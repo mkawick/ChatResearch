@@ -6,7 +6,7 @@ Tools/options/Projects and solutions/VC++ Directories
 For me, this reads:
 
 Includes:
-C:\libraries\Mber\boost
+C:\projects\Mber\boost
 
 This is an incomplete set of boost 1.53 because we do not need the entire set of libs too.
 

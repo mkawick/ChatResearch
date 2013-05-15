@@ -17,6 +17,8 @@ public:
 	PacketFactory();
    bool     Parse( const U8* bufferIn, int& bufferOffset, BasePacket** packetOut ) const;// be sure to check the return value
 
+   bool     SafeParse( const U8* bufferIn, int& bufferOffset, BasePacket& packetOut ) const;// only ever returns an instance of basepacket
+
 private:
 
    bool     ParseLogin( const U8* bufferIn, int& bufferOffset, const BasePacket* firstPassParse, BasePacket** packetOut ) const;

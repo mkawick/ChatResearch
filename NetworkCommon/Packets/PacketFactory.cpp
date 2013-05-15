@@ -85,6 +85,14 @@ bool	PacketFactory::Parse( const U8* bufferIn, int& bufferOffset, BasePacket** p
    return false;
 }// be sure to check the return value
 
+//---------------------------------------------------------------------------------------------------------------------------------------
+
+bool     PacketFactory::SafeParse( const U8* bufferIn, int& bufferOffset, BasePacket& packetOut ) const
+{
+   int offset = bufferOffset;
+   packetOut.SerializeIn( bufferIn, offset );
+   return true;
+}
 
 //---------------------------------------------------------------------------------------------------------------------------------------
 //---------------------------------------------------------------------------------------------------------------------------------------

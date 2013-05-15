@@ -12,6 +12,7 @@ KhaanConnector::KhaanConnector( int id, bufferevent* be ):
       m_denyAllFutureData( false ),
       m_gateway( NULL )
 {
+   m_randomNumberOfPacketsBeforeLogin = 30 + rand() % 20;
 }
 
 //-----------------------------------------------------------------------------------------
@@ -34,25 +35,60 @@ void  KhaanConnector::PreCleanup()
 
 bool	KhaanConnector::OnDataReceived( unsigned char* data, int length )
 {
-   BasePacket* packetIn;
-   int offset = 0;
-   PacketFactory parser;
-   if( m_authorizedConnection == false )
-   {
-      m_numPacketsReceivedBeforeAuth ++;
-   }
    if( m_denyAllFutureData == true )
    {
       FlushReadBuffer();
       return false;
    }
+
+   BasePacket* packetIn;
+   int offset = 0;
+   PacketFactory parser;
+
    if( length > MaximumInputBufferSize )// special case
    {
       FlushReadBuffer();
+
+      m_denyAllFutureData = true;
+      Log( "Gateway: hacker alert. Packet length is far too long", 3 );
       return false;
-      // todo, log hacker
    }
-   if( parser.Parse( data, offset, &packetIn ) == true )
+
+   if( m_authorizedConnection == false )
+   {
+      // before we parse, which is potentially dangerous, we will do a quick check
+      BasePacket testPacket;
+      parser.SafeParse( data, offset, testPacket );
+      if( testPacket.packetType != PacketType_Login || testPacket.packetSubType != PacketLogin::LoginType_Login )
+      {
+         m_numPacketsReceivedBeforeAuth ++;
+         if( m_numPacketsReceivedBeforeAuth > m_randomNumberOfPacketsBeforeLogin )
+         {
+            m_denyAllFutureData = true;
+            Log( "Gateway: hacker alert. Too many packet received without a login.", 3 );
+            CloseConnection();
+         }
+
+         // we never proceed beyond here. If you are not authorized and you are not passing login packets, you get no pass, whatsoever.
+         return false;
+      }
+   }
+
+   
+
+   bool result = false;
+   // catch bad packets, buffer over runs, or other badly formed data.
+   try 
+   {
+      result = parser.Parse( data, offset, &packetIn );
+   }
+   catch( ... )
+   {
+      Log( "parsing in KhaanConnector threw an exception" );
+      m_denyAllFutureData = true;
+   }
+
+   if( result == true )
    {
       if( IsWhiteListedIn( packetIn ) )
       {

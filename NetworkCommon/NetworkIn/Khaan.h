@@ -91,6 +91,7 @@ protected:
    static void    DataAvailable( struct bufferevent* bev, void* arg );
    static void	   HandleSocketError( struct bufferevent* bev, short what, void* arg );
    void           FlushReadBuffer();
+   void           CloseConnection();
 
 protected:
 	int				m_socketId;

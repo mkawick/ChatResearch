@@ -29,6 +29,7 @@ private:
 
    U32                  m_connectionId;
    U32                  m_numPacketsReceivedBeforeAuth;
+   U32                  m_randomNumberOfPacketsBeforeLogin;
    bool                 m_authorizedConnection;
    bool                 m_denyAllFutureData;
    DiplodocusGateway*   m_gateway;

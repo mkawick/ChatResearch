@@ -290,6 +290,17 @@ void     Khaan :: FlushReadBuffer()
 
 //---------------------------------------------------------------
 
+void     Khaan :: CloseConnection()
+{
+   if( m_bufferEvent )
+   {
+      bufferevent_free( m_bufferEvent );
+      Cleanup();
+   }
+}
+
+//---------------------------------------------------------------
+
 // Called by libevent when there is an error on the underlying socket descriptor.
 void	   Khaan::HandleSocketError( struct bufferevent* bufferEventObj, short events, void* context )
 {
