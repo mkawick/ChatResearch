@@ -22,7 +22,9 @@ Fruitadens :: Fruitadens( const char* name ) : CChainedThread( true, 200 ),
                m_isConnected( false ),
                m_port( 0 ),
                m_hasFailedCritically( false ),
-               m_serverType( ServerType_General )
+               m_serverType( ServerType_General ),
+               m_connectedServerId( 0 ),
+               m_serverId( 0 )
 {
    m_name = name;
    memset( &m_ipAddress, 0, sizeof( m_ipAddress ) );
@@ -32,23 +34,9 @@ Fruitadens :: Fruitadens( const char* name ) : CChainedThread( true, 200 ),
 
 void  Fruitadens :: NotifyEndpointOfIdentification( const string& serverName, U32 serverId, bool isGameServer, bool isController, bool requiresWrapper )
 {
-   PacketServerIdentifier* serverIdPacket = new PacketServerIdentifier;
-   serverIdPacket->serverName = serverName;
-   serverIdPacket->serverId = serverId;
-   serverIdPacket->isGameServer = false;
-   serverIdPacket->isController = false;
-
-   if( requiresWrapper )
-   {
-      PacketServerToServerWrapper* wrapper = new PacketServerToServerWrapper;
-      wrapper->serverId = serverId;
-      wrapper->pPacket = serverIdPacket;
-      AddOutputChainData( wrapper, 0 );
-   }
-   else
-   {
-      AddOutputChainData( serverIdPacket, 0 );
-   }
+   BasePacket* packet = NULL;
+   PackageForServerIdentification( serverName, serverId, isGameServer, isController, requiresWrapper, &packet );
+   AddOutputChainData( packet, 0 );
 }
 
 //-----------------------------------------------------------------------------
@@ -159,6 +147,7 @@ void  Fruitadens :: AttemptConnection()
 
    string portString = boost::lexical_cast<string>( m_port );
    string notification = "Client on port " + portString;
+
    // this failure can happen for a lot of reasons, like the server hasn't been launched yet.
    if (connect( m_clientSocket, (sockaddr*)&m_ipAddress, sizeof(m_ipAddress)) == SOCKET_ERROR)
    {
@@ -282,6 +271,22 @@ int  Fruitadens::ProcessOutputFunction()
 
 bool  Fruitadens::HandlePacketReceived( BasePacket* packetIn )
 {
+   // special case
+   if( packetIn->packetType == PacketType_ServerToServerWrapper )
+   {
+      PacketServerToServerWrapper* wrapper = static_cast< PacketServerToServerWrapper* >( packetIn );
+      PacketServerIdentifier* unwrappedPacket = static_cast< PacketServerIdentifier * > ( wrapper->pPacket );
+      m_connectedServerId = wrapper->serverId;
+
+      cout << "Downline Server sent connection info, name = '" << unwrappedPacket->serverName << "' : " << m_connectedServerId << endl;
+      cout << "Server isGame = '" << unwrappedPacket->isGameServer << ", isController : " << unwrappedPacket->isController << endl;
+
+      delete unwrappedPacket;
+      delete wrapper;
+
+      return true;
+   }
+
    Threading::MutexLock locker( m_inputChainListMutex );
    // we don't do much interpretation here, we simply pass output data onto our output, which should be the DB or other servers.
    ChainLinkIteratorType itInput = m_listOfInputs.begin();

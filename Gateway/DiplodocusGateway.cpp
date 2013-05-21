@@ -7,7 +7,7 @@
 //-----------------------------------------------------------------------------------------
 //-----------------------------------------------------------------------------------------
 
-DiplodocusGateway::DiplodocusGateway() : Diplodocus< KhaanConnector > ( "gateway", ServerType_Gateway ),
+DiplodocusGateway::DiplodocusGateway( const string& serverName, U32 serverId ) : Diplodocus< KhaanConnector > ( serverName, serverId, ServerType_Gateway ),
                                           m_connectionIdTracker( 12 )
 {
    SetSleepTime( 33 );// 30 fps
@@ -40,7 +40,7 @@ bool  DiplodocusGateway::AddInputChainData( BasePacket* packet, U32 connectionId
       wrapper->connectionId = connectionId;
       wrapper->pPacket = packet;
 
-      wrapper->serverType = ServerType_Chat;// we are cheating. we should look at the type of packet and route it appropriately.
+      //wrapper->serverType = ServerType_Chat;// we are cheating. we should look at the type of packet and route it appropriately.
       
       m_mutex.lock();
       m_packetsToBeSentInternally.push_back( wrapper );
@@ -76,7 +76,7 @@ void  DiplodocusGateway::ClientConnectionIsAboutToRemove( KhaanConnector* khaan 
    int socketId = khaan->GetSocketId();
 
    PacketLogout* logout = new PacketLogout();// must be done before we clear the lists of ids
-   logout->serverType = ServerType_Chat;
+   //logout->serverType = ServerType_Chat;
 
    AddInputChainData( logout, connectionId );
 
@@ -111,6 +111,8 @@ bool DiplodocusGateway::PushPacketToProperOutput( BasePacket* packet )
 
 int  DiplodocusGateway::ProcessInputFunction()// should be simple throughput, we just match the packet types coming in to the proper server
 {
+   SendServerIdentification();
+
    if( m_packetsToBeSentInternally.size() == 0 )
       return 0;
 

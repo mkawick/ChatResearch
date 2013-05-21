@@ -38,7 +38,12 @@ public:
       GamePacketType_RequestListOfGames,
       GamePacketType_RequestListOfGamesResponse,
       GamePacketType_RequestListOfUsersInGame,
-      GamePacketType_RequestListOfUsersInGameResponse
+      GamePacketType_RequestListOfUsersInGameResponse,
+
+
+      GamePacketType_ListOfGames,// usually s2s
+      GamePacketType_GameIdentification, // to client
+      GamePacketType_RawGameData
    };
 public:
    PacketGameToServer( int packet_type = PacketType_Gameplay, int packet_sub_type = GamePacketType_LoginToServer ) : BasePacket( packet_type, packet_sub_type ) {}
@@ -294,9 +299,55 @@ public:
    string   gameUuid;
    SerializedKeyValueVector< string >   users; // game details?
 };
-      
+
 ///////////////////////////////////////////////////////////////
 
+class PacketListOfGames : public PacketGameToServer
+{
+public:
+   PacketListOfGames(): PacketGameToServer( PacketType_Gameplay, GamePacketType_ListOfGames ), connectionId ( 0 ) {}
+
+   bool  SerializeIn( const U8* data, int& bufferOffset );
+   bool  SerializeOut( U8* data, int& bufferOffset ) const;
+
+   U32      connectionId;
+   SerializedKeyValueVector< string >   games;
+};
+
+///////////////////////////////////////////////////////////////
+
+class PacketGameIdentification : public PacketGameToServer
+{
+public:
+   PacketGameIdentification(): PacketGameToServer( PacketType_Gameplay, GamePacketType_GameIdentification ), gameId ( 0 ) {}
+
+   bool  SerializeIn( const U8* data, int& bufferOffset );
+   bool  SerializeOut( U8* data, int& bufferOffset ) const;
+
+   U32      gameId;
+   string   name;
+   string   shortName;
+};
+
+///////////////////////////////////////////////////////////////
+
+class PacketGameplayRawData : public PacketGameToServer
+{
+public:
+   PacketGameplayRawData(): PacketGameToServer( PacketType_Gameplay, GamePacketType_RawGameData ),size( 0 ) {}
+   //PacketGameplayRawData( PacketGameplayRawData& packet ) ;
+   //~PacketGameplayRawData();
+   //PacketGameplayRawData& operator = ( PacketGameplayRawData& packet ) ;
+
+   bool  SerializeIn( const U8* data, int& bufferOffset ); // allocates memory
+   bool  SerializeOut( U8* data, int& bufferOffset ) const;
+
+   void  Prep( U16 size, const U8* ptr );
+
+   enum { MaxBufferSize = 1024 };
+   U16      size;
+   U8      data[ MaxBufferSize ];
+};
 
 ///////////////////////////////////////////////////////////////
 

@@ -6,7 +6,7 @@
 ///////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////
 
-DiplodocusGame::DiplodocusGame(): Diplodocus< KhaanGame >( "game", ServerType_GameInstance ) 
+DiplodocusGame::DiplodocusGame( const string& serverName, U32 serverId ): Diplodocus< KhaanGame >( serverName, serverId, ServerType_GameInstance ) 
 {
 }
 
@@ -190,7 +190,7 @@ bool  DiplodocusGame::HandlePacketToOtherServer( BasePacket* packet, U32 connect
 
 //---------------------------------------------------------------
 
-void  DiplodocusGame::ConnectUser( PacketPrepareForUserLogin* loginPacket )
+void  DiplodocusGame::ConnectUser( const PacketPrepareForUserLogin* loginPacket )
 {
    U32 connectionId = loginPacket->connectionId;
    ConnectionMapIterator it = m_connectionMap.find( connectionId );
@@ -211,7 +211,7 @@ void  DiplodocusGame::ConnectUser( PacketPrepareForUserLogin* loginPacket )
 
 //---------------------------------------------------------------
 
-void  DiplodocusGame::DisconnectUser( PacketPrepareForUserLogout* logoutPacket )
+void  DiplodocusGame::DisconnectUser( const PacketPrepareForUserLogout* logoutPacket )
 {
   /* U32 connectionId = logoutPacket->connectionId;
    ConnectionMapIterator it = m_connectionMap.find( connectionId );

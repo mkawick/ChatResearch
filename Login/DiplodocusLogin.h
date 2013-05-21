@@ -20,7 +20,6 @@ struct ConnectionToUser
    string   lastLoginTime;
 
    LoginStatus status;
-   
 };
 
 //-----------------------------------------------------------------------------------------
@@ -29,11 +28,12 @@ class DiplodocusLogin : public Diplodocus< KhaanLogin >
 {
    enum QueryType 
    {
-      QueryType_UserLoginInfo = 1
+      QueryType_UserLoginInfo = 1,
+      QueryType_UserListOfGame = 2
    };
 
 public:
-   DiplodocusLogin();
+   DiplodocusLogin( const string& serverName, U32 serverId );
 
    bool     AddInputChainData( BasePacket* packet, U32 connectionId );
    bool     AddOutputChainData( BasePacket* packet, U32 connectionId );
@@ -48,6 +48,8 @@ private:
 
    bool     SuccessfulLogin( U32 connectionId );
    bool     ForceUserLogoutAndBlock( U32 connectionId );
+   bool     RequestListOfGames( U32 connectionId, const string& userUuid );
+   bool     SendListOfGamesToGameServers( U32 connectionId, const KeyValueVector& kv_array );
 
    bool     UpdateLastLoggedOutTime( U32 connectionId );
    bool     UpdateLastLoggedInTime( U32 connectionId );

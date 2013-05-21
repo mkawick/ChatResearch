@@ -8,6 +8,7 @@
 #include "../NetworkCommon/Utils/Utils.h"
 
 #include <boost/algorithm/string.hpp>
+#include <boost/lexical_cast.hpp>
 
 #include <iostream>
 #include <iomanip>
@@ -76,7 +77,7 @@ private:
 //---------------------------------------------------------------------------
 //---------------------------------------------------------------------------
 
-int main(int argc, char* argv[])
+int main(int argc, const char* argv[])
 {
  /*  Pyroraptor pyro;
    for( int i=0; i<16; i++ )
@@ -330,7 +331,7 @@ void     ConsoleStrategy::PrintInstructions()
       OutputCommand( "repeat", "x = repeated chats in a row.. long text", true );
       break;
    case Strategy_Game:
-      OutputCommand( "create", "x = create new game, new name will be returned", false );
+      OutputCommand( "create", "x = create new game instance, new name will be returned", false );
       OutputCommand( "invite", "x to y = invite a user by uuid (syntax matters)", false );
       OutputCommand( "accept", "x = accept invitation", false );
       //OutputCommand( "add", "x to y = add user to game (syntax matters)", false );
@@ -338,6 +339,9 @@ void     ConsoleStrategy::PrintInstructions()
       OutputCommand( "quit", " current game ", false );
       OutputCommand( "delete", " current game ", false );
       OutputCommand( "list", " list of games ", false );
+      OutputCommand( "switch x", " switch to x game server by name or short name (no spaces)", true );
+      //OutputCommand( "attach x", " attach to this game server", false );
+      OutputCommand( "echo n", " send random n bytes to game server (default is 32) ", true );
       // advance the game turn
       // login to exiting game
       break;
@@ -811,6 +815,26 @@ bool     ConsoleStrategy::Gameplay( const string& text )
       m_communications.RequestMembers( channelUuid );*/
       m_communications.CreateGame( game );
       return true;
+   }
+   if( parse.FindValue( "switch", game ) == true )
+   {
+      if( game.size() == 0 )
+      {
+         m_pyro.SetConsoleColor( Pyroraptor::ColorsError );
+         m_pyro.Log( "You must provide a game name" );
+         return false;
+      }
+
+      m_communications.ChangeGame( game );
+   }
+   if( parse.FindValue( "echo", game ) == true )
+   {
+      if( game.size() == 0 )
+      {
+         game = "32";
+      }
+
+      m_communications.GameEcho( boost::lexical_cast<int>( game ) );
    }
    return false;
 }

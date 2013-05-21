@@ -11,6 +11,8 @@
 #include "../NetworkCommon/NetworkIn/Diplodocus.h"
 #include "../NetworkCommon/ServerConstants.h"
 
+#include "../NetworkCommon/Packets/GamePacket.h"
+
 #include "KhaanGame.h"
 class UserSession;
 //#include "UserConnection.h"
@@ -22,7 +24,7 @@ class UserSession;
 class DiplodocusGame : public Diplodocus< KhaanGame >
 {
 public:
-   DiplodocusGame();
+   DiplodocusGame( const string& serverName, U32 serverId );
 
    bool     AddInputChainData( BasePacket* packet, U32 connectionId );
    bool     AddOutputChainData( BasePacket* packet, U32 connectionId );
@@ -54,8 +56,9 @@ private:
 
    bool     HandlePacketFromOtherServer( BasePacket* packet, U32 connectionId );
    bool     HandlePacketToOtherServer( BasePacket* packet, U32 connectionId );
-   void     ConnectUser( PacketPrepareForUserLogin* loginPacket );
-   void     DisconnectUser( PacketPrepareForUserLogout* logoutPacket );
+   void     ConnectUser( const PacketPrepareForUserLogin* loginPacket );
+   void     DisconnectUser( const PacketPrepareForUserLogout* logoutPacket );
+   void     IsUserAllowedToUseThisProduct( const PacketListOfGames* packet );
 
    typedef pair< int, UserSession* >      ConnectionPair;
    typedef map< int, UserSession* >       ConnectionMap;

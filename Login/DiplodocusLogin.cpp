@@ -2,11 +2,12 @@
 #include "../NetworkCommon/Utils/TableWrapper.h"
 
 #include "../NetworkCommon/Packets/ServerToServerPacket.h"
+#include "../NetworkCommon/Packets/GamePacket.h"
 
 
 //////////////////////////////////////////////////////////
 
-DiplodocusLogin::DiplodocusLogin()  : Diplodocus< KhaanLogin >( "login", ServerType_Login ), m_updateGatewayConnections( false )
+DiplodocusLogin::DiplodocusLogin( const string& serverName, U32 serverId )  : Diplodocus< KhaanLogin >( serverName, serverId, ServerType_Login ), m_updateGatewayConnections( false )
 {
 }
 
@@ -107,7 +108,7 @@ bool     DiplodocusLogin::LogUserIn( const string& username, const string& passw
    dbQuery->lookup = QueryType_UserLoginInfo;
    dbQuery->meta = username;
 
-   string queryString = "SELECT * FROM USER where name='" ;
+   string queryString = "SELECT * FROM user WHERE name='" ;
    queryString += username;
    queryString += "'";
    dbQuery->query = queryString;
@@ -188,6 +189,33 @@ bool  DiplodocusLogin::ForceUserLogoutAndBlock( U32 connectionId )
 
 //------------------------------------------------------------------------------------------------
 
+bool  DiplodocusLogin::SendListOfGamesToGameServers( U32 connectionId, const KeyValueVector& kv_array )
+{
+   UserConnectionMapIterator it = m_userConnectionMap.find( connectionId ); // user may have disconnected waiting for the db.
+   if( it != m_userConnectionMap.end() )
+   {
+      BaseOutputContainer::iterator itOutputs = m_listOfOutputs.begin();
+      while( itOutputs != m_listOfOutputs.end() )
+      {
+         ChainedInterface* outputPtr = (*itOutputs).m_interface;
+
+         PacketListOfGames* packetToSend = new PacketListOfGames;
+         packetToSend->games = kv_array;// potentially costly.
+         packetToSend->connectionId = connectionId;
+
+         if( outputPtr->AddOutputChainData( packetToSend, m_chainId ) == false )
+         {
+            delete packetToSend;
+         }
+         itOutputs++;
+      }
+   }
+
+   return false;
+}
+
+//------------------------------------------------------------------------------------------------
+
 bool  DiplodocusLogin::UpdateLastLoggedInTime( U32 connectionId )
 {
    UserConnectionMapIterator it = m_userConnectionMap.find( connectionId );
@@ -195,7 +223,7 @@ bool  DiplodocusLogin::UpdateLastLoggedInTime( U32 connectionId )
    {
       PacketDbQuery* dbQuery = new PacketDbQuery;
       dbQuery->id = connectionId ;
-      dbQuery->lookup = QueryType_UserLoginInfo;
+      dbQuery->lookup = QueryType_UserListOfGame;
       dbQuery->isFireAndForget = true;// no result is needed
 
       string queryString = "UPDATE user SET user.last_login_timestamp=CURRENT_TIMESTAMP WHERE uuid = '";
@@ -263,7 +291,29 @@ bool    DiplodocusLogin::SuccessfulLogin( U32 connectionId )
 
    SendPacketToGateway( wrapper, connectionId );
 
+   RequestListOfGames( connectionId, userUuid );
+
    return SendLoginStatusToOtherServers( username, userUuid, connectionId, lastLoginTime, true );
+}
+
+//------------------------------------------------------------------------------------------------
+
+bool  DiplodocusLogin::RequestListOfGames( U32 connectionId, const string& userUuid )
+{
+   if( userUuid.size() && connectionId != 0 )
+   {
+      PacketDbQuery* dbQuery = new PacketDbQuery;
+      dbQuery->id = connectionId ;
+      dbQuery->lookup = QueryType_UserListOfGame;
+
+      string queryString = "SELECT game.uuid, game.name FROM game INNER JOIN user_game ON game.uuid=user_game.game_uuid WHERE user_game.user_uuid = '";
+      queryString += userUuid;
+      queryString += "'";
+      dbQuery->query = queryString;
+
+      return AddQueryToOutput( dbQuery );
+   }
+   return false;
 }
 
 //---------------------------------------------------------------
@@ -363,6 +413,36 @@ bool     DiplodocusLogin::AddOutputChainData( BasePacket* packet, U32 connection
 
                }
                break;
+            case QueryType_UserListOfGame:
+               {
+                  if( dbResult->successfulQuery == false || dbResult->bucket.bucket.size() == 0 )// no records found
+                  {
+                     string str = "List of games not valie db query failed, username: ";
+                     str += it->second.username;
+                     str += ", uuid: ";
+                     str += it->second.userUuid;
+                     Log( str, 4 );
+                     ForceUserLogoutAndBlock( connectionId );
+                     return false;
+                  }
+
+                  KeyValueVector             key_value_array;
+
+                  SimpleGameTable            enigma( dbResult->bucket );
+                  SimpleGameTable::iterator it = enigma.begin();
+                  
+                  while( it != enigma.end() )
+                  {
+                     SimpleGameTable::row       row = *it++;
+                     string name =              row[ SimpleGame::Column_name ];
+                     string uuid =              row[ SimpleGame::Column_uuid ];
+
+                     key_value_array.push_back( KeyValueString ( uuid, name ) );
+                  }
+
+                  SendListOfGamesToGameServers( connectionId, key_value_array );
+               }
+               break;
          }
       }
    }
@@ -373,6 +453,8 @@ bool     DiplodocusLogin::AddOutputChainData( BasePacket* packet, U32 connection
 
 int      DiplodocusLogin::CallbackFunction()
 {
+   SendServerIdentification();
+
    if( m_updateGatewayConnections == false )
       return 0;
 
@@ -383,6 +465,7 @@ int      DiplodocusLogin::CallbackFunction()
       ChainedInterface* inputPtr = itInputs->m_interface;
       InputChainType* connection = static_cast< InputChainType* >( inputPtr );
       connection->Update();
+      itInputs++;
    }
    m_updateGatewayConnections = false;
 

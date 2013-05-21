@@ -13,7 +13,7 @@
 #include "../Packets/ServerToServerPacket.h"
 #include "DiplodocusServerToServer.h"
 
-DiplodocusServerToServer::DiplodocusServerToServer() : Diplodocus< KhaanServerToServer >( "server-to-server", ServerType_Chat ), m_jobIdTracker( 32 ) // 32 is a non-zero value useful for test only
+DiplodocusServerToServer::DiplodocusServerToServer( const string& serverName, U32 serverId ) : Diplodocus< KhaanServerToServer >( serverName, serverId, ServerType_Chat ), m_jobIdTracker( 32 ) // 32 is a non-zero value useful for test only
 {
    SetConnectionId( ServerToServerConnectionId );
 }
@@ -44,8 +44,8 @@ bool   DiplodocusServerToServer::AddInputChainData( BasePacket* packet, U32 conn
    {
       //HandleCommandFromGateway( packet, connectionId );
       PacketServerToServerWrapper* wrapper = static_cast< PacketServerToServerWrapper* >( packet );
-      BasePacket* actualPacket = wrapper->pPacket;
-      int         serverId = wrapper->serverId;
+      BasePacket* unwrappedPacket = wrapper->pPacket;
+      U32         serverId = wrapper->serverId;
 
       LockMutex();
 
@@ -56,24 +56,23 @@ bool   DiplodocusServerToServer::AddInputChainData( BasePacket* packet, U32 conn
       {
          ChainLink& chainedInput = *itInputs++;
 	      ChainedInterface* interfacePtr = chainedInput.m_interface;
-         khaan = reinterpret_cast< KhaanServerToServer* >( interfacePtr );
+         khaan = static_cast< KhaanServerToServer* >( interfacePtr );
 
          if( serverId == khaan->GetServerId() )
          {
             found = true;
             break;
          }
-
-         
       }
       if( found == false || khaan == NULL )
       {
          assert( 0 );
       }
+      
 
       // create job for this packet including the serverId, a unique job id, and so on. Keep in mind that the connection may disappear
       // during the servicing of this job
-      CreateJob( khaan, actualPacket );
+      CreateJob( khaan, unwrappedPacket );
       
       // potentially needed
       //m_serversNeedingUpdate.push_back( khaan->GetServerId() );
@@ -84,6 +83,16 @@ bool   DiplodocusServerToServer::AddInputChainData( BasePacket* packet, U32 conn
    }
 
    return true;
+}
+
+//---------------------------------------------------------------
+
+void  DiplodocusServerToServer::ServerWasIdentified( KhaanServerToServer* khaan )
+{
+   BasePacket* packet = NULL;
+   PackageForServerIdentification( m_serverName, m_serverId, m_isGame, m_isControllerApp, true, &packet );
+   khaan->AddOutputChainData( packet, 0 );
+   m_serversNeedingUpdate.push_back( khaan->GetServerId() );
 }
 
 //---------------------------------------------------------------
@@ -127,7 +136,7 @@ bool  DiplodocusServerToServer::AddOutputChainData( BasePacket* packet, U32 conn
       {
          ChainLink& chainedInput = *itInputs++;
          ChainedInterface* interfacePtr = chainedInput.m_interface;
-         KhaanServerToServer* khaan = reinterpret_cast< KhaanServerToServer* >( interfacePtr );
+         KhaanServerToServer* khaan = static_cast< KhaanServerToServer* >( interfacePtr );
          if( khaan->GetServerId() == connectionId )// 
          {
             // we will swallow this in either case and so we delete the packets if the khaan does not use it.
@@ -169,7 +178,7 @@ int   DiplodocusServerToServer::CallbackFunction()
       {
          ChainLink& chainedInput = *itInputs++;
          ChainedInterface* interfacePtr = chainedInput.m_interface;
-         KhaanServerToServer* khaan = reinterpret_cast< KhaanServerToServer* >( interfacePtr );
+         KhaanServerToServer* khaan = static_cast< KhaanServerToServer* >( interfacePtr );
          if( khaan->GetServerId() == serverId )
          {
             khaan->Update();

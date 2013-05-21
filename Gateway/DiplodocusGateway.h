@@ -12,13 +12,15 @@
 class DiplodocusGateway : public Diplodocus< KhaanConnector >
 {
 public:
-   DiplodocusGateway();
+   DiplodocusGateway( const string& serverName, U32 serverId );
    ~DiplodocusGateway();
 
    bool           AddInputChainData( BasePacket* packet, U32 socketId );
    bool           AddOutputChainData( BasePacket* packet, U32 serverType );
 
    void           ClientConnectionIsAboutToRemove( KhaanConnector* khaan );
+
+   //-----------------------------------------
 
 private:
 

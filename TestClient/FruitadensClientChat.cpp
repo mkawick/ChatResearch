@@ -6,7 +6,6 @@
 
 #include "../NetworkCommon/Utils/Utils.h"
 #include "../NetworkCommon/ServerConstants.h"
-#include "../NetworkCommon/Packets/GamePacket.h"
 
 #include <mmsystem.h>
 //-----------------------------------------------------------------------------
@@ -74,7 +73,7 @@ bool  FruitadensClientChat::RequestGroups()
 
 //-----------------------------------------------------------------------------
 
-bool  FruitadensClientChat::ChangeChannel( string& channel )
+bool  FruitadensClientChat::ChangeChannel( const string& channel )
 {
    string channelUuid= FindChatChannel( channel );
    if( channelUuid.length() == 0 )
@@ -88,6 +87,28 @@ bool  FruitadensClientChat::ChangeChannel( string& channel )
       PacketChangeChatChannel channelChange;
       channelChange.chatChannelUuid = channelUuid;
       SerializePacketOut( &channelChange );
+   }
+   return true;
+}
+
+//-----------------------------------------------------------------------------
+
+bool  FruitadensClientChat::ChangeGame( const string& gameName )// either name or shortname
+{
+   U32 id = FindGame( gameName );
+   if( id == 0 )
+   {
+      m_pyro->SetConsoleColor( Pyroraptor::ColorsError );
+      Log( "error: bad chat game name" );
+      return false;
+   }
+   else
+   {
+      m_selectedGame = id;
+      m_pyro->SetConsoleColor( Pyroraptor::ColorsNormal );
+      m_pyro->Log( " Game selected: ", false ); 
+      m_pyro->SetConsoleColor( Pyroraptor::ColorsText );
+      m_pyro->Log( FindGameNameFromGameId( id ) );
    }
    return true;
 }
@@ -222,15 +243,15 @@ void     FruitadensClientChat::AddChatChannelsToList( const ChannelKeyValue& new
 
 void     FruitadensClientChat::AddFriendsToList( const UserNameKeyValue& users )
 {
-   KeyValueList::const_iterator     itUsers = users.begin();
+   KeyValueVector::const_iterator     itUsers = users.begin();
    while( itUsers != users.end() )
    {
       bool found = false;
-      const KeyValue& kvpUsers = *itUsers++;
-      KeyValueList::const_iterator  itFriends = m_friends.begin();
+      const KeyValueString& kvpUsers = *itUsers++;
+      KeyValueVector::const_iterator  itFriends = m_friends.begin();
       while( itFriends != m_friends.end() )
       {
-         const KeyValue&  kvpFriend = *itFriends++;
+         const KeyValueString&  kvpFriend = *itFriends++;
          if( kvpUsers.key == kvpFriend.key )
          {
             found = true;
@@ -239,7 +260,7 @@ void     FruitadensClientChat::AddFriendsToList( const UserNameKeyValue& users )
       }
       if( found == false )
       {
-         m_friends.push_back( KeyValue( kvpUsers.key, kvpUsers.value ) );
+         m_friends.push_back( KeyValueString( kvpUsers.key, kvpUsers.value ) );
       }
    }
 }
@@ -282,10 +303,10 @@ string   FruitadensClientChat::FindChatChannelFromUuid( const string& uuid ) con
 
 string   FruitadensClientChat::FindFriend( const string& name ) const 
 {
-   KeyValueList::const_iterator  itFriends = m_friends.begin();
+   KeyValueVector::const_iterator  itFriends = m_friends.begin();
    while( itFriends != m_friends.end() )
    {
-      const KeyValue&  kvpFriend = *itFriends++;
+      const KeyValueString&  kvpFriend = *itFriends++;
       if( kvpFriend.value == name )
       {
          return kvpFriend.key;
@@ -301,10 +322,10 @@ string   FruitadensClientChat::FindFriend( const string& name ) const
 
 string   FruitadensClientChat::FindFriendFromUuid( const string& uuid ) const 
 {
-   KeyValueList::const_iterator  itFriends = m_friends.begin();
+   KeyValueVector::const_iterator  itFriends = m_friends.begin();
    while( itFriends != m_friends.end() )
    {
-      const KeyValue&  kvpFriend = *itFriends++;
+      const KeyValueString&  kvpFriend = *itFriends++;
       if( kvpFriend.key == uuid )
       {
          return kvpFriend.value;
@@ -314,6 +335,38 @@ string   FruitadensClientChat::FindFriendFromUuid( const string& uuid ) const
       return m_username;
 
    return string();
+}
+
+//-----------------------------------------------------------------------------
+
+U32   FruitadensClientChat::FindGame( const string& name ) const
+{
+   GameList::const_iterator it = m_gameList.begin();
+   while( it != m_gameList.end() )
+   {
+      const PacketGameIdentification& gameId = *it++;
+      if( gameId.name == name || gameId.shortName == name )
+      {
+         return gameId.gameId;
+      }
+   }
+   return 0;
+}
+
+//-----------------------------------------------------------------------------
+
+string   FruitadensClientChat::FindGameNameFromGameId( U32 id ) const
+{
+   GameList::const_iterator it = m_gameList.begin();
+   while( it != m_gameList.end() )
+   {
+      const PacketGameIdentification& gameId = *it++;
+      if( gameId.gameId == id )
+      {
+         return gameId.name;
+      }
+   }
+   return 0;
 }
 
 //-----------------------------------------------------------------------------
@@ -442,12 +495,43 @@ bool     FruitadensClientChat::DeleteGame( const string& gameUuid )
 
 //-----------------------------------------------------------------------------
 
+bool     FruitadensClientChat:: GameEcho( int numBytes )
+{
+   if( m_numBytesSent != 0 )
+   {
+      m_pyro->SetConsoleColor( Pyroraptor::ColorsError );
+      m_pyro->Log( "error: a package is already in progress" );
+      return false;
+   }
+   if( m_selectedGame == 0 )
+   {
+      m_pyro->SetConsoleColor( Pyroraptor::ColorsError );
+      m_pyro->Log( "error: select a game first" );
+      return false;
+   }
+
+   if( numBytes > MaxBufferBytes )
+      numBytes = MaxBufferBytes;
+   m_numBytesSent = numBytes;
+
+   for( int i=0; i< m_numBytesSent; i++ )
+   {
+      m_comparisonBuffer[i] = rand() % 256;
+   }
+   PacketGameplayRawData* packet = new PacketGameplayRawData;
+   packet->gameInstanceId = m_selectedGame;
+
+   packet->Prep( m_numBytesSent, m_comparisonBuffer );   
+   return SerializePacketOut( packet );
+}
+//-----------------------------------------------------------------------------
+/*
 string   FruitadensClientChat::FindGame( const string& name )
 {
-   KeyValueList::const_iterator  itGames = m_availableGames.begin();
+   KeyValueVector::const_iterator  itGames = m_availableGames.begin();
    while( itGames != m_availableGames.end() )
    {
-      const KeyValue&  kvpGame = *itGames++;
+      const KeyValueString&  kvpGame = *itGames++;
       if( kvpGame.value == name )
       {
          return kvpGame.key;
@@ -461,10 +545,10 @@ string   FruitadensClientChat::FindGame( const string& name )
 
 string   FruitadensClientChat::FindGameByUuid( const string& uuid )
 {
-   KeyValueList::const_iterator  itGames = m_availableGames.begin();
+   KeyValueVector::const_iterator  itGames = m_availableGames.begin();
    while( itGames != m_availableGames.end() )
    {
-      const KeyValue&  kvpGame = *itGames++;
+      const KeyValueString&  kvpGame = *itGames++;
       if( kvpGame.key == uuid )
       {
          return kvpGame.value;
@@ -472,7 +556,7 @@ string   FruitadensClientChat::FindGameByUuid( const string& uuid )
    }
 
    return string();
-}
+}*/
 
 //-----------------------------------------------------------------------------
 //-----------------------------------------------------------------------------
@@ -531,6 +615,12 @@ void     FruitadensClientChat::DumpChatChannels()
    m_pyro->Log( "}" );
 }
 
+//-----------------------------------------------------------------------------
+
+void     FruitadensClientChat::DumpGames()
+{
+   DumpListOfGames( m_gameList );
+}
 
 //-----------------------------------------------------------------------------
 
@@ -556,6 +646,38 @@ void     FruitadensClientChat::DumpListOfUsers( const string& channelUuid, const
       m_pyro->Log( " : ", false );
       m_pyro->SetConsoleColor( Pyroraptor::ColorsResponseText );
       m_pyro->Log( kv.key );
+   }
+   m_pyro->SetConsoleColor( Pyroraptor::ColorsNormal );
+   m_pyro->Log( "}" );
+}
+
+//-----------------------------------------------------------------------------
+
+void     FruitadensClientChat::DumpListOfGames( const GameList& gameList )
+{
+   m_pyro->SetConsoleColor( Pyroraptor::ColorsNormal );
+   
+   string text = "games: ";
+
+   text += "[ ";
+   text += boost::lexical_cast< string >( gameList.size() );
+   text += " ] = {";
+   m_pyro->Log( text );
+
+   GameList::const_iterator it = gameList.begin();
+   while( it != gameList.end() )
+   {
+      const PacketGameIdentification& gameId = *it++;
+      m_pyro->SetConsoleColor( Pyroraptor::ColorsUsername );
+      m_pyro->Log( gameId.name, false );
+      m_pyro->SetConsoleColor( Pyroraptor::ColorsNormal );
+      m_pyro->Log( ", ", false );
+      m_pyro->SetConsoleColor( Pyroraptor::ColorsResponseText );
+      m_pyro->Log( gameId.shortName );
+      m_pyro->SetConsoleColor( Pyroraptor::ColorsNormal );
+      m_pyro->Log( " : ", false );
+      m_pyro->SetConsoleColor( Pyroraptor::ColorsResponseText );
+      m_pyro->Log( gameId.gameId );
    }
    m_pyro->SetConsoleColor( Pyroraptor::ColorsNormal );
    m_pyro->Log( "}" );
@@ -1112,6 +1234,51 @@ void  FruitadensClientChat::HandlePacketIn( BasePacket* packetIn )
           }
           m_pyro->Log( "     **************************************** " );
           m_pyro->SetConsoleColor( Pyroraptor::ColorsNormal );
+      }
+      break;
+   case PacketType_Gameplay:
+      {
+         switch( packetIn->packetSubType )
+         {
+         case PacketGameToServer::GamePacketType_GameIdentification:
+            {
+               PacketGameIdentification* gameId = 
+                  static_cast<PacketGameIdentification*>( packetIn );
+
+               m_pyro->SetConsoleColor( Pyroraptor::ColorsNormal );
+               cout << "Available game: " << gameId->gameId << endl;
+               
+               m_pyro->SetConsoleColor( Pyroraptor::ColorsResponseText );
+               cout << "   **** game name: " << gameId->name << endl;
+               cout << "   ***  game nik name: " << gameId->shortName << endl;
+
+               m_gameList.push_back( PacketGameIdentification( *gameId ) );
+            }
+            break;
+         case PacketGameToServer::GamePacketType_RawGameData:
+            {
+               PacketGameplayRawData* data = 
+                  static_cast<PacketGameplayRawData*>( packetIn );
+
+               m_pyro->SetConsoleColor( Pyroraptor::ColorsNormal );
+               m_pyro->Log( "Raw data returned: ", false );
+               m_pyro->Log( data->size );
+
+               m_pyro->SetConsoleColor( Pyroraptor::ColorsText );
+               if( m_numBytesSent == data->size &&
+                  memcmp( data->data, m_comparisonBuffer, m_numBytesSent ) == 0 )
+               {
+                  m_pyro->Log( "packet matches " );
+               }
+               else
+               {
+                  m_pyro->Log( "packet does not match " );
+               }
+
+               m_numBytesSent = 0;// clear this flag
+            }
+            break;
+         }         
       }
       break;
    }

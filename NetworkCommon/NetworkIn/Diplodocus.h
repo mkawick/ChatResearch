@@ -44,8 +44,10 @@ public:
    typedef typename std::list< InputChainType* >::iterator  InputChainIteratorType;
 
 public:
-	Diplodocus( string serverName, ServerType type );
+	Diplodocus( string serverName, U32 serverId, ServerType type );
 	virtual ~Diplodocus();
+   void           SetAsControllerApp( bool isController = true ) { m_isControllerApp = isController ; }
+   void           SetAsGame( bool isGame = true ) { m_isGame = isGame; }
 
    void           SetupListening( int port );
    bool           RequestUpdate( const string& connectionUuid ); // todo, update this
@@ -63,6 +65,7 @@ public:
 
    virtual void   ClientConnectionFinishedAdding( InputChainType* khaan ) {}
    virtual void   ClientConnectionIsAboutToRemove( InputChainType* khaan ) {}
+   virtual void   ServerWasIdentified( InputChainType* khaan ){}
 
 protected:
 
@@ -77,18 +80,22 @@ protected:
 
    void           MarkAllConnectionsAsNeedingUpdate( BaseOutputContainer& listOfClients );
 
-   deque< int >                                             m_clientsNeedingUpdate;
+   deque< U32 >                                             m_clientsNeedingUpdate;
 
-   typedef typename std::map< int, InputChainType* >        ClientMap;// posssibly change this to a hash lookup once the client is logged in
+   typedef typename std::map< U32, InputChainType* >        ClientMap;// posssibly change this to a hash lookup once the client is logged in
    typedef typename ClientMap::iterator                     ClientMapIterator;
    ClientMap                                                m_connectedClients; // this is a duplicate of the chained list, but with mapping
-   typedef typename pair< int, InputChainType* >            ClientLookup;
+   typedef typename pair< U32, InputChainType* >            ClientLookup;
 
    bool              m_isListeningWorking;
+   bool              m_hasSentServerIdentification;
+   bool              m_isControllerApp;
+   bool              m_isGame;
    int               m_listeningPort;
    evconnlistener*   m_listener;// libevent object
-   string            m_serverName;// just used for id
-   ServerType        m_serverType;// jus used for logging and topology purposes.
+   string            m_serverName; // just used for id
+   U32               m_serverId; // just used for id
+   ServerType        m_serverType;// just used for logging and topology purposes.
 
 
    bool           SetupListeningSocket();
@@ -97,6 +104,8 @@ protected:
 
    int            ProcessInputFunction();
    int            ProcessOutputFunction();
+
+   void           SendServerIdentification();
 
    //-------------------------------------------
    void           UpdateAllConnections();

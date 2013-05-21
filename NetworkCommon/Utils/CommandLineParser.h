@@ -19,7 +19,7 @@ using namespace std;
 class CommandLineParser
 {
 public:
-   CommandLineParser( int num, char* arguments[] );
+   CommandLineParser( int num, const char* arguments[] );
    CommandLineParser( const vector< std::string >& strings );// simple pairing
    CommandLineParser( const string& textToSeparateAndSort, const vector< std::string >& stringDictionary );
    bool  FindValue( const string& key, string& valueOut ) const;
@@ -44,5 +44,5 @@ protected:
    typedef ValuesList::const_iterator     ValuesListConstIterator;
    ValuesList                             m_values;
 
-   void  ProcessCommandLine( int num, char* arguments[], ValuesList& values ) const;
+   void  ProcessCommandLine( int num, const char* arguments[], ValuesList& values ) const;
 };

@@ -25,6 +25,7 @@ public:
    bool        Disconnect();
 
    bool        IsConnected() const { return m_isConnected; }
+   void        SetServerUniqueId( U32 id ) { m_serverId = id; }
 
 protected:
 
@@ -47,11 +48,13 @@ protected:
    int               m_clientSocket;
    bool              m_isConnected;
    bool              m_hasFailedCritically;
+   U32               m_connectedServerId;
    sockaddr_in       m_ipAddress;
    U16               m_port;
    ServerType        m_serverType;
    std::string       m_name;
    PacketQueue       m_packetsReadyToSend;
+   U32               m_serverId;
 };
 
 //-------------------------------------------------------------------------

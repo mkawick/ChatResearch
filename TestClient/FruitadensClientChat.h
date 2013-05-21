@@ -6,13 +6,16 @@
 #include "../NetworkCommon/Packets/ChatPacket.h"
 
 #include "../NetworkCommon/Packets/PacketFactory.h"
+#include "../NetworkCommon/Packets/GamePacket.h"
+
 #include "../NetworkCommon/NetworkOut/Fruitadens.h"
 #include "../NetworkCommon/NetworkOut/Pyroraptor.h"
 
 class FruitadensClientChat : public Fruitadens
 {
+   enum { MaxBufferBytes = 1024 };
 public:
-   FruitadensClientChat() : Fruitadens( "client chat" ) {}
+   FruitadensClientChat() : Fruitadens( "client chat" ), m_selectedGame( 0 ), m_numBytesSent( 0 ) {}
 
    bool     FinalFixup();
    string   GetUsername() const { return m_username; }
@@ -23,12 +26,16 @@ public:
    bool     Logout();
    bool     RequestFriends();
    bool     RequestGroups();
-   bool     ChangeChannel( string& channel );
+   bool     ChangeChannel( const string& channel );
+   bool     ChangeGame( const string& gameName );// either name or shortname
 
    string   FindChatChannel( const string& name ) const;
    string   FindChatChannelFromUuid( const string& uuid ) const;
    string   FindFriend( const string& name ) const;
    string   FindFriendFromUuid( const string& uuid ) const;
+
+   U32      FindGame( const string& name ) const;
+   string   FindGameNameFromGameId( U32 id ) const;
 
    // admin for chat
    bool     CreateChatChannel( const string& chatChannelName );
@@ -48,26 +55,28 @@ public:
 
    void     DumpFriends();
    void     DumpChatChannels();
+   void     DumpGames();
    bool	   SendMessage( const string& message );
 
    bool     CreateGame( const string& gameName );
    bool     AddUserToGame( const string& channel, const string& gameUuid );
    bool     LoadListOfGames();
    bool     DeleteGame( const string& gameUuid );
-   string   FindGame( const string& name );
-   string   FindGameByUuid( const string& name );
+   bool     GameEcho( int numBytes );
+  /* string   FindGame( const string& name );
+   string   FindGameByUuid( const string& name );*/
 
    bool     SendRawData( U8* data, int len );
 
 protected:
 
-   typedef KeyValueSerializer< string >            KeyValue;
-   typedef vector< KeyValue >                      KeyValueList;
    typedef SerializedKeyValueVector< string >      UserNameKeyValue;
    typedef SerializedKeyValueVector< ChannelInfo > ChannelKeyValue;
+   typedef vector< PacketGameIdentification >      GameList;
 
    
    void     DumpListOfUsers( const string& channelUuid, const SerializedKeyValueVector< string >& users );
+   void     DumpListOfGames( const GameList& gameList );
    void     AddChatChannelsToList( const ChannelKeyValue& channels );
    void     AddFriendsToList( const UserNameKeyValue& users );
 
@@ -80,13 +89,18 @@ protected:
    void     HandlePacketIn( BasePacket* packetIn );
 
    
-   KeyValueList      m_friends;
+   KeyValueVector    m_friends;
    ChannelKeyValue   m_groups;
-   KeyValueList      m_availableGames;
+   KeyValueVector    m_availableGames;
+   GameList          m_gameList;
 
    Pyroraptor*       m_pyro;
    DWORD             m_beginTime, m_endTime;
    string            m_username, m_attemptedUsername;
    string            m_uuid;
    string            m_currentChannel;
+   U32               m_selectedGame;
+
+   U8                m_comparisonBuffer[ MaxBufferBytes ];
+   int               m_numBytesSent;
 };

@@ -482,6 +482,21 @@ bool     PacketFactory::ParseGame( const U8* bufferIn, int& bufferOffset, const 
          *packetOut = SerializeIn< PacketRequestListOfUsersInGameResponse >( bufferIn, bufferOffset );
       }
       return true;
+   case PacketGameToServer::GamePacketType_ListOfGames:
+      {
+         *packetOut = SerializeIn< PacketListOfGames >( bufferIn, bufferOffset );
+      }
+      return true;
+   case PacketGameToServer::GamePacketType_GameIdentification:
+      {
+         *packetOut = SerializeIn< PacketGameIdentification >( bufferIn, bufferOffset );
+      }
+      return true;
+   case PacketGameToServer::GamePacketType_RawGameData:
+      {
+         *packetOut = SerializeIn< PacketGameplayRawData >( bufferIn, bufferOffset );
+      }
+      return true;
    }
 
    return false;

@@ -148,7 +148,7 @@ bool     UserConnection::PrepInitialLogin()
    dbQuery->id = m_connectionId;
    dbQuery->lookup = QueryType_UserLoginInfo;
 
-   string queryString = "SELECT * FROM USER where name='" ;
+   string queryString = "SELECT * FROM user WHERE name='" ;
    queryString += m_username;
    queryString += "'";
    dbQuery->query = queryString;
@@ -391,7 +391,7 @@ bool  UserConnection::SendListOfFriendsToGateway()
       {
          packetFriends = new PacketFriendsList;
       }
-      KeyValueSerializer< string >& kv = *it++;
+      KeyValueString& kv = *it++;
       packetFriends->friendList.insert( kv.key, kv.value );  // slow?
       if( packetFriends->friendList.size() >= maxUsersSentAtOnce )
       {
@@ -608,7 +608,7 @@ bool     UserConnection::HandleDbQueryResult( BasePacket* packet )
                string   name =   row[ TableUser::Column_name ];
                string   uuid =   row[ TableUser::Column_uuid ];
               
-               availableFriends.push_back( KeyValueSerializer< string >( uuid, name ) );
+               availableFriends.push_back( KeyValueString( uuid, name ) );
             }
 
             InformUserOfSuccessfulLogin();

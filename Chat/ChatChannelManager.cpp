@@ -37,7 +37,7 @@ bool     ChatChannelManager::AddInputChainData( BasePacket* packet ) // usually 
    if( packet->packetType == PacketType_GatewayWrapper )
    {
       assert( 0 );// should never happen
-      PacketGatewayWrapper* wrapper = reinterpret_cast< PacketGatewayWrapper* >( packet );
+      PacketGatewayWrapper* wrapper = static_cast< PacketGatewayWrapper* >( packet );
       m_packetsIn.push_back( wrapper->pPacket );
       delete packet;
    }

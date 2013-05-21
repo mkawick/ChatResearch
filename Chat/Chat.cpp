@@ -18,7 +18,7 @@ using namespace std;
 
 //-----------------------------------------------------------------------------
 
-int main( int argc, char* argv[] )
+int main( int argc, const char* argv[] )
 {
    CommandLineParser    parser( argc, argv );
 
@@ -69,18 +69,23 @@ int main( int argc, char* argv[] )
    }
 
    //----------------------------------------------------------------
-
-   DiplodocusChat*    middleware = new DiplodocusChat();
-   middleware->AddOutputChain( delta );
    
+   string serverName = "Chat Server";
+   U64 serverUniqueHashValue = GenerateUniqueHash( serverName );
+   U32 serverId = (U32)serverUniqueHashValue;
+
    string version = "0.04";
-   cout << "Chat server:" << endl;
+   cout << serverName << ":" << endl;
    cout << "Version " << version << endl;
+   cout << "ServerId " << serverId << endl;
    cout << "------------------------------------------------------------------" << endl << endl << endl;
+
+   DiplodocusChat*    middleware = new DiplodocusChat( serverName, serverId );
+   middleware->AddOutputChain( delta );
 
    middleware->SetupListening( listenPortAddress );
 
-   DiplodocusServerToServer* s2s = new DiplodocusServerToServer();
+   DiplodocusServerToServer* s2s = new DiplodocusServerToServer( serverName, serverId );
    s2s->SetupListening( listenS2SPort );
    
    //----------------------------------------------------------------

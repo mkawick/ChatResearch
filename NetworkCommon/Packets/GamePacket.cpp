@@ -376,3 +376,109 @@ bool  PacketRequestListOfUsersInGameResponse::SerializeOut( U8* data, int& buffe
 
 ///////////////////////////////////////////////////////////////
 
+bool  PacketListOfGames::SerializeIn( const U8* data, int& bufferOffset )
+{
+   PacketGameToServer::SerializeIn( data, bufferOffset );
+   Serialize::In( data, bufferOffset, connectionId );
+   Serialize::In( data, bufferOffset, games );
+
+   return true;
+}
+
+bool  PacketListOfGames::SerializeOut( U8* data, int& bufferOffset ) const
+{
+   PacketGameToServer::SerializeOut( data, bufferOffset );
+   Serialize::Out( data, bufferOffset, connectionId );
+   Serialize::Out( data, bufferOffset, games );
+
+   return true;
+}
+
+///////////////////////////////////////////////////////////////
+
+bool  PacketGameIdentification::SerializeIn( const U8* data, int& bufferOffset )
+{
+   PacketGameToServer::SerializeIn( data, bufferOffset );
+   Serialize::In( data, bufferOffset, gameId );
+   Serialize::In( data, bufferOffset, name );
+   Serialize::In( data, bufferOffset, shortName );
+
+   return true;
+}
+
+bool  PacketGameIdentification::SerializeOut( U8* data, int& bufferOffset ) const
+{
+   PacketGameToServer::SerializeOut( data, bufferOffset );
+   Serialize::Out( data, bufferOffset, gameId );
+   Serialize::Out( data, bufferOffset, name );
+   Serialize::Out( data, bufferOffset, shortName );
+
+   return true;
+}
+
+///////////////////////////////////////////////////////////////
+/*
+PacketGameplayRawData::PacketGameplayRawData( PacketGameplayRawData& packet ) 
+{
+   this->size = packet.size;
+   this->data = packet.data;
+   packet.data = NULL;
+}
+PacketGameplayRawData& PacketGameplayRawData::operator = ( PacketGameplayRawData& packet ) 
+{
+   if( this->data )
+      delete this->data;
+   this->size = packet.size;
+   this->data = packet.data;
+   packet.data = NULL;
+
+   return *this;
+}
+
+PacketGameplayRawData::~PacketGameplayRawData() 
+{ 
+   if( data ) 
+      delete data; 
+   data = NULL;// pointless
+}*/
+
+bool  PacketGameplayRawData::SerializeIn( const U8* buffer, int& bufferOffset )
+{
+   PacketGameToServer::SerializeIn( buffer, bufferOffset );
+   Serialize::In( buffer, bufferOffset, size );
+   assert( size > 0 && size <= MaxBufferSize );
+
+   //data = new U8[size + 1];
+   memcpy( data, buffer + bufferOffset, size );
+   bufferOffset += size;
+   data[ size ] = 0;// null terminate
+
+   return true;
+}
+
+bool  PacketGameplayRawData::SerializeOut( U8* buffer, int& bufferOffset ) const
+{ 
+   assert( size > 0 && size <= MaxBufferSize );
+
+   PacketGameToServer::SerializeOut( buffer, bufferOffset );
+   Serialize::Out( buffer, bufferOffset, size );
+
+   memcpy( buffer + bufferOffset, data, size );
+   bufferOffset += size;
+
+   return true;
+}
+
+void  PacketGameplayRawData::Prep( U16 numBytes, const U8* ptr )
+{
+   /*if( data )
+      delete data;*/
+
+   size = numBytes;
+   //data = new U8[size];
+   memcpy( data, ptr, size );
+}
+
+///////////////////////////////////////////////////////////////
+
+

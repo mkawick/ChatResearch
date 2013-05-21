@@ -24,9 +24,14 @@ using namespace std;
 #include "DiplodocusLogin.h"
 #include "FruitadensLogin.h"
 
+// db.address=10.16.4.44 db.port=3306 db.username=admin db.password=Pz5328!@ db.schema=pleiades
 ////////////////////////////////////////////////////////////////////////
 
-int main( int argc, char* argv[] )
+FruitadensLogin* PrepFruitadensLogin( const string& ipaddress, U16 port, U32 serverId, DiplodocusLogin* loginServer );
+
+////////////////////////////////////////////////////////////////////////
+
+int main( int argc, const char* argv[] )
 {
    CommandLineParser    parser( argc, argv );
 
@@ -93,42 +98,63 @@ int main( int argc, char* argv[] )
 
    string serverName = "Login server";
    U64 serverUniqueHashValue = GenerateUniqueHash( serverName );
+   U32 serverId = (U32)serverUniqueHashValue;
 
    string version = "0.04";
    cout << serverName << endl;
    cout << "Version " << version << endl;
-   cout << "ServerId " << (U32)serverUniqueHashValue << endl;
+   cout << "ServerId " << serverId << endl;
    cout << "------------------------------------------------------------------" << endl << endl << endl;
 
-   DiplodocusLogin* loginServer = new DiplodocusLogin();
+   DiplodocusLogin* loginServer = new DiplodocusLogin( serverName, serverId );
    
    FruitadensLogin chatOut( "login to chat" );
    chatOut.SetConnectedServerType( ServerType_Chat );
-   chatOut.SetServerUniqueId( (U32)serverUniqueHashValue );
+   chatOut.SetServerUniqueId( serverId );
 
-   FruitadensLogin gameServerOut( "fruity to gameserver" );
+  /* FruitadensLogin gameServerOut( "fruity to gameserver" );
    gameServerOut.SetConnectedServerType( ServerType_GameInstance );
-   gameServerOut.SetServerUniqueId( (U32)serverUniqueHashValue );
+   gameServerOut.SetServerUniqueId( serverId );*/
 
    loginServer->AddOutputChain( &chatOut );
-   loginServer->AddOutputChain( &gameServerOut );
+   //loginServer->AddOutputChain( &gameServerOut );
    loginServer->AddOutputChain( delta );
    loginServer->SetupListening( listenPort );
    
    chatOut.Connect( chatIpAddressString.c_str(), chatPort );
    chatOut.Resume();
-   gameServerOut.Connect( agricolaIpAddressString.c_str(), agricolaPort );
-   gameServerOut.Resume();
 
-   chatOut.NotifyEndpointOfIdentification( serverName, (U32)serverUniqueHashValue, false, false, true );
-   gameServerOut.NotifyEndpointOfIdentification( serverName, (U32)serverUniqueHashValue, false, false, true  );
-   
+   // various games. We will need to deal with allowing a dynamic number of games in future
+   FruitadensLogin* game1 = PrepFruitadensLogin( agricolaIpAddressString, agricolaPort, serverId, loginServer );
+   FruitadensLogin* game2 = PrepFruitadensLogin( "localhost", 24600, serverId, loginServer );
+   FruitadensLogin* game3 = PrepFruitadensLogin( "localhost", 24602, serverId, loginServer );
+
+   game1->NotifyEndpointOfIdentification( serverName, serverId, false, false, true  );
+   game2->NotifyEndpointOfIdentification( serverName, serverId, false, false, true  );
+   game3->NotifyEndpointOfIdentification( serverName, serverId, false, false, true  );
+
    loginServer->Resume();
-
    loginServer->Run();
 
    getch();
    
 	return 0;
 }
+
+////////////////////////////////////////////////////////////////////////
+
+FruitadensLogin* PrepFruitadensLogin( const string& ipaddress, U16 port, U32 serverId, DiplodocusLogin* loginServer )
+{
+   FruitadensLogin* gameServerOut = new FruitadensLogin( "fruity to gameserver" );
+   gameServerOut->SetConnectedServerType( ServerType_GameInstance );
+   gameServerOut->SetServerUniqueId( serverId );
+
+   loginServer->AddOutputChain( gameServerOut );
+
+   gameServerOut->Connect( ipaddress.c_str(), port );
+   gameServerOut->Resume();
+
+   return gameServerOut;
+}
+
 ////////////////////////////////////////////////////////////////////////

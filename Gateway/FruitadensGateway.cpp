@@ -25,7 +25,6 @@ FruitadensGateway::~FruitadensGateway()
 
 bool FruitadensGateway::FilterOutwardPacket( BasePacket* packet ) const
 {
-   // we should validate that the packet_server_type matches...
    if( packet->packetType == PacketType_GatewayWrapper )
    {
       PacketGatewayWrapper* wrapper = static_cast< PacketGatewayWrapper* >( packet );
@@ -34,7 +33,13 @@ bool FruitadensGateway::FilterOutwardPacket( BasePacket* packet ) const
       if( m_serverType == ServerType_GameInstance )
       {
          if( type == PacketType_Gameplay )
-            return true;
+         {
+            // sending packets to the correct server.
+            if( m_connectedServerId == wrapper->pPacket->gameInstanceId )
+            {
+               return true;
+            }
+         }
       }
       else if( m_serverType == ServerType_Chat )
       {

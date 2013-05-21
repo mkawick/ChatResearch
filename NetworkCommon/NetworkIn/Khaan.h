@@ -56,7 +56,7 @@ public:
 
 	//-----------------------------------------------
 
-	int				GetSocketId() const { return m_socketId; }
+	U32				GetSocketId() const { return m_socketId; }
 	bufferevent*	GetBufferEvent() const { return m_bufferEvent; }
 
 	void				SetIPAddress( const sockaddr_in& addr );
@@ -94,7 +94,7 @@ protected:
    void           CloseConnection();
 
 protected:
-	int				m_socketId;
+	U32				m_socketId;
 	bufferevent*	m_bufferEvent;
 	sockaddr_in		m_ipAddress;
 

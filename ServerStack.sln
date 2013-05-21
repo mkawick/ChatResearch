@@ -16,6 +16,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		SolutionReadMe.txt = SolutionReadMe.txt
 	EndProjectSection
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "BaseGameLibrary", "BaseGameLibrary\BaseGameLibrary.vcproj", "{C3B3C31F-671D-4FC0-A69A-A90C2DEBEEF3}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Win32 = Debug|Win32
@@ -42,6 +44,10 @@ Global
 		{163C7BC4-C317-45E0-9EF2-82F182473725}.Debug|Win32.Build.0 = Debug|Win32
 		{163C7BC4-C317-45E0-9EF2-82F182473725}.Release|Win32.ActiveCfg = Release|Win32
 		{163C7BC4-C317-45E0-9EF2-82F182473725}.Release|Win32.Build.0 = Release|Win32
+		{C3B3C31F-671D-4FC0-A69A-A90C2DEBEEF3}.Debug|Win32.ActiveCfg = Debug|Win32
+		{C3B3C31F-671D-4FC0-A69A-A90C2DEBEEF3}.Debug|Win32.Build.0 = Debug|Win32
+		{C3B3C31F-671D-4FC0-A69A-A90C2DEBEEF3}.Release|Win32.ActiveCfg = Release|Win32
+		{C3B3C31F-671D-4FC0-A69A-A90C2DEBEEF3}.Release|Win32.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

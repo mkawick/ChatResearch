@@ -102,3 +102,18 @@ public:
 typedef Enigmosaurus <SimpleChat> SimpleChatTable;
 
 //////////////////////////////////////////////////////////////
+
+class SimpleGame
+{
+public:
+   enum Columns
+   {
+      Column_uuid,
+      Column_name,
+      Column_end
+   };
+};
+
+typedef Enigmosaurus <SimpleGame> SimpleGameTable;
+
+//////////////////////////////////////////////////////////////

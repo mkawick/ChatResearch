@@ -20,16 +20,18 @@ public:
 class DiplodocusServerToServer : public Diplodocus< KhaanServerToServer >
 {
 public:
-   DiplodocusServerToServer();
+   DiplodocusServerToServer( const string& serverName, U32 serverId );
    ~DiplodocusServerToServer();
 
-   bool  AddInputChainData( BasePacket* packet, U32 connectionId );
-   bool  AddOutputChainData( BasePacket* packet, U32 connectionId ) ;
+   bool     AddInputChainData( BasePacket* packet, U32 connectionId );
+   bool     AddOutputChainData( BasePacket* packet, U32 connectionId ) ;
 
-   void  ClientConnectionFinishedAdding( BaseInputChainHandler* khaan );
-   void  ClientConnectionIsAboutToRemove( BaseInputChainHandler* khaan );
+   void     ClientConnectionFinishedAdding( BaseInputChainHandler* khaan );
+   void     ClientConnectionIsAboutToRemove( BaseInputChainHandler* khaan );
 
    //---------------------------------------------------
+
+   void     ServerWasIdentified( KhaanServerToServer* khaan );
 
 private:
 

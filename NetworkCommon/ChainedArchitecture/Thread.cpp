@@ -215,7 +215,7 @@ DWORD    CAbstractThread::ThreadFunction( void* data )
 void*    CAbstractThread::ThreadFunction( void* data )
 #endif
 {
-   CAbstractThread* thread = reinterpret_cast< CAbstractThread* > ( data );
+   CAbstractThread* thread = static_cast< CAbstractThread* > ( data );
 
    // before a thread can start, we need to give the owner a little time to finish creating. 
    // in cases where we have 100 threads or more, the creation can take a while and the threads

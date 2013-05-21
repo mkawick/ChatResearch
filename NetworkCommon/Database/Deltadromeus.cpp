@@ -91,7 +91,7 @@ public:
    Deltadromeus::ResultSet& 
                GetResults() { return m_results; }
 
-   bool        SubmitQuery( MYSQL* connection );
+   bool        SubmitQuery( MYSQL* connection, const string& dbName );
    //bool        SubmitQueryAndPrintResults( MYSQL* connection );
 
 protected:
@@ -180,7 +180,7 @@ bool     Deltadromeus::AddInputChainData( BasePacket* packet, U32 senderId )
 {
    if( packet->packetType == PacketType_DbQuery )
    {
-      PacketDbQuery* dbPacket = reinterpret_cast< PacketDbQuery* >( packet );
+      PacketDbQuery* dbPacket = static_cast< PacketDbQuery* >( packet );
       SendQuery( dbPacket->query, senderId, dbPacket->id, dbPacket->isFireAndForget, true, dbPacket->lookup, &dbPacket->meta, dbPacket->serverLookup );
       delete packet;
       return true;
@@ -324,11 +324,12 @@ void     Deltadromeus::Connect()
    }
    // Now we will actually connect to the specific database.
 
-   m_connect = mysql_real_connect( m_connect, m_serverName.c_str(), m_username.c_str(), m_password.c_str(), m_dbName.c_str(), m_port, NULL,0 );
+   m_connect = mysql_real_connect( m_connect, m_serverName.c_str(), m_username.c_str(), m_password.c_str(), m_dbName.c_str(), m_port, NULL, 0 );
 
    if( m_connect )    // If instance didn't initialize say so and exit with fault.
    {
       m_isConnected = true;
+      //mysql_select_db( m_connect, m_dbName.c_str() );
    }
    
 
@@ -349,7 +350,7 @@ int     Deltadromeus::CallbackFunction()
       DbJob* currentJob = m_jobsInProgress.front();
       if( currentJob->HasStarted() == false )
       {
-         currentJob->SubmitQuery( m_connect );
+         currentJob->SubmitQuery( m_connect, m_dbName );
       }
       else if( currentJob->IsComplete() == true )
       {
@@ -367,7 +368,7 @@ int     Deltadromeus::CallbackFunction()
          if( m_jobsInProgress.size() > 0 )
          {
             DbJob* currentJob = m_jobsInProgress.front();
-            currentJob->SubmitQuery( m_connect );
+            currentJob->SubmitQuery( m_connect, m_dbName );
          }
       }
    }
@@ -443,17 +444,21 @@ Deltadromeus::JobId
 
 //------------------------------------------------------------
 
-bool  DbJob::SubmitQuery( MYSQL* connection )
+bool  DbJob::SubmitQuery( MYSQL* connection, const string& dbName )
 {
    if( m_hasStarted == true )
       return false;
 
    m_hasStarted = true;
 
+   //mysql_select_db( connection, dbName.c_str() );
    int result = mysql_query( connection, m_query.c_str() );
+   
    if( result != 0 )
    {
       m_errorCondition = true;
+      const char* errorText = mysql_error( connection );
+      cout << "DB Error: " << errorText << endl;
    }
    else
    {

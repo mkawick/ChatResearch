@@ -90,6 +90,7 @@ bool        Diplodocus< InputChain, OutputChain >::SetupListeningSocket()
    cout << " ******************************* " << endl;
    cout << "New server instance listening " << endl;
    cout << "Server name: " << m_serverName << endl;
+   cout << "Server id: " << m_serverId << endl;
    cout << "Server type: " << m_serverType << endl;
    cout << "Currently listening on port: " << m_listeningPort << endl;
    cout << " ******************************* " << endl;
@@ -158,12 +159,12 @@ bool  Diplodocus< InputChain, OutputChain >::PushInputEvent( ThreadEvent* te )
 template< typename InputChain, typename OutputChain >
 void  Diplodocus< InputChain, OutputChain >::NotifyFinishedRemoving( ChainedInterface* obj )
 {
-   InputChainType* connection = reinterpret_cast<InputChainType*>( obj );
+   InputChainType* connection = static_cast<InputChainType*>( obj );
    if( connection == NULL )
       return;
 
    LockMutex();
-   int id = connection->GetSocketId();
+   U32 id = connection->GetSocketId();
    ClientMapIterator it = m_connectedClients.find( id );
    if( it == m_connectedClients.end() )
    {
@@ -224,10 +225,14 @@ bool  Diplodocus< InputChain, OutputChain >::AddOutputChainData( BasePacket* t, 
 //------------------------------------------------------------------------------
 
 template< typename InputChain, typename OutputChain >
-Diplodocus< InputChain, OutputChain >::Diplodocus( string serverName, ServerType type ) : 
+Diplodocus< InputChain, OutputChain >::Diplodocus( string serverName, U32 serverId, ServerType type ) : 
                                     m_isListeningWorking( false ),
+                                    m_hasSentServerIdentification( false ),
+                                    m_isControllerApp( false ),
+                                    m_isGame( false ),
                                     m_listeningPort( 0 ),
                                     m_serverName( serverName ), 
+                                    m_serverId( serverId ),
                                     m_serverType( type )
 {
 }
@@ -357,7 +362,7 @@ void  Diplodocus< InputChain, OutputChain >::MarkAllConnectionsAsNeedingUpdate( 
    {
       ChainLink& chainedInput = *itInputs++;
 	   ChainedInterface* interfacePtr = chainedInput.m_interface;
-      KhaanChat* khaan = reinterpret_cast< KhaanChat* >( interfacePtr );
+      KhaanChat* khaan = static_cast< KhaanChat* >( interfacePtr );
 
       m_clientsNeedingUpdate.push_back( khaan->GetConnectionId() );
    }
@@ -445,10 +450,13 @@ void	Diplodocus< InputChain, OutputChain >::UpdateAllConnections()
    // the potential exists for this queue to be updated while we are working on it
    // this is alright as long as we pull from the front and push onto the back as this list is non-persistent
 
+   if( m_clientsNeedingUpdate.size() == 0 )// no locking a mutex if you don't need to do it.
+      return;
+
    LockMutex();
    while( m_clientsNeedingUpdate.size() )// threads can remove themselves.
    {
-      int id = m_clientsNeedingUpdate.front();      
+      U32 id = m_clientsNeedingUpdate.front();      
       m_clientsNeedingUpdate.pop_front();
 
       ClientMapIterator it = m_connectedClients.end();
@@ -467,12 +475,47 @@ void	Diplodocus< InputChain, OutputChain >::UpdateAllConnections()
 }
 
 //------------------------------------------------------------------------------------------
+/*
+template< typename InputChain, typename OutputChain >
+void	Diplodocus< InputChain, OutputChain >::MoveConnectedClientsWithMapLookupOf0ToConnectionId()
+{
+}
+*/
+//------------------------------------------------------------------------------------------
+
+template< typename InputChain, typename OutputChain >
+void     Diplodocus< InputChain, OutputChain >::SendServerIdentification()
+{
+   if( m_hasSentServerIdentification == false )
+   {
+      ChainLinkIteratorType itOutput = m_listOfOutputs.begin();
+      while( itOutput != m_listOfOutputs.end() )
+      {
+         ChainLink& chainedOutput = *itOutput++;
+	      ChainedInterface* interfacePtr = chainedOutput.m_interface;
+
+         BasePacket* packet = NULL;
+         PackageForServerIdentification( m_serverName, m_serverId, m_isGame, m_isControllerApp, true, &packet );
+         bool  accepted = interfacePtr->AddOutputChainData( packet, m_chainId );
+
+         if( accepted == false )
+         {
+            delete packet;
+         }
+      }
+      m_hasSentServerIdentification = true;
+   }
+}
+
+//------------------------------------------------------------------------------------------
 
 template< typename InputChain, typename OutputChain >
 int		Diplodocus< InputChain, OutputChain >::ProcessInputFunction()
 {
    if( m_isNetworkingEnabled == false )
       return 1;
+
+   SendServerIdentification();
 
    return 0; 
 }

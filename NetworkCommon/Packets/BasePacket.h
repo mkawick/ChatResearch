@@ -75,7 +75,8 @@ public:
    type     value;
 };
 
-typedef vector< KeyValueSerializer< string > >  KeyValueVector;
+typedef KeyValueSerializer< string >            KeyValueString;
+typedef vector< KeyValueString >                KeyValueVector;
 typedef KeyValueVector::iterator                KeyValueVectorIterator;
 typedef KeyValueVector::const_iterator          KeyValueConstIterator;
 
@@ -97,14 +98,15 @@ public:
 
    const KeyValueVector&   GetData() const { return dataList; }
    void  clear() { dataList.clear(); }
-   //void  insert( string& key, type& obj ) { dataList.push_back( KeyValue( key, obj ) ); }
+   
+   // helper functions
    void  insert( const string& key, const type& obj ) { dataList.push_back( KeyValue( key, obj ) ); }
 
-   int   size() const { return dataList.size(); }
-   const_KVIterator  begin() const { return dataList.begin(); }
-   KVIterator        begin() { return dataList.begin(); }
-   const_KVIterator  end() const { return dataList.end(); }
-   KVIterator        end() { return dataList.end(); }
+   int                  size() const { return dataList.size(); }
+   const_KVIterator     begin() const { return dataList.begin(); }
+   KVIterator           begin() { return dataList.begin(); }
+   const_KVIterator     end() const { return dataList.end(); }
+   KVIterator           end() { return dataList.end(); }
 
    bool operator = (const KeyValueSerializer< type >& src );
    bool operator = (const KeyValueVector& src );
@@ -122,9 +124,10 @@ public:
    bool  SerializeIn( const U8* data, int& bufferOffset );
    bool  SerializeOut( U8* data, int& bufferOffset ) const;
 
-   void  push_back( type value ) { m_data.push_back( value ); }
-   const type&  operator[]( int index ) { return m_data[ index ]; }
-   int   size() const { return m_data.size(); }
+   // helper functions
+   void           push_back( type value ) { m_data.push_back( value ); }
+   int            size() const { return m_data.size(); }
+   const type&    operator[]( int index ) { return m_data[ index ]; }
 
 protected:
    vector< type >    m_data;
@@ -140,19 +143,22 @@ protected:
    //enum SubType {};
 public:
    BasePacket( int packet_type = PacketType_Base, int packet_sub_type = 0 ) :
-      serverType( 0 ),
       packetType( packet_type ),
       packetSubType( packet_sub_type ),
       versionNumber( 0 ),
       gameInstanceId( 0 ){}
+   ~BasePacket()
+   {
+      gameInstanceId = 0;// for a place to set breakpoints.
+   }
 
    virtual bool  SerializeIn( const U8* data, int& bufferOffset );
    virtual bool  SerializeOut( U8* data, int& bufferOffset ) const;
 
-   U8       serverType;
    U8       packetType;
    U8       packetSubType;
    U8       versionNumber;
+   U8       pad;
    U32      gameInstanceId;
 };
 
@@ -504,3 +510,5 @@ public:
 
 ///////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////
+
+bool  PackageForServerIdentification( const string& serverName, U32 serverId, bool isGameServer, bool isController, bool requiresWrapper, BasePacket** packet );

@@ -21,7 +21,7 @@ using namespace std;
 
 //-----------------------------------------------------------------------------
 
-int main(int argc, char* argv[])
+int main(int argc, const char* argv[])
 {
    CommandLineParser    parser( argc, argv );
 
@@ -79,25 +79,23 @@ int main(int argc, char* argv[])
    }
 
    //---------------------------------------------------------------------
-   // the guts
-
-   
-   
    
    string serverName = "Agricola Game Server";
    U64 serverUniqueHashValue = GenerateUniqueHash( serverName );
+   U32 serverId = (U32)serverUniqueHashValue;
 
    string version = "0.04";
    cout << serverName << ":" << endl;
    cout << "Version " << version << endl;
-   cout << "ServerId " << (U32)serverUniqueHashValue << endl;
+   cout << "ServerId " << serverId << endl;
    cout << "------------------------------------------------------------------" << endl << endl << endl;
 
    //----------------------------------------------------------------
-   DiplodocusGame*    middleware = new DiplodocusGame();
+   DiplodocusGame*    middleware = new DiplodocusGame( serverName, serverId );
    middleware->AddOutputChain( delta );
 
    middleware->SetupListening( listenPortAddress );
+   middleware->SetAsGame();
 
    FruitadensServerToServer chatControl( "fruity to chat" );
    chatControl.SetConnectedServerType( ServerType_Chat );
@@ -105,9 +103,10 @@ int main(int argc, char* argv[])
    
    chatControl.Connect( chatServerAddressForGames.c_str(), chatServerPort );
    chatControl.Resume();
-   chatControl.NotifyEndpointOfIdentification( serverName, static_cast< U32>( serverUniqueHashValue ), true, false, false );
+   chatControl.NotifyEndpointOfIdentification( serverName, static_cast< U32 >( serverUniqueHashValue ), true, false, false );
 
-   DiplodocusServerToServer* s2s = new DiplodocusServerToServer();
+   DiplodocusServerToServer* s2s = new DiplodocusServerToServer( serverName, serverId );
+   s2s->SetAsGame();
    s2s->SetupListening( listenS2SPort );
 
    //----------------------------------------------------------------

@@ -17,6 +17,8 @@ public:
 
    bool	OnDataReceived( unsigned char* data, int length );
 
+   U32   GetServerId() const { return m_serverId; }
+
    string      m_serverName;
    U32         m_serverId;
    bool        m_isGameServer;

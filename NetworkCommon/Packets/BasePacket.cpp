@@ -117,7 +117,6 @@ void  DynamicDataBucket::operator = ( const list< list< string > >& copyData )
 
 bool  BasePacket::SerializeIn( const U8* data, int& bufferOffset )
 { 
-   Serialize::In( data, bufferOffset, serverType );
    Serialize::In( data, bufferOffset, packetType );
    Serialize::In( data, bufferOffset, packetSubType );
    Serialize::In( data, bufferOffset, versionNumber );
@@ -127,7 +126,6 @@ bool  BasePacket::SerializeIn( const U8* data, int& bufferOffset )
 
 bool  BasePacket::SerializeOut( U8* data, int& bufferOffset ) const 
 { 
-   Serialize::Out( data, bufferOffset, serverType );
    Serialize::Out( data, bufferOffset, packetType );
    Serialize::Out( data, bufferOffset, packetSubType );
    Serialize::Out( data, bufferOffset, versionNumber );

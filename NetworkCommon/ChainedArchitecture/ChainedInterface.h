@@ -317,6 +317,9 @@ void  ChainedInterface<Type>::CleanupAllChainDependencies()
 template <typename Type> 
 void     ChainedInterface<Type>::CleanupAllEvents()
 {
+   if( m_eventsIn.size() == 0 && m_eventsOut.size() == 0 )
+      return;
+
    m_inputChainListMutex.lock();
    int num = m_eventsIn.size();
    while( num -- )

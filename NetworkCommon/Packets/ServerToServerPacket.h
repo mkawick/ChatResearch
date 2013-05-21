@@ -15,6 +15,7 @@ public:
 
    string      serverName;
    U32         serverId;
+   U32         gameInstanceId;// used to filter game packets
    bool        isGameServer;
    bool        isController;
 };
@@ -32,6 +33,10 @@ public:
    U32         serverId;
    BasePacket* pPacket;
 };
+
+///////////////////////////////////////////////////////////////
+
+
 
 ///////////////////////////////////////////////////////////////
 

@@ -16,6 +16,7 @@ struct AcceptanceTest
       if( testAlpha >= 'A' && testAlpha <= 'Z' ) return false;
       if( c >= '0' && c <= '9' ) return false;
       if( c == '.' ) return false;
+      if( c == '!' || c == '$' || c == '@' || c == '*' || c == '+' || c == '-' ) return false;// a few other characters allowed
 
       return true;
    }
@@ -37,7 +38,7 @@ string  ConvertStringToLower( const string& str )
 //--------------------------------------------------------------------------
 //--------------------------------------------------------------------------
 
-CommandLineParser::CommandLineParser( int num, char* arguments[] )
+CommandLineParser::CommandLineParser( int num, const char* arguments[] )
 {
    ProcessCommandLine( num, arguments, m_values );
 }
@@ -176,7 +177,7 @@ bool  CommandLineParser::GetKeyValue( int index, string& key, int& value ) const
 
 //--------------------------------------------------------------------------
 
-void  CommandLineParser::ProcessCommandLine( int num, char* arguments[], ValuesList& values ) const
+void  CommandLineParser::ProcessCommandLine( int num, const char* arguments[], ValuesList& values ) const
 {
    // because the first few args are for the app itself, we will not parse those
    typedef boost::tokenizer< boost::char_separator< char > > tokenizer;
