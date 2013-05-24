@@ -12,92 +12,92 @@
 
 ///////////////////////////////////////////////////////////////////
 
+int counter = 0;
+
 bool	KhaanGame::OnDataReceived( unsigned char* data, int length )
 {
-   BasePacket* packetIn;
-   int offset = 0;
-   PacketFactory parser;
-   if( parser.Parse( data, offset, &packetIn ) == true )
+   counter ++;
+
+   cout << " k# " << counter << endl;
+
+   if( m_mainInterfacePtr == NULL )
    {
-      int type = packetIn->packetType;
-      if( type != PacketType_GatewayWrapper &&
-          type != PacketType_GatewayInformation &&
-          type != PacketType_ServerToServerWrapper )
-      {
-         assert( 0 );
-      }
-
-      if( type == PacketType_ServerToServerWrapper )
-      {
-         PacketServerToServerWrapper* wrapper = static_cast< PacketServerToServerWrapper* >( packetIn );
-
-         if( wrapper->pPacket->packetType == PacketType_ServerInformation )
-         {
-            PacketServerIdentifier* serverId = static_cast< PacketServerIdentifier * > ( wrapper->pPacket );
-            SaveOffServerIdentification( serverId );
-
-            delete serverId;
-         }
-         else
-         {
-            assert( 0 );
-         }
-         delete wrapper;
-      }
-      else
-      {
-         PacketGatewayWrapper* wrapper = static_cast< PacketGatewayWrapper* >( packetIn );
-
-         bool wasHandled = false;
-         ChainLinkIteratorType itOutputs = m_listOfOutputs.begin();
-         if( itOutputs != m_listOfOutputs.end() )// only one output currently supported.
-         {
-            const ChainLink& chain = *itOutputs++;
-            ChainedInterface* interfacePtr = chain.m_interface;
-            DiplodocusGame * middle = static_cast<DiplodocusGame*>( interfacePtr );
-
-            m_connectionId = wrapper->connectionId;
-            if( interfacePtr->AddInputChainData( wrapper, m_connectionId ) == true )
-            {
-               wasHandled = true; 
-               //break;
-            }
-         }
-         if( wasHandled == false )
-         {
-            delete wrapper->pPacket;
-            delete wrapper;
-         }
-      }
+      SetupMainInterfacePointer();
    }
+   assert( m_mainInterfacePtr != NULL ) ;
+
+   TempStorage* ts = new TempStorage;
+   memcpy( ts->data, data, length );
+   ts->size = length;
+
+   m_mutex.lock();
+   m_toBeProcessed.push_back( ts );
+   m_mutex.unlock();
+
+   ThreadEvent te;
+   te.type = ThreadEvent_NeedsService;
+   te.identifier = m_chainId;
+   m_mainInterfacePtr->PushInputEvent( &te );
+
    return true;
 }
 
-
 //---------------------------------------------------------------
 
-void  KhaanGame :: SaveOffServerIdentification( const PacketServerIdentifier* packet )
+void  KhaanGame :: SetupMainInterfacePointer()
 {
-   const PacketServerIdentifier* serverId = static_cast< const PacketServerIdentifier * > ( packet );
-
-   m_serverName = serverId->serverName;
-   m_serverId = serverId->serverId;
-   m_isGameServer = serverId->isGameServer;
-   m_isController = serverId->isController;
-
-   cout << "Server has connected, name = '" << m_serverName << "' : " << m_serverId << endl;
+   if( m_mainInterfacePtr )
+      return;
 
    ChainLinkIteratorType itOutputs = m_listOfOutputs.begin();
-   if( itOutputs != m_listOfOutputs.end() )// only one output currently supported.
+   if( itOutputs != m_listOfOutputs.end() )// only ever one
    {
       const ChainLink& chain = *itOutputs++;
-      ChainedInterface* interfacePtr = chain.m_interface;
-      DiplodocusGame * middle = static_cast<DiplodocusGame*>( interfacePtr );
-
-      middle->ServerWasIdentified( this );
-      middle->AddGatewayConnection( m_serverId );
-
+      m_mainInterfacePtr = chain.m_interface;
    }
 }
 
+int tracker = 0;
+//---------------------------------------------------------------
+
+bool   KhaanGame :: PassPacketOn( BasePacket* packetIn, U32 connectionId )
+{
+   // testing only, please remove
+   if( packetIn->packetType == PacketType_GatewayWrapper )
+   {
+      PacketGatewayWrapper* wrapper = static_cast< PacketGatewayWrapper* >( packetIn );
+
+      int temp = (int) (wrapper->pPacket->versionNumber);
+      if( temp - tracker > 1 )
+      {
+         cout << "gap" << endl;
+      }
+      tracker = temp;
+
+      cout << " p# " << tracker  << endl;
+   }
+   m_mainInterfacePtr->AddInputChainData( packetIn, connectionId );
+   return true;
+}
+
+//---------------------------------------------------------------
+
+void  KhaanGame :: UpdateInwardPacketList()
+{
+   assert( m_mainInterfacePtr != NULL );
+
+   while( m_toBeProcessed.size() )
+   {
+      m_mutex.lock();
+      TempStorage* ts = m_toBeProcessed.front();
+      m_toBeProcessed.pop_front();
+      m_mutex.unlock();
+
+      KhaanServerToServer::OnDataReceived( ts->data, ts->size );
+
+      delete ts;
+
+      cout << "process" << endl;
+   }
+}
 //-----------------------------------------------------------------------------------------

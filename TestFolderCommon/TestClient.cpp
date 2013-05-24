@@ -18,9 +18,18 @@
 using namespace std;
 
 #include <assert.h>
+
+#if PLATFORM == PLATFORM_WINDOWS
 #include <conio.h>
+#else
+#include <curses.h>
+#define MAX_PATH 256
+#endif
+
 #define _CRT_SECURE_NO_DEPRECATE
 #pragma warning( disable: 4996 )
+
+// note the additions to the search path
 
 //---------------------------------------------------------------------------
 //---------------------------------------------------------------------------
@@ -36,39 +45,39 @@ class ConsoleStrategy
       Strategy_Game
    };
 public:
-   ConsoleStrategy( FruitadensClientChat& communications, Pyroraptor& pyro ) : 
-                     m_strategy( Strategy_Login ), 
-                     m_communications( communications ), 
-                     m_pyro( pyro ) {}
-
+   ConsoleStrategy( FruitadensClientChat& communications, Pyroraptor& pyro ) :
+   m_strategy( Strategy_Login ),
+   m_communications( communications ),
+   m_pyro( pyro ) {}
+   
    void     Run();
-
+   
 private:
-
+   
    bool     IsExit( const string& text );
    bool     IsInstructions( const string& text );
    bool     ChangeStrategy( const string& text );
    void     PrintInstructions();
    void     OutputCommand( const char* command, const char* instructions, bool isEnabled );
    //bool     GetText( const string& prompt, const string& textBack );
-
-
+   
+   
    bool     Login( const string& text );
    bool     Logout( const string& text );//?
    bool     Text( const string& text );
    bool     Chat( const string& text );
    bool     Hacker( const string& text );
    bool     Gameplay( const string& text );
-
+   
    void     PrintCurrentStrategy();
-      //------------------------------------
+   //------------------------------------
    void     RunRandomHack( int bufferLength );
    void     RunLoginHack( const string& username );
    void     RunBadStringHack();
    void     RunHeaderHack();
    void     RunRepeatHack( int numPackets );
-
-      //------------------------------------
+   
+   //------------------------------------
    Strategy                m_strategy;
    FruitadensClientChat&   m_communications;
    Pyroraptor&             m_pyro;
@@ -79,36 +88,36 @@ private:
 
 int main(int argc, const char* argv[])
 {
- /*  Pyroraptor pyro;
-   for( int i=0; i<16; i++ )
-   {
-      pyro.SetConsoleColor( i );
-      cout << "this is a test of colors " << i << endl;
-   }*/
-
+   /*  Pyroraptor pyro;
+    for( int i=0; i<16; i++ )
+    {
+    pyro.SetConsoleColor( i );
+    cout << "this is a test of colors " << i << endl;
+    }*/
+   
    Pyroraptor pyro;
    pyro.SetConsoleColor( Pyroraptor::ColorsNormal );
    cout << endl << "    Client communications app." << endl << endl;
    cout << "     version 0.04 " << endl;
    cout << " ------------------------------------------- " << endl;
    pyro.SetConsoleColor( Pyroraptor::ColorsNormal );
-
+   
    CommandLineParser    parser( argc, argv );
    int port = 9600;
    string serverName = "localhost";
    serverName = "chat.mickey.playdekgames.com";
-
+   
    parser.FindValue( "server.port", port );
    parser.FindValue( "server.name", serverName );
-
-
+   
+   
    InitializeSockets();
    FruitadensClientChat fruity;
    fruity.Connect( serverName.c_str(), 9600 );
-
+   
    
    fruity.AddOutputChain( &pyro );
-
+   
    int key = 0;
    while( fruity.IsConnected() == false )
    {
@@ -122,18 +131,18 @@ int main(int argc, const char* argv[])
       }
    }
    fruity.FinalFixup();
-
+   
    ConsoleStrategy strategy( fruity, pyro );
    strategy.Run();
-
+   
    ShutdownSockets();
-
+   
    pyro.SetConsoleColor( Pyroraptor::ColorsNormal );
    cout << " ------------------------------------------- " << endl;
    cout << endl << endl;
    cout << endl << "app has exited" << endl << "press any key to exit" << endl;
    getch();
-
+   
 	return 0;
 }
 
@@ -146,8 +155,8 @@ int main(int argc, const char* argv[])
 
 bool  GetCommand( string originalText, string& command, char delineator = '/' )
 {
-	int length = originalText.size();
-	int position = originalText.find_first_of( delineator );
+	int length = static_cast< int >( originalText.size() );
+	int position = static_cast< int >( originalText.find_first_of( delineator ) );
 	if( position == string::npos )
 	{
 		return false;
@@ -156,27 +165,27 @@ bool  GetCommand( string originalText, string& command, char delineator = '/' )
 	{
 		position++;
 	}
-
-	if( position >= static_cast<int>( originalText.size() ) ) 
+   
+	if( position >= static_cast<int>( originalText.size() ) )
 	{
 		return false;
 	}
-   int nextPosition = originalText.find_first_of( ' ', position );// go until we find a space. treat that as the channel marker.
+   int nextPosition = static_cast< int >( originalText.find_first_of( ' ', position ) );// go until we find a space. treat that as the channel marker.
 	char buffer[MAX_PATH];
 	char newText[MAX_PATH];// todo, needs to be much longer
 	newText[0] = 0;
-	if( nextPosition == string::npos ) 
+	if( nextPosition == string::npos )
 	{
 		int copyLength = length - position;
 		originalText.copy( buffer, copyLength, position );
 		buffer[ copyLength ] = 0;
-	} 
-	else 
+	}
+	else
 	{
 		int copyLength = nextPosition - position;
 		originalText.copy( buffer, nextPosition - position, position );
 		buffer[ copyLength ] = 0;
-
+      
 		copyLength = nextPosition - position;
 		originalText.copy( newText, length - nextPosition, nextPosition +1 );
 		newText[ copyLength ] = 0;
@@ -213,10 +222,10 @@ void  ConsoleStrategy::Run()
       }
       m_pyro.Log( ">", false );
       m_pyro.SetConsoleColor( Pyroraptor::ColorsText );
-
+      
       std::string    text;
       std::getline( std::cin, text );
-
+      
       string command;
       if( GetCommand( text, command ) == true )
       {
@@ -245,21 +254,21 @@ void  ConsoleStrategy::Run()
       {
          switch( m_strategy )
          {
-         case Strategy_Text:
-            Text( text );
-            break;
-         case Strategy_Login:
-            Login( text );
-            break;
-         case Strategy_ChatAdmin:
-            Chat(text );
-            break;
-         case Strategy_HackerMode:
-            Hacker( text );
-            break;
-         case Strategy_Game:
-            Gameplay( text );
-            break;
+            case Strategy_Text:
+               Text( text );
+               break;
+            case Strategy_Login:
+               Login( text );
+               break;
+            case Strategy_ChatAdmin:
+               Chat(text );
+               break;
+            case Strategy_HackerMode:
+               Hacker( text );
+               break;
+            case Strategy_Game:
+               Gameplay( text );
+               break;
          }
       }
    }
@@ -297,56 +306,57 @@ void     ConsoleStrategy::PrintInstructions()
 {
    switch( m_strategy )
    {
-   case Strategy_Text:
-      OutputCommand( "{/chat=chat admin mode, /game=game mode, /hack=hacker mode, /exit=exit app}", " ", true );
-      OutputCommand( "*", "x = changes chat channel to x (e.g. '* stars': channel ->'stars')", true );
-      OutputCommand( "groups", "= lists all of your groups", true );
-      OutputCommand( "friends", "= lists all of your friends", true );
-       break;
-   case Strategy_Login:
-      OutputCommand( "{/hack=hacker mode, /exit=exit app}", " ", true );
-      OutputCommand( " ", "Enter username. Password is not used. ( e.g. >mickey )", true );
-      break;
-   case Strategy_ChatAdmin:
-      OutputCommand( "{/text=normal mode, /game=game mode, /exit=exit app}", " ", true );
-      OutputCommand( "delete", "x = delete group", true );
-      OutputCommand( "create", "x = create new empty group, conflicts will be ignored (todo)", true );
-      OutputCommand( "invite", "x to y = invite a user by uuid (syntax matters) *", false );
-      OutputCommand( "add", "x to y = add user to group (syntax matters)", true ); 
-      OutputCommand( "remove", "x from y = remove user from group (syntax matters)", true ); 
-      OutputCommand( "history", "x = get all chat for a group", true );
-      OutputCommand( "list", "= list all group names and Ids", false );
-      OutputCommand( "chatters", "x = get all chat contributers for a group", true );
-      OutputCommand( "members", "x = get all chat members for a group", true );
-      OutputCommand( "reload", "= loads all channels into chat server", true );
-      OutputCommand( "all_channels", "= sends complete list of channels to client", true );
-      OutputCommand( "all_users", "= sends complete list of users to client", true );
-      break;
-   case Strategy_HackerMode:
-      OutputCommand( "{/text=normal mode, /exit=exit app}", " ", true );
-      OutputCommand( "random x", "= random packet of x len. if no x, then random length", true );
-      OutputCommand( "login x", "= send login again for x", true );
-      OutputCommand( "bad_string", "= send a string packet with bad string size info", true );
-      OutputCommand( "header", "= packet with valid header but super large", true );
-      OutputCommand( "repeat", "x = repeated chats in a row.. long text", true );
-      break;
-   case Strategy_Game:
-      OutputCommand( "create", "x = create new game instance, new name will be returned", false );
-      OutputCommand( "invite", "x to y = invite a user by uuid (syntax matters)", false );
-      OutputCommand( "accept", "x = accept invitation", false );
-      //OutputCommand( "add", "x to y = add user to game (syntax matters)", false );
-      OutputCommand( "add", "x to y = add user to game (syntax matters)", false );
-      OutputCommand( "quit", " current game ", false );
-      OutputCommand( "delete", " current game ", false );
-      OutputCommand( "list", " list of games ", false );
-      OutputCommand( "switch x", " switch to x game server by name or short name (no spaces)", true );
-      //OutputCommand( "attach x", " attach to this game server", false );
-      OutputCommand( "echo n", " send random n bytes to game server (default is 32) ", true );
-      // advance the game turn
-      // login to exiting game
-      break;
+      case Strategy_Text:
+         OutputCommand( "{/chat=chat admin mode, /game=game mode, /hack=hacker mode, /exit=exit app}", " ", true );
+         OutputCommand( "*", "x = changes chat channel to x (e.g. '* stars': channel ->'stars')", true );
+         OutputCommand( "groups", "= lists all of your groups", true );
+         OutputCommand( "friends", "= lists all of your friends", true );
+         break;
+      case Strategy_Login:
+         OutputCommand( "{/hack=hacker mode, /exit=exit app}", " ", true );
+         OutputCommand( " ", "Enter username. Password is not used. ( e.g. >mickey )", true );
+         break;
+      case Strategy_ChatAdmin:
+         OutputCommand( "{/text=normal mode, /game=game mode, /exit=exit app}", " ", true );
+         OutputCommand( "delete", "x = delete group", true );
+         OutputCommand( "create", "x = create new empty group, conflicts will be ignored (todo)", true );
+         OutputCommand( "invite", "x to y = invite a user by uuid (syntax matters) *", false );
+         OutputCommand( "add", "x to y = add user to group (syntax matters)", true );
+         OutputCommand( "remove", "x from y = remove user from group (syntax matters)", true );
+         OutputCommand( "history", "x = get all chat for a group", true );
+         OutputCommand( "list", "= list all group names and Ids", false );
+         OutputCommand( "chatters", "x = get all chat contributers for a group", true );
+         OutputCommand( "members", "x = get all chat members for a group", true );
+         OutputCommand( "reload", "= loads all channels into chat server", true );
+         OutputCommand( "all_channels", "= sends complete list of channels to client", true );
+         OutputCommand( "all_users", "= sends complete list of users to client", true );
+         break;
+      case Strategy_HackerMode:
+         OutputCommand( "{/text=normal mode, /exit=exit app}", " ", true );
+         OutputCommand( "random x", "= random packet of x len. if no x, then random length", true );
+         OutputCommand( "login x", "= send login again for x", true );
+         OutputCommand( "bad_string", "= send a string packet with bad string size info", true );
+         OutputCommand( "header", "= packet with valid header but super large", true );
+         OutputCommand( "repeat", "x = repeated chats in a row.. long text", true );
+         break;
+      case Strategy_Game:
+         OutputCommand( "create", "x = create new game instance, new name will be returned", false );
+         OutputCommand( "invite", "x to y = invite a user by uuid (syntax matters)", false );
+         OutputCommand( "accept", "x = accept invitation", false );
+         //OutputCommand( "add", "x to y = add user to game (syntax matters)", false );
+         OutputCommand( "add", "x to y = add user to game (syntax matters)", false );
+         OutputCommand( "quit", " current game ", false );
+         OutputCommand( "delete", " current game ", false );
+         OutputCommand( "list", " list of games ", false );
+         OutputCommand( "switch x", " switch to x game server by name or short name (no spaces)", true );
+         //OutputCommand( "attach x", " attach to this game server", false );
+         OutputCommand( "multiecho n", " send random packets to game server (default is 10) ", true );
+         OutputCommand( "echo n", " send random n bytes to game server (default is 32) ", true );
+         // advance the game turn
+         // login to exiting game
+         break;
    }
-
+   
    m_pyro.SetConsoleColor( Pyroraptor::ColorsNormal );
    m_pyro.Log( "__________________________________________________" );
 }
@@ -387,7 +397,7 @@ bool     ConsoleStrategy::ChangeStrategy( const string& text )
 {
    switch( m_strategy )
    {
-   case Strategy_Text:
+      case Strategy_Text:
       {
          if( boost::iequals( text, "chat" ) )
          {
@@ -404,16 +414,16 @@ bool     ConsoleStrategy::ChangeStrategy( const string& text )
             m_strategy = Strategy_Game;
             return true;
          }
-      // nothing else is aceptable
+         // nothing else is aceptable
       }
-   case Strategy_Login:// you must login first
+      case Strategy_Login:// you must login first
          if( boost::iequals( text, "hack" ) )
          {
             m_strategy = Strategy_HackerMode;
             return true;
          }
-      break;
-   case Strategy_ChatAdmin:
+         break;
+      case Strategy_ChatAdmin:
       {
          if( boost::iequals( text, "text" ) )
          {
@@ -425,20 +435,20 @@ bool     ConsoleStrategy::ChangeStrategy( const string& text )
             m_strategy = Strategy_Game;
             return true;
          }
-      // nothing else is aceptable
+         // nothing else is aceptable
       }
-      break;
-   case Strategy_HackerMode:
+         break;
+      case Strategy_HackerMode:
       {
          if( boost::iequals( text, "text" ) )
          {
             m_strategy = Strategy_Text;
             return true;
          }
-      // nothing else is aceptable
+         // nothing else is aceptable
       }
-      break;
-   case Strategy_Game:
+         break;
+      case Strategy_Game:
       {
          if( boost::iequals( text, "text" ) )
          {
@@ -450,9 +460,9 @@ bool     ConsoleStrategy::ChangeStrategy( const string& text )
             m_strategy = Strategy_ChatAdmin;
             return true;
          }
-      // nothing else is aceptable
+         // nothing else is aceptable
       }
-      break;
+         break;
    }
    return false;
 }
@@ -493,7 +503,7 @@ bool     ConsoleStrategy::Text( const string& text )
    {
       return false;
    }
-
+   
    string chatChannel;
    string test = Trim( text );
    if( test[0] == '*' )
@@ -505,11 +515,11 @@ bool     ConsoleStrategy::Text( const string& text )
          m_pyro.Log( "Cannot change channel.. no name specified" );
          return false;
       }
-
+      
       chatChannel = test.substr( begin, test.size() + 1 );
-
+      
       chatChannel = Trim( chatChannel );
-
+      
       if( m_communications.ChangeChannel( chatChannel ) == false )
       {
          m_pyro.SetConsoleColor( Pyroraptor::ColorsError );
@@ -518,11 +528,11 @@ bool     ConsoleStrategy::Text( const string& text )
       }
       return true;
    }
-
+   
    //-------------------------------
    vector< string > stringList;
    boost::split( stringList, test, boost::is_any_of("\t "));
-
+   
    CommandLineParser parse( stringList ) ;
    if( parse.IsKeywordFirst( "groups" ) == true )
    {
@@ -538,7 +548,7 @@ bool     ConsoleStrategy::Text( const string& text )
       m_communications.DumpFriends();
       return true;
    }
-
+   
    if( m_communications.SendMessage( text ) == false )
    {
       m_pyro.SetConsoleColor( Pyroraptor::ColorsError );
@@ -554,9 +564,9 @@ bool     ConsoleStrategy::Chat( const string& text )
 {
    vector< string > stringList;
    boost::split( stringList, text, boost::is_any_of("\t "));
-
+   
    CommandLineParser parse( stringList ) ;
-
+   
    string chatChannel, userUuid;
    if( parse.FindValue( "create", chatChannel ) == true )
    {
@@ -752,9 +762,9 @@ bool     ConsoleStrategy::Hacker( const string& text )
 {
    vector< string > stringList;
    boost::split( stringList, text, boost::is_any_of("\t "));
-
+   
    CommandLineParser parse( stringList ) ;
-
+   
    int requestedLength = 0;
    string username;
    if( parse.FindValue( "random", requestedLength ) == true )
@@ -782,7 +792,7 @@ bool     ConsoleStrategy::Hacker( const string& text )
       RunRepeatHack( requestedLength );
       return true;
    }
-
+   
    return false;
 }
 
@@ -792,9 +802,9 @@ bool     ConsoleStrategy::Gameplay( const string& text )
 {
    vector< string > stringList;
    boost::split( stringList, text, boost::is_any_of("\t "));
-
+   
    CommandLineParser parse( stringList ) ;
-
+   
    string game;
    //--------------------------------
    if( parse.FindValue( "create", game ) == true )
@@ -805,14 +815,14 @@ bool     ConsoleStrategy::Gameplay( const string& text )
          m_pyro.Log( "You must provide a game name" );
          return false;
       }
-   /*   string channelUuid = m_communications.FindChatChannel( chatChannel );
-      if( channelUuid.size() == 0 )
-      {
-         m_pyro.SetConsoleColor( Pyroraptor::ColorsError );
-         m_pyro.Log( "The chat channel that you provided cannot be found. Try loading all." );
-         return false;
-      }
-      m_communications.RequestMembers( channelUuid );*/
+      /*   string channelUuid = m_communications.FindChatChannel( chatChannel );
+       if( channelUuid.size() == 0 )
+       {
+       m_pyro.SetConsoleColor( Pyroraptor::ColorsError );
+       m_pyro.Log( "The chat channel that you provided cannot be found. Try loading all." );
+       return false;
+       }
+       m_communications.RequestMembers( channelUuid );*/
       m_communications.CreateGame( game );
       return true;
    }
@@ -824,7 +834,7 @@ bool     ConsoleStrategy::Gameplay( const string& text )
          m_pyro.Log( "You must provide a game name" );
          return false;
       }
-
+      
       m_communications.ChangeGame( game );
    }
    if( parse.FindValue( "echo", game ) == true )
@@ -833,8 +843,17 @@ bool     ConsoleStrategy::Gameplay( const string& text )
       {
          game = "32";
       }
-
+      
       m_communications.GameEcho( boost::lexical_cast<int>( game ) );
+   }
+   if( parse.FindValue( "multiecho", game ) == true )
+   {
+      if( game.size() == 0 )
+      {
+         game = "10";
+      }
+      
+      m_communications.MultiplePacketEcho( boost::lexical_cast<int>( game ) );
    }
    return false;
 }
@@ -847,23 +866,23 @@ void     ConsoleStrategy::RunRandomHack( int bufferLength )
    {
       bufferLength = rand() % 1014 + 10; // 10-1024
    }
-
+   
    U8* buffer = new U8[ bufferLength ];
-
+   
    m_pyro.SetConsoleColor( Pyroraptor::ColorsText );
    m_pyro.Log( "Random data being sent" );
    m_pyro.Log( "length is ", false );
    m_pyro.SetConsoleColor( Pyroraptor::ColorsNormal );
    m_pyro.Log( bufferLength );
-
    
-   int width = 24;
+   
+   //int width = 24;
    cout << hex;
    for( int i=0; i<bufferLength; i++ )
    {
       U8 val = rand()%256;
       buffer[i] = val;
-      if( i < 256 )// stop printing after a while 
+      if( i < 256 )// stop printing after a while
       {
          if( i>0 && i % 25 == 0 )
          {
@@ -878,7 +897,7 @@ void     ConsoleStrategy::RunRandomHack( int bufferLength )
    cout << dec << endl;
    m_communications.SendRawData( buffer, bufferLength );
    delete [] buffer;
-
+   
    m_pyro.Log( "Random data has been sent" );
 }
 
@@ -889,9 +908,9 @@ void     ConsoleStrategy::RunLoginHack( const string& username )
    m_pyro.SetConsoleColor( Pyroraptor::ColorsText );
    m_pyro.Log( "Logging in as user ", false );
    m_pyro.Log( username );
-
+   
    m_communications.Login( username, "password" );
-
+   
    m_pyro.Log( "Log in complete " );
 }
 
@@ -908,13 +927,13 @@ void     ConsoleStrategy::RunHeaderHack()
 {
    int bufferLength = 65536;
    U8* buffer = new U8[ bufferLength ];
-
+   
    PacketFriendsListRequest packet;
    int offset = 0;
    packet.SerializeOut( buffer, offset );
-
+   
    m_communications.SendRawData( buffer, bufferLength );
-
+   
    delete buffer;
 }
 
@@ -925,13 +944,13 @@ void     ConsoleStrategy::RunRepeatHack( int numPackets )
    m_pyro.SetConsoleColor( Pyroraptor::ColorsText );
    m_pyro.Log( "Repeat hack for num packets = ", false );
    m_pyro.Log( numPackets );
-
+   
    string message = "Now is the time for all good men to come to the aid of their country.";
    m_pyro.Log( "Message sent: ", false );
-
+   
    m_pyro.Log( message );
-
-   for( int i=0; i< numPackets; i++) 
+   
+   for( int i=0; i< numPackets; i++)
    {
       m_communications.SendMessage( message );
    }
@@ -943,21 +962,21 @@ void     ConsoleStrategy::PrintCurrentStrategy()
 {
    switch( m_strategy )
    {
-   case Strategy_Text:
-      m_pyro.Log( "text_mode" );
-      break;
-   case Strategy_Login:
-      m_pyro.Log( "login_mode" );
-      break;
-   case Strategy_ChatAdmin:
-      m_pyro.Log( "chat_admin_mode" );
-      break;
-   case Strategy_HackerMode:
-      m_pyro.Log( "hacker_mode" );
-      break;
-   case Strategy_Game:
-      m_pyro.Log( "game mode" );
-      break;
+      case Strategy_Text:
+         m_pyro.Log( "text_mode" );
+         break;
+      case Strategy_Login:
+         m_pyro.Log( "login_mode" );
+         break;
+      case Strategy_ChatAdmin:
+         m_pyro.Log( "chat_admin_mode" );
+         break;
+      case Strategy_HackerMode:
+         m_pyro.Log( "hacker_mode" );
+         break;
+      case Strategy_Game:
+         m_pyro.Log( "game mode" );
+         break;
    }
 }
 

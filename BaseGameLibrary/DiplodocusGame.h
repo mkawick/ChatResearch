@@ -29,7 +29,7 @@ public:
    // default input chain methods
    bool     AddInputChainData( BasePacket* packet, U32 connectionId );
    bool     AddOutputChainData( BasePacket* packet, U32 connectionId );
-   void     HandleCommandFromGateway( BasePacket* packet, U32 connectionId );
+   bool     HandleCommandFromGateway( BasePacket* packet, U32 connectionId );
    
    //-----------------------------------------------------------------------------
 
@@ -42,8 +42,6 @@ public:
    void     SetDatabaseIdentification( const string& uuid ) { m_gameUuid = uuid; }
    bool     IsDatabaseIdentificationValid() const { return m_gameUuid.size() > 0; }
 
-   void     AddGatewayConnection( U32 id ) { m_connectionIdGateway = id; }
-
 private:
    int      CallbackFunction();
    void	   UpdateAllConnections();
@@ -55,7 +53,7 @@ private:
    void     DisconnectUser( const PacketPrepareForUserLogout* logoutPacket );
    void     IsUserAllowedToUseThisProduct( const PacketListOfGames* packet );
 
-   U32                                    m_connectionIdGateway;
+   //U32                                    m_connectionIdGateway;
    deque< U32 >                           m_serversNeedingUpdate;
    GameCallbacks*                         m_callbacks;
    string                                 m_gameUuid;

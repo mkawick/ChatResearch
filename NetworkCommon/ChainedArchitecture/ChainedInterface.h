@@ -22,7 +22,7 @@ public:
    int      type;// custom
    int      subType;// custom
    int      identifier;
-   void*    meta;
+   U8*      meta;
 };
 
 /////////////////////////////////////////////////////////////////////////////
@@ -321,16 +321,14 @@ void     ChainedInterface<Type>::CleanupAllEvents()
       return;
 
    m_inputChainListMutex.lock();
-   int num = m_eventsIn.size();
-   while( num -- )
+   while( m_eventsIn.size() > 0 )
    {
       ThreadEvent* event = m_eventsIn.front();
       m_eventsIn.pop_front();
       delete event;
    }
 
-   num = m_eventsOut.size();
-   while( num -- )
+   while( m_eventsOut.size() > 0 )
    {
       ThreadEvent* event = m_eventsOut.front();
       m_eventsOut.pop_front();

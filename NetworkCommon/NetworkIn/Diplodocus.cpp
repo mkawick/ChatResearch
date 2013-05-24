@@ -2,6 +2,11 @@
 
 #include "../Platform.h"
 #include "../Datatypes.h"
+#include "../Serialize.h"
+
+#include <iostream>
+using namespace std;
+
 #include "Diplodocus.h"
 
 
@@ -29,7 +34,7 @@ int		SetSocketToNonblock( int ListenSocket )
 #if PLATFORM == PLATFORM_MAC || PLATFORM == PLATFORM_UNIX
 
    int nonBlocking = 1;
-   if ( fcntl( handle, F_SETFL, O_NONBLOCK, nonBlocking ) == -1 )
+   if ( fcntl( ListenSocket, F_SETFL, O_NONBLOCK, nonBlocking ) == -1 )
    {
       printf( "failed to set non-blocking socket\n" );
       return false;

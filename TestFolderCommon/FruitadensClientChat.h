@@ -1,6 +1,7 @@
 // FruitadensClientChat.h
 
 #pragma once
+
 #include "../NetworkCommon/ChainedArchitecture/Thread.h"
 #include "../NetworkCommon/Packets/BasePacket.h"
 #include "../NetworkCommon/Packets/ChatPacket.h"
@@ -15,7 +16,7 @@ class FruitadensClientChat : public Fruitadens
 {
    enum { MaxBufferBytes = 1024 };
 public:
-   FruitadensClientChat() : Fruitadens( "client chat" ), m_selectedGame( 0 ), m_numBytesSent( 0 ) {}
+   FruitadensClientChat() : Fruitadens( "client chat" ), m_selectedGame( 0 ), m_numEchoBytesSent( 0 ), m_packetEchoPacketsSent( 0 ) {}
 
    bool     FinalFixup();
    string   GetUsername() const { return m_username; }
@@ -63,6 +64,7 @@ public:
    bool     LoadListOfGames();
    bool     DeleteGame( const string& gameUuid );
    bool     GameEcho( int numBytes );
+   bool     MultiplePacketEcho( int packetCount );
   /* string   FindGame( const string& name );
    string   FindGameByUuid( const string& name );*/
 
@@ -95,12 +97,17 @@ protected:
    GameList          m_gameList;
 
    Pyroraptor*       m_pyro;
-   DWORD             m_beginTime, m_endTime;
+   U32               m_beginTime, m_endTime;
    string            m_username, m_attemptedUsername;
    string            m_uuid;
    string            m_currentChannel;
    U32               m_selectedGame;
 
-   U8                m_comparisonBuffer[ MaxBufferBytes ];
-   int               m_numBytesSent;
+   U8                m_echoComparisonBuffer[ MaxBufferBytes ];
+   int               m_numEchoBytesSent;
+
+   int               m_packetEchoPacketsSent;
+   int               m_packetEchoReturnCounter;
+   vector< PacketGameplayRawData >   m_multiplePacketEchoHistory;
+   U32               m_beginMultiPacketTime, m_endMultiPacketTime;
 };

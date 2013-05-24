@@ -1,13 +1,15 @@
 
 #include <assert.h>
 #include <boost/lexical_cast.hpp>
+#include <iomanip>
+#include <iostream>
+using namespace std;
 
 #include "FruitadensClientChat.h"
 
 #include "../NetworkCommon/Utils/Utils.h"
-#include "../NetworkCommon/ServerConstants.h"
 
-#include <mmsystem.h>
+
 //-----------------------------------------------------------------------------
 
 // remember to wrap all of these in Gateway wrappers.
@@ -78,6 +80,7 @@ bool  FruitadensClientChat::ChangeChannel( const string& channel )
    string channelUuid= FindChatChannel( channel );
    if( channelUuid.length() == 0 )
    {
+      m_pyro->SetConsoleColor( Pyroraptor::ColorsError );
       Log( "error: bad chat channel" );
       Log( " try one of these " );
       DumpChatChannels();
@@ -497,7 +500,7 @@ bool     FruitadensClientChat::DeleteGame( const string& gameUuid )
 
 bool     FruitadensClientChat:: GameEcho( int numBytes )
 {
-   if( m_numBytesSent != 0 )
+   if( m_numEchoBytesSent != 0 )
    {
       m_pyro->SetConsoleColor( Pyroraptor::ColorsError );
       m_pyro->Log( "error: a package is already in progress" );
@@ -512,17 +515,90 @@ bool     FruitadensClientChat:: GameEcho( int numBytes )
 
    if( numBytes > MaxBufferBytes )
       numBytes = MaxBufferBytes;
-   m_numBytesSent = numBytes;
+   m_numEchoBytesSent = numBytes;
 
-   for( int i=0; i< m_numBytesSent; i++ )
+   for( int i=0; i< m_numEchoBytesSent; i++ )
    {
-      m_comparisonBuffer[i] = rand() % 256;
+      m_echoComparisonBuffer[i] = rand() % 256;
    }
-   PacketGameplayRawData* packet = new PacketGameplayRawData;
-   packet->gameInstanceId = m_selectedGame;
+   PacketGameplayRawData packet;
+   packet.gameInstanceId = m_selectedGame;
 
-   packet->Prep( m_numBytesSent, m_comparisonBuffer );   
-   return SerializePacketOut( packet );
+   packet.Prep( m_numEchoBytesSent, m_echoComparisonBuffer );   
+   return SerializePacketOut( &packet );
+}
+
+//-----------------------------------------------------------------------------
+
+bool     FruitadensClientChat:: MultiplePacketEcho( int packetCount )
+{
+  /* if( m_packetEchoPacketsSent != 0 )
+   {
+      m_pyro->SetConsoleColor( Pyroraptor::ColorsError );
+      m_pyro->Log( "error: a package is already in progress" );
+      return false;
+   }*/
+   if( m_selectedGame == 0 )
+   {
+      m_pyro->SetConsoleColor( Pyroraptor::ColorsError );
+      m_pyro->Log( "error: select a game first" );
+      return false;
+   }
+   if( packetCount <1 || packetCount > 10000 )
+   {
+      m_pyro->SetConsoleColor( Pyroraptor::ColorsError );
+      m_pyro->Log( "error: the number you sepcified is wrong. Try 1-10000" );
+      return false;
+   }
+
+   m_packetEchoReturnCounter = 0;
+   m_multiplePacketEchoHistory.clear();
+
+   U8 tempBuffer [512];
+   m_packetEchoPacketsSent = packetCount;
+
+   for( int i=0; i< m_packetEchoPacketsSent; i++ )
+   {
+      int numBytesToSend = rand() % 128 + 32;
+      for( int fill=0; fill< numBytesToSend; fill++ )
+      {
+         tempBuffer[ fill ] = rand() % 256;
+      }
+      PacketGameplayRawData packet;
+      packet.versionNumber = i;
+      packet.gameInstanceId = m_selectedGame;
+      packet.Prep( numBytesToSend, tempBuffer ); 
+
+
+      m_multiplePacketEchoHistory.push_back( packet );
+   }
+
+   m_pyro->SetConsoleColor( Pyroraptor::ColorsNormal );
+   m_pyro->Log( " ****************** MultiplePacketEcho test begin ****************** " );
+
+   U8 buffer[ MaxBufferSize ];
+   int dangerZone = 2048 * 3/4;// as per the gateway constant
+   int offset = 0;
+   m_beginTime = GetCurrentMilliseconds();
+
+   m_beginMultiPacketTime = GetCurrentMilliseconds();
+   for( int i=0; i< m_packetEchoPacketsSent; i++ )
+   {
+      const PacketGameplayRawData& packet = m_multiplePacketEchoHistory[i];
+      cout << i << ":" << std::setw(20) << packet.size << endl;
+      //SerializePacketOut( &packet );
+      packet.SerializeOut( buffer, offset );
+      if( offset > dangerZone )
+      {
+         SendPacket( buffer, offset );
+         offset = 0;
+      }
+   }
+   if( offset )
+   {
+      SendPacket( buffer, offset );
+   }
+   return true;
 }
 //-----------------------------------------------------------------------------
 /*
@@ -691,7 +767,7 @@ bool     FruitadensClientChat::SerializePacketOut( const BasePacket* packet )
    int offset = 0;
 
    packet->SerializeOut( buffer, offset );
-   m_beginTime = timeGetTime();
+   m_beginTime = GetCurrentMilliseconds();
    return SendPacket( buffer, offset );
 }
 
@@ -713,8 +789,8 @@ int   FruitadensClientChat::ProcessInputFunction()
 
    U8 buffer[ MaxBufferSize ];
 
-   int numBytes = recv( m_clientSocket, (char*) buffer, MaxBufferSize, NULL );
-	if( numBytes != SOCKET_ERROR)
+   int numBytes = static_cast< int >( recv( m_clientSocket, (char*) buffer, MaxBufferSize, NULL ) );
+	if( numBytes != SOCKET_ERROR )
 	{
       m_pyro->SetConsoleColor( Pyroraptor::ColorsText );
       m_pyro->Log( "Data has come in" );
@@ -726,10 +802,10 @@ int   FruitadensClientChat::ProcessInputFunction()
       int offset = 0;
       while( offset < numBytes )
       {
-         BasePacket* packetIn;
+         BasePacket* packetIn = NULL;
          if( factory.Parse( buffer, offset, &packetIn ) == true )
          {
-            m_endTime = timeGetTime();
+            m_endTime = GetCurrentMilliseconds();
 
             m_pyro->SetConsoleColor( Pyroraptor::ColorsDarkBlue );
             
@@ -743,6 +819,10 @@ int   FruitadensClientChat::ProcessInputFunction()
          {
             offset = numBytes;
          }
+         /*if( packetIn )
+         {
+            delete packetIn;
+         }*/
       }
 	}
    
@@ -888,7 +968,7 @@ void  FruitadensClientChat::HandlePacketIn( BasePacket* packetIn )
                PacketChatChannelListToClient* channelList = static_cast<PacketChatChannelListToClient*>( packetIn );
 
                m_pyro->SetConsoleColor( Pyroraptor::ColorsNormal );
-               int num = channelList->chatChannel.size();
+               int num = static_cast< int >( channelList->chatChannel.size() );
                m_pyro->Log( "Channels for this user are [", false );
                m_pyro->Log( num, false );
                m_pyro->Log( "] = {" ); 
@@ -1180,6 +1260,8 @@ void  FruitadensClientChat::HandlePacketIn( BasePacket* packetIn )
          m_pyro->Log( "   connectionId: ", false );
          m_pyro->Log( gwPacket->connectionId );
          HandlePacketIn( tempPacket );
+         delete tempPacket;
+         delete gwPacket;
       }
       break;
    case PacketType_ErrorReport:
@@ -1260,22 +1342,73 @@ void  FruitadensClientChat::HandlePacketIn( BasePacket* packetIn )
                PacketGameplayRawData* data = 
                   static_cast<PacketGameplayRawData*>( packetIn );
 
-               m_pyro->SetConsoleColor( Pyroraptor::ColorsNormal );
-               m_pyro->Log( "Raw data returned: ", false );
-               m_pyro->Log( data->size );
-
-               m_pyro->SetConsoleColor( Pyroraptor::ColorsText );
-               if( m_numBytesSent == data->size &&
-                  memcmp( data->data, m_comparisonBuffer, m_numBytesSent ) == 0 )
+               if( m_numEchoBytesSent )// this is the test that we're performing
                {
-                  m_pyro->Log( "packet matches " );
+                  m_pyro->SetConsoleColor( Pyroraptor::ColorsNormal );
+                  m_pyro->Log( "Raw data returned: ", false );
+                  m_pyro->Log( data->size );
+
+                  m_pyro->SetConsoleColor( Pyroraptor::ColorsText );
+                  if( m_numEchoBytesSent == data->size &&
+                     memcmp( data->data, m_echoComparisonBuffer, m_numEchoBytesSent ) == 0 )
+                  {
+                     m_pyro->Log( "packet matches " );
+                  }
+                  else
+                  {
+                     m_pyro->Log( "packet does not match " );
+                  }
+
+                  m_numEchoBytesSent = 0;// clear this flag
+               }
+               else if( m_packetEchoPacketsSent )
+               {
+                  //m_packetEchoPacketsSent
+                  int currentIndex = m_packetEchoReturnCounter++;
+                  if( currentIndex > m_packetEchoPacketsSent )
+                  {
+                     m_pyro->SetConsoleColor( Pyroraptor::ColorsError );
+                     Log( "error: the number of returned packets was too high" );
+                     return;
+                  }
+
+                  const PacketGameplayRawData& originalPacket = m_multiplePacketEchoHistory[ currentIndex ];
+                  if( originalPacket.size != data->size )
+                  {
+                     m_pyro->SetConsoleColor( Pyroraptor::ColorsError );
+                     m_pyro->Log( "error: the size of these packets don't match" );
+                     m_pyro->Log( " *** packet index: ", false );
+                     m_pyro->Log( currentIndex );
+                     return;
+                  }
+
+                  if( memcmp( data->data, originalPacket.data, originalPacket.size ) != 0 )
+                  {
+                     m_pyro->SetConsoleColor( Pyroraptor::ColorsError );
+                     m_pyro->Log( "error: the data in these packets don't match" );
+                     m_pyro->Log( " *** packet index: ", false );
+                     m_pyro->Log( currentIndex );
+                     return;
+                  }
+
+                  if( m_packetEchoPacketsSent == m_packetEchoReturnCounter )
+                  {
+                     m_endMultiPacketTime = GetCurrentMilliseconds();
+                     m_pyro->SetConsoleColor( Pyroraptor::ColorsNormal );
+                     m_pyro->Log( "Test complete" );
+                     m_pyro->Log( "Time taken was: ", false );
+                     m_pyro->Log( (int)(m_endMultiPacketTime - m_beginMultiPacketTime), false );
+                     m_pyro->Log( " ms " );
+                     m_pyro->Log( "number of packet sent: ", false );
+                     m_pyro->Log( m_packetEchoPacketsSent );
+
+                     m_packetEchoPacketsSent = 0;// clear the flag
+                  }
                }
                else
                {
-                  m_pyro->Log( "packet does not match " );
+                  assert( 0 );// this is bad
                }
-
-               m_numBytesSent = 0;// clear this flag
             }
             break;
          }         

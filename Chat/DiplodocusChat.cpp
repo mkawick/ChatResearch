@@ -50,8 +50,7 @@ bool   DiplodocusChat::AddInputChainData( BasePacket* packet, U32 connectionId )
 {
    if( packet->packetType == PacketType_GatewayInformation )
    {
-      HandleCommandFromGateway( packet, connectionId );
-      return true;
+      return HandleCommandFromGateway( packet, connectionId );
    }
 
    if( packet->packetType == PacketType_ServerJobWrapper )
@@ -352,12 +351,14 @@ bool  DiplodocusChat::AddPacketFromUserConnection( BasePacket* packet, U32 conne
 
 //---------------------------------------------------------------
 
-void  DiplodocusChat::HandleCommandFromGateway( BasePacket* packet, U32 connectionId )
+bool  DiplodocusChat::HandleCommandFromGateway( BasePacket* packet, U32 connectionId )
 {
    Threading::MutexLock locker( m_mutex );
 
    // delete connections, etc.
    assert( 0 );// incomplete
+
+   return true;
 }
 
 //---------------------------------------------------------------

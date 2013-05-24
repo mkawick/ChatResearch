@@ -1,5 +1,6 @@
 // FruitadensGateway.cpp
 
+#include "../NetworkCommon/ServerConstants.h"
 #include "FruitadensGateway.h"
 #include "../NetworkCommon/Packets/PacketFactory.h"
 #include "../NetworkCommon/Packets/BasePacket.h"
@@ -77,12 +78,20 @@ int  FruitadensGateway::ProcessOutputFunction()
 
    if( m_packetsReadyToSend.size() > 0 )
    {
-      m_mutex.lock();
-      while( m_packetsReadyToSend.size() )
+      U8 buffer[ MaxBufferSize ];
+      int dangerZone = MaxBufferSize * 3/4;// 25%
+      int offset = 0;
+
+      
+      while( m_packetsReadyToSend.size() && offset < dangerZone )
       {
+         m_mutex.lock();
          BasePacket* packet = m_packetsReadyToSend.front();
-         SerializePacketOut( packet );
          m_packetsReadyToSend.pop_front();
+         m_mutex.unlock();
+         packet->SerializeOut( buffer, offset );
+
+         //SerializePacketOut( packet );
 
          if( packet->packetType == PacketType_GatewayWrapper )
          {
@@ -96,7 +105,9 @@ int  FruitadensGateway::ProcessOutputFunction()
          }
          delete packet;
       }
-      m_mutex.unlock();
+      
+
+      SendPacket( buffer, offset );
    }
 
    return 0;

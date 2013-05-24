@@ -107,9 +107,9 @@ int main( int argc, const char* argv[] )
    FruitadensGateway* game2 = PrepFruitadens( "localhost", 23401, serverId, gateway );
    FruitadensGateway* game3 = PrepFruitadens( "localhost", 23402, serverId, gateway );
 
-   game1->NotifyEndpointOfIdentification( serverName, serverId, false, false, true  );
-   game2->NotifyEndpointOfIdentification( serverName, serverId, false, false, true  );
-   game3->NotifyEndpointOfIdentification( serverName, serverId, false, false, true  );
+   game1->NotifyEndpointOfIdentification( serverName, serverId, false, false, true, true  );
+   game2->NotifyEndpointOfIdentification( serverName, serverId, false, false, true, true  );
+   game3->NotifyEndpointOfIdentification( serverName, serverId, false, false, true, true  );
 
    loginServerOut.Connect( loginIpAddressString.c_str(), loginPort );
    loginServerOut.Resume();

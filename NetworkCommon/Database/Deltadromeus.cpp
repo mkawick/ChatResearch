@@ -123,7 +123,7 @@ Deltadromeus::Deltadromeus() : Threading::CChainedThread< BasePacket* >(),
    m_port( 0 ),
    m_connect( NULL )
 {
-   SetSleepTime( 70 );// only check for db needs once in a while
+   SetSleepTime( 30 );// only check for db needs once in a while
 }
 
 Deltadromeus::~Deltadromeus()

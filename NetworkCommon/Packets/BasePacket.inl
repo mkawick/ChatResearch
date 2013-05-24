@@ -4,7 +4,7 @@
 template < typename type >
 bool  SerializedVector< type >::SerializeIn( const U8* data, int& bufferOffset )
 {
-   int num = m_data.size();
+   int num = static_cast< int>( m_data.size() );
    Serialize::In( data, bufferOffset, num );
 
    for( int i=0; i<num; i++ )
@@ -20,10 +20,10 @@ bool  SerializedVector< type >::SerializeIn( const U8* data, int& bufferOffset )
 template < typename type >
 bool  SerializedVector< type >::SerializeOut( U8* data, int& bufferOffset ) const
 {
-   int num = m_data.size();
+   int num = static_cast< int>( m_data.size() );
    Serialize::Out( data, bufferOffset, num );
 
-   vector< type > :: const_iterator it = m_data.begin();
+   typename std::vector< type > :: const_iterator  it = m_data.begin();
    while( it != m_data.end() )
    {
       Serialize::Out( data, bufferOffset, *it++ );
@@ -71,10 +71,10 @@ bool  SerializedKeyValueVector< type > ::SerializeIn( const U8* data, int& buffe
 template < typename type >
 bool  SerializedKeyValueVector< type > ::SerializeOut( U8* data, int& bufferOffset ) const
 {
-   int num = dataList.size();
+   int num = static_cast< int>( dataList.size() );
    Serialize::Out( data, bufferOffset, num );
 
-   KeyValueVector::const_iterator it = dataList.begin();
+   typename KeyValueVector::const_iterator it = dataList.begin();
    while( it != dataList.end() )
    {
       const KeyValueSerializer<type>& kvs = *it++ ;
@@ -88,7 +88,7 @@ bool SerializedKeyValueVector< type > ::operator = (const KeyValueSerializer< ty
 {
    dataList.clear();
 
-   KeyValueVector::const_iterator it = src.begin();
+   typename KeyValueVector::const_iterator it = src.begin();
    while( it != src.end() )
    {
       dataList.push_back( *it++ );
@@ -102,7 +102,7 @@ bool SerializedKeyValueVector< type > ::operator = (const vector< KeyValueSerial
 {
    dataList.clear();
 
-   KeyValueVector::const_iterator it = src.begin();
+   typename KeyValueVector::const_iterator it = src.begin();
    while( it != src.end() )
    {
       dataList.push_back( *it++ );

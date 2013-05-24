@@ -3,6 +3,7 @@
 #pragma once
 
 #include "DataTypes.h"
+#include "ServerConstants.h"
 
 #if PLATFORM == PLATFORM_WINDOWS
 #include <Winsock2.h>
@@ -16,7 +17,10 @@ U64 ntohll(U64 value);
 
 #elif PLATFORM == PLATFORM_MAC || PLATFORM == PLATFORM_UNIX
 #include <sys/types.h>
+#include <sys/socket.h>
+#include <netdb.h>
 #include <netinet/in.h>
+#include <netinet/tcp.h>
 #endif
 
 #include <string>
@@ -53,17 +57,17 @@ namespace Serialize
    #else
       memcpy( &value, source + offset, size );
       #if size == 2 
-            {
-               value = static_cast< T > ( ntohs( value ) );// using a cast to work around compile error
-            }
+         {
+            value = static_cast< T > ( ntohs( value ) );// using a cast to work around compile error
+         }
       #elif size == 4 
-            {
-               value = static_cast< T > ( ntohl( value ) );
-            }
+         {
+            value = static_cast< T > ( ntohl( value ) );
+         }
       #elif size == 8 
-            {
-               value = static_cast< T > ( ntohll( value ) );
-            }
+         {
+            value = static_cast< T > ( ntohll( value ) );
+         }
       #endif
    #endif
          offset += size;
@@ -72,7 +76,6 @@ namespace Serialize
       static inline void Out( U8* destination, int& offset, const T& value )
 	   {
          int size = sizeof( value );
-         T temp = value;
    #if size == 1
          {
             *destination = &temp;

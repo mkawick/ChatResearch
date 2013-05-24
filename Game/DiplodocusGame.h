@@ -32,7 +32,7 @@ public:
 
    int      CallbackFunction();
 
-   void     HandleCommandFromGateway( BasePacket* packet, U32 connectionId );
+   bool     HandleCommandFromGateway( BasePacket* packet, U32 connectionId );
    
 
    //-----------------------------------------------------------------------------

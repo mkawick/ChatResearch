@@ -78,31 +78,36 @@ bool	KhaanConnector::OnDataReceived( unsigned char* data, int length )
 
    bool result = false;
    // catch bad packets, buffer over runs, or other badly formed data.
-   try 
+   while( offset < length )
    {
-      result = parser.Parse( data, offset, &packetIn );
-   }
-   catch( ... )
-   {
-      Log( "parsing in KhaanConnector threw an exception" );
-      m_denyAllFutureData = true;
-   }
-
-   if( result == true )
-   {
-      if( IsWhiteListedIn( packetIn ) )
+      try 
       {
-         m_gateway->AddInputChainData( packetIn , m_connectionId );
+         result = parser.Parse( data, offset, &packetIn );
+      }
+      catch( ... )
+      {
+         Log( "parsing in KhaanConnector threw an exception" );
+         m_denyAllFutureData = true;
+         break;
+      }
+
+      if( result == true )
+      {
+         if( IsWhiteListedIn( packetIn ) )
+         {
+            m_gateway->AddInputChainData( packetIn , m_connectionId );
+         }
+         else
+         {
+            FlushReadBuffer();// apparently bad data, let's prevent buffer overruns, etc
+            delete packetIn;
+         }
       }
       else
       {
          FlushReadBuffer();// apparently bad data, let's prevent buffer overruns, etc
-         delete packetIn;
+         break;
       }
-   }
-   else
-   {
-      FlushReadBuffer();// apparently bad data, let's prevent buffer overruns, etc
    }
    return true;
 }

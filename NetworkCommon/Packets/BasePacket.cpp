@@ -27,7 +27,7 @@ bool  StringBucket::SerializeIn( const U8* data, int& bufferOffset )
 
 bool  StringBucket::SerializeOut( U8* data, int& bufferOffset ) const 
 { 
-   int numStrings = bucket.size();
+   int numStrings = static_cast< int>( bucket.size() );
    Serialize::Out( data, bufferOffset, numStrings );
 
    
@@ -68,11 +68,11 @@ bool  DynamicDataBucket::SerializeIn( const U8* data, int& bufferOffset )
 
 bool  DynamicDataBucket::SerializeOut( U8* data, int& bufferOffset ) const 
 { 
-   int numRows = bucket.size();
+   int numRows = static_cast< int>( bucket.size() );
    Serialize::Out( data, bufferOffset, numRows );
 
    DataSet::const_iterator it = bucket.begin();
-   int numColumns = (*it).size();
+   int numColumns = static_cast< int>( (*it).size() );
    Serialize::Out( data, bufferOffset, numColumns );
 
    while( it != bucket.end() )

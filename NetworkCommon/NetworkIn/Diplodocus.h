@@ -40,7 +40,7 @@ template< typename InputChain = BaseInputChainHandler, typename OutputChain = Ba
 class Diplodocus: public BasePacketChainHandler
 {
 public:
-   typedef typename InputChain                              InputChainType;
+   typedef  InputChain                              InputChainType;
    typedef typename std::list< InputChainType* >::iterator  InputChainIteratorType;
 
 public:
@@ -66,6 +66,8 @@ public:
    virtual void   ClientConnectionFinishedAdding( InputChainType* khaan ) {}
    virtual void   ClientConnectionIsAboutToRemove( InputChainType* khaan ) {}
    virtual void   ServerWasIdentified( InputChainType* khaan ){}
+   void           AddGatewayConnection( U32 id ) { m_connectionIdGateway = id; }
+   virtual bool   HandleCommandFromGateway( BasePacket* packet, U32 connectionId ) { return false; }
 
 protected:
 
@@ -80,22 +82,24 @@ protected:
 
    void           MarkAllConnectionsAsNeedingUpdate( BaseOutputContainer& listOfClients );
 
-   deque< U32 >                                             m_clientsNeedingUpdate;
-
    typedef typename std::map< U32, InputChainType* >        ClientMap;// posssibly change this to a hash lookup once the client is logged in
    typedef typename ClientMap::iterator                     ClientMapIterator;
+   typedef  pair< U32, InputChainType* >                    ClientLookup;
+   
    ClientMap                                                m_connectedClients; // this is a duplicate of the chained list, but with mapping
-   typedef typename pair< U32, InputChainType* >            ClientLookup;
+   deque< U32 >                                             m_clientsNeedingUpdate;
 
    bool              m_isListeningWorking;
    bool              m_hasSentServerIdentification;
    bool              m_isControllerApp;
+   bool              m_isGateway;
    bool              m_isGame;
    int               m_listeningPort;
    evconnlistener*   m_listener;// libevent object
    string            m_serverName; // just used for id
    U32               m_serverId; // just used for id
    ServerType        m_serverType;// just used for logging and topology purposes.
+   U32               m_connectionIdGateway;
 
 
    bool           SetupListeningSocket();

@@ -117,7 +117,7 @@ bool	Khaan :: OnDataReceived( unsigned char* data, int length )
 
          ThreadEvent te;
          te.type = ThreadEvent_NeedsService;
-         te.identifier = m_socketId;// todo, needs a better id
+         te.identifier = m_chainId;
          interfacePtr->PushInputEvent( &te );
       }
    }

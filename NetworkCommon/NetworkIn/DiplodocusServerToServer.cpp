@@ -79,7 +79,7 @@ bool   DiplodocusServerToServer::AddInputChainData( BasePacket* packet, U32 conn
 
       UnlockMutex();
 
-      return false;
+      return true;
    }
 
    return true;
@@ -90,7 +90,7 @@ bool   DiplodocusServerToServer::AddInputChainData( BasePacket* packet, U32 conn
 void  DiplodocusServerToServer::ServerWasIdentified( KhaanServerToServer* khaan )
 {
    BasePacket* packet = NULL;
-   PackageForServerIdentification( m_serverName, m_serverId, m_isGame, m_isControllerApp, true, &packet );
+   PackageForServerIdentification( m_serverName, m_serverId, m_isGame, m_isControllerApp, true, m_isGateway, &packet );
    khaan->AddOutputChainData( packet, 0 );
    m_serversNeedingUpdate.push_back( khaan->GetServerId() );
 }

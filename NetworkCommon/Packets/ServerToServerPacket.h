@@ -8,7 +8,12 @@
 class PacketServerIdentifier : public BasePacket
 {
 public:
-   PacketServerIdentifier( int packet_type = PacketType_ServerInformation, int packet_sub_type = 0  ): BasePacket( packet_type, packet_sub_type ), serverId( 0 ), isGameServer( true ), isController( false ) {}
+   PacketServerIdentifier( int packet_type = PacketType_ServerInformation, int packet_sub_type = 0  ): 
+                           BasePacket( packet_type, packet_sub_type ), 
+                           serverId( 0 ), 
+                           isGameServer( true ), 
+                           isController( false ), 
+                           isGateway( false ) {}
 
    bool  SerializeIn( const U8* data, int& bufferOffset );
    bool  SerializeOut( U8* data, int& bufferOffset ) const;
@@ -18,6 +23,7 @@ public:
    U32         gameInstanceId;// used to filter game packets
    bool        isGameServer;
    bool        isController;
+   bool        isGateway;
 };
 
 ///////////////////////////////////////////////////////////////

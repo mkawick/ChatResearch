@@ -12,8 +12,7 @@ using namespace std;
 ///////////////////////////////////////////////////////////////////
 
 DiplodocusGame::DiplodocusGame( const string& serverName, U32 serverId ): Diplodocus< KhaanGame >( serverName, serverId, ServerType_GameInstance ),
-                  m_callbacks( NULL ),
-                  m_connectionIdGateway( 0 )
+                  m_callbacks( NULL )
 {
 }
 
@@ -38,7 +37,7 @@ void     DiplodocusGame::ClientConnectionFinishedAdding( KhaanGame* khaan )
 void     DiplodocusGame::ServerWasIdentified( KhaanGame* khaan )
 {
    BasePacket* packet = NULL;
-   PackageForServerIdentification( m_serverName, m_serverId, m_isGame, m_isControllerApp, true, &packet );
+   PackageForServerIdentification( m_serverName, m_serverId, m_isGame, m_isControllerApp, true, m_isGateway, &packet );
    khaan->AddOutputChainData( packet, 0 );
    m_serversNeedingUpdate.push_back( khaan->GetServerId() );
 }
@@ -47,12 +46,14 @@ void     DiplodocusGame::ServerWasIdentified( KhaanGame* khaan )
 
 //---------------------------------------------------------------
 
-void  DiplodocusGame::HandleCommandFromGateway( BasePacket* packet, U32 connectionId )
+bool  DiplodocusGame::HandleCommandFromGateway( BasePacket* packet, U32 connectionId )
 {
    Threading::MutexLock locker( m_mutex );
 
    // delete connections, etc.
    assert( 0 );// incomplete
+
+   return true;
 }
 
 //---------------------------------------------------------------
@@ -62,8 +63,7 @@ bool   DiplodocusGame::AddInputChainData( BasePacket* packet, U32 connectionId )
 {
    if( packet->packetType == PacketType_GatewayInformation )
    {
-      HandleCommandFromGateway( packet, connectionId );
-      return false;
+      return HandleCommandFromGateway( packet, connectionId );
    }
 
    if( packet->packetType == PacketType_ServerJobWrapper )
@@ -275,6 +275,7 @@ int   DiplodocusGame::CallbackFunction()
          }
       }
    }
+   UpdateAllConnections();
 
    return 1;
 }

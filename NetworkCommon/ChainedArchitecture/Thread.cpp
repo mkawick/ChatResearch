@@ -116,8 +116,10 @@ void  CAbstractThread::Cleanup()
    
 #ifndef WIN32
    if( m_thread )
-   void* result;
-   pthread_join( m_thread, &result );
+   {
+      void* result;
+      pthread_join( m_thread, &result );
+   }
 #endif
 }
 

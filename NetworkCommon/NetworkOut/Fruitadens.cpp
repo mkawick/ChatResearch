@@ -1,6 +1,8 @@
 // Fruitadens.cpp
 
 #include "../ServerConstants.h"
+#include "../Serialize.h"
+#include "../Utils/Utils.h"
 
 #include <iostream>
 
@@ -13,6 +15,7 @@ using namespace std;
 #include "../Packets/BasePacket.h"
 #include "../Packets/ServerToServerPacket.h"
 #include "../Packets/PacketFactory.h"
+
 
 
 //-----------------------------------------------------------------------------
@@ -32,10 +35,10 @@ Fruitadens :: Fruitadens( const char* name ) : CChainedThread( true, 200 ),
 
 //-----------------------------------------------------------------------------
 
-void  Fruitadens :: NotifyEndpointOfIdentification( const string& serverName, U32 serverId, bool isGameServer, bool isController, bool requiresWrapper )
+void  Fruitadens :: NotifyEndpointOfIdentification( const string& serverName, U32 serverId, bool isGameServer, bool isController, bool requiresWrapper, bool isGateway )
 {
    BasePacket* packet = NULL;
-   PackageForServerIdentification( serverName, serverId, isGameServer, isController, requiresWrapper, &packet );
+   PackageForServerIdentification( serverName, serverId, isGameServer, isController, requiresWrapper, isGateway, &packet );
    AddOutputChainData( packet, 0 );
 }
 
@@ -104,7 +107,7 @@ bool  Fruitadens :: SetupConnection( const char* serverName, int port )
 
    m_ipAddress.sin_family = AF_INET;
    m_ipAddress.sin_port = htons( port );
-   m_ipAddress.sin_addr.s_addr = *(unsigned long*) host_entry->h_addr;
+   m_ipAddress.sin_addr.s_addr = static_cast< U32 >( *(unsigned long*) host_entry->h_addr );
 
    AttemptConnection();
 
@@ -190,7 +193,7 @@ int   Fruitadens :: ProcessInputFunction()
 
    while( 1 )
    {
-      int numBytes = recv( m_clientSocket, (char*) buffer, MaxBufferSize, NULL );
+      int numBytes = static_cast< int >( recv( m_clientSocket, (char*) buffer, MaxBufferSize, NULL ) );
 	   if( numBytes == SOCKET_ERROR)
 	   {
 #if PLATFORM == PLATFORM_WINDOWS
@@ -322,7 +325,7 @@ bool  Fruitadens :: SendPacket( const U8* buffer, int length )
 {
    if( m_isConnected && ( length > 0 ) )
    {
-      int nBytes = send( m_clientSocket, reinterpret_cast<const char*>( buffer ), length, 0 );
+      int nBytes = static_cast< int >( send( m_clientSocket, reinterpret_cast<const char*>( buffer ), length, 0 ) );
       if( nBytes == SOCKET_ERROR || nBytes < length )
       {
          Log( "Client: It wont go through sir!!" );

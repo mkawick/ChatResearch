@@ -8,14 +8,18 @@
 using namespace std;
 
 #include <ctime>
+#include <time.h>
 #include <boost/functional/hash.hpp>
 #include <boost/algorithm/string/trim.hpp>
 #include <boost/algorithm/string.hpp>
+//#include <boost/chrono/.hpp>
 
 
 #if PLATFORM == PLATFORM_WINDOWS
    #include <windows.h>
    #include <mmsystem.h>
+#else
+#include <sys/time.h>
 #endif
 #pragma warning (disable:4996)
 
@@ -133,7 +137,17 @@ U32            GetCurrentMilliseconds()
 #if PLATFORM == PLATFORM_WINDOWS
    return timeGetTime();
 #else
-   return 0;
+   struct timeval now;
+   int rv = gettimeofday( &now, 0 );
+   if( rv ) return rv;/// some kind of error
+   
+   return static_cast< U32 >( now.tv_sec * 1000 + now.tv_usec / 1000000 );
+   
+   /*timespec ts;
+   
+   clock_gettime( CLOCK_PROCESS_CPUTIME_ID, &ts );
+   
+   return static_cast<U32>( ts.tv_sec * 1000 + ts.tv_nsec / 1000000 );*/
 #endif
 }
 //-------------------------------------------------------------------------
@@ -174,3 +188,25 @@ std::string    Reduce( const std::string& str,
 }
 
 //-------------------------------------------------------------------------
+
+#if PLATFORM != PLATFORM_WINDOWS
+int kbhit()
+{
+   struct timeval tv;
+   fd_set fd;
+   
+   tv.tv_sec = 0;
+   tv.tv_usec = 0;
+   FD_ZERO( &fd );
+   FD_SET( 0, &fd );
+   
+   if( -1 != select( 1, &fd, NULL, NULL, &tv ))
+   {
+      if( FD_ISSET( 0, &fd ))
+      {
+         return 1;
+      }
+   }
+   return 0;
+}
+#endif

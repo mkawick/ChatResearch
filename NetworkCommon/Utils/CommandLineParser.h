@@ -27,7 +27,7 @@ public:
    bool  FindValue( const string& key ) const;
    bool  IsKeywordFirst( const string& key ) const;
 
-   int   GetNumKeyValuePairs() const { return m_values.size(); }
+   int   GetNumKeyValuePairs() const { return static_cast<int> ( m_values.size() ); }
    bool  GetKeyValue( int index, string& key, string& value ) const;
    bool  GetKeyValue( int index, string& key, int& value ) const;
 

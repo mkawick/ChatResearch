@@ -33,12 +33,14 @@ void     DiplodocusGame::ClientConnectionFinishedAdding( KhaanGame* khaan )
 
 //---------------------------------------------------------------
 
-void  DiplodocusGame::HandleCommandFromGateway( BasePacket* packet, U32 connectionId )
+bool  DiplodocusGame::HandleCommandFromGateway( BasePacket* packet, U32 connectionId )
 {
    Threading::MutexLock locker( m_mutex );
 
    // delete connections, etc.
    assert( 0 );// incomplete
+
+   return false;
 }
 
 //---------------------------------------------------------------

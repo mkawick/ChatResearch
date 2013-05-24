@@ -15,10 +15,10 @@ CChainedThread<Type>::CChainedThread( bool needsThreadProtection, int sleepTime,
 
 //----------------------------------------------------------------
 
-template <typename Type> 
-void  CChainedThread<Type>::CallbackOnCleanup()
+template< typename Type >
+void  CChainedThread< Type >::CallbackOnCleanup()
 {
-   CleanupAllChainDependencies();
+   ChainedInterface< Type > :: CleanupAllChainDependencies();
    CAbstractThread::CallbackOnCleanup();
 }
 
@@ -27,17 +27,17 @@ void  CChainedThread<Type>::CallbackOnCleanup()
 template <typename Type> 
 int       CChainedThread<Type>::CallbackFunction()
 {
-   ProcessEvents();
+   ChainedInterface< Type >::ProcessEvents();
 
-   m_inputChainListMutex.lock();
+   ChainedInterface< Type >::m_inputChainListMutex.lock();
    ProcessInputFunction();
-   m_inputChainListMutex.unlock();
+   ChainedInterface< Type >::m_inputChainListMutex.unlock();
 
    //-------------------------------
 
-   m_outputChainListMutex.lock();
+   ChainedInterface< Type >::m_outputChainListMutex.lock();
    ProcessOutputFunction();
-   m_outputChainListMutex.unlock();
+   ChainedInterface< Type >::m_outputChainListMutex.unlock();
 
    return 0;
 }

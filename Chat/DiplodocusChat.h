@@ -58,7 +58,7 @@ private:
    void     HandleUserDisconnection( PacketPrepareForUserLogout* logoutPacket );
 
    void     CleanupOldConnections();
-   void     HandleCommandFromGateway( BasePacket* packet, U32 connectionId );
+   bool     HandleCommandFromGateway( BasePacket* packet, U32 connectionId );
    bool     HandlePacketFromOtherServer( BasePacket* packet, U32 connectionId );
    bool     HandlePacketToOtherServer( BasePacket* packet, U32 connectionId );
    

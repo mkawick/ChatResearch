@@ -1,6 +1,6 @@
 // Utils.h
 
-#pragma once;
+#pragma once
 
 #include "../DataTypes.h"
 #include <string>
@@ -27,3 +27,10 @@ std::string    Trim(const std::string& str,
 std::string    Reduce(const std::string& str,
                    const std::string& fill = " ",
                    const std::string& whitespace = " \t");
+
+#if PLATFORM != PLATFORM_WINDOWS
+int kbhit();
+#define  SOCKET_ERROR   -1
+#define closesocket  close
+#endif
+

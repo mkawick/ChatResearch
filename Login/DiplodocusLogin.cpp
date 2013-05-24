@@ -9,6 +9,7 @@
 
 DiplodocusLogin::DiplodocusLogin( const string& serverName, U32 serverId )  : Diplodocus< KhaanLogin >( serverName, serverId, ServerType_Login ), m_updateGatewayConnections( false )
 {
+   SetSleepTime( 30 );
 }
 
 //---------------------------------------------------------------

@@ -1,29 +1,36 @@
 #pragma once
 // KhaanGame.h
 
-#include "../NetworkCommon/NetworkIn/Khaan.h"
+#include "../NetworkCommon/NetworkIn/KhaanServerToServer.h"
+#include "../NetworkCommon/ServerConstants.h"
 
 class PacketServerIdentifier;
 
+struct TempStorage
+{
+   U8 data[ MaxBufferSize ];
+   int size;
+};
+
 ///////////////////////////////////////////////////////////////
 
-class KhaanGame : public Khaan
+class KhaanGame : public KhaanServerToServer
 {
 public:
-   KhaanGame() : Khaan( 0, NULL ), m_isGameServer( false ), m_isController( 0 )  {}
-   KhaanGame( int id, bufferevent* be ) : Khaan( id, be ), m_isGameServer( false ), m_isController( 0 ) {}
+   KhaanGame() : KhaanServerToServer(), m_mainInterfacePtr( NULL )  {}
+   KhaanGame( int id, bufferevent* be ) : KhaanServerToServer( id, be ), m_mainInterfacePtr( NULL ) {}
 
-   bool	OnDataReceived( unsigned char* data, int length );
-
-   U32   GetServerId() const { return m_serverId; }
-
+   bool  OnDataReceived( unsigned char* data, int length );
 private:
-   void  SaveOffServerIdentification( const PacketServerIdentifier* packet );
 
-   string      m_serverName;
-   U32         m_serverId;
-   bool        m_isGameServer;
-   bool        m_isController;
+   void  UpdateInwardPacketList();
+   bool  PassPacketOn( BasePacket* serverId, U32 connectionId );
+
+   void  SetupMainInterfacePointer();
+
+   ChainedInterface* m_mainInterfacePtr;
+   deque< TempStorage* > m_toBeProcessed;
+   Threading::Mutex m_mutex;
 };
 
 ///////////////////////////////////////////////////////////////

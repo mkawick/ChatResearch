@@ -277,6 +277,14 @@
 					RelativePath="..\NetworkCommon\NetworkIn\Khaan.h"
 					>
 				</File>
+				<File
+					RelativePath="..\NetworkCommon\NetworkIn\KhaanServerToServer.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\NetworkCommon\NetworkIn\KhaanServerToServer.h"
+					>
+				</File>
 			</Filter>
 			<Filter
 				Name="NetworkOut"

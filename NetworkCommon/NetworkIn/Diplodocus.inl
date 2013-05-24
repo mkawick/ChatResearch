@@ -31,7 +31,7 @@ bool        Diplodocus< InputChain, OutputChain >::InitializeNetworking()
    }
 
    if ( InitializeSockets() == false ) {
-      cout << "Socket startup failed with error " << endl;
+      std::cout << "Socket startup failed with error " << endl;
       return false;
    }
 
@@ -168,7 +168,7 @@ void  Diplodocus< InputChain, OutputChain >::NotifyFinishedRemoving( ChainedInte
    ClientMapIterator it = m_connectedClients.find( id );
    if( it == m_connectedClients.end() )
    {
-      it = m_connectedClients.find( connection->GetConnectionId() );
+      it = m_connectedClients.find( connection->GetChainedId() );
    }
       
    if( it != m_connectedClients.end() )
@@ -233,7 +233,9 @@ Diplodocus< InputChain, OutputChain >::Diplodocus( string serverName, U32 server
                                     m_listeningPort( 0 ),
                                     m_serverName( serverName ), 
                                     m_serverId( serverId ),
-                                    m_serverType( type )
+                                    m_serverType( type ),
+                                    m_isGateway( false ),
+                                    m_connectionIdGateway( 0 )
 {
 }
 
@@ -266,7 +268,6 @@ void     Diplodocus< InputChain, OutputChain >::SetupListening( int port )
 
    if( InitializeNetworking() == true )
    {
-      bool success = true;
       if( SetupListeningSocket() == false )
       {
          assert( 0 );
@@ -289,7 +290,7 @@ template< typename InputChain, typename OutputChain >
 void	Diplodocus< InputChain, OutputChain >::AddClientConnection( InputChainType* client )
 {
    LockMutex();
-   m_connectedClients.insert(  ClientLookup ( client->GetConnectionId(), client ) );
+   m_connectedClients.insert(  ClientLookup ( client->GetChainedId(), client ) );
    AddInputChain( client );
    UnlockMutex();
 
@@ -305,7 +306,7 @@ template< typename InputChain, typename OutputChain >
 bool	Diplodocus< InputChain, OutputChain >::FindKhaan( const string& connectionName, InputChainType** connection )
 {
 	*connection = NULL;
-	list <Khaan*>::iterator it = KhaanList.begin();
+	/*list <Khaan*>::iterator it = KhaanList.begin();
 	while( it != KhaanList.end() )
 	{
 		if( (*it )->GetName() == connectionName )
@@ -314,7 +315,7 @@ bool	Diplodocus< InputChain, OutputChain >::FindKhaan( const string& connectionN
 			return true;
 		}
 		it++;
-	}
+	}*/
 	return false;
 }
 
@@ -362,9 +363,9 @@ void  Diplodocus< InputChain, OutputChain >::MarkAllConnectionsAsNeedingUpdate( 
    {
       ChainLink& chainedInput = *itInputs++;
 	   ChainedInterface* interfacePtr = chainedInput.m_interface;
-      KhaanChat* khaan = static_cast< KhaanChat* >( interfacePtr );
+      Khaan* khaan = static_cast< Khaan* >( interfacePtr );
 
-      m_clientsNeedingUpdate.push_back( khaan->GetConnectionId() );
+      m_clientsNeedingUpdate.push_back( khaan->GetChainedId() );
    }
 
    UnlockMutex();
@@ -495,7 +496,7 @@ void     Diplodocus< InputChain, OutputChain >::SendServerIdentification()
 	      ChainedInterface* interfacePtr = chainedOutput.m_interface;
 
          BasePacket* packet = NULL;
-         PackageForServerIdentification( m_serverName, m_serverId, m_isGame, m_isControllerApp, true, &packet );
+         PackageForServerIdentification( m_serverName, m_serverId, m_isGame, m_isControllerApp, true, m_isGateway, &packet );
          bool  accepted = interfacePtr->AddOutputChainData( packet, m_chainId );
 
          if( accepted == false )

@@ -4,6 +4,8 @@
 
 #include "../ServerType.h"
 #include "../datatypes.h"
+#include "../ServerConstants.h"
+#include "../Serialize.h"
 #include <string>
 #include <vector>
 #include <list>
@@ -86,8 +88,8 @@ template < typename type = string >
 class SerializedKeyValueVector
 {
 public:
-   typedef typename KeyValueSerializer< type >           KeyValue;
-   typedef typename vector< KeyValue >                   KeyValueVector;
+   typedef  KeyValueSerializer< type >           KeyValue;
+   typedef  vector< KeyValue >                   KeyValueVector;
    typedef typename KeyValueVector::iterator             KeyValueVectorIterator;
    typedef typename KeyValueVector::iterator             KVIterator;
    typedef typename KeyValueVector::const_iterator       const_KVIterator;
@@ -102,7 +104,7 @@ public:
    // helper functions
    void  insert( const string& key, const type& obj ) { dataList.push_back( KeyValue( key, obj ) ); }
 
-   int                  size() const { return dataList.size(); }
+   int                  size() const { return static_cast< int >( dataList.size() ); }
    const_KVIterator     begin() const { return dataList.begin(); }
    KVIterator           begin() { return dataList.begin(); }
    const_KVIterator     end() const { return dataList.end(); }
@@ -126,7 +128,7 @@ public:
 
    // helper functions
    void           push_back( type value ) { m_data.push_back( value ); }
-   int            size() const { return m_data.size(); }
+   int            size() const { return static_cast< int >( m_data.size() ); }
    const type&    operator[]( int index ) { return m_data[ index ]; }
 
 protected:
@@ -511,4 +513,4 @@ public:
 ///////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////
 
-bool  PackageForServerIdentification( const string& serverName, U32 serverId, bool isGameServer, bool isController, bool requiresWrapper, BasePacket** packet );
+bool  PackageForServerIdentification( const string& serverName, U32 serverId, bool isGameServer, bool isController, bool requiresWrapper, bool isGateway, BasePacket** packet );

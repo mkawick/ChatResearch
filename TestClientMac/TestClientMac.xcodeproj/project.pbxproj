@@ -1,0 +1,376 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 46;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		7044E1BD174ED4E3006EBA76 /* Serialize.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 7044E1B9174ED4E3006EBA76 /* Serialize.cpp */; };
+		7044E1C5174ED758006EBA76 /* libncurses.5.4.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 7044E1C4174ED758006EBA76 /* libncurses.5.4.dylib */; };
+		706D5F84174ED1930092F07C /* TestClientMac.1 in CopyFiles */ = {isa = PBXBuildFile; fileRef = 706D5F83174ED1930092F07C /* TestClientMac.1 */; };
+		706D5F8D174ED1B00092F07C /* FruitadensClientChat.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 706D5F8A174ED1B00092F07C /* FruitadensClientChat.cpp */; };
+		706D5F8E174ED1B00092F07C /* TestClient.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 706D5F8C174ED1B00092F07C /* TestClient.cpp */; };
+		706D5FA3174ED3040092F07C /* Thread.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 706D5F94174ED3040092F07C /* Thread.cpp */; };
+		706D5FA4174ED3040092F07C /* BasePacket.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 706D5F98174ED3040092F07C /* BasePacket.cpp */; };
+		706D5FA5174ED3040092F07C /* ChatPacket.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 706D5F9B174ED3040092F07C /* ChatPacket.cpp */; };
+		706D5FA6174ED3040092F07C /* GamePacket.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 706D5F9D174ED3040092F07C /* GamePacket.cpp */; };
+		706D5FA7174ED3040092F07C /* PacketFactory.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 706D5F9F174ED3040092F07C /* PacketFactory.cpp */; };
+		706D5FA8174ED3040092F07C /* ServerToServerPacket.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 706D5FA1174ED3040092F07C /* ServerToServerPacket.cpp */; };
+		706D5FFC174ED35D0092F07C /* Diplodocus.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 706D5FFB174ED35D0092F07C /* Diplodocus.cpp */; };
+		706D6001174ED36A0092F07C /* Fruitadens.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 706D5FFD174ED36A0092F07C /* Fruitadens.cpp */; };
+		706D6002174ED36A0092F07C /* Pyroraptor.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 706D5FFF174ED36A0092F07C /* Pyroraptor.cpp */; };
+		706D6007174ED37C0092F07C /* CommandLineParser.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 706D6003174ED37C0092F07C /* CommandLineParser.cpp */; };
+		706D6008174ED37C0092F07C /* Utils.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 706D6005174ED37C0092F07C /* Utils.cpp */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		706D5F7C174ED1930092F07C /* CopyFiles */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = /usr/share/man/man1/;
+			dstSubfolderSpec = 0;
+			files = (
+				706D5F84174ED1930092F07C /* TestClientMac.1 in CopyFiles */,
+			);
+			runOnlyForDeploymentPostprocessing = 1;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
+/* Begin PBXFileReference section */
+		7044E1B7174ED4E3006EBA76 /* DataTypes.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = DataTypes.h; path = ../NetworkCommon/DataTypes.h; sourceTree = "<group>"; };
+		7044E1B8174ED4E3006EBA76 /* Platform.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = Platform.h; path = ../NetworkCommon/Platform.h; sourceTree = "<group>"; };
+		7044E1B9174ED4E3006EBA76 /* Serialize.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = Serialize.cpp; path = ../NetworkCommon/Serialize.cpp; sourceTree = "<group>"; };
+		7044E1BA174ED4E3006EBA76 /* Serialize.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = Serialize.h; path = ../NetworkCommon/Serialize.h; sourceTree = "<group>"; };
+		7044E1BB174ED4E3006EBA76 /* ServerConstants.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = ServerConstants.h; path = ../NetworkCommon/ServerConstants.h; sourceTree = "<group>"; };
+		7044E1BC174ED4E3006EBA76 /* ServerType.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = ServerType.h; path = ../NetworkCommon/ServerType.h; sourceTree = "<group>"; };
+		7044E1C4174ED758006EBA76 /* libncurses.5.4.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libncurses.5.4.dylib; path = usr/lib/libncurses.5.4.dylib; sourceTree = SDKROOT; };
+		706D5F7E174ED1930092F07C /* TestClientMac */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = TestClientMac; sourceTree = BUILT_PRODUCTS_DIR; };
+		706D5F83174ED1930092F07C /* TestClientMac.1 */ = {isa = PBXFileReference; lastKnownFileType = text.man; name = TestClientMac.1; path = TestClientMac/TestClientMac.1; sourceTree = "<group>"; };
+		706D5F8A174ED1B00092F07C /* FruitadensClientChat.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = FruitadensClientChat.cpp; path = ../../TestFolderCommon/FruitadensClientChat.cpp; sourceTree = "<group>"; };
+		706D5F8B174ED1B00092F07C /* FruitadensClientChat.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = FruitadensClientChat.h; path = ../../TestFolderCommon/FruitadensClientChat.h; sourceTree = "<group>"; };
+		706D5F8C174ED1B00092F07C /* TestClient.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = TestClient.cpp; path = ../../TestFolderCommon/TestClient.cpp; sourceTree = "<group>"; };
+		706D5F92174ED3040092F07C /* ChainedInterface.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ChainedInterface.h; sourceTree = "<group>"; };
+		706D5F93174ED3040092F07C /* ChainedThread.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ChainedThread.h; sourceTree = "<group>"; };
+		706D5F94174ED3040092F07C /* Thread.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Thread.cpp; sourceTree = "<group>"; };
+		706D5F95174ED3040092F07C /* Thread.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Thread.h; sourceTree = "<group>"; };
+		706D5F96174ED3040092F07C /* Thread.inl */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = Thread.inl; sourceTree = "<group>"; };
+		706D5F98174ED3040092F07C /* BasePacket.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = BasePacket.cpp; sourceTree = "<group>"; };
+		706D5F99174ED3040092F07C /* BasePacket.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = BasePacket.h; sourceTree = "<group>"; };
+		706D5F9A174ED3040092F07C /* BasePacket.inl */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = BasePacket.inl; sourceTree = "<group>"; };
+		706D5F9B174ED3040092F07C /* ChatPacket.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = ChatPacket.cpp; sourceTree = "<group>"; };
+		706D5F9C174ED3040092F07C /* ChatPacket.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ChatPacket.h; sourceTree = "<group>"; };
+		706D5F9D174ED3040092F07C /* GamePacket.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = GamePacket.cpp; sourceTree = "<group>"; };
+		706D5F9E174ED3040092F07C /* GamePacket.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = GamePacket.h; sourceTree = "<group>"; };
+		706D5F9F174ED3040092F07C /* PacketFactory.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = PacketFactory.cpp; sourceTree = "<group>"; };
+		706D5FA0174ED3040092F07C /* PacketFactory.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = PacketFactory.h; sourceTree = "<group>"; };
+		706D5FA1174ED3040092F07C /* ServerToServerPacket.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = ServerToServerPacket.cpp; sourceTree = "<group>"; };
+		706D5FA2174ED3040092F07C /* ServerToServerPacket.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ServerToServerPacket.h; sourceTree = "<group>"; };
+		706D5FFB174ED35D0092F07C /* Diplodocus.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = Diplodocus.cpp; path = ../NetworkCommon/NetworkIn/Diplodocus.cpp; sourceTree = "<group>"; };
+		706D5FFD174ED36A0092F07C /* Fruitadens.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = Fruitadens.cpp; path = ../NetworkCommon/NetworkOut/Fruitadens.cpp; sourceTree = "<group>"; };
+		706D5FFE174ED36A0092F07C /* Fruitadens.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = Fruitadens.h; path = ../NetworkCommon/NetworkOut/Fruitadens.h; sourceTree = "<group>"; };
+		706D5FFF174ED36A0092F07C /* Pyroraptor.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = Pyroraptor.cpp; path = ../NetworkCommon/NetworkOut/Pyroraptor.cpp; sourceTree = "<group>"; };
+		706D6000174ED36A0092F07C /* Pyroraptor.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = Pyroraptor.h; path = ../NetworkCommon/NetworkOut/Pyroraptor.h; sourceTree = "<group>"; };
+		706D6003174ED37C0092F07C /* CommandLineParser.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = CommandLineParser.cpp; path = ../NetworkCommon/Utils/CommandLineParser.cpp; sourceTree = "<group>"; };
+		706D6004174ED37C0092F07C /* CommandLineParser.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = CommandLineParser.h; path = ../NetworkCommon/Utils/CommandLineParser.h; sourceTree = "<group>"; };
+		706D6005174ED37C0092F07C /* Utils.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = Utils.cpp; path = ../NetworkCommon/Utils/Utils.cpp; sourceTree = "<group>"; };
+		706D6006174ED37C0092F07C /* Utils.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = Utils.h; path = ../NetworkCommon/Utils/Utils.h; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		706D5F7B174ED1930092F07C /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				7044E1C5174ED758006EBA76 /* libncurses.5.4.dylib in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		706D5F75174ED1930092F07C = {
+			isa = PBXGroup;
+			children = (
+				7044E1C4174ED758006EBA76 /* libncurses.5.4.dylib */,
+				706D5F90174ED2DE0092F07C /* NetworkCommon */,
+				706D5F8F174ED2BF0092F07C /* Junk */,
+				706D5F80174ED1930092F07C /* TestClientMac */,
+				706D5F7F174ED1930092F07C /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		706D5F7F174ED1930092F07C /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				706D5F7E174ED1930092F07C /* TestClientMac */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		706D5F80174ED1930092F07C /* TestClientMac */ = {
+			isa = PBXGroup;
+			children = (
+				706D5F8A174ED1B00092F07C /* FruitadensClientChat.cpp */,
+				706D5F8B174ED1B00092F07C /* FruitadensClientChat.h */,
+				706D5F8C174ED1B00092F07C /* TestClient.cpp */,
+			);
+			path = TestClientMac;
+			sourceTree = "<group>";
+		};
+		706D5F8F174ED2BF0092F07C /* Junk */ = {
+			isa = PBXGroup;
+			children = (
+				706D5F83174ED1930092F07C /* TestClientMac.1 */,
+			);
+			name = Junk;
+			sourceTree = "<group>";
+		};
+		706D5F90174ED2DE0092F07C /* NetworkCommon */ = {
+			isa = PBXGroup;
+			children = (
+				7044E1B7174ED4E3006EBA76 /* DataTypes.h */,
+				7044E1B8174ED4E3006EBA76 /* Platform.h */,
+				7044E1B9174ED4E3006EBA76 /* Serialize.cpp */,
+				7044E1BA174ED4E3006EBA76 /* Serialize.h */,
+				7044E1BB174ED4E3006EBA76 /* ServerConstants.h */,
+				7044E1BC174ED4E3006EBA76 /* ServerType.h */,
+				706D5FAA174ED32A0092F07C /* NetworkOut */,
+				706D5FA9174ED3240092F07C /* Utils */,
+				706D5F91174ED3040092F07C /* ChainedArchitecture */,
+				706D5F97174ED3040092F07C /* Packets */,
+			);
+			name = NetworkCommon;
+			sourceTree = "<group>";
+		};
+		706D5F91174ED3040092F07C /* ChainedArchitecture */ = {
+			isa = PBXGroup;
+			children = (
+				706D5F92174ED3040092F07C /* ChainedInterface.h */,
+				706D5F93174ED3040092F07C /* ChainedThread.h */,
+				706D5F94174ED3040092F07C /* Thread.cpp */,
+				706D5F95174ED3040092F07C /* Thread.h */,
+				706D5F96174ED3040092F07C /* Thread.inl */,
+			);
+			name = ChainedArchitecture;
+			path = ../NetworkCommon/ChainedArchitecture;
+			sourceTree = "<group>";
+		};
+		706D5F97174ED3040092F07C /* Packets */ = {
+			isa = PBXGroup;
+			children = (
+				706D5F98174ED3040092F07C /* BasePacket.cpp */,
+				706D5F99174ED3040092F07C /* BasePacket.h */,
+				706D5F9A174ED3040092F07C /* BasePacket.inl */,
+				706D5F9B174ED3040092F07C /* ChatPacket.cpp */,
+				706D5F9C174ED3040092F07C /* ChatPacket.h */,
+				706D5F9D174ED3040092F07C /* GamePacket.cpp */,
+				706D5F9E174ED3040092F07C /* GamePacket.h */,
+				706D5F9F174ED3040092F07C /* PacketFactory.cpp */,
+				706D5FA0174ED3040092F07C /* PacketFactory.h */,
+				706D5FA1174ED3040092F07C /* ServerToServerPacket.cpp */,
+				706D5FA2174ED3040092F07C /* ServerToServerPacket.h */,
+			);
+			name = Packets;
+			path = ../NetworkCommon/Packets;
+			sourceTree = "<group>";
+		};
+		706D5FA9174ED3240092F07C /* Utils */ = {
+			isa = PBXGroup;
+			children = (
+				706D6003174ED37C0092F07C /* CommandLineParser.cpp */,
+				706D6004174ED37C0092F07C /* CommandLineParser.h */,
+				706D6005174ED37C0092F07C /* Utils.cpp */,
+				706D6006174ED37C0092F07C /* Utils.h */,
+			);
+			name = Utils;
+			sourceTree = "<group>";
+		};
+		706D5FAA174ED32A0092F07C /* NetworkOut */ = {
+			isa = PBXGroup;
+			children = (
+				706D5FFD174ED36A0092F07C /* Fruitadens.cpp */,
+				706D5FFE174ED36A0092F07C /* Fruitadens.h */,
+				706D5FFF174ED36A0092F07C /* Pyroraptor.cpp */,
+				706D6000174ED36A0092F07C /* Pyroraptor.h */,
+				706D5FFB174ED35D0092F07C /* Diplodocus.cpp */,
+			);
+			name = NetworkOut;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		706D5F7D174ED1930092F07C /* TestClientMac */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 706D5F87174ED1930092F07C /* Build configuration list for PBXNativeTarget "TestClientMac" */;
+			buildPhases = (
+				706D5F7A174ED1930092F07C /* Sources */,
+				706D5F7B174ED1930092F07C /* Frameworks */,
+				706D5F7C174ED1930092F07C /* CopyFiles */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = TestClientMac;
+			productName = TestClientMac;
+			productReference = 706D5F7E174ED1930092F07C /* TestClientMac */;
+			productType = "com.apple.product-type.tool";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		706D5F76174ED1930092F07C /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				LastUpgradeCheck = 0460;
+				ORGANIZATIONNAME = "Mickey Kawick";
+			};
+			buildConfigurationList = 706D5F79174ED1930092F07C /* Build configuration list for PBXProject "TestClientMac" */;
+			compatibilityVersion = "Xcode 3.2";
+			developmentRegion = English;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+			);
+			mainGroup = 706D5F75174ED1930092F07C;
+			productRefGroup = 706D5F7F174ED1930092F07C /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				706D5F7D174ED1930092F07C /* TestClientMac */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXSourcesBuildPhase section */
+		706D5F7A174ED1930092F07C /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				706D5F8D174ED1B00092F07C /* FruitadensClientChat.cpp in Sources */,
+				706D5F8E174ED1B00092F07C /* TestClient.cpp in Sources */,
+				706D5FA3174ED3040092F07C /* Thread.cpp in Sources */,
+				706D5FA4174ED3040092F07C /* BasePacket.cpp in Sources */,
+				706D5FA5174ED3040092F07C /* ChatPacket.cpp in Sources */,
+				706D5FA6174ED3040092F07C /* GamePacket.cpp in Sources */,
+				706D5FA7174ED3040092F07C /* PacketFactory.cpp in Sources */,
+				706D5FA8174ED3040092F07C /* ServerToServerPacket.cpp in Sources */,
+				706D5FFC174ED35D0092F07C /* Diplodocus.cpp in Sources */,
+				706D6001174ED36A0092F07C /* Fruitadens.cpp in Sources */,
+				706D6002174ED36A0092F07C /* Pyroraptor.cpp in Sources */,
+				706D6007174ED37C0092F07C /* CommandLineParser.cpp in Sources */,
+				706D6008174ED37C0092F07C /* Utils.cpp in Sources */,
+				7044E1BD174ED4E3006EBA76 /* Serialize.cpp in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		706D5F85174ED1930092F07C /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ARCHS = "$(ARCHS_STANDARD_64_BIT)";
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++0x";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				GCC_C_LANGUAGE_STANDARD = gnu99;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_ENABLE_OBJC_EXCEPTIONS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				HEADER_SEARCH_PATHS = (
+					/Users/mickey/develop/boost,
+					"/Users/mickey/develop/libevent/**",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 10.8;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = macosx;
+			};
+			name = Debug;
+		};
+		706D5F86174ED1930092F07C /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ARCHS = "$(ARCHS_STANDARD_64_BIT)";
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++0x";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = YES;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				GCC_C_LANGUAGE_STANDARD = gnu99;
+				GCC_ENABLE_OBJC_EXCEPTIONS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				HEADER_SEARCH_PATHS = (
+					/Users/mickey/develop/boost,
+					"/Users/mickey/develop/libevent/**",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 10.8;
+				SDKROOT = macosx;
+			};
+			name = Release;
+		};
+		706D5F88174ED1930092F07C /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = Debug;
+		};
+		706D5F89174ED1930092F07C /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		706D5F79174ED1930092F07C /* Build configuration list for PBXProject "TestClientMac" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				706D5F85174ED1930092F07C /* Debug */,
+				706D5F86174ED1930092F07C /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		706D5F87174ED1930092F07C /* Build configuration list for PBXNativeTarget "TestClientMac" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				706D5F88174ED1930092F07C /* Debug */,
+				706D5F89174ED1930092F07C /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = 706D5F76174ED1930092F07C /* Project object */;
+}
