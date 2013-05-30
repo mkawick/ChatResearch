@@ -53,46 +53,6 @@ void   Khaan ::PreCleanup()
 
 //-----------------------------------------------------------------------------
 
-bool	Khaan :: operator == ( const Khaan& RHS )
-{
-	if( m_socketId == RHS.m_socketId && 
-		m_bufferEvent == RHS.m_bufferEvent && 
-		RHS.m_bufferEvent != NULL)
-	{
-		return true;
-	}
-	return false;
-}
-
-//-----------------------------------------------------------------------------
-
-bool	Khaan :: operator == ( const Khaan* RHS )
-{
-	if( m_socketId == RHS->m_socketId && 
-		m_bufferEvent == RHS->m_bufferEvent && 
-		RHS->m_bufferEvent != NULL )
-	{
-		return true;
-	}
-	return false;
-}
-
-//-----------------------------------------------------------------------------
-
-bool	Khaan :: operator != ( const Khaan& RHS )
-{
-	return !operator == ( RHS );
-}
-
-//-----------------------------------------------------------------------------
-
-bool	Khaan :: operator != ( const Khaan* RHS )
-{
-	return !operator == ( RHS );
-}
-
-//-----------------------------------------------------------------------------
-
 void	Khaan :: SetIPAddress( const sockaddr_in& addr )
 {
 	m_ipAddress = addr;
@@ -144,6 +104,9 @@ bool	Khaan :: Update()
 
 void	Khaan :: UpdateInwardPacketList()
 {
+   if( m_packetsIn.size() == 0 )
+      return;
+
    int numOutputs = m_listOfOutputs.size();
    if( numOutputs > 1 )
    {
@@ -172,8 +135,11 @@ void	Khaan :: UpdateInwardPacketList()
 
 void	Khaan :: UpdateOutwardPacketList()
 {
+   if( m_packetsOut.size() == 0 )
+      return;
+
+   int length = 0;
    int bufferOffset = 0;
-   int testBufferOffset = 0;
 
    U8 buffer[ MaxBufferSize ];
 
@@ -182,12 +148,12 @@ void	Khaan :: UpdateOutwardPacketList()
    for( int i=0; i< num; i++ )
    {
       BasePacket* packet = m_packetsOut.front();
-      packet->SerializeOut( buffer, testBufferOffset ); 
-      if( testBufferOffset < MaxBufferSize - 256 )// do not write past the end
+      packet->SerializeOut( buffer, bufferOffset ); 
+      if( bufferOffset < MaxBufferSize - 256 )// do not write past the end
       {
          delete packet;
          m_packetsOut.pop_front();
-         bufferOffset = testBufferOffset;
+         length = bufferOffset;
       }
       else
       {
@@ -195,15 +161,17 @@ void	Khaan :: UpdateOutwardPacketList()
       }
    }
 
-   if( bufferOffset > 0 )
+   if( length > 0 )
    {
       static int numWrites = 0;
       numWrites ++;
       static int numBytes = 0;
-      numBytes += bufferOffset;
+      numBytes += length;
       
-      int result = send( m_socketId, (const char* )buffer, bufferOffset, 0 );
-
+      // I cannot get the socket to write the first time... it alsways writes the second time and after.. 20 hours of research later...
+      int result = send( m_socketId, (const char* )buffer, length, 0 );
+      //struct evbuffer* outputBuffer = bufferevent_get_output( GetBufferEvent() );
+     /// int result = evbuffer_add( outputBuffer, buffer, length );
    }
 }
 
@@ -226,9 +194,9 @@ bool Khaan :: AddOutputChainData( BasePacket* packet, U32 filingData )
 
 //-----------------------------------------------------------------------------
 
-static void  DataWritten(struct bufferevent *bev, void *user_data) {
+void  Khaan :: OnDataWritten( struct bufferevent *bev, void *user_data ) 
+{
    struct evbuffer *output = bufferevent_get_output(bev);
-
    //output->open();
     /* if (evbuffer_get_length(output) == 0) {
          printf("flushed answer\n");
@@ -240,8 +208,11 @@ static void  DataWritten(struct bufferevent *bev, void *user_data) {
 
 void     Khaan :: RegisterToReceiveNetworkTraffic()
 {
-   bufferevent_setcb( GetBufferEvent(), Khaan::DataAvailable, DataWritten, 
-                                       Khaan::HandleSocketError, this );
+   bufferevent_setcb( GetBufferEvent(), 
+                      OnDataAvailable, 
+                      OnDataWritten, 
+                      OnSocketError, 
+                      this );
 
    // We have to enable it before our callbacks will be called. 
    bufferevent_enable( GetBufferEvent(), EV_READ | EV_WRITE );
@@ -258,25 +229,26 @@ void     Khaan :: RegisterToReceiveNetworkTraffic()
 //---------------------------------------------------------------
 
 // Called by libevent when there is data to read.
-void     Khaan :: DataAvailable( struct bufferevent* bufferEventObj, void* arg )
+void     Khaan :: OnDataAvailable( struct bufferevent* bufferEventObj, void* arg )
 {
    const U32   MaxBufferSize = 12*1024;// allowing for massive, reads that should never happen
-   Khaan*   This = (Khaan*) arg;
+   
+   Khaan*      This = (Khaan*) arg;
    U8          data[ MaxBufferSize ];
-   size_t      numBytesreceived;
+   size_t      numBytesReceived;
 
    /* Read 8k at a time and send it to all connected clients. */
    while( 1 )
    {
-      numBytesreceived = bufferevent_read( bufferEventObj, data, sizeof( data ) );
-      if( numBytesreceived <= 0 ) // nothing to send
+      numBytesReceived = bufferevent_read( bufferEventObj, data, sizeof( data ) );
+      if( numBytesReceived <= 0 ) // nothing to send
       {
          break;
       }
 
       if( This )
       {
-         This->OnDataReceived( data, numBytesreceived );
+         This->OnDataReceived( data, numBytesReceived );
       }
    }
 }
@@ -285,16 +257,16 @@ void     Khaan :: DataAvailable( struct bufferevent* bufferEventObj, void* arg )
 
 void     Khaan :: FlushReadBuffer()
 {
-   bufferevent_flush( m_bufferEvent, EV_READ, BEV_FINISHED );
+   bufferevent_flush( GetBufferEvent(), EV_READ, BEV_FINISHED );
 }
 
 //---------------------------------------------------------------
 
 void     Khaan :: CloseConnection()
 {
-   if( m_bufferEvent )
+   if( GetBufferEvent() )
    {
-      bufferevent_free( m_bufferEvent );
+      bufferevent_free( GetBufferEvent() );
       Cleanup();
    }
 }
@@ -302,7 +274,7 @@ void     Khaan :: CloseConnection()
 //---------------------------------------------------------------
 
 // Called by libevent when there is an error on the underlying socket descriptor.
-void	   Khaan::HandleSocketError( struct bufferevent* bufferEventObj, short events, void* context )
+void	   Khaan::OnSocketError( struct bufferevent* bufferEventObj, short events, void* context )
 {
    Khaan* khaan = (Khaan*) context;
 
@@ -332,6 +304,8 @@ void    Khaan :: Cleanup()
    // flush all pending packets
    ClearAllPacketsIn();
    ClearAllPacketsOut();
+   //bufferevent_free( GetBufferEvent() );
+   //m_bufferEvent = NULL;
 }
 
 //---------------------------------------------------------------

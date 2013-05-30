@@ -197,6 +197,29 @@ bool  GameFramework::InformClientWhoThisServerIs( U32 connectionId )
 
 //-----------------------------------------------------
 
+void     GameFramework::AddTimer( U32 timerId, U32 callbackTimeMs ) // timers must be unique
+{
+   map< U32, TimerInfo >:: iterator it = m_timers.find( timerId );
+   if( it != m_timers.end() )
+   {
+      assert( 0 ); // duplicate timer ids are not allowed
+   }
+
+   U32 FifteenMinutes =15*60*1000;
+   if( callbackTimeMs < 10 || callbackTimeMs > FifteenMinutes ) 
+   {
+      assert( 0 ); // timings outside of a good range.
+   }
+
+   TimerInfo timer;
+   timer.scheduleTimeMs = callbackTimeMs;
+   timer.timerId = timerId;
+   timer.lastTimeMs = 0;
+   m_timers.insert( pair< U32, TimerInfo >( timerId, timer ) );
+}
+
+//-----------------------------------------------------
+
 bool  GameFramework::Run()
 {
    Deltadromeus* delta = new Deltadromeus;
@@ -221,6 +244,16 @@ bool  GameFramework::Run()
    m_connectionManager->SetupListening( m_gatewayListenPort );
    m_connectionManager->SetAsGame();
    m_connectionManager->RegisterCallbacks( m_callbacksObject );
+
+   // copy all timers
+   map< U32, TimerInfo >::const_iterator it = m_timers.begin();
+   while( it != m_timers.end() )
+   {
+      const pair< U32, TimerInfo >& timer = *it++;
+      m_connectionManager->AddTimer( timer.second.timerId, timer.second.scheduleTimeMs );
+   }
+
+   m_timers.clear();
 
    string nameOfChatServerConnection = m_serverName;
    nameOfChatServerConnection += " to chat";

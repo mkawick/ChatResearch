@@ -63,13 +63,6 @@ public:
 	const sockaddr_in&	GetIPAddress() const { return m_ipAddress; }
 	
 	//-----------------------------------------------
-	
-	bool	operator == ( const Khaan& RHS );
-	bool	operator == ( const Khaan* RHS );
-	bool	operator != ( const Khaan& RHS );
-	bool	operator != ( const Khaan* RHS );
-
-	//-----------------------------------------------
 
    bool           Update();
 
@@ -88,8 +81,9 @@ public:
    static void    SignalledUpdate( evutil_socket_t fd, short what, void *arg );
 protected:
    
-   static void    DataAvailable( struct bufferevent* bev, void* arg );
-   static void	   HandleSocketError( struct bufferevent* bev, short what, void* arg );
+   static void    OnDataAvailable( struct bufferevent* bev, void* This );
+   static void	   OnSocketError( struct bufferevent* bev, short what, void* This );
+   static void    OnDataWritten( struct bufferevent *bev, void *This );
    void           FlushReadBuffer();
    void           CloseConnection();
 

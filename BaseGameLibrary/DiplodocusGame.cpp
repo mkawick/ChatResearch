@@ -18,6 +18,22 @@ DiplodocusGame::DiplodocusGame( const string& serverName, U32 serverId ): Diplod
 
 //---------------------------------------------------------------
 
+void     DiplodocusGame::AddTimer( U32 timerId, U32 callbackTimeMs )
+{
+   TimerInfo timer;
+   timer.scheduleTimeMs = callbackTimeMs;
+   timer.timerId = timerId;
+   timer.lastTimeMs = GetCurrentMilliseconds();
+
+   m_timers.push_back( timer );
+   if( GetSleepTime() > static_cast< int >( callbackTimeMs ) )
+   {
+      SetSleepTime( callbackTimeMs ); // never less granularity than the smallest
+   }
+}
+
+//---------------------------------------------------------------
+
 void     DiplodocusGame::ClientConnectionIsAboutToRemove( KhaanGame* khaan )
 {
    cout << "Gateway has disconnected" << endl;
@@ -252,6 +268,28 @@ void	DiplodocusGame::UpdateAllConnections()
    UnlockMutex();
 }
 
+
+//---------------------------------------------------------------
+
+void     DiplodocusGame::UpdateAllTimers()
+{
+   if( m_timers.size() == 0 || m_callbacks == NULL )
+      return;
+
+   U32 currentTimeMs = GetCurrentMilliseconds();
+
+   list< TimerInfo >:: iterator it = m_timers.begin();
+   while( it != m_timers.end() )
+   {
+      TimerInfo& timer = *it++;
+      if( timer.lastTimeMs < (currentTimeMs - timer.scheduleTimeMs ) )
+      {
+         m_callbacks->TimerCallback( timer.timerId );
+         timer.lastTimeMs = currentTimeMs;
+      }
+   }
+}
+
 //---------------------------------------------------------------
 
 int   DiplodocusGame::CallbackFunction()
@@ -276,6 +314,7 @@ int   DiplodocusGame::CallbackFunction()
       }
    }
    UpdateAllConnections();
+   UpdateAllTimers();
 
    return 1;
 }

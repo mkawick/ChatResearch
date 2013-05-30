@@ -35,6 +35,8 @@ public:
 
    virtual bool   UserConfirmedToOwnThisProduct( U32 connectionId, bool isConfirmed ) = 0;
 
+   virtual bool   TimerCallback( U32 timerId ) = 0;
+
    //virtual bool   DbQueryComplete( int queryType, char* result, bool success );
    
 protected:

@@ -14,8 +14,11 @@
 #include "KhaanGame.h"
 #include "GameCallbacks.h"
 #include "../NetworkCommon/Packets/GamePacket.h"
+#include <list>
+using namespace std;
 
 class UserSession;
+
 
 ////////////////////////////////////////////////////////////////////////////////////////
 
@@ -33,7 +36,7 @@ public:
    
    //-----------------------------------------------------------------------------
 
-  // bool     SendErrorReportToClient( PacketErrorReport::ErrorType error, int connectionId );
+   void     AddTimer( U32 timerId, U32 callbackTimeMs = 100 ); // timers must be unique
    void     ClientConnectionIsAboutToRemove( KhaanGame* khaan );
    void     ClientConnectionFinishedAdding( KhaanGame* khaan );
    void     ServerWasIdentified( KhaanGame* khaan );
@@ -47,6 +50,8 @@ private:
    void	   UpdateAllConnections();
    void     CleanupOldConnections();
 
+   void     UpdateAllTimers();
+
    bool     HandlePacketFromOtherServer( BasePacket* packet, U32 connectionId );
    bool     HandlePacketToOtherServer( BasePacket* packet, U32 connectionId );
    void     ConnectUser( const PacketPrepareForUserLogin* loginPacket );
@@ -57,6 +62,9 @@ private:
    deque< U32 >                           m_serversNeedingUpdate;
    GameCallbacks*                         m_callbacks;
    string                                 m_gameUuid;
+   
+
+   list< TimerInfo >                      m_timers;
 };
 
 ////////////////////////////////////////////////////////////////////////////////////////

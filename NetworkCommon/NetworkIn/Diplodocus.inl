@@ -324,9 +324,9 @@ bool	Diplodocus< InputChain, OutputChain >::FindKhaan( const string& connectionN
 template< typename InputChain, typename OutputChain >
 void  Diplodocus< InputChain, OutputChain >::OnAccept( evconnlistener* listenerObj, evutil_socket_t newSocketId, sockaddr* ClientAddr, int socklen, void* context )
 {
-    // We got a new connection! Set up a bufferevent for it. 
-    struct event_base*  base = evconnlistener_get_base( listenerObj );
-    struct bufferevent* bufferEvent = bufferevent_socket_new( base, newSocketId, BEV_OPT_CLOSE_ON_FREE );
+   // We got a new connection! Set up a bufferevent for it. 
+   struct event_base*  base = evconnlistener_get_base( listenerObj );
+   struct bufferevent* bufferEvent = bufferevent_socket_new( base, newSocketId, BEV_OPT_CLOSE_ON_FREE );
 
    InputChainType* khaan = new InputChainType( newSocketId, bufferEvent );
    khaan->SetIPAddress( *((struct sockaddr_in*)ClientAddr) );

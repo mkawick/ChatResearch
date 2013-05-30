@@ -25,3 +25,10 @@ typedef int64_t         S64;
 #endif
 
 typedef  U64    stringhash;
+
+struct   TimerInfo
+{
+   U32   scheduleTimeMs;
+   U32   lastTimeMs;
+   U32   timerId;
+};

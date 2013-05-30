@@ -1,6 +1,7 @@
 #pragma once
 
 #include <string>
+#include <map>
 using namespace std;
 
 #include "../NetworkCommon/DataTypes.h"
@@ -10,6 +11,7 @@ using namespace std;
 
 class GameFramework;
 class DiplodocusGame;
+
 
 //////////////////////////////////////////////////////////
 
@@ -40,6 +42,7 @@ public:
    //----------- end configuration -------------------
 
 
+   void     AddTimer( U32 timerId, U32 callbackTimeMs = 100 ); // timers must be unique
    void     RegisterForIncomingData( GameCallbacks* basicGameServer ) { m_callbacksObject = basicGameServer; }
    bool     IsSetupProperly() const { if( m_callbacksObject == NULL || m_gameUuid.size() == 0 ) return false; return true; }
 
@@ -78,6 +81,8 @@ private:
    string         m_dbUsername;
    string         m_dbPassword;
    string         m_dbSchema;
+
+   map< U32, TimerInfo > m_timers;
 };
 
 //////////////////////////////////////////////////////////
