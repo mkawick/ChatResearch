@@ -7,6 +7,14 @@
 #include "../ServerType.h"
 #include <string>
 
+#if PLATFORM == PLATFORM_MAC || PLATFORM == PLATFORM_UNIX
+
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <fcntl.h>
+
+#endif
+
 class BasePacket;
 //-------------------------------------------------------------------------
 

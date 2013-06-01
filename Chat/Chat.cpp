@@ -7,7 +7,6 @@
 #pragma warning (disable:4996)
 using namespace std;
 
-#include <conio.h>
 #include <assert.h>
 
 #include <boost/lexical_cast.hpp>
@@ -15,6 +14,9 @@ using namespace std;
 #include "DiplodocusChat.h"
 #include "../NetworkCommon/NetworkIn/DiplodocusServerToServer.h"
 
+#if PLATFORM == PLATFORM_WINDOWS
+#include <conio.h>
+#endif   
 
 //-----------------------------------------------------------------------------
 

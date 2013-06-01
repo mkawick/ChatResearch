@@ -7,14 +7,15 @@
 #pragma warning (disable:4996)
 using namespace std;
 
-#include <conio.h>
+//#include <conio.h>
 #include <assert.h>
 
 #include <boost/lexical_cast.hpp>
 
 #include <cstdio>
-#include <conio.h>
+
 #include "../NetworkCommon/Utils/utils.h"
+
 #include "../NetworkCommon/Utils/CommandLineParser.h"
 
 #include "../NetworkCommon/Database/Deltadromeus.h"
@@ -23,6 +24,10 @@ using namespace std;
 #include "KhaanLogin.h"
 #include "DiplodocusLogin.h"
 #include "FruitadensLogin.h"
+
+#if PLATFORM == PLATFORM_WINDOWS
+#include <conio.h>
+#endif
 
 // db.address=10.16.4.44 db.port=3306 db.username=admin db.password=Pz5328!@ db.schema=pleiades
 ////////////////////////////////////////////////////////////////////////

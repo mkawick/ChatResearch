@@ -30,6 +30,7 @@ std::string    Reduce(const std::string& str,
 
 #if PLATFORM != PLATFORM_WINDOWS
 int kbhit();
+int getch();
 #define  SOCKET_ERROR   -1
 #define closesocket  close
 #endif

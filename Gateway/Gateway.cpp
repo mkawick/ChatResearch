@@ -7,13 +7,13 @@
 #pragma warning (disable:4996)
 using namespace std;
 
-#include <conio.h>
+
+
 #include <assert.h>
 
 #include <boost/lexical_cast.hpp>
 
 #include <cstdio>
-#include <conio.h>
 #include "../NetworkCommon/Utils/utils.h"
 #include "../NetworkCommon/Utils/CommandLineParser.h"
 #include "../NetworkCommon/Packets/ServerToServerPacket.h"
@@ -21,6 +21,11 @@ using namespace std;
 #include "KhaanConnector.h"
 #include "DiplodocusGateway.h"
 #include "FruitadensGateway.h"
+
+#if PLATFORM == PLATFORM_WINDOWS
+
+#include <conio.h>
+#endif
 
 ////////////////////////////////////////////////////////////////////////
 

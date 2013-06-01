@@ -10,6 +10,19 @@
 #include <event2/thread.h>
 #include "../Packets/BasePacket.h"
 
+#ifndef cout
+#include <iostream>
+using namespace std;
+#endif
+
+#if PLATFORM != PLATFORM_WINDOWS
+//#include <sys/socket.h>
+//#include <netinet/in.h>
+//#include <fcntl.h>
+#include <arpa/inet.h>
+
+#endif
+
 void	   SetupListenAddress( struct sockaddr_in& ListenAddress, U16 ServerPort );
 
 //------------------------------------------------------------------------------

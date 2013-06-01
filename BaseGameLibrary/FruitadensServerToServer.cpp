@@ -1,3 +1,5 @@
+#include "../NetworkCommon/Platform.h"
+
 #if PLATFORM == PLATFORM_WINDOWS
 #include <winsock2.h>
 

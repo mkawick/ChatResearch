@@ -19,7 +19,10 @@ using namespace std;
    #include <windows.h>
    #include <mmsystem.h>
 #else
-#include <sys/time.h>
+   #include <sys/time.h>
+   #include <termios.h>
+   #include <unistd.h>
+   #include <fcntl.h>
 #endif
 #pragma warning (disable:4996)
 
@@ -192,21 +195,53 @@ std::string    Reduce( const std::string& str,
 #if PLATFORM != PLATFORM_WINDOWS
 int kbhit()
 {
-   struct timeval tv;
-   fd_set fd;
+   struct termios oldt, newt;
+   int ch;
+   int oldf;
    
-   tv.tv_sec = 0;
-   tv.tv_usec = 0;
-   FD_ZERO( &fd );
-   FD_SET( 0, &fd );
+   tcgetattr(STDIN_FILENO, &oldt);
+   newt = oldt;
+   newt.c_lflag &= ~(ICANON | ECHO);
+   tcsetattr(STDIN_FILENO, TCSANOW, &newt);
+   oldf = fcntl(STDIN_FILENO, F_GETFL, 0);
+   fcntl(STDIN_FILENO, F_SETFL, oldf | O_NONBLOCK);
    
-   if( -1 != select( 1, &fd, NULL, NULL, &tv ))
+   ch = getchar();
+   
+   tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
+   fcntl(STDIN_FILENO, F_SETFL, oldf);
+   
+   if(ch != EOF)
    {
-      if( FD_ISSET( 0, &fd ))
-      {
-         return 1;
-      }
+      ungetc(ch, stdin);
+      return 1;
    }
+   
    return 0;
+}
+
+int getch()
+{
+   struct termios oldt, newt;
+   int ch;
+   int oldf;
+   
+   tcgetattr(STDIN_FILENO, &oldt);
+   newt = oldt;
+   newt.c_lflag &= ~(ICANON | ECHO);
+   tcsetattr(STDIN_FILENO, TCSANOW, &newt);
+   oldf = fcntl(STDIN_FILENO, F_GETFL, 0);
+   fcntl(STDIN_FILENO, F_SETFL, oldf | O_NONBLOCK);
+   
+   while( (ch = getchar() ) == EOF )
+   {
+         
+   }
+   
+   tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
+   fcntl(STDIN_FILENO, F_SETFL, oldf);
+   
+   return ch;
+
 }
 #endif

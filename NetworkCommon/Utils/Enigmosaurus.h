@@ -20,7 +20,7 @@ template< typename TabelInterface >
 class Enigmosaurus
 {
 private:
-   typedef typename TabelInterface  tabletype;
+   typedef  TabelInterface  tabletype;
    typedef vector< string >         DataRow;
    typedef list< DataRow >          DataSet;
 

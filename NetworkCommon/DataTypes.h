@@ -5,7 +5,7 @@
 #include "Platform.h"
 
 typedef unsigned char   U8;
-typedef unsigned short  U16;
+typedef unsigned short  U16;	
 typedef unsigned int    U32;
 typedef char            S8;
 typedef short           S16;
@@ -24,6 +24,7 @@ typedef int64_t         S64;
 
 #endif
 
+typedef  U32    ConnectionId;
 typedef  U64    stringhash;
 
 struct   TimerInfo

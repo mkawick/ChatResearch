@@ -8,11 +8,11 @@
 #define PLATFORM_UNIX     3
 
 #if defined(_WIN32)
-#define PLATFORM  PLATFORM_WINDOWS
+#define PLATFORM   PLATFORM_WINDOWS
 #elif defined(__APPLE__)
-#define PLATFORM  PLATFORM_MAC
+#define PLATFORM   PLATFORM_MAC
 #else
-#define PLATFORM  PLATFORM_UNIX
+#define PLATFORM   PLATFORM_UNIX
 #endif
 
 
@@ -20,5 +20,3 @@ bool     InitializeSockets();
 void     ShutdownSockets();
 int		SetSocketToNonblock( int ListenSocket );
 void     DisableNagle( int socketId );
-
-typedef int ConnectionId;

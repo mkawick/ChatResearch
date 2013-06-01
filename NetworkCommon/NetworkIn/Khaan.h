@@ -2,10 +2,13 @@
 
 #pragma once
 
+#ifndef PLATFORM
+#include "../platform.h"
+#endif
+
 #if PLATFORM == PLATFORM_WINDOWS
 
 #undef UNICODE
-
 #define WIN32_LEAN_AND_MEAN
 
 #include <ws2tcpip.h>

@@ -7,6 +7,12 @@
 #include <string>
 #include "../DataTypes.h"
 
+#ifndef BasePacket
+
+#include "../Packets/BasePacket.h"
+
+#endif
+
 #if PLATFORM == PLATFORM_WINDOWS
 #define WIN32_LEAN_AND_MEAN
 #define _WINSOCKAPI_ // preventing issues with winsock, only
@@ -26,7 +32,7 @@ typedef HANDLE             ThreadId;
 typedef pthread_mutex_t    ThreadMutex;
 typedef pthread_t          ThreadId;
 typedef pthread_attr_t     ThreadAttributes;
-#define Sleep(a)           usleep((float)(a) * 1000)
+#define Sleep(a)           usleep((float)(a) * 0.001)
 
 #endif
 

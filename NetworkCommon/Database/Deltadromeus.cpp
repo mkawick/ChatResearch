@@ -10,14 +10,17 @@
 // this setup is based on this:
 // http://www.nitecon.com/tutorials-articles/develop/cpp/c-mysql-beginner-tutorial/
 
-#include <my_global.h> // Include this file first to avoid problems
-#include <mysql.h> // MySQL Include File
 
-#include <sstream>
+//#include <>
 #include <iostream>
 #include <iomanip>
+#include <sstream>
 #include <map>
 using namespace std;
+
+
+#include <my_global.h> // Include this file first to avoid problems
+#include <mysql.h> // MySQL Include File
 
 
 #include "../ChainedArchitecture/Thread.h"
