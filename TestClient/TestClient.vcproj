@@ -60,6 +60,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
+				AdditionalDependencies="..\Debug\BaseClientLibrary.lib"
 				LinkIncremental="2"
 				IgnoreDefaultLibraryNames="libcmt.lib"
 				GenerateDebugInformation="true"
@@ -117,6 +118,7 @@
 				EnableIntrinsicFunctions="true"
 				PreprocessorDefinitions="WIN32;NDEBUG;_CONSOLE"
 				RuntimeLibrary="2"
+				BufferSecurityCheck="false"
 				EnableFunctionLevelLinking="true"
 				UsePrecompiledHeader="0"
 				WarningLevel="3"
@@ -133,7 +135,9 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
+				AdditionalDependencies="..\Release\BaseClientLibrary.lib"
 				LinkIncremental="1"
+				IgnoreDefaultLibraryNames="libcmt.lib"
 				GenerateDebugInformation="true"
 				SubSystem="1"
 				OptimizeReferences="2"
@@ -208,10 +212,6 @@
 				>
 			</File>
 			<File
-				RelativePath="..\NetworkCommon\Serialize.cpp"
-				>
-			</File>
-			<File
 				RelativePath="..\NetworkCommon\Serialize.h"
 				>
 			</File>
@@ -235,10 +235,6 @@
 					>
 				</File>
 				<File
-					RelativePath="..\NetworkCommon\ChainedArchitecture\Thread.cpp"
-					>
-				</File>
-				<File
 					RelativePath="..\NetworkCommon\ChainedArchitecture\Thread.h"
 					>
 				</File>
@@ -250,14 +246,6 @@
 			<Filter
 				Name="NetworkOut"
 				>
-				<File
-					RelativePath="..\NetworkCommon\NetworkIn\Diplodocus.cpp"
-					>
-				</File>
-				<File
-					RelativePath="..\NetworkCommon\NetworkOut\Fruitadens.cpp"
-					>
-				</File>
 				<File
 					RelativePath="..\NetworkCommon\NetworkOut\Fruitadens.h"
 					>
@@ -275,15 +263,7 @@
 				Name="Utils"
 				>
 				<File
-					RelativePath="..\NetworkCommon\Utils\CommandLineParser.cpp"
-					>
-				</File>
-				<File
 					RelativePath="..\NetworkCommon\Utils\CommandLineParser.h"
-					>
-				</File>
-				<File
-					RelativePath="..\NetworkCommon\Utils\Utils.cpp"
 					>
 				</File>
 				<File
@@ -295,10 +275,6 @@
 				Name="Packets"
 				>
 				<File
-					RelativePath="..\NetworkCommon\Packets\BasePacket.cpp"
-					>
-				</File>
-				<File
 					RelativePath="..\NetworkCommon\Packets\BasePacket.h"
 					>
 				</File>
@@ -307,15 +283,7 @@
 					>
 				</File>
 				<File
-					RelativePath="..\NetworkCommon\Packets\ChatPacket.cpp"
-					>
-				</File>
-				<File
 					RelativePath="..\NetworkCommon\Packets\ChatPacket.h"
-					>
-				</File>
-				<File
-					RelativePath="..\NetworkCommon\Packets\GamePacket.cpp"
 					>
 				</File>
 				<File
@@ -323,15 +291,7 @@
 					>
 				</File>
 				<File
-					RelativePath="..\NetworkCommon\Packets\PacketFactory.cpp"
-					>
-				</File>
-				<File
 					RelativePath="..\NetworkCommon\Packets\PacketFactory.h"
-					>
-				</File>
-				<File
-					RelativePath="..\NetworkCommon\Packets\ServerToServerPacket.cpp"
 					>
 				</File>
 				<File

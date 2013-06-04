@@ -274,8 +274,7 @@ string   FruitadensClientChat::FindChatChannel( const string& name ) const
 {
    ChannelKeyValue::const_KVIterator   itGroups = m_groups.begin();
    while( itGroups != m_groups.end() )
-   {
-      const ChannelKeyValue::KeyValue& kvpGroup = *itGroups++;
+   {      const ChannelKeyValue::KeyValue& kvpGroup = *itGroups++;
 
       if( kvpGroup.value.channelName == name )
       {

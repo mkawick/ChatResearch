@@ -10,6 +10,9 @@ EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Game", "Game\Game.vcproj", "{E1CCE861-3A89-4B2F-8635-B543B90EFA5C}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "TestClient", "TestClient\TestClient.vcproj", "{163C7BC4-C317-45E0-9EF2-82F182473725}"
+	ProjectSection(ProjectDependencies) = postProject
+		{F74C7545-C2D2-4FDE-9B4C-F875FA9D5C22} = {F74C7545-C2D2-4FDE-9B4C-F875FA9D5C22}
+	EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{FF127F69-75F1-43E9-ABD3-BBD0663D3D88}"
 	ProjectSection(SolutionItems) = preProject
@@ -17,6 +20,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "BaseGameLibrary", "BaseGameLibrary\BaseGameLibrary.vcproj", "{C3B3C31F-671D-4FC0-A69A-A90C2DEBEEF3}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "BaseClientLibrary", "BaseClientLibrary\BaseClientLibrary.vcproj", "{F74C7545-C2D2-4FDE-9B4C-F875FA9D5C22}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -48,6 +53,10 @@ Global
 		{C3B3C31F-671D-4FC0-A69A-A90C2DEBEEF3}.Debug|Win32.Build.0 = Debug|Win32
 		{C3B3C31F-671D-4FC0-A69A-A90C2DEBEEF3}.Release|Win32.ActiveCfg = Release|Win32
 		{C3B3C31F-671D-4FC0-A69A-A90C2DEBEEF3}.Release|Win32.Build.0 = Release|Win32
+		{F74C7545-C2D2-4FDE-9B4C-F875FA9D5C22}.Debug|Win32.ActiveCfg = Debug|Win32
+		{F74C7545-C2D2-4FDE-9B4C-F875FA9D5C22}.Debug|Win32.Build.0 = Debug|Win32
+		{F74C7545-C2D2-4FDE-9B4C-F875FA9D5C22}.Release|Win32.ActiveCfg = Release|Win32
+		{F74C7545-C2D2-4FDE-9B4C-F875FA9D5C22}.Release|Win32.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
