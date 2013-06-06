@@ -148,7 +148,7 @@ bool     UserConnection::PrepInitialLogin()
    dbQuery->id = m_connectionId;
    dbQuery->lookup = QueryType_UserLoginInfo;
 
-   string queryString = "SELECT * FROM user WHERE name='" ;
+   string queryString = "SELECT * FROM users WHERE user_name='" ;
    queryString += m_username;
    queryString += "'";
    dbQuery->query = queryString;
@@ -177,7 +177,7 @@ bool  UserConnection::RequestFriends()
    dbQuery->id = m_connectionId;
    dbQuery->lookup = QueryType_UserFriendsList;
 
-   string queryString = "SELECT * FROM user WHERE user.uuid IN (SELECT friends.userid2 as uuid FROM friends WHERE friends.userid1 = '" ;
+   string queryString = "SELECT * FROM users WHERE users.uuid IN (SELECT friends.userid2 as uuid FROM friends WHERE friends.userid1 = '" ;
    queryString += m_uuid;
    queryString += "' union SELECT friends.userid1 as uuid FROM friends WHERE friends.userid2 = '";
    queryString += m_uuid;
@@ -221,7 +221,7 @@ void     UserConnection::GetChatDiegest( const string& channelUuid )
    dbQuery->id = m_connectionId;
    dbQuery->lookup = QueryType_ChatHistory;
 
-   string queryString = "SELECT chat.text, user.name, chat.game_turn, chat.timestamp FROM chat, user WHERE chat.user_id_sender=user.uuid AND chat_channel_id='";
+   string queryString = "SELECT chat.text, user.name, chat.game_turn, chat.timestamp FROM chat_message AS chat, users WHERE chat.user_id_sender=user.uuid AND chat_channel_id='";
    queryString += channelUuid;
    queryString += "'";
    dbQuery->query = queryString;
@@ -246,7 +246,7 @@ void     UserConnection::GetAllChatHistroySinceLastLogin()
    dbQuery->id = m_connectionId;
    dbQuery->lookup = QueryType_ChatHistoryMissedSinceLastLogin;
 
-   string queryString = "SELECT * FROM chat where chat_channel_id in " \
+   string queryString = "SELECT * FROM chat_message AS chat where chat_channel_id in " \
       " (SELECT chat_channel.uuid from chat_channel"\
       " join user_join_chat_channel"\
       " on user_join_chat_channel.channel_uuid = chat_channel.uuid "\

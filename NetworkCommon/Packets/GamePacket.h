@@ -40,6 +40,8 @@ public:
       GamePacketType_RequestListOfUsersInGame,
       GamePacketType_RequestListOfUsersInGameResponse,
 
+      GamePacketType_RequestUserWinLoss,
+      GamePacketType_RequestUserWinLossResponse,
 
       GamePacketType_ListOfGames,// usually s2s
       GamePacketType_GameIdentification, // to client
@@ -298,6 +300,63 @@ public:
    string   gameName;
    string   gameUuid;
    SerializedKeyValueVector< string >   users; // game details?
+};
+
+
+///////////////////////////////////////////////////////////////
+
+
+struct WinLoss
+{
+   WinLoss() : isPrivate( false ),
+               wins( 0 ),
+               losses( 0 ),
+               rating( 0 ),
+               totalGamesPlayed( 0 ),
+               hoursLogged( 0 ),
+               minutesLogged( 0 )
+   {}
+   string   gameUuid;
+   bool     isPrivate;
+   int      wins;
+   int      losses;
+   int      rating;
+   int      totalGamesPlayed;
+
+   int      hoursLogged;
+   int      minutesLogged;
+
+   bool     SerializeIn( const U8* data, int& bufferOffset );
+   bool     SerializeOut( U8* data, int& bufferOffset ) const;
+};
+
+
+///////////////////////////////////////////////////////////////
+
+class PacketRequestUserWinLoss : public PacketGameToServer
+{
+public:
+   PacketRequestUserWinLoss(): PacketGameToServer( PacketType_Gameplay, GamePacketType_RequestUserWinLoss ) {}
+
+   bool  SerializeIn( const U8* data, int& bufferOffset );
+   bool  SerializeOut( U8* data, int& bufferOffset ) const;
+
+   string   userUuid;   
+   string   gameUuid;
+};
+
+///////////////////////////////////////////////////////////////
+
+class PacketRequestUserWinLossResponse : public PacketGameToServer
+{
+public:
+   PacketRequestUserWinLossResponse(): PacketGameToServer( PacketType_Gameplay, GamePacketType_RequestUserWinLossResponse ) {}
+
+   bool  SerializeIn( const U8* data, int& bufferOffset );
+   bool  SerializeOut( U8* data, int& bufferOffset ) const;
+
+   string   userUuid;
+   WinLoss  winLoss;
 };
 
 ///////////////////////////////////////////////////////////////

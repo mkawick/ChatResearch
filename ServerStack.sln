@@ -23,6 +23,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "BaseGameLibrary", "BaseGame
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "BaseClientLibrary", "BaseClientLibrary\BaseClientLibrary.vcproj", "{F74C7545-C2D2-4FDE-9B4C-F875FA9D5C22}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ClientFramework", "ClientFramework\ClientFramework.vcproj", "{AD4412F9-3DFC-424E-9084-4442CE77C01F}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Win32 = Debug|Win32
@@ -57,6 +59,10 @@ Global
 		{F74C7545-C2D2-4FDE-9B4C-F875FA9D5C22}.Debug|Win32.Build.0 = Debug|Win32
 		{F74C7545-C2D2-4FDE-9B4C-F875FA9D5C22}.Release|Win32.ActiveCfg = Release|Win32
 		{F74C7545-C2D2-4FDE-9B4C-F875FA9D5C22}.Release|Win32.Build.0 = Release|Win32
+		{AD4412F9-3DFC-424E-9084-4442CE77C01F}.Debug|Win32.ActiveCfg = Debug|Win32
+		{AD4412F9-3DFC-424E-9084-4442CE77C01F}.Debug|Win32.Build.0 = Debug|Win32
+		{AD4412F9-3DFC-424E-9084-4442CE77C01F}.Release|Win32.ActiveCfg = Release|Win32
+		{AD4412F9-3DFC-424E-9084-4442CE77C01F}.Release|Win32.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

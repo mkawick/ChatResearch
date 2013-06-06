@@ -321,7 +321,7 @@ bool  Fruitadens :: SerializePacketOut( const BasePacket* packet )
 
 //-----------------------------------------------------------------------------
 
-bool  Fruitadens :: SendPacket( const U8* buffer, int length )
+bool  Fruitadens :: SendPacket( const U8* buffer, int length ) const
 {
    if( m_isConnected && ( length > 0 ) )
    {

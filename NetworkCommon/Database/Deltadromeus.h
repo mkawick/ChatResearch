@@ -35,7 +35,7 @@ public:
    bool     IsConnected() const { return m_isConnected; }
 
    //-----------------------------------------------
-   JobId    SendQuery( const string& query, int myId = 0, int senderReference = 0, bool isFireAndForget = false, bool isChainData = false, int extraLookupInfo = 0, string* meta = NULL, U32 serverId =0 );
+   JobId    SendQuery( const string& query, int myId = 0, int senderReference = 0, const list<string>* stringsToEscape = NULL, bool isFireAndForget = false, bool isChainData = false, int extraLookupInfo = 0, string* meta = NULL, U32 serverId =0 );
    bool     AddInputChainData( BasePacket* packet, U32 chainId );// only use this interface for chained processing
 
    bool     HasResults( JobId id ) const;
@@ -69,7 +69,7 @@ protected:
    string                  m_password;
    string                  m_dbName;
 
-   DbHandle*               m_connect;
+   DbHandle*               m_DbConnection;
 };
 
 //---------------------------------------------------------------------------------------------------

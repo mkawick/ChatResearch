@@ -11,6 +11,7 @@ using namespace std;
 #include "DiplodocusChat.h"
 #include "UserConnection.h"
 #include <boost/lexical_cast.hpp>
+#include <mysql.h>
 
 #include "../NetworkCommon/Utils/TableWrapper.h"
 #include "../NetworkCommon/Packets/GamePacket.h"
@@ -366,6 +367,7 @@ bool     ChatChannelManager::FinishJob( PacketDbQueryResult* dbResult, ChatChann
                UserTable::row    row = *it++;
                string   name = row[ TableUser::Column_name ];
                string   uuid = row[ TableUser::Column_uuid ];
+               string   id = row[ TableUser::Column_id ];
 
                usersAndIds.insert( uuid, name );
             }
@@ -393,6 +395,7 @@ bool     ChatChannelManager::FinishJob( PacketDbQueryResult* dbResult, ChatChann
                UserTable::row    row = *it++;
                string   name = row[ TableSimpleUser::Column_name ];
                string   uuid = row[ TableSimpleUser::Column_uuid ];
+               string   id =  row[ TableSimpleUser::Column_id ];
 
                usersAndIds.insert( uuid, name );
             }
@@ -420,6 +423,7 @@ bool     ChatChannelManager::FinishJob( PacketDbQueryResult* dbResult, ChatChann
                UserTable::row    row = *it++;
                string   name = row[ TableSimpleUser::Column_name ];
                string   uuid = row[ TableSimpleUser::Column_uuid ];
+               string   id =  row[ TableSimpleUser::Column_id ];
 
                usersAndIds.insert( uuid, name );
             }
@@ -1290,7 +1294,7 @@ bool     ChatChannelManager::RequestChatters( const string& channelUuid, const s
    // where channel.uuid='abcdefghijklmnop'
 
    string 
-   queryString =  "SELECT DISTINCT user.name, user.uuid FROM user as user ";
+   queryString =  "SELECT DISTINCT user.name, user.uuid, user.id FROM users as user ";
    queryString += "join user_join_chat_channel as joiner on joiner.user_uuid=user.uuid ";
    queryString += "join chat_channel as channel on joiner.channel_uuid=channel.uuid ";
    queryString += "join chat as chat_log on channel.uuid=chat_log.chat_channel_id ";
@@ -1343,7 +1347,7 @@ bool     ChatChannelManager::RequestAllUsersInChatChannel( const string& channel
    // where channel.uuid='abcdefghijklmnop'
 
    string 
-   queryString =  "SELECT user.name, user.uuid FROM user ";
+   queryString =  "SELECT user.name, user.uuid FROM users ";
    queryString += "join user_join_chat_channel as joiner on joiner.user_uuid=user.uuid ";
    queryString += "join chat_channel as channel on joiner.channel_uuid=channel.uuid ";
    queryString += "where channel.uuid='";
@@ -1468,7 +1472,7 @@ void     ChatChannelManager::RequestUsersList( const string& authUuid, bool isFu
          return ;
       }
 
-      string queryString = "SELECT * FROM user";
+      string queryString = "SELECT * FROM users";
       U32 serverId = 0;
       DbQueryAndPacket( authUuid, authUuid, serverId, authUuid, authHash, queryString, ChatChannelDbJob::JobType_SelectAllUsersToSendToAuth, false );
    }
@@ -1506,8 +1510,8 @@ void     ChatChannelManager::WriteChatToDb( const string& message, const string&
    dbQuery->meta = connectionId;
    dbQuery->isFireAndForget = true;// no result is needed
    //insert into chat values( null, 'Damn sexy', 'ABCDEFGHIJKLMNOP', null, 'ABCDEFGHIJKLMNOP', null, 1, 1345);
-   string queryString = "INSERT INTO chat VALUES( null, '";
-   queryString += message;
+   string queryString = "INSERT INTO chat_message VALUES( null, '";
+   queryString += "%s";
    queryString += "', '";
    queryString += senderUuid;
    queryString += "', ";//;
@@ -1527,6 +1531,7 @@ void     ChatChannelManager::WriteChatToDb( const string& message, const string&
    queryString += boost::lexical_cast< string >( gameTurn );
    queryString += ", ";
    queryString += "0 )"; // game instance id
+   dbQuery->escapedStrings.insert( message );
 
    dbQuery->query = queryString;
    m_chatServer->AddPacketFromUserConnection( dbQuery, connectionId );

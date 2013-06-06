@@ -56,7 +56,7 @@ Mutex::~Mutex()
 
 //----------------------------------------------------------------
 
-bool  Mutex::lock()
+bool  Mutex::lock() const
 {
    m_pendingLockReqs++;
 #if PLATFORM == PLATFORM_WINDOWS
@@ -72,7 +72,7 @@ bool  Mutex::lock()
 
 //----------------------------------------------------------------
 
-bool  Mutex::unlock()
+bool  Mutex::unlock() const
 {
    m_isLocked = false;
    m_pendingLockReqs--;

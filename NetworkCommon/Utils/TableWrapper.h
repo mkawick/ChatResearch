@@ -13,10 +13,15 @@ public:
    {
       Column_id,
       Column_name,
+      Column_password_hash,
+      Column_email,
+      Column_user_gamekit_id,
+      Column_user_gamekit_id_hash,
+      Column_user_creation_date,
       Column_uuid,
-      Column_birth_date,
       Column_last_login_time,
       Column_last_logout_time,
+      Column_password,
       Column_end
    };
    static const char* const column_names[];
@@ -33,6 +38,7 @@ public:
    {
       Column_name,
       Column_uuid,
+      Column_id,
       Column_end
    };
    static const char* const column_names[];

@@ -49,7 +49,7 @@ int main( int argc, const char* argv[] )
    parser.FindValue( "db.password", dbPassword );
    parser.FindValue( "db.schema", dbSchema );
 
-   int listenPortAddress = 9601, dbPortAddress = 16384, listenS2SPort = 9602;
+   int listenPortAddress = 9601, dbPortAddress = 3306, listenS2SPort = 9602;
    try 
    {
       listenS2SPort = boost::lexical_cast<int>( listenForS2SPort );

@@ -45,16 +45,16 @@ class Mutex
 public:
    Mutex();
    ~Mutex();
-   bool  lock();
-   bool  unlock();
+   bool  lock() const;
+   bool  unlock() const;
 
    bool  IsLocked() const { return m_isLocked; }
    int	 NumPendingLockRequests() const { return m_pendingLockReqs; }
 
 private:
-   ThreadMutex    m_mutex;
-   bool           m_isLocked;
-   int            m_pendingLockReqs;
+   mutable ThreadMutex    m_mutex;
+   mutable bool           m_isLocked;
+   mutable int            m_pendingLockReqs;
 };
 
 class MutexLock

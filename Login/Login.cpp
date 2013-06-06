@@ -65,7 +65,7 @@ int main( int argc, const char* argv[] )
    string dbIpAddress = "localhost";
    string dbUsername = "root";
    string dbPassword = "password";
-   string dbSchema = "pleiades";
+   string dbSchema = "playdek";
 
    parser.FindValue( "db.address", dbIpAddress );
    parser.FindValue( "db.port", dbPortString );
@@ -74,7 +74,7 @@ int main( int argc, const char* argv[] )
    parser.FindValue( "db.schema", dbSchema );
 
 
-   int listenPort = 3072, chatPort = 9602, dbPortAddress = 16384, agricolaPort = 23996;
+   int listenPort = 3072, chatPort = 9602, dbPortAddress = 3306, agricolaPort = 23996;
    try 
    {
        listenPort = boost::lexical_cast<int>( listenPortString );

@@ -349,6 +349,7 @@ bool  PacketDbQuery::SerializeIn( const U8* data, int& bufferOffset )
 
    Serialize::In( data, bufferOffset, isFireAndForget );
    Serialize::In( data, bufferOffset, query );
+   Serialize::In( data, bufferOffset, escapedStrings );
 
    return true;
 }
@@ -359,6 +360,7 @@ bool  PacketDbQuery::SerializeOut( U8* data, int& bufferOffset ) const
    
    Serialize::Out( data, bufferOffset, isFireAndForget );
    Serialize::Out( data, bufferOffset, query );
+   Serialize::Out( data, bufferOffset, escapedStrings );
 
    return true;
 }

@@ -109,7 +109,7 @@ bool     DiplodocusLogin::LogUserIn( const string& username, const string& passw
    dbQuery->lookup = QueryType_UserLoginInfo;
    dbQuery->meta = username;
 
-   string queryString = "SELECT * FROM user WHERE name='" ;
+   string queryString = "SELECT * FROM users as user WHERE user_name='" ;
    queryString += username;
    queryString += "'";
    dbQuery->query = queryString;
@@ -128,7 +128,7 @@ bool     DiplodocusLogin::LogUserOut( U32 connectionId )
       dbQuery->lookup = QueryType_UserLoginInfo;
       dbQuery->isFireAndForget = true;// no result is needed
       
-      string queryString = "UPDATE user SET user.last_logout_timestamp=CURRENT_TIMESTAMP WHERE uuid = '";
+      string queryString = "UPDATE users AS user SET user.last_logout_timestamp=CURRENT_TIMESTAMP WHERE uuid = '";
       queryString += it->second.userUuid;
       queryString += "'";
       dbQuery->query = queryString;
@@ -227,7 +227,7 @@ bool  DiplodocusLogin::UpdateLastLoggedInTime( U32 connectionId )
       dbQuery->lookup = QueryType_UserListOfGame;
       dbQuery->isFireAndForget = true;// no result is needed
 
-      string queryString = "UPDATE user SET user.last_login_timestamp=CURRENT_TIMESTAMP WHERE uuid = '";
+      string queryString = "UPDATE users AS user SET user.last_login_timestamp=CURRENT_TIMESTAMP WHERE uuid = '";
       queryString += it->second.userUuid;
       queryString += "'";
       dbQuery->query = queryString;
@@ -250,7 +250,7 @@ bool  DiplodocusLogin::UpdateLastLoggedOutTime( U32 connectionId )
       dbQuery->lookup = QueryType_UserLoginInfo;
       dbQuery->isFireAndForget = true;// no result is needed
 
-      string queryString = "UPDATE user SET user.last_logout_timestamp=CURRENT_TIMESTAMP WHERE uuid = '";
+      string queryString = "UPDATE users AS user SET user.last_logout_timestamp=CURRENT_TIMESTAMP WHERE uuid = '";
       queryString += it->second.userUuid;
       queryString += "'";
       dbQuery->query = queryString;
@@ -307,7 +307,7 @@ bool  DiplodocusLogin::RequestListOfGames( U32 connectionId, const string& userU
       dbQuery->id = connectionId ;
       dbQuery->lookup = QueryType_UserListOfGame;
 
-      string queryString = "SELECT game.uuid, game.name FROM game INNER JOIN user_game ON game.uuid=user_game.game_uuid WHERE user_game.user_uuid = '";
+      string queryString = "SELECT game.uuid, game.name FROM game INNER JOIN user_join_game AS user_game ON game.uuid=user_game.game_uuid WHERE user_game.user_uuid = '";
       queryString += userUuid;
       queryString += "'";
       dbQuery->query = queryString;

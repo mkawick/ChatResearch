@@ -74,6 +74,7 @@ public:
    void        SetSenderMeta( const string* meta ) { m_senderMeta = *meta; }
    void        SetSenderLookup( int lookup ) { m_senderLookup = lookup; }
    void        SetServerLookup( U32 serverId ) { m_serverId = serverId; }
+   void        AddEscapedString( MYSQL* connection, const string& escapeMe );
 
    void        SetFireAndForget( bool fireAndForget = true ) { m_fireAndForget = fireAndForget; }
    bool        IsFireAndForget() const { return m_fireAndForget; }
@@ -124,7 +125,7 @@ protected:
 Deltadromeus::Deltadromeus() : Threading::CChainedThread< BasePacket* >(),
    m_isConnected( false ),
    m_port( 0 ),
-   m_connect( NULL )
+   m_DbConnection( NULL )
 {
    SetSleepTime( 30 );// only check for db needs once in a while
 }
@@ -152,7 +153,7 @@ void     Deltadromeus::SetConnectionInfo( const string& serverName, U16 port, co
 //------------------------------------------------------------
 
 Deltadromeus::JobId    
-   Deltadromeus::SendQuery( const string& query, int myId, int senderReference, bool isFireAndForget, bool isChainData, int extraLookupInfo, string* meta, U32 serverId )
+   Deltadromeus::SendQuery( const string& query, int myId, int senderReference, const list<string>* stringsToEscape, bool isFireAndForget, bool isChainData, int extraLookupInfo, string* meta, U32 serverId )
 {
    if( m_isConnected == false )
       return JobIdError;
@@ -167,6 +168,14 @@ Deltadromeus::JobId
       job->SetSenderMeta( meta );
    }
    job->SetServerLookup( serverId );
+   if( stringsToEscape && stringsToEscape->size() )
+   {
+      list<string>::const_iterator it = stringsToEscape->begin();
+      while( it != stringsToEscape->end () )
+      {
+         job->AddEscapedString( m_DbConnection, *it++ );
+      }
+   }
 
    m_mutex.lock();
    m_jobsInProgress.push_back( job );
@@ -184,7 +193,7 @@ bool     Deltadromeus::AddInputChainData( BasePacket* packet, U32 senderId )
    if( packet->packetType == PacketType_DbQuery )
    {
       PacketDbQuery* dbPacket = static_cast< PacketDbQuery* >( packet );
-      SendQuery( dbPacket->query, senderId, dbPacket->id, dbPacket->isFireAndForget, true, dbPacket->lookup, &dbPacket->meta, dbPacket->serverLookup );
+      SendQuery( dbPacket->query, senderId, dbPacket->id, &(dbPacket->escapedStrings.bucket), dbPacket->isFireAndForget, true, dbPacket->lookup, &dbPacket->meta, dbPacket->serverLookup );
       delete packet;
       return true;
    }
@@ -304,9 +313,9 @@ void     Deltadromeus::Disconnect()
 
    m_mutex.unlock();
 
-   if( m_connect )
+   if( m_DbConnection )
    {
-      mysql_close( m_connect );   // Close and shutdown 
+      mysql_close( m_DbConnection );   // Close and shutdown 
    }
 }
 
@@ -318,21 +327,21 @@ void     Deltadromeus::Connect()
 
    m_isConnected = false;
 
-   m_connect = mysql_init( NULL ); // Initialise the instance
+   m_DbConnection = mysql_init( NULL ); // Initialise the instance
    // This If is irrelevant and you don't need to show it. I kept it in for Fault Testing.
-   if( !m_connect )    // If instance didn't initialize say so and exit with fault.
+   if( !m_DbConnection )    // If instance didn't initialize say so and exit with fault.
    {
       cout << stderr << "MySQL Initialization Failed" << endl;
       return;
    }
    // Now we will actually connect to the specific database.
 
-   m_connect = mysql_real_connect( m_connect, m_serverName.c_str(), m_username.c_str(), m_password.c_str(), m_dbName.c_str(), m_port, NULL, 0 );
+   m_DbConnection = mysql_real_connect( m_DbConnection, m_serverName.c_str(), m_username.c_str(), m_password.c_str(), m_dbName.c_str(), m_port, NULL, 0 );
 
-   if( m_connect )    // If instance didn't initialize say so and exit with fault.
+   if( m_DbConnection )    // If instance didn't initialize say so and exit with fault.
    {
       m_isConnected = true;
-      //mysql_select_db( m_connect, m_dbName.c_str() );
+      //mysql_select_db( m_DbConnection, m_dbName.c_str() );
    }
    
 
@@ -353,7 +362,7 @@ int     Deltadromeus::CallbackFunction()
       DbJob* currentJob = m_jobsInProgress.front();
       if( currentJob->HasStarted() == false )
       {
-         currentJob->SubmitQuery( m_connect, m_dbName );
+         currentJob->SubmitQuery( m_DbConnection, m_dbName );
       }
       else if( currentJob->IsComplete() == true )
       {
@@ -371,7 +380,7 @@ int     Deltadromeus::CallbackFunction()
          if( m_jobsInProgress.size() > 0 )
          {
             DbJob* currentJob = m_jobsInProgress.front();
-            currentJob->SubmitQuery( m_connect, m_dbName );
+            currentJob->SubmitQuery( m_DbConnection, m_dbName );
          }
       }
    }
@@ -443,6 +452,24 @@ Deltadromeus::JobId
    JobId jobId;
    memcpy( &jobId, buffer, sizeof( jobId ) );
    return jobId;
+}
+
+//------------------------------------------------------------
+
+void  DbJob::AddEscapedString( MYSQL* connection, const string& escapeMe )
+{
+   if( escapeMe.size() == 0 )
+      return;
+
+   char queryString[512], escapedVersion[512];
+
+   mysql_real_escape_string( connection, escapedVersion, escapeMe.c_str(), escapeMe.size() );
+   if( strlen( escapedVersion ) == 0 )
+      return;
+
+   sprintf( queryString, m_query.c_str(), escapedVersion );// this is a lot of work, I realize but should be very rare
+
+   m_query = queryString; // replace the query with the text replacement
 }
 
 //------------------------------------------------------------

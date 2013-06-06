@@ -51,8 +51,8 @@ public:
    virtual bool   PushInputEvent( ThreadEvent* ) { return false; }
    virtual bool   PushOutputEvent( ThreadEvent* ) { return false; }
 
-   virtual bool   Log( const std::string& text, int priority = 1 );
-   virtual bool   Log( const char* text, int priority = 1 );// not used too often
+   virtual bool   Log( const std::string& text, int priority = 1 ) const;
+   virtual bool   Log( const char* text, int priority = 1 ) const;// not used too often
 
    //------------------------------------------------------
 protected:
@@ -78,6 +78,7 @@ protected:
 
    typedef std::list< ChainLink >	                        BaseOutputContainer;
    typedef typename BaseOutputContainer::iterator	         ChainLinkIteratorType;
+   typedef typename BaseOutputContainer::const_iterator	   ChainLinkConstIterator;
    typedef std::back_insert_iterator< std::deque< int > >   inserter;
 
    typedef std::deque< ThreadEvent* >                       ThreadQueue;
@@ -347,24 +348,24 @@ void     ChainedInterface<Type>::ProcessEvents()
 // however, this can lead to duplate log entries so be careful. Make sure to 
 // return false if you do not plan to consume the log.
 template <typename Type> 
-bool     ChainedInterface<Type>::Log( const std::string& text, int priority )
+bool     ChainedInterface<Type>::Log( const std::string& text, int priority ) const
 {
    return Log( text.c_str(), priority );
 }
 
 template <typename Type> 
-bool     ChainedInterface<Type>::Log( const char* text, int priority )
+bool     ChainedInterface<Type>::Log( const char* text, int priority ) const
 {
    bool didLog = false;
    m_outputChainListMutex.lock();
    {
       // the indentation here is to show that we are in the 'scope' of the locks
 
-      ChainLinkIteratorType itOutputs = m_listOfOutputs.begin();
+      ChainLinkConstIterator itOutputs = m_listOfOutputs.begin();
       while( itOutputs != m_listOfOutputs.end() )
       {
-         ChainLink& chainedOutput = *itOutputs++;
-         ChainedInterface* interfacePtr = chainedOutput.m_interface;
+         const ChainLink& chainedOutput = *itOutputs++;
+         const ChainedInterface* interfacePtr = chainedOutput.m_interface;
          didLog = interfacePtr->Log( text, priority );
          if( didLog )// someone captured the log so stop sending it.
             break;

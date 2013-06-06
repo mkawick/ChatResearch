@@ -376,6 +376,82 @@ bool  PacketRequestListOfUsersInGameResponse::SerializeOut( U8* data, int& buffe
 
 ///////////////////////////////////////////////////////////////
 
+bool  WinLoss::SerializeIn( const U8* data, int& bufferOffset )
+{
+   Serialize::In( data, bufferOffset, gameUuid );
+   Serialize::In( data, bufferOffset, isPrivate );
+   Serialize::In( data, bufferOffset, wins );
+   Serialize::In( data, bufferOffset, losses );
+
+   Serialize::In( data, bufferOffset, rating );
+   Serialize::In( data, bufferOffset, totalGamesPlayed );
+   Serialize::In( data, bufferOffset, hoursLogged );
+   Serialize::In( data, bufferOffset, minutesLogged );
+
+   return true;
+}
+
+bool  WinLoss::SerializeOut( U8* data, int& bufferOffset ) const
+{
+   Serialize::Out( data, bufferOffset, gameUuid );
+   Serialize::Out( data, bufferOffset, isPrivate );
+   Serialize::Out( data, bufferOffset, wins );
+   Serialize::Out( data, bufferOffset, losses );
+
+   Serialize::Out( data, bufferOffset, rating );
+   Serialize::Out( data, bufferOffset, totalGamesPlayed );
+   Serialize::Out( data, bufferOffset, hoursLogged );
+   Serialize::Out( data, bufferOffset, minutesLogged );
+
+   return true;
+}
+
+
+///////////////////////////////////////////////////////////////
+
+bool  PacketRequestUserWinLoss::SerializeIn( const U8* data, int& bufferOffset )
+{
+   PacketGameToServer::SerializeIn( data, bufferOffset );
+   Serialize::In( data, bufferOffset, userUuid );
+   Serialize::In( data, bufferOffset, gameUuid );
+
+   return true;
+}
+
+bool  PacketRequestUserWinLoss::SerializeOut( U8* data, int& bufferOffset ) const
+{
+   PacketGameToServer::SerializeOut( data, bufferOffset );
+   Serialize::Out( data, bufferOffset, userUuid );
+   Serialize::Out( data, bufferOffset, gameUuid );
+
+   return true;
+}
+
+
+///////////////////////////////////////////////////////////////
+
+bool  PacketRequestUserWinLossResponse::SerializeIn( const U8* data, int& bufferOffset )
+{
+   PacketGameToServer::SerializeIn( data, bufferOffset );
+   Serialize::In( data, bufferOffset, userUuid );
+   Serialize::In( data, bufferOffset, winLoss );
+
+   return true;
+}
+
+bool  PacketRequestUserWinLossResponse::SerializeOut( U8* data, int& bufferOffset ) const
+{
+   PacketGameToServer::SerializeOut( data, bufferOffset );
+   Serialize::Out( data, bufferOffset, userUuid );
+   Serialize::Out( data, bufferOffset, winLoss );
+
+   return true;
+}
+
+
+
+///////////////////////////////////////////////////////////////
+
 bool  PacketListOfGames::SerializeIn( const U8* data, int& bufferOffset )
 {
    PacketGameToServer::SerializeIn( data, bufferOffset );

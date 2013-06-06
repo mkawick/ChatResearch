@@ -43,6 +43,7 @@ public:
    bool  SerializeOut( U8* data, int& bufferOffset ) const;
 
    void  operator = ( const list< string >& copyData );
+   void  insert( const string& str ) { bucket.push_back( str ); }
    DataSet  bucket;   
 };
 
@@ -443,6 +444,7 @@ public:
 
    bool     isFireAndForget;
    string   query;
+   StringBucket   escapedStrings;
 };
 
 

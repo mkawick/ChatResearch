@@ -45,7 +45,7 @@ protected:
    virtual bool   HandlePacketReceived( BasePacket* packetIn );
 
    virtual bool   SerializePacketOut( const BasePacket* packet );
-   bool           SendPacket( const U8* buffer, int length );
+   bool           SendPacket( const U8* buffer, int length ) const;
 
 protected:
 
