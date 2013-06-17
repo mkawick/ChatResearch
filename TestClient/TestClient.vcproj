@@ -251,6 +251,10 @@
 					>
 				</File>
 				<File
+					RelativePath="..\NetworkCommon\NetworkUtils.cpp"
+					>
+				</File>
+				<File
 					RelativePath="..\NetworkCommon\NetworkOut\Pyroraptor.cpp"
 					>
 				</File>
@@ -284,6 +288,14 @@
 				</File>
 				<File
 					RelativePath="..\NetworkCommon\Packets\ChatPacket.h"
+					>
+				</File>
+				<File
+					RelativePath="..\NetworkCommon\Packets\DbPacket.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\NetworkCommon\Packets\DbPacket.h"
 					>
 				</File>
 				<File

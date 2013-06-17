@@ -180,6 +180,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\email.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\FruitadensLogin.cpp"
 				>
 			</File>
@@ -202,6 +206,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\email.h"
+				>
+			</File>
+			<File
 				RelativePath=".\FruitadensLogin.h"
 				>
 			</File>
@@ -219,6 +227,34 @@
 		<Filter
 			Name="NetworkCommon"
 			>
+			<File
+				RelativePath="..\NetworkCommon\DataTypes.h"
+				>
+			</File>
+			<File
+				RelativePath="..\NetworkCommon\NetworkUtils.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\NetworkCommon\Platform.h"
+				>
+			</File>
+			<File
+				RelativePath="..\NetworkCommon\Serialize.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\NetworkCommon\Serialize.h"
+				>
+			</File>
+			<File
+				RelativePath="..\NetworkCommon\ServerConstants.h"
+				>
+			</File>
+			<File
+				RelativePath="..\NetworkCommon\ServerType.h"
+				>
+			</File>
 			<Filter
 				Name="ChainedArchitecture"
 				>
@@ -323,6 +359,14 @@
 					>
 				</File>
 				<File
+					RelativePath="..\NetworkCommon\Packets\DbPacket.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\NetworkCommon\Packets\DbPacket.h"
+					>
+				</File>
+				<File
 					RelativePath="..\NetworkCommon\Packets\GamePacket.cpp"
 					>
 				</File>
@@ -376,6 +420,30 @@
 				</File>
 				<File
 					RelativePath="..\NetworkCommon\Utils\Utils.h"
+					>
+				</File>
+			</Filter>
+			<Filter
+				Name="Logging"
+				>
+				<File
+					RelativePath="..\NetworkCommon\Logging\server_log.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\NetworkCommon\Logging\server_log.h"
+					>
+				</File>
+			</Filter>
+			<Filter
+				Name="Daemon"
+				>
+				<File
+					RelativePath="..\NetworkCommon\Daemon\Daemonizer.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\NetworkCommon\Daemon\Daemonizer.h"
 					>
 				</File>
 			</Filter>

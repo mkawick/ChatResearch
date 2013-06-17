@@ -2,6 +2,7 @@
 
 #include "Utils.h"
 
+#include <stdio.h>
 #include <sstream>
 #include <iostream>
 #include <iomanip>
@@ -18,13 +19,13 @@ using namespace std;
 #if PLATFORM == PLATFORM_WINDOWS
    #include <windows.h>
    #include <mmsystem.h>
+#pragma warning (disable:4996)
 #else
    #include <sys/time.h>
    #include <termios.h>
    #include <unistd.h>
    #include <fcntl.h>
 #endif
-#pragma warning (disable:4996)
 
 //-------------------------------------------------------------------------
 
@@ -245,3 +246,14 @@ int getch()
 
 }
 #endif
+
+void  PrintCurrentTime()
+{
+   char nowBuf[100];
+   time_t now = time(0);
+   struct tm *nowtm;
+   nowtm = localtime(&now);
+   strftime(nowBuf, sizeof(nowBuf), "%Y-%m-%d %H:%M:%S", nowtm);
+
+   cout << nowBuf << endl;
+}

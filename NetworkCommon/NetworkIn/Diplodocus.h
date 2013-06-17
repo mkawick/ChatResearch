@@ -2,6 +2,8 @@
 
 #pragma once
 
+#include <stdio.h>
+#include <memory.h>
 // needs
 // main init socket should take an ipaddress and a port and begin listening for connection requests
 // should route traffic to an outside ipaddress and port or another internal server... so we need a server_connection object
@@ -18,6 +20,7 @@
 
 typedef string HashLookup;
 HashLookup CreateHash( const string& );
+static const int DefaultSleepTimeForPacketHandlers = 33;
 
 class BasePacket;
 typedef Khaan                                      BaseInputChainHandler;
@@ -28,7 +31,7 @@ typedef Khaan                                      BaseInputChainHandler;
 class BasePacketChainHandler : public Threading::CChainedThread < BasePacket* >
 {
 protected:
-   BasePacketChainHandler() : CChainedThread( false, 33, false ) {}
+   BasePacketChainHandler() : Threading::CChainedThread < BasePacket* >( false, DefaultSleepTimeForPacketHandlers, false ) {}
    static   struct event_base*   m_LibEventInstance;
 };
 
@@ -40,8 +43,10 @@ template< typename InputChain = BaseInputChainHandler, typename OutputChain = Ba
 class Diplodocus: public BasePacketChainHandler
 {
 public:
-   typedef  InputChain                              InputChainType;
+   typedef InputChain                                       InputChainType;
    typedef typename std::list< InputChainType* >::iterator  InputChainIteratorType;
+   typedef OutputChain                                      OutputChainType;
+   typedef typename std::list< OutputChainType* >::iterator OutputChainIteratorType;
 
 public:
 	Diplodocus( string serverName, U32 serverId, ServerType type );
@@ -56,7 +61,7 @@ public:
    static bool    ExitApp();
 
    bool           PushInputEvent( ThreadEvent* );
-   void           NotifyFinishedRemoving( ChainedInterface* obj );
+   void           NotifyFinishedRemoving( InputChainType* obj );
 
    bool           AddInputChainData( BasePacket* t, U32 filingData );
    bool           AddOutputChainData( BasePacket* t, U32 filingData );
@@ -96,10 +101,10 @@ protected:
    bool              m_isGame;
    int               m_listeningPort;
    evconnlistener*   m_listener;// libevent object
-   string            m_serverName; // just used for id
    U32               m_serverId; // just used for id
    ServerType        m_serverType;// just used for logging and topology purposes.
    U32               m_connectionIdGateway;
+   string            m_serverName; // just used for id
 
 
    bool           SetupListeningSocket();

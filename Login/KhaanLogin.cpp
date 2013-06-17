@@ -1,12 +1,12 @@
 // KhaanLogin.cpp
 
 #include <iostream>
+#include <memory.h>
 
 #include "KhaanLogin.h"
 #include "../NetworkCommon/Packets/PacketFactory.h"
 #include "../NetworkCommon/Packets/BasePacket.h"
 #include "../NetworkCommon/Packets/GamePacket.h"
-#include "../NetworkCommon/Packets/ServerToServerPacket.h"
 
 ///////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////

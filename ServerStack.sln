@@ -25,6 +25,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "BaseClientLibrary", "BaseCl
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ClientFramework", "ClientFramework\ClientFramework.vcproj", "{AD4412F9-3DFC-424E-9084-4442CE77C01F}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Accounts", "Accounts\Accounts.vcproj", "{0C54456D-3577-4F89-865B-06C8AE97291F}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Win32 = Debug|Win32
@@ -63,6 +65,10 @@ Global
 		{AD4412F9-3DFC-424E-9084-4442CE77C01F}.Debug|Win32.Build.0 = Debug|Win32
 		{AD4412F9-3DFC-424E-9084-4442CE77C01F}.Release|Win32.ActiveCfg = Release|Win32
 		{AD4412F9-3DFC-424E-9084-4442CE77C01F}.Release|Win32.Build.0 = Release|Win32
+		{0C54456D-3577-4F89-865B-06C8AE97291F}.Debug|Win32.ActiveCfg = Debug|Win32
+		{0C54456D-3577-4F89-865B-06C8AE97291F}.Debug|Win32.Build.0 = Debug|Win32
+		{0C54456D-3577-4F89-865B-06C8AE97291F}.Release|Win32.ActiveCfg = Release|Win32
+		{0C54456D-3577-4F89-865B-06C8AE97291F}.Release|Win32.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

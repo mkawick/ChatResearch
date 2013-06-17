@@ -29,7 +29,7 @@ bool	KhaanGame::OnDataReceived( unsigned char* data, int length )
 
       if( type == PacketType_ServerToServerWrapper )
       {
-         PacketServerToServerWrapper* wrapper = reinterpret_cast< PacketServerToServerWrapper* >( packetIn );
+         PacketServerToServerWrapper* wrapper = static_cast< PacketServerToServerWrapper* >( packetIn );
 
          if( wrapper->pPacket->packetType == PacketType_ServerInformation )
          {
@@ -51,7 +51,7 @@ bool	KhaanGame::OnDataReceived( unsigned char* data, int length )
       }
       else
       {
-         PacketGatewayWrapper* wrapper = reinterpret_cast< PacketGatewayWrapper* >( packetIn );
+         PacketGatewayWrapper* wrapper = static_cast< PacketGatewayWrapper* >( packetIn );
 
          ChainLinkIteratorType itOutputs = m_listOfOutputs.begin();
          if( itOutputs != m_listOfOutputs.end() )// only one output currently supported.

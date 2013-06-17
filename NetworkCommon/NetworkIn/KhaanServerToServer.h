@@ -1,5 +1,5 @@
 #pragma once
-#include "khaan.h"
+#include "Khaan.h"
 
 class PacketServerIdentifier;
 

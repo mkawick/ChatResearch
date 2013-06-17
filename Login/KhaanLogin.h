@@ -1,5 +1,6 @@
 #pragma once
-#include "../NetworkCommon/NetworkIn/khaanservertoserver.h"
+#include "../NetworkCommon/NetworkIn/KhaanServerToServer.h"
+
 
 class KhaanLogin : public KhaanServerToServer
 {

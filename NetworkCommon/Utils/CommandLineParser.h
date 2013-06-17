@@ -4,7 +4,12 @@
 
 #include <vector>
 #include <string>
+#include "../Platform.h"
+
+#if PLATFORM == PLATFORM_WINDOWS
 #pragma warning (disable:4996)
+#endif
+
 using namespace std;
 
 //-----------------------------------------------------------

@@ -11,27 +11,40 @@
 // http://www.nitecon.com/tutorials-articles/develop/cpp/c-mysql-beginner-tutorial/
 
 
-//#include <>
+#include <boost/type_traits.hpp>
+#include <boost/algorithm/string/replace.hpp>
 #include <iostream>
-#include <iomanip>
-#include <sstream>
-#include <map>
 using namespace std;
 
+#include "../Platform.h"
+#if PLATFORM == PLATFORM_WINDOWS
+#pragma warning( disable:4996)
+#pragma comment( lib, "libmysql.lib" )
+//#include <winsock2.h>
+#endif
+
+#include "../Packets/DbPacket.h"
 
 #include <my_global.h> // Include this file first to avoid problems
 #include <mysql.h> // MySQL Include File
 
+#include <memory.h>
+#include "../DataTypes.h"
 
 #include "../ChainedArchitecture/Thread.h"
-#include "../DataTypes.h"
 
 // the following define allows us to generalize our header such that external users do not know the underlying tech
 #define DbHandle st_mysql
-#include "Deltadromeus.h"
-#include "../Packets/BasePacket.h"
 
-#pragma comment( lib, "libmysql.lib" )
+//#include <stl_vector.h>
+
+#include "Deltadromeus.h"
+
+
+void  LogEverything( const char* text )
+{
+   //cout << text << endl;
+}
 
 //---------------------------------------------------------------------------------------------------
 //---------------------------------------------------------------------------------------------------
@@ -39,7 +52,7 @@ using namespace std;
 struct DbJob
 {
 public:
-   DbJob( Deltadromeus::JobId id, const std::string& query, int senderKey = 0, int senderIdentifier = 0 ) : 
+   DbJob( Deltadromeus::JobId id, const std::string& query, U32 senderKey = 0, U32 senderIdentifier = 0 ) : 
       m_jobId( id ), 
       m_query( query ), 
       m_senderIdentifier( senderIdentifier ), 
@@ -49,9 +62,10 @@ public:
       m_hasStarted( false ),
       m_hasResultSet( false ),
       m_isComplete( false ),
-      m_errorCondition( false ),
       m_cancelled( false ),
-      m_fireAndForget( false )
+      m_fireAndForget( false ),
+      m_isChainData( false ),
+      m_errorCondition( false )
       {
          if( m_query.size() < 12 )// about the minimum that a query can be "select * from a"
          {
@@ -64,15 +78,15 @@ public:
 
    Deltadromeus::JobId
                GetJobId() const { return m_jobId; }
-   int         GetSenderId() const { return m_senderIdentifier; }
-   int         GetSenderKey() const { return m_senderKey; }
-   int         GetSenderLookup() const { return m_senderLookup; }
+   U32         GetSenderId() const { return m_senderIdentifier; }
+   U32         GetSenderKey() const { return m_senderKey; }
+   U32         GetSenderLookup() const { return m_senderLookup; }
    U32         GetServerId() const { return m_serverId; }
    string      GetSenderMeta() const { return m_senderMeta; }
    bool        GetErrorCondition() const { return m_errorCondition; }
 
    void        SetSenderMeta( const string* meta ) { m_senderMeta = *meta; }
-   void        SetSenderLookup( int lookup ) { m_senderLookup = lookup; }
+   void        SetSenderLookup( U32 lookup ) { m_senderLookup = lookup; }
    void        SetServerLookup( U32 serverId ) { m_serverId = serverId; }
    void        AddEscapedString( MYSQL* connection, const string& escapeMe );
 
@@ -101,9 +115,9 @@ public:
 protected:
    Deltadromeus::JobId     m_jobId;
    string                  m_query;
-   int                     m_senderIdentifier;
-   int                     m_senderKey;
-   int                     m_senderLookup;
+   U32                     m_senderIdentifier;
+   U32                     m_senderKey;
+   U32                     m_senderLookup;
    U32                     m_serverId;
    string                  m_senderMeta;
 
@@ -127,7 +141,7 @@ Deltadromeus::Deltadromeus() : Threading::CChainedThread< BasePacket* >(),
    m_port( 0 ),
    m_DbConnection( NULL )
 {
-   SetSleepTime( 30 );// only check for db needs once in a while
+   SetSleepTime( 65 );// only check for db needs once in a while
 }
 
 Deltadromeus::~Deltadromeus()
@@ -177,11 +191,11 @@ Deltadromeus::JobId
       }
    }
 
+   job->SetFireAndForget( isFireAndForget );
+
    m_mutex.lock();
    m_jobsInProgress.push_back( job );
-   m_mutex.unlock();
-
-   job->SetFireAndForget( isFireAndForget );
+   m_mutex.unlock();   
 
    return jobId;
 }
@@ -206,7 +220,7 @@ bool     Deltadromeus::AddInputChainData( BasePacket* packet, U32 senderId )
 bool     Deltadromeus::GetResults( JobId id, ResultSet& results )
 {
    Threading::MutexLock Lock( m_mutex );
-   int num = m_jobsComplete.size();
+   //int num = m_jobsComplete.size();
 
    deque< DbJob* >::iterator it = m_jobsComplete.begin();
    while( it != m_jobsComplete.end() )
@@ -331,7 +345,7 @@ void     Deltadromeus::Connect()
    // This If is irrelevant and you don't need to show it. I kept it in for Fault Testing.
    if( !m_DbConnection )    // If instance didn't initialize say so and exit with fault.
    {
-      cout << stderr << "MySQL Initialization Failed" << endl;
+      std::cout << stderr << "MySQL Initialization Failed" << endl;
       return;
    }
    // Now we will actually connect to the specific database.
@@ -341,7 +355,11 @@ void     Deltadromeus::Connect()
    if( m_DbConnection )    // If instance didn't initialize say so and exit with fault.
    {
       m_isConnected = true;
-      //mysql_select_db( m_DbConnection, m_dbName.c_str() );
+      cout << "Successful login to the DB: " << m_dbName << ":" << m_port << " using  user=" << m_username << " and pwd=" << m_password << endl;
+   }
+   else
+   {
+      cout << "Failed to login to the DB: " << m_dbName << ":" << m_port << " using  user=" << m_username << " and pwd=" << m_password << endl;
    }
    
 
@@ -355,37 +373,46 @@ int     Deltadromeus::CallbackFunction()
    if( m_isConnected == false )
       return 0;
 
-   m_mutex.lock();
-   
+   LogEverything( "DB update" );
+
    if( m_jobsInProgress.size() )
    {
       DbJob* currentJob = m_jobsInProgress.front();
       if( currentJob->HasStarted() == false )
       {
+         LogEverything( "DB submit query " );
          currentJob->SubmitQuery( m_DbConnection, m_dbName );
       }
       else if( currentJob->IsComplete() == true )
       {
+         LogEverything( "DB query is complete " );
          if( currentJob->IsFireAndForget() == true )
          {
+            LogEverything( "DB query is f&f " );
             delete currentJob;
          }
          else if( PutQueryResultInProperChain( currentJob ) == false )
          {
+            LogEverything( "DB query result stored " );
             m_jobsComplete.push_back( currentJob );
          }
+         m_mutex.lock();
          m_jobsInProgress.pop_front();
+         m_mutex.unlock(); 
 
          // now start the next job
          if( m_jobsInProgress.size() > 0 )
          {
+            LogEverything( "DB has more jobs to start " );
             DbJob* currentJob = m_jobsInProgress.front();
             currentJob->SubmitQuery( m_DbConnection, m_dbName );
          }
+         else
+         {
+            LogEverything( "DB queue is empty" );
+         }
       }
-   }
-
-   m_mutex.unlock();      
+   } 
 
    return 1;
 }
@@ -397,16 +424,16 @@ bool     Deltadromeus::PutQueryResultInProperChain( DbJob* testJob )
    if( testJob->IsChainData() == false )
       return false;
 
-   int matchingId = testJob->GetSenderId();
+   U32 matchingId = testJob->GetSenderId();
 
-   if( matchingId != -1 )
+   if( matchingId != (U32)-1 )
    {
       Threading::MutexLock    locker( m_inputChainListMutex );
       ChainLinkIteratorType it = m_listOfInputs.begin();
       while( it != m_listOfInputs.end() )
       {
-         ChainLink& link = (*it);
-         ChainedInterface*	chainObj = (*it).m_interface;
+         //ChainLink& link = (*it);
+         ChainedInterface< BasePacket*>*	chainObj = (*it).m_interface;
 
          if( chainObj->GetChainedId() == matchingId )
          {
@@ -459,17 +486,25 @@ Deltadromeus::JobId
 void  DbJob::AddEscapedString( MYSQL* connection, const string& escapeMe )
 {
    if( escapeMe.size() == 0 )
+   {
+      boost::replace_first( m_query, "%s", "" );// much, much better than sprintf
       return;
+   }
 
-   char queryString[512], escapedVersion[512];
+   char escapedVersion[512];
 
    mysql_real_escape_string( connection, escapedVersion, escapeMe.c_str(), escapeMe.size() );
    if( strlen( escapedVersion ) == 0 )
       return;
 
-   sprintf( queryString, m_query.c_str(), escapedVersion );// this is a lot of work, I realize but should be very rare
-
-   m_query = queryString; // replace the query with the text replacement
+   if( strlen( escapedVersion ) > 0 )
+   {
+      boost::replace_first( m_query, "%s", escapedVersion);// much, much better than sprintf
+   }
+   else
+   {
+      boost::replace_first( m_query, "%s", "" );// much, much better than sprintf
+   }
 }
 
 //------------------------------------------------------------
@@ -495,7 +530,7 @@ bool  DbJob::SubmitQuery( MYSQL* connection, const string& dbName )
       MYSQL_RES* res_set = mysql_store_result( connection ); // Receive the result and store it in res_set
       if( res_set )
       {
-         unsigned long long numrows = mysql_num_rows( res_set ); // Create the count to print all rows
+         //unsigned long long numrows = mysql_num_rows( res_set ); // Create the count to print all rows
          unsigned int numcolumns = mysql_num_fields( res_set );
 
          MYSQL_ROW row;  // Assign variable for rows. 

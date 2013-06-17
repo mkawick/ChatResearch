@@ -8,8 +8,6 @@
 
 /* Begin PBXBuildFile section */
 		70615BD117596345000C42D6 /* libmysqlclient.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 70615BD017596345000C42D6 /* libmysqlclient.a */; };
-		70615BD5175963D3000C42D6 /* libevent.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 70615BD4175963D3000C42D6 /* libevent.a */; };
-		70615BD7175965AA000C42D6 /* libevent_pthreads.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 70615BD6175965AA000C42D6 /* libevent_pthreads.a */; };
 		707F580C17593E93006FEA41 /* LoginMac.1 in CopyFiles */ = {isa = PBXBuildFile; fileRef = 707F580B17593E93006FEA41 /* LoginMac.1 */; };
 		707F581E17593F06006FEA41 /* Serialize.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 707F581A17593F06006FEA41 /* Serialize.cpp */; };
 		707F582317593F20006FEA41 /* CommandLineParser.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 707F581F17593F20006FEA41 /* CommandLineParser.cpp */; };
@@ -30,6 +28,8 @@
 		70A9F54C17595B230009AED5 /* DiplodocusLogin.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 70A9F54617595B230009AED5 /* DiplodocusLogin.cpp */; };
 		70A9F54D17595B230009AED5 /* FruitadensLogin.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 70A9F54817595B230009AED5 /* FruitadensLogin.cpp */; };
 		70A9F54E17595B230009AED5 /* KhaanLogin.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 70A9F54A17595B230009AED5 /* KhaanLogin.cpp */; };
+		70F7BB661760F27D00DCCA7E /* libevent_pthreads.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 70F7BB641760F27D00DCCA7E /* libevent_pthreads.a */; };
+		70F7BB671760F27D00DCCA7E /* libevent.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 70F7BB651760F27D00DCCA7E /* libevent.a */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -47,8 +47,6 @@
 
 /* Begin PBXFileReference section */
 		70615BD017596345000C42D6 /* libmysqlclient.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libmysqlclient.a; path = /usr/local/lib/libmysqlclient.a; sourceTree = "<absolute>"; };
-		70615BD4175963D3000C42D6 /* libevent.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libevent.a; path = ../../../../../../../../usr/local/lib/libevent.a; sourceTree = "<group>"; };
-		70615BD6175965AA000C42D6 /* libevent_pthreads.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libevent_pthreads.a; path = ../../../../../../../../usr/local/lib/libevent_pthreads.a; sourceTree = "<group>"; };
 		707F580617593E93006FEA41 /* LoginMac */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = LoginMac; sourceTree = BUILT_PRODUCTS_DIR; };
 		707F580B17593E93006FEA41 /* LoginMac.1 */ = {isa = PBXFileReference; lastKnownFileType = text.man; path = LoginMac.1; sourceTree = "<group>"; };
 		707F581817593F06006FEA41 /* DataTypes.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = DataTypes.h; path = ../../NetworkCommon/DataTypes.h; sourceTree = "<group>"; };
@@ -98,6 +96,8 @@
 		70A9F54917595B230009AED5 /* FruitadensLogin.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = FruitadensLogin.h; path = ../../FruitadensLogin.h; sourceTree = "<group>"; };
 		70A9F54A17595B230009AED5 /* KhaanLogin.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = KhaanLogin.cpp; path = ../../KhaanLogin.cpp; sourceTree = "<group>"; };
 		70A9F54B17595B230009AED5 /* KhaanLogin.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = KhaanLogin.h; path = ../../KhaanLogin.h; sourceTree = "<group>"; };
+		70F7BB641760F27D00DCCA7E /* libevent_pthreads.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libevent_pthreads.a; path = "../../../libevent/Mac-libs/libevent_pthreads.a"; sourceTree = "<group>"; };
+		70F7BB651760F27D00DCCA7E /* libevent.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libevent.a; path = "../../../libevent/Mac-libs/libevent.a"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -106,8 +106,8 @@
 			buildActionMask = 2147483647;
 			files = (
 				70615BD117596345000C42D6 /* libmysqlclient.a in Frameworks */,
-				70615BD5175963D3000C42D6 /* libevent.a in Frameworks */,
-				70615BD7175965AA000C42D6 /* libevent_pthreads.a in Frameworks */,
+				70F7BB661760F27D00DCCA7E /* libevent_pthreads.a in Frameworks */,
+				70F7BB671760F27D00DCCA7E /* libevent.a in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -246,8 +246,8 @@
 		70FAB31717595FC200D50533 /* LibEventCoreLibrary */ = {
 			isa = PBXGroup;
 			children = (
-				70615BD6175965AA000C42D6 /* libevent_pthreads.a */,
-				70615BD4175963D3000C42D6 /* libevent.a */,
+				70F7BB641760F27D00DCCA7E /* libevent_pthreads.a */,
+				70F7BB651760F27D00DCCA7E /* libevent.a */,
 			);
 			name = LibEventCoreLibrary;
 			sourceTree = "<group>";
@@ -363,8 +363,8 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				HEADER_SEARCH_PATHS = (
-					/Users/mickey/develop/boost,
-					"/Users/mickey/develop/libevent/**",
+					"$(SRCROOT)/../../../boost",
+					"$(SRCROOT)/../../../libevent/**",
 					"/usr/local/include/**",
 				);
 				LIBRARY_SEARCH_PATHS = /usr/local/lib;
@@ -395,8 +395,8 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				HEADER_SEARCH_PATHS = (
-					/Users/mickey/develop/boost,
-					"/Users/mickey/develop/libevent/**",
+					"$(SRCROOT)/../../../boost",
+					"$(SRCROOT)/../../../libevent/**",
 					"/usr/local/include/**",
 				);
 				LIBRARY_SEARCH_PATHS = /usr/local/lib;
@@ -408,6 +408,10 @@
 		707F581017593E93006FEA41 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				LIBRARY_SEARCH_PATHS = (
+					"$(inherited)",
+					"\"$(SRCROOT)/../../../libevent/Mac-libs\"",
+				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
 			};
 			name = Debug;
@@ -415,6 +419,10 @@
 		707F581117593E93006FEA41 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				LIBRARY_SEARCH_PATHS = (
+					"$(inherited)",
+					"\"$(SRCROOT)/../../../libevent/Mac-libs\"",
+				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
 			};
 			name = Release;

@@ -21,13 +21,12 @@
 		702214A41759264800476F8D /* Khaan.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 702214A21759264800476F8D /* Khaan.cpp */; };
 		702214AA1759265A00476F8D /* Thread.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 702214A71759265A00476F8D /* Thread.cpp */; };
 		702214AC1759277C00476F8D /* libncurses.5.4.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 702214AB1759277C00476F8D /* libncurses.5.4.dylib */; };
-		707F57E517593D05006FEA41 /* libevent_core.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 707F57E217593D05006FEA41 /* libevent_core.a */; };
-		707F57E617593D05006FEA41 /* libevent_pthreads.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 707F57E317593D05006FEA41 /* libevent_pthreads.a */; };
-		707F57E717593D05006FEA41 /* libevent.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 707F57E417593D05006FEA41 /* libevent.a */; };
 		707F585F1759497A006FEA41 /* DiplodocusGateway.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 707F58571759497A006FEA41 /* DiplodocusGateway.cpp */; };
 		707F58601759497A006FEA41 /* FruitadensGateway.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 707F58591759497A006FEA41 /* FruitadensGateway.cpp */; };
 		707F58611759497A006FEA41 /* Gateway.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 707F585B1759497A006FEA41 /* Gateway.cpp */; };
 		707F58621759497A006FEA41 /* KhaanConnector.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 707F585D1759497A006FEA41 /* KhaanConnector.cpp */; };
+		70F7BB621760F20B00DCCA7E /* libevent_pthreads.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 70F7BB601760F20B00DCCA7E /* libevent_pthreads.a */; };
+		70F7BB631760F20B00DCCA7E /* libevent.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 70F7BB611760F20B00DCCA7E /* libevent.a */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -80,9 +79,6 @@
 		702214A81759265A00476F8D /* Thread.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = Thread.h; path = ../../NetworkCommon/ChainedArchitecture/Thread.h; sourceTree = "<group>"; };
 		702214A91759265A00476F8D /* Thread.inl */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = Thread.inl; path = ../../NetworkCommon/ChainedArchitecture/Thread.inl; sourceTree = "<group>"; };
 		702214AB1759277C00476F8D /* libncurses.5.4.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libncurses.5.4.dylib; path = usr/lib/libncurses.5.4.dylib; sourceTree = SDKROOT; };
-		707F57E217593D05006FEA41 /* libevent_core.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libevent_core.a; path = ../../../../../../../../usr/local/lib/libevent_core.a; sourceTree = "<group>"; };
-		707F57E317593D05006FEA41 /* libevent_pthreads.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libevent_pthreads.a; path = ../../../../../../../../usr/local/lib/libevent_pthreads.a; sourceTree = "<group>"; };
-		707F57E417593D05006FEA41 /* libevent.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libevent.a; path = ../../../../../../../../usr/local/lib/libevent.a; sourceTree = "<group>"; };
 		707F58571759497A006FEA41 /* DiplodocusGateway.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = DiplodocusGateway.cpp; path = ../../DiplodocusGateway.cpp; sourceTree = "<group>"; };
 		707F58581759497A006FEA41 /* DiplodocusGateway.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = DiplodocusGateway.h; path = ../../DiplodocusGateway.h; sourceTree = "<group>"; };
 		707F58591759497A006FEA41 /* FruitadensGateway.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = FruitadensGateway.cpp; path = ../../FruitadensGateway.cpp; sourceTree = "<group>"; };
@@ -91,6 +87,8 @@
 		707F585C1759497A006FEA41 /* GatewayCommon.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = GatewayCommon.h; path = ../../GatewayCommon.h; sourceTree = "<group>"; };
 		707F585D1759497A006FEA41 /* KhaanConnector.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = KhaanConnector.cpp; path = ../../KhaanConnector.cpp; sourceTree = "<group>"; };
 		707F585E1759497A006FEA41 /* KhaanConnector.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = KhaanConnector.h; path = ../../KhaanConnector.h; sourceTree = "<group>"; };
+		70F7BB601760F20B00DCCA7E /* libevent_pthreads.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libevent_pthreads.a; path = "../../../libevent/Mac-libs/libevent_pthreads.a"; sourceTree = "<group>"; };
+		70F7BB611760F20B00DCCA7E /* libevent.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libevent.a; path = "../../../libevent/Mac-libs/libevent.a"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -99,9 +97,8 @@
 			buildActionMask = 2147483647;
 			files = (
 				702214AC1759277C00476F8D /* libncurses.5.4.dylib in Frameworks */,
-				707F57E517593D05006FEA41 /* libevent_core.a in Frameworks */,
-				707F57E617593D05006FEA41 /* libevent_pthreads.a in Frameworks */,
-				707F57E717593D05006FEA41 /* libevent.a in Frameworks */,
+				70F7BB621760F20B00DCCA7E /* libevent_pthreads.a in Frameworks */,
+				70F7BB631760F20B00DCCA7E /* libevent.a in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -226,9 +223,8 @@
 		702214AD17593A6F00476F8D /* LibeventCoreLibrary */ = {
 			isa = PBXGroup;
 			children = (
-				707F57E217593D05006FEA41 /* libevent_core.a */,
-				707F57E317593D05006FEA41 /* libevent_pthreads.a */,
-				707F57E417593D05006FEA41 /* libevent.a */,
+				70F7BB601760F20B00DCCA7E /* libevent_pthreads.a */,
+				70F7BB611760F20B00DCCA7E /* libevent.a */,
 			);
 			name = LibeventCoreLibrary;
 			sourceTree = "<group>";
@@ -333,8 +329,8 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				HEADER_SEARCH_PATHS = (
-					/Users/mickey/develop/boost,
-					"/Users/mickey/develop/libevent/**",
+					"$(SRCROOT)/../../../boost",
+					"$(SRCROOT)/../../../libevent/**",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 10.8;
 				ONLY_ACTIVE_ARCH = YES;
@@ -363,8 +359,8 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				HEADER_SEARCH_PATHS = (
-					/Users/mickey/develop/boost,
-					"/Users/mickey/develop/libevent/**",
+					"$(SRCROOT)/../../../boost",
+					"$(SRCROOT)/../../../libevent/**",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 10.8;
 				SDKROOT = macosx;
@@ -377,6 +373,7 @@
 				LIBRARY_SEARCH_PATHS = (
 					"$(inherited)",
 					"\"$(SRCROOT)/../../../../../libevent/.libs\"",
+					"\"$(SRCROOT)/../../../libevent/Mac-libs\"",
 				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
 			};
@@ -388,6 +385,7 @@
 				LIBRARY_SEARCH_PATHS = (
 					"$(inherited)",
 					"\"$(SRCROOT)/../../../../../libevent/.libs\"",
+					"\"$(SRCROOT)/../../../libevent/Mac-libs\"",
 				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
 			};

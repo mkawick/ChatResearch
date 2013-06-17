@@ -2,7 +2,7 @@
 
 // DiplodocusGateway.h
 
-#include "../NetworkCommon/NetworkIn/diplodocus.h"
+#include "../NetworkCommon/NetworkIn/Diplodocus.h"
 
 #include "KhaanConnector.h"
 #include "GatewayCommon.h"

@@ -16,17 +16,18 @@ using namespace std;
 #include "../Packets/ServerToServerPacket.h"
 #include "../Packets/PacketFactory.h"
 
+const int typicalSleepTime = 200;
 
 
 //-----------------------------------------------------------------------------
 
-Fruitadens :: Fruitadens( const char* name ) : CChainedThread( true, 200 ),
+Fruitadens :: Fruitadens( const char* name ) : Threading::CChainedThread <BasePacket*>( true, typicalSleepTime ),
                m_clientSocket( 0 ),
                m_isConnected( false ),
-               m_port( 0 ),
                m_hasFailedCritically( false ),
-               m_serverType( ServerType_General ),
                m_connectedServerId( 0 ),
+               m_port( 0 ),
+               m_serverType( ServerType_General ),
                m_serverId( 0 )
 {
    m_name = name;
@@ -295,7 +296,7 @@ bool  Fruitadens::HandlePacketReceived( BasePacket* packetIn )
    ChainLinkIteratorType itInput = m_listOfInputs.begin();
    while( itInput != m_listOfInputs.end() )// only one input currently supported.
    {
-      ChainedInterface* inputPtr = (*itInput).m_interface;
+      ChainedInterface<BasePacket*>* inputPtr = (*itInput).m_interface;
       if( inputPtr->AddOutputChainData( packetIn ) == true )
       {
          return true;

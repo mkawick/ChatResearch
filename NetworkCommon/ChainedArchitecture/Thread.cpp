@@ -5,13 +5,12 @@
 //  Copyright (c) 2013 Playdek games. All rights reserved.
 //
 
-#include "../Platform.h"
-#if PLATFORM == PLATFORM_WINDOWS
-#else
-#endif
-
 #include <assert.h>
 #include <deque>
+#include <memory.h>
+
+#include "../Platform.h"
+
 #include "Thread.h"
 using namespace std;
 using namespace Threading;
@@ -19,7 +18,12 @@ using namespace Threading;
 const int timeoutUponDeleteMs = 1000;
 const int mutexTimeout = 1000;
 
+
+#if PLATFORM == PLATFORM_WINDOWS
 #pragma comment( lib, "winmm.lib" )
+#else
+#endif
+
 
 //////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -91,12 +95,12 @@ bool  Mutex::unlock() const
 //////////////////////////////////////////////////////////////////////////////////////////////
 
 CAbstractThread::CAbstractThread( bool needsThreadProtections, int sleepTime, bool paused ) : 
-                  m_thread( NULL ),
-                  m_needsThreadProtection( needsThreadProtections ), 
-                  m_sleepTime( sleepTime ),
+                  m_isPaused( paused ),
                   m_running( false ),
                   m_markedForCleanup( false ),
-                  m_isPaused( paused )
+                  m_needsThreadProtection( needsThreadProtections ), 
+                  m_sleepTime( sleepTime ),
+                  m_thread( NULL )
 {
 #if PLATFORM == PLATFORM_WINDOWS
    m_threadId = 0;
@@ -166,6 +170,15 @@ void  CAbstractThread::SetPriority( ePriority priority )
    //sched_param param;
    pthread_setschedparam( m_thread, SCHED_OTHER, &param );
 #endif
+}
+
+//----------------------------------------------------------------
+
+void CAbstractThread::Resume() 
+{ 
+   m_isPaused = false; 
+   if( m_thread == NULL ) 
+      CreateThread(); 
 }
 
 //----------------------------------------------------------------

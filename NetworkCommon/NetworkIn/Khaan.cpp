@@ -2,6 +2,7 @@
 
 #include <event2/event.h>
 #include <iostream>
+
 #include "Khaan.h"
 
 #include "../ServerConstants.h"
@@ -43,7 +44,7 @@ void   Khaan ::PreCleanup()
 
    ChainLinkIteratorType output = m_listOfOutputs.begin();
 
-   ChainedInterface*	chain = (*output).m_interface;
+   ChainedInterface<BasePacket*>* chain = (*output).m_interface;
    if( chain )
    {
       Diplodocus <Khaan> * chatServer = static_cast< Diplodocus <Khaan> * >( chain );
@@ -72,8 +73,8 @@ bool	Khaan :: OnDataReceived( unsigned char* data, int length )
       ChainLinkIteratorType itOutputs = m_listOfOutputs.begin();
       while( itOutputs != m_listOfOutputs.end() )
       {
-         const ChainLink& chain = *itOutputs++;
-         ChainedInterface* interfacePtr = chain.m_interface;
+         ChainLink& chain = *itOutputs++;
+         ChainedInterface<BasePacket*>* interfacePtr = chain.m_interface;
 
          ThreadEvent te;
          te.type = ThreadEvent_NeedsService;
@@ -115,7 +116,8 @@ void	Khaan :: UpdateInwardPacketList()
 
    ChainLinkIteratorType output = m_listOfOutputs.begin();
 
-   ChainedInterface*	chain = (*output).m_interface;
+   //ChainedInterface*	chain = (*output).m_interface;
+   ChainedInterface<BasePacket*>* chain = (*output).m_interface;
 
    if( chain )
    {
@@ -149,7 +151,7 @@ void	Khaan :: UpdateOutwardPacketList()
    {
       BasePacket* packet = m_packetsOut.front();
       packet->SerializeOut( buffer, bufferOffset ); 
-      if( bufferOffset < MaxBufferSize - 256 )// do not write past the end
+      if( bufferOffset < (int)( MaxBufferSize - 256 ) )// do not write past the end
       {
          delete packet;
          m_packetsOut.pop_front();
@@ -196,7 +198,7 @@ bool Khaan :: AddOutputChainData( BasePacket* packet, U32 filingData )
 
 void  Khaan :: OnDataWritten( struct bufferevent *bev, void *user_data ) 
 {
-   struct evbuffer *output = bufferevent_get_output(bev);
+   //struct evbuffer *output = bufferevent_get_output(bev);
    //output->open();
     /* if (evbuffer_get_length(output) == 0) {
          printf("flushed answer\n");

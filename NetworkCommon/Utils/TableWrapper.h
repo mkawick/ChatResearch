@@ -21,7 +21,6 @@ public:
       Column_uuid,
       Column_last_login_time,
       Column_last_logout_time,
-      Column_password,
       Column_end
    };
    static const char* const column_names[];
@@ -45,6 +44,31 @@ public:
 };
 
 typedef Enigmosaurus <TableSimpleUser> SimpleUserTable;
+
+//////////////////////////////////////////////////////////////
+
+class TableUserTempNewUser
+{
+public:
+   enum Columns
+   {
+      Column_id,
+      Column_name,
+      Column_user_id,
+      Column_email,
+      Column_lookup_key,
+      Column_game_id,
+      Column_time_created,
+      Column_was_email_sent,
+      Column_language_id,
+      Column_uuid,
+      Column_gamekit_hash,
+      Column_end
+   };
+   static const char* const column_names[];
+};
+
+typedef Enigmosaurus <TableUserTempNewUser> NewUsersTable;
 
 //////////////////////////////////////////////////////////////
 
@@ -121,5 +145,63 @@ public:
 };
 
 typedef Enigmosaurus <SimpleGame> SimpleGameTable;
+
+//////////////////////////////////////////////////////////////
+
+class StringsTable
+{
+public:
+   enum Columns
+   {
+      Column_id,
+      Column_string,
+      Column_category,
+      Column_description,
+      Column_english,
+      Column_spanish,
+      Column_french,
+      Column_german,
+      Column_italian,
+      Column_portuguese,
+      Column_russian,
+      Column_japanese,
+      Column_chinese,
+      Column_end
+   };
+};
+
+typedef Enigmosaurus <StringsTable> StringTableParser;
+
+//////////////////////////////////////////////////////////////
+
+class TableIndexOnly
+{
+public:
+   enum Columns
+   {
+      Column_index,
+      Column_end
+   };
+   static const char* const column_names[];
+};
+
+typedef Enigmosaurus <TableIndexOnly> IndexTableParser;
+
+//////////////////////////////////////////////////////////////
+
+class ConfigTable
+{
+public:
+   enum Columns
+   {
+      Column_id,
+      Column_key,
+      Column_value,
+      Column_category,
+      Column_end
+   };
+};
+
+typedef Enigmosaurus <ConfigTable> ConfigParser;
 
 //////////////////////////////////////////////////////////////

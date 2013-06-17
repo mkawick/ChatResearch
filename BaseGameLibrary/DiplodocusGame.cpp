@@ -163,7 +163,7 @@ bool   DiplodocusGame::AddOutputChainData( BasePacket* packet, U32 connectionId 
    {
       if( packet->packetSubType == BasePacketDbQuery::QueryType_Result )
       {
-         PacketDbQueryResult* result = reinterpret_cast<PacketDbQueryResult*>( packet );
+         PacketDbQueryResult* result = static_cast<PacketDbQueryResult*>( packet );
          U32 connectionId = result->id;
          if( connectionId == m_chatChannelManager->GetConnectionId() )
          {

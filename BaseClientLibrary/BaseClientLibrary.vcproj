@@ -217,15 +217,15 @@
 				Name="NetworkOut"
 				>
 				<File
-					RelativePath="..\NetworkCommon\NetworkIn\Diplodocus.cpp"
-					>
-				</File>
-				<File
 					RelativePath="..\NetworkCommon\NetworkOut\Fruitadens.cpp"
 					>
 				</File>
 				<File
 					RelativePath="..\NetworkCommon\NetworkOut\Fruitadens.h"
+					>
+				</File>
+				<File
+					RelativePath="..\NetworkCommon\NetworkUtils.cpp"
 					>
 				</File>
 			</Filter>
@@ -250,6 +250,14 @@
 				</File>
 				<File
 					RelativePath="..\NetworkCommon\Packets\ChatPacket.h"
+					>
+				</File>
+				<File
+					RelativePath="..\NetworkCommon\Packets\DbPacket.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\NetworkCommon\Packets\DbPacket.h"
 					>
 				</File>
 				<File

@@ -14,6 +14,8 @@ using namespace std;
 #include <mysql.h>
 
 #include "../NetworkCommon/Utils/TableWrapper.h"
+
+#include "../NetworkCommon/Packets/DbPacket.h"
 #include "../NetworkCommon/Packets/GamePacket.h"
 #include "../NetworkCommon/Packets/ServerToServerPacket.h"
 
@@ -86,7 +88,7 @@ bool     ChatChannelManager::ProcessPacket( BasePacket* packet )
          {
          case BasePacketDbQuery::QueryType_Result:
             {
-               PacketDbQueryResult* dbResult = reinterpret_cast< PacketDbQueryResult* >( packet );
+               PacketDbQueryResult* dbResult = static_cast< PacketDbQueryResult* >( packet );
                int jobId = dbResult->lookup;
                string lookupUuid = dbResult->meta;
                DbJobIterator iter;

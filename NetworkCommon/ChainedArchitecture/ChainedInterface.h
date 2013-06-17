@@ -66,9 +66,8 @@ protected:
 		Type	            RemoveData() { Type t = m_data.front(); m_data.pop_front(); return t; }
       bool              HasData() const { return m_data.size() > 0; }
 
-		ChainedInterface*	m_interface;
-		std::deque<Type>	m_data;
-		//Mutex				m_mutex;
+		ChainedInterface<Type>*	   m_interface;
+		std::deque<Type>	         m_data;
 	};
 
    virtual void   NotifyFinishedAdding( ChainedInterface* obj = NULL ) {} 

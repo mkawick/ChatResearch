@@ -32,7 +32,7 @@ typedef HANDLE             ThreadId;
 typedef pthread_mutex_t    ThreadMutex;
 typedef pthread_t          ThreadId;
 typedef pthread_attr_t     ThreadAttributes;
-#define Sleep(a)           usleep((float)(a) * 0.001)
+#define Sleep(a)           usleep((float)(a) * 1000)
 
 #endif
 
@@ -128,7 +128,7 @@ public:
    void              SetSleepTime( int ms ) { m_sleepTime = ms; }
 
    void              Pause() { m_isPaused = true; }
-   void              Resume() { m_isPaused = false; if( m_thread == NULL ) CreateThread(); }
+   void              Resume();
 
    //------------------------------------------------------
 

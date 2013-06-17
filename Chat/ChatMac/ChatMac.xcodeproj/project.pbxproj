@@ -7,9 +7,9 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		70F7BB6A1760F2D400DCCA7E /* libevent_pthreads.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 70F7BB681760F2D400DCCA7E /* libevent_pthreads.a */; };
+		70F7BB6B1760F2D400DCCA7E /* libevent.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 70F7BB691760F2D400DCCA7E /* libevent.a */; };
 		70F9635D17596A07001F0F25 /* ChatMac.1 in CopyFiles */ = {isa = PBXBuildFile; fileRef = 70F9635C17596A07001F0F25 /* ChatMac.1 */; };
-		70F9636F17596AB8001F0F25 /* libevent.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 70F9636E17596AB8001F0F25 /* libevent.a */; };
-		70F9637317596B06001F0F25 /* libevent_pthreads.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 70F9637117596B06001F0F25 /* libevent_pthreads.a */; };
 		70F9637417596B06001F0F25 /* libmysqlclient.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 70F9637217596B06001F0F25 /* libmysqlclient.a */; };
 		70F9637E17596B26001F0F25 /* Chat.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 70F9637517596B25001F0F25 /* Chat.cpp */; };
 		70F9637F17596B26001F0F25 /* ChatChannelManager.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 70F9637617596B25001F0F25 /* ChatChannelManager.cpp */; };
@@ -48,10 +48,10 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		70F7BB681760F2D400DCCA7E /* libevent_pthreads.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libevent_pthreads.a; path = "../../../libevent/Mac-libs/libevent_pthreads.a"; sourceTree = "<group>"; };
+		70F7BB691760F2D400DCCA7E /* libevent.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libevent.a; path = "../../../libevent/Mac-libs/libevent.a"; sourceTree = "<group>"; };
 		70F9635717596A07001F0F25 /* ChatMac */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = ChatMac; sourceTree = BUILT_PRODUCTS_DIR; };
 		70F9635C17596A07001F0F25 /* ChatMac.1 */ = {isa = PBXFileReference; lastKnownFileType = text.man; path = ChatMac.1; sourceTree = "<group>"; };
-		70F9636E17596AB8001F0F25 /* libevent.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libevent.a; path = /usr/local/lib/libevent.a; sourceTree = "<absolute>"; };
-		70F9637117596B06001F0F25 /* libevent_pthreads.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libevent_pthreads.a; path = /usr/local/lib/libevent_pthreads.a; sourceTree = "<absolute>"; };
 		70F9637217596B06001F0F25 /* libmysqlclient.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libmysqlclient.a; path = ../../../../../../../../usr/local/lib/libmysqlclient.a; sourceTree = "<group>"; };
 		70F9637517596B25001F0F25 /* Chat.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = Chat.cpp; path = ../../Chat.cpp; sourceTree = "<group>"; };
 		70F9637617596B25001F0F25 /* ChatChannelManager.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = ChatChannelManager.cpp; path = ../../ChatChannelManager.cpp; sourceTree = "<group>"; };
@@ -111,9 +111,9 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				70F9636F17596AB8001F0F25 /* libevent.a in Frameworks */,
-				70F9637317596B06001F0F25 /* libevent_pthreads.a in Frameworks */,
 				70F9637417596B06001F0F25 /* libmysqlclient.a in Frameworks */,
+				70F7BB6A1760F2D400DCCA7E /* libevent_pthreads.a in Frameworks */,
+				70F7BB6B1760F2D400DCCA7E /* libevent.a in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -167,8 +167,8 @@
 		70F9637017596AD4001F0F25 /* LibEventCoreLibrary */ = {
 			isa = PBXGroup;
 			children = (
-				70F9637117596B06001F0F25 /* libevent_pthreads.a */,
-				70F9636E17596AB8001F0F25 /* libevent.a */,
+				70F7BB681760F2D400DCCA7E /* libevent_pthreads.a */,
+				70F7BB691760F2D400DCCA7E /* libevent.a */,
 			);
 			name = LibEventCoreLibrary;
 			sourceTree = "<group>";
@@ -375,8 +375,8 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				HEADER_SEARCH_PATHS = (
-					/Users/mickey/develop/boost,
-					"/Users/mickey/develop/libevent/**",
+					"$(SRCROOT)/../../../boost",
+					"$(SRCROOT)/../../../libevent/**",
 					/usr/local/mysql/include,
 				);
 				LIBRARY_SEARCH_PATHS = /usr/local/lib;
@@ -407,8 +407,8 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				HEADER_SEARCH_PATHS = (
-					/Users/mickey/develop/boost,
-					"/Users/mickey/develop/libevent/**",
+					"$(SRCROOT)/../../../boost",
+					"$(SRCROOT)/../../../libevent/**",
 					/usr/local/mysql/include,
 				);
 				LIBRARY_SEARCH_PATHS = /usr/local/lib;
@@ -420,6 +420,10 @@
 		70F9636117596A07001F0F25 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				LIBRARY_SEARCH_PATHS = (
+					"$(inherited)",
+					"\"$(SRCROOT)/../../../libevent/Mac-libs\"",
+				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
 			};
 			name = Debug;
@@ -427,6 +431,10 @@
 		70F9636217596A07001F0F25 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				LIBRARY_SEARCH_PATHS = (
+					"$(inherited)",
+					"\"$(SRCROOT)/../../../libevent/Mac-libs\"",
+				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
 			};
 			name = Release;
@@ -450,6 +458,7 @@
 				70F9636217596A07001F0F25 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
 	};

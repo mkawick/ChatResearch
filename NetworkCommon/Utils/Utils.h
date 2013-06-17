@@ -12,6 +12,8 @@ U64            GetDateFromString( const char* UTCFormatted );
 std::string    CreatePrintablePair( const std::string& key, const std::string& value );
 U32            GetCurrentMilliseconds();
 
+void           PrintCurrentTime();
+
 std::string    Trim(const std::string& str,
                  const std::string& whitespace = " \t");
 

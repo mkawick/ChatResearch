@@ -21,6 +21,7 @@ U64 ntohll(U64 value);
 #include <netdb.h>
 #include <netinet/in.h>
 #include <netinet/tcp.h>
+#include <sys/fcntl.h>
 #endif
 
 #include <string>

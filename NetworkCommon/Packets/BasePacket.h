@@ -3,7 +3,7 @@
 #pragma once
 
 #include "../ServerType.h"
-#include "../datatypes.h"
+#include "../DataTypes.h"
 #include "../ServerConstants.h"
 #include "../Serialize.h"
 #include <string>
@@ -409,66 +409,13 @@ public:
 
 
 ///////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////
 
-
-class BasePacketDbQuery : public BasePacket
-{
-public:
-   enum QueryType
-   {
-      QueryType_Query,
-      QueryType_Result
-   };
-public:
-   BasePacketDbQuery( int packet_type = PacketType_DbQuery, int packet_sub_type = QueryType_Query ): BasePacket( packet_type, packet_sub_type ), id( 0 ), lookup( 0 ), serverLookup( 0 ) {}
-
-   bool  SerializeIn( const U8* data, int& bufferOffset );
-   bool  SerializeOut( U8* data, int& bufferOffset ) const;
-
-   U32      id;
-   int      lookup;
-   U32      serverLookup;
-   string   meta;
-};
-
-///////////////////////////////////////////////////////////////
-
-class PacketDbQuery : public BasePacketDbQuery
-{
-public:
-   PacketDbQuery( int packet_type = PacketType_DbQuery, int packet_sub_type = QueryType_Query ): BasePacketDbQuery( packet_type, packet_sub_type ), isFireAndForget( false ) {}
-
-   bool  SerializeIn( const U8* data, int& bufferOffset );
-   bool  SerializeOut( U8* data, int& bufferOffset ) const;
-
-   bool     isFireAndForget;
-   string   query;
-   StringBucket   escapedStrings;
-};
-
-
-///////////////////////////////////////////////////////////////
-
-class PacketDbQueryResult : public BasePacketDbQuery
-{
-public:
-   PacketDbQueryResult( int packet_type = PacketType_DbQuery, int packet_sub_type = QueryType_Result  ): BasePacketDbQuery( packet_type, packet_sub_type ), successfulQuery( false ) {}
-
-   bool  SerializeIn( const U8* data, int& bufferOffset );
-   bool  SerializeOut( U8* data, int& bufferOffset ) const;
-
-   bool                 successfulQuery;
-   DynamicDataBucket    bucket;// this could be slow with large datasets.. look into optimizations here
-};
-
-///////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////
 
 class PacketGatewayWrapper : public BasePacket
 {
 public:
-   PacketGatewayWrapper( int packet_type = PacketType_GatewayWrapper, int packet_sub_type = 0  ): BasePacket( packet_type, packet_sub_type ), pPacket( NULL ), connectionId( -1 ) {}
+   PacketGatewayWrapper( int packet_type = PacketType_GatewayWrapper, int packet_sub_type = 0  ): BasePacket( packet_type, packet_sub_type ), connectionId( -1 ), pPacket( NULL ) {}
 
    bool  SerializeIn( const U8* data, int& bufferOffset );
    bool  SerializeOut( U8* data, int& bufferOffset ) const;

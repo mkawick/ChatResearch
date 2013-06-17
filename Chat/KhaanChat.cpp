@@ -27,7 +27,7 @@ bool	KhaanChat::OnDataReceived( unsigned char* data, int length )
       }
       if( type == PacketType_GatewayWrapper )
       {
-         PacketGatewayWrapper* wrapper = reinterpret_cast< PacketGatewayWrapper* >( packetIn );
+         PacketGatewayWrapper* wrapper = static_cast< PacketGatewayWrapper* >( packetIn );
 
          ChainLinkIteratorType itOutputs = m_listOfOutputs.begin();
          if( itOutputs != m_listOfOutputs.end() )// only one output currently supported.
@@ -47,7 +47,7 @@ bool	KhaanChat::OnDataReceived( unsigned char* data, int length )
       }
       else if( type == PacketType_ServerToServerWrapper )
       {
-         PacketServerToServerWrapper* wrapper = reinterpret_cast< PacketServerToServerWrapper* >( packetIn );
+         PacketServerToServerWrapper* wrapper = static_cast< PacketServerToServerWrapper* >( packetIn );
          // so this is just server information about the gateway since we only accept connections about the gateway on this port
          PacketServerIdentifier* serverId = static_cast< PacketServerIdentifier * > ( wrapper->pPacket );
 

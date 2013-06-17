@@ -1,3 +1,6 @@
+
+#include <memory.h>
+
 #include "FruitadensLogin.h"
 #include "../NetworkCommon/Packets/PacketFactory.h"
 #include "../NetworkCommon/Packets/BasePacket.h"

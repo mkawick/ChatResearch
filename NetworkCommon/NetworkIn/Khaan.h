@@ -3,7 +3,7 @@
 #pragma once
 
 #ifndef PLATFORM
-#include "../platform.h"
+#include "../Platform.h"
 #endif
 
 #if PLATFORM == PLATFORM_WINDOWS
@@ -12,6 +12,7 @@
 #define WIN32_LEAN_AND_MEAN
 
 #include <ws2tcpip.h>
+#pragma warning (disable:4996)
 
 #elif PLATFORM == PLATFORM_MAC || PLATFORM == PLATFORM_UNIX
 
@@ -27,7 +28,7 @@
 //#include <iostream>
 //#include <map>
 using namespace std;
-#pragma warning (disable:4996)
+
 
 #include <assert.h>
 

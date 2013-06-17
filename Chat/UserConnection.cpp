@@ -2,6 +2,7 @@
 
 #include "../NetworkCommon/Packets/BasePacket.h"
 #include "../NetworkCommon/Packets/ChatPacket.h"
+#include "../NetworkCommon/Packets/DbPacket.h"
 
 #include "DiplodocusChat.h"
 #include "chatChannelManager.h"
@@ -59,7 +60,7 @@ bool     UserConnection::AddInputChainData( BasePacket* packet, U32 connectionId
    // packets are likely to be either packets from the gateway or packets from the DB. Eventually, game packets will make their way here too.
    if( packet->packetType == PacketType_GatewayWrapper )
    {
-      PacketGatewayWrapper* wrapper = reinterpret_cast< PacketGatewayWrapper* >( packet );
+      PacketGatewayWrapper* wrapper = static_cast< PacketGatewayWrapper* >( packet );
       m_packetsIn.push_back( wrapper->pPacket );
       delete packet;
    }
@@ -564,7 +565,7 @@ bool     UserConnection::ProcessPacket( BasePacket* packet )
 
 bool     UserConnection::HandleDbQueryResult( BasePacket* packet )
 {
-   PacketDbQueryResult* dbResult = reinterpret_cast< PacketDbQueryResult* >( packet );
+   PacketDbQueryResult* dbResult = static_cast< PacketDbQueryResult* >( packet );
 
    switch( dbResult->lookup )
    {

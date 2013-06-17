@@ -8,6 +8,7 @@
 #include <event2/bufferevent.h>
 #include <event2/buffer.h>
 #include <event2/thread.h>
+
 #include "../Packets/BasePacket.h"
 
 #ifndef cout
@@ -20,6 +21,11 @@ using namespace std;
 //#include <netinet/in.h>
 //#include <fcntl.h>
 #include <arpa/inet.h>
+
+#include <event2/util.h>
+#include <event2/event-config.h>
+#include <stdarg.h>
+#include <errno.h>
 
 #endif
 
@@ -170,9 +176,9 @@ bool  Diplodocus< InputChain, OutputChain >::PushInputEvent( ThreadEvent* te )
 //------------------------------------------------------------------------------
 
 template< typename InputChain, typename OutputChain >
-void  Diplodocus< InputChain, OutputChain >::NotifyFinishedRemoving( ChainedInterface* obj )
+void  Diplodocus< InputChain, OutputChain >::NotifyFinishedRemoving( InputChainType* connection )
 {
-   InputChainType* connection = static_cast<InputChainType*>( obj );
+   //InputChainType* connection = static_cast<InputChainType*>( obj );
    if( connection == NULL )
       return;
 
@@ -206,14 +212,15 @@ void  Diplodocus< InputChain, OutputChain >::NotifyFinishedRemoving( ChainedInte
 template< typename InputChain, typename OutputChain >
 bool  Diplodocus< InputChain, OutputChain >::AddInputChainData( BasePacket* t, U32 filingData )// this should be performed by the derived class
 {
-   ClientMapIterator foundItem = m_connectedClients.find( filingData );
+   /*ClientMapIterator foundItem = m_connectedClients.find( filingData );
    if( foundItem != m_connectedClients.end() )
    {
       InputChainType* connection = (*foundItem).second;
       // now we know who gave us this item along with the connection info. We can store it, pass it along, etc.
       delete t;
-   }
-   return false;
+   }*/
+   delete t;
+   return true;
 }
 
 //------------------------------------------------------------------------------
@@ -221,17 +228,17 @@ bool  Diplodocus< InputChain, OutputChain >::AddInputChainData( BasePacket* t, U
 template< typename InputChain, typename OutputChain >
 bool  Diplodocus< InputChain, OutputChain >::AddOutputChainData( BasePacket* t, U32 filingData )
 {
-   ClientMapIterator foundItem = m_connectedClients.find( filingData );
+  /* ClientMapIterator foundItem = m_connectedClients.find( filingData );
    if( foundItem != m_connectedClients.end() )
    {
       InputChainType* connection = (*foundItem).second;
       // now we know who gave us this item along with the connection info. We can store it, pass it along, etc.
       //delete t;
-   }
+   }*/
 
    delete t;
 
-   return false;
+   return true;
 }
 
 //------------------------------------------------------------------------------
@@ -242,13 +249,16 @@ Diplodocus< InputChain, OutputChain >::Diplodocus( string serverName, U32 server
                                     m_isListeningWorking( false ),
                                     m_hasSentServerIdentification( false ),
                                     m_isControllerApp( false ),
+                                    m_isGateway( false ),
                                     m_isGame( false ),
                                     m_listeningPort( 0 ),
-                                    m_serverName( serverName ), 
+                                    m_listener( NULL ),
+                                    
                                     m_serverId( serverId ),
                                     m_serverType( type ),
-                                    m_isGateway( false ),
-                                    m_connectionIdGateway( 0 )
+                                    
+                                    m_connectionIdGateway( 0 ),
+                                    m_serverName( serverName )
 {
 }
 
@@ -374,8 +384,8 @@ void  Diplodocus< InputChain, OutputChain >::MarkAllConnectionsAsNeedingUpdate( 
    ChainLinkIteratorType itInputs = m_listOfInputs.begin();
    while( itInputs != m_listOfInputs.end() )
    {
-      ChainLink& chainedInput = *itInputs++;
-	   ChainedInterface* interfacePtr = chainedInput.m_interface;
+      ChainLink & chainedInput = *itInputs++;
+	   ChainedInterface< InputChain >* interfacePtr = chainedInput.m_interface;
       Khaan* khaan = static_cast< Khaan* >( interfacePtr );
 
       m_clientsNeedingUpdate.push_back( khaan->GetChainedId() );
@@ -489,12 +499,7 @@ void	Diplodocus< InputChain, OutputChain >::UpdateAllConnections()
 }
 
 //------------------------------------------------------------------------------------------
-/*
-template< typename InputChain, typename OutputChain >
-void	Diplodocus< InputChain, OutputChain >::MoveConnectedClientsWithMapLookupOf0ToConnectionId()
-{
-}
-*/
+
 //------------------------------------------------------------------------------------------
 
 template< typename InputChain, typename OutputChain >
@@ -502,11 +507,11 @@ void     Diplodocus< InputChain, OutputChain >::SendServerIdentification()
 {
    if( m_hasSentServerIdentification == false )
    {
-      ChainLinkIteratorType itOutput = m_listOfOutputs.begin();
-      while( itOutput != m_listOfOutputs.end() )
+      ChainLinkIteratorType   itOutputs = m_listOfOutputs.begin();
+      while( itOutputs != m_listOfOutputs.end() )
       {
-         ChainLink& chainedOutput = *itOutput++;
-	      ChainedInterface* interfacePtr = chainedOutput.m_interface;
+         ChainLink& chainedOutput = *itOutputs++;
+         OutputChain* interfacePtr = static_cast<OutputChain*>( chainedOutput.m_interface );
 
          BasePacket* packet = NULL;
          PackageForServerIdentification( m_serverName, m_serverId, m_isGame, m_isControllerApp, true, m_isGateway, &packet );
@@ -517,9 +522,11 @@ void     Diplodocus< InputChain, OutputChain >::SendServerIdentification()
             delete packet;
          }
       }
+
       m_hasSentServerIdentification = true;
    }
 }
+
 
 //------------------------------------------------------------------------------------------
 

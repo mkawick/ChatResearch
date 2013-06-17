@@ -4,7 +4,7 @@
 #include <iostream>
 #include <list>
 #include <vector>
-#pragma warning (disable:4996)
+
 using namespace std;
 
 //#include <conio.h>
@@ -13,13 +13,16 @@ using namespace std;
 #include <boost/lexical_cast.hpp>
 
 #include <cstdio>
+#include <memory.h>
 
-#include "../NetworkCommon/Utils/utils.h"
+#include "../NetworkCommon/Utils/Utils.h"
 
 #include "../NetworkCommon/Utils/CommandLineParser.h"
 
 #include "../NetworkCommon/Database/Deltadromeus.h"
 #include "../NetworkCommon/Packets/ServerToServerPacket.h"
+
+#include "../NetworkCommon/Daemon/Daemonizer.h"
 
 #include "KhaanLogin.h"
 #include "DiplodocusLogin.h"
@@ -27,6 +30,7 @@ using namespace std;
 
 #if PLATFORM == PLATFORM_WINDOWS
 #include <conio.h>
+#pragma warning (disable:4996)
 #endif
 
 // db.address=10.16.4.44 db.port=3306 db.username=admin db.password=Pz5328!@ db.schema=pleiades
@@ -38,6 +42,8 @@ FruitadensLogin* PrepFruitadensLogin( const string& ipaddress, U16 port, U32 ser
 
 int main( int argc, const char* argv[] )
 {
+   daemonize( "login_serverd" );
+
    CommandLineParser    parser( argc, argv );
 
    string listenPortString = "3072";

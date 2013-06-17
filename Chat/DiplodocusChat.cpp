@@ -4,6 +4,7 @@
 #include "ChatChannelManager.h"
 #include "../NetworkCommon/NetworkIn/DiplodocusServerToServer.h"
 
+#include "../NetworkCommon/Packets/DbPacket.h"
 #include "../NetworkCommon/Packets/GamePacket.h"
 #include "../NetworkCommon/Packets/ServerToServerPacket.h"
 
@@ -116,7 +117,7 @@ bool   DiplodocusChat::AddOutputChainData( BasePacket* packet, U32 connectionId 
    {
       if( packet->packetSubType == BasePacketDbQuery::QueryType_Result )
       {
-         PacketDbQueryResult* result = reinterpret_cast<PacketDbQueryResult*>( packet );
+         PacketDbQueryResult* result = static_cast<PacketDbQueryResult*>( packet );
          U32 connectionId = result->id;
          if( connectionId == m_chatChannelManager->GetConnectionId() )
          {
@@ -321,7 +322,7 @@ bool  DiplodocusChat::AddPacketFromUserConnection( BasePacket* packet, U32 conne
       ClientMapIterator itInputs = m_connectedClients.begin();
       if( itInputs != m_connectedClients.end() )// only one output currently supported.
       {
-         KhaanChat* khaan = reinterpret_cast< KhaanChat* >( itInputs->second );
+         KhaanChat* khaan = static_cast< KhaanChat* >( itInputs->second );
          khaan->AddOutputChainData( packet );
          m_clientsNeedingUpdate.push_back( khaan->GetConnectionId() );
          itInputs++;

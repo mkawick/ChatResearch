@@ -12,6 +12,7 @@ using namespace std;
 #include "ChatPacket.h"
 #include "GamePacket.h"
 #include "ServerToServerPacket.h"
+#include "DbPacket.h"
 
 PacketFactory::PacketFactory(){}
 
@@ -30,7 +31,6 @@ bool	PacketFactory::Parse( const U8* bufferIn, int& bufferOffset, BasePacket** p
 {
    *packetOut = NULL;// just to be sure that no one misuses this
 
-   //const BasePacket* testPtr = reinterpret_cast< const BasePacket* > ( bufferIn );
    BasePacket firstPassParse;
    int offset = bufferOffset;
    firstPassParse.SerializeIn( bufferIn, offset );

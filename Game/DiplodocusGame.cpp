@@ -1,6 +1,7 @@
 #include "DiplodocusGame.h"
 #include "KhaanGame.h"
 
+#include "../NetworkCommon/Packets/DbPacket.h"
 #include "../NetworkCommon/Packets/ServerToServerPacket.h"
 
 ///////////////////////////////////////////////////////////////////
