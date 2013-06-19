@@ -6,6 +6,7 @@
 #include <sstream>
 #include <iostream>
 #include <iomanip>
+#include <fstream>
 using namespace std;
 
 #include <ctime>
@@ -256,4 +257,22 @@ void  PrintCurrentTime()
    strftime(nowBuf, sizeof(nowBuf), "%Y-%m-%d %H:%M:%S", nowtm);
 
    cout << nowBuf << endl;
+}
+
+string OpenAndLoadFile( const string& path )
+{
+   string returnString;
+   ifstream file( path.c_str() );
+   std::string temp;
+   if( file.is_open() )
+   {
+      while(std::getline( file, temp )) 
+      {
+         returnString += temp;
+      }
+
+      file.close();
+   }
+
+   return returnString;
 }

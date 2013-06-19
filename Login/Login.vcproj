@@ -180,10 +180,6 @@
 				>
 			</File>
 			<File
-				RelativePath=".\email.cpp"
-				>
-			</File>
-			<File
 				RelativePath=".\FruitadensLogin.cpp"
 				>
 			</File>
@@ -203,10 +199,6 @@
 			>
 			<File
 				RelativePath=".\DiplodocusLogin.h"
-				>
-			</File>
-			<File
-				RelativePath=".\email.h"
 				>
 			</File>
 			<File

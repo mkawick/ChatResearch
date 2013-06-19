@@ -10,6 +10,7 @@
 #include <vector>
 #include <sstream>
 #include <algorithm>
+#include <fstream>
 using namespace std;
 
 #include "../NetworkCommon/Platform.h"
@@ -35,8 +36,10 @@ using namespace std;
 
 #endif
 
+#define LogToFile 1
+ofstream dumpFile;
 
-#define CRLF "\r\n"   
+static const char* CRLF = "\r\n";
 
 //////////////////////////////////////////////////////////////////////////////
 
@@ -55,6 +58,28 @@ void Check(int iStatus, const char* functionName )
   cerr << "Error during call to " << functionName << ": " << iStatus << " - " << errorCode << endl;
 }
 
+void   OpenLogFile( const char* fileName )
+{
+#if defined( LogToFile )
+   dumpFile.open( fileName,ios::app );
+#endif
+}
+
+
+void LogTextToFile( const char* text ) 
+{
+#if defined( LogToFile )
+   dumpFile << text;
+#endif
+}
+
+void  CloseFile()
+{
+#if defined( LogToFile )
+   dumpFile.close();
+#endif
+}
+
 //////////////////////////////////////////////////////////////////////////////
 
 int  sendConfirmationEmail( const char* toAddr, const char* fromAddr, const char* emailServerName, const char* bodyText, const char* subject, const char* linkText, const char* linkAddr )
@@ -62,8 +87,11 @@ int  sendConfirmationEmail( const char* toAddr, const char* fromAddr, const char
    // Lookup email server's IP address.
 
   char        buffer[4096]       = "";
-  char        messageLine[255]       = "";
+  //char        messageLine[255]       = "";
+  int maxLen = strlen( bodyText ) + 64;
+  auto_ptr< char > messageLine( new char[ maxLen ] );
 
+  OpenLogFile( "emailDump.log" );
   hostent*   hostEntry = gethostbyname(emailServerName);
   if(!hostEntry)
   {
@@ -95,7 +123,6 @@ int  sendConfirmationEmail( const char* toAddr, const char* fromAddr, const char
   // Setup a Socket Address structure
   SockAddr.sin_family = AF_INET;
   SockAddr.sin_port   = iProtocolPort;
-  //SockAddr.sin_addr   = static_cast< U32 >( *(unsigned long*) hostEntry->h_addr_list);
   memcpy( &( SockAddr.sin_addr ), hostEntry->h_addr_list[0], hostEntry->h_length );
 
   // Connect the Socket
@@ -110,63 +137,76 @@ int  sendConfirmationEmail( const char* toAddr, const char* fromAddr, const char
   Check(recv(socketId, buffer, sizeof(buffer), 0), "recv() Reply");
 
   // Send HELO server.com
-  sprintf(messageLine, "HELO %s%s", emailServerName, CRLF);
-  Check(send(socketId, messageLine, strlen(messageLine), 0), "send() HELO");
+  sprintf( messageLine.get(), "HELO %s%s", emailServerName, CRLF);
+  Check(send(socketId, messageLine.get(), strlen( messageLine.get() ), 0), "send() HELO");
+  LogTextToFile( messageLine.get() );
   Check(recv(socketId, buffer, sizeof(buffer), 0), "recv() HELO");
 
   // Send MAIL FROM: <sender@mydomain.com>
-  sprintf(messageLine, "MAIL FROM:<%s>%s", fromAddr, CRLF);
-  Check(send(socketId, messageLine, strlen(messageLine), 0), "send() MAIL FROM");
+  sprintf( messageLine.get(), "MAIL FROM:<%s>%s", fromAddr, CRLF);
+  Check(send(socketId, messageLine.get(), strlen( messageLine.get() ), 0), "send() MAIL FROM");
+  LogTextToFile( messageLine.get() );
   Check(recv(socketId, buffer, sizeof(buffer), 0), "recv() MAIL FROM");
 
   // Send RCPT TO: <receiver@domain.com>
-  sprintf(messageLine, "RCPT TO:<%s>%s", toAddr, CRLF);
-  Check(send(socketId, messageLine, strlen(messageLine), 0), "send() RCPT TO");
+  sprintf( messageLine.get(), "RCPT TO:<%s>%s", toAddr, CRLF);
+  Check(send(socketId, messageLine.get(), strlen( messageLine.get() ), 0), "send() RCPT TO");
+  LogTextToFile( messageLine.get() );
   Check(recv(socketId, buffer, sizeof(buffer), 0), "recv() RCPT TO");
 
   // Send DATA
-  sprintf(messageLine, "DATA%s", CRLF);
-  Check(send(socketId, messageLine, strlen(messageLine), 0), "send() DATA");
+  sprintf( messageLine.get(), "DATA%s", CRLF);
+  Check(send(socketId, messageLine.get(), strlen( messageLine.get() ), 0), "send() DATA");
+  LogTextToFile( messageLine.get() );
   Check(recv(socketId, buffer, sizeof(buffer), 0), "recv() DATA");
 
-  sprintf(messageLine, "From:%s%s", fromAddr, CRLF);
-  Check(send(socketId, messageLine, strlen(messageLine), 0), "send() From TO");
+  sprintf( messageLine.get(), "From:%s%s", fromAddr, CRLF);
+  Check(send(socketId, messageLine.get(), strlen( messageLine.get() ), 0), "send() From TO");
+  LogTextToFile( messageLine.get() );
 
-  sprintf(messageLine, "To:%s%s", toAddr, CRLF);
-  Check(send(socketId, messageLine, strlen(messageLine), 0), "send() From TO");
+  sprintf( messageLine.get(), "To:%s%s", toAddr, CRLF);
+  Check(send(socketId, messageLine.get(), strlen( messageLine.get() ), 0), "send() From TO");
+  LogTextToFile( messageLine.get() );
 
-  sprintf(messageLine, "Subject:%s%s", subject, CRLF);
-  Check(send(socketId, messageLine, strlen(messageLine), 0), "send() Subject TO");
+  sprintf( messageLine.get(), "Subject:%s%s", subject, CRLF);
+  Check(send(socketId, messageLine.get(), strlen( messageLine.get() ), 0), "send() Subject TO");
+  LogTextToFile( messageLine.get() );
 
-  sprintf(messageLine, "Content-Type: text/html%s", CRLF);
-  Check(send(socketId, messageLine, strlen(messageLine), 0), "send() content type");
+  sprintf( messageLine.get(), "Content-Type: text/html%s", CRLF);
+  Check(send(socketId, messageLine.get(), strlen( messageLine.get() ), 0), "send() content type");
+  LogTextToFile( messageLine.get() );
 
 
 
-  sprintf(messageLine, "%s%s", bodyText, CRLF);
-  Check(send(socketId, messageLine, strlen(messageLine), 0), "send() message-line");
+  sprintf( messageLine.get(), "%s%s", bodyText, CRLF);
+  Check(send(socketId, messageLine.get(), strlen( messageLine.get() ), 0), "send() message-line");
+  LogTextToFile( messageLine.get() );
   
   
-  if( linkText && strlen( linkText ) > 0 && 
+ /* if( linkText && strlen( linkText ) > 0 && 
      linkAddr && strlen( linkAddr ) > 0 )
   {
      const char* linkString = "<html><body><a href=\"%s\">%s</a>%s</body></html>";
      sprintf(messageLine, linkString, linkAddr, linkText, CRLF);
-     Check(send(socketId, messageLine, strlen(messageLine), 0), "send() link text");
-  }
+     Check(send(socketId, messageLine, strlen( messageLine.get() ), 0), "send() link text");
+     LogTextToFile( messageLine );
+  }*/
 
   // Send blank line and a period
-  sprintf(messageLine, "%s.%s", CRLF, CRLF);
-  Check(send(socketId, messageLine, strlen(messageLine), 0), "send() end-message");
+  sprintf( messageLine.get(), "%s.%s", CRLF, CRLF);
+  Check(send(socketId, messageLine.get(), strlen( messageLine.get() ), 0), "send() end-message");
+  LogTextToFile( messageLine.get() );
   Check(recv(socketId, buffer, sizeof(buffer), 0), "recv() end-message");
 
   // Send QUIT
-  sprintf(messageLine, "QUIT%s", CRLF);
-  Check(send(socketId, messageLine, strlen(messageLine), 0), "send() QUIT");
+  sprintf( messageLine.get(), "QUIT%s", CRLF);
+  Check(send(socketId, messageLine.get(), strlen( messageLine.get() ), 0), "send() QUIT");
+  LogTextToFile( messageLine.get() );
   Check(recv(socketId, buffer, sizeof(buffer), 0), "recv() QUIT");
 
   // Close server socket and prepare to exit.
   closesocket(socketId);
+  CloseFile();
 
   return 0;
 }
@@ -205,6 +245,16 @@ static inline bool is_alnum_space(char c)
     return ( is_alnum(c) || (c == ' '));
 }
 
+static inline bool filter_disallowed_characters( char c )
+{
+   if( c == ' ' || c == '{' || c == '}' || c == '+' || c == '*' || c =='#' )
+      return true;
+
+   return false;
+}
+
+// look at http://en.wikipedia.org/wiki/Email_address
+
 bool  IsValidEmailAddress( const string& test )
 {
    std::vector<std::string> splits = split( test, '@' );
@@ -214,7 +264,7 @@ bool  IsValidEmailAddress( const string& test )
    string firstPart = splits[0];
 
    //RFC 832 allows almost any precursor for the first part... move along
-   if( firstPart.size() < 2 )
+   if( firstPart.size() < 1 )
       return false;
 
    string secondPart = splits[1];
@@ -229,7 +279,10 @@ bool  IsValidEmailAddress( const string& test )
    if( is_alnum( *secondPart.rbegin() ) == false ) // no ending with bad charaters
       return false;
 
-   if( find_if( secondPart.begin(), secondPart.end(), is_alnum_space) == secondPart.end() )// some of this string must be alpha numeric
+   if( find_if( secondPart.begin(), secondPart.end(), filter_disallowed_characters) != secondPart.end() ) // filter out some email addresses by special characters
+      return false;
+
+   if( find_if( secondPart.begin(), secondPart.end(), is_alnum) == secondPart.end() )// some of this string must be alpha numeric
       return false;
 
    const string& domain = *splits2.rbegin();
@@ -240,4 +293,48 @@ bool  IsValidEmailAddress( const string& test )
       return false;
 
    return true;
+}
+
+
+bool  allowed_text_string( char c )
+{
+   if( isalpha(c) || isdigit(c) || c==' ' || c=='_' || c =='.' )
+      return true;
+
+   return false;
+}
+
+vector<string> CreateDictionary( const string& textString, char searchChar )
+{
+   vector<string> dictionary;
+   string::const_iterator start = textString.begin();
+   while( start != textString.end() )
+   {
+      char c = *start++;
+      if( c == searchChar )// begin of replacement
+      {
+         string::const_iterator end = start;
+         while( end != textString.end() )
+         {
+            char test = *end;
+            if( test == searchChar )
+            {
+               string subString;
+               subString.assign( start, end );
+               start = end+1;// move past the marker
+
+               if( subString.size() > 0 )
+               {
+                  dictionary.push_back( subString );
+               }
+               break;
+            }
+            if( allowed_text_string( test ) == false ) // must be an invalid set of 
+               break;
+            end ++;
+         }
+      } 
+   }
+
+   return dictionary;
 }

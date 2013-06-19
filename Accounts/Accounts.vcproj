@@ -366,6 +366,18 @@
 					>
 				</File>
 				<File
+					RelativePath="..\NetworkCommon\Utils\Enigmosaurus.h"
+					>
+				</File>
+				<File
+					RelativePath="..\NetworkCommon\Utils\TableWrapper.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\NetworkCommon\Utils\TableWrapper.h"
+					>
+				</File>
+				<File
 					RelativePath="..\NetworkCommon\Utils\Utils.cpp"
 					>
 				</File>

@@ -10,7 +10,7 @@
 
 #include "../NetworkCommon/Logging/server_log.h"
 
-#include "email.h"
+//#include "email.h"
 #include <boost/lexical_cast.hpp>
 
 const char* newAccountEmailAddress = "account_create@playdekgames.com";
@@ -367,7 +367,7 @@ bool  DiplodocusLogin::CreateAccount( const char* username, const char* emailAdd
    linkPath += "?key=";
    linkPath += tempHash;
 
-   sendConfirmationEmail( emailAddress, newAccountEmailAddress, mailServer, "Thank you for signing up with Playdek. Click this link to confirm your new account.", "Confirmation email" , "Playdek.com", linkPath.c_str() );
+   //sendConfirmationEmail( emailAddress, newAccountEmailAddress, mailServer, "Thank you for signing up with Playdek. Click this link to confirm your new account.", "Confirmation email" , "Playdek.com", linkPath.c_str() );
 
    return success;
 }
@@ -917,7 +917,7 @@ string   DiplodocusLogin::GetString( const string& stringName, int languageId )
 
 void     DiplodocusLogin::HandleNewAccounts( const PacketDbQueryResult* dbResult )
 {
-   cout << "HandleNewAccounts..." << endl;
+  /* cout << "HandleNewAccounts..." << endl;
    NewUsersTable              enigma( dbResult->bucket );
    NewUsersTable::iterator    it = enigma.begin();
    
@@ -1012,7 +1012,7 @@ void     DiplodocusLogin::HandleNewAccounts( const PacketDbQueryResult* dbResult
 
          AddQueryToOutput( dbQuery );
       }
-   }
+   }*/
 
 }
 

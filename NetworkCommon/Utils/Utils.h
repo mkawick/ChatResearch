@@ -29,6 +29,7 @@ std::string    Trim(const std::string& str,
 std::string    Reduce(const std::string& str,
                    const std::string& fill = " ",
                    const std::string& whitespace = " \t");
+std::string    OpenAndLoadFile( const std::string& path );
 
 #if PLATFORM != PLATFORM_WINDOWS
 int kbhit();

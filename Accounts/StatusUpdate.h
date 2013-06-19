@@ -38,7 +38,10 @@ class StatusUpdate : public Threading::CChainedThread < BasePacket* >
       QueryType_UserCheckForNewAccount,
       QueryType_UserFindBlankUUID,
       QueryType_LoadStrings,
-      QueryType_LoadWeblinks
+      QueryType_LoadWeblinks,
+      QueryType_AutoCreateUsers,
+      QueryType_AutoCreateUsersInsertOrUpdate,
+      QueryType_DeleteTempNewUserRecord
    };
 
 public:
@@ -64,8 +67,15 @@ private:
    void     PreloadLanguageStrings();
    void     SaveStrings( const PacketDbQueryResult* dbResult );
    string   GetString( const string& stringName, int languageId );
+
+
    bool                 m_hasLoadedStringTable;
    StringTableLookup    m_stringsTable;
+   map< stringhash, stringhash > m_replacemetStringsLookup;
+   typedef pair< stringhash, stringhash > ReplacementPair;
+   string   m_pathToConfirmationEmailFile;
+   string   m_confirmationEmailTemplate;
+   void     ReplaceAllLookupStrings( string& bodyText, int languageId );
 
    void     PreloadWeblinks();
    void     HandleWeblinks( const PacketDbQueryResult* dbResult );
@@ -80,8 +90,13 @@ private:
    void     CheckForNewAccounts();
    void     HandleNewAccounts( const PacketDbQueryResult* dbResult );
 
+   void     LookForFlaggedAutoCreateAccounts();
+   void     HandleAutoCreateAccounts( const PacketDbQueryResult* dbResult );
+
    time_t   m_checkOnBlankUuidTimer;
    int      m_checkOnBlankUuidTimeoutSeconds;
    time_t   m_newAccountCreationTimer;
    int      m_newAccountTimeoutSeconds;
+   time_t   m_checkOnautoCreateTimer;
+   int      m_checkOnautoCreateTimeoutSeconds;
 };

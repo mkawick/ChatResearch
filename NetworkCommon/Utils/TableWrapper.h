@@ -21,6 +21,8 @@ public:
       Column_uuid,
       Column_last_login_time,
       Column_last_logout_time,
+      Column_active,
+      Column_language_id,
       Column_end
    };
    static const char* const column_names[];
@@ -63,6 +65,11 @@ public:
       Column_language_id,
       Column_uuid,
       Column_gamekit_hash,
+      Column_user_pw_hash,
+      Column_user_name_match,
+      Column_flagged_as_invalid,
+      Column_flagged_auto_create,
+      Column_time_last_confirmation_email_sent,
       Column_end
    };
    static const char* const column_names[];
@@ -166,6 +173,7 @@ public:
       Column_russian,
       Column_japanese,
       Column_chinese,
+      Column_replaces,
       Column_end
    };
 };
