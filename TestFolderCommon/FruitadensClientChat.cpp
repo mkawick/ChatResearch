@@ -16,6 +16,7 @@ using namespace std;
 bool  FruitadensClientChat::Login( const string& username, const string& password )
 {
    PacketLogin login;
+   login.gameProductId = GameProductId_AGRICOLA;
    login.loginKey = "deadbeef";
    login.uuid = username;
    login.username = username;

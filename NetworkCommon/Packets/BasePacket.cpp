@@ -27,7 +27,7 @@ bool  StringBucket::SerializeIn( const U8* data, int& bufferOffset )
 
 bool  StringBucket::SerializeOut( U8* data, int& bufferOffset ) const 
 { 
-   int numStrings = static_cast< int>( bucket.size() );
+   int numStrings = static_cast< int >( bucket.size() );
    Serialize::Out( data, bufferOffset, numStrings );
 
    
@@ -68,11 +68,11 @@ bool  DynamicDataBucket::SerializeIn( const U8* data, int& bufferOffset )
 
 bool  DynamicDataBucket::SerializeOut( U8* data, int& bufferOffset ) const 
 { 
-   int numRows = static_cast< int>( bucket.size() );
+   int numRows = static_cast< int >( bucket.size() );
    Serialize::Out( data, bufferOffset, numRows );
 
    DataSet::const_iterator it = bucket.begin();
-   int numColumns = static_cast< int>( (*it).size() );
+   int numColumns = static_cast< int >( (*it).size() );
    Serialize::Out( data, bufferOffset, numColumns );
 
    while( it != bucket.end() )
@@ -120,6 +120,8 @@ bool  BasePacket::SerializeIn( const U8* data, int& bufferOffset )
    Serialize::In( data, bufferOffset, packetType );
    Serialize::In( data, bufferOffset, packetSubType );
    Serialize::In( data, bufferOffset, versionNumber );
+   Serialize::In( data, bufferOffset, gameProductId );
+   
    Serialize::In( data, bufferOffset, gameInstanceId );
    return true; 
 }
@@ -129,6 +131,7 @@ bool  BasePacket::SerializeOut( U8* data, int& bufferOffset ) const
    Serialize::Out( data, bufferOffset, packetType );
    Serialize::Out( data, bufferOffset, packetSubType );
    Serialize::Out( data, bufferOffset, versionNumber );
+   Serialize::Out( data, bufferOffset, gameProductId );
    Serialize::Out( data, bufferOffset, gameInstanceId );
    return true; 
 }

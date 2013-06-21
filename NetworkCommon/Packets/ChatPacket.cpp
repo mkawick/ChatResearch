@@ -128,7 +128,7 @@ bool  PacketChatChannelListToClient::SerializeOut( U8* data, int& bufferOffset )
 {
    BasePacket::SerializeOut( data, bufferOffset );
 
-   int numItems = static_cast< int>( chatChannel.size() );
+   int numItems = static_cast< int >( chatChannel.size() );
    Serialize::Out( data, bufferOffset, numItems );
 
    for( int i=0; i<numItems; i++ )

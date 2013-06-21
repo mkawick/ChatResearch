@@ -355,11 +355,11 @@ void     Deltadromeus::Connect()
    if( m_DbConnection )    // If instance didn't initialize say so and exit with fault.
    {
       m_isConnected = true;
-      cout << "Successful login to the DB: " << m_dbName << ":" << m_port << " using  user=" << m_username << " and pwd=" << m_password << endl;
+      cout << "Successful login to the DB, IP: " << m_serverName << ":" << m_port << " with schema " << m_dbName <<  " using  user=" << m_username << endl;
    }
    else
    {
-      cout << "Failed to login to the DB: " << m_dbName << ":" << m_port << " using  user=" << m_username << " and pwd=" << m_password << endl;
+      cout << "Failed to login to the DB, IP: " << m_serverName << ":" << m_port << " with schema " << m_dbName <<  " using  user=" << m_username << endl;
    }
    
 
@@ -523,7 +523,7 @@ bool  DbJob::SubmitQuery( MYSQL* connection, const string& dbName )
    {
       m_errorCondition = true;
       const char* errorText = mysql_error( connection );
-      cout << "DB Error: " << errorText << endl;
+      cout << "DB Error: " << errorText << " on query " << m_query << endl;
    }
    else
    {

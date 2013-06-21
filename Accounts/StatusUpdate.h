@@ -41,7 +41,8 @@ class StatusUpdate : public Threading::CChainedThread < BasePacket* >
       QueryType_LoadWeblinks,
       QueryType_AutoCreateUsers,
       QueryType_AutoCreateUsersInsertOrUpdate,
-      QueryType_DeleteTempNewUserRecord
+      QueryType_DeleteTempNewUserRecord,
+      QueryType_Hack
    };
 
 public:
@@ -75,7 +76,7 @@ private:
    typedef pair< stringhash, stringhash > ReplacementPair;
    string   m_pathToConfirmationEmailFile;
    string   m_confirmationEmailTemplate;
-   void     ReplaceAllLookupStrings( string& bodyText, int languageId );
+   void     ReplaceAllLookupStrings( string& bodyText, int languageId,  map< string, string >& specialStrings );
 
    void     PreloadWeblinks();
    void     HandleWeblinks( const PacketDbQueryResult* dbResult );
@@ -99,4 +100,8 @@ private:
    int      m_newAccountTimeoutSeconds;
    time_t   m_checkOnautoCreateTimer;
    int      m_checkOnautoCreateTimeoutSeconds;
+
+
+   void     Hack();
+   void     HackResult( PacketDbQueryResult* dbResult );
 };

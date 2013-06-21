@@ -161,7 +161,7 @@ public:
    U8       packetType;
    U8       packetSubType;
    U8       versionNumber;
-   U8       pad;
+   U8       gameProductId;
    U32      gameInstanceId;
 };
 

@@ -11,6 +11,7 @@
 #include <sstream>
 #include <algorithm>
 #include <fstream>
+#include <memory>
 using namespace std;
 
 #include "../NetworkCommon/Platform.h"
@@ -82,7 +83,7 @@ void  CloseFile()
 
 //////////////////////////////////////////////////////////////////////////////
 
-int  sendConfirmationEmail( const char* toAddr, const char* fromAddr, const char* emailServerName, const char* bodyText, const char* subject, const char* linkText, const char* linkAddr )
+int  SendConfirmationEmail( const char* toAddr, const char* fromAddr, const char* emailServerName, const char* bodyText, const char* subject, const char* linkText, const char* linkAddr )
 {
    // Lookup email server's IP address.
 
@@ -298,7 +299,7 @@ bool  IsValidEmailAddress( const string& test )
 
 bool  allowed_text_string( char c )
 {
-   if( isalpha(c) || isdigit(c) || c==' ' || c=='_' || c =='.' )
+   if( isalpha(c) || isdigit(c) || c==' ' || c=='_' || c =='.' || c =='-' )
       return true;
 
    return false;

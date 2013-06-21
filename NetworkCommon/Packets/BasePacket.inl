@@ -4,7 +4,7 @@
 template < typename type >
 bool  SerializedVector< type >::SerializeIn( const U8* data, int& bufferOffset )
 {
-   int num = static_cast< int>( m_data.size() );
+   int num = static_cast< int >( m_data.size() );
    Serialize::In( data, bufferOffset, num );
 
    for( int i=0; i<num; i++ )
@@ -20,7 +20,7 @@ bool  SerializedVector< type >::SerializeIn( const U8* data, int& bufferOffset )
 template < typename type >
 bool  SerializedVector< type >::SerializeOut( U8* data, int& bufferOffset ) const
 {
-   int num = static_cast< int>( m_data.size() );
+   int num = static_cast< int >( m_data.size() );
    Serialize::Out( data, bufferOffset, num );
 
    typename std::vector< type > :: const_iterator  it = m_data.begin();
@@ -71,7 +71,7 @@ bool  SerializedKeyValueVector< type > ::SerializeIn( const U8* data, int& buffe
 template < typename type >
 bool  SerializedKeyValueVector< type > ::SerializeOut( U8* data, int& bufferOffset ) const
 {
-   int num = static_cast< int>( dataList.size() );
+   int num = static_cast< int >( dataList.size() );
    Serialize::Out( data, bufferOffset, num );
 
    typename KeyValueVector::const_iterator it = dataList.begin();

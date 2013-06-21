@@ -90,6 +90,57 @@ void     StatusUpdate::FillInUserAccountUUIDs()
 
 //---------------------------------------------------------------
 
+// this hack was added once I discovered that multiple users had the same UUID
+bool runOnce = false;
+void  StatusUpdate::Hack()
+{
+   if( isMailServiceEnabled == false )
+      return;
+
+   if( runOnce )
+   {
+      runOnce = false;
+
+      PacketDbQuery* dbQuery = new PacketDbQuery;
+      dbQuery->id = 0;
+      dbQuery->lookup = QueryType_Hack;
+
+      dbQuery->query = "SELECT * FROM user_temp_new_user WHERE (was_email_sent='0' or time_created<'2013-06-16') AND flagged_as_invalid='0'  and was_email_sent<2 LIMIT 10";
+      AddQueryToOutput( dbQuery );
+   }
+}
+
+void     StatusUpdate::HackResult( PacketDbQueryResult* dbResult )
+{
+   HandleNewAccounts( dbResult );
+  /* NewUsersTable              enigma( dbResult->bucket );
+   NewUsersTable::iterator    it = enigma.begin();
+   
+   while( it != enigma.end() )
+   {
+      NewUsersTable::row         row = *it++;
+      string columnId =          row[ TableUserTempNewUser::Column_id ];
+      string name =              row[ TableUserTempNewUser::Column_name ];
+
+      PacketDbQuery* dbQuery = new PacketDbQuery;
+      dbQuery->id = 0;
+      dbQuery->lookup = QueryType_Hack;
+      dbQuery->isFireAndForget = true;
+
+      string newUuid = GenerateUUID( GetCurrentMilliseconds() + static_cast<U32>( GenerateUniqueHash( columnId + name ) ) );
+
+      // update user_temp_new_user set uuid='12345678' where id='2719'
+      dbQuery->query = "Update user_temp_new_user SET uuid='";
+      dbQuery->query += newUuid;
+      dbQuery->query += "' WHERE id='";
+      dbQuery->query += columnId;
+      dbQuery->query += "'";
+      AddQueryToOutput( dbQuery );
+   }*/
+}
+
+//---------------------------------------------------------------
+
 void     StatusUpdate::HandleBlankUUIDs( PacketDbQueryResult* dbResult )
 {
    if( isMailServiceEnabled == false )
@@ -130,7 +181,7 @@ void     StatusUpdate::UpdateUuidForUser( const string& userId, bool updateCreat
       return;
    }
 
-   string newUuid = GenerateUUID( GetCurrentMilliseconds() );
+   string newUuid = GenerateUUID( GetCurrentMilliseconds() + static_cast<U32>( GenerateUniqueHash( userId + columnId ) ) );
 
    if( userId.size() != 0 && userId != "0" ) 
    {
@@ -237,7 +288,7 @@ string   StatusUpdate::GetString( const string& stringName, int languageId )
 
 //---------------------------------------------------------------
 
-void     StatusUpdate::ReplaceAllLookupStrings( string& bodyText, int languageId )
+void     StatusUpdate::ReplaceAllLookupStrings( string& bodyText, int languageId,  map< string, string >& specialStrings )
 {
    vector<string> dictionary = CreateDictionary( bodyText );
    map< string, string > replacements;
@@ -247,8 +298,17 @@ void     StatusUpdate::ReplaceAllLookupStrings( string& bodyText, int languageId
    {
       string lookupString = *it++;
 
-      const string actualString = GetString( lookupString, languageId );
-      if( actualString.size() )
+      string actualString;
+      map< string, string >::iterator foundIter = specialStrings.find( lookupString );
+      if( foundIter != specialStrings.end() )
+      {
+         actualString = foundIter->second;
+      }
+      else
+      {
+         actualString = GetString( lookupString, languageId );
+      }
+      //if( actualString.size() )
       {
          string replaceString = "%";
          replaceString += lookupString;
@@ -279,7 +339,28 @@ void     StatusUpdate::ReplaceAllLookupStrings( string& bodyText, int languageId
       }
    }
 }
+/*
+emailDomainReplacements [] = 
+{
+   { "gamil", "gmail.com" },
+   { "gmaill", "gmail" },
+   { "gmai", "gmail" },
 
+   { "hahoo", "yahoo" },
+   { "ahoo", "yahoo" },
+
+   { "otmail", "hotmail" },
+   { "hoymail", "hotmail" },
+}
+
+tailReplacements [] =
+{
+   { "co", "com" },
+   { "con", "com" },
+   { "cob", "com" },
+   { "ccom", "com" },
+   { "om", "com" },
+};*/
 //---------------------------------------------------------------
 
 void     StatusUpdate::HandleNewAccounts( const PacketDbQueryResult* dbResult )
@@ -317,24 +398,28 @@ void     StatusUpdate::HandleNewAccounts( const PacketDbQueryResult* dbResult )
 
       string subjectText = GetString( "email.new_account.welcome.subject", languageId ); //"Confirmation email";
       string bodyText = GetString( "email.new_account.welcome.body_text", languageId );//"Thank you for signing up with Playdek. Click this link to confirm your new account.";
-      if( m_confirmationEmailTemplate.size() )
-      {
-         bodyText = m_confirmationEmailTemplate;
-         ReplaceAllLookupStrings( bodyText, languageId );
-      }
-      
 
-      string userLookupKey = GenerateUUID( GetCurrentMilliseconds() );
+      string userLookupKey = GenerateUUID( GetCurrentMilliseconds() + static_cast<U32>( GenerateUniqueHash( name + email ) ) );
       userLookupKey += GenerateUUID( GetCurrentMilliseconds() ); // double long text
 
       string linkPath = m_linkToAccountCreated;
       linkPath += "?key=";
       linkPath += userLookupKey;
 
+
+      if( m_confirmationEmailTemplate.size() )
+      {
+         bodyText = m_confirmationEmailTemplate;
+         map< string, string > specialStrings;
+         specialStrings.insert( pair<string, string> ( "link-to-confirmation", linkPath ) );
+         ReplaceAllLookupStrings( bodyText, languageId, specialStrings );
+      }
+
+
       if( IsValidEmailAddress( email ) )
       {
-         // update playdek.user_temp_new_user set was_email_sent='1', lookup_key='lkjasdfhlkjhadfs' where id='4' ;
-         sendConfirmationEmail( email.c_str(), newAccountEmailAddress, mailServer, bodyText.c_str(), subjectText.c_str(), "Playdek.com", linkPath.c_str() );
+         // update playdek.user_temp_new_user set was_email_sent=was_email_sent+1, lookup_key='lkjasdfhlkjhadfs' where id='4' ;
+         SendConfirmationEmail( email.c_str(), newAccountEmailAddress, mailServer, bodyText.c_str(), subjectText.c_str(), "Playdek.com", linkPath.c_str() );
 
          // it is likely that the new user does not have a UUID yet so we will add it to both tables
          UpdateUuidForUser( userId, true, columnId );
@@ -344,7 +429,7 @@ void     StatusUpdate::HandleNewAccounts( const PacketDbQueryResult* dbResult )
          dbQuery->lookup = QueryType_UserCheckForNewAccount;
          dbQuery->isFireAndForget = true;
 
-         string queryString = "UPDATE user_temp_new_user SET was_email_sent='1', lookup_key='";
+         string queryString = "UPDATE user_temp_new_user SET was_email_sent=was_email_sent+1, lookup_key='";
          queryString += userLookupKey;
          queryString += "', time_last_confirmation_email_sent='";
          queryString += GetDateInUTC();
@@ -404,6 +489,7 @@ int      StatusUpdate::CallbackFunction()
 {
    if( isMailServiceEnabled == true )
    {
+      Hack();
       FillInUserAccountUUIDs();
       CheckForNewAccounts();
       LookForFlaggedAutoCreateAccounts();
@@ -502,6 +588,15 @@ bool     StatusUpdate::AddOutputChainData( BasePacket* packet, U32 connectionId 
                      return false;
                   }
                   HandleAutoCreateAccounts( dbResult );
+               }
+               break;
+            case QueryType_Hack:
+               {
+                  if( dbResult->successfulQuery == false || dbResult->bucket.bucket.size() == 0 )// no records found
+                  {
+                     return false;
+                  }
+                  HackResult( dbResult );
                }
                break;
          }
@@ -658,6 +753,14 @@ void     StatusUpdate::HandleWeblinks( const PacketDbQueryResult* dbResult )
    if( pathToConfirmationEmailFile.size() )
    {
       m_confirmationEmailTemplate = OpenAndLoadFile( pathToConfirmationEmailFile );
+   }
+   else
+   {
+      cout << "Error email: pathToConfirmationEmailFile not specified" << endl;
+   }
+   if( m_confirmationEmailTemplate.size() == 0 )
+   {
+      cout << "Error email: confirmation email file not found" << endl;
    }
 }
 

@@ -279,6 +279,10 @@
 				Name="Packets"
 				>
 				<File
+					RelativePath="..\NetworkCommon\Packets\BasePacket.cpp"
+					>
+				</File>
+				<File
 					RelativePath="..\NetworkCommon\Packets\BasePacket.h"
 					>
 				</File>
@@ -296,6 +300,10 @@
 				</File>
 				<File
 					RelativePath="..\NetworkCommon\Packets\DbPacket.h"
+					>
+				</File>
+				<File
+					RelativePath="..\NetworkCommon\Packets\GamePacket.cpp"
 					>
 				</File>
 				<File
