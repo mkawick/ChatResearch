@@ -13,7 +13,7 @@
 #include "../Packets/ServerToServerPacket.h"
 #include "DiplodocusServerToServer.h"
 
-DiplodocusServerToServer::DiplodocusServerToServer( const string& serverName, U32 serverId ) : Diplodocus< KhaanServerToServer >( serverName, serverId, ServerType_Chat ), m_jobIdTracker( 32 ) // 32 is a non-zero value useful for test only
+DiplodocusServerToServer::DiplodocusServerToServer( const string& serverName, U32 serverId, U8 gameProductId ) : Diplodocus< KhaanServerToServer >( serverName, serverId, gameProductId, ServerType_Chat ), m_jobIdTracker( 32 ) // 32 is a non-zero value useful for test only
 {
    SetConnectionId( ServerToServerConnectionId );
 }
@@ -90,7 +90,7 @@ bool   DiplodocusServerToServer::AddInputChainData( BasePacket* packet, U32 conn
 void  DiplodocusServerToServer::ServerWasIdentified( KhaanServerToServer* khaan )
 {
    BasePacket* packet = NULL;
-   PackageForServerIdentification( m_serverName, m_serverId, m_isGame, m_isControllerApp, true, m_isGateway, &packet );
+   PackageForServerIdentification( m_serverName, m_serverId, m_gameProductId, m_isGame, m_isControllerApp, true, m_isGateway, &packet );
    khaan->AddOutputChainData( packet, 0 );
    m_serversNeedingUpdate.push_back( khaan->GetServerId() );
 }

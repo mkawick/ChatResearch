@@ -17,6 +17,7 @@ struct UserInfo
    string   uuid;
    string   apple_id;
    U32      connectionId;
+   U8       gameProductId;
 };
 
 //////////////////////////////////////////////////////////
@@ -26,6 +27,7 @@ class GameCallbacks
 {
 public:
    GameCallbacks( GameFramework& game ) : m_game ( game ) {}
+   virtual void   Initialize() {}
 
    virtual bool   UserConnected( const UserInfo* info, U32 connectionId ) = 0;
    virtual bool   UserDisconnected( U32 connectionId ) = 0;

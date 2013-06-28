@@ -405,6 +405,18 @@
 					>
 				</File>
 			</Filter>
+			<Filter
+				Name="Logging"
+				>
+				<File
+					RelativePath="..\NetworkCommon\Logging\server_log.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\NetworkCommon\Logging\server_log.h"
+					>
+				</File>
+			</Filter>
 		</Filter>
 		<File
 			RelativePath=".\ReadMe.txt"

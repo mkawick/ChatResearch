@@ -21,15 +21,16 @@ struct ConnectionToUser
       LoginStatus_Hacker
    };
 
-   ConnectionToUser( const string& name, const string& pword, const string& key ) : username( name ), password( pword ), loginKey( key ), status( LoginStatus_Pending ) {}
+   ConnectionToUser( const string& name, U64& pword, const string& key ) : username( name ), password( pword ), loginKey( key ), status( LoginStatus_Pending ) {}
    string   username;
-   string   password;
+   U64      password;
    string   email;
    string   userUuid;
    string   loginKey;
    string   lastLoginTime;
 
    LoginStatus status;
+   U8       gameProductId;
 };
 
 
@@ -55,6 +56,8 @@ class DiplodocusLogin : public Diplodocus< KhaanLogin >
    enum QueryType 
    {
       QueryType_UserLoginInfo = 1,
+      QueryType_UpdateLastLoggedInTime,
+      QueryType_UpdateLastLoggedOutTime,
       QueryType_UserListOfGame
    };
 
@@ -69,7 +72,7 @@ private:
    int      CallbackFunction();
 
    bool     AddQueryToOutput( PacketDbQuery* query );
-   bool     LogUserIn( const string& username, const string& password, const string& loginKey, U8 gameProductId, U32 connectionId );
+   bool     LogUserIn( const string& username, U64& password, const string& loginKey, U8 gameProductId, U32 connectionId );
    bool     LogUserOut( U32 connectionId );
 
    bool     SuccessfulLogin( U32 connectionId );
@@ -81,7 +84,7 @@ private:
    bool     UpdateLastLoggedOutTime( U32 connectionId );
    bool     UpdateLastLoggedInTime( U32 connectionId );
 
-   bool     SendLoginStatusToOtherServers( const string& username, const string& userUuid, U32 connectionId, const string& lastLoginTime, bool isLoggedIn );
+   bool     SendLoginStatusToOtherServers( const string& username, const string& userUuid, U32 connectionId, U8 gameProductId, const string& lastLoginTime, bool isLoggedIn );
 
    bool     SendPacketToGateway( BasePacket*, U32 connectionId );
 

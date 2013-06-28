@@ -188,8 +188,8 @@ public:
 
    string   uuid;
    string   username;
-   string   password;
    string   loginKey;
+   U64      password;
 };
 
 ///////////////////////////////////////////////////////////////
@@ -462,4 +462,4 @@ public:
 ///////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////
 
-bool  PackageForServerIdentification( const string& serverName, U32 serverId, bool isGameServer, bool isController, bool requiresWrapper, bool isGateway, BasePacket** packet );
+bool  PackageForServerIdentification( const string& serverName, U32 serverId, U8 gameProductId, bool isGameServer, bool isController, bool requiresWrapper, bool isGateway, BasePacket** packet );

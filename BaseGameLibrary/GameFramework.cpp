@@ -6,6 +6,7 @@
 using namespace std;
 
 #include <boost/lexical_cast.hpp>
+#include "../NetworkCommon/Version.h"
 #include "../NetworkCommon/Utils/CommandLineParser.h"
 #include "../NetworkCommon/Utils/Utils.h"
 
@@ -19,10 +20,11 @@ using namespace std;
 //-----------------------------------------------------
 //-----------------------------------------------------
 
-GameFramework::GameFramework( const char* name, const char* shortName, const char* version ) :
+GameFramework::GameFramework( const char* name, const char* shortName, U8 gameProductId, const char* version ) :
    m_callbacksObject( NULL ),
    m_serverName( name ),
    m_shortName( shortName ),
+   m_gameProductId( gameProductId ),
    m_version( version )
 {
    U64 serverUniqueHashValue = GenerateUniqueHash( m_serverName );
@@ -42,7 +44,7 @@ GameFramework::GameFramework( const char* name, const char* shortName, const cha
 
    m_dbUsername = "root";
    m_dbPassword = "password";
-   m_dbSchema = "pleiades";
+   m_dbSchema = "playdek";
 }
 
 //-----------------------------------------------------
@@ -154,6 +156,7 @@ bool  GameFramework::SendGameData( U32 connectionId, const MarshalledData* data 
       PacketGameplayRawData* packet = new PacketGameplayRawData;
       packet->Prep( data->m_sizeOfData, data->m_data );
       packet->gameInstanceId = m_serverId;
+      packet->gameProductId = m_gameProductId;
 
       PacketGatewayWrapper* wrapper = new PacketGatewayWrapper;
       wrapper->pPacket = packet;
@@ -178,6 +181,7 @@ bool  GameFramework::InformClientWhoThisServerIs( U32 connectionId )
    id->gameId = GetServerId();
    id->name = GetServerName();
    id->shortName = GetServerShortName();
+   id->gameProductId = m_gameProductId;
 
    PacketGatewayWrapper* wrapper = new PacketGatewayWrapper;
    wrapper->pPacket = id;
@@ -233,10 +237,12 @@ bool  GameFramework::Run()
    cout << m_serverName << ":" << endl;
    cout << "Version " << m_version << endl;
    cout << "ServerId " << m_serverId << endl;
+   cout << "Product Id " << m_gameProductId << endl;
+   cout << "Db " << m_dbIpAddress << ":" << m_dbPort << endl;
    cout << "------------------------------------------------------------------" << endl << endl << endl;
 
    //----------------------------------------------------------------
-   m_connectionManager = new DiplodocusGame( m_serverName, m_serverId );
+   m_connectionManager = new DiplodocusGame( m_serverName, m_serverId, m_gameProductId );
    m_connectionManager->SetDatabaseIdentification( m_gameUuid );
 
    m_connectionManager->AddOutputChain( delta );
@@ -259,12 +265,14 @@ bool  GameFramework::Run()
    nameOfChatServerConnection += " to chat";
    FruitadensServerToServer chatControl( nameOfChatServerConnection.c_str() );
    chatControl.SetConnectedServerType( ServerType_Chat );
-   chatControl.SetServerId( m_serverId );   
+   chatControl.SetServerId( m_serverId );
+   chatControl.SetGameProductId( m_gameProductId );
+
    chatControl.Connect( m_chatServerAddress.c_str(), m_chatServerPort );
    chatControl.Resume();
    chatControl.NotifyEndpointOfIdentification( m_serverName, m_serverId, true, false, false );
 
-   DiplodocusServerToServer* s2s = new DiplodocusServerToServer( m_serverName, m_serverId );
+   DiplodocusServerToServer* s2s = new DiplodocusServerToServer( m_serverName, m_serverId, m_gameProductId );
    s2s->SetAsGame();
    s2s->SetupListening( m_listenForS2SPort );
 

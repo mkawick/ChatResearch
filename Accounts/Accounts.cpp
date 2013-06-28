@@ -26,6 +26,7 @@ using namespace std;
 #include "../NetworkCommon/Packets/ServerToServerPacket.h"
 
 #include "../NetworkCommon/Daemon/Daemonizer.h"
+#include "../NetworkCommon/Logging/server_log.h"
 
 #include "StatusUpdate.h"
 
@@ -45,6 +46,12 @@ using namespace std;
 int main( int argc, const char* argv[] )
 {
    daemonize( "account_serverd" );
+
+   U32 beginTime = GetCurrentMilliseconds();
+   Sleep( 1000 );
+   U32 endTime = GetCurrentMilliseconds();
+
+   cout<< "Time for 1000 ms sleep was : " << endTime - beginTime << endl;
 
    CommandLineParser    parser( argc, argv );
 
@@ -88,6 +95,7 @@ int main( int argc, const char* argv[] )
    catch( boost::bad_lexical_cast const& ) 
    {
        std::cout << "Error: input string was not valid" << std::endl;
+       LogMessage(LOG_PRIO_ERR, "Error: input string was not valid\n");
    }
 
    //--------------------------------------------------------------
@@ -97,6 +105,7 @@ int main( int argc, const char* argv[] )
    if( delta->IsConnected() == false )
    {
       cout << "Error: Database connection is invalid." << endl;
+      LogMessage(LOG_PRIO_ERR, "Error: Database connection is invalid.\n");
       getch();
       return 1;
    }
@@ -108,18 +117,26 @@ int main( int argc, const char* argv[] )
    U64 serverUniqueHashValue = GenerateUniqueHash( serverName );
    U32 serverId = (U32)serverUniqueHashValue;
 
-   string version = "0.01";
+   string version = "0.09";
    cout << serverName << endl;
    cout << "Version " << version << endl;
    cout << "ServerId " << serverId << endl;
    cout << "------------------------------------------------------------------" << endl << endl << endl;
+   LogMessage(LOG_PRIO_ERR, "serverName\n");
+   LogMessage(LOG_PRIO_ERR, "Version %s\n", version.c_str() );
+   LogMessage(LOG_PRIO_ERR, "ServerId %d\n", serverId);
+   LogMessage(LOG_PRIO_ERR, "------------------------------------------------------------------\n\n\n");
 
    StatusUpdate* server = new StatusUpdate( serverName, serverId );
    server->AddOutputChain( delta );
    
    server->Resume();
 
-   getch();
+   //getch();
+   while( 1 ) // infinite loop
+   {
+      Sleep( 1000 );
+   }
    
 	return 0;
 }

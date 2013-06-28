@@ -20,7 +20,7 @@ public:
 class DiplodocusServerToServer : public Diplodocus< KhaanServerToServer >
 {
 public:
-   DiplodocusServerToServer( const string& serverName, U32 serverId );
+   DiplodocusServerToServer( const string& serverName, U32 serverId, U8 gameProductId = 0 );
    ~DiplodocusServerToServer();
 
    bool     AddInputChainData( BasePacket* packet, U32 connectionId );

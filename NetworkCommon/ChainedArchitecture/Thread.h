@@ -10,6 +10,7 @@
 #ifndef BasePacket
 
 #include "../Packets/BasePacket.h"
+#include "../Utils/Utils.h"
 
 #endif
 
@@ -32,7 +33,6 @@ typedef HANDLE             ThreadId;
 typedef pthread_mutex_t    ThreadMutex;
 typedef pthread_t          ThreadId;
 typedef pthread_attr_t     ThreadAttributes;
-#define Sleep(a)           usleep((float)(a) * 1000)
 
 #endif
 

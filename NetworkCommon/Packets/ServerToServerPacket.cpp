@@ -107,7 +107,7 @@ bool  PacketServerJobWrapper::SerializeOut( U8* data, int& bufferOffset ) const
 
 ///////////////////////////////////////////////////////////////
 
-bool  PackageForServerIdentification( const string& serverName, U32 serverId, bool isGameServer, bool isController, bool requiresWrapper, bool isGateway, BasePacket** packet )
+bool  PackageForServerIdentification( const string& serverName, U32 serverId, U8 gameProductId, bool isGameServer, bool isController, bool requiresWrapper, bool isGateway, BasePacket** packet )
 {
    PacketServerIdentifier* serverIdPacket = new PacketServerIdentifier;
    serverIdPacket->serverName = serverName;
@@ -115,6 +115,7 @@ bool  PackageForServerIdentification( const string& serverName, U32 serverId, bo
    serverIdPacket->isGameServer = isGameServer;
    serverIdPacket->isController = isController;
    serverIdPacket->isGateway = isGateway;
+   serverIdPacket->gameProductId = gameProductId;
 
    if( requiresWrapper )
    {

@@ -13,10 +13,12 @@
 
 #include <boost/type_traits.hpp>
 #include <boost/algorithm/string/replace.hpp>
+#include <boost/lexical_cast.hpp>
 #include <iostream>
 using namespace std;
 
 #include "../Platform.h"
+#include "../Logging/server_log.h"
 #if PLATFORM == PLATFORM_WINDOWS
 #pragma warning( disable:4996)
 #pragma comment( lib, "libmysql.lib" )
@@ -44,6 +46,7 @@ using namespace std;
 void  LogEverything( const char* text )
 {
    //cout << text << endl;
+   //LogMessage(LOG_PRIO_ERR, "MySQL Initialization Failed\n");//
 }
 
 //---------------------------------------------------------------------------------------------------
@@ -196,6 +199,7 @@ Deltadromeus::JobId
    m_mutex.lock();
    m_jobsInProgress.push_back( job );
    m_mutex.unlock();   
+   Resume();
 
    return jobId;
 }
@@ -297,6 +301,7 @@ bool     Deltadromeus::Log( const char* text, int priority )
 void     Deltadromeus::Disconnect()
 {
    m_isConnected = false;
+   Resume();
 
    m_mutex.lock();
 
@@ -346,20 +351,34 @@ void     Deltadromeus::Connect()
    if( !m_DbConnection )    // If instance didn't initialize say so and exit with fault.
    {
       std::cout << stderr << "MySQL Initialization Failed" << endl;
+      LogMessage(LOG_PRIO_ERR, "MySQL Initialization Failed\n");
       return;
    }
    // Now we will actually connect to the specific database.
 
    m_DbConnection = mysql_real_connect( m_DbConnection, m_serverName.c_str(), m_username.c_str(), m_password.c_str(), m_dbName.c_str(), m_port, NULL, 0 );
 
+   string output = " login to the DB, IP: ";
+   output += m_serverName;
+   output += ":";
+   output += boost::lexical_cast<string> ( m_port );
+   output += " with schema ";
+   output += m_dbName;
+   output += " using  user=";
+   output += m_username;
+ /*  output += " password=";
+   output += m_password;*/
+
    if( m_DbConnection )    // If instance didn't initialize say so and exit with fault.
    {
       m_isConnected = true;
-      cout << "Successful login to the DB, IP: " << m_serverName << ":" << m_port << " with schema " << m_dbName <<  " using  user=" << m_username << endl;
+      cout << "Successful" << output << endl;
+      LogMessage(LOG_PRIO_ERR, "Successful%s\n", output.c_str());
    }
    else
    {
-      cout << "Failed to login to the DB, IP: " << m_serverName << ":" << m_port << " with schema " << m_dbName <<  " using  user=" << m_username << endl;
+      cout << "Failed" << output << endl;
+      LogMessage(LOG_PRIO_ERR, "Failed%s\n", output.c_str());
    }
    
 
@@ -409,6 +428,7 @@ int     Deltadromeus::CallbackFunction()
          }
          else
          {
+            Pause();
             LogEverything( "DB queue is empty" );
          }
       }

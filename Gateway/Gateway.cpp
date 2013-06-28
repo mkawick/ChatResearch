@@ -14,6 +14,7 @@ using namespace std;
 #include <boost/lexical_cast.hpp>
 
 #include <cstdio>
+#include "../NetworkCommon/Version.h"
 #include "../NetworkCommon/Utils/utils.h"
 #include "../NetworkCommon/Utils/CommandLineParser.h"
 #include "../NetworkCommon/Packets/ServerToServerPacket.h"
@@ -81,7 +82,6 @@ int main( int argc, const char* argv[] )
    U64 serverUniqueHashValue = GenerateUniqueHash( serverName );
    U32 serverId = (U32)serverUniqueHashValue;
 
-   string version = "0.04";
    cout << serverName << endl;
    cout << "Version " << version << endl;
    cout << "ServerId " << serverId << endl;
@@ -112,9 +112,10 @@ int main( int argc, const char* argv[] )
    FruitadensGateway* game2 = PrepFruitadens( "localhost", 23401, serverId, gateway );
    FruitadensGateway* game3 = PrepFruitadens( "localhost", 23402, serverId, gateway );
 
-   game1->NotifyEndpointOfIdentification( serverName, serverId, false, false, true, true  );
-   game2->NotifyEndpointOfIdentification( serverName, serverId, false, false, true, true  );
-   game3->NotifyEndpointOfIdentification( serverName, serverId, false, false, true, true  );
+   U8 gameProductId = 0;
+   game1->NotifyEndpointOfIdentification( serverName, serverId, gameProductId, false, false, true, true  );
+   game2->NotifyEndpointOfIdentification( serverName, serverId, gameProductId,false, false, true, true  );
+   game3->NotifyEndpointOfIdentification( serverName, serverId, gameProductId,false, false, true, true  );
 
    loginServerOut.Connect( loginIpAddressString.c_str(), loginPort );
    loginServerOut.Resume();

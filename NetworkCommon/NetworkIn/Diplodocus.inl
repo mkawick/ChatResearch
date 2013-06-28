@@ -245,7 +245,7 @@ bool  Diplodocus< InputChain, OutputChain >::AddOutputChainData( BasePacket* t, 
 //------------------------------------------------------------------------------
 
 template< typename InputChain, typename OutputChain >
-Diplodocus< InputChain, OutputChain >::Diplodocus( string serverName, U32 serverId, ServerType type ) : 
+Diplodocus< InputChain, OutputChain >::Diplodocus( string serverName, U32 serverId, U8 gameProductId, ServerType type ) : 
                                     m_isListeningWorking( false ),
                                     m_hasSentServerIdentification( false ),
                                     m_isControllerApp( false ),
@@ -255,6 +255,7 @@ Diplodocus< InputChain, OutputChain >::Diplodocus( string serverName, U32 server
                                     m_listener( NULL ),
                                     
                                     m_serverId( serverId ),
+                                    m_gameProductId( gameProductId ),
                                     m_serverType( type ),
                                     
                                     m_connectionIdGateway( 0 ),
@@ -514,7 +515,7 @@ void     Diplodocus< InputChain, OutputChain >::SendServerIdentification()
          OutputChain* interfacePtr = static_cast<OutputChain*>( chainedOutput.m_interface );
 
          BasePacket* packet = NULL;
-         PackageForServerIdentification( m_serverName, m_serverId, m_isGame, m_isControllerApp, true, m_isGateway, &packet );
+         PackageForServerIdentification( m_serverName, m_serverId, m_gameProductId, m_isGame, m_isControllerApp, true, m_isGateway, &packet );
          bool  accepted = interfacePtr->AddOutputChainData( packet, m_chainId );
 
          if( accepted == false )

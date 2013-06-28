@@ -43,7 +43,7 @@ void daemonize( const char* PACKAGE_NAME )
 #if PLATFORM != PLATFORM_WINDOWS
    
 
-   cout << "Fork" << endl;
+   LogMessage(LOG_PRIO_ERR, "Fork\n");
 
    pid_t pid = fork();
    if (pid < 0)
@@ -53,7 +53,8 @@ void daemonize( const char* PACKAGE_NAME )
    }
    else if (pid > 0)
    {
-      cout << "Fork fail" << endl;
+      cout << "Fork success" << endl;
+      LogMessage(LOG_PRIO_ERR, "Fork Success\n");
       exit(0); //parent
    }
 
@@ -81,6 +82,7 @@ void daemonize( const char* PACKAGE_NAME )
    //dup(0);
 
    cout << "opening lock file" << endl;
+   LogMessage(LOG_PRIO_ERR, "opening lock file\n");
    int fd = open(LOCKFILE.c_str(), O_RDWR|O_CREAT, S_IRUSR|S_IWUSR|S_IRGRP|S_IROTH);
    if (fd < 0)
    {
@@ -119,5 +121,6 @@ void daemonize( const char* PACKAGE_NAME )
 #endif
 
    cout << "daemonize finished" << endl;
+   LogMessage(LOG_PRIO_ERR, "daemonize finished\n");
 }
 

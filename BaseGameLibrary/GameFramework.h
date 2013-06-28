@@ -18,7 +18,7 @@ class DiplodocusGame;
 class GameFramework
 {
 public:
-   GameFramework( const char* gameName, const char* shortName, const char* version = "0.04" );
+   GameFramework( const char* gameName, const char* shortName, U8 gameProductId, const char* version = "0.04" );
    ~GameFramework();
 
    void  SetDatabaseIdentification( const string& uuid ) { m_gameUuid = uuid; }
@@ -26,6 +26,7 @@ public:
    const string&  GetServerName() const { return m_serverName; }
    const string&  GetServerShortName() const { return m_shortName; }
    U32            GetServerId() const { return m_serverId; }
+   U8             GetGameProductId() const { return m_gameProductId; }
 
    //----------- configuration -----------------------
 
@@ -61,6 +62,7 @@ private:
    string         m_serverName;
    string         m_shortName;
    U32            m_serverId;
+   U8             m_gameProductId;
    string         m_version;
    string         m_gameUuid;
 

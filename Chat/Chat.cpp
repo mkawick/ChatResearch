@@ -13,6 +13,7 @@ using namespace std;
 
 #include "DiplodocusChat.h"
 #include "../NetworkCommon/NetworkIn/DiplodocusServerToServer.h"
+#include "../Networkcommon/Version.h"
 
 #if PLATFORM == PLATFORM_WINDOWS
 #include <conio.h>
@@ -41,7 +42,7 @@ int main( int argc, const char* argv[] )
    string dbIpAddress = "localhost";
    string dbUsername = "root";
    string dbPassword = "password";
-   string dbSchema = "pleiades";
+   string dbSchema = "playdek";
 
    parser.FindValue( "db.address", dbIpAddress );
    parser.FindValue( "db.port", dbPortString );
@@ -76,10 +77,10 @@ int main( int argc, const char* argv[] )
    U64 serverUniqueHashValue = GenerateUniqueHash( serverName );
    U32 serverId = (U32)serverUniqueHashValue;
 
-   string version = "0.04";
    cout << serverName << ":" << endl;
    cout << "Version " << version << endl;
    cout << "ServerId " << serverId << endl;
+   cout << "Db " << dbIpAddress << ":" << dbPortAddress << endl;
    cout << "------------------------------------------------------------------" << endl << endl << endl;
 
    DiplodocusChat*    middleware = new DiplodocusChat( serverName, serverId );
@@ -87,7 +88,7 @@ int main( int argc, const char* argv[] )
 
    middleware->SetupListening( listenPortAddress );
 
-   DiplodocusServerToServer* s2s = new DiplodocusServerToServer( serverName, serverId );
+   DiplodocusServerToServer* s2s = new DiplodocusServerToServer( serverName, serverId, 0 );
    s2s->SetupListening( listenS2SPort );
    
    //----------------------------------------------------------------

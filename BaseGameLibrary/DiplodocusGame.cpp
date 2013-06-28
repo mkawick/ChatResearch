@@ -11,7 +11,7 @@ using namespace std;
 ///////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////
 
-DiplodocusGame::DiplodocusGame( const string& serverName, U32 serverId ): Diplodocus< KhaanGame >( serverName, serverId, ServerType_GameInstance ),
+DiplodocusGame::DiplodocusGame( const string& serverName, U32 serverId, U8 gameProductId ): Diplodocus< KhaanGame >( serverName, serverId, gameProductId, ServerType_GameInstance ),
                   m_callbacks( NULL )
 {
 }
@@ -53,7 +53,7 @@ void     DiplodocusGame::ClientConnectionFinishedAdding( KhaanGame* khaan )
 void     DiplodocusGame::ServerWasIdentified( KhaanGame* khaan )
 {
    BasePacket* packet = NULL;
-   PackageForServerIdentification( m_serverName, m_serverId, m_isGame, m_isControllerApp, true, m_isGateway, &packet );
+   PackageForServerIdentification( m_serverName, m_serverId, m_gameProductId, m_isGame, m_isControllerApp, true, m_isGateway, &packet );
    khaan->AddOutputChainData( packet, 0 );
    m_serversNeedingUpdate.push_back( khaan->GetServerId() );
 }
@@ -422,6 +422,7 @@ void  DiplodocusGame::ConnectUser( const PacketPrepareForUserLogin* loginPacket 
       ui.uuid = loginPacket->uuid;
       ui.apple_id = "";
       ui.connectionId = connectionId;
+      ui.gameProductId = loginPacket->gameProductId;
       m_callbacks->UserConnected( &ui, connectionId );
    }
 }

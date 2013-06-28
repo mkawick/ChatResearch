@@ -13,6 +13,7 @@ public:
    {
       Column_id,
       Column_name,
+      Column_name_match,
       Column_password_hash,
       Column_email,
       Column_user_gamekit_id,
@@ -23,6 +24,7 @@ public:
       Column_last_logout_time,
       Column_active,
       Column_language_id,
+      Column_user_confirmation_date,
       Column_end
    };
    static const char* const column_names[];
@@ -194,6 +196,22 @@ public:
 };
 
 typedef Enigmosaurus <TableIndexOnly> IndexTableParser;
+
+//////////////////////////////////////////////////////////////
+
+class TableKeyValue
+{
+public:
+   enum Columns
+   {
+      Column_key,
+      Column_value,
+      Column_end
+   };
+   static const char* const column_names[];
+};
+
+typedef Enigmosaurus <TableKeyValue> KeyValueParser;
 
 //////////////////////////////////////////////////////////////
 

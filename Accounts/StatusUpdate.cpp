@@ -19,19 +19,27 @@ const bool isMailServiceEnabled = true;
 
 const char* newAccountEmailAddress = "account_create@playdekgames.com";
 const char* mailServer = "mail.playdekgames.com";
-
+const int OneDay = 3600 * 24;
 
 StatusUpdate::StatusUpdate( const string& serverName, U32 serverId ) : Threading::CChainedThread < BasePacket* >( false, DefaultSleepTime, false ),
                   m_hasLoadedStringTable( false ),
                   m_hasLoadedWeblinks( false ),
                   m_checkOnBlankUuidTimeoutSeconds( 10 ),
                   m_newAccountTimeoutSeconds( 48 ),
-                  m_checkOnautoCreateTimeoutSeconds( 60 )
+                  m_checkOnautoCreateTimeoutSeconds( 60 ),
+                  m_checkOnOldEmailsTimeoutSeconds( OneDay ),/// once per day
+                  m_expireOldAccountRequestsTimeoutSeconds( OneDay )
 {
-   SetSleepTime( 30 );
+   SetSleepTime( 500 );
    time( &m_newAccountCreationTimer );
    time( &m_checkOnBlankUuidTimer );
    time( &m_checkOnautoCreateTimer );
+   time( &m_checkOnOldEmailsTimer );
+   time( &m_expireOldAccountRequestsTimer );
+
+   m_checkOnOldEmailsTimer -= OneDay; // always check on launch.. no waiting 24 hours.
+   m_expireOldAccountRequestsTimer -= OneDay;
+
    LogOpen();
    LogMessage( LOG_PRIO_INFO, "Accounts::Accounts server created\n" );
    cout << "Accounts::Accounts server created" << endl;
@@ -85,13 +93,90 @@ void     StatusUpdate::FillInUserAccountUUIDs()
       dbQuery->query = "SELECT user_id FROM users where uuid is NULL LIMIT 30";
 
       AddQueryToOutput( dbQuery );
+      //LogMessage( LOG_PRIO_INFO, "Accounts::FillInUserAccountUUIDs\n" );
+   }
+}
+
+//---------------------------------------------------------------
+
+void  StatusUpdate::ResendEmailToOlderAccounts()
+{
+   if( isMailServiceEnabled == false )
+      return;
+
+   time_t testTimer;
+   time( &testTimer );
+
+   if( difftime( testTimer, m_checkOnOldEmailsTimer ) >= m_checkOnOldEmailsTimeoutSeconds ) 
+   {
+      m_checkOnOldEmailsTimer = testTimer;
+
+      PacketDbQuery* dbQuery = new PacketDbQuery;
+      dbQuery->id = 0;
+      dbQuery->lookup = QueryType_ResendEmailToOlderAccounts;
+
+      string preparedDate = GetDateInUTC( -3, 0, 0 );// get three days ago
+      dbQuery->query = "SELECT * FROM user_temp_new_user WHERE time_created<'";
+      dbQuery->query += preparedDate;
+      dbQuery->query += "' AND flagged_as_invalid=0 AND email_returned_as_undeliverable=0 AND was_email_sent<2";
+      AddQueryToOutput( dbQuery );
+
+      LogMessage( LOG_PRIO_INFO, "Accounts::ResendEmailToOlderAccounts\n" );
+   }
+}
+
+//---------------------------------------------------------------
+
+void     StatusUpdate::ResendEmailToOlderAccountsResult( PacketDbQueryResult* dbResult )
+{
+   HandleNewAccounts( dbResult );
+}
+
+//---------------------------------------------------------------
+
+void     StatusUpdate::ExpireOldUserAccountRequests()
+{
+   if( isMailServiceEnabled == false )
+      return;
+
+   time_t testTimer;
+   time( &testTimer );
+
+   if( difftime( testTimer, m_expireOldAccountRequestsTimer ) >= m_expireOldAccountRequestsTimeoutSeconds ) 
+   {
+      m_expireOldAccountRequestsTimer = testTimer;
+      PacketDbQuery* dbQuery = new PacketDbQuery;
+      dbQuery->id = 0;
+      dbQuery->lookup = QueryType_MoveOlderAccountsRequest;
+      dbQuery->isFireAndForget = true;
+
+      string preparedDate = GetDateInUTC( -8, 0, 0 );// get three days ago
+      dbQuery->query = "INSERT user_pending_expired SELECT * FROM user_temp_new_user WHERE time_created<'";
+      dbQuery->query += preparedDate;
+      dbQuery->query += "'";
+      AddQueryToOutput( dbQuery );
+
+      
+      dbQuery = new PacketDbQuery;
+      dbQuery->id = 0;
+      dbQuery->lookup = QueryType_DeleteOlderAccountsRequest;
+      dbQuery->isFireAndForget = true;
+
+      dbQuery->query = "DELETE FROM user_temp_new_user WHERE time_created<'";
+      dbQuery->query += preparedDate;
+      dbQuery->query += "'";
+      AddQueryToOutput( dbQuery );
+
+
+      LogMessage( LOG_PRIO_INFO, "Accounts::ExpireOldUserAccountRequests\n" );
+
    }
 }
 
 //---------------------------------------------------------------
 
 // this hack was added once I discovered that multiple users had the same UUID
-bool runOnce = false;
+bool runOnce = true;
 void  StatusUpdate::Hack()
 {
    if( isMailServiceEnabled == false )
@@ -105,15 +190,16 @@ void  StatusUpdate::Hack()
       dbQuery->id = 0;
       dbQuery->lookup = QueryType_Hack;
 
-      dbQuery->query = "SELECT * FROM user_temp_new_user WHERE (was_email_sent='0' or time_created<'2013-06-16') AND flagged_as_invalid='0'  and was_email_sent<2 LIMIT 10";
+      string preparedDate = GetDateInUTC( -3, 0, 0 );// get three days ago
+      dbQuery->query = "select id from user_temp_new_user where uuid in ( select uuid from user_temp_new_user group by uuid having count(uuid) > 1)";
       AddQueryToOutput( dbQuery );
    }
 }
 
 void     StatusUpdate::HackResult( PacketDbQueryResult* dbResult )
 {
-   HandleNewAccounts( dbResult );
-  /* NewUsersTable              enigma( dbResult->bucket );
+   //HandleNewAccounts( dbResult );
+   NewUsersTable              enigma( dbResult->bucket );
    NewUsersTable::iterator    it = enigma.begin();
    
    while( it != enigma.end() )
@@ -136,9 +222,66 @@ void     StatusUpdate::HackResult( PacketDbQueryResult* dbResult )
       dbQuery->query += columnId;
       dbQuery->query += "'";
       AddQueryToOutput( dbQuery );
-   }*/
+   }
 }
 
+//---------------------------------------------------------------
+
+// this hack was added once I discovered that multiple users had the same UUID
+void  StatusUpdate::DuplicateUUIDSearch()
+{
+   if( isMailServiceEnabled == false )
+      return;
+
+   PacketDbQuery* dbQuery = new PacketDbQuery;
+   dbQuery->id = 0;
+   dbQuery->lookup = QueryType_DuplicateUUIDSearch;
+
+   string preparedDate = GetDateInUTC( -3, 0, 0 );// get three days ago
+   dbQuery->query = "select id, uuid from user_temp_new_user where uuid in ( select uuid from user_temp_new_user group by uuid having count(uuid) > 1)";
+   AddQueryToOutput( dbQuery );
+}
+
+//---------------------------------------------------------------
+
+void     StatusUpdate::DuplicateUUIDSearchResult( PacketDbQueryResult* dbResult )
+{
+   //HandleNewAccounts( dbResult );
+   KeyValueParser              enigma( dbResult->bucket );
+   KeyValueParser::iterator    it = enigma.begin();
+
+   U32 counter = 1;
+   
+   while( it != enigma.end() )
+   {
+      KeyValueParser::row      row = *it++;
+      string columnId =        row[ TableKeyValue::Column_key ];
+      string uuid =            row[ TableKeyValue::Column_value ];
+
+      PacketDbQuery* dbQuery = new PacketDbQuery;
+      dbQuery->id = 0;
+      dbQuery->lookup = QueryType_Hack;
+      dbQuery->isFireAndForget = true;
+
+      string newUuid = GenerateUUID( GetCurrentMilliseconds() + static_cast<U32>( GenerateUniqueHash( columnId + uuid ) ) + counter );
+      counter ++;// guaranteeing incremental values in case the app is too fast for the millisecond timer
+
+      dbQuery->query = "Update user_temp_new_user SET uuid='";
+      dbQuery->query += newUuid;
+      dbQuery->query += "' WHERE id='";
+      dbQuery->query += columnId;
+      dbQuery->query += "'";
+      AddQueryToOutput( dbQuery );
+
+      string message = "Accounts::DuplicateUUIDSearchResult duplicate UUID changed from ";
+      message += uuid;
+      message += " to ";
+      message += newUuid;
+      message += "\n";
+
+      //LogMessage( LOG_PRIO_ERR, message.c_str() );
+   }
+}
 //---------------------------------------------------------------
 
 void     StatusUpdate::HandleBlankUUIDs( PacketDbQueryResult* dbResult )
@@ -163,8 +306,8 @@ void     StatusUpdate::HandleBlankUUIDs( PacketDbQueryResult* dbResult )
 
    if( addedUuids )
    {
-      string message = "Accounts::HandleBlankUUIDs some UUIDs were added\n";
-      LogMessage( LOG_PRIO_ERR, message.c_str() );
+      //string message = "Accounts::HandleBlankUUIDs some UUIDs were added\n";
+      //LogMessage( LOG_PRIO_ERR, message.c_str() );
       //cout << message << endl;
    }
 }
@@ -365,7 +508,8 @@ tailReplacements [] =
 
 void     StatusUpdate::HandleNewAccounts( const PacketDbQueryResult* dbResult )
 {
-   cout << "HandleNewAccounts..." << endl;
+   //cout << "HandleNewAccounts..." << endl;
+   //LogMessage( LOG_PRIO_INFO, "HandleNewAccounts...\n" );
    NewUsersTable              enigma( dbResult->bucket );
    NewUsersTable::iterator    it = enigma.begin();
    
@@ -448,10 +592,10 @@ void     StatusUpdate::HandleNewAccounts( const PacketDbQueryResult* dbResult )
          message += userLookupKey;
 
          LogMessage( LOG_PRIO_INFO, message.c_str() );
-         cout << message << endl;
+         //cout << message << endl;
 
-         cout << "Time sent: ";
-         PrintCurrentTime();
+         //cout << "Time sent: ";
+         //PrintCurrentTime();
       }
       else
       {
@@ -480,6 +624,9 @@ void     StatusUpdate::HandleNewAccounts( const PacketDbQueryResult* dbResult )
    // to the same user which invalidates the first. By resetting the timer here, we put a gap in between the reads and allow the db to 
    // service the writes and prevent multiple emails.
    time( &m_newAccountCreationTimer );
+
+   // fix up any weird UUID problems
+   DuplicateUUIDSearch();
 }
 
 
@@ -489,10 +636,16 @@ int      StatusUpdate::CallbackFunction()
 {
    if( isMailServiceEnabled == true )
    {
-      Hack();
+      if( m_hasLoadedWeblinks && m_hasLoadedStringTable )
+      {
+         ResendEmailToOlderAccounts();
+         CheckForNewAccounts();
+         LookForFlaggedAutoCreateAccounts();
+         ExpireOldUserAccountRequests();
+         Hack();
+      }
+      
       FillInUserAccountUUIDs();
-      CheckForNewAccounts();
-      LookForFlaggedAutoCreateAccounts();
       PreloadLanguageStrings();
       PreloadWeblinks();
    }
@@ -599,6 +752,24 @@ bool     StatusUpdate::AddOutputChainData( BasePacket* packet, U32 connectionId 
                   HackResult( dbResult );
                }
                break;
+            case QueryType_ResendEmailToOlderAccounts:
+               {
+                  if( dbResult->successfulQuery == false || dbResult->bucket.bucket.size() == 0 )// no records found
+                  {
+                     return false;
+                  }
+                  ResendEmailToOlderAccountsResult( dbResult );
+               }
+               break;
+            case QueryType_DuplicateUUIDSearch:
+               {
+                  if( dbResult->successfulQuery == false || dbResult->bucket.bucket.size() == 0 )// no records found
+                  {
+                     return false;
+                  }
+                  DuplicateUUIDSearchResult( dbResult );
+               }
+               break;
          }
       }
    }
@@ -624,6 +795,8 @@ void     StatusUpdate::PreloadLanguageStrings()
 
          dbQuery->query = "SELECT * FROM string where category='account'";// || category='create_account'";
          AddQueryToOutput( dbQuery );
+
+         LogMessage( LOG_PRIO_INFO, "Accounts::PreloadLanguageStrings\n" );
       }
    }
 }
@@ -650,6 +823,8 @@ void     StatusUpdate::PreloadWeblinks()
 
          dbQuery->query = "SELECT * FROM config where category='Mber'";
          AddQueryToOutput( dbQuery );
+
+         LogMessage( LOG_PRIO_INFO, "Accounts::PreloadWeblinks\n" );
       }
    }
 }
@@ -856,6 +1031,8 @@ void     StatusUpdate::HandleAutoCreateAccounts( const PacketDbQueryResult* dbRe
 
       dbQuery->query = query;
       AddQueryToOutput( dbQuery );
+
+      LogMessage( LOG_PRIO_INFO, "Accounts::HandleAutoCreateAccounts\n" );
    }
 }
 
@@ -882,6 +1059,8 @@ void     StatusUpdate::CheckForNewAccounts()
       dbQuery->query = "SELECT * FROM user_temp_new_user WHERE was_email_sent='0' AND flagged_as_invalid='0'";
 
       AddQueryToOutput( dbQuery );
+
+      //LogMessage( LOG_PRIO_INFO, "Accounts::CheckForNewAccounts\n" );
    }
 }
 
@@ -894,7 +1073,7 @@ void     StatusUpdate::LookForFlaggedAutoCreateAccounts()
 
    if( difftime( testTimer, m_checkOnautoCreateTimer ) >= m_checkOnautoCreateTimeoutSeconds ) /// only check once every 60 seconds
    {
-      cout << "LookForFlaggedAutoCreateAccounts..." << endl;
+      //cout << "LookForFlaggedAutoCreateAccounts..." << endl;
       m_checkOnautoCreateTimer = testTimer;
 
       PacketDbQuery* dbQuery = new PacketDbQuery;
@@ -904,6 +1083,8 @@ void     StatusUpdate::LookForFlaggedAutoCreateAccounts()
       dbQuery->query = "SELECT * FROM user_temp_new_user WHERE flagged_auto_create='1'";
 
       AddQueryToOutput( dbQuery );
+
+      //LogMessage( LOG_PRIO_INFO, "Accounts::LookForFlaggedAutoCreateAccounts\n" );
    }
 }
 

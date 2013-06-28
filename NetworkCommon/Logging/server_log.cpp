@@ -3,7 +3,7 @@
 #include <stdarg.h>
 #include <stdio.h>
 
-#if !defined(_WIN32)
+#if PLATFORM != PLATFORM_WINDOWS
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"

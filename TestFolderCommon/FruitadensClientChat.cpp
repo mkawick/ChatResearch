@@ -16,7 +16,6 @@ using namespace std;
 bool  FruitadensClientChat::Login( const string& username, const string& password )
 {
    PacketLogin login;
-   login.gameProductId = GameProductId_AGRICOLA;
    login.loginKey = "deadbeef";
    login.uuid = username;
    login.username = username;
@@ -458,6 +457,7 @@ bool     FruitadensClientChat::CreateGame( const string& gameName )
 {
    PacketCreateGame game;
    game.name = gameName;
+   game.gameProductId = testConnectedGameProductId;
    SerializePacketOut( &game );
    return true;
 }
@@ -469,6 +469,7 @@ bool     FruitadensClientChat::AddUserToGame( const string& userUuid, const stri
    PacketAddUserToGame game;
    game.userUuid = userUuid;
    game.gameUuid = gameUuid;
+   game.gameProductId = testConnectedGameProductId;
    SerializePacketOut( &game );
 
    return true;
@@ -479,6 +480,7 @@ bool     FruitadensClientChat::AddUserToGame( const string& userUuid, const stri
 bool     FruitadensClientChat::LoadListOfGames()
 {
    PacketRequestListOfGames listOfGames;
+   listOfGames.gameProductId = testConnectedGameProductId;
    SerializePacketOut( &listOfGames );
 
    return true;
@@ -490,7 +492,7 @@ bool     FruitadensClientChat::DeleteGame( const string& gameUuid )
 {
    PacketDeleteGame game;
    game.uuid = gameUuid;
-
+   game.gameProductId = testConnectedGameProductId;
    SerializePacketOut( &game );
 
    return true;
@@ -525,6 +527,7 @@ bool     FruitadensClientChat:: GameEcho( int numBytes )
    packet.gameInstanceId = m_selectedGame;
 
    packet.Prep( m_numEchoBytesSent, m_echoComparisonBuffer );   
+   packet.gameProductId = testConnectedGameProductId;
    return SerializePacketOut( &packet );
 }
 
@@ -568,7 +571,7 @@ bool     FruitadensClientChat:: MultiplePacketEcho( int packetCount )
       packet.versionNumber = i;
       packet.gameInstanceId = m_selectedGame;
       packet.Prep( numBytesToSend, tempBuffer ); 
-
+      packet.gameProductId = testConnectedGameProductId;
 
       m_multiplePacketEchoHistory.push_back( packet );
    }

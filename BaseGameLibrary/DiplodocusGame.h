@@ -25,7 +25,7 @@ class UserSession;
 class DiplodocusGame : public Diplodocus< KhaanGame >
 {
 public:
-   DiplodocusGame( const string& serverName, U32 serverId );
+   DiplodocusGame( const string& serverName, U32 serverId, U8 gameProductId = 0 );
 
    void     RegisterCallbacks( GameCallbacks* callbacks ) { m_callbacks = callbacks; }
 

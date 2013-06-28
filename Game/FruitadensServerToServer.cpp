@@ -17,7 +17,7 @@
 
 //-----------------------------------------------------------------------------------------
 
-FruitadensServerToServer::FruitadensServerToServer( const char* name ) : Fruitadens( name ), m_serverId( 0 )
+FruitadensServerToServer::FruitadensServerToServer( const char* name ) : Fruitadens( name ), m_serverId( 0 ), m_gameProductId( 0 )
 {
 }
 
@@ -64,6 +64,7 @@ int  FruitadensServerToServer::ProcessOutputFunction()
          BasePacket* packet = m_packetsReadyToSend.front();
 
          PacketServerToServerWrapper wrapper;
+         wrapper.gameProductId = m_gameProductId;
          wrapper.serverId = m_serverId;
          wrapper.pPacket = packet;
 

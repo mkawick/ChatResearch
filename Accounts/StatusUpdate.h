@@ -42,6 +42,10 @@ class StatusUpdate : public Threading::CChainedThread < BasePacket* >
       QueryType_AutoCreateUsers,
       QueryType_AutoCreateUsersInsertOrUpdate,
       QueryType_DeleteTempNewUserRecord,
+      QueryType_ResendEmailToOlderAccounts,
+      QueryType_MoveOlderAccountsRequest,
+      QueryType_DeleteOlderAccountsRequest,
+      QueryType_DuplicateUUIDSearch,
       QueryType_Hack
    };
 
@@ -101,7 +105,21 @@ private:
    time_t   m_checkOnautoCreateTimer;
    int      m_checkOnautoCreateTimeoutSeconds;
 
+   time_t   m_checkOnOldEmailsTimer;
+   int      m_checkOnOldEmailsTimeoutSeconds;
+
+   time_t   m_expireOldAccountRequestsTimer;
+   int      m_expireOldAccountRequestsTimeoutSeconds;
+
+
+   void     ResendEmailToOlderAccounts();
+   void     ResendEmailToOlderAccountsResult( PacketDbQueryResult* dbResult );
 
    void     Hack();
    void     HackResult( PacketDbQueryResult* dbResult );
+
+   void     ExpireOldUserAccountRequests();
+   void     DuplicateUUIDSearch();
+   void     DuplicateUUIDSearchResult( PacketDbQueryResult* dbResult );
+
 };

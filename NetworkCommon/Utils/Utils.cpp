@@ -88,11 +88,21 @@ string   Get0PrefixedValue( int value )
 
 //-------------------------------------------------------------------------
 
-string GetDateInUTC()
+string GetDateInUTC( int diffDays, int diffHours, int diffMinutes )
 {
    ostringstream Convert;
    time_t t = time(0);   // get time now
    struct tm * now = localtime( & t );
+   if( diffDays || diffHours || diffMinutes )
+   {
+      struct tm* temp = now;
+      temp->tm_mday += diffDays;
+      temp->tm_hour += diffHours;
+      temp->tm_min += diffMinutes;
+      t = mktime( temp );
+      now = localtime( & t );
+      //ctime(&temp);
+   }
 
    string strMonth = Get0PrefixedValue( now->tm_mon + 1 ) ;
    string strDay = Get0PrefixedValue( now->tm_mday + 1 );
@@ -237,7 +247,7 @@ int getch()
    
    while( (ch = getchar() ) == EOF )
    {
-         
+       Sleep( 30 );// give it a rest.
    }
    
    tcsetattr(STDIN_FILENO, TCSANOW, &oldt);

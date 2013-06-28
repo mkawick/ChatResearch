@@ -247,6 +247,10 @@
 				RelativePath="..\NetworkCommon\ServerType.h"
 				>
 			</File>
+			<File
+				RelativePath="..\NetworkCommon\Version.h"
+				>
+			</File>
 			<Filter
 				Name="ChainedArchitecture"
 				>

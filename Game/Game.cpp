@@ -45,7 +45,7 @@ int main(int argc, const char* argv[])
    string dbIpAddress = "localhost";
    string dbUsername = "root";
    string dbPassword = "password";
-   string dbSchema = "pleiades";
+   string dbSchema = "playdek";
 
    parser.FindValue( "db.address", dbIpAddress );
    parser.FindValue( "db.port", dbPort );
@@ -91,7 +91,7 @@ int main(int argc, const char* argv[])
    cout << "------------------------------------------------------------------" << endl << endl << endl;
 
    //----------------------------------------------------------------
-   DiplodocusGame*    middleware = new DiplodocusGame( serverName, serverId );
+   DiplodocusGame*    middleware = new DiplodocusGame( serverName, serverId, GameProductId_MONKEYS_FROM_MARS );
    middleware->AddOutputChain( delta );
 
    middleware->SetupListening( listenPortAddress );

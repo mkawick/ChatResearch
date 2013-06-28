@@ -26,6 +26,7 @@ Fruitadens :: Fruitadens( const char* name ) : Threading::CChainedThread <BasePa
                m_isConnected( false ),
                m_hasFailedCritically( false ),
                m_connectedServerId( 0 ),
+               m_connectedGameProductId( 0 ),
                m_port( 0 ),
                m_serverType( ServerType_General ),
                m_serverId( 0 )
@@ -36,10 +37,10 @@ Fruitadens :: Fruitadens( const char* name ) : Threading::CChainedThread <BasePa
 
 //-----------------------------------------------------------------------------
 
-void  Fruitadens :: NotifyEndpointOfIdentification( const string& serverName, U32 serverId, bool isGameServer, bool isController, bool requiresWrapper, bool isGateway )
+void  Fruitadens :: NotifyEndpointOfIdentification( const string& serverName, U32 serverId, U8 gameProductId, bool isGameServer, bool isController, bool requiresWrapper, bool isGateway )
 {
    BasePacket* packet = NULL;
-   PackageForServerIdentification( serverName, serverId, isGameServer, isController, requiresWrapper, isGateway, &packet );
+   PackageForServerIdentification( serverName, serverId, gameProductId, isGameServer, isController, requiresWrapper, isGateway, &packet );
    AddOutputChainData( packet, 0 );
 }
 
@@ -281,8 +282,10 @@ bool  Fruitadens::HandlePacketReceived( BasePacket* packetIn )
       PacketServerToServerWrapper* wrapper = static_cast< PacketServerToServerWrapper* >( packetIn );
       PacketServerIdentifier* unwrappedPacket = static_cast< PacketServerIdentifier * > ( wrapper->pPacket );
       m_connectedServerId = wrapper->serverId;
+      m_connectedGameProductId = unwrappedPacket->gameProductId;
 
-      cout << "Downline Server sent connection info, name = '" << unwrappedPacket->serverName << "' : " << m_connectedServerId << endl;
+      cout << "Downline Server sent connection info: " << endl;
+      cout << "name = '" << unwrappedPacket->serverName << "' : type " << static_cast<U32>( m_connectedGameProductId ) << ", id=" << m_connectedServerId << endl;
       cout << "Server isGame = '" << unwrappedPacket->isGameServer << ", isController : " << unwrappedPacket->isController << endl;
 
       delete unwrappedPacket;

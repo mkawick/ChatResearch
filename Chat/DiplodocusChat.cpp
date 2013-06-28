@@ -11,7 +11,7 @@
 ///////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////
 
-DiplodocusChat :: DiplodocusChat( const string& serverName, U32 serverId ) : Diplodocus< KhaanChat >( serverName, serverId, ServerType_Chat ), m_inputsNeedUpdate( false ), m_chatChannelManagerNeedsUpdate( false )
+DiplodocusChat :: DiplodocusChat( const string& serverName, U32 serverId ) : Diplodocus< KhaanChat >( serverName, serverId, 0,  ServerType_Chat ), m_inputsNeedUpdate( false ), m_chatChannelManagerNeedsUpdate( false )
 {
    ChatChannelManager::SetDiplodocusChat( this );
    

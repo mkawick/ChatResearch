@@ -15,6 +15,7 @@ using namespace std;
 #include <cstdio>
 #include <memory.h>
 
+#include "../NetworkCommon/Version.h"
 #include "../NetworkCommon/Utils/Utils.h"
 
 #include "../NetworkCommon/Utils/CommandLineParser.h"
@@ -111,10 +112,10 @@ int main( int argc, const char* argv[] )
    U64 serverUniqueHashValue = GenerateUniqueHash( serverName );
    U32 serverId = (U32)serverUniqueHashValue;
 
-   string version = "0.04";
    cout << serverName << endl;
    cout << "Version " << version << endl;
    cout << "ServerId " << serverId << endl;
+   cout << "Db " << dbIpAddress << ":" << dbPortAddress << endl;
    cout << "------------------------------------------------------------------" << endl << endl << endl;
 
    DiplodocusLogin* loginServer = new DiplodocusLogin( serverName, serverId );

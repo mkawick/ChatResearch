@@ -24,7 +24,7 @@ class UserSession;
 class DiplodocusGame : public Diplodocus< KhaanGame >
 {
 public:
-   DiplodocusGame( const string& serverName, U32 serverId );
+   DiplodocusGame( const string& serverName, U32 serverId, U8 gameProductId = 0 );
 
    bool     AddInputChainData( BasePacket* packet, U32 connectionId );
    bool     AddOutputChainData( BasePacket* packet, U32 connectionId );

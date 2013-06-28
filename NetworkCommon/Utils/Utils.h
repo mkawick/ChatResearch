@@ -7,7 +7,7 @@
 
 std::string    GenerateUUID( U32 xorValue = 0 );
 U64            GenerateUniqueHash( const std::string& str );
-std::string    GetDateInUTC();
+std::string    GetDateInUTC( int diffDays = 0, int diffHours = 0, int diffMinutes = 0 );
 U64            GetDateFromString( const char* UTCFormatted );
 std::string    CreatePrintablePair( const std::string& key, const std::string& value );
 U32            GetCurrentMilliseconds();
@@ -34,6 +34,8 @@ std::string    OpenAndLoadFile( const std::string& path );
 #if PLATFORM != PLATFORM_WINDOWS
 int kbhit();
 int getch();
+#define Sleep(a)           usleep(( useconds_t )(a * 1000))
+
 #define  SOCKET_ERROR   -1
 #define closesocket  close
 #endif

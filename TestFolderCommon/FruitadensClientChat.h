@@ -12,6 +12,8 @@
 #include "../NetworkCommon/NetworkOut/Fruitadens.h"
 #include "../NetworkCommon/NetworkOut/Pyroraptor.h"
 
+static const U8 testConnectedGameProductId = GameProductId_MONKEYS_FROM_MARS;
+
 class FruitadensClientChat : public Fruitadens
 {
    enum { MaxBufferBytes = 1024 };

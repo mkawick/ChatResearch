@@ -49,7 +49,7 @@ public:
    typedef typename std::list< OutputChainType* >::iterator OutputChainIteratorType;
 
 public:
-	Diplodocus( string serverName, U32 serverId, ServerType type );
+	Diplodocus( string serverName, U32 serverId, U8 gameProductId, ServerType type );
 	virtual ~Diplodocus();
    void           SetAsControllerApp( bool isController = true ) { m_isControllerApp = isController ; }
    void           SetAsGame( bool isGame = true ) { m_isGame = isGame; }
@@ -102,6 +102,7 @@ protected:
    int               m_listeningPort;
    evconnlistener*   m_listener;// libevent object
    U32               m_serverId; // just used for id
+   U8                m_gameProductId;
    ServerType        m_serverType;// just used for logging and topology purposes.
    U32               m_connectionIdGateway;
    string            m_serverName; // just used for id

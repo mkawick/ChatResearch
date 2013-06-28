@@ -1,7 +1,8 @@
-#ifndef H_SERVER_LOG_H
-#define H_SERVER_LOG_H
+#pragma once
 
-#if defined(WIN32)
+#include "../Platform.h"
+
+#if PLATFORM == PLATFORM_WINDOWS
 
 #define LOG_PRIO_ERR    0
 #define LOG_PRIO_WARN   1
@@ -26,5 +27,4 @@ void LogMessage(int priority, const char *fmt, ...);
 
 void LogClose();
 
-#endif   //H_SERVER_LOG_H
 

@@ -36,7 +36,8 @@ bool FruitadensGateway::FilterOutwardPacket( BasePacket* packet ) const
          if( type == PacketType_Gameplay )
          {
             // sending packets to the correct server.
-            if( m_connectedServerId == wrapper->pPacket->gameInstanceId )
+            if( m_connectedServerId == wrapper->pPacket->gameInstanceId && 
+                  wrapper->pPacket->gameProductId == m_connectedGameProductId )
             {
                return true;
             }
