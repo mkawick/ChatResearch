@@ -282,6 +282,14 @@
 					RelativePath="..\NetworkCommon\Database\Deltadromeus.h"
 					>
 				</File>
+				<File
+					RelativePath="..\NetworkCommon\Database\Scleromochlus.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\NetworkCommon\Database\Scleromochlus.h"
+					>
+				</File>
 			</Filter>
 			<Filter
 				Name="NetworkIn"

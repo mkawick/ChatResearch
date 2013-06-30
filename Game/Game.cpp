@@ -69,7 +69,7 @@ int main(int argc, const char* argv[])
       std::cout << "Error: input string was not valid" << std::endl;
    }
 
-   Deltadromeus* delta = new Deltadromeus;
+   Database::Deltadromeus* delta = new Database::Deltadromeus;
    delta->SetConnectionInfo( dbIpAddress, dbPortAddress, dbUsername, dbPassword, dbSchema );
    if( delta->IsConnected() == false )
    {
