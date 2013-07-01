@@ -45,6 +45,7 @@ class StatusUpdate : public Threading::CChainedThread < BasePacket* >
       QueryType_ResendEmailToOlderAccounts,
       QueryType_MoveOlderAccountsRequest,
       QueryType_DeleteOlderAccountsRequest,
+      QueryType_ResetPasswords,
       QueryType_DuplicateUUIDSearch,
       QueryType_Hack
    };
@@ -80,11 +81,13 @@ private:
    typedef pair< stringhash, stringhash > ReplacementPair;
    string   m_pathToConfirmationEmailFile;
    string   m_confirmationEmailTemplate;
+   string   m_passwordResetEmailTemplate;
    void     ReplaceAllLookupStrings( string& bodyText, int languageId,  map< string, string >& specialStrings );
 
    void     PreloadWeblinks();
    void     HandleWeblinks( const PacketDbQueryResult* dbResult );
    string   m_linkToAccountCreated;
+   string   m_linkToResetPasswordConfirm;
    bool     m_hasLoadedWeblinks;
 
    // TO BE REMOVED (once the login server does not rely on other services updating the new account creation)
@@ -111,6 +114,9 @@ private:
    time_t   m_expireOldAccountRequestsTimer;
    int      m_expireOldAccountRequestsTimeoutSeconds;
 
+   time_t   m_resetPasswordEmailTimer;
+   int      m_resetPasswordEmailTimeoutSeconds;
+
 
    void     ResendEmailToOlderAccounts();
    void     ResendEmailToOlderAccountsResult( PacketDbQueryResult* dbResult );
@@ -121,5 +127,8 @@ private:
    void     ExpireOldUserAccountRequests();
    void     DuplicateUUIDSearch();
    void     DuplicateUUIDSearchResult( PacketDbQueryResult* dbResult );
+
+   void     CheckForResetPassword();
+   void     HandleResetPassword( const PacketDbQueryResult* dbResult );
 
 };

@@ -28,7 +28,8 @@ StatusUpdate::StatusUpdate( const string& serverName, U32 serverId ) : Threading
                   m_newAccountTimeoutSeconds( 48 ),
                   m_checkOnautoCreateTimeoutSeconds( 60 ),
                   m_checkOnOldEmailsTimeoutSeconds( OneDay ),/// once per day
-                  m_expireOldAccountRequestsTimeoutSeconds( OneDay )
+                  m_expireOldAccountRequestsTimeoutSeconds( OneDay ),
+                  m_resetPasswordEmailTimeoutSeconds( 30 )
 {
    SetSleepTime( 500 );
    time( &m_newAccountCreationTimer );
@@ -36,6 +37,7 @@ StatusUpdate::StatusUpdate( const string& serverName, U32 serverId ) : Threading
    time( &m_checkOnautoCreateTimer );
    time( &m_checkOnOldEmailsTimer );
    time( &m_expireOldAccountRequestsTimer );
+   time( &m_resetPasswordEmailTimer );
 
    m_checkOnOldEmailsTimer -= OneDay; // always check on launch.. no waiting 24 hours.
    m_expireOldAccountRequestsTimer -= OneDay;
@@ -446,38 +448,18 @@ void     StatusUpdate::ReplaceAllLookupStrings( string& bodyText, int languageId
       if( foundIter != specialStrings.end() )
       {
          actualString = foundIter->second;
+         actualString += "\r\n";// keeping the strings from going too long
       }
       else
       {
          actualString = GetString( lookupString, languageId );
+         actualString += "\r\n";// keeping the strings from going too long
       }
       //if( actualString.size() )
       {
          string replaceString = "%";
          replaceString += lookupString;
          replaceString += "%";
-
-        /* stringhash hash = GenerateUniqueHash( lookupString );
-
-         map< stringhash, stringhash >::iterator matchedString = m_replacemetStringsLookup.find( hash );
-
-         if( matchedString == m_replacemetStringsLookup.end() )
-         {
-            cout << "unfound string in lookups: " << lookupString << endl;
-            return;
-         }
-
-         GetString(*/
-         /*stringhash sought = matchedString->second;
-         StringTableLookup::iterator foundStringIter = m_stringsTable.find( sought );
-         if( foundStringIter == m_stringsTable.end() )
-         {
-            cout << "unfound string in lookups: " << lookupString << endl;
-            return;
-         }
-         const string& actualString = foundStringIter->second ;*/
-
-         //bodyText.replace( lookupString, actualString );
          boost::replace_first( bodyText, replaceString, actualString );
       }
    }
@@ -540,28 +522,33 @@ void     StatusUpdate::HandleNewAccounts( const PacketDbQueryResult* dbResult )
          continue;
       }
 
-      string subjectText = GetString( "email.new_account.welcome.subject", languageId ); //"Confirmation email";
-      string bodyText = GetString( "email.new_account.welcome.body_text", languageId );//"Thank you for signing up with Playdek. Click this link to confirm your new account.";
-
-      string userLookupKey = GenerateUUID( GetCurrentMilliseconds() + static_cast<U32>( GenerateUniqueHash( name + email ) ) );
-      userLookupKey += GenerateUUID( GetCurrentMilliseconds() ); // double long text
-
-      string linkPath = m_linkToAccountCreated;
-      linkPath += "?key=";
-      linkPath += userLookupKey;
-
-
-      if( m_confirmationEmailTemplate.size() )
-      {
-         bodyText = m_confirmationEmailTemplate;
-         map< string, string > specialStrings;
-         specialStrings.insert( pair<string, string> ( "link-to-confirmation", linkPath ) );
-         ReplaceAllLookupStrings( bodyText, languageId, specialStrings );
-      }
-
-
       if( IsValidEmailAddress( email ) )
       {
+         string subjectText = GetString( "email.new_account.welcome.subject", languageId ); //"Confirmation email";
+         string bodyText = GetString( "email.new_account.welcome.body_text", languageId );//"Thank you for signing up with Playdek. Click this link to confirm your new account.";
+
+         string userLookupKey = GenerateUUID( GetCurrentMilliseconds() + static_cast<U32>( GenerateUniqueHash( name + email ) ) );
+         userLookupKey += GenerateUUID( GetCurrentMilliseconds() ); // double long text
+
+         string linkPath = m_linkToAccountCreated;
+         linkPath += "?key=";
+         linkPath += userLookupKey;
+
+
+         if( m_confirmationEmailTemplate.size() )
+         {
+            bodyText = m_confirmationEmailTemplate;
+            map< string, string > specialStrings;
+            specialStrings.insert( pair<string, string> ( "link-to-confirmation", linkPath ) );
+            ReplaceAllLookupStrings( bodyText, languageId, specialStrings );
+         }
+         else
+         {
+            bodyText += "<a href='";
+            bodyText += linkPath;
+            bodyText += "'>Playdek.com</a>";
+         }
+
          // update playdek.user_temp_new_user set was_email_sent=was_email_sent+1, lookup_key='lkjasdfhlkjhadfs' where id='4' ;
          SendConfirmationEmail( email.c_str(), newAccountEmailAddress, mailServer, bodyText.c_str(), subjectText.c_str(), "Playdek.com", linkPath.c_str() );
 
@@ -643,6 +630,7 @@ int      StatusUpdate::CallbackFunction()
          LookForFlaggedAutoCreateAccounts();
          ExpireOldUserAccountRequests();
          Hack();
+         CheckForResetPassword();
       }
       
       FillInUserAccountUUIDs();
@@ -770,6 +758,15 @@ bool     StatusUpdate::AddOutputChainData( BasePacket* packet, U32 connectionId 
                   DuplicateUUIDSearchResult( dbResult );
                }
                break;
+            case QueryType_ResetPasswords:
+               {
+                  if( dbResult->successfulQuery == false || dbResult->bucket.bucket.size() == 0 )// no records found
+                  {
+                     return false;
+                  }
+                  HandleResetPassword( dbResult );
+               }
+               break;
          }
       }
    }
@@ -816,6 +813,7 @@ void     StatusUpdate::PreloadWeblinks()
          // because this table may not exist, we will set the default here
 
          m_linkToAccountCreated = "http://accounts.playdekgames.com/account_created.php";
+         m_linkToResetPasswordConfirm = "http://accounts.playdekgames.com/reset_password_confirm.php";
 
          PacketDbQuery* dbQuery = new PacketDbQuery;
          dbQuery->id = 0;
@@ -869,8 +867,11 @@ void     StatusUpdate::HandleWeblinks( const PacketDbQueryResult* dbResult )
 
    string begin = "http://accounts.playdekgames.com";
    string middle = "";
-   string end = "account_created.php";
+   string accountCreated = "account_created.php";
+   string resetPassword = "reset_password_confirm.php";
+
    string pathToConfirmationEmailFile;
+   string pathToResetPasswordEmailFile;
    
    while( it != enigma.end() )
    {
@@ -889,11 +890,19 @@ void     StatusUpdate::HandleWeblinks( const PacketDbQueryResult* dbResult )
       }
       else if( key == "user_account.web_account_created" )
       {
-         end = value;
+         accountCreated = value;
+      }
+      else if( key == "user_account.web_reset_password_confirmed" )
+      {
+         resetPassword = value;
       }
       else if( key == "user_account.account_created.confirmation_email_path" )
       {
          pathToConfirmationEmailFile = value;
+      }
+      else if( key == "user_account.password_reset.reset_email_path" )
+      {
+         pathToResetPasswordEmailFile = value;
       }
    }
 
@@ -901,6 +910,7 @@ void     StatusUpdate::HandleWeblinks( const PacketDbQueryResult* dbResult )
    
    // assemble the path
    m_linkToAccountCreated = begin;
+   m_linkToResetPasswordConfirm = begin;
 
    char character = *m_linkToAccountCreated.rbegin();
 
@@ -917,13 +927,15 @@ void     StatusUpdate::HandleWeblinks( const PacketDbQueryResult* dbResult )
          m_linkToAccountCreated += "/";
       }
    }
-   if( end.size() < 3 )
+   if( accountCreated.size() < 3 )
    {
       string str = "Config table does not contain a useful value for 'user_account.web_account_created'; db query failed";
       Log( str );
    }
-   assert( end.size() > 2 );// minimal string size
-   m_linkToAccountCreated += end;
+   assert( accountCreated.size() > 2 );// minimal string size
+   m_linkToResetPasswordConfirm = m_linkToAccountCreated;
+   m_linkToAccountCreated += accountCreated;
+   m_linkToResetPasswordConfirm += resetPassword;
 
    if( pathToConfirmationEmailFile.size() )
    {
@@ -936,6 +948,19 @@ void     StatusUpdate::HandleWeblinks( const PacketDbQueryResult* dbResult )
    if( m_confirmationEmailTemplate.size() == 0 )
    {
       cout << "Error email: confirmation email file not found" << endl;
+   }
+
+   if( pathToResetPasswordEmailFile.size() )
+   {
+      m_passwordResetEmailTemplate = OpenAndLoadFile( pathToResetPasswordEmailFile );
+   }
+   else
+   {
+      cout << "Error email: pathToResetPasswordEmailFile not specified" << endl;
+   }
+   if( m_passwordResetEmailTemplate.size() == 0 )
+   {
+      cout << "Error email: reset password email file not found" << endl;
    }
 }
 
@@ -1062,6 +1087,112 @@ void     StatusUpdate::CheckForNewAccounts()
 
       //LogMessage( LOG_PRIO_INFO, "Accounts::CheckForNewAccounts\n" );
    }
+}
+
+
+//---------------------------------------------------------------
+
+void     StatusUpdate::CheckForResetPassword()
+{
+   if( isMailServiceEnabled == false )
+      return;
+
+   time_t testTimer;
+   time( &testTimer );
+
+   if( difftime( testTimer, m_resetPasswordEmailTimer ) >= m_resetPasswordEmailTimeoutSeconds ) 
+   {
+      m_resetPasswordEmailTimer = testTimer;
+
+      PacketDbQuery* dbQuery = new PacketDbQuery;
+      dbQuery->id = 0;
+      dbQuery->lookup = QueryType_ResetPasswords;
+
+      dbQuery->query = "SELECT reset_password_keys.id, user_email, languageId, reset_password_keys.reset_key FROM users JOIN reset_password_keys ON reset_password_keys.user_account_uuid = users.uuid ";
+
+      AddQueryToOutput( dbQuery );
+
+      //LogMessage( LOG_PRIO_INFO, "Accounts::CheckForNewAccounts\n" );
+   }
+}
+
+
+//---------------------------------------------------------------
+void     StatusUpdate::HandleResetPassword( const PacketDbQueryResult* dbResult )
+{
+   //cout << "HandleNewAccounts..." << endl;
+   //LogMessage( LOG_PRIO_INFO, "HandleNewAccounts...\n" );
+   PasswordResetParser              enigma( dbResult->bucket );
+   PasswordResetParser::iterator    it = enigma.begin();
+   
+   while( it != enigma.end() )
+   {
+      PasswordResetParser::row      row = *it++;
+      string columnId =             row[ EmailAddressesOfPasswordsToResetTable::Column_id ];
+      string email =                row[ EmailAddressesOfPasswordsToResetTable::Column_email ];
+      string languageString =        row[ EmailAddressesOfPasswordsToResetTable::Column_language_id ];
+      string Column_reset_key =     row[ EmailAddressesOfPasswordsToResetTable::Column_reset_key ];
+      int languageId = boost::lexical_cast<int>( languageString );
+
+      if( IsValidEmailAddress( email ) )
+      {
+         string subjectText = GetString( "email.reset_password.subject", languageId ); //"Confirmation email";
+         string bodyText = GetString( "email.reset_password.body_text", languageId );//"Thank you for signing up with Playdek. Click this link to confirm your new account.";
+
+         string linkPath = m_linkToResetPasswordConfirm;
+         linkPath += "?key=";
+         linkPath += Column_reset_key;
+
+         if( m_passwordResetEmailTemplate.size() )
+         {
+            string bodyText = m_passwordResetEmailTemplate;
+            map< string, string > specialStrings;
+            specialStrings.insert( pair<string, string> ( "link-to-confirmation", linkPath ) );
+            ReplaceAllLookupStrings( bodyText, languageId, specialStrings );
+         }
+         else
+         {
+            bodyText += "<a href='";
+            bodyText += linkPath;
+            bodyText += "'>Playdek.com</a>";
+         }
+
+         // update playdek.user_temp_new_user set was_email_sent=was_email_sent+1, lookup_key='lkjasdfhlkjhadfs' where id='4' ;
+         SendConfirmationEmail( email.c_str(), newAccountEmailAddress, mailServer, bodyText.c_str(), subjectText.c_str(), "Playdek.com", linkPath.c_str() );
+
+         PacketDbQuery* dbQuery = new PacketDbQuery;
+         dbQuery->id = 0;
+         dbQuery->lookup = QueryType_ResetPasswords;
+
+         dbQuery->query = "UPDATE reset_password_keys SET was_email_sent=1 WHERE reset_key='";
+         dbQuery->query += Column_reset_key;
+         dbQuery->query += "'";
+
+         AddQueryToOutput( dbQuery );
+      }
+   }
+/*
+   if( isMailServiceEnabled == false )
+      return;
+
+   time_t testTimer;
+   time( &testTimer );
+
+   if( difftime( testTimer, m_newAccountCreationTimer ) >= m_newAccountTimeoutSeconds ) /// only check once every 55 seconds
+   {
+      //cout << "CheckForNewAccounts..." << endl;
+      m_newAccountCreationTimer = testTimer;
+
+      PacketDbQuery* dbQuery = new PacketDbQuery;
+      dbQuery->id = 0;
+      dbQuery->lookup = QueryType_ResetPasswords;
+
+      dbQuery->query = "SELECT reset_password_keys.id, user_email FROM users JOIN reset_password_keys ON reset_password_keys.user_account_uuid = users.uuid ";
+
+      AddQueryToOutput( dbQuery );
+
+      //LogMessage( LOG_PRIO_INFO, "Accounts::CheckForNewAccounts\n" );
+   }*/
 }
 
 //---------------------------------------------------------------

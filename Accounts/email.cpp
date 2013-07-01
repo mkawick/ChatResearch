@@ -62,7 +62,7 @@ void Check(int iStatus, const char* functionName )
 void   OpenLogFile( const char* fileName )
 {
 #if defined( LogToFile )
-   dumpFile.open( fileName,ios::app );
+   dumpFile.open( fileName, ios::app );
 #endif
 }
 
@@ -81,6 +81,85 @@ void  CloseFile()
 #endif
 }
 
+
+//////////////////////////////////////////////////////////////////////////////
+
+void HtmlEntitySafeSplit( char* buffer, const char* source, int splitSize, const char* delimiter )
+{
+   int   position = 0;
+   bool  unsafeSplit = false;
+   int   sourceLength = strlen( source );
+
+   for(int i=0; i<sourceLength; i++)
+   {
+      if(position >= splitSize && unsafeSplit == false )
+      {
+         int len = strlen( delimiter );
+         memcpy( buffer, delimiter, len );
+         buffer += len;
+
+         unsafeSplit = false;
+         position = 0;
+      }
+
+      char c = *source++;
+
+      if( c == '&' )
+         unsafeSplit = true;
+      else if( c == ';' )
+         unsafeSplit = false;
+      else if( c == ' ' )
+         unsafeSplit = false;
+
+      *buffer = c;
+      buffer++;
+      position++;
+   }
+   *buffer = 0;
+}
+
+
+//////////////////////////////////////////////////////////////////////////////
+
+int   SendEveryFewCharcters( const char* source, int len, int minCharacters, int maxCharacters, int socketId )
+{
+   int longest = 0;
+   int position = 0;
+   while( position < len )
+   {
+      const char* text = source;
+      int linePosition = 0;
+      while( linePosition < minCharacters )
+      {
+         linePosition ++;
+         text ++;
+      }
+      // now we look for crlf
+      do
+      {
+         while( *text && *text != '\r' )
+         {
+            linePosition ++;
+            text++;
+         }
+      } while( *text && *(text+1) != '\n' );
+
+      // now we are ready for a break
+      linePosition += 2;// point to the thing after the the line feed
+      text += 2;
+
+      send( socketId, source, linePosition, 0);
+      if( linePosition > longest )
+          longest = linePosition;
+
+      source = text;
+      position += linePosition;
+   }
+
+   return longest;
+}
+
+
 //////////////////////////////////////////////////////////////////////////////
 
 int  SendConfirmationEmail( const char* toAddr, const char* fromAddr, const char* emailServerName, const char* bodyText, const char* subject, const char* linkText, const char* linkAddr )
@@ -88,8 +167,8 @@ int  SendConfirmationEmail( const char* toAddr, const char* fromAddr, const char
    // Lookup email server's IP address.
 
   char        buffer[4096]       = "";
-  //char        messageLine[255]       = "";
-  int maxLen = strlen( bodyText ) + 64;
+  int bodyLen = strlen( bodyText );
+  int maxLen = bodyLen + 1024;// we're going to be inserting a lot of CRLFs
   auto_ptr< char > messageLine( new char[ maxLen ] );
 
   OpenLogFile( "emailDump.log" );
@@ -178,10 +257,18 @@ int  SendConfirmationEmail( const char* toAddr, const char* fromAddr, const char
   LogTextToFile( messageLine.get() );
 
 
-
-  sprintf( messageLine.get(), "%s%s", bodyText, CRLF);
+  /*sprintf( messageLine.get(), "%s%s", bodyText, CRLF);
   Check(send(socketId, messageLine.get(), strlen( messageLine.get() ), 0), "send() message-line");
-  LogTextToFile( messageLine.get() );
+  LogTextToFile( messageLine.get() );*/
+
+  SendEveryFewCharcters( bodyText, bodyLen, 34, 76, socketId );
+ /* HtmlEntitySafeSplit( messageLine.get(), bodyText, 76, CRLF );
+  //
+
+  ofstream dumpFile;
+  dumpFile.open( "BodyTextWithCRLF.txt", ios::app );
+  dumpFile << messageLine.get();
+  dumpFile.close();*/
   
   
  /* if( linkText && strlen( linkText ) > 0 && 

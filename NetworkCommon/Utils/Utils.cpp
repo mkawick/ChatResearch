@@ -272,16 +272,18 @@ void  PrintCurrentTime()
 string OpenAndLoadFile( const string& path )
 {
    string returnString;
-   ifstream file( path.c_str() );
+   ifstream file( path.c_str(), ios::in|ios::binary|ios::ate );
    std::string temp;
    if( file.is_open() )
    {
-      while(std::getline( file, temp )) 
-      {
-         returnString += temp;
-      }
-
+      ifstream::pos_type  size = file.tellg();
+      int num = size;
+      char* memblock = new char [size];
+      file.seekg (0, ios::beg);
+      file.read (memblock, size);
       file.close();
+      returnString = memblock;
+      delete memblock;
    }
 
    return returnString;
