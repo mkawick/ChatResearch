@@ -37,6 +37,10 @@ int getch();
 #define Sleep(a)           usleep(( useconds_t )(a * 1000))
 
 #define  SOCKET_ERROR   -1
+
+#ifndef closesocket
 #define closesocket  close
+#endif
+
 #endif
 

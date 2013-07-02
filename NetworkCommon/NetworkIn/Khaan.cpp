@@ -7,6 +7,7 @@
 
 #include "../ServerConstants.h"
 #include "../Packets/BasePacket.h"
+#include "../Packets/ServerToServerPacket.h"
 #include "../Packets/PacketFactory.h"
 #include "Diplodocus.h"
 
@@ -153,6 +154,17 @@ void	Khaan :: UpdateOutwardPacketList()
       packet->SerializeOut( buffer, bufferOffset ); 
       if( bufferOffset < (int)( MaxBufferSize - 256 ) )// do not write past the end
       {
+         if( packet->packetType == PacketType_GatewayWrapper )
+         {
+            PacketGatewayWrapper* wrapper = static_cast< PacketGatewayWrapper* >( packet );
+            delete wrapper->pPacket;
+         }
+         else if( packet->packetType == PacketType_ServerToServerWrapper )
+         {
+            PacketServerToServerWrapper* wrapper = static_cast< PacketServerToServerWrapper* >( packet );
+            delete wrapper->pPacket;
+         }
+
          delete packet;
          m_packetsOut.pop_front();
          length = bufferOffset;

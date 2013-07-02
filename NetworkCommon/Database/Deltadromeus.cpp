@@ -25,21 +25,18 @@ using namespace std;
 //#include <winsock2.h>
 #endif
 
-#include <my_global.h> // Include this file first to avoid problems
-#include <mysql.h> // MySQL Include File
-
-#include "../Packets/DbPacket.h"
-
 #include <memory.h>
 #include "../DataTypes.h"
 
-#include "../ChainedArchitecture/Thread.h"
-
+#include "../Packets/DbPacket.h"
 //#include <stl_vector.h>
 
 #include "Deltadromeus.h"
 using namespace Database;
 
+
+#include <my_global.h> // Include this file first to avoid problems
+#include <mysql.h> // MySQL Include File
 
 void  LogEverything( const char* text )
 {
@@ -159,6 +156,8 @@ bool  DbJob::SubmitQuery( MYSQL* connection, const string& dbName )
             m_results.push_back( oneRow );
             m_hasResultSet = true;
          }
+         
+         mysql_free_result( res_set );
       }
       else
       {
@@ -520,6 +519,13 @@ bool     Deltadromeus::PutQueryResultInProperChain( DbJobBase* testJob )
                delete testJob;
                return true;
             }
+            if( result == false )
+            {
+               delete resultPacket;
+            }
+           /* resultPacket->bucket.bucket.clear();
+
+            delete resultPacket;*/
          }
          it++;
       }

@@ -226,6 +226,7 @@ public:
    bool  SerializeOut( U8* data, int& bufferOffset ) const;
 
    bool  wasLoginSuccessful;
+   U32   connectionId;  // used for a user ID.
 };
 
 

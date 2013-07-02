@@ -167,6 +167,7 @@ bool  PacketLoginToClient::SerializeIn( const U8* data, int& bufferOffset )
 {
    PacketLogin::SerializeIn( data, bufferOffset );
    Serialize::In( data, bufferOffset, wasLoginSuccessful );
+   Serialize::In( data, bufferOffset, connectionId );
 
    return true;
 }
@@ -175,6 +176,7 @@ bool  PacketLoginToClient::SerializeOut( U8* data, int& bufferOffset ) const
 {
    PacketLogin::SerializeOut( data, bufferOffset );
    Serialize::Out( data, bufferOffset, wasLoginSuccessful );
+   Serialize::Out( data, bufferOffset, connectionId );
 
    return true;
 }

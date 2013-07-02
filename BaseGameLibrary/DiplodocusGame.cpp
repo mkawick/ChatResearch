@@ -149,6 +149,8 @@ bool   DiplodocusGame::AddInputChainData( BasePacket* packet, U32 connectionId )
       {
          assert( 0 );
       }
+
+      delete unwrappedPacket;
    }
    return false;
 }

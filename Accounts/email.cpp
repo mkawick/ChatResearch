@@ -74,6 +74,17 @@ void LogTextToFile( const char* text )
 #endif
 }
 
+void LogTextToFile( const char* text, int length ) 
+{
+#if defined( LogToFile )
+   char str[2048];
+   memcpy( str, text, length );
+   str[length] = 0;
+
+   dumpFile << str;
+#endif
+}
+
 void  CloseFile()
 {
 #if defined( LogToFile )
@@ -144,11 +155,15 @@ int   SendEveryFewCharcters( const char* source, int len, int minCharacters, int
          }
       } while( *text && *(text+1) != '\n' );
 
-      // now we are ready for a break
-      linePosition += 2;// point to the thing after the the line feed
-      text += 2;
+      if( position < len && *text ) 
+      {
+         // now we are ready for a break
+         linePosition += 2;// point to the thing after the the line feed
+         text += 2;
+      }
 
       send( socketId, source, linePosition, 0);
+      LogTextToFile( source, linePosition );
       if( linePosition > longest )
           longest = linePosition;
 

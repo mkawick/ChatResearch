@@ -168,6 +168,7 @@ bool  DiplodocusGateway::AddOutputChainData( BasePacket* packet, U32 serverType 
 // assuming that everything is thread protected at this point
 void  DiplodocusGateway::HandlePacketToKhaan( KhaanConnector* khaan, BasePacket* packet )
 {
+   U32 connectionId = khaan->GetConnectionId();
    if( packet->packetType == PacketType_Login && 
        packet->packetSubType == PacketLogin::LoginType_InformGatewayOfLoginStatus )
    {
@@ -179,18 +180,21 @@ void  DiplodocusGateway::HandlePacketToKhaan( KhaanConnector* khaan, BasePacket*
       else
       {
          khaan->DenyAllFutureData();
+         connectionId = 0;
       }
+
       PacketLoginToClient* clientNotify = new PacketLoginToClient;
       clientNotify->wasLoginSuccessful = finishedLogin->wasLoginSuccessful;
       clientNotify->uuid = finishedLogin->uuid;
       clientNotify->username = finishedLogin->username;
+      clientNotify->connectionId = connectionId;
 
       delete finishedLogin;
       packet = clientNotify;
    }
 
    khaan->AddOutputChainData( packet );
-   m_connectionsNeedingUpdate.push_back( khaan->GetConnectionId() );
+   m_connectionsNeedingUpdate.push_back( connectionId );
 }
 
 //-----------------------------------------------------------------------------------------
