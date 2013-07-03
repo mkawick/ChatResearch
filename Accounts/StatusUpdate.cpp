@@ -15,33 +15,41 @@
 #include <iostream>
 using namespace std;
 
-const bool isMailServiceEnabled = true;
-
-const char* newAccountEmailAddress = "account_create@playdekgames.com";
-const char* resetPasswordEmailAddress = "account_reset@playdekgames.com";
-const char* mailServer = "mail.playdekgames.com";
 const int OneDay = 3600 * 24;
 
-StatusUpdate::StatusUpdate( const string& serverName, U32 serverId ) : Threading::CChainedThread < BasePacket* >( false, DefaultSleepTime, false ),
-                  m_hasLoadedStringTable( false ),
-                  m_hasLoadedWeblinks( false ),
-                  m_checkOnBlankUuidTimeoutSeconds( 55 ),
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+StatusUpdate::StatusUpdate( const string& serverName, U32 serverId ) : Queryer(),
+                 // m_hasLoadedStringTable( false ),
+                  //m_hasLoadedWeblinks( false ),
                   m_newAccountTimeoutSeconds( 48 ),
                   m_checkOnautoCreateTimeoutSeconds( 60 ),
                   m_checkOnOldEmailsTimeoutSeconds( OneDay ),/// once per day
-                  m_expireOldAccountRequestsTimeoutSeconds( OneDay ),
-                  m_resetPasswordEmailTimeoutSeconds( 30 )
+                  m_expireOldAccountRequestsTimeoutSeconds( OneDay )
 {
    SetSleepTime( 500 );
    time( &m_newAccountCreationTimer );
-   time( &m_checkOnBlankUuidTimer );
    time( &m_checkOnautoCreateTimer );
    time( &m_checkOnOldEmailsTimer );
    time( &m_expireOldAccountRequestsTimer );
-   time( &m_resetPasswordEmailTimer );
 
    m_checkOnOldEmailsTimer -= OneDay; // always check on launch.. no waiting 24 hours.
    m_expireOldAccountRequestsTimer -= OneDay;
+
+   m_blankUuidHandler = new BlankUUIDQueryHandler( QueryType_UserFindBlankUUID, this, string( "SELECT user_id FROM users WHERE uuid IS NULL OR uuid=0 LIMIT 30") );
+   m_blankUuidHandler->SetPeriodicty( 60 );
+   m_newAccountHandler = new NewAccountQueryHandler( QueryType_UserCheckForNewAccount, this, string( "SELECT * FROM user_temp_new_user WHERE was_email_sent='0' AND flagged_as_invalid='0'" ) );
+   m_newAccountHandler->SetPeriodicty( 48 );
+   m_newAccountHandler->SetQueryTypeForLoadingStrings( QueryType_LoadStrings );
+   m_newAccountHandler->SetQueryTypeForLoadingWeblinks( QueryType_LoadWeblinks );
+   m_newAccountHandler->SetQueryTypeForOlderEmailsResent( QueryType_ResendEmailToOlderAccounts );
+   m_newAccountHandler->SetBlankUUIDHandler( m_blankUuidHandler );
+
+   m_resetPasswordHandler = new ResetPasswordQueryHandler( QueryType_ResetPasswords, this, string( "SELECT reset_password_keys.id, users.user_email, users.language_id, reset_password_keys.reset_key FROM users JOIN reset_password_keys ON reset_password_keys.user_account_uuid = users.uuid WHERE reset_password_keys.was_email_sent=0" ) );
+   m_resetPasswordHandler->SetPeriodicty( 30 );
 
    LogOpen();
    LogMessage( LOG_PRIO_INFO, "Accounts::Accounts server created\n" );
@@ -50,6 +58,9 @@ StatusUpdate::StatusUpdate( const string& serverName, U32 serverId ) : Threading
 
 StatusUpdate::~StatusUpdate()
 {
+   delete m_blankUuidHandler;
+   //delete m_newAccountHandler;
+   //delete m_resetPasswordHandler;
 }
 
 //---------------------------------------------------------------
@@ -71,33 +82,6 @@ bool     StatusUpdate::AddInputChainData( BasePacket* packet, U32 connectionId )
    /// this service does not accept normal user connections.
    return false;
 
-}
-
-//---------------------------------------------------------------
-
-void     StatusUpdate::FillInUserAccountUUIDs()
-{
-   if( isMailServiceEnabled == false )
-      return;
-
-   time_t testTimer;
-   time( &testTimer );
-
-   if( difftime( testTimer, m_checkOnBlankUuidTimer ) >= m_checkOnBlankUuidTimeoutSeconds ) 
-   {
-      //cout << "FillInUserAccountUUIDs..." << endl;
-
-      m_checkOnBlankUuidTimer = testTimer;
-
-      PacketDbQuery* dbQuery = new PacketDbQuery;
-      dbQuery->id = 0;
-      dbQuery->lookup = QueryType_UserFindBlankUUID;
-
-      dbQuery->query = "SELECT user_id FROM users where uuid is NULL LIMIT 30";
-
-      AddQueryToOutput( dbQuery );
-      //LogMessage( LOG_PRIO_INFO, "Accounts::FillInUserAccountUUIDs\n" );
-   }
 }
 
 //---------------------------------------------------------------
@@ -132,7 +116,8 @@ void  StatusUpdate::ResendEmailToOlderAccounts()
 
 void     StatusUpdate::ResendEmailToOlderAccountsResult( PacketDbQueryResult* dbResult )
 {
-   HandleNewAccounts( dbResult );
+ //  HandleNewAccounts( dbResult );
+   m_newAccountHandler->HandleResult( dbResult );
 }
 
 //---------------------------------------------------------------
@@ -285,186 +270,7 @@ void     StatusUpdate::DuplicateUUIDSearchResult( PacketDbQueryResult* dbResult 
       //LogMessage( LOG_PRIO_ERR, message.c_str() );
    }
 }
-//---------------------------------------------------------------
 
-void     StatusUpdate::HandleBlankUUIDs( PacketDbQueryResult* dbResult )
-{
-   if( isMailServiceEnabled == false )
-      return;
-
-   //cout << "HandleBlankUUIDs..." << endl;
-
-   bool addedUuids = false;
-   IndexTableParser              enigma( dbResult->bucket );
-   IndexTableParser::iterator    it = enigma.begin();
-   while( it != enigma.end() )
-   {
-      addedUuids = true;
-      IndexTableParser::row      row = *it++;
-
-      string userId =            row[ TableIndexOnly::Column_index ];
-
-      UpdateUuidForUser( userId, true, "0" );
-   }
-
-   if( addedUuids )
-   {
-      //string message = "Accounts::HandleBlankUUIDs some UUIDs were added\n";
-      //LogMessage( LOG_PRIO_ERR, message.c_str() );
-      //cout << message << endl;
-   }
-}
-
-//---------------------------------------------------------------
-
-void     StatusUpdate::UpdateUuidForUser( const string& userId, bool updateCreateAccountTableToo, const string& columnId )
-{
-   if( ( userId.size() == 0 || userId == "0" ) && ( columnId.size() == 0 || columnId == "0" ) )
-   {
-      string message = "Accounts::UpdateUuidForUser userId is null\n";
-      LogMessage( LOG_PRIO_ERR, message.c_str() );
-      cout << message << endl;
-      return;
-   }
-
-   string newUuid = GenerateUUID( GetCurrentMilliseconds() + static_cast<U32>( GenerateUniqueHash( userId + columnId ) ) );
-
-   if( userId.size() != 0 && userId != "0" ) 
-   {
-      PacketDbQuery* dbQuery = new PacketDbQuery;
-      dbQuery->id = 0;
-      dbQuery->lookup = QueryType_UserFindBlankUUID;
-      dbQuery->isFireAndForget = true;
-
-      dbQuery->query = "UPDATE users SET uuid='";
-      dbQuery->query += newUuid;
-      dbQuery->query += "' where user_id='";
-      dbQuery->query += userId;
-      dbQuery->query += "';";
-
-      AddQueryToOutput( dbQuery );
-
-      if( updateCreateAccountTableToo )
-      {
-         dbQuery = new PacketDbQuery;
-         dbQuery->id = 0;
-         dbQuery->lookup = QueryType_UserFindBlankUUID;
-         dbQuery->isFireAndForget = true;
-
-         string queryString = "UPDATE user_temp_new_user SET uuid='";
-         queryString += newUuid;
-         queryString += "' WHERE user_id='";
-         queryString += userId;
-         queryString += "';";
-         dbQuery->query = queryString;
-
-         AddQueryToOutput( dbQuery );
-      }
-   }
-   else
-   {
-      if( updateCreateAccountTableToo )
-      {
-         PacketDbQuery* dbQuery = new PacketDbQuery;
-         dbQuery->id = 0;
-         dbQuery->lookup = QueryType_UserFindBlankUUID;
-         dbQuery->isFireAndForget = true;
-
-         string queryString = "UPDATE user_temp_new_user SET uuid='";
-         queryString += newUuid;
-         queryString += "' WHERE id='";
-         queryString += columnId;
-         queryString += "';";
-         dbQuery->query = queryString;
-
-         AddQueryToOutput( dbQuery );
-      }
-   }
-}
-
-//---------------------------------------------------------------
-
-string   StatusUpdate::GetString( const string& stringName, int languageId )
-{
-   stringhash lookupHash = GenerateUniqueHash( stringName );
-   StringTableLookup::iterator it = m_stringsTable.find( lookupHash );
-
-   if( it != m_stringsTable.end() )
-   {
-      string defaultText = it->second[ StringsTable::Column_english ];
-
-      string tempString = "";
-      switch( languageId )
-      {
-      case LanguageList_spanish:
-         tempString = it->second[ StringsTable::Column_spanish ];
-         break;
-      case LanguageList_french:
-         tempString = it->second[ StringsTable::Column_french ];
-         break;
-      case LanguageList_german:
-         tempString = it->second[ StringsTable::Column_german ];
-         break;
-      case LanguageList_italian:
-         tempString = it->second[ StringsTable::Column_italian ];
-         break;
-      case LanguageList_portuguese:
-         tempString = it->second[ StringsTable::Column_german ];
-         break;
-      case LanguageList_russian:
-         tempString = it->second[ StringsTable::Column_russian ];
-         break;
-      case LanguageList_japanese:
-         tempString = it->second[ StringsTable::Column_japanese ];
-         break;
-      case LanguageList_chinese:
-         tempString = it->second[ StringsTable::Column_chinese ];
-         break;
-      }
-
-      if( tempString != "" && tempString != "NULL" )
-         return tempString;
-      return defaultText;
-   }
-   else
-   {
-      return string();
-   }
-}
-
-//---------------------------------------------------------------
-
-void     StatusUpdate::ReplaceAllLookupStrings( string& bodyText, int languageId,  map< string, string >& specialStrings )
-{
-   vector<string> dictionary = CreateDictionary( bodyText );
-   map< string, string > replacements;
-
-   vector<string>::iterator it = dictionary.begin(); 
-   while( it != dictionary.end() )
-   {
-      string lookupString = *it++;
-
-      string actualString;
-      map< string, string >::iterator foundIter = specialStrings.find( lookupString );
-      if( foundIter != specialStrings.end() )
-      {
-         actualString = foundIter->second;
-         //actualString += "\r\n";// keeping the strings from going too long ... this doesn't work on Apple's email system.
-      }
-      else
-      {
-         actualString = GetString( lookupString, languageId );
-         actualString += "\r\n";// keeping the strings from going too long
-      }
-      //if( actualString.size() )
-      {
-         string replaceString = "%";
-         replaceString += lookupString;
-         replaceString += "%";
-         boost::replace_first( bodyText, replaceString, actualString );
-      }
-   }
-}
 /*
 emailDomainReplacements [] = 
 {
@@ -488,7 +294,7 @@ tailReplacements [] =
    { "om", "com" },
 };*/
 //---------------------------------------------------------------
-
+/*
 void     StatusUpdate::HandleNewAccounts( const PacketDbQueryResult* dbResult )
 {
    //cout << "HandleNewAccounts..." << endl;
@@ -554,7 +360,8 @@ void     StatusUpdate::HandleNewAccounts( const PacketDbQueryResult* dbResult )
          SendConfirmationEmail( email.c_str(), newAccountEmailAddress, mailServer, bodyText.c_str(), subjectText.c_str(), "Playdek.com", linkPath.c_str() );
 
          // it is likely that the new user does not have a UUID yet so we will add it to both tables
-         UpdateUuidForUser( userId, true, columnId );
+         //UpdateUuidForUser( userId, true, columnId );
+         m_blankUuidHandler->UpdateUuidForUser( userId, true, columnId );
 
          PacketDbQuery* dbQuery = new PacketDbQuery;
          dbQuery->id = 0;
@@ -616,7 +423,7 @@ void     StatusUpdate::HandleNewAccounts( const PacketDbQueryResult* dbResult )
    // fix up any weird UUID problems
    DuplicateUUIDSearch();
 }
-
+*/
 
 //---------------------------------------------------------------
 
@@ -624,19 +431,26 @@ int      StatusUpdate::CallbackFunction()
 {
    if( isMailServiceEnabled == true )
    {
-      if( m_hasLoadedWeblinks && m_hasLoadedStringTable )
+      time_t currentTime;
+      time( &currentTime );
+
+      if( m_newAccountHandler->IsReady() )
       {
          ResendEmailToOlderAccounts();
-         CheckForNewAccounts();
+         //CheckForNewAccounts();
+         
          LookForFlaggedAutoCreateAccounts();
          ExpireOldUserAccountRequests();
          Hack();
-         CheckForResetPassword();
+         //CheckForResetPassword();
+         m_resetPasswordHandler->Update( currentTime );
       }
       
-      FillInUserAccountUUIDs();
-      PreloadLanguageStrings();
-      PreloadWeblinks();
+     
+      m_blankUuidHandler->Update( currentTime );
+      m_newAccountHandler->Update( currentTime );
+      //PreloadLanguageStrings();
+      //PreloadWeblinks();
    }
    return 1;
 }
@@ -673,125 +487,125 @@ bool     StatusUpdate::AddOutputChainData( BasePacket* packet, U32 connectionId 
       {
          bool wasHandled = false;
          PacketDbQueryResult* dbResult = static_cast<PacketDbQueryResult*>( packet );
-         switch( dbResult->lookup )
+         if( m_blankUuidHandler->HandleResult( dbResult ) == true )
          {
-            cout << "Db query type:"<< dbResult->lookup << ", success=" << dbResult->successfulQuery << endl;
-            case QueryType_UserCheckForNewAccount:
-               {
-                  if( dbResult->successfulQuery == true && dbResult->bucket.bucket.size() > 0 )
+            wasHandled = true;
+         }
+         else if( m_newAccountHandler->HandleResult( dbResult ) == true )
+         {
+            wasHandled = true;
+         }
+         else if( m_resetPasswordHandler->HandleResult( dbResult ) == true )
+         {
+            wasHandled = true;
+         }
+         else
+         {
+            switch( dbResult->lookup )
+            {
+               //cout << "Db query type:"<< dbResult->lookup << ", success=" << dbResult->successfulQuery << endl;
+               /*case QueryType_UserCheckForNewAccount:
                   {
-                     HandleNewAccounts( dbResult );
-                  }
-                  else
-                  {
-                     string str = "New user accounts db query failed";
-                     Log( str );
+                     if( dbResult->successfulQuery == true && dbResult->bucket.bucket.size() > 0 )
+                     {
+                        HandleNewAccounts( dbResult );
+                     }
+                     else
+                     {
+                        string str = "New user accounts db query failed";
+                        Log( str );
 
-                  }
+                     }
 
-                  wasHandled = true;
-               }
-               break;
-            case QueryType_UserFindBlankUUID:
-               {
-                  if( dbResult->successfulQuery == true && dbResult->bucket.bucket.size() > 0 )
-                  {
-                     HandleBlankUUIDs( dbResult );
+                     wasHandled = true;
                   }
-                /*  else
+                  break;*/
+            /*   case QueryType_LoadStrings:
                   {
-                     string str = "Find users with blank UUID failed";
-                     Log( str );
-                  }*/
-                  
-                  wasHandled = true;
-               }
-               break;
-            case QueryType_LoadStrings:
-               {
-                  if( dbResult->successfulQuery == true && dbResult->bucket.bucket.size() > 0 )
-                  {
-                     SaveStrings( dbResult );
+                     if( dbResult->successfulQuery == true && dbResult->bucket.bucket.size() > 0 )
+                     {
+                        SaveStrings( dbResult );
+                     }
+                     else
+                     {
+                        string str = "String table failed to load";
+                        Log( str );
+                     }
+                     
+                     wasHandled = true;
                   }
-                  else
+                  break;
+               case QueryType_LoadWeblinks:
                   {
-                     string str = "String table failed to load";
-                     Log( str );
+                     if( dbResult->successfulQuery == true && dbResult->bucket.bucket.size() > 0 )
+                     {
+                        HandleWeblinks( dbResult );
+                     }
+                     else
+                     {
+                        string str = "Config table failed to load";
+                        Log( str );
+                     }
+                    
+                     wasHandled = true;
                   }
-                  
-                  wasHandled = true;
-               }
-               break;
-            case QueryType_LoadWeblinks:
-               {
-                  if( dbResult->successfulQuery == true && dbResult->bucket.bucket.size() > 0 )
+                  break;*/
+               case QueryType_AutoCreateUsers:
                   {
-                     HandleWeblinks( dbResult );
+                     if( dbResult->successfulQuery == true && dbResult->bucket.bucket.size() > 0 )
+                     {
+                        HandleAutoCreateAccounts( dbResult );
+                     }
+                     else
+                     {
+                        //string str = "Config table failed to load";
+                        //Log( str );
+                     }
+                     
+                     wasHandled = true;
                   }
-                  else
+                  break;
+               case QueryType_Hack:
                   {
-                     string str = "Config table failed to load";
-                     Log( str );
+                     if( dbResult->successfulQuery == true && dbResult->bucket.bucket.size() > 0 )
+                     {
+                        HackResult( dbResult );
+                     }
+                     
+                     wasHandled = true;
                   }
-                 
-                  wasHandled = true;
-               }
-               break;
-            case QueryType_AutoCreateUsers:
-               {
-                  if( dbResult->successfulQuery == true && dbResult->bucket.bucket.size() > 0 )
+                  break;
+               case QueryType_ResendEmailToOlderAccounts:
                   {
-                     HandleAutoCreateAccounts( dbResult );
+                     if( dbResult->successfulQuery == true && dbResult->bucket.bucket.size() > 0 )
+                     {
+                        ResendEmailToOlderAccountsResult( dbResult );
+                     }
+                     
+                     wasHandled = true;
                   }
-                  else
+                  break;
+               case QueryType_DuplicateUUIDSearch:
                   {
-                     //string str = "Config table failed to load";
-                     //Log( str );
-                  }
-                  
-                  wasHandled = true;
-               }
-               break;
-            case QueryType_Hack:
-               {
-                  if( dbResult->successfulQuery == true && dbResult->bucket.bucket.size() > 0 )
-                  {
-                     HackResult( dbResult );
-                  }
-                  
-                  wasHandled = true;
-               }
-               break;
-            case QueryType_ResendEmailToOlderAccounts:
-               {
-                  if( dbResult->successfulQuery == true && dbResult->bucket.bucket.size() > 0 )
-                  {
-                     ResendEmailToOlderAccountsResult( dbResult );
-                  }
-                  
-                  wasHandled = true;
-               }
-               break;
-            case QueryType_DuplicateUUIDSearch:
-               {
-                  if( dbResult->successfulQuery == true && dbResult->bucket.bucket.size() > 0 )
-                  {
-                     DuplicateUUIDSearchResult( dbResult );
-                  }
+                     if( dbResult->successfulQuery == true && dbResult->bucket.bucket.size() > 0 )
+                     {
+                        DuplicateUUIDSearchResult( dbResult );
+                     }
 
-                  wasHandled = true;
-               }
-               break;
-            case QueryType_ResetPasswords:
-               {
-                  if( dbResult->successfulQuery == true && dbResult->bucket.bucket.size() > 0 )
-                  {
-                     HandleResetPassword( dbResult );
+                     wasHandled = true;
                   }
-                  
-                  wasHandled = true;
-               }
-               break;
+                  break;
+               /*case QueryType_ResetPasswords:
+                  {
+                     if( dbResult->successfulQuery == true && dbResult->bucket.bucket.size() > 0 )
+                     {
+                        HandleResetPassword( dbResult );
+                     }
+                     
+                     wasHandled = true;
+                  }
+                  break;*/
+            }
          }
          if( wasHandled == true )
          {
@@ -804,7 +618,7 @@ bool     StatusUpdate::AddOutputChainData( BasePacket* packet, U32 connectionId 
 }
 
 //---------------------------------------------------------------
-
+/*
 void     StatusUpdate::PreloadLanguageStrings()
 {
    if( m_hasLoadedStringTable == false )
@@ -855,10 +669,10 @@ void     StatusUpdate::PreloadWeblinks()
          LogMessage( LOG_PRIO_INFO, "Accounts::PreloadWeblinks\n" );
       }
    }
-}
+}*/
 
 //---------------------------------------------------------------
-
+/*
 void     StatusUpdate::SaveStrings( const PacketDbQueryResult* dbResult )
 {
    cout << "strings saved :" << dbResult->bucket.bucket.size() << endl;
@@ -1000,7 +814,7 @@ void     StatusUpdate::HandleWeblinks( const PacketDbQueryResult* dbResult )
    }
 }
 
-//---------------------------------------------------------------
+//---------------------------------------------------------------*/
 
 void     StatusUpdate::HandleAutoCreateAccounts( const PacketDbQueryResult* dbResult )
 {
@@ -1018,7 +832,8 @@ void     StatusUpdate::HandleAutoCreateAccounts( const PacketDbQueryResult* dbRe
       {
          //continue; // wait until next round until it has the uuid in place
          //uuid = GenerateUUID( GetCurrentMilliseconds() );
-         UpdateUuidForUser( "0", true, id );
+         //UpdateUuidForUser( "0", true, id );
+         m_blankUuidHandler->UpdateUuidForUser( "0", true, id );
          continue;
       }
 
@@ -1098,7 +913,7 @@ void     StatusUpdate::HandleAutoCreateAccounts( const PacketDbQueryResult* dbRe
 }
 
 //---------------------------------------------------------------
-
+/*
 void     StatusUpdate::CheckForNewAccounts()
 {
    if( isMailServiceEnabled == false )
@@ -1124,10 +939,10 @@ void     StatusUpdate::CheckForNewAccounts()
       //LogMessage( LOG_PRIO_INFO, "Accounts::CheckForNewAccounts\n" );
    }
 }
-
+*/
 
 //---------------------------------------------------------------
-
+/*
 void     StatusUpdate::CheckForResetPassword()
 {
    if( isMailServiceEnabled == false )
@@ -1148,11 +963,11 @@ void     StatusUpdate::CheckForResetPassword()
 
       //LogMessage( LOG_PRIO_INFO, "Accounts::CheckForNewAccounts\n" );
    }
-}
+}*/
 
 
 //---------------------------------------------------------------
-
+/*
 void     StatusUpdate::HandleResetPassword( const PacketDbQueryResult* dbResult )
 {
    //cout << "HandleNewAccounts..." << endl;
@@ -1165,7 +980,7 @@ void     StatusUpdate::HandleResetPassword( const PacketDbQueryResult* dbResult 
       PasswordResetParser::row      row = *it++;
       string columnId =             row[ EmailAddressesOfPasswordsToResetTable::Column_id ];
       string email =                row[ EmailAddressesOfPasswordsToResetTable::Column_email ];
-      string languageString =        row[ EmailAddressesOfPasswordsToResetTable::Column_language_id ];
+      string languageString =       row[ EmailAddressesOfPasswordsToResetTable::Column_language_id ];
       string Column_reset_key =     row[ EmailAddressesOfPasswordsToResetTable::Column_reset_key ];
       
       int languageId = 1;// english
@@ -1214,7 +1029,7 @@ void     StatusUpdate::HandleResetPassword( const PacketDbQueryResult* dbResult 
 
    time( &m_resetPasswordEmailTimer );
 }
-
+*/
 //---------------------------------------------------------------
 
 void     StatusUpdate::LookForFlaggedAutoCreateAccounts()

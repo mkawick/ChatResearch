@@ -5,6 +5,9 @@
 #include "../NetworkCommon/DataTypes.h"
 #include "../NetworkCommon/ServerType.h"
 #include "../NetworkCommon/ChainedArchitecture/ChainedThread.h"
+#include "BlankUUIDQueryHandler.h"
+#include "NewAccountQueryHandler.h"
+#include "ResetPasswordQueryHandler.h"
 #include <map>
 
 const int DefaultSleepTime = 30;
@@ -16,22 +19,13 @@ class PacketDbQueryResult;
 
 //-----------------------------------------------------------------------------------------
 
-enum LanguageList // corresponds to the db-language table
-{
-   LanguageList_english = 1,
-   LanguageList_spanish,
-   LanguageList_french,
-   LanguageList_german,
-   LanguageList_italian,
-   LanguageList_portuguese,
-   LanguageList_russian,
-   LanguageList_japanese,
-   LanguageList_chinese
-};
+///////////////////////////////////////////////////////////////////////////////////////////
 
+///////////////////////////////////////////////////////////////////////////////////////////
 
-class StatusUpdate : public Threading::CChainedThread < BasePacket* >
+class StatusUpdate : public Queryer
 {
+public:
    enum QueryType 
    {
       QueryType_UserCreateTempAccount = 1,
@@ -56,6 +50,7 @@ public:
 
    bool     AddInputChainData( BasePacket* packet, U32 connectionId );
    bool     AddOutputChainData( BasePacket* packet, U32 connectionId );
+   void     DuplicateUUIDSearch();
    
 
 private:
@@ -65,12 +60,11 @@ private:
 
     //---------------------------------------------------------------
 
-   typedef map< stringhash, vector< string > >    StringTableLookup;
-   typedef pair< stringhash, vector< string > >   StringTableLookupPair;
+   
 
 
    /// the following is all related to email services
-   void     PreloadLanguageStrings();
+ /*  void     PreloadLanguageStrings();
    void     SaveStrings( const PacketDbQueryResult* dbResult );
    string   GetString( const string& stringName, int languageId );
 
@@ -88,21 +82,16 @@ private:
    void     HandleWeblinks( const PacketDbQueryResult* dbResult );
    string   m_linkToAccountCreated;
    string   m_linkToResetPasswordConfirm;
-   bool     m_hasLoadedWeblinks;
+   bool     m_hasLoadedWeblinks;*/
 
    // TO BE REMOVED (once the login server does not rely on other services updating the new account creation)
 
-   void     FillInUserAccountUUIDs();
-   void     HandleBlankUUIDs( PacketDbQueryResult* dbResult );
-   void     UpdateUuidForUser( const string& userId, bool updateCreateAccountTableToo, const string& columnId );
-   void     CheckForNewAccounts();
-   void     HandleNewAccounts( const PacketDbQueryResult* dbResult );
+   //void     CheckForNewAccounts();
+   //void     HandleNewAccounts( const PacketDbQueryResult* dbResult );
 
    void     LookForFlaggedAutoCreateAccounts();
    void     HandleAutoCreateAccounts( const PacketDbQueryResult* dbResult );
 
-   time_t   m_checkOnBlankUuidTimer;
-   int      m_checkOnBlankUuidTimeoutSeconds;
    time_t   m_newAccountCreationTimer;
    int      m_newAccountTimeoutSeconds;
    time_t   m_checkOnautoCreateTimer;
@@ -114,8 +103,8 @@ private:
    time_t   m_expireOldAccountRequestsTimer;
    int      m_expireOldAccountRequestsTimeoutSeconds;
 
-   time_t   m_resetPasswordEmailTimer;
-   int      m_resetPasswordEmailTimeoutSeconds;
+   //time_t   m_resetPasswordEmailTimer;
+   //int      m_resetPasswordEmailTimeoutSeconds;
 
 
    void     ResendEmailToOlderAccounts();
@@ -125,10 +114,14 @@ private:
    void     HackResult( PacketDbQueryResult* dbResult );
 
    void     ExpireOldUserAccountRequests();
-   void     DuplicateUUIDSearch();
+   
    void     DuplicateUUIDSearchResult( PacketDbQueryResult* dbResult );
 
-   void     CheckForResetPassword();
-   void     HandleResetPassword( const PacketDbQueryResult* dbResult );
+ /*  void     CheckForResetPassword();
+   void     HandleResetPassword( const PacketDbQueryResult* dbResult );*/
+
+   BlankUUIDQueryHandler* m_blankUuidHandler;
+   NewAccountQueryHandler* m_newAccountHandler;
+   ResetPasswordQueryHandler* m_resetPasswordHandler;
 
 };

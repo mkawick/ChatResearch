@@ -5,10 +5,14 @@ account_serverddir = $(datadir)/@PACKAGE@
 account_serverd_SOURCES = StatusUpdate.cpp \
 email.cpp \
 Accounts.cpp \
+BlankUUIDQueryHandler.cpp \
+NewAccountQueryHandler.cpp \
+ResetPasswordQueryHandler.cpp \
 ../NetworkCommon/NetworkUtils.cpp \
 ../NetworkCommon/ChainedArchitecture/Thread.cpp \
 ../NetworkCommon/Daemon/Daemonizer.cpp \
 ../NetworkCommon/Database/Deltadromeus.cpp \
+../NetworkCommon/Database/QueryHandler.cpp \
 ../NetworkCommon/NetworkIn/Diplodocus.cpp \
 ../NetworkCommon/NetworkIn/Khaan.cpp \
 ../NetworkCommon/NetworkIn/KhaanServerToServer.cpp \

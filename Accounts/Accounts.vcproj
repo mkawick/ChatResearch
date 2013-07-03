@@ -175,7 +175,19 @@
 				>
 			</File>
 			<File
+				RelativePath=".\BlankUUIDQueryHandler.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\email.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\NewAccountQueryHandler.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\ResetPasswordQueryHandler.cpp"
 				>
 			</File>
 			<File
@@ -189,7 +201,19 @@
 			UniqueIdentifier="{93995380-89BD-4b04-88EB-625FBE52EBFB}"
 			>
 			<File
+				RelativePath=".\BlankUUIDQueryHandler.h"
+				>
+			</File>
+			<File
 				RelativePath=".\email.h"
+				>
+			</File>
+			<File
+				RelativePath=".\NewAccountQueryHandler.h"
+				>
+			</File>
+			<File
+				RelativePath=".\ResetPasswordQueryHandler.h"
 				>
 			</File>
 			<File
@@ -279,6 +303,14 @@
 				</File>
 				<File
 					RelativePath="..\NetworkCommon\Database\Deltadromeus.h"
+					>
+				</File>
+				<File
+					RelativePath="..\NetworkCommon\Database\QueryHandler.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\NetworkCommon\Database\QueryHandler.h"
 					>
 				</File>
 			</Filter>
