@@ -97,6 +97,22 @@ bool     DiplodocusLogin::AddQueryToOutput( PacketDbQuery* packet )
 
 //---------------------------------------------------------------
 
+bool     DiplodocusLogin::FindUserAlreadyInGame( const string& username, U8 gameProductId )
+{
+   UserConnectionMapIterator it = m_userConnectionMap.begin();
+   while( it != m_userConnectionMap.end() )
+   {
+      UserConnectionPair pairObj = *it++;
+      ConnectionToUser& conn = pairObj.second;
+      if( conn.gameProductId == gameProductId &&// optimized for simplest test first
+         conn.username == username )
+      {
+         return true;
+      }
+   }
+   return false;
+}
+
 bool     DiplodocusLogin::LogUserIn( const string& username, U64& password, const string& loginKey, U8 gameProductId, U32 connectionId )
 {
    UserConnectionMapIterator it = m_userConnectionMap.find( connectionId );
@@ -112,6 +128,18 @@ bool     DiplodocusLogin::LogUserIn( const string& username, U64& password, cons
    {
       // should we boot this user for hacking? Or is it bad code?
       Log( "invalid attempt at login: username was empty", 4 );
+      return false;
+   }
+
+   // Before we add the user, let's verify that s/he isn't already logged in with a different connectionId. Storing this in a map
+   // makes sense, but it's overkill for now.
+
+   if( FindUserAlreadyInGame( username, gameProductId ) == true )
+   {
+      // should we boot this user for hacking? Or is it bad code?
+      Log( "Second login from the same product attempt was made", 4 );
+      Log( username.c_str(), 4 );
+      ForceUserLogoutAndBlock( connectionId );
       return false;
    }
 

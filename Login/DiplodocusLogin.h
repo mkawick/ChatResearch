@@ -74,6 +74,7 @@ private:
    bool     AddQueryToOutput( PacketDbQuery* query );
    bool     LogUserIn( const string& username, U64& password, const string& loginKey, U8 gameProductId, U32 connectionId );
    bool     LogUserOut( U32 connectionId );
+   bool     FindUserAlreadyInGame( const string& username, U8 gameProductId );
 
    bool     SuccessfulLogin( U32 connectionId );
    bool     ForceUserLogoutAndBlock( U32 connectionId );

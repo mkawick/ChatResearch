@@ -60,6 +60,7 @@
 			/>
 			<Tool
 				Name="VCLibrarianTool"
+				IgnoreDefaultLibraryNames="libcmt.lib"
 			/>
 			<Tool
 				Name="VCALinkTool"

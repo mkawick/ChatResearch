@@ -10,7 +10,7 @@
 DiplodocusGateway::DiplodocusGateway( const string& serverName, U32 serverId ) : Diplodocus< KhaanConnector > ( serverName, serverId, 0, ServerType_Gateway ),
                                           m_connectionIdTracker( 12 )
 {
-   SetSleepTime( 33 );// 30 fps
+   SetSleepTime( 16 );// 30 fps
 }
 
 DiplodocusGateway::~DiplodocusGateway()
