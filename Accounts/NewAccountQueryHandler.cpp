@@ -13,6 +13,7 @@ using namespace std;
 #include "BlankUUIDQueryHandler.h"
 #include "StatusUpdate.h"
 #include "email.h"
+#include "../NetworkCommon/Logging/server_log.h"
 
 
 const char* newAccountEmailAddress = "account_create@playdekgames.com";
@@ -20,6 +21,8 @@ const char* newAccountEmailAddress = "account_create@playdekgames.com";
 bool                            NewAccountQueryHandler::m_hasLoadedStringTable = false;
 bool                            NewAccountQueryHandler::m_hasLoadedWeblinks = false;
 const char*                     NewAccountQueryHandler::m_mailServer = "mail.playdekgames.com";
+string                          NewAccountQueryHandler::m_linkToAccountCreated;
+string                          NewAccountQueryHandler::m_linkToResetPasswordConfirm;
 string                          NewAccountQueryHandler::m_pathToConfirmationEmailFile;
 string                          NewAccountQueryHandler::m_confirmationEmailTemplate;
 string                          NewAccountQueryHandler::m_passwordResetEmailTemplate;
@@ -29,7 +32,7 @@ map< stringhash, stringhash >   NewAccountQueryHandler::m_replacemetStringsLooku
 
 ///////////////////////////////////////////////////////////////////////////////////////////
 
-NewAccountQueryHandler::NewAccountQueryHandler( int id, Queryer* parent, string& query ) : QueryHandler( id, 20, parent ), 
+NewAccountQueryHandler::NewAccountQueryHandler( U32 id, Queryer* parent, string& query ) : QueryHandler( id, 20, parent ), 
                      m_isServicingNewAccounts( false ),
                      m_isServicingStringLoading( false ),
                      m_isServicingWebLinks( false )
@@ -51,19 +54,23 @@ void     NewAccountQueryHandler::Update( time_t currentTime )
       PreloadWeblinks();
       return;
    }
-   CheckForNewAccounts();
+   if( isMailServiceEnabled == true )
+   {
+      QueryHandler::Update( currentTime, m_isServicingNewAccounts );
+   }
 }
 
 //---------------------------------------------------------------
 
 void     NewAccountQueryHandler::CheckForNewAccounts()
 {
-   if( isMailServiceEnabled == false || m_isServicingNewAccounts == true )
-      return;
+   
 
-   time_t testTimer;
-   time( &testTimer );
+   time_t currentTime;
+   time( &currentTime );
 
+   
+/*
    if( difftime( testTimer, m_lastTimeStamp ) >= m_periodicitySeconds ) 
    {
       //cout << "CheckForNewAccounts..." << endl;
@@ -76,7 +83,7 @@ void     NewAccountQueryHandler::CheckForNewAccounts()
 
       m_parent->AddQueryToOutput( dbQuery );
       m_isServicingNewAccounts = true;
-   }
+   }*/
 }
 
 //---------------------------------------------------------------
@@ -148,6 +155,8 @@ bool     NewAccountQueryHandler::HandleResult( const PacketDbQueryResult* dbResu
       dbResult->lookup != m_olderEmailsQueryType )
       return false;
 
+   SetValueOnExit< bool >     setter( m_isServicingNewAccounts, false );// due to multiple exit points...
+
    if( dbResult->lookup == m_loadStringsQueryType )
    {
       SaveStrings( dbResult );
@@ -177,15 +186,15 @@ bool     NewAccountQueryHandler::HandleResult( const PacketDbQueryResult* dbResu
       message += " at email: ";
       message += email;
 
-      //LogMessage( LOG_PRIO_INFO, message.c_str() );
+      LogMessage( LOG_PRIO_INFO, message.c_str() );
       cout << message << endl;
 
       if( email.size() == 0 )// we can't send an email...
       {
          string message = "User does not have a valid email: ";
          message += name;
-         //LogMessage( LOG_PRIO_WARN, message.c_str() );
-         cout << message << endl;
+         LogMessage( LOG_PRIO_WARN, message.c_str() );
+         cout << endl << message << endl;
          continue;
       }
 
@@ -217,7 +226,14 @@ bool     NewAccountQueryHandler::HandleResult( const PacketDbQueryResult* dbResu
          }
 
          // update playdek.user_temp_new_user set was_email_sent=was_email_sent+1, lookup_key='lkjasdfhlkjhadfs' where id='4' ;
-         SendConfirmationEmail( email.c_str(), newAccountEmailAddress, m_mailServer, bodyText.c_str(), subjectText.c_str(), "Playdek.com", linkPath.c_str() );
+         if( SendConfirmationEmail( email.c_str(), newAccountEmailAddress, m_mailServer, bodyText.c_str(), subjectText.c_str(), "Playdek.com", linkPath.c_str() ) != 0 )
+         {
+            string   message = "ERROR: For new accounts, SendConfirmationEmail seems to be down. Socket connections are being rejected.";
+            LogMessage( LOG_PRIO_ERR, message.c_str() );
+            cout << endl << message << endl;
+            time( &m_lastTimeStamp );// restart timer
+            return false;
+         }
 
          // it is likely that the new user does not have a UUID yet so we will add it to both tables
          //UpdateUuidForUser( userId, true, columnId );
@@ -249,8 +265,8 @@ bool     NewAccountQueryHandler::HandleResult( const PacketDbQueryResult* dbResu
          message += " ... lookup_key = ";
          message += userLookupKey;
 
-        // LogMessage( LOG_PRIO_INFO, message.c_str() );
-         //cout << message << endl;
+         LogMessage( LOG_PRIO_INFO, message.c_str() );
+         cout <<endl << message << endl;
 
          //cout << "Time sent: ";
          //PrintCurrentTime();
@@ -272,7 +288,7 @@ bool     NewAccountQueryHandler::HandleResult( const PacketDbQueryResult* dbResu
          string queryString = "UPDATE user_temp_new_user SET flagged_as_invalid='1' WHERE id='";
          queryString += columnId;
          queryString += "';";
-         dbQuery->query = m_queryString;
+         dbQuery->query = queryString;
 
          m_parent->AddQueryToOutput( dbQuery );
       }
@@ -283,8 +299,6 @@ bool     NewAccountQueryHandler::HandleResult( const PacketDbQueryResult* dbResu
    // fix up any weird UUID problems
    // I realize that this breaks the essence of encapsulation, but it is far easier than many alternatives
    static_cast<StatusUpdate*>( m_parent )->DuplicateUUIDSearch();
-
-   m_isServicingNewAccounts = false;
 
    return true;
 }

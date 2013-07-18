@@ -278,13 +278,16 @@ string OpenAndLoadFile( const string& path )
    {
       ifstream::pos_type  size = file.tellg();
       int num = size;
-      char* memblock = new char [size];
+      char* memblock = new char [num+1];
+      memblock[num] = 0;
       file.seekg (0, ios::beg);
       file.read (memblock, size);
       file.close();
       returnString = memblock;
+      returnString += "\0";
       delete memblock;
    }
 
+   
    return returnString;
 }

@@ -27,12 +27,13 @@ class QueryHandler
 public:
 
    QueryHandler( U32 type, int periodicity, Queryer* parent );
+   virtual ~QueryHandler();
 
    void  SetQuery( string& _query ) { m_queryString = _query; }
    void  SetParent( Queryer* parent ) { m_parent = parent; }
    void  SetPeriodicty( int timeoutSeconds ) { m_periodicitySeconds = timeoutSeconds; }
 
-   virtual void     Update( time_t currentTime );
+   virtual void     Update( time_t currentTime, bool& flagToSet );
    virtual void     Fire();// not based on a timer.
    virtual bool     HandleResult( const PacketDbQueryResult* dbResult ) = 0;
 

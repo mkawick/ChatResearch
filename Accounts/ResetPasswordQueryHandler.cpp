@@ -11,11 +11,12 @@ using namespace std;
 #include "../NetworkCommon/Utils/TableWrapper.h"
 #include "ResetPasswordQueryHandler.h"
 #include "email.h"
+#include "../NetworkCommon/Logging/server_log.h"
 
 
 const char* resetPasswordEmailAddress = "account_reset@playdekgames.com";
 
-ResetPasswordQueryHandler::ResetPasswordQueryHandler( int id, Queryer* parent, string& query ) : NewAccountQueryHandler( id, parent, query )
+ResetPasswordQueryHandler::ResetPasswordQueryHandler( U32 id, Queryer* parent, string& query ) : NewAccountQueryHandler( id, parent, query ), m_isServicingResetPassword( false )
 {
 }
 
@@ -28,7 +29,7 @@ void     ResetPasswordQueryHandler::Update( time_t currentTime )
    if( m_hasLoadedStringTable == false || m_hasLoadedWeblinks == false )
       return;
 
-   QueryHandler::Update( currentTime );
+   QueryHandler::Update( currentTime, m_isServicingResetPassword );
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////
@@ -37,6 +38,8 @@ bool     ResetPasswordQueryHandler::HandleResult( const PacketDbQueryResult* dbR
 {
    if( dbResult->lookup != m_queryType )
       return false;
+
+   SetValueOnExit< bool >           setter( m_isServicingResetPassword, false );// due to multiple exit points...
 
    PasswordResetParser              enigma( dbResult->bucket );
    PasswordResetParser::iterator    it = enigma.begin();
@@ -66,7 +69,7 @@ bool     ResetPasswordQueryHandler::HandleResult( const PacketDbQueryResult* dbR
 
          if( m_passwordResetEmailTemplate.size() )
          {
-            string bodyText = m_passwordResetEmailTemplate;
+            bodyText = m_passwordResetEmailTemplate;
             map< string, string > specialStrings;
             specialStrings.insert( pair<string, string> ( "link-to-confirmation", linkPath ) );
             ReplaceAllLookupStrings( bodyText, languageId, specialStrings );
@@ -79,7 +82,14 @@ bool     ResetPasswordQueryHandler::HandleResult( const PacketDbQueryResult* dbR
          }
 
          // update playdek.user_temp_new_user set was_email_sent=was_email_sent+1, lookup_key='lkjasdfhlkjhadfs' where id='4' ;
-         SendConfirmationEmail( email.c_str(), resetPasswordEmailAddress, m_mailServer, bodyText.c_str(), subjectText.c_str(), "Playdek.com", linkPath.c_str() );
+         if( SendConfirmationEmail( email.c_str(), resetPasswordEmailAddress, m_mailServer, bodyText.c_str(), subjectText.c_str(), "Playdek.com", linkPath.c_str() ) != 0 )
+         {
+            string   message = "ERROR: For reset password, SendConfirmationEmail seems to be down. Socket connections are being rejected.";
+            LogMessage( LOG_PRIO_ERR, message.c_str() );
+            cout << endl << message << endl;
+            time( &m_lastTimeStamp );// restart timer
+            return false;
+         }
 
          PacketDbQuery* dbQuery = new PacketDbQuery;
          dbQuery->id = 0;
@@ -91,6 +101,12 @@ bool     ResetPasswordQueryHandler::HandleResult( const PacketDbQueryResult* dbR
          dbQuery->query += "'";
 
          m_parent->AddQueryToOutput( dbQuery );
+
+         string message = "Resetting password account confirmation at email: ";
+         message += email;
+
+         LogMessage( LOG_PRIO_INFO, message.c_str() );
+         cout << endl << message << endl;
       }
    }
 

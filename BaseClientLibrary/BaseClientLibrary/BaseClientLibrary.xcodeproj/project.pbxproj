@@ -7,6 +7,11 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		707B53D41794BB2E001D9BA1 /* NetworkLayer.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 707B53D21794BB2E001D9BA1 /* NetworkLayer.cpp */; };
+		707B53D51794BB2E001D9BA1 /* NetworkLayer.h in Headers */ = {isa = PBXBuildFile; fileRef = 707B53D31794BB2E001D9BA1 /* NetworkLayer.h */; };
+		707B53D71794BBFC001D9BA1 /* NetworkUtils.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 707B53D61794BBFC001D9BA1 /* NetworkUtils.cpp */; };
+		707B53EA1794BC2D001D9BA1 /* DbPacket.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 707B53DE1794BC2D001D9BA1 /* DbPacket.cpp */; };
+		707B53EB1794BC2D001D9BA1 /* DbPacket.h in Headers */ = {isa = PBXBuildFile; fileRef = 707B53DF1794BC2D001D9BA1 /* DbPacket.h */; };
 		70AE986817600E3C00D964F2 /* DataTypes.h in Headers */ = {isa = PBXBuildFile; fileRef = 70AE986217600E3C00D964F2 /* DataTypes.h */; };
 		70AE986917600E3C00D964F2 /* Platform.h in Headers */ = {isa = PBXBuildFile; fileRef = 70AE986317600E3C00D964F2 /* Platform.h */; };
 		70AE986A17600E3C00D964F2 /* Serialize.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 70AE986417600E3C00D964F2 /* Serialize.cpp */; };
@@ -37,6 +42,11 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		707B53D21794BB2E001D9BA1 /* NetworkLayer.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = NetworkLayer.cpp; path = ../NetworkLayer.cpp; sourceTree = "<group>"; };
+		707B53D31794BB2E001D9BA1 /* NetworkLayer.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = NetworkLayer.h; path = ../NetworkLayer.h; sourceTree = "<group>"; };
+		707B53D61794BBFC001D9BA1 /* NetworkUtils.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = NetworkUtils.cpp; path = ../../NetworkCommon/NetworkUtils.cpp; sourceTree = "<group>"; };
+		707B53DE1794BC2D001D9BA1 /* DbPacket.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = DbPacket.cpp; path = ../../NetworkCommon/Packets/DbPacket.cpp; sourceTree = "<group>"; };
+		707B53DF1794BC2D001D9BA1 /* DbPacket.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = DbPacket.h; path = ../../NetworkCommon/Packets/DbPacket.h; sourceTree = "<group>"; };
 		70AE986217600E3C00D964F2 /* DataTypes.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = DataTypes.h; path = ../../NetworkCommon/DataTypes.h; sourceTree = "<group>"; };
 		70AE986317600E3C00D964F2 /* Platform.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = Platform.h; path = ../../NetworkCommon/Platform.h; sourceTree = "<group>"; };
 		70AE986417600E3C00D964F2 /* Serialize.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = Serialize.cpp; path = ../../NetworkCommon/Serialize.cpp; sourceTree = "<group>"; };
@@ -99,6 +109,8 @@
 		70F964B017600DB2001F0F25 /* NetworkCommon */ = {
 			isa = PBXGroup;
 			children = (
+				707B53D21794BB2E001D9BA1 /* NetworkLayer.cpp */,
+				707B53D31794BB2E001D9BA1 /* NetworkLayer.h */,
 				70F964B117600DBD001F0F25 /* ChainedArchitecture */,
 				70F964B217600DCC001F0F25 /* NetworkOut */,
 				70F964B317600DD5001F0F25 /* Packets */,
@@ -138,6 +150,8 @@
 		70F964B317600DD5001F0F25 /* Packets */ = {
 			isa = PBXGroup;
 			children = (
+				707B53DE1794BC2D001D9BA1 /* DbPacket.cpp */,
+				707B53DF1794BC2D001D9BA1 /* DbPacket.h */,
 				70AE987617600E6900D964F2 /* BasePacket.cpp */,
 				70AE987717600E6900D964F2 /* BasePacket.h */,
 				70AE987817600E6900D964F2 /* BasePacket.inl */,
@@ -156,6 +170,7 @@
 		70F964B417600DE1001F0F25 /* Utils */ = {
 			isa = PBXGroup;
 			children = (
+				707B53D61794BBFC001D9BA1 /* NetworkUtils.cpp */,
 				70AE986E17600E5500D964F2 /* CommandLineParser.cpp */,
 				70AE986F17600E5500D964F2 /* CommandLineParser.h */,
 				70AE987017600E5500D964F2 /* Utils.cpp */,
@@ -187,6 +202,8 @@
 				70AE989117600E7D00D964F2 /* ChainedThread.h in Headers */,
 				70AE989317600E7D00D964F2 /* Thread.h in Headers */,
 				70AE989717600E8F00D964F2 /* Fruitadens.h in Headers */,
+				707B53D51794BB2E001D9BA1 /* NetworkLayer.h in Headers */,
+				707B53EB1794BC2D001D9BA1 /* DbPacket.h in Headers */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -252,6 +269,9 @@
 				70AE989217600E7D00D964F2 /* Thread.cpp in Sources */,
 				70AE989617600E8F00D964F2 /* Fruitadens.cpp in Sources */,
 				70AE989917600EEA00D964F2 /* Diplodocus.cpp in Sources */,
+				707B53D41794BB2E001D9BA1 /* NetworkLayer.cpp in Sources */,
+				707B53D71794BBFC001D9BA1 /* NetworkUtils.cpp in Sources */,
+				707B53EA1794BC2D001D9BA1 /* DbPacket.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

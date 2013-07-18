@@ -9,9 +9,14 @@ using namespace std;
 
 ///////////////////////////////////////////////////////////////////////////////////////////
 
-BlankUUIDQueryHandler::BlankUUIDQueryHandler( int id, Queryer* parent, string& query ) : QueryHandler( id, 20, parent )
+BlankUUIDQueryHandler::BlankUUIDQueryHandler( U32 id, Queryer* parent, string& query ) : QueryHandler( id, 20, parent ), m_isServicingBlankUUID( false )
 {
    m_queryString = query;
+}
+
+void     BlankUUIDQueryHandler::Update( time_t currentTime )
+{
+   QueryHandler::Update( currentTime, m_isServicingBlankUUID );
 }
 
 //---------------------------------------------------------------
@@ -20,6 +25,8 @@ bool     BlankUUIDQueryHandler::HandleResult( const PacketDbQueryResult* dbResul
 {
    if( dbResult->lookup == m_queryType )
    {
+      SetValueOnExit< bool >           setter( m_isServicingBlankUUID, false );// due to multiple exit points...
+
       bool addedUuids = false;
       IndexTableParser              enigma( dbResult->bucket );
       IndexTableParser::iterator    it = enigma.begin();

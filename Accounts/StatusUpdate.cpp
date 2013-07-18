@@ -23,8 +23,6 @@ const int OneDay = 3600 * 24;
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 StatusUpdate::StatusUpdate( const string& serverName, U32 serverId ) : Queryer(),
-                 // m_hasLoadedStringTable( false ),
-                  //m_hasLoadedWeblinks( false ),
                   m_newAccountTimeoutSeconds( 48 ),
                   m_checkOnautoCreateTimeoutSeconds( 60 ),
                   m_checkOnOldEmailsTimeoutSeconds( OneDay ),/// once per day
@@ -39,17 +37,22 @@ StatusUpdate::StatusUpdate( const string& serverName, U32 serverId ) : Queryer()
    m_checkOnOldEmailsTimer -= OneDay; // always check on launch.. no waiting 24 hours.
    m_expireOldAccountRequestsTimer -= OneDay;
 
-   m_blankUuidHandler = new BlankUUIDQueryHandler( QueryType_UserFindBlankUUID, this, string( "SELECT user_id FROM users WHERE uuid IS NULL OR uuid=0 LIMIT 30") );
-   m_blankUuidHandler->SetPeriodicty( 60 );
-   m_newAccountHandler = new NewAccountQueryHandler( QueryType_UserCheckForNewAccount, this, string( "SELECT * FROM user_temp_new_user WHERE was_email_sent='0' AND flagged_as_invalid='0'" ) );
-   m_newAccountHandler->SetPeriodicty( 48 );
+   string queryForBlankUUIDs = "SELECT user_id FROM users WHERE uuid IS NULL OR uuid=0 LIMIT 30";
+   m_blankUuidHandler = new BlankUUIDQueryHandler( QueryType_UserFindBlankUUID, this, queryForBlankUUIDs );
+   m_blankUuidHandler->SetPeriodicty( timeoutBlankUUIDTimer );
+
+   string queryForNewAccounts = "SELECT * FROM user_temp_new_user WHERE was_email_sent='0' AND flagged_as_invalid='0'";
+   m_newAccountHandler = new NewAccountQueryHandler( QueryType_UserCheckForNewAccount, this, queryForNewAccounts );
+   m_newAccountHandler->SetPeriodicty( timeoutNewAccount );
    m_newAccountHandler->SetQueryTypeForLoadingStrings( QueryType_LoadStrings );
    m_newAccountHandler->SetQueryTypeForLoadingWeblinks( QueryType_LoadWeblinks );
    m_newAccountHandler->SetQueryTypeForOlderEmailsResent( QueryType_ResendEmailToOlderAccounts );
    m_newAccountHandler->SetBlankUUIDHandler( m_blankUuidHandler );
 
-   m_resetPasswordHandler = new ResetPasswordQueryHandler( QueryType_ResetPasswords, this, string( "SELECT reset_password_keys.id, users.user_email, users.language_id, reset_password_keys.reset_key FROM users JOIN reset_password_keys ON reset_password_keys.user_account_uuid = users.uuid WHERE reset_password_keys.was_email_sent=0" ) );
-   m_resetPasswordHandler->SetPeriodicty( 30 );
+   string queryForPasswordReset = "SELECT reset_password_keys.id, users.user_email, users.language_id, reset_password_keys.reset_key FROM users JOIN reset_password_keys ON reset_password_keys.user_account_uuid = users.uuid WHERE reset_password_keys.was_email_sent=0";
+
+   m_resetPasswordHandler = new ResetPasswordQueryHandler( QueryType_ResetPasswords, this, queryForPasswordReset );
+   m_resetPasswordHandler->SetPeriodicty( timeoutResetPassword );
 
    LogOpen();
    LogMessage( LOG_PRIO_INFO, "Accounts::Accounts server created\n" );

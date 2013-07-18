@@ -103,7 +103,7 @@ int main(int argc, const char* argv[])
    
    chatControl.Connect( chatServerAddressForGames.c_str(), chatServerPort );
    chatControl.Resume();
-   chatControl.NotifyEndpointOfIdentification( serverName, static_cast< U32 >( serverUniqueHashValue ), true, false, false );
+   chatControl.NotifyEndpointOfIdentification( serverName, static_cast< U32 >( serverUniqueHashValue ), GameProductId_SUMMONWAR, true, false, true, false );
 
    DiplodocusServerToServer* s2s = new DiplodocusServerToServer( serverName, serverId );
    s2s->SetAsGame();

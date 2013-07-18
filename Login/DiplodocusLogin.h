@@ -21,9 +21,10 @@ struct ConnectionToUser
       LoginStatus_Hacker
    };
 
-   ConnectionToUser( const string& name, U64& pword, const string& key ) : username( name ), password( pword ), loginKey( key ), status( LoginStatus_Pending ) {}
+   ConnectionToUser( const string& name, const string& pword, const string& key ) : username( name ), passwordHash( pword ), loginKey( key ), status( LoginStatus_Pending ), active( true ) {}
+   string   id;
    string   username;
-   U64      password;
+   string   passwordHash;
    string   email;
    string   userUuid;
    string   loginKey;
@@ -31,6 +32,7 @@ struct ConnectionToUser
 
    LoginStatus status;
    U8       gameProductId;
+   bool     active;
 };
 
 
@@ -72,8 +74,8 @@ private:
    int      CallbackFunction();
 
    bool     AddQueryToOutput( PacketDbQuery* query );
-   bool     LogUserIn( const string& username, U64& password, const string& loginKey, U8 gameProductId, U32 connectionId );
-   bool     LogUserOut( U32 connectionId );
+   bool     LogUserIn( const string& username, const string& password, const string& loginKey, U8 gameProductId, U32 connectionId );
+   bool     LogUserOut( U32 connectionId, bool wasDisconnectedByError );
    bool     FindUserAlreadyInGame( const string& username, U8 gameProductId );
 
    bool     SuccessfulLogin( U32 connectionId );
@@ -85,7 +87,7 @@ private:
    bool     UpdateLastLoggedOutTime( U32 connectionId );
    bool     UpdateLastLoggedInTime( U32 connectionId );
 
-   bool     SendLoginStatusToOtherServers( const string& username, const string& userUuid, U32 connectionId, U8 gameProductId, const string& lastLoginTime, bool isLoggedIn );
+   bool     SendLoginStatusToOtherServers( const string& username, const string& userUuid, U32 connectionId, U8 gameProductId, const string& lastLoginTime, bool isActive, const string& email, const string& passwordHash, const string& userId, bool isLoggedIn, bool wasDisconnectedByError );
 
    bool     SendPacketToGateway( BasePacket*, U32 connectionId );
 

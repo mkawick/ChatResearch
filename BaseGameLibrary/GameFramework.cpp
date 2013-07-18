@@ -152,11 +152,26 @@ void  GameFramework::UseCommandlineOverrides( int argc, const char* argv[] )
 bool  GameFramework::SendGameData( U32 connectionId, const MarshalledData* data )
 {
    //if( m_connectionManager->IsConnectionValid( connectionId ) == true )
+   int size = data->m_sizeOfData;
+   bool didSend = true;
+   const U8* ptr = data->m_data;
+   int packetIndex = size / PacketGameplayRawData::MaxBufferSize + 1; // always start at 1.
+   assert( packetIndex <= 254 );// must fit into 1 byte
+   while( size > 0 )
    {
+      int workingSize = size;
+      if( workingSize > PacketGameplayRawData::MaxBufferSize )
+      {
+         workingSize = PacketGameplayRawData::MaxBufferSize;
+      }
+      
       PacketGameplayRawData* packet = new PacketGameplayRawData;
-      packet->Prep( data->m_sizeOfData, data->m_data );
+      packet->Prep( workingSize, ptr, packetIndex-- );
       packet->gameInstanceId = m_serverId;
       packet->gameProductId = m_gameProductId;
+
+      size -= workingSize;
+      ptr += workingSize;
 
       PacketGatewayWrapper* wrapper = new PacketGatewayWrapper;
       wrapper->pPacket = packet;
@@ -166,9 +181,20 @@ bool  GameFramework::SendGameData( U32 connectionId, const MarshalledData* data 
          delete wrapper;
          delete packet;
          return false;
+         didSend =  false;
       }
-      return true;
    }
+   if( didSend )
+      return true;
+
+   return false;
+}
+
+//-----------------------------------------------------
+
+bool  GameFramework::SendChatData( U32 connectionId, const BasePacket* )
+{
+   //m_chatServer->p;
 
    return false;
 }
@@ -263,14 +289,14 @@ bool  GameFramework::Run()
 
    string nameOfChatServerConnection = m_serverName;
    nameOfChatServerConnection += " to chat";
-   FruitadensServerToServer chatControl( nameOfChatServerConnection.c_str() );
-   chatControl.SetConnectedServerType( ServerType_Chat );
-   chatControl.SetServerId( m_serverId );
-   chatControl.SetGameProductId( m_gameProductId );
+   m_chatServer = new FruitadensServerToServer( nameOfChatServerConnection.c_str() );
+   m_chatServer->SetConnectedServerType( ServerType_Chat );
+   m_chatServer->SetServerId( m_serverId );
+   m_chatServer->SetGameProductId( m_gameProductId );
 
-   chatControl.Connect( m_chatServerAddress.c_str(), m_chatServerPort );
-   chatControl.Resume();
-   chatControl.NotifyEndpointOfIdentification( m_serverName, m_serverId, true, false, false );
+   m_chatServer->Connect( m_chatServerAddress.c_str(), m_chatServerPort );
+   m_chatServer->Resume();
+   m_chatServer->NotifyEndpointOfIdentification( m_serverName, m_serverId, m_gameProductId, true, false, false, false );
 
    DiplodocusServerToServer* s2s = new DiplodocusServerToServer( m_serverName, m_serverId, m_gameProductId );
    s2s->SetAsGame();
@@ -278,7 +304,7 @@ bool  GameFramework::Run()
 
    //----------------------------------------------------------------
    s2s->AddOutputChain( m_connectionManager );
-   m_connectionManager->AddOutputChain( &chatControl );
+   m_connectionManager->AddOutputChain( m_chatServer );
 
    m_connectionManager->Run();
 

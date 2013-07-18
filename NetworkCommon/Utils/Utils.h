@@ -44,3 +44,17 @@ int getch();
 
 #endif
 
+template <typename T>
+class SetValueOnExit
+{
+public:
+   SetValueOnExit( T& valueToChange, T valueToSet ): m_valueToChange( valueToChange ), m_valueToSet( valueToSet ) {}
+   ~SetValueOnExit() 
+   {
+      m_valueToChange = m_valueToSet;
+   }
+private:
+   T& m_valueToChange;
+   T m_valueToSet;
+};
+

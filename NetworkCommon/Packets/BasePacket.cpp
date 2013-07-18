@@ -143,9 +143,11 @@ bool  PacketLogin::SerializeIn( const U8* data, int& bufferOffset )
    BasePacket::SerializeIn( data, bufferOffset );
    Serialize::In( data, bufferOffset, uuid );
    Serialize::In( data, bufferOffset, username );
+   
    Serialize::In( data, bufferOffset, password );
    Serialize::In( data, bufferOffset, loginKey );
-
+   Serialize::In( data, bufferOffset, languageCode );
+   
    return true;
 }
 
@@ -154,8 +156,28 @@ bool  PacketLogin::SerializeOut( U8* data, int& bufferOffset ) const
    BasePacket::SerializeOut( data, bufferOffset );
    Serialize::Out( data, bufferOffset, uuid );
    Serialize::Out( data, bufferOffset, username );
+
    Serialize::Out( data, bufferOffset, password );
    Serialize::Out( data, bufferOffset, loginKey );
+   Serialize::Out( data, bufferOffset, languageCode );
+
+   return true;
+}
+
+///////////////////////////////////////////////////////////////
+
+bool  PacketLogout::SerializeIn( const U8* data, int& bufferOffset )
+{
+   BasePacket::SerializeIn( data, bufferOffset );
+   Serialize::In( data, bufferOffset, wasDisconnectedByError );
+   return true;
+}
+
+bool  PacketLogout::SerializeOut( U8* data, int& bufferOffset ) const
+{
+   BasePacket::SerializeOut( data, bufferOffset );
+   Serialize::Out( data, bufferOffset, wasDisconnectedByError );
+   
 
    return true;
 }
@@ -201,11 +223,62 @@ bool  PacketLoginToGateway::SerializeOut( U8* data, int& bufferOffset ) const
 
 ///////////////////////////////////////////////////////////////
 
+bool  PacketCreateAccount::SerializeIn( const U8* data, int& bufferOffset )
+{
+   BasePacket::SerializeIn( data, bufferOffset );
+   Serialize::In( data, bufferOffset, username );
+   Serialize::In( data, bufferOffset, useremail );
+   Serialize::In( data, bufferOffset, password );
+   Serialize::In( data, bufferOffset, deviceId );
+   Serialize::In( data, bufferOffset, deviceAccountId );
+
+   return true;
+}
+
+bool  PacketCreateAccount::SerializeOut( U8* data, int& bufferOffset ) const
+{
+   BasePacket::SerializeOut( data, bufferOffset );
+   Serialize::Out( data, bufferOffset, username );
+   Serialize::Out( data, bufferOffset, useremail );
+   Serialize::Out( data, bufferOffset, password );
+   Serialize::Out( data, bufferOffset, deviceId );
+   Serialize::Out( data, bufferOffset, deviceAccountId );
+
+   return true;
+}
+
+///////////////////////////////////////////////////////////////
+
+bool  PacketCreateAccountResponse::SerializeIn( const U8* data, int& bufferOffset )
+{
+   BasePacket::SerializeIn( data, bufferOffset );
+   Serialize::In( data, bufferOffset, username );
+   Serialize::In( data, bufferOffset, useremail );
+   Serialize::In( data, bufferOffset, wasSuccessful );
+
+   return true;
+}
+
+bool  PacketCreateAccountResponse::SerializeOut( U8* data, int& bufferOffset ) const
+{
+   BasePacket::SerializeOut( data, bufferOffset );
+   Serialize::Out( data, bufferOffset, username );
+   Serialize::Out( data, bufferOffset, useremail );
+   Serialize::Out( data, bufferOffset, wasSuccessful );
+
+   return true;
+}
+
+///////////////////////////////////////////////////////////////
+
 bool  PacketPrepareForUserLogin::SerializeIn( const U8* data, int& bufferOffset )
 {
    PacketLogin::SerializeIn( data, bufferOffset );
    Serialize::In( data, bufferOffset, lastLoginTime );
    Serialize::In( data, bufferOffset, connectionId );
+   Serialize::In( data, bufferOffset, email );
+   Serialize::In( data, bufferOffset, active );
+   Serialize::In( data, bufferOffset, userId );
 
    return true;
 }
@@ -215,6 +288,9 @@ bool  PacketPrepareForUserLogin::SerializeOut( U8* data, int& bufferOffset ) con
    PacketLogin::SerializeOut( data, bufferOffset );
    Serialize::Out( data, bufferOffset, lastLoginTime );
    Serialize::Out( data, bufferOffset, connectionId );
+   Serialize::Out( data, bufferOffset, email );
+   Serialize::Out( data, bufferOffset, active );
+   Serialize::Out( data, bufferOffset, userId );
 
    return true;
 }
@@ -226,6 +302,7 @@ bool  PacketPrepareForUserLogout::SerializeIn( const U8* data, int& bufferOffset
 {
    BasePacket::SerializeIn( data, bufferOffset );
    Serialize::In( data, bufferOffset, connectionId );
+   Serialize::In( data, bufferOffset, wasDisconnectedByError );
 
    return true;
 }
@@ -234,6 +311,7 @@ bool  PacketPrepareForUserLogout::SerializeOut( U8* data, int& bufferOffset ) co
 {
    BasePacket::SerializeOut( data, bufferOffset );
    Serialize::Out( data, bufferOffset, connectionId );
+   Serialize::Out( data, bufferOffset, wasDisconnectedByError );
 
    return true;
 }

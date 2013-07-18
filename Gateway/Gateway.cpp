@@ -111,11 +111,13 @@ int main( int argc, const char* argv[] )
    FruitadensGateway* game1 = PrepFruitadens( agricolaIpAddressString, agricolaPort, serverId, gateway );
    FruitadensGateway* game2 = PrepFruitadens( "localhost", 23401, serverId, gateway );
    FruitadensGateway* game3 = PrepFruitadens( "localhost", 23402, serverId, gateway );
+   FruitadensGateway* game4 = PrepFruitadens( "localhost", 23550, serverId, gateway );// summoner wars
 
    U8 gameProductId = 0;
    game1->NotifyEndpointOfIdentification( serverName, serverId, gameProductId, false, false, true, true  );
-   game2->NotifyEndpointOfIdentification( serverName, serverId, gameProductId,false, false, true, true  );
-   game3->NotifyEndpointOfIdentification( serverName, serverId, gameProductId,false, false, true, true  );
+   game2->NotifyEndpointOfIdentification( serverName, serverId, gameProductId, false, false, true, true  );
+   game3->NotifyEndpointOfIdentification( serverName, serverId, gameProductId, false, false, true, true  );
+   game4->NotifyEndpointOfIdentification( serverName, serverId, gameProductId, false, false, true, true  );
 
    loginServerOut.Connect( loginIpAddressString.c_str(), loginPort );
    loginServerOut.Resume();

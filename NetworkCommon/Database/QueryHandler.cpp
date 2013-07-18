@@ -11,16 +11,20 @@ QueryHandler :: QueryHandler( U32 type, int periodicity, Queryer* parent ) : m_q
    time( &m_lastTimeStamp );
 }
 
-
-void     QueryHandler::Update( time_t currentTime )
+QueryHandler :: ~QueryHandler()
 {
-   if( m_parent == NULL )
+}
+
+void     QueryHandler::Update( time_t currentTime, bool& flagToSet )
+{
+   if( m_parent == NULL || flagToSet == true )
       return;
 
    if( difftime( currentTime, m_lastTimeStamp ) >= m_periodicitySeconds ) 
    {
       m_lastTimeStamp = currentTime;
 
+      flagToSet = true;
       PacketDbQuery* dbQuery = new PacketDbQuery;
       dbQuery->id = 0;
       dbQuery->lookup = m_queryType;

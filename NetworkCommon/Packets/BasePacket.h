@@ -179,6 +179,8 @@ public:
       LoginType_InformGatewayOfLoginStatus,
       LoginType_PrepareForUserLogin,
       LoginType_PrepareForUserLogout,
+      LoginType_CreateAccount,
+      LoginType_CreateAccountResponse
    };
 public:
    PacketLogin( int packet_type = PacketType_Login, int packet_sub_type = LoginType_Login ): BasePacket( packet_type, packet_sub_type ) {}
@@ -188,8 +190,10 @@ public:
 
    string   uuid;
    string   username;
+   
    string   loginKey;
-   U64      password;
+   string   password;
+   string   languageCode;
 };
 
 ///////////////////////////////////////////////////////////////
@@ -197,10 +201,12 @@ public:
 class PacketLogout : public BasePacket
 {
 public:
-   PacketLogout(): BasePacket( PacketType_Login, PacketLogin::LoginType_Logout ) {}
+   PacketLogout(): BasePacket( PacketType_Login, PacketLogin::LoginType_Logout ), wasDisconnectedByError( false ) {}
 
-   bool  SerializeIn( const U8* data, int& bufferOffset ) { return BasePacket::SerializeIn( data, bufferOffset ); }
-   bool  SerializeOut( U8* data, int& bufferOffset ) const { return BasePacket::SerializeOut( data, bufferOffset ); }
+   bool  SerializeIn( const U8* data, int& bufferOffset );
+   bool  SerializeOut( U8* data, int& bufferOffset ) const;
+   
+   bool  wasDisconnectedByError;
 };
 
 ///////////////////////////////////////////////////////////////
@@ -245,6 +251,38 @@ public:
 
 ///////////////////////////////////////////////////////////////
 
+class PacketCreateAccount : public BasePacket
+{
+public:
+   PacketCreateAccount(): BasePacket( PacketType_Login, PacketLogin::LoginType_CreateAccount ) {}
+
+   bool  SerializeIn( const U8* data, int& bufferOffset );
+   bool  SerializeOut( U8* data, int& bufferOffset ) const;
+   
+   string username;
+   string useremail;
+   string password;
+   string deviceId;
+   string deviceAccountId;
+};
+
+///////////////////////////////////////////////////////////////
+
+class PacketCreateAccountResponse : public BasePacket
+{
+public:
+   PacketCreateAccountResponse(): BasePacket( PacketType_Login, PacketLogin::LoginType_CreateAccountResponse ) {}
+
+   bool  SerializeIn( const U8* data, int& bufferOffset );
+   bool  SerializeOut( U8* data, int& bufferOffset ) const;
+   
+   string   username;
+   string   useremail;
+   bool     wasSuccessful;
+};
+
+///////////////////////////////////////////////////////////////
+
 class PacketPrepareForUserLogin : public PacketLogin
 {
 public:
@@ -253,8 +291,11 @@ public:
    bool  SerializeIn( const U8* data, int& bufferOffset );
    bool  SerializeOut( U8* data, int& bufferOffset ) const;
 
-   string lastLoginTime;
-   U32   connectionId;
+   string   lastLoginTime;
+   U32      connectionId;
+   string   email;
+   bool     active;
+   U32      userId;
 };
 
 ///////////////////////////////////////////////////////////////
@@ -262,12 +303,13 @@ public:
 class PacketPrepareForUserLogout : public BasePacket
 {
 public:
-   PacketPrepareForUserLogout() : BasePacket( PacketType_Login, PacketLogin::LoginType_PrepareForUserLogout ) {}
+   PacketPrepareForUserLogout() : BasePacket( PacketType_Login, PacketLogin::LoginType_PrepareForUserLogout ), connectionId( 0 ), wasDisconnectedByError( false ) {}
 
    bool  SerializeIn( const U8* data, int& bufferOffset );
    bool  SerializeOut( U8* data, int& bufferOffset ) const;
 
    U32   connectionId;
+   bool  wasDisconnectedByError;
 };
 
 ///////////////////////////////////////////////////////////////

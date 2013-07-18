@@ -76,6 +76,7 @@ void  DiplodocusGateway::ClientConnectionIsAboutToRemove( KhaanConnector* khaan 
    int socketId = khaan->GetSocketId();
 
    PacketLogout* logout = new PacketLogout();// must be done before we clear the lists of ids
+   logout->wasDisconnectedByError = true;
    //logout->serverType = ServerType_Chat;
 
    AddInputChainData( logout, connectionId );
@@ -194,6 +195,14 @@ void  DiplodocusGateway::HandlePacketToKhaan( KhaanConnector* khaan, BasePacket*
    }
 
    khaan->AddOutputChainData( packet );
+
+   // this is a performance improvement to prevent duplicate entries in this deque.
+   ConnectionIdQueue::iterator it = m_connectionsNeedingUpdate.begin();
+   while( it != m_connectionsNeedingUpdate.end() )
+   {
+      if( *it++ == connectionId )
+         return;
+   }
    m_connectionsNeedingUpdate.push_back( connectionId );
 }
 

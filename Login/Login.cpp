@@ -140,10 +140,12 @@ int main( int argc, const char* argv[] )
    FruitadensLogin* game1 = PrepFruitadensLogin( agricolaIpAddressString, agricolaPort, serverId, loginServer );
    FruitadensLogin* game2 = PrepFruitadensLogin( "localhost", 24600, serverId, loginServer );
    FruitadensLogin* game3 = PrepFruitadensLogin( "localhost", 24602, serverId, loginServer );
+   FruitadensLogin* game4 = PrepFruitadensLogin( "localhost", 24604, serverId, loginServer );
 
-   game1->NotifyEndpointOfIdentification( serverName, serverId, false, false, true  );
-   game2->NotifyEndpointOfIdentification( serverName, serverId, false, false, true  );
-   game3->NotifyEndpointOfIdentification( serverName, serverId, false, false, true  );
+   game1->NotifyEndpointOfIdentification( serverName, serverId, 0, false, false, true, false  );
+   game2->NotifyEndpointOfIdentification( serverName, serverId, 0, false, false, true, false  );
+   game3->NotifyEndpointOfIdentification( serverName, serverId, 0, false, false, true, false  );
+   game4->NotifyEndpointOfIdentification( serverName, serverId, 0, false, false, true, false  );
 
    loginServer->Resume();
    loginServer->Run();

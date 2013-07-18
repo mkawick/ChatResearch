@@ -62,7 +62,7 @@ void Check(int iStatus, const char* functionName )
 void   OpenLogFile( const char* fileName )
 {
 #if defined( LogToFile )
-   dumpFile.open( fileName, ios::app );
+   dumpFile.open( fileName, ios::out | ios::app | ios::binary );
 #endif
 }
 
@@ -70,18 +70,17 @@ void   OpenLogFile( const char* fileName )
 void LogTextToFile( const char* text ) 
 {
 #if defined( LogToFile )
-   dumpFile << text;
+   //dumpFile << text;
+   dumpFile.write( text, strlen( text ) );
 #endif
 }
 
 void LogTextToFile( const char* text, int length ) 
 {
 #if defined( LogToFile )
-   char str[2048];
-   memcpy( str, text, length );
-   str[length] = 0;
 
-   dumpFile << str;
+   //dumpFile << str;
+   dumpFile.write( text, length );
 #endif
 }
 
@@ -136,6 +135,7 @@ int   SendEveryFewCharcters( const char* source, int len, int minCharacters, int
 {
    int longest = 0;
    int position = 0;
+   //const char* html = strstr( source, "</html>" );
    while( position < len )
    {
       const char* text = source;
@@ -148,24 +148,31 @@ int   SendEveryFewCharcters( const char* source, int len, int minCharacters, int
       // now we look for crlf
       do
       {
-         while( *text && *text != '\r' )
+         while( ( position + linePosition < len ) && 
+            *text != '\r' )
          {
             linePosition ++;
             text++;
          }
-      } while( *text && *(text+1) != '\n' );
+      } while( ( position + linePosition < len ) && *(text+1) != '\n' );
 
-      if( position < len && *text ) 
+
+      if( position + linePosition > len )
       {
-         // now we are ready for a break
-         linePosition += 2;// point to the thing after the the line feed
-         text += 2;
+         linePosition = len - position;
       }
-
       send( socketId, source, linePosition, 0);
       LogTextToFile( source, linePosition );
       if( linePosition > longest )
           longest = linePosition;
+
+      // if we can, move past the cr/lf
+      if( position < len && *text ) 
+      {
+         // now we are ready for a break
+         linePosition += 2;// point to the thing after the line feed
+         text += 2;
+      }
 
       source = text;
       position += linePosition;

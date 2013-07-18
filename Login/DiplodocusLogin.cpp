@@ -63,9 +63,9 @@ bool     DiplodocusLogin::AddInputChainData( BasePacket* packet, U32 connectionI
             break;
          case PacketLogin::LoginType_Logout:
             {
-               //PacketLogout* logout = static_cast<PacketLogout*>( actualPacket );
+               PacketLogout* logout = static_cast<PacketLogout*>( actualPacket );
                UpdateLastLoggedOutTime( userConnectionId );
-               LogUserOut( userConnectionId );
+               LogUserOut( userConnectionId, logout->wasDisconnectedByError );
             }
             break;
          }
@@ -113,7 +113,7 @@ bool     DiplodocusLogin::FindUserAlreadyInGame( const string& username, U8 game
    return false;
 }
 
-bool     DiplodocusLogin::LogUserIn( const string& username, U64& password, const string& loginKey, U8 gameProductId, U32 connectionId )
+bool     DiplodocusLogin::LogUserIn( const string& username, const string& password, const string& loginKey, U8 gameProductId, U32 connectionId )
 {
    UserConnectionMapIterator it = m_userConnectionMap.find( connectionId );
    if( it != m_userConnectionMap.end() )
@@ -166,7 +166,7 @@ bool     DiplodocusLogin::LogUserIn( const string& username, U64& password, cons
 }
 //---------------------------------------------------------------
 
-bool     DiplodocusLogin::LogUserOut( U32 connectionId )
+bool     DiplodocusLogin::LogUserOut( U32 connectionId, bool wasDisconnectedByError )
 {
    UserConnectionMapIterator it = m_userConnectionMap.find( connectionId );
    if( it != m_userConnectionMap.end() )
@@ -176,13 +176,25 @@ bool     DiplodocusLogin::LogUserOut( U32 connectionId )
       dbQuery->lookup =          QueryType_UserLoginInfo;
       dbQuery->isFireAndForget = true;// no result is needed
       
+      ConnectionToUser& connection = it->second;
       string queryString = "UPDATE users AS user SET user.last_logout_timestamp=CURRENT_TIMESTAMP WHERE uuid = '";
-      queryString += it->second.userUuid;
+      queryString += connection.userUuid;
       queryString += "'";
       dbQuery->query =           queryString;
 
-      SendLoginStatusToOtherServers( it->second.username, it->second.userUuid, connectionId, it->second.gameProductId, it->second.lastLoginTime, false );
+      SendLoginStatusToOtherServers( it->second.username, it->second.userUuid, connectionId, it->second.gameProductId, it->second.lastLoginTime, connection.active, connection.email, connection.passwordHash, connection.id, false, wasDisconnectedByError );
 
+      if( wasDisconnectedByError == false )
+      {
+         PacketGatewayWrapper* wrapper = new PacketGatewayWrapper();
+         wrapper->connectionId = connectionId;
+         PacketLogoutToClient* logout = new PacketLogoutToClient();
+         logout->username = it->second.username;// just for loggin purposes
+         logout->uuid = it->second.userUuid;
+
+         wrapper->pPacket = logout;
+         SendPacketToGateway( wrapper, connectionId );
+      }
       m_userConnectionMap.erase( it );
 
       return AddQueryToOutput( dbQuery );
@@ -208,13 +220,23 @@ bool  DiplodocusLogin::ForceUserLogoutAndBlock( U32 connectionId )
    string username;
    string uuid;
    string lastLoginTime;
+   string email;
    UserConnectionMapIterator it = m_userConnectionMap.find( connectionId );
+   bool           active = false;
+   string   passwordHash = "0";
+   string   userId = "0";
+
    if( it != m_userConnectionMap.end() )
    {
-      username = it->second.username;
-      uuid = it->second.userUuid;
-      lastLoginTime = it->second.lastLoginTime;
-      it->second.status = ConnectionToUser::LoginStatus_Invalid;
+      ConnectionToUser& user = it->second;
+      username = user.username;
+      uuid = user.userUuid;
+      lastLoginTime = user.lastLoginTime;
+      user.status = ConnectionToUser::LoginStatus_Invalid;
+      active =          user.active;
+      passwordHash =    user.passwordHash;
+      userId =          user.id;
+      email =           user.email;
    }
 
    // now disconnect him/her
@@ -231,7 +253,7 @@ bool  DiplodocusLogin::ForceUserLogoutAndBlock( U32 connectionId )
       wrapper->pPacket = loginStatus;
    }
    SendPacketToGateway( wrapper, connectionId );
-   SendLoginStatusToOtherServers( username, uuid, connectionId, it->second.gameProductId, lastLoginTime, false );
+   SendLoginStatusToOtherServers( username, uuid, connectionId, it->second.gameProductId, lastLoginTime, active, email, passwordHash, userId, false, false );
 
    return true;
 }
@@ -319,11 +341,16 @@ bool    DiplodocusLogin::SuccessfulLogin( U32 connectionId )
       return false;
    }
 
-   const string& username = it->second.username;
-   const string& userUuid = it->second.userUuid;
-   const string& email = it->second.email;
-   const string& lastLoginTime = it->second.lastLoginTime;
-   U8 gameProductId = it->second.gameProductId;
+   ConnectionToUser& connection = it->second;
+
+   const string&  username =        connection.username;
+   const string&  userUuid =        connection.userUuid;
+   const string&  email =           connection.email;
+   const string&  lastLoginTime =   connection.lastLoginTime;
+   bool           active =          connection.active;
+   const string&  passwordHash =    connection.passwordHash;
+   const string&  userId =          connection.id;
+   U8 gameProductId =               connection.gameProductId;
 
    PacketGatewayWrapper* wrapper = new PacketGatewayWrapper();
    {
@@ -347,7 +374,7 @@ bool    DiplodocusLogin::SuccessfulLogin( U32 connectionId )
 
    //This is where we inform all of the games that the user is logged in.
 
-   return SendLoginStatusToOtherServers( username, userUuid, connectionId, gameProductId, lastLoginTime, true );
+   return SendLoginStatusToOtherServers( username, userUuid, connectionId, gameProductId, lastLoginTime, active, email, passwordHash, userId, true, false );
 }
 
 //------------------------------------------------------------------------------------------------
@@ -374,7 +401,7 @@ bool  DiplodocusLogin::RequestListOfGames( U32 connectionId, const string& userU
 
 //---------------------------------------------------------------
 
-bool  DiplodocusLogin::SendLoginStatusToOtherServers( const string& username, const string& userUuid, U32 connectionId, U8 gameProductId, const string& lastLoginTime, bool isLoggedIn )
+bool  DiplodocusLogin::SendLoginStatusToOtherServers( const string& username, const string& userUuid, U32 connectionId, U8 gameProductId, const string& lastLoginTime, bool isActive, const string& email, const string& passwordHash, const string& userId, bool isLoggedIn, bool wasDisconnectedByError )
 {
    // send this to every other listening server
    BaseOutputContainer::iterator itOutputs = m_listOfOutputs.begin();
@@ -392,6 +419,11 @@ bool  DiplodocusLogin::SendLoginStatusToOtherServers( const string& username, co
          prepareForUser->lastLoginTime = lastLoginTime;
          prepareForUser->gameProductId = gameProductId;
 
+         prepareForUser->active = isActive;
+         prepareForUser->email= email;
+         prepareForUser->userId = boost::lexical_cast<U32>( userId );
+         prepareForUser->password = passwordHash;
+
          packetToSend = prepareForUser;
          
       }
@@ -399,6 +431,7 @@ bool  DiplodocusLogin::SendLoginStatusToOtherServers( const string& username, co
       {
          PacketPrepareForUserLogout* logout = new PacketPrepareForUserLogout;
          logout->connectionId = connectionId;
+         logout->wasDisconnectedByError = wasDisconnectedByError;
 
          packetToSend = logout;
       }
@@ -461,16 +494,23 @@ bool     DiplodocusLogin::AddOutputChainData( BasePacket* packet, U32 connection
                   
                   UserTable            enigma( dbResult->bucket );
                   UserTable::row       row = *enigma.begin();
+                  string id =               row[ TableUser::Column_id ];
                   string name =             row[ TableUser::Column_name ];
                   string uuid =             row[ TableUser::Column_uuid ];
                   string email =            row[ TableUser::Column_email ];
+                  string passwordHash =     row[ TableUser::Column_password_hash ];
                   // note that we are using logout for our last login time.
                   string lastLoginTime =    row[ TableUser::Column_last_logout_time ];
+                  string isActive =         row[ TableUser::Column_active];
 
+                  it->second.username = name;
                   it->second.userUuid = uuid;
                   it->second.status = ConnectionToUser::LoginStatus_LoggedIn;
                   it->second.lastLoginTime = lastLoginTime;
                   it->second.email = email;
+                  it->second.id =   id;
+                  it->second.passwordHash = passwordHash;
+                  it->second.active = boost::lexical_cast<bool>( isActive );
 
                   it->second.gameProductId = dbResult->serverLookup;
 

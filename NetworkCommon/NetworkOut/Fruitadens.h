@@ -22,9 +22,10 @@ class Fruitadens : public Threading::CChainedThread <BasePacket*>
 {
 public:
    Fruitadens( const char* name );
+   ~Fruitadens();
 
    bool        AddOutputChainData( BasePacket* packet, U32 filingData );// standard code, no need to modify
-   void        NotifyEndpointOfIdentification( const std::string& serverName, U32 serverId, U8 gameProductId, bool isGameServer, bool isController, bool requiresWrapper = true, bool isGateway = false );
+   void        NotifyEndpointOfIdentification( const std::string& serverName, U32 serverId, U8 gameProductId, bool isGameServer, bool isController, bool requiresWrapper, bool isGateway );
 
    void        SetConnectedServerType( ServerType type ) { m_serverType = type; }
    ServerType  GetConnectedServerType() const { return m_serverType; }

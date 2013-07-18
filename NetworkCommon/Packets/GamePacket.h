@@ -401,10 +401,11 @@ public:
    bool  SerializeIn( const U8* data, int& bufferOffset ); // allocates memory
    bool  SerializeOut( U8* data, int& bufferOffset ) const;
 
-   void  Prep( U16 size, const U8* ptr );
+   void  Prep( U16 numBytes, const U8* ptr, int packetIndex );
 
    enum { MaxBufferSize = 1024 };
-   U16      size;
+   U16     size;
+   U8      index; // when subdividing these, these are reverse ordered. 6.5.4.3.2.1 so that we can send up to 254k.We still rely on high layers to serialize properly.
    U8      data[ MaxBufferSize ];
 };
 

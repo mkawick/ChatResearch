@@ -7,6 +7,7 @@
 
 #include <iostream>
 using namespace std;
+#include <time.h>
 
 ///////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////
@@ -284,9 +285,11 @@ void     DiplodocusGame::UpdateAllTimers()
    while( it != m_timers.end() )
    {
       TimerInfo& timer = *it++;
+      time_t currentTime;
+      time( &currentTime );
       if( timer.lastTimeMs < (currentTimeMs - timer.scheduleTimeMs ) )
       {
-         m_callbacks->TimerCallback( timer.timerId );
+         m_callbacks->TimerCallback( timer.timerId, currentTime );
          timer.lastTimeMs = currentTimeMs;
       }
    }
@@ -420,11 +423,16 @@ void  DiplodocusGame::ConnectUser( const PacketPrepareForUserLogin* loginPacket 
    if( m_callbacks )
    {
       UserInfo ui;
-      ui.username = loginPacket->username;
-      ui.uuid = loginPacket->uuid;
+      ui.username =        loginPacket->username;
+      ui.uuid =            loginPacket->uuid;
       ui.apple_id = "";
-      ui.connectionId = connectionId;
-      ui.gameProductId = loginPacket->gameProductId;
+      ui.connectionId =    connectionId;
+      ui.gameProductId =   loginPacket->gameProductId;
+      ui.active =          loginPacket->active;
+      ui.email =           loginPacket->email;
+      ui.passwordHash =    loginPacket->password;
+      ui.id =              loginPacket->userId;
+
       m_callbacks->UserConnected( &ui, connectionId );
    }
 }
@@ -434,9 +442,10 @@ void  DiplodocusGame::ConnectUser( const PacketPrepareForUserLogin* loginPacket 
 void  DiplodocusGame::DisconnectUser( const PacketPrepareForUserLogout* logoutPacket )
 {
    U32 connectionId = logoutPacket->connectionId;
+   bool  errorDisconnect = logoutPacket->wasDisconnectedByError;
    if( m_callbacks )
    {
-      m_callbacks->UserDisconnected( connectionId );
+      m_callbacks->UserDisconnected( connectionId, errorDisconnect );
    }
 }
 

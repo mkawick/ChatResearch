@@ -11,7 +11,7 @@ using namespace std;
 
 class GameFramework;
 class DiplodocusGame;
-
+class FruitadensServerToServer;
 
 //////////////////////////////////////////////////////////
 
@@ -50,6 +50,7 @@ public:
    //----------------------------------------------
 
    bool     SendGameData( U32 connectionId, const MarshalledData* );
+   bool     SendChatData( U32 connectionId, const BasePacket* );
    bool     InformClientWhoThisServerIs( U32 connectionId );
 
    //----------------------------------------------
@@ -74,6 +75,7 @@ private:
 
    U16            m_chatServerPort;
    string         m_chatServerAddress;
+   FruitadensServerToServer*  m_chatServer;
 
    U16            m_listenForS2SPort;
    string         m_listenForS2SAddress;

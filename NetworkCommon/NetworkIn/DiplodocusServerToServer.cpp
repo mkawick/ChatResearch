@@ -66,7 +66,8 @@ bool   DiplodocusServerToServer::AddInputChainData( BasePacket* packet, U32 conn
       }
       if( found == false || khaan == NULL )
       {
-         assert( 0 );
+         //assert( 0 );
+         return false;
       }
       
 

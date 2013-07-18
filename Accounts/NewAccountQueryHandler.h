@@ -32,7 +32,7 @@ class NewAccountQueryHandler : public QueryHandler
 {
 
 public:
-   NewAccountQueryHandler( int id, Queryer* parent, string& query );
+   NewAccountQueryHandler( U32 id, Queryer* parent, string& query );
 
    void     Update( time_t currentTime );
 
@@ -73,8 +73,7 @@ protected:
 
    void     PreloadWeblinks();
    void     HandleWeblinks( const PacketDbQueryResult* dbResult );
-   string   m_linkToAccountCreated;
-   string   m_linkToResetPasswordConfirm;
+   
    
 
 protected:
@@ -82,6 +81,8 @@ protected:
 
    static bool                            m_hasLoadedStringTable;
    static bool                            m_hasLoadedWeblinks;
+   static string                          m_linkToAccountCreated;
+   static string                          m_linkToResetPasswordConfirm;
    static string                          m_pathToConfirmationEmailFile;
    static string                          m_confirmationEmailTemplate;
    static string                          m_passwordResetEmailTemplate;

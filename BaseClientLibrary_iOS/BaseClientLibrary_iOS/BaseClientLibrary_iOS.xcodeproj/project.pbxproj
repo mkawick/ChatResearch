@@ -21,6 +21,8 @@
 		34EA68A617611DD400F07E19 /* CommandLineParser.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 34EA688C17611DD400F07E19 /* CommandLineParser.cpp */; };
 		34EA68A917611DD400F07E19 /* Utils.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 34EA689317611DD400F07E19 /* Utils.cpp */; };
 		34EA68AF17612DF500F07E19 /* NetworkUtils.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 34EA68AE17612DF500F07E19 /* NetworkUtils.cpp */; };
+		707B53F41794C1A6001D9BA1 /* DbPacket.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 707B53F21794C1A6001D9BA1 /* DbPacket.cpp */; };
+		707B53F71794C1BC001D9BA1 /* NetworkLayer.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 707B53F51794C1BC001D9BA1 /* NetworkLayer.cpp */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -71,6 +73,10 @@
 		34EA689317611DD400F07E19 /* Utils.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Utils.cpp; sourceTree = "<group>"; };
 		34EA689417611DD400F07E19 /* Utils.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Utils.h; sourceTree = "<group>"; };
 		34EA68AE17612DF500F07E19 /* NetworkUtils.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = NetworkUtils.cpp; path = ../NetworkUtils.cpp; sourceTree = "<group>"; };
+		707B53F21794C1A6001D9BA1 /* DbPacket.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = DbPacket.cpp; sourceTree = "<group>"; };
+		707B53F31794C1A6001D9BA1 /* DbPacket.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = DbPacket.h; sourceTree = "<group>"; };
+		707B53F51794C1BC001D9BA1 /* NetworkLayer.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = NetworkLayer.cpp; path = ../BaseClientLibrary/NetworkLayer.cpp; sourceTree = "<group>"; };
+		707B53F61794C1BC001D9BA1 /* NetworkLayer.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = NetworkLayer.h; path = ../BaseClientLibrary/NetworkLayer.h; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -132,6 +138,8 @@
 		34EA685A17611DD400F07E19 /* NetworkCommon */ = {
 			isa = PBXGroup;
 			children = (
+				707B53F51794C1BC001D9BA1 /* NetworkLayer.cpp */,
+				707B53F61794C1BC001D9BA1 /* NetworkLayer.h */,
 				34EA685B17611DD400F07E19 /* ChainedArchitecture */,
 				34EA687317611DD400F07E19 /* NetworkOut */,
 				34EA687817611DD400F07E19 /* Packets */,
@@ -172,6 +180,8 @@
 		34EA687817611DD400F07E19 /* Packets */ = {
 			isa = PBXGroup;
 			children = (
+				707B53F21794C1A6001D9BA1 /* DbPacket.cpp */,
+				707B53F31794C1A6001D9BA1 /* DbPacket.h */,
 				34EA687917611DD400F07E19 /* BasePacket.cpp */,
 				34EA687A17611DD400F07E19 /* BasePacket.h */,
 				34EA687B17611DD400F07E19 /* BasePacket.inl */,
@@ -261,6 +271,8 @@
 				34EA68A617611DD400F07E19 /* CommandLineParser.cpp in Sources */,
 				34EA68A917611DD400F07E19 /* Utils.cpp in Sources */,
 				34EA68AF17612DF500F07E19 /* NetworkUtils.cpp in Sources */,
+				707B53F41794C1A6001D9BA1 /* DbPacket.cpp in Sources */,
+				707B53F71794C1BC001D9BA1 /* NetworkLayer.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

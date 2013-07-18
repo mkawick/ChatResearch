@@ -124,4 +124,7 @@ private:
    NewAccountQueryHandler* m_newAccountHandler;
    ResetPasswordQueryHandler* m_resetPasswordHandler;
 
+   static const U32 timeoutBlankUUIDTimer = 60;
+   static const U32 timeoutNewAccount = 48;
+   static const U32 timeoutResetPassword = 30;
 };

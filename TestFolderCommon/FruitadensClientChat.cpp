@@ -526,7 +526,7 @@ bool     FruitadensClientChat:: GameEcho( int numBytes )
    PacketGameplayRawData packet;
    packet.gameInstanceId = m_selectedGame;
 
-   packet.Prep( m_numEchoBytesSent, m_echoComparisonBuffer );   
+   packet.Prep( m_numEchoBytesSent, m_echoComparisonBuffer, 1 );   
    packet.gameProductId = testConnectedGameProductId;
    return SerializePacketOut( &packet );
 }
@@ -570,7 +570,7 @@ bool     FruitadensClientChat:: MultiplePacketEcho( int packetCount )
       PacketGameplayRawData packet;
       packet.versionNumber = i;
       packet.gameInstanceId = m_selectedGame;
-      packet.Prep( numBytesToSend, tempBuffer ); 
+      packet.Prep( numBytesToSend, tempBuffer, i ); 
       packet.gameProductId = testConnectedGameProductId;
 
       m_multiplePacketEchoHistory.push_back( packet );

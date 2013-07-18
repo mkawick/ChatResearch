@@ -16,6 +16,10 @@ using namespace std;
 #include "../Packets/ServerToServerPacket.h"
 #include "../Packets/PacketFactory.h"
 
+#if PLATFORM != PLATFORM_WINDOWS
+#include <errno.h>
+#endif
+
 const int typicalSleepTime = 200;
 
 
@@ -33,6 +37,11 @@ Fruitadens :: Fruitadens( const char* name ) : Threading::CChainedThread <BasePa
 {
    m_name = name;
    memset( &m_ipAddress, 0, sizeof( m_ipAddress ) );
+}
+
+Fruitadens::~Fruitadens()
+{
+   Cleanup();
 }
 
 //-----------------------------------------------------------------------------
@@ -74,8 +83,11 @@ bool  Fruitadens :: Connect( const char* serverName, int port )// work off of DN
 
 bool  Fruitadens :: Disconnect()
 {
-   Cleanup();
    closesocket( m_clientSocket );
+   
+   m_clientSocket = NULL;
+   m_isConnected = false;
+   m_hasFailedCritically = false;
 
    return true;
 }
@@ -156,10 +168,17 @@ void  Fruitadens :: AttemptConnection()
    // this failure can happen for a lot of reasons, like the server hasn't been launched yet.
    if (connect( m_clientSocket, (sockaddr*)&m_ipAddress, sizeof(m_ipAddress)) == SOCKET_ERROR)
    {
+#if PLATFORM != PLATFORM_WINDOWS
+      if( errno == EINPROGRESS )
+      {
+         return;
+      }
+#endif
       notification += " failed to connect ";
       Log( notification.c_str() );
       return;
    }
+
 
    notification += " has connected ";
    Log( notification.c_str() );
