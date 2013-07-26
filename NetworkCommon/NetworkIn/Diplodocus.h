@@ -65,6 +65,8 @@ public:
 
    bool           AddInputChainData( BasePacket* t, U32 filingData );
    bool           AddOutputChainData( BasePacket* t, U32 filingData );
+   bool           SendPacketToGateway( BasePacket* packet, U32 connectionId );
+   bool           SendErrorToClient( U32 connectionId, PacketErrorReport::ErrorType error );
 
    //---------------------------------------------
 
@@ -86,6 +88,7 @@ public:
 protected:
 
    void           MarkAllConnectionsAsNeedingUpdate( BaseOutputContainer& listOfClients );
+   void           MarkConnectionAsNeedingUpdate( int connectionId );
 
    typedef typename std::map< U32, InputChainType* >        ClientMap;// posssibly change this to a hash lookup once the client is logged in
    typedef typename ClientMap::iterator                     ClientMapIterator;
@@ -99,6 +102,7 @@ protected:
    bool              m_isControllerApp;
    bool              m_isGateway;
    bool              m_isGame;
+   bool              m_updateGatewayConnections;
    int               m_listeningPort;
    evconnlistener*   m_listener;// libevent object
    U32               m_serverId; // just used for id

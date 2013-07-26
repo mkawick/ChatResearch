@@ -38,6 +38,10 @@ using namespace std;
 ////////////////////////////////////////////////////////////////////////
 
 FruitadensLogin* PrepFruitadensLogin( const string& ipaddress, U16 port, U32 serverId, DiplodocusLogin* loginServer );
+void  SendServerNotification( const string& serverName, U32 serverId, FruitadensLogin* fruity )
+{
+   fruity->NotifyEndpointOfIdentification( serverName, serverId, 0, false, false, true, false  );
+}
 
 ////////////////////////////////////////////////////////////////////////
 
@@ -53,6 +57,12 @@ int main( int argc, const char* argv[] )
    string chatPortString = "9602";
    string chatIpAddressString = "localhost";
 
+   string contactPortString = "9802";
+   string contactIpAddressString = "localhost";
+
+   string assetPortString = "10002";
+   string assetIpAddressString = "localhost";
+
    string agricolaPortString = "23996";
    string agricolaIpAddressString = "localhost";
 
@@ -64,6 +74,12 @@ int main( int argc, const char* argv[] )
    parser.FindValue( "chat.port", chatPortString );
    parser.FindValue( "chat.address", chatIpAddressString );
 
+   parser.FindValue( "contact.port", contactPortString );
+   parser.FindValue( "contact.address", contactIpAddressString );
+
+   parser.FindValue( "asset.port", assetPortString );
+   parser.FindValue( "asset.address", assetIpAddressString );
+   
    parser.FindValue( "agricola.address", agricolaPortString );
    parser.FindValue( "agricola.port", agricolaIpAddressString );
 
@@ -81,13 +97,18 @@ int main( int argc, const char* argv[] )
    parser.FindValue( "db.schema", dbSchema );
 
 
-   int listenPort = 3072, chatPort = 9602, dbPortAddress = 3306, agricolaPort = 23996;
+   int listenPort = 3072, dbPortAddress = 3306, chatPort = 9602, contactPort=9802, assetPort=10002;
+   int agricolaPort = 23996;
    try 
    {
        listenPort = boost::lexical_cast<int>( listenPortString );
-       chatPort = boost::lexical_cast<int>( chatPortString );
-       agricolaPort = boost::lexical_cast<int>( agricolaPortString );
        dbPortAddress = boost::lexical_cast<int>( dbPortString );
+
+       chatPort = boost::lexical_cast<int>( chatPortString );
+       contactPort = boost::lexical_cast<int>( contactPortString );
+       assetPort = boost::lexical_cast<int>( assetPortString );
+
+       agricolaPort = boost::lexical_cast<int>( agricolaPortString );
    } 
    catch( boost::bad_lexical_cast const& ) 
    {
@@ -119,22 +140,35 @@ int main( int argc, const char* argv[] )
    cout << "------------------------------------------------------------------" << endl << endl << endl;
 
    DiplodocusLogin* loginServer = new DiplodocusLogin( serverName, serverId );
-   
-   FruitadensLogin chatOut( "login to chat" );
-   chatOut.SetConnectedServerType( ServerType_Chat );
-   chatOut.SetServerUniqueId( serverId );
-
-  /* FruitadensLogin gameServerOut( "fruity to gameserver" );
-   gameServerOut.SetConnectedServerType( ServerType_GameInstance );
-   gameServerOut.SetServerUniqueId( serverId );*/
-
-   loginServer->AddOutputChain( &chatOut );
-   //loginServer->AddOutputChain( &gameServerOut );
    loginServer->AddOutputChain( delta );
    loginServer->SetupListening( listenPort );
    
+   //----------------------------------
+
+   FruitadensLogin chatOut( "login to chat" );
+   chatOut.SetConnectedServerType( ServerType_Chat );
+   chatOut.SetServerUniqueId( serverId );
+   loginServer->AddOutputChain( &chatOut );
    chatOut.Connect( chatIpAddressString.c_str(), chatPort );
    chatOut.Resume();
+   SendServerNotification( serverName, serverId, &chatOut );
+
+   FruitadensLogin contactOut( "login to contact" );
+   contactOut.SetConnectedServerType( ServerType_Contact );
+   contactOut.SetServerUniqueId( serverId );
+   loginServer->AddOutputChain( &contactOut );
+   contactOut.Connect( contactIpAddressString.c_str(), contactPort );
+   contactOut.Resume();
+   SendServerNotification( serverName, serverId, &contactOut );
+
+   FruitadensLogin assetOut( "login to asset" );
+   assetOut.SetConnectedServerType( ServerType_Asset );
+   assetOut.SetServerUniqueId( serverId );
+   loginServer->AddOutputChain( &assetOut );
+   assetOut.Connect( assetIpAddressString.c_str(), assetPort );
+   assetOut.Resume();
+   SendServerNotification( serverName, serverId, &assetOut );
+   
 
    // various games. We will need to deal with allowing a dynamic number of games in future
    FruitadensLogin* game1 = PrepFruitadensLogin( agricolaIpAddressString, agricolaPort, serverId, loginServer );
@@ -142,10 +176,15 @@ int main( int argc, const char* argv[] )
    FruitadensLogin* game3 = PrepFruitadensLogin( "localhost", 24602, serverId, loginServer );
    FruitadensLogin* game4 = PrepFruitadensLogin( "localhost", 24604, serverId, loginServer );
 
-   game1->NotifyEndpointOfIdentification( serverName, serverId, 0, false, false, true, false  );
+ /*  game1->NotifyEndpointOfIdentification( serverName, serverId, 0, false, false, true, false  );
    game2->NotifyEndpointOfIdentification( serverName, serverId, 0, false, false, true, false  );
    game3->NotifyEndpointOfIdentification( serverName, serverId, 0, false, false, true, false  );
-   game4->NotifyEndpointOfIdentification( serverName, serverId, 0, false, false, true, false  );
+   game4->NotifyEndpointOfIdentification( serverName, serverId, 0, false, false, true, false  );*/
+
+   SendServerNotification( serverName, serverId, game1 );
+   SendServerNotification( serverName, serverId, game2 );
+   SendServerNotification( serverName, serverId, game3 );
+   SendServerNotification( serverName, serverId, game4 );
 
    loginServer->Resume();
    loginServer->Run();

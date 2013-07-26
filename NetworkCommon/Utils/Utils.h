@@ -3,6 +3,7 @@
 #pragma once
 
 #include "../DataTypes.h"
+#include <boost/type_traits/is_signed.hpp>
 #include <string>
 
 std::string    GenerateUUID( U32 xorValue = 0 );
@@ -58,3 +59,33 @@ private:
    T m_valueToSet;
 };
 
+template < class T >
+bool ConvertFromString( const std::string& InputString, T& Value )
+{
+   Value = 0;
+   T tempValue = 0;
+   int numConverted = 0;
+   bool makeNegative = false;
+   for(std::string::const_iterator it = InputString.begin() ; it < InputString.end(); ++it)
+   {
+      char c = *it;
+      if( c>= '0' && c<='9' )
+      {
+         Value = Value * 10 + (c - '0' );
+         numConverted ++;
+      }
+      else if( c == '-' && numConverted == 0 )
+      {
+         makeNegative = true;
+      }
+      else
+      {
+         return false;
+      }
+   }
+   if( makeNegative == true && boost::is_signed<T>::value == true )
+   {
+      Value *= -1;
+   }
+   return true;
+}

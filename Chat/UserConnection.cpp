@@ -179,9 +179,9 @@ bool  UserConnection::RequestFriends()
    dbQuery->lookup = QueryType_UserFriendsList;
 
    string queryString = "SELECT * FROM users WHERE users.uuid IN (SELECT friends.userid2 as uuid FROM friends WHERE friends.userid1 = '" ;
-   queryString += m_uuid;
+   queryString += m_userDbId;
    queryString += "' union SELECT friends.userid1 as uuid FROM friends WHERE friends.userid2 = '";
-   queryString += m_uuid;
+   queryString += m_userDbId;
    queryString += "')";
    dbQuery->query = queryString;
 

@@ -13,6 +13,8 @@ enum  ServerType
    ServerType_General,
    ServerType_Chat,
    ServerType_Controller,
+   ServerType_Asset,
+   ServerType_Contact,
    ServerType_Test
 };
 

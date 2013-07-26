@@ -10,6 +10,7 @@ using namespace std;
 #include "PacketFactory.h"
 #include "BasePacket.h"
 #include "ChatPacket.h"
+#include "ContactPacket.h"
 #include "GamePacket.h"
 #include "ServerToServerPacket.h"
 #include "DbPacket.h"
@@ -52,6 +53,14 @@ bool	PacketFactory::Parse( const U8* bufferIn, int& bufferOffset, BasePacket** p
    case PacketType_UserInfo:
       {
          return ParseUserInfo( bufferIn, bufferOffset, &firstPassParse, packetOut );
+      }
+   case PacketType_Contact:
+      {
+         return ParseContact( bufferIn, bufferOffset, &firstPassParse, packetOut );
+      }
+   case PacketType_Asset:
+      {
+         return ParseAsset( bufferIn, bufferOffset, &firstPassParse, packetOut );
       }
    case PacketType_DbQuery:
       {   
@@ -134,6 +143,16 @@ bool  PacketFactory::ParseLogin( const U8* bufferIn, int& bufferOffset, const Ba
       case PacketLogin::LoginType_PrepareForUserLogout:
          {
             *packetOut = SerializeIn< PacketPrepareForUserLogout >( bufferIn, bufferOffset );
+         }
+         return true;
+      case PacketLogin::LoginType_CreateAccount:
+         {
+            *packetOut = SerializeIn< PacketCreateAccount >( bufferIn, bufferOffset );
+         }
+         return true;
+      case PacketLogin::LoginType_CreateAccountResponse:
+         {
+            *packetOut = SerializeIn< PacketCreateAccountResponse >( bufferIn, bufferOffset );
          }
          return true;
    }
@@ -356,6 +375,86 @@ bool     PacketFactory::ParseUserInfo( const U8* bufferIn, int& bufferOffset, co
       return true;
    }
 
+   return false;
+}
+
+//-----------------------------------------------------------------------------------------
+
+bool     PacketFactory::ParseContact( const U8* bufferIn, int& bufferOffset, const BasePacket* firstPassParse, BasePacket** packetOut ) const
+{
+   switch( firstPassParse->packetSubType )
+   {
+   case PacketContact::ContactType_Base:
+      {
+         *packetOut = SerializeIn< PacketContact >( bufferIn, bufferOffset );
+      }
+      return true;
+   case PacketContact::ContactType_TestNotification:
+      {
+         *packetOut = SerializeIn< PacketContact_TestNotification >( bufferIn, bufferOffset );
+      }
+      return true;
+
+   case PacketContact::ContactType_GetListOfContacts:
+      {
+         *packetOut = SerializeIn< PacketContact_GetListOfContacts >( bufferIn, bufferOffset );
+      }
+      return true;
+
+   case PacketContact::ContactType_GetListOfContactsResponse:
+      {
+         *packetOut = SerializeIn< PacketContact_GetListOfContactsResponse >( bufferIn, bufferOffset );
+      }
+      return true;
+
+
+   case PacketContact::ContactType_GetListOfInvitations:
+      {
+         *packetOut = SerializeIn< PacketContact_GetListOfInvitations >( bufferIn, bufferOffset );
+      }
+      return true;
+   case PacketContact::ContactType_GetListOfInvitationsResponse:
+      {
+         *packetOut = SerializeIn< PacketContact_GetListOfInvitationsResponse >( bufferIn, bufferOffset );
+      }
+      return true;
+
+   case PacketContact::ContactType_GetListOfInvitationsSent:
+      {
+         *packetOut = SerializeIn< PacketContact_GetListOfInvitationsSent >( bufferIn, bufferOffset );
+      }
+      return true;
+
+   case PacketContact::ContactType_GetListOfInvitationsSentResponse:
+      {
+         *packetOut = SerializeIn< PacketContact_GetListOfInvitationsSentResponse >( bufferIn, bufferOffset );
+      }
+      return true;
+
+  /* case PacketContact::ContactType_InviteContact:
+      {
+         *packetOut = SerializeIn< PacketContact >( bufferIn, bufferOffset );
+      }
+      return true;
+   case PacketContact::ContactType_RemoveInivtation:
+      {
+         *packetOut = SerializeIn< PacketContact_TestNotification >( bufferIn, bufferOffset );
+      }
+      return true;
+
+   case PacketContact::ContactType_AcceptInvite:
+      {
+         *packetOut = SerializeIn< PacketContact_GetListOfContacts >( bufferIn, bufferOffset );
+      }
+      return true;*/
+   }
+   return false;
+}
+
+//-----------------------------------------------------------------------------------------
+
+bool     PacketFactory::ParseAsset( const U8* bufferIn, int& bufferOffset, const BasePacket* firstPassParse, BasePacket** packetOut ) const
+{
    return false;
 }
 

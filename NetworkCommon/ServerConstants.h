@@ -28,7 +28,7 @@ copied from server_game_select
 */
 enum GameProductId 
 {
-   GameProductId_ASCENSION,
+   GameProductId_ASCENSION = 1,
    GameProductId_DOMINION,  
    GameProductId_THUNDERSTONE,
    GameProductId_WOWCMG,

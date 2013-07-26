@@ -59,6 +59,24 @@ bool FruitadensGateway::FilterOutwardPacket( BasePacket* packet ) const
             return true;
          }
       }
+      else if( m_serverType == ServerType_Contact )
+      {
+         if( type == PacketType_UserInfo )
+         {
+            return true;
+         }
+         if( type == PacketType_Contact )
+         {
+            return true;
+         }
+      }
+      else if( m_serverType == ServerType_Asset )
+      {
+         if( type == PacketType_Asset )
+         {
+            return true;
+         }
+      }
    }
    else if( packet->packetType == PacketType_ServerToServerWrapper )
    {

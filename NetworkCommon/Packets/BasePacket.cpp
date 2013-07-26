@@ -231,6 +231,7 @@ bool  PacketCreateAccount::SerializeIn( const U8* data, int& bufferOffset )
    Serialize::In( data, bufferOffset, password );
    Serialize::In( data, bufferOffset, deviceId );
    Serialize::In( data, bufferOffset, deviceAccountId );
+   Serialize::In( data, bufferOffset, languageId );
 
    return true;
 }
@@ -243,6 +244,7 @@ bool  PacketCreateAccount::SerializeOut( U8* data, int& bufferOffset ) const
    Serialize::Out( data, bufferOffset, password );
    Serialize::Out( data, bufferOffset, deviceId );
    Serialize::Out( data, bufferOffset, deviceAccountId );
+   Serialize::Out( data, bufferOffset, languageId );
 
    return true;
 }

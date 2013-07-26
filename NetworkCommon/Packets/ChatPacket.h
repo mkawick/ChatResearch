@@ -1,4 +1,4 @@
-
+// ChatPacket.h
 
 
 class PacketChatToServer : public BasePacket 
@@ -44,6 +44,9 @@ public:
       ChatType_AdminRequestChatChannelListResponse,
       ChatType_AdminRequestUsersList,
       ChatType_AdminRequestUsersListResponse,
+
+      ChatType_S2SSendNotificationToUser,
+      ChatType_SendNotificationToUser,
 
       ChatType_Friend
    };

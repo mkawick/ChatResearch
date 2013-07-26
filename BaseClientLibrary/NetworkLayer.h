@@ -23,7 +23,32 @@ struct Demographics
    int      timeZoneGmt;
 };
 
+class BasicUser
+{
+   string    userName;
+   string    userEmail;
+   string    UUID;
+   bool      isOnline;
+};
 
+class ChatChannel
+{
+   string   channelName;
+   string   channelDetails;
+   string   UUID;
+   bool     isGameCreatedChannel;
+
+   vector< BasicUser > usersInChannel; // not necessarily friends
+};
+
+class Group
+{
+   string groupName;
+   string groupMotto;
+   int    avatarId;
+   string chatChannel; // the venn diagrap for groups and channels may not be 1-1
+   vector< BasicUser > usersInGroup;
+};
 
 //-----------------------------------------------------
 
@@ -38,8 +63,22 @@ public:
 
    virtual void  GameData( U16 length, const U8* rawdata ) = 0;
 
+   virtual void  FriendUpdate() {}
+   virtual void  FriendOnlineStatusChanged( const string& uuid ) {}
+   virtual void  ChatChannelUpdate() {}
+   virtual void  ListOfFriendUpdate() {}
+
+   virtual void  SearchResults( vector< string >& values ) {}
+
+   virtual void  ChatReceived( const string& message, const string& channelUUID, const string& userUUID ){}
+   virtual void  AssetReceived( const U8* buffer, int size, const string& assetId ){}
+
    UserNetworkEventNotifier() : connectionId ( 0 ) {}
    U32      connectionId;
+
+   vector< BasicUser >     Friends;
+   vector< ChatChannel >   Channels;
+   vector< Group >         Groups;
 };
 
 ///////////////////////////////////////////////////////
@@ -76,6 +115,7 @@ public:
    string   GetUsername() const { return m_username; }
 
    bool     RequestLogin( const string& username, const string& password, const string& languageCode );
+   bool     RequestAccountCreate( const string& username, const string& useremail, const string& password, int languageId, const string& deviceId, const string& gkHash ); // deviceId could be NULL except in andriod world
    bool     RequestLogout() const;
 
    bool     RequestListOfFriends() const;
@@ -85,6 +125,8 @@ public:
    bool     RequestUserWinLossRecord( const string& username ) const;
 
    bool     SendRawPacket( const char* buffer, int length ) const;
+
+   bool     SendSearchForUsers( const string& searchString, int numRequested, int offset ) const; // min 2 char
 
 
    bool     ChangeGame( const string& gameName );
@@ -115,6 +157,7 @@ private:
    U8                m_gameProductId;
    bool              m_isLoggingIn;
    bool              m_isLoggedIn;
+   bool              m_isCreatingAccount;
 
    mutable U32       m_beginTime, m_endTime;
 

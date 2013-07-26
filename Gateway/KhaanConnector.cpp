@@ -59,7 +59,8 @@ bool	KhaanConnector::OnDataReceived( unsigned char* data, int length )
       // before we parse, which is potentially dangerous, we will do a quick check
       BasePacket testPacket;
       parser.SafeParse( data, offset, testPacket );
-      if( testPacket.packetType != PacketType_Login || testPacket.packetSubType != PacketLogin::LoginType_Login )
+      if( testPacket.packetType != PacketType_Login || 
+         ( testPacket.packetSubType != PacketLogin::LoginType_Login && testPacket.packetSubType != PacketLogin::LoginType_CreateAccount ) )
       {
          m_numPacketsReceivedBeforeAuth ++;
          if( m_numPacketsReceivedBeforeAuth > m_randomNumberOfPacketsBeforeLogin )
@@ -125,6 +126,10 @@ bool  KhaanConnector::IsWhiteListedIn( const BasePacket* packet ) const
    case PacketType_Chat:
       return true;
    case PacketType_UserInfo:
+      return true;
+    case PacketType_Contact:
+      return true;
+   case PacketType_Asset:
       return true;
    case PacketType_UserStateChange: // from server to client, usually
       return false;

@@ -241,6 +241,40 @@ bool  Diplodocus< InputChain, OutputChain >::AddOutputChainData( BasePacket* t, 
    return true;
 }
 
+
+//---------------------------------------------------------------
+
+template< typename InputChain, typename OutputChain >
+bool     Diplodocus< InputChain, OutputChain >::SendPacketToGateway( BasePacket* packet, U32 connectionId )
+{
+   ChainLinkIteratorType itInputs = m_listOfInputs.begin();
+   while( itInputs != m_listOfInputs.end() )// only one output currently supported.
+   {
+      ChainedInterface<BasePacket*>* inputPtr = itInputs->m_interface;
+      InputChainType* connection = static_cast< InputChainType* >( inputPtr );
+      if( connection->AddOutputChainData( packet, connectionId ) == true )
+      {
+         m_clientsNeedingUpdate.push_back( connection->GetChainedId() );
+         return true;
+      }
+   }
+
+   return false;
+}
+
+//---------------------------------------------------------------
+
+template< typename InputChain, typename OutputChain >
+bool  Diplodocus< InputChain, OutputChain >::SendErrorToClient( U32 connectionId, PacketErrorReport::ErrorType error )
+{
+   PacketGatewayWrapper* wrapper = new PacketGatewayWrapper;
+   wrapper->connectionId = connectionId;
+   wrapper->pPacket = new PacketErrorReport( error );
+   SendPacketToGateway( wrapper, connectionId );
+
+   return false;
+}
+
 //------------------------------------------------------------------------------
 //------------------------------------------------------------------------------
 
@@ -398,6 +432,23 @@ void  Diplodocus< InputChain, OutputChain >::MarkAllConnectionsAsNeedingUpdate( 
 //---------------------------------------------------------------
 
 template< typename InputChain, typename OutputChain >
+void  Diplodocus< InputChain, OutputChain >::MarkConnectionAsNeedingUpdate( int chainId )
+{
+   deque< U32 >::iterator it = m_clientsNeedingUpdate.begin();
+   while( it != m_clientsNeedingUpdate.end() )
+   {
+      if( *it == chainId ) 
+         return;
+   }
+
+   LockMutex();
+      m_clientsNeedingUpdate.push_back( chainId );
+   UnlockMutex();
+}
+
+//---------------------------------------------------------------
+
+template< typename InputChain, typename OutputChain >
 void	Diplodocus< InputChain, OutputChain >::AddNewConnections()
 {
 	/*KhaanIteratorType addIt = m_KhaansToAddList.begin();
@@ -481,7 +532,7 @@ void	Diplodocus< InputChain, OutputChain >::UpdateAllConnections()
    LockMutex();
    while( m_clientsNeedingUpdate.size() )// threads can remove themselves.
    {
-      U32 id = m_clientsNeedingUpdate.front();      
+      U32 id = m_clientsNeedingUpdate.front();
       m_clientsNeedingUpdate.pop_front();
 
       ClientMapIterator it = m_connectedClients.end();

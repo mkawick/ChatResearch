@@ -2,6 +2,7 @@
 
 #include "../ServerStack/NetworkCommon/Utils/Utils.h"
 #include "../ServerStack/NetworkCommon/Packets/PacketFactory.h"
+#include "../ServerStack/NetworkCommon/Packets/ContactPacket.h"
 
 #include <assert.h>
 #include <iostream>
@@ -92,6 +93,32 @@ bool  NetworkLayer::RequestLogin( const string& username, const string& password
 
 //-----------------------------------------------------------------------------
 
+bool     NetworkLayer::RequestAccountCreate( const string& username, const string& useremail, const string& password, int languageId, const string& deviceId, const string& gkHash )
+{
+   if( m_isConnected == false )
+   {
+      Init();
+   }
+   assert( m_isLoggedIn == false );
+
+   PacketCreateAccount createAccount;
+   createAccount.username = username;
+   createAccount.useremail = useremail;
+   createAccount.password = boost::lexical_cast< string >( CreatePasswordHash( password.c_str() ) );
+   createAccount.deviceId = deviceId;
+   createAccount.deviceAccountId = boost::lexical_cast< string >( CreatePasswordHash( gkHash.c_str() ) );
+   createAccount.languageId = languageId;
+
+   m_attemptedUsername = username;
+
+   m_isCreatingAccount = true;
+   SerializePacketOut( &createAccount );
+
+   return true;
+}
+
+//-----------------------------------------------------------------------------
+
 bool  NetworkLayer::RequestLogout() const
 {
    if( m_isConnected == false )
@@ -108,7 +135,7 @@ bool  NetworkLayer::RequestLogout() const
 
 bool  NetworkLayer::RequestListOfFriends() const
 {
-   PacketFriendsListRequest friends;
+   PacketContact_GetListOfContacts friends;
    SerializePacketOut( &friends );
 
    return true;
@@ -334,6 +361,50 @@ bool  NetworkLayer::HandlePacketIn( BasePacket* packetIn )
 {
    switch( packetIn->packetType )
    {
+      case PacketType_Contact:
+      {
+         switch( packetIn->packetSubType )
+         {
+         case PacketContact::ContactType_GetListOfContacts:
+            {
+               cout << "contacts received" << endl;
+               PacketContact_GetListOfContactsResponse* packet = static_cast< PacketContact_GetListOfContactsResponse* >( packetIn );
+               cout << "num records: " << packet->friends.size() << endl;
+            }
+            break;
+         }
+         
+      }
+      break;
+      case PacketType_ErrorReport:
+      {
+         switch( packetIn->packetSubType )
+         {
+         case PacketErrorReport::ErrorType_CreateFailed_BadPassword:
+            cout << "Bad password" << endl;
+            break;
+         case PacketErrorReport::ErrorType_CreateFailed_DisallowedUsername:
+            cout << "Bad username" << endl;
+            break;
+         case PacketErrorReport::ErrorType_CreateFailed_DuplicateUsername:
+            cout << "Duplicate username" << endl;
+            break;
+         case PacketErrorReport::ErrorType_CreateFailed_DuplicateEmail:
+            cout << "Duplicate email" << endl;
+            break;
+         case PacketErrorReport::ErrorType_CreateAccount_Success:
+            cout << "Account created" << endl;
+            break;
+         case PacketErrorReport::ErrorType_CreateAccount_AccountUpdated:
+            cout << "Account update" << endl;
+            break;
+         case PacketErrorReport::ErrorType_CreateFailed_UserCreateAccountPending:
+            cout << "Account creation pending. Check your email." << endl;
+            break;
+         }
+         m_isCreatingAccount = false;
+      }
+      break;
       case PacketType_Login:
       {
          switch( packetIn->packetSubType )

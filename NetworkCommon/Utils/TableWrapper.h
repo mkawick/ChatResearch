@@ -249,3 +249,68 @@ typedef Enigmosaurus <EmailAddressesOfPasswordsToResetTable> PasswordResetParser
 
 
 //////////////////////////////////////////////////////////////
+
+class TableUserProfile
+{
+public:
+   enum Columns
+   {
+      Column_id,
+      Column_address1,
+      Column_address2,
+      Column_city,
+      Column_provence,
+      Column_mail_code,
+      Column_country,
+      Column_marketing_opt_out,
+      Column_screen_name,
+      Column_gender,
+      Column_mber_avatar,
+      Column_home_phone,
+      Column_alt_phone,
+      Column_show_gender_profile,
+      Column_end
+   };
+   static const char* const column_names[];
+};
+
+typedef Enigmosaurus <TableUserProfile> UserProfileTable;
+
+//////////////////////////////////////////////////////////////
+
+//////////////////////////////////////////////////////////////
+
+class TableUserJoinPending
+{
+public:
+   enum Columns
+   {
+      Column_id,
+      Column_name,
+      Column_name_match,
+      Column_password_hash,
+      Column_email,
+      Column_user_gamekit_id,
+      Column_user_gamekit_id_hash,
+      Column_user_creation_date,
+      Column_uuid,
+      Column_last_login_time,
+      Column_last_logout_time,
+      Column_active,
+      Column_language_id,
+      Column_user_confirmation_date,
+      Column_pending_id,
+      Column_inviter_id,
+      Column_invitee_id,
+      Column_was_notified,
+      Column_sent,
+      Column_message,
+      Column_pending_uuid,
+      Column_end
+   };
+   static const char* const column_names[];
+};
+
+typedef Enigmosaurus <TableUserJoinPending> UserJoinPendingTable;
+
+//////////////////////////////////////////////////////////////

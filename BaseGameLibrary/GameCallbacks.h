@@ -1,6 +1,8 @@
 // GameCallbacks.h
 #pragma once
 
+#include "../NetworkCommon/Packets/ContactPacket.h"
+
 class GameFramework;
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
@@ -9,19 +11,6 @@ struct MarshalledData
 {
    int         m_sizeOfData;
    const U8*   m_data;
-};
-
-struct UserInfo
-{
-   string   username;
-   string   uuid;
-   string   apple_id;
-   U32      connectionId;
-   U8       gameProductId;
-   bool     active;
-   string   email;
-   string   passwordHash;
-   string   id;
 };
 
 //////////////////////////////////////////////////////////

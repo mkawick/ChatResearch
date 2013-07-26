@@ -216,6 +216,9 @@ Database::JobId
    if( m_isConnected == false )
       return JobIdError;
 
+   if( query.size() == 0 )
+      return JobIdError;
+
    JobId    jobId = CreateJobId();
    DbJobBase* job = new DbJob( jobId, query, senderReference, myId );// yes we are tracking the jobId twice
    job->SetIsChainData( isChainData );

@@ -44,12 +44,19 @@ int main( int argc, const char* argv[] )
    string chatPortString = "9601";
    string chatIpAddressString = "localhost";
 
-   string agricolaPortString = "23995";
-   string agricolaIpAddressString = "localhost";
+   string game1PortString = "23550";
+   string game1Address = "localhost";
 
    string loginPortString = "3072";
    string loginIpAddressString = "localhost";
 
+   string assetDeliveryPortString = "9700";
+   string assetDeliveryIpAddressString = "localhost";
+
+   string contactPortString = "9800";
+   string contactIpAddressString = "localhost";
+
+   //--------------------------------------------------------------
 
    parser.FindValue( "listen.port", listenPortString );
    parser.FindValue( "listen.address", listenAddressString );
@@ -57,19 +64,27 @@ int main( int argc, const char* argv[] )
    parser.FindValue( "chat.port", chatPortString );
    parser.FindValue( "chat.address", chatIpAddressString );
 
-   parser.FindValue( "agricola.address", agricolaIpAddressString );
-   parser.FindValue( "agricola.port", agricolaPortString );
+   parser.FindValue( "game.port", game1PortString );
+   parser.FindValue( "game.address", game1Address );
 
    parser.FindValue( "login.port", loginPortString );
    parser.FindValue( "login.address", loginIpAddressString );
 
-   int listenPort = 9600, chatPort = 9601, agricolaPort = 23995, loginPort = 3072;
+   parser.FindValue( "asset.port", assetDeliveryPortString );
+   parser.FindValue( "asset.address", assetDeliveryIpAddressString );
+
+   parser.FindValue( "contact.port", contactPortString );
+   parser.FindValue( "contact.address", contactIpAddressString );
+
+   int listenPort = 9600, chatPort = 9601, game1Port = 23550, loginPort = 3072, assetPort = 9700, contactPort = 9800;
    try 
    {
        listenPort = boost::lexical_cast<int>( listenPortString );
        chatPort = boost::lexical_cast<int>( chatPortString );
-       agricolaPort = boost::lexical_cast<int>( agricolaPortString );
        loginPort = boost::lexical_cast<int>( loginPortString );
+       game1Port = boost::lexical_cast<int>( game1PortString );
+       assetPort = boost::lexical_cast<int>( assetDeliveryPortString );
+       contactPort = boost::lexical_cast<int>( contactPortString );
    } 
    catch( boost::bad_lexical_cast const& ) 
    {
@@ -98,9 +113,18 @@ int main( int argc, const char* argv[] )
    FruitadensGateway loginServerOut( "fruity to login" );
    loginServerOut.SetConnectedServerType( ServerType_Login );
 
+   FruitadensGateway assetServer( "fruity to asset" );
+   assetServer.SetConnectedServerType( ServerType_Asset );
+
+   FruitadensGateway contactServer( "fruity to contact" );
+   contactServer.SetConnectedServerType( ServerType_Asset );
+
    gateway->AddOutputChain( &chatOut );
    gateway->AddOutputChain( &gameServerOut );
    gateway->AddOutputChain( &loginServerOut );
+   gateway->AddOutputChain( &assetServer );
+   gateway->AddOutputChain( &contactServer );
+
    gateway->SetupListening( listenPort );
    
    //--------------------------------------------------------------
@@ -108,19 +132,25 @@ int main( int argc, const char* argv[] )
    chatOut.Connect( chatIpAddressString.c_str(), chatPort );
    chatOut.Resume();
 
-   FruitadensGateway* game1 = PrepFruitadens( agricolaIpAddressString, agricolaPort, serverId, gateway );
-   FruitadensGateway* game2 = PrepFruitadens( "localhost", 23401, serverId, gateway );
-   FruitadensGateway* game3 = PrepFruitadens( "localhost", 23402, serverId, gateway );
-   FruitadensGateway* game4 = PrepFruitadens( "localhost", 23550, serverId, gateway );// summoner wars
+   FruitadensGateway* game1 = PrepFruitadens( game1Address, game1Port, serverId, gateway );
+   //FruitadensGateway* game2 = PrepFruitadens( "localhost", 23401, serverId, gateway );
+   //FruitadensGateway* game3 = PrepFruitadens( "localhost", 23402, serverId, gateway );
+   //FruitadensGateway* game4 = PrepFruitadens( "localhost", 23550, serverId, gateway );// summoner wars
 
    U8 gameProductId = 0;
    game1->NotifyEndpointOfIdentification( serverName, serverId, gameProductId, false, false, true, true  );
-   game2->NotifyEndpointOfIdentification( serverName, serverId, gameProductId, false, false, true, true  );
-   game3->NotifyEndpointOfIdentification( serverName, serverId, gameProductId, false, false, true, true  );
-   game4->NotifyEndpointOfIdentification( serverName, serverId, gameProductId, false, false, true, true  );
+   //game2->NotifyEndpointOfIdentification( serverName, serverId, gameProductId, false, false, true, true  );
+   //game3->NotifyEndpointOfIdentification( serverName, serverId, gameProductId, false, false, true, true  );
+   //game4->NotifyEndpointOfIdentification( serverName, serverId, gameProductId, false, false, true, true  );
 
    loginServerOut.Connect( loginIpAddressString.c_str(), loginPort );
    loginServerOut.Resume();
+
+   assetServer.Connect( assetDeliveryIpAddressString.c_str(), assetPort );
+   assetServer.Resume();
+
+   contactServer.Connect( contactIpAddressString.c_str(), contactPort );
+   contactServer.Resume();
 
   /* chatOut.NotifyEndpointOfIdentification( serverName, serverId, false, false, true );
    gameServerOut.NotifyEndpointOfIdentification( serverName, serverId, false, false, true );

@@ -20,6 +20,8 @@ enum PacketType
    PacketType_Login,
    PacketType_Chat,
    PacketType_UserInfo,
+   PacketType_Contact,
+   PacketType_Asset,
    PacketType_UserStateChange, // from server to client, usually
    PacketType_DbQuery,
    PacketType_Gameplay,
@@ -264,6 +266,7 @@ public:
    string password;
    string deviceId;
    string deviceAccountId;
+   U8     languageId;
 };
 
 ///////////////////////////////////////////////////////////////
@@ -491,7 +494,20 @@ public:
       ErrorType_YouAreTheOnlyPersonInThatChatChannel,
       ErrorType_CannotAddUserToChannel_AlreadyExists,
       ErrorType_NoChatHistoryExistsOnSelectedChannel,
-      ErrorType_NoChatHistoryExistsForThisUser
+      ErrorType_NoChatHistoryExistsForThisUser,
+
+      ErrorType_CreateFailed_BadPassword,
+      ErrorType_CreateFailed_DisallowedUsername,
+      ErrorType_CreateFailed_DuplicateUsername,
+      ErrorType_CreateFailed_DuplicateEmail,
+      ErrorType_CreateFailed_UserCreateAccountPending,
+      ErrorType_CreateAccount_Success,
+      ErrorType_CreateAccount_AccountUpdated,
+
+      ErrorType_Contact_Invitation_success,
+      ErrorType_Contact_Invitation_ProblemFindingUser,
+      ErrorType_Contact_Invitation_InviteeAlreadyInvited,
+      ErrorType_Contact_Invitation_Accepted,
    };
 public:
    PacketErrorReport( int packet_sub_type = ErrorType_Generic ): BasePacket( PacketType_ErrorReport, packet_sub_type ) {}

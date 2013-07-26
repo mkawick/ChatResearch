@@ -350,6 +350,14 @@
 					>
 				</File>
 				<File
+					RelativePath="..\NetworkCommon\Packets\ContactPacket.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\NetworkCommon\Packets\ContactPacket.h"
+					>
+				</File>
+				<File
 					RelativePath="..\NetworkCommon\Packets\DbPacket.cpp"
 					>
 				</File>
