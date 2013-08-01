@@ -247,12 +247,17 @@ bool  Diplodocus< InputChain, OutputChain >::AddOutputChainData( BasePacket* t, 
 template< typename InputChain, typename OutputChain >
 bool     Diplodocus< InputChain, OutputChain >::SendPacketToGateway( BasePacket* packet, U32 connectionId )
 {
+   PacketGatewayWrapper* wrapper = new PacketGatewayWrapper();
+   wrapper->connectionId = connectionId;
+   wrapper->pPacket = packet;
+
    ChainLinkIteratorType itInputs = m_listOfInputs.begin();
    while( itInputs != m_listOfInputs.end() )// only one output currently supported.
    {
       ChainedInterface<BasePacket*>* inputPtr = itInputs->m_interface;
+      itInputs++;
       InputChainType* connection = static_cast< InputChainType* >( inputPtr );
-      if( connection->AddOutputChainData( packet, connectionId ) == true )
+      if( connection->AddOutputChainData( wrapper, connectionId ) == true )
       {
          m_clientsNeedingUpdate.push_back( connection->GetChainedId() );
          return true;
@@ -267,11 +272,7 @@ bool     Diplodocus< InputChain, OutputChain >::SendPacketToGateway( BasePacket*
 template< typename InputChain, typename OutputChain >
 bool  Diplodocus< InputChain, OutputChain >::SendErrorToClient( U32 connectionId, PacketErrorReport::ErrorType error )
 {
-   PacketGatewayWrapper* wrapper = new PacketGatewayWrapper;
-   wrapper->connectionId = connectionId;
-   wrapper->pPacket = new PacketErrorReport( error );
-   SendPacketToGateway( wrapper, connectionId );
-
+   SendPacketToGateway( new PacketErrorReport( error ), connectionId );
    return false;
 }
 

@@ -159,7 +159,7 @@ bool  DiplodocusServerToServer::AddOutputChainData( BasePacket* packet, U32 conn
       return false;
    }
 
-   assert( 0 );// we should not have arrived here.
+   //assert( 0 );// we should not have arrived here.
    return false;
 }
 

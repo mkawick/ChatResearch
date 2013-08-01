@@ -11,6 +11,7 @@ public:
       ChatType_ChangeChatChannel,
       ChatType_ChangeChatChannelToClient,
       ChatType_SendListOfChannelsToClient,
+      ChatType_UserAddedToChatChannelFromGameServer,
 
       ChatType_UserChatStatusChange,// sent to each member of each group of which a user logs in
 
@@ -21,14 +22,23 @@ public:
 
       ChatType_CreateChatChannel,
       ChatType_CreateChatChannelResponse,
+      ChatType_CreateChatChannelFromGameServer,
+      ChatType_CreateChatChannelFromGameServerResponse,
+
       ChatType_DeleteChatChannel,
       ChatType_DeleteChatChannelResponse,
       ChatType_InviteUserToChatChannel,
       ChatType_InviteUserToChatChannelResponse,
+      
       ChatType_AddUserToChatChannel,
       ChatType_AddUserToChatChannelResponse,
+      ChatType_AddUserToChatChannelGameServer,
+      ChatType_AddUserToChatChannelGameServerResponse,
+
       ChatType_RemoveUserFromChatChannel,
       ChatType_RemoveUserFromChatChannelResponse,
+      ChatType_RemoveUserFromChatChannelGameServer,
+      ChatType_RemoveUserFromChatChannelGameServerResponse,
       
       ChatType_RequestChatters,
       ChatType_RequestChattersResponse,
@@ -57,6 +67,8 @@ public:
    bool  SerializeOut( U8* data, int& bufferOffset ) const;
 
    string   message;
+   string   channelUuid;
+   string   userUuid;
 };
 
 ///////////////////////////////////////////////////////////////
@@ -120,7 +132,7 @@ public:
 ///////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////
 
-class PacketChatChannelListToClient : public PacketChatToServer // can both directions
+class PacketChatChannelListToClient : public PacketChatToServer 
 {
 public:
    PacketChatChannelListToClient( int packet_type = PacketType_Chat, int packet_sub_type = ChatType_SendListOfChannelsToClient ) : PacketChatToServer( packet_type, packet_sub_type ){  }
@@ -130,6 +142,24 @@ public:
 
    vector< string >  chatChannel;
 };
+
+
+///////////////////////////////////////////////////////////////
+
+class PacketChatUserAddedToChatChannelFromGameServer : public BasePacket
+{
+public:
+   PacketChatUserAddedToChatChannelFromGameServer( int packet_type = PacketType_Chat, int packet_sub_type = PacketChatToServer::ChatType_UserAddedToChatChannelFromGameServer ) : BasePacket( packet_type, packet_sub_type ){  }
+
+   bool  SerializeIn( const U8* data, int& bufferOffset );
+   bool  SerializeOut( U8* data, int& bufferOffset ) const;
+
+   string   gameName;
+   U32      gameId;
+   string   channelUuid;
+   SerializedKeyValueVector< string >   userList;
+};
+
 
 ///////////////////////////////////////////////////////////////
 
@@ -235,6 +265,36 @@ public:
    bool     successfullyCreated;
 };
 
+
+///////////////////////////////////////////////////////////////
+
+class PacketChatCreateChatChannelFromGameServer : public BasePacket
+{
+public:
+   PacketChatCreateChatChannelFromGameServer( int packet_type = PacketType_Chat, int packet_sub_type = PacketChatToServer::ChatType_CreateChatChannelFromGameServer ) : BasePacket( packet_type, packet_sub_type ){  }
+
+   bool  SerializeIn( const U8* data, int& bufferOffset );
+   bool  SerializeOut( U8* data, int& bufferOffset ) const;
+
+   string         gameName;
+   U32            gameId;
+   StringBucket   userUuidList;
+};
+
+
+///////////////////////////////////////////////////////////////
+
+class PacketChatCreateChatChannelFromGameServerResponse : public BasePacket
+{
+public:
+   PacketChatCreateChatChannelFromGameServerResponse( int packet_type = PacketType_Chat, int packet_sub_type = PacketChatToServer::ChatType_CreateChatChannelFromGameServerResponse ) : BasePacket( packet_type, packet_sub_type ){  }
+
+   bool  SerializeIn( const U8* data, int& bufferOffset );
+   bool  SerializeOut( U8* data, int& bufferOffset ) const;
+
+   string         channelUuid;
+};
+
 ///////////////////////////////////////////////////////////////
 
 class PacketChatDeleteChatChannel : public BasePacket
@@ -323,6 +383,37 @@ public:
 
 ///////////////////////////////////////////////////////////////
 
+class PacketChatAddUserToChatChannelGameServer : public BasePacket
+{
+public:
+   PacketChatAddUserToChatChannelGameServer( int packet_type = PacketType_Chat, int packet_sub_type = PacketChatToServer::ChatType_AddUserToChatChannelGameServer ) : BasePacket( packet_type, packet_sub_type ){  }
+
+   bool  SerializeIn( const U8* data, int& bufferOffset );
+   bool  SerializeOut( U8* data, int& bufferOffset ) const;
+
+   string   gameName;
+   U32      gameId;
+   string   userUuid;
+};
+
+///////////////////////////////////////////////////////////////
+
+class PacketChatAddUserToChatChannelGameServerResponse : public BasePacket
+{
+public:
+   PacketChatAddUserToChatChannelGameServerResponse( int packet_type = PacketType_Chat, int packet_sub_type = PacketChatToServer::ChatType_AddUserToChatChannelGameServerResponse ) : BasePacket( packet_type, packet_sub_type ){  }
+
+   bool  SerializeIn( const U8* data, int& bufferOffset );
+   bool  SerializeOut( U8* data, int& bufferOffset ) const;
+
+   string   chatChannelUuid;
+   string   userUuid;
+   U32      gameId;
+   bool     success;
+};
+
+///////////////////////////////////////////////////////////////
+
 class PacketChatRemoveUserFromChatChannel : public BasePacket
 {
 public:
@@ -347,6 +438,37 @@ public:
 
    string   chatChannelUuid;
    string   userUuid;
+   bool     success;
+};
+
+///////////////////////////////////////////////////////////////
+
+class PacketChatRemoveUserFromChatChannelGameServer : public BasePacket
+{
+public:
+   PacketChatRemoveUserFromChatChannelGameServer( int packet_type = PacketType_Chat, int packet_sub_type = PacketChatToServer::ChatType_RemoveUserFromChatChannelGameServer ) : BasePacket( packet_type, packet_sub_type ){  }
+
+   bool  SerializeIn( const U8* data, int& bufferOffset );
+   bool  SerializeOut( U8* data, int& bufferOffset ) const;
+
+   string   gameName;
+   U32      gameId;
+   string   userUuid;
+};
+
+///////////////////////////////////////////////////////////////
+
+class PacketChatRemoveUserFromChatChannelGameServerResponse : public BasePacket
+{
+public:
+   PacketChatRemoveUserFromChatChannelGameServerResponse( int packet_type = PacketType_Chat, int packet_sub_type = PacketChatToServer::ChatType_RemoveUserFromChatChannelGameServerResponse ) : BasePacket( packet_type, packet_sub_type ){  }
+
+   bool  SerializeIn( const U8* data, int& bufferOffset );
+   bool  SerializeOut( U8* data, int& bufferOffset ) const;
+
+   string   chatChannelUuid;
+   string   userUuid;
+   U32      gameId;
    bool     success;
 };
 

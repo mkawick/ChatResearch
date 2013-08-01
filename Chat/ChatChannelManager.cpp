@@ -736,9 +736,50 @@ void     ChatChannelManager::UserSendsChatToChannel( const string& senderUuid, c
 
 //---------------------------------------------------------------------
 
-void     ChatChannelManager::UserSendsChatToUser( const string& userUuid, const string& destinationUuid, const string& message )
+void     ChatChannelManager::UserSendsChatToUser( const string& senderUuid, const string& destinationUuid, const string& message )
 {
-   assert( 0 );// not finished
+   stringhash senderHash = GenerateUniqueHash( senderUuid );
+   stringhash receiverHash = GenerateUniqueHash( destinationUuid );
+
+   UserUuidMapIterator senderIter = m_userUuidMap.find( senderHash );
+   if( senderIter == m_userUuidMap.end() )
+   {
+      string text = " User ";
+      text += senderUuid;
+      text += " tried to send text to user ";
+      text += destinationUuid;
+      text += " but the sender does not exist in ChatChannelManager";
+      m_chatServer->Log( text, 1 );
+      return;
+   }
+
+   ChatUser& userSender = senderIter->second;
+   U32 connectionId = userSender.connection->GetConnectionId();
+
+   UserUuidMapIterator receiverIter = m_userUuidMap.find( receiverHash );
+   if( receiverIter == m_userUuidMap.end() )
+   {
+      string text = " User ";
+      text += senderUuid;
+      text += " tried to send text on user ";
+      text += destinationUuid;
+      text += " but the receiver does not exist in ChatChannelManager";
+      m_chatServer->Log( text, 1 );
+      //return;
+      // this is totally fine.. you can send a message to another player who is not online
+      m_chatServer->SendErrorReportToClient( PacketErrorReport::ErrorType_UserNotOnline, connectionId  );
+    }
+
+   else //( receiverIter
+   {
+      UserConnection* connection = receiverIter->second.connection;
+      connection->SendChat( message, senderUuid, senderIter->second.username, "" );
+   }
+
+   //-----------------------------------------
+
+   string channelUuid;
+   WriteChatToDb( message, senderUuid, destinationUuid, channelUuid, 0, connectionId );
 }
 
 //---------------------------------------------------------------------

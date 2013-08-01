@@ -22,14 +22,12 @@ using namespace std;
 #if PLATFORM == PLATFORM_WINDOWS
 #pragma warning( disable:4996)
 #pragma comment( lib, "libmysql.lib" )
-//#include <winsock2.h>
 #endif
 
 #include <memory.h>
 #include "../DataTypes.h"
 
 #include "../Packets/DbPacket.h"
-//#include <stl_vector.h>
 
 #include "Deltadromeus.h"
 using namespace Database;
@@ -37,6 +35,7 @@ using namespace Database;
 
 #include <my_global.h> // Include this file first to avoid problems
 #include <mysql.h> // MySQL Include File
+#include <errmsg.h> // MySQL Include File
 
 void  LogEverything( const char* text )
 {
@@ -60,7 +59,8 @@ DbJobBase :: DbJobBase( Database::JobId id, const std::string& query, U32 sender
       m_cancelled( false ),
       m_fireAndForget( false ),
       m_isChainData( false ),
-      m_errorCondition( false )
+      m_errorCondition( false ),
+      m_errorConnectionNeedsToBeReset( false )
 {
    if( m_query.size() < 12 )// about the minimum that a query can be "select * from a"
    {
@@ -80,7 +80,6 @@ public:
    //-----------------------------------------------------------
 
    bool        SubmitQuery( DbHandle* connection, const string& dbName );
-   //bool        SubmitQueryAndPrintResults( MYSQL* connection );
 };
 
 //------------------------------------------------------------
@@ -116,6 +115,7 @@ bool  DbJob::SubmitQuery( MYSQL* connection, const string& dbName )
    if( m_hasStarted == true )
       return false;
 
+   m_errorCondition = false;
    m_hasStarted = true;
 
    //mysql_select_db( connection, dbName.c_str() );
@@ -126,6 +126,14 @@ bool  DbJob::SubmitQuery( MYSQL* connection, const string& dbName )
       m_errorCondition = true;
       const char* errorText = mysql_error( connection );
       cout << "DB Error: " << errorText << " on query " << m_query << endl;
+
+      U32 errorCode = mysql_errno( connection );
+      cout << "DB Error code: " << errorCode << endl;
+      if( errorCode == CR_SERVER_LOST ||
+         errorCode == CR_CONNECTION_ERROR )
+      {
+         m_errorConnectionNeedsToBeReset = true;
+      }
    }
    else
    {
@@ -183,7 +191,8 @@ void  DbJobBase::Cancel()
 Deltadromeus::Deltadromeus() : Threading::CChainedThread< BasePacket* >(),
    m_isConnected( false ),
    m_port( 0 ),
-   m_DbConnection( NULL )
+   m_DbConnection( NULL ),
+   m_needsReconnection( true )
 {
    SetSleepTime( 65 );// only check for db needs once in a while
 }
@@ -214,7 +223,14 @@ Database::JobId
    Deltadromeus::SendQuery( const string& query, int myId, int senderReference, const list<string>* stringsToEscape, bool isFireAndForget, bool isChainData, int extraLookupInfo, string* meta, U32 serverId )
 {
    if( m_isConnected == false )
-      return JobIdError;
+   {
+      if( m_needsReconnection == true )
+      {
+         Connect();
+      }
+      if( m_isConnected == false )
+         return JobIdError;
+   }
 
    if( query.size() == 0 )
       return JobIdError;
@@ -416,8 +432,13 @@ void     Deltadromeus::Connect()
    if( m_DbConnection )    // If instance didn't initialize say so and exit with fault.
    {
       m_isConnected = true;
+      m_needsReconnection = false;
       cout << "Successful" << output << endl;
       LogMessage(LOG_PRIO_ERR, "Successful%s\n", output.c_str());
+
+      mysql_set_character_set( m_DbConnection, "utf8" );
+      my_bool reconnect = 0;
+      mysql_options( m_DbConnection, MYSQL_OPT_RECONNECT, &reconnect );
    }
    else
    {
@@ -427,6 +448,8 @@ void     Deltadromeus::Connect()
    
 
    Resume();
+
+   
 }
 
 //------------------------------------------------------------
@@ -434,7 +457,13 @@ void     Deltadromeus::Connect()
 int     Deltadromeus::CallbackFunction()
 {
    if( m_isConnected == false )
+   {
+      if( m_needsReconnection == true )
+      {
+         Connect();
+      }
       return 0;
+   }
 
    LogEverything( "DB update" );
 
@@ -448,6 +477,11 @@ int     Deltadromeus::CallbackFunction()
       }
       else if( currentJob->IsComplete() == true )
       {
+         if( currentJob->GetErrorCondition() == true && currentJob->GetIsConnectionBad() )
+         {
+            m_isConnected = false;
+            m_needsReconnection = true;
+         }
          LogEverything( "DB query is complete " );
          if( currentJob->IsFireAndForget() == true )
          {

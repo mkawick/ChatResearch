@@ -14,6 +14,7 @@ using namespace std;
 class DiplodocusContact :  public Diplodocus< KhaanContact >
 {
 public:
+   typedef Diplodocus< KhaanContact > Parent;
   /* enum QueryType 
    {
       QueryType_UserLoginInfo = 1,
@@ -44,8 +45,9 @@ public:
    void     ServerWasIdentified( KhaanContact* khaan );
    bool     AddInputChainData( BasePacket* packet, U32 connectionId );
 
-   const UserContact* GetUser( U32 userId );
+   UserContact* GetUser( U32 userId );
    UserContact* GetUserByUuid( const string& uuid );
+   UserContact* GetUserByUsername( const string& username );
 
    // tables:
    // friends

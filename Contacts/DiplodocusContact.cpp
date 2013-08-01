@@ -60,57 +60,19 @@ bool     DiplodocusContact::AddInputChainData( BasePacket* packet, U32 connectio
       PacketGatewayWrapper* wrapper = static_cast< PacketGatewayWrapper* >( packet );
       BasePacket* unwrappedPacket = wrapper->pPacket;
       U32 connectionIdToUse = wrapper->connectionId;
-      delete wrapper;
 
       if( unwrappedPacket->packetType == PacketType_Contact )
       {
-         // we validate the raw data format...
-        /* if( unwrappedPacket->packetSubType == PacketGameToServer::GamePacketType_RawGameData )
-         {
-            PacketGameplayRawData* rawData = static_cast< PacketGameplayRawData* > ( unwrappedPacket );
-            if( m_callbacks )
-            {
-               MarshalledData data;
-               data.m_data = rawData->data;
-               data.m_sizeOfData = rawData->size;
-               m_callbacks->DataFromClient( connectionIdToUse, &data );
-            }
-            delete unwrappedPacket;
-            return true;
-         }
-         else if( unwrappedPacket->packetSubType == PacketGameToServer::GamePacketType_ListOfGames )
-         {
-            PacketListOfGames* packet = static_cast< PacketListOfGames* > ( unwrappedPacket );
-            bool  isUserValidForThisGame = false;
-            KeyValueVectorIterator it = packet->games.begin();
-            while( it != packet->games.end() )
-            {
-               if( it->key == m_gameUuid )
-               {
-                  isUserValidForThisGame = true;
-               }
-               it++;
-            }
-            if( m_callbacks )
-            {
-               m_callbacks->UserConfirmedToOwnThisProduct( packet->connectionId, isUserValidForThisGame );
-            }
-            delete unwrappedPacket;
-            return true;
-         }*/
-        /* // for simplicity, we are simply going to send packets onto the chat server
-         ChainLinkIteratorType itOutputs = m_listOfOutputs.begin();
-         while( itOutputs != m_listOfOutputs.end() )// only one output currently supported.
-         {
-            ChainedInterface* outputPtr = itOutputs->m_interface;
-            if( outputPtr->AddOutputChainData( pPacket, -1 ) == true )
-            {
-               return true;
-            }
-            itOutputs++;
-         }
-         assert( 0 );
-         return false;*/
+         UserContactMapIterator found = m_users.find( connectionId );
+         if( found == m_users.end() )
+            return false;
+
+         PacketContact* packetContact = static_cast< PacketContact* >( unwrappedPacket );
+         bool result = found->second.HandleRequestFromClient( packetContact );
+        
+         delete unwrappedPacket;
+         delete wrapper;
+         return true;
       }
       else
       {
@@ -124,7 +86,7 @@ bool     DiplodocusContact::AddInputChainData( BasePacket* packet, U32 connectio
 
 //---------------------------------------------------------------
 
-const UserContact* DiplodocusContact::GetUser( U32 userId )
+ UserContact* DiplodocusContact::GetUser( U32 userId )
 {
    UserIdToContactMapIterator it = m_userLookupById.find( userId );
    if( it == m_userLookupById.end() )
@@ -136,6 +98,22 @@ const UserContact* DiplodocusContact::GetUser( U32 userId )
 
    return &found->second;
 }
+
+//---------------------------------------------------------------
+
+UserContact* DiplodocusContact::GetUserByUsername( const string& username )
+{
+   UserContactMapIterator it = m_users.begin(); //find( it->second );
+   while( it != m_users.end() )
+   {
+      if( it->second.GetUserInfo().username == username )
+         return &it->second;
+      it++;
+   }
+
+   return NULL;
+}
+
 
 //---------------------------------------------------------------
 
@@ -317,25 +295,24 @@ void     DiplodocusContact::UpdateAllConnections()
    while( it != m_users.end() )
    {
       UserContact& contact = it->second;
+      UserContactMapIterator temp = it++;
       if( contact.IsLoggedOut() )
       {
          if( contact.SecondsExpiredSinceLoggedOut() > SecondsBeforeRemovingLoggedOutUser )
          {
             m_userLookupById.erase( contact.GetUserInfo().id );
-            m_users.erase( it );
-         }
-         else
-         {
-            it++;
+            
+            m_users.erase( temp );
          }
       }
       else 
       {
          contact.Update();
-         it++;
       }
    }
    m_mutex.unlock();
+
+   Parent::UpdateAllConnections();
 }
 
 //---------------------------------------------------------------

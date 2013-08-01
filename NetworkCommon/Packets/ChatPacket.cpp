@@ -12,6 +12,8 @@ bool  PacketChatToServer::SerializeIn( const U8* data, int& bufferOffset )
 {
    BasePacket::SerializeIn( data, bufferOffset );
    Serialize::In( data, bufferOffset, message );
+   Serialize::In( data, bufferOffset, channelUuid );
+   Serialize::In( data, bufferOffset, userUuid );
 
    return true;
 }
@@ -20,6 +22,8 @@ bool  PacketChatToServer::SerializeOut( U8* data, int& bufferOffset ) const
 {
    BasePacket::SerializeOut( data, bufferOffset );
    Serialize::Out( data, bufferOffset, message );
+   Serialize::Out( data, bufferOffset, channelUuid );
+   Serialize::Out( data, bufferOffset, userUuid );
   
    return true;
 }
@@ -139,6 +143,32 @@ bool  PacketChatChannelListToClient::SerializeOut( U8* data, int& bufferOffset )
 
    return true;
 }
+
+
+///////////////////////////////////////////////////////////////
+
+bool  PacketChatUserAddedToChatChannelFromGameServer::SerializeIn( const U8* data, int& bufferOffset )
+{
+   BasePacket::SerializeIn( data, bufferOffset );
+   Serialize::In( data, bufferOffset, gameName );
+   Serialize::In( data, bufferOffset, gameId );
+   Serialize::In( data, bufferOffset, channelUuid );
+   Serialize::In( data, bufferOffset, userList );
+
+   return true;
+}
+
+bool  PacketChatUserAddedToChatChannelFromGameServer::SerializeOut( U8* data, int& bufferOffset ) const
+{
+   BasePacket::SerializeOut( data, bufferOffset );
+   Serialize::Out( data, bufferOffset, gameName );
+   Serialize::Out( data, bufferOffset, gameId );
+   Serialize::Out( data, bufferOffset, channelUuid );
+   Serialize::Out( data, bufferOffset, userList );
+
+   return true;
+}
+
 
 ///////////////////////////////////////////////////////////////
 
@@ -290,6 +320,47 @@ bool  PacketChatCreateChatChannelResponse::SerializeOut( U8* data, int& bufferOf
 
 ///////////////////////////////////////////////////////////////
 
+bool  PacketChatCreateChatChannelFromGameServer::SerializeIn( const U8* data, int& bufferOffset )
+{
+   BasePacket::SerializeIn( data, bufferOffset );
+   Serialize::In( data, bufferOffset, gameName );
+   Serialize::In( data, bufferOffset, gameId );
+   Serialize::In( data, bufferOffset, userUuidList );
+
+   return true;
+}
+
+bool  PacketChatCreateChatChannelFromGameServer::SerializeOut( U8* data, int& bufferOffset ) const
+{
+   BasePacket::SerializeOut( data, bufferOffset );
+   Serialize::Out( data, bufferOffset, gameName );
+   Serialize::Out( data, bufferOffset, gameId );
+   Serialize::Out( data, bufferOffset, userUuidList );
+   return true;
+}
+
+///////////////////////////////////////////////////////////////
+
+bool  PacketChatCreateChatChannelFromGameServerResponse::SerializeIn( const U8* data, int& bufferOffset )
+{
+   BasePacket::SerializeIn( data, bufferOffset );
+
+   Serialize::In( data, bufferOffset, channelUuid );
+
+   return true;
+}
+
+bool  PacketChatCreateChatChannelFromGameServerResponse::SerializeOut( U8* data, int& bufferOffset ) const
+{
+   BasePacket::SerializeOut( data, bufferOffset );
+
+   Serialize::Out( data, bufferOffset, channelUuid );
+
+   return true;
+}
+
+///////////////////////////////////////////////////////////////
+
 bool  PacketChatDeleteChatChannel::SerializeIn( const U8* data, int& bufferOffset )
 {
    BasePacket::SerializeIn( data, bufferOffset );
@@ -424,6 +495,56 @@ bool  PacketChatAddUserToChatChannelResponse::SerializeOut( U8* data, int& buffe
    return true;
 }
 
+
+///////////////////////////////////////////////////////////////
+
+bool  PacketChatAddUserToChatChannelGameServer::SerializeIn( const U8* data, int& bufferOffset )
+{
+   BasePacket::SerializeIn( data, bufferOffset );
+
+   Serialize::In( data, bufferOffset, gameName );
+   Serialize::In( data, bufferOffset, gameId );
+   Serialize::In( data, bufferOffset, userUuid );
+
+   return true;
+}
+
+bool  PacketChatAddUserToChatChannelGameServer::SerializeOut( U8* data, int& bufferOffset ) const
+{
+   BasePacket::SerializeOut( data, bufferOffset );
+
+   Serialize::Out( data, bufferOffset, gameName );
+   Serialize::Out( data, bufferOffset, gameId );
+   Serialize::Out( data, bufferOffset, userUuid );
+
+   return true;
+}
+
+///////////////////////////////////////////////////////////////
+
+bool  PacketChatAddUserToChatChannelGameServerResponse::SerializeIn( const U8* data, int& bufferOffset )
+{
+   BasePacket::SerializeIn( data, bufferOffset );
+
+   Serialize::In( data, bufferOffset, chatChannelUuid );
+   Serialize::In( data, bufferOffset, userUuid );
+   Serialize::In( data, bufferOffset, gameId );
+   Serialize::In( data, bufferOffset, success );
+
+   return true;
+}
+
+bool  PacketChatAddUserToChatChannelGameServerResponse::SerializeOut( U8* data, int& bufferOffset ) const
+{
+   BasePacket::SerializeOut( data, bufferOffset );
+
+   Serialize::Out( data, bufferOffset, chatChannelUuid );
+   Serialize::Out( data, bufferOffset, userUuid );
+   Serialize::Out( data, bufferOffset, gameId );
+   Serialize::Out( data, bufferOffset, success );
+
+   return true;
+}
 ///////////////////////////////////////////////////////////////
 
 bool  PacketChatRemoveUserFromChatChannel::SerializeIn( const U8* data, int& bufferOffset )
@@ -465,6 +586,56 @@ bool  PacketChatRemoveUserFromChatChannelResponse::SerializeOut( U8* data, int& 
 
    Serialize::Out( data, bufferOffset, chatChannelUuid );
    Serialize::Out( data, bufferOffset, userUuid );
+   Serialize::Out( data, bufferOffset, success );
+
+   return true;
+}
+
+///////////////////////////////////////////////////////////////
+
+bool  PacketChatRemoveUserFromChatChannelGameServer::SerializeIn( const U8* data, int& bufferOffset )
+{
+   BasePacket::SerializeIn( data, bufferOffset );
+
+   Serialize::In( data, bufferOffset, gameName );
+   Serialize::In( data, bufferOffset, gameId );
+   Serialize::In( data, bufferOffset, userUuid );
+
+   return true;
+}
+
+bool  PacketChatRemoveUserFromChatChannelGameServer::SerializeOut( U8* data, int& bufferOffset ) const
+{
+   BasePacket::SerializeOut( data, bufferOffset );
+
+   Serialize::Out( data, bufferOffset, gameName );
+   Serialize::Out( data, bufferOffset, gameId );
+   Serialize::Out( data, bufferOffset, userUuid );
+
+   return true;
+}
+
+///////////////////////////////////////////////////////////////
+
+bool  PacketChatRemoveUserFromChatChannelGameServerResponse::SerializeIn( const U8* data, int& bufferOffset )
+{
+   BasePacket::SerializeIn( data, bufferOffset );
+
+   Serialize::In( data, bufferOffset, chatChannelUuid );
+   Serialize::In( data, bufferOffset, userUuid );
+   Serialize::In( data, bufferOffset, gameId );
+   Serialize::In( data, bufferOffset, success );
+
+   return true;
+}
+
+bool  PacketChatRemoveUserFromChatChannelGameServerResponse::SerializeOut( U8* data, int& bufferOffset ) const
+{
+   BasePacket::SerializeOut( data, bufferOffset );
+
+   Serialize::Out( data, bufferOffset, chatChannelUuid );
+   Serialize::Out( data, bufferOffset, userUuid );
+   Serialize::Out( data, bufferOffset, gameId );
    Serialize::Out( data, bufferOffset, success );
 
    return true;

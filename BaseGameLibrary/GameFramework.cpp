@@ -16,6 +16,7 @@ using namespace std;
 #include "FruitadensServerToServer.h"
 #include "../NetworkCommon/NetworkIn/DiplodocusServerToServer.h"
 #include "../NetworkCommon/Packets/GamePacket.h"
+#include "../NetworkCommon/Packets/ServerToServerPacket.h"
 
 //-----------------------------------------------------
 //-----------------------------------------------------
@@ -192,9 +193,16 @@ bool  GameFramework::SendGameData( U32 connectionId, const MarshalledData* data 
 
 //-----------------------------------------------------
 
-bool  GameFramework::SendChatData( U32 connectionId, const BasePacket* )
+bool  GameFramework::SendChatData( BasePacket* packet )
 {
-   //m_chatServer->p;
+   PacketServerToServerWrapper* wrapper = new PacketServerToServerWrapper;
+   wrapper->serverId = GetServerId();
+   wrapper->gameProductId = m_gameProductId;
+   wrapper->pPacket = packet;
+
+   packet->gameProductId = m_gameProductId;
+
+   m_chatServer->AddOutputChainData( wrapper, 0 );
 
    return false;
 }

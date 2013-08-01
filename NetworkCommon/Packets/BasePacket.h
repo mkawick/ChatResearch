@@ -490,6 +490,7 @@ public:
       ErrorType_ChatNotCurrentlyAvailable,// reported at the gateway
       ErrorType_BadChatChannel,
       ErrorType_NoChatChannel,
+      ErrorType_UserNotOnline,
       ErrorType_NotAMemberOfThatChatChannel,
       ErrorType_YouAreTheOnlyPersonInThatChatChannel,
       ErrorType_CannotAddUserToChannel_AlreadyExists,
@@ -507,7 +508,10 @@ public:
       ErrorType_Contact_Invitation_success,
       ErrorType_Contact_Invitation_ProblemFindingUser,
       ErrorType_Contact_Invitation_InviteeAlreadyInvited,
+      ErrorType_Contact_Invitation_InviteeAlreadyFriend,
+      ErrorType_Contact_Invitation_InvalidUser,
       ErrorType_Contact_Invitation_Accepted,
+      ErrorType_Contact_Invitation_BadInvitation,
    };
 public:
    PacketErrorReport( int packet_sub_type = ErrorType_Generic ): BasePacket( PacketType_ErrorReport, packet_sub_type ) {}

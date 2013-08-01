@@ -50,7 +50,7 @@ public:
    //----------------------------------------------
 
    bool     SendGameData( U32 connectionId, const MarshalledData* );
-   bool     SendChatData( U32 connectionId, const BasePacket* );
+   bool     SendChatData( BasePacket* ); // we will own this data after
    bool     InformClientWhoThisServerIs( U32 connectionId );
 
    //----------------------------------------------

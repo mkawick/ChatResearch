@@ -117,7 +117,7 @@ int main( int argc, const char* argv[] )
    assetServer.SetConnectedServerType( ServerType_Asset );
 
    FruitadensGateway contactServer( "fruity to contact" );
-   contactServer.SetConnectedServerType( ServerType_Asset );
+   contactServer.SetConnectedServerType( ServerType_Contact );
 
    gateway->AddOutputChain( &chatOut );
    gateway->AddOutputChain( &gameServerOut );

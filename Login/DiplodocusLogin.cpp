@@ -383,14 +383,10 @@ bool     DiplodocusLogin::LogUserOut( U32 connectionId, bool wasDisconnectedByEr
 
       if( wasDisconnectedByError == false )
       {
-         PacketGatewayWrapper* wrapper = new PacketGatewayWrapper();
-         wrapper->connectionId = connectionId;
          PacketLogoutToClient* logout = new PacketLogoutToClient();
          logout->username = it->second.username;// just for loggin purposes
          logout->uuid = it->second.userUuid;
-
-         wrapper->pPacket = logout;
-         SendPacketToGateway( wrapper, connectionId );
+         SendPacketToGateway( logout, connectionId );
       }
       m_userConnectionMap.erase( it );
 
@@ -712,11 +708,7 @@ bool  DiplodocusLogin::CreateUserAccount( U32 connectionId, const string& email,
 
 bool  DiplodocusLogin::ForceUserLogoutAndBlock( U32 connectionId )
 {
-   // send error to client
-   PacketGatewayWrapper* wrapper = new PacketGatewayWrapper;
-   wrapper->connectionId = connectionId;
-   wrapper->pPacket = new PacketErrorReport( PacketErrorReport::ErrorType_UserBadLogin );
-   SendPacketToGateway( wrapper, connectionId );
+   SendErrorToClient( connectionId, PacketErrorReport::ErrorType_UserBadLogin );
 
    string                     username;
    string                     uuid;
@@ -741,19 +733,13 @@ bool  DiplodocusLogin::ForceUserLogoutAndBlock( U32 connectionId )
    }
 
    // now disconnect him/her
-   wrapper = new PacketGatewayWrapper();
-   {
-      wrapper->connectionId = connectionId;
+   PacketLoginToGateway* loginStatus = new PacketLoginToGateway();
+   loginStatus->username = username;
+   loginStatus->uuid = uuid;
 
-      PacketLoginToGateway* loginStatus = new PacketLoginToGateway();
-      loginStatus->username = username;
-      loginStatus->uuid = uuid;
+   loginStatus->wasLoginSuccessful = false;
 
-      loginStatus->wasLoginSuccessful = false;
-
-      wrapper->pPacket = loginStatus;
-   }
-   SendPacketToGateway( wrapper, connectionId );
+   SendPacketToGateway( loginStatus, connectionId );
    SendLoginStatusToOtherServers( username, uuid, connectionId, it->second.gameProductId, lastLoginTime, active, email, passwordHash, userId, false, false );
 
    return true;
@@ -836,7 +822,7 @@ bool  DiplodocusLogin::UpdateLastLoggedOutTime( U32 connectionId )
 bool    DiplodocusLogin::SuccessfulLogin( U32 connectionId )
 {
    UserConnectionMapIterator it = m_userConnectionMap.find( connectionId );
-   if( it == m_userConnectionMap.end() )
+   if( it == m_userConnectionMap.end() || m_userConnectionMap.size() == 0 )
    {
       Log( "Login server: major problem with successfull long.", 4 );
       return false;
@@ -853,23 +839,17 @@ bool    DiplodocusLogin::SuccessfulLogin( U32 connectionId )
    const string&  userId =          connection.id;
    U8 gameProductId =               connection.gameProductId;
 
-   PacketGatewayWrapper* wrapper = new PacketGatewayWrapper();
+
+   PacketLoginToGateway* loginStatus = new PacketLoginToGateway();
+   if( it != m_userConnectionMap.end() )
    {
-      wrapper->connectionId = connectionId;
-
-      PacketLoginToGateway* loginStatus = new PacketLoginToGateway();
-      if( it != m_userConnectionMap.end() )
-      {
-         loginStatus->username = username;
-         loginStatus->uuid = userUuid;
-      }
-      loginStatus->wasLoginSuccessful = true;
-
-      wrapper->pPacket = loginStatus;
+      loginStatus->username = username;
+      loginStatus->uuid = userUuid;
    }
+   loginStatus->wasLoginSuccessful = true;
 
 
-   SendPacketToGateway( wrapper, connectionId );
+   SendPacketToGateway( loginStatus, connectionId );
 
    RequestListOfGames( connectionId, userUuid );
 
@@ -1006,7 +986,7 @@ bool     DiplodocusLogin::AddOutputChainData( BasePacket* packet, U32 connection
          if( connectionId != 0 )
          {
             it = m_userConnectionMap.find( connectionId );
-            if( it == m_userConnectionMap.end () )
+            if( it == m_userConnectionMap.end () || m_userConnectionMap.size() == 0 )
             {
                string str = "Login server: Something seriously wrong where the db query came back from the server but no record.. ";
                Log( str, 4 );

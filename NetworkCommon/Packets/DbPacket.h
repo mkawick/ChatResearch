@@ -38,8 +38,8 @@ public:
    bool  SerializeIn( const U8* data, int& bufferOffset );
    bool  SerializeOut( U8* data, int& bufferOffset ) const;
 
-   bool     isFireAndForget;
-   string   query;
+   bool           isFireAndForget;
+   string         query;
    StringBucket   escapedStrings;
 };
 

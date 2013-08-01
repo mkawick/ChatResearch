@@ -37,7 +37,7 @@ public:
    const string&     GetUuid() const { return m_uuid; }
    const string&     GetLoginKey() const { return m_loginKey; }
 
-   void              SetupFromLogin( const string& name, const string& uuid, const string& loginKey, const string& lastLoginTime );
+   void              SetupFromLogin( U32 userId, const string& name, const string& uuid, const string& loginKey, const string& lastLoginTime );
 
    const string&     GetCurrentChatGroup() const { return m_currentChannel; }
    //void              SetCurrentChatGroup( const string& channel );
@@ -100,7 +100,7 @@ protected:
 
    //-------------------------------------------------------------------------
 
-   bool              SendChatOut( const string& message );
+   bool              SendChatOut( const string& message, const string& userUuid, const string& channelUuid );
 
    //-------------------------------------------------------------------------
 

@@ -3,7 +3,6 @@
 #pragma once
 
 #include "../DataTypes.h"
-#include <boost/type_traits/is_signed.hpp>
 #include <string>
 
 std::string    GenerateUUID( U32 xorValue = 0 );
@@ -83,7 +82,7 @@ bool ConvertFromString( const std::string& InputString, T& Value )
          return false;
       }
    }
-   if( makeNegative == true && boost::is_signed<T>::value == true )
+   if( makeNegative == true )
    {
       Value *= -1;
    }

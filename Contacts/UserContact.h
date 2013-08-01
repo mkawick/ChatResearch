@@ -18,6 +18,15 @@ struct Invitation
    string userUuid;
    string message;
    string uuid;
+   string date;
+};
+
+struct InvitationQueryLookup
+{
+   int      index;
+   string   inviteeUuid;
+   string   inviteeName;
+   string   message;
 };
 
 ///////////////////////////////////////////////////////////////////
@@ -34,8 +43,6 @@ public:
    bool  HandleDbQueryResult( const PacketDbQueryResult* result );
    bool  HandleRequestFromClient( const PacketContact* packet );
 
-   bool  GetListOfContacts();
-
    void  SetServer( DiplodocusContact* infoServer ) { m_infoServer = infoServer; }
 
    void  NeedsUpdate() { m_requiresUpdate = true; }
@@ -48,9 +55,22 @@ public:
 
 private:
 
-   bool  InviteUser( const string& inviteeUuid, const string& message );
-   void  FinishInvitation( U32 inviteeId, const string& message );
-   void  YouHaveBeenInvitedToBeAFriend( const string& userName, const string& uuid );
+   void  InitContactsAndInvitations();
+   bool  GetListOfContacts();
+   bool  GetListOfInvitations();
+   bool  GetListOfInvitationsSent();
+
+   bool  InviteUser( const PacketContact_InviteContact* packet );
+   bool  AcceptInvitation( const PacketContact_AcceptInvite* packet );
+   void  FinishAcceptingInvitation( const PacketDbQueryResult* result ); 
+   void  FinishInvitation( U32 inviteeId, const string& message, UserContact* contact = NULL );
+   void  YouHaveBeenInvitedToBeAFriend( const string& userName, const string& uuid, const string& message, const string& curentTime );
+   void  InvitationAccepted( const string& sentFromuserName, const string& sentToUserName, bool accepted );
+   bool  InformFriendsOfOnlineStatus( bool isOnline );
+
+   bool  YourFriendsOnlineStatusChange( U32 connectionId, const string& userName, const string& UUID, bool isOnline );
+
+   bool  DoesPendingInvitationExist( const string& inviteeUuid, const string& inviteeName );
 
    enum 
    {
@@ -61,6 +81,9 @@ private:
 
       QueryType_GetInviteeDetails,
       QueryType_AddInvitationToUser,
+      QueryType_GetInvitationPriorToAcceptance,
+      QueryType_DeleteInvitation,
+      QueryType_InsertNewFriend,
    };
 
 
@@ -78,5 +101,9 @@ private:
    vector< UserInfo >   m_friends;
    vector< Invitation > m_invitationsOut;
    vector< Invitation > m_invitationsIn;
+   //vector< PacketContact_InviteContact > m_invitationsPendingUserLookup;
+
+   int                  m_invitationQueryIndex;
+   list< InvitationQueryLookup >  m_invitationQueryLookup;
 };
 ///////////////////////////////////////////////////////////////////

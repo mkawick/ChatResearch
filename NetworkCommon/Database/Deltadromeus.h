@@ -39,6 +39,7 @@ namespace Database
       U32         GetServerId() const { return m_serverId; }
       string      GetSenderMeta() const { return m_senderMeta; }
       bool        GetErrorCondition() const { return m_errorCondition; }
+      bool        GetIsConnectionBad() const { return m_errorConnectionNeedsToBeReset; }
 
       void        SetSenderMeta( const string* meta ) { m_senderMeta = *meta; }
       void        SetSenderLookup( U32 lookup ) { m_senderLookup = lookup; }
@@ -82,6 +83,7 @@ namespace Database
       bool                    m_isChainData;
       
       bool                    m_errorCondition;
+      bool                    m_errorConnectionNeedsToBeReset;
       Database::ResultSet     m_results;
    };
    //---------------------------------------------------------------------------------------------------
@@ -126,6 +128,7 @@ namespace Database
       JobQueue                m_jobsComplete;
 
       bool                    m_isConnected;
+      bool                    m_needsReconnection;
       string                  m_serverName;
       U16                     m_port;
       string                  m_username;

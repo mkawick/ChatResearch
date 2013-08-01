@@ -178,11 +178,13 @@ bool  UserConnection::RequestFriends()
    dbQuery->id = m_connectionId;
    dbQuery->lookup = QueryType_UserFriendsList;
 
-   string queryString = "SELECT * FROM users WHERE users.uuid IN (SELECT friends.userid2 as uuid FROM friends WHERE friends.userid1 = '" ;
+  /* string queryString = "SELECT * FROM users WHERE users.uuid IN (SELECT friends.userid2 as uuid FROM friends WHERE friends.userid1 = '" ;
    queryString += m_userDbId;
-   queryString += "' union SELECT friends.userid1 as uuid FROM friends WHERE friends.userid2 = '";
-   queryString += m_userDbId;
-   queryString += "')";
+   queryString += "' union SELECT friends.userid1 as uuid FROM friends WHERE friends.userid2 = '";*/
+
+   string queryString = "SELECT * FROM users INNER JOIN friends ON users.user_id=friends.userid2 WHERE friends.userid1=";// get my list of friends
+   queryString += boost::lexical_cast< string >( m_userDbId );
+   // WHERE FROM 
    dbQuery->query = queryString;
 
    m_chatServer->AddPacketFromUserConnection( dbQuery, m_connectionId );
@@ -285,15 +287,22 @@ bool     UserConnection::SendLoginStatus( bool wasSuccessful )
 
 //------------------------------------------------------------------------------------------------
 
-bool     UserConnection::SendChatOut( const string& message )
+bool     UserConnection::SendChatOut( const string& message, const string& userUuid, const string& channelUuid )
 {
-   if( m_currentChannel.size() == 0 && m_currentFriendUuid.size() == 0 )
+ /*  if( m_currentChannel.size() == 0 && m_currentFriendUuid.size() == 0 )
    {
       m_chatServer->SendErrorReportToClient( PacketErrorReport::ErrorType_NoChatChannel, m_connectionId  );
       return false;
-   }
+   }*/
 
-   m_chatChannelManager->UserSendsChatToChannel( m_uuid, m_currentChannel, message );
+   if( channelUuid.size() )
+   {
+      m_chatChannelManager->UserSendsChatToChannel( m_uuid, channelUuid, message );
+   }
+   else
+   {
+      m_chatChannelManager->UserSendsChatToUser( m_uuid, userUuid, message );
+   }
    return true;
 }
 
@@ -341,12 +350,14 @@ bool     UserConnection::SetChatChannel( const string& channelUuid )
 
 //------------------------------------------------------------------------------------------------
 
-void     UserConnection::SetupFromLogin( const string& name, const string& uuid, const string& loginKey, const string& lastLoginTime )
+void     UserConnection::SetupFromLogin( U32 userId, const string& name, const string& uuid, const string& loginKey, const string& lastLoginTime )
 {
    m_username = name;
    m_uuid = uuid;
    m_loginKey = loginKey;
    m_lastLoginTime = lastLoginTime;
+   m_userDbId = userId;
+
    RequestExtraUserInfo();
 }
 
@@ -462,7 +473,7 @@ bool     UserConnection::ProcessPacket( BasePacket* packet )
          case PacketChatToServer::ChatType_ChatToServer:
             {
                PacketChatToServer* chat = static_cast< PacketChatToServer* >( packet );
-               SendChatOut( chat->message );
+               SendChatOut( chat->message, chat->userUuid, chat->channelUuid );
             }
             break;
          case PacketChatToServer::ChatType_ChangeChatChannel:

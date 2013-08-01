@@ -303,7 +303,7 @@ public:
       Column_inviter_id,
       Column_invitee_id,
       Column_was_notified,
-      Column_sent,
+      Column_sent_date,
       Column_message,
       Column_pending_uuid,
       Column_end
@@ -312,5 +312,26 @@ public:
 };
 
 typedef Enigmosaurus <TableUserJoinPending> UserJoinPendingTable;
+
+//////////////////////////////////////////////////////////////
+
+class TableFriendPending
+{
+public:
+   enum Columns
+   {
+      Column_id,
+      Column_inviter_id,
+      Column_invitee_id,
+      Column_was_notified,
+      Column_sent_date,
+      Column_message,
+      Column_pending_uuid,
+      Column_end
+   };
+   static const char* const column_names[];
+};
+
+typedef Enigmosaurus <TableFriendPending> UserFriendPendingTable;
 
 //////////////////////////////////////////////////////////////

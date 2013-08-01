@@ -205,7 +205,11 @@ bool  PacketFactory::ParseChat( const U8* bufferIn, int& bufferOffset, const Bas
          *packetOut = SerializeIn< PacketChatChannelListToClient >( bufferIn, bufferOffset );
       }
       return true;
-
+   case PacketChatToServer::ChatType_UserAddedToChatChannelFromGameServer:
+      {
+         *packetOut = SerializeIn< PacketChatUserAddedToChatChannelFromGameServer >( bufferIn, bufferOffset );
+      }
+      return true;
    case PacketChatToServer::ChatType_RequestHistoryResult:
       {
          *packetOut = SerializeIn< PacketChatHistoryResult >( bufferIn, bufferOffset );
@@ -229,6 +233,16 @@ bool  PacketFactory::ParseChat( const U8* bufferIn, int& bufferOffset, const Bas
    case PacketChatToServer::ChatType_CreateChatChannelResponse:
       {
          *packetOut = SerializeIn< PacketChatCreateChatChannelResponse >( bufferIn, bufferOffset );
+      }
+      return true;
+   case PacketChatToServer::ChatType_CreateChatChannelFromGameServer:
+      {
+         *packetOut = SerializeIn< PacketChatCreateChatChannelFromGameServer >( bufferIn, bufferOffset );
+      }
+      return true;
+   case PacketChatToServer::ChatType_CreateChatChannelFromGameServerResponse:
+      {
+         *packetOut = SerializeIn< PacketChatCreateChatChannelFromGameServerResponse >( bufferIn, bufferOffset );
       }
       return true;
 
@@ -264,6 +278,17 @@ bool  PacketFactory::ParseChat( const U8* bufferIn, int& bufferOffset, const Bas
          *packetOut = SerializeIn< PacketChatAddUserToChatChannelResponse >( bufferIn, bufferOffset );
       }
       return true;
+   case PacketChatToServer::ChatType_AddUserToChatChannelGameServer:
+      {
+         *packetOut = SerializeIn< PacketChatAddUserToChatChannelGameServer >( bufferIn, bufferOffset );
+      }
+      return true;
+   case PacketChatToServer::ChatType_AddUserToChatChannelGameServerResponse:
+      {
+         *packetOut = SerializeIn< PacketChatAddUserToChatChannelGameServerResponse >( bufferIn, bufferOffset );
+      }
+      return true;
+
 
    case PacketChatToServer::ChatType_RemoveUserFromChatChannel:
       {
@@ -273,6 +298,16 @@ bool  PacketFactory::ParseChat( const U8* bufferIn, int& bufferOffset, const Bas
    case PacketChatToServer::ChatType_RemoveUserFromChatChannelResponse:
       {
          *packetOut = SerializeIn< PacketChatRemoveUserFromChatChannelResponse >( bufferIn, bufferOffset );
+      }
+      return true;
+   case PacketChatToServer::ChatType_RemoveUserFromChatChannelGameServer:
+      {
+         *packetOut = SerializeIn< PacketChatRemoveUserFromChatChannelGameServer >( bufferIn, bufferOffset );
+      }
+      return true;
+   case PacketChatToServer::ChatType_RemoveUserFromChatChannelGameServerResponse:
+      {
+         *packetOut = SerializeIn< PacketChatRemoveUserFromChatChannelGameServerResponse >( bufferIn, bufferOffset );
       }
       return true;
    
@@ -407,7 +442,6 @@ bool     PacketFactory::ParseContact( const U8* bufferIn, int& bufferOffset, con
       }
       return true;
 
-
    case PacketContact::ContactType_GetListOfInvitations:
       {
          *packetOut = SerializeIn< PacketContact_GetListOfInvitations >( bufferIn, bufferOffset );
@@ -430,23 +464,49 @@ bool     PacketFactory::ParseContact( const U8* bufferIn, int& bufferOffset, con
          *packetOut = SerializeIn< PacketContact_GetListOfInvitationsSentResponse >( bufferIn, bufferOffset );
       }
       return true;
-
-  /* case PacketContact::ContactType_InviteContact:
+   case PacketContact::ContactType_InviteContact:
       {
-         *packetOut = SerializeIn< PacketContact >( bufferIn, bufferOffset );
+         *packetOut = SerializeIn< PacketContact_InviteContact >( bufferIn, bufferOffset );
       }
       return true;
-   case PacketContact::ContactType_RemoveInivtation:
+   case PacketContact::ContactType_InviteSentNotification:
       {
-         *packetOut = SerializeIn< PacketContact_TestNotification >( bufferIn, bufferOffset );
+         *packetOut = SerializeIn< PacketContact_InviteSentNotification >( bufferIn, bufferOffset );
       }
       return true;
-
+   case PacketContact::ContactType_InviteReceived:
+      {
+         *packetOut = SerializeIn< PacketContact_InviteReceivedNotification >( bufferIn, bufferOffset );
+      }
+      return true;
+    case PacketContact::ContactType_RemoveInivtation:
+      {
+         *packetOut = SerializeIn< PacketContact_RemoveInvitation >( bufferIn, bufferOffset );
+      }
+      return true;
    case PacketContact::ContactType_AcceptInvite:
       {
-         *packetOut = SerializeIn< PacketContact_GetListOfContacts >( bufferIn, bufferOffset );
+         *packetOut = SerializeIn< PacketContact_AcceptInvite >( bufferIn, bufferOffset );
       }
-      return true;*/
+      return true;
+   case PacketContact::ContactType_InvitationAccepted:
+      {
+         *packetOut = SerializeIn< PacketContact_InvitationAccepted >( bufferIn, bufferOffset );
+      }
+      return true;
+
+   case PacketContact::ContactType_BlockUser:
+      {
+         *packetOut = SerializeIn< PacketContact_InviteBlockUser >( bufferIn, bufferOffset );
+      }
+      return true;
+
+
+   case PacketContact::ContactType_UserOnlineStatusChange:
+      {
+         *packetOut = SerializeIn< PacketContact_FriendOnlineStatusChange >( bufferIn, bufferOffset );
+      }
+      return true;
    }
    return false;
 }

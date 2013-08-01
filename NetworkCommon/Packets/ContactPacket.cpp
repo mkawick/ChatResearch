@@ -46,6 +46,8 @@ bool  InvitationInfo::SerializeIn( const U8* data, int& bufferOffset )
    Serialize::In( data, bufferOffset, message );
    Serialize::In( data, bufferOffset, inviterName );
    Serialize::In( data, bufferOffset, inviteeName );
+   Serialize::In( data, bufferOffset, uuid );
+   Serialize::In( data, bufferOffset, date );
 
    return true;
 }
@@ -55,6 +57,8 @@ bool  InvitationInfo::SerializeOut( U8* data, int& bufferOffset ) const
    Serialize::Out( data, bufferOffset, message );
    Serialize::Out( data, bufferOffset, inviterName );
    Serialize::Out( data, bufferOffset, inviteeName );
+   Serialize::Out( data, bufferOffset, uuid );
+   Serialize::Out( data, bufferOffset, date );
 
    return true;
 }
@@ -177,11 +181,167 @@ bool  PacketContact_GetListOfInvitationsSentResponse::SerializeIn( const U8* dat
 
    return true; 
 }
-
 bool  PacketContact_GetListOfInvitationsSentResponse::SerializeOut( U8* data, int& bufferOffset ) const 
 { 
    BasePacket::SerializeOut( data, bufferOffset );
    Serialize::Out( data, bufferOffset, invitations );
+
+   return true; 
+}
+
+///////////////////////////////////////////////////////////////
+
+
+bool  PacketContact_InviteContact::SerializeIn( const U8* data, int& bufferOffset )
+{ 
+   BasePacket::SerializeIn( data, bufferOffset );
+   Serialize::In( data, bufferOffset, username );
+   Serialize::In( data, bufferOffset, uuid );
+   Serialize::In( data, bufferOffset, message );
+
+   return true; 
+}
+
+bool  PacketContact_InviteContact::SerializeOut( U8* data, int& bufferOffset ) const 
+{ 
+   BasePacket::SerializeOut( data, bufferOffset );
+   Serialize::Out( data, bufferOffset, username );
+   Serialize::Out( data, bufferOffset, uuid );
+   Serialize::Out( data, bufferOffset, message );
+
+   return true; 
+}
+
+///////////////////////////////////////////////////////////////
+
+bool  PacketContact_InviteSentNotification::SerializeIn( const U8* data, int& bufferOffset )
+{ 
+   BasePacket::SerializeIn( data, bufferOffset );
+   Serialize::In( data, bufferOffset, info );
+
+   return true; 
+}
+
+bool  PacketContact_InviteSentNotification::SerializeOut( U8* data, int& bufferOffset ) const 
+{ 
+   BasePacket::SerializeOut( data, bufferOffset );
+   Serialize::Out( data, bufferOffset, info );
+
+   return true; 
+}
+
+///////////////////////////////////////////////////////////////
+
+bool  PacketContact_InviteReceivedNotification::SerializeIn( const U8* data, int& bufferOffset )
+{ 
+   BasePacket::SerializeIn( data, bufferOffset );
+   Serialize::In( data, bufferOffset, info );
+
+   return true; 
+}
+
+bool  PacketContact_InviteReceivedNotification::SerializeOut( U8* data, int& bufferOffset ) const 
+{ 
+   BasePacket::SerializeOut( data, bufferOffset );
+   Serialize::Out( data, bufferOffset, info );
+
+   return true; 
+}
+
+///////////////////////////////////////////////////////////////
+
+bool  PacketContact_RemoveInvitation::SerializeIn( const U8* data, int& bufferOffset )
+{ 
+   BasePacket::SerializeIn( data, bufferOffset );
+   Serialize::In( data, bufferOffset, invitationUuid );
+
+   return true; 
+}
+
+bool  PacketContact_RemoveInvitation::SerializeOut( U8* data, int& bufferOffset ) const 
+{ 
+   BasePacket::SerializeOut( data, bufferOffset );
+   Serialize::Out( data, bufferOffset, invitationUuid );
+
+   return true; 
+}
+
+///////////////////////////////////////////////////////////////
+
+bool  PacketContact_AcceptInvite::SerializeIn( const U8* data, int& bufferOffset )
+{ 
+   BasePacket::SerializeIn( data, bufferOffset );
+   Serialize::In( data, bufferOffset, invitationUuid );
+
+   return true; 
+}
+
+bool  PacketContact_AcceptInvite::SerializeOut( U8* data, int& bufferOffset ) const 
+{ 
+   BasePacket::SerializeOut( data, bufferOffset );
+   Serialize::Out( data, bufferOffset, invitationUuid );
+
+   return true; 
+}
+
+///////////////////////////////////////////////////////////////
+
+bool  PacketContact_InvitationAccepted::SerializeIn( const U8* data, int& bufferOffset )
+{ 
+   BasePacket::SerializeIn( data, bufferOffset );
+   Serialize::In( data, bufferOffset, fromUsername );
+   Serialize::In( data, bufferOffset, toUsername );
+   Serialize::In( data, bufferOffset, wasAccepted );
+
+   return true; 
+}
+
+bool  PacketContact_InvitationAccepted::SerializeOut( U8* data, int& bufferOffset ) const 
+{ 
+   BasePacket::SerializeOut( data, bufferOffset );
+   Serialize::Out( data, bufferOffset, fromUsername );
+   Serialize::Out( data, bufferOffset, toUsername );
+   Serialize::Out( data, bufferOffset, wasAccepted );
+
+   return true; 
+}
+
+///////////////////////////////////////////////////////////////
+
+bool  PacketContact_InviteBlockUser::SerializeIn( const U8* data, int& bufferOffset )
+{ 
+   BasePacket::SerializeIn( data, bufferOffset );
+   Serialize::In( data, bufferOffset, username );
+   Serialize::In( data, bufferOffset, uuid );
+
+   return true; 
+}
+
+bool  PacketContact_InviteBlockUser::SerializeOut( U8* data, int& bufferOffset ) const 
+{ 
+   BasePacket::SerializeOut( data, bufferOffset );
+   Serialize::Out( data, bufferOffset, username );
+   Serialize::Out( data, bufferOffset, uuid );
+
+   return true; 
+}
+
+///////////////////////////////////////////////////////////////
+
+bool  PacketContact_FriendOnlineStatusChange::SerializeIn( const U8* data, int& bufferOffset )
+{ 
+   BasePacket::SerializeIn( data, bufferOffset );
+   Serialize::In( data, bufferOffset, uuid );
+   Serialize::In( data, bufferOffset, friendInfo );
+
+   return true; 
+}
+
+bool  PacketContact_FriendOnlineStatusChange::SerializeOut( U8* data, int& bufferOffset ) const 
+{ 
+   BasePacket::SerializeOut( data, bufferOffset );
+   Serialize::Out( data, bufferOffset, uuid );
+   Serialize::Out( data, bufferOffset, friendInfo );
 
    return true; 
 }
