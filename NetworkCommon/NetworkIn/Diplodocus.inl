@@ -259,7 +259,9 @@ bool     Diplodocus< InputChain, OutputChain >::SendPacketToGateway( BasePacket*
       InputChainType* connection = static_cast< InputChainType* >( inputPtr );
       if( connection->AddOutputChainData( wrapper, connectionId ) == true )
       {
+         LockMutex();
          m_clientsNeedingUpdate.push_back( connection->GetChainedId() );
+         UnlockMutex();
          return true;
       }
    }
@@ -435,15 +437,15 @@ void  Diplodocus< InputChain, OutputChain >::MarkAllConnectionsAsNeedingUpdate( 
 template< typename InputChain, typename OutputChain >
 void  Diplodocus< InputChain, OutputChain >::MarkConnectionAsNeedingUpdate( int chainId )
 {
+   LockMutex();
+
    deque< U32 >::iterator it = m_clientsNeedingUpdate.begin();
    while( it != m_clientsNeedingUpdate.end() )
    {
       if( *it == chainId ) 
          return;
    }
-
-   LockMutex();
-      m_clientsNeedingUpdate.push_back( chainId );
+   m_clientsNeedingUpdate.push_back( chainId );
    UnlockMutex();
 }
 
@@ -527,10 +529,10 @@ void	Diplodocus< InputChain, OutputChain >::UpdateAllConnections()
    // the potential exists for this queue to be updated while we are working on it
    // this is alright as long as we pull from the front and push onto the back as this list is non-persistent
 
+   Threading::MutexLock locker( m_mutex );
    if( m_clientsNeedingUpdate.size() == 0 )// no locking a mutex if you don't need to do it.
       return;
 
-   LockMutex();
    while( m_clientsNeedingUpdate.size() )// threads can remove themselves.
    {
       U32 id = m_clientsNeedingUpdate.front();
@@ -548,7 +550,6 @@ void	Diplodocus< InputChain, OutputChain >::UpdateAllConnections()
          connection->Update();
       }
    }
-   UnlockMutex();
 }
 
 //------------------------------------------------------------------------------------------

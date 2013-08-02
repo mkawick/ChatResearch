@@ -824,9 +824,9 @@ bool   ChatChannelManager::CreateNewChannel( const string& channelName, const st
 
 //---------------------------------------------------------------------
 
-bool   ChatChannelManager::CreateNewChannel( const string& channelName, const U32 serverId )
+bool   ChatChannelManager::CreateNewChannel( const PacketChatCreateChatChannelFromGameServer* pPacket )
 {
-   //***********************************************
+  /* //***********************************************
    // todo, add lookup to prevent duplicate channels
    // check for user permissions
    //***********************************************
@@ -845,7 +845,7 @@ bool   ChatChannelManager::CreateNewChannel( const string& channelName, const U3
 
    string authUuid;
    stringhash authHash = 0;
-   DbQueryAndPacket( channelName, newId, serverId, authUuid, authHash, queryString, ChatChannelDbJob::JobType_Create, false );
+   DbQueryAndPacket( channelName, newId, serverId, authUuid, authHash, queryString, ChatChannelDbJob::JobType_Create, false );*/
 
    return true;
 }
@@ -1065,10 +1065,10 @@ bool     ChatChannelManager::AddUserToChannel( const string& channelUuid, const 
 
 //---------------------------------------------------------------------
 
-bool     ChatChannelManager::AddUserToChannel( const string& channelUuid, const string& userUuid, U32 serverId )
+bool     ChatChannelManager::AddUserToChannel( const PacketChatAddUserToChatChannelGameServer* pPacket )
 {
-   stringhash userHashLookup = GenerateUniqueHash( userUuid );
-   stringhash channelHash = GenerateUniqueHash( channelUuid );
+ //  stringhash userHashLookup = GenerateUniqueHash( userUuid );
+ //  stringhash channelHash = GenerateUniqueHash( channelUuid );
 
    /* // todo, send errors back
       PacketAddUserToGameResponse* packet = new PacketAddUserToGameResponse;
@@ -1078,7 +1078,7 @@ bool     ChatChannelManager::AddUserToChannel( const string& channelUuid, const 
       PackageAndSendToDiplodocusChat( packet, serverId );
    */
 
-   UserUuidMapIterator userIter = m_userUuidMap.find( userHashLookup );
+ /*  UserUuidMapIterator userIter = m_userUuidMap.find( userHashLookup );
    if( userIter == m_userUuidMap.end() )
    {
       string text = " Server ";
@@ -1142,7 +1142,7 @@ bool     ChatChannelManager::AddUserToChannel( const string& channelUuid, const 
 
    UserUuidSet otherUsersToNotify;
    AddUserToChannelInternal( userHashLookup, channelUuid, channel.name, otherUsersToNotify );
-   InformUsersAboutUserStatusChange( userHashLookup, otherUsersToNotify, UserStatusChange_UserAddedToChannel );
+   InformUsersAboutUserStatusChange( userHashLookup, otherUsersToNotify, UserStatusChange_UserAddedToChannel );*/
 
    return false;
 }
@@ -1231,8 +1231,9 @@ bool     ChatChannelManager::RemoveUserFromChannel( const string& channelUuid, c
 }
 //---------------------------------------------------------------------
 
-bool     ChatChannelManager::RemoveUserFromChannel( const string& channelUuid, const string& userUuid, U32 serverId )
+bool     ChatChannelManager::RemoveUserFromChannel( const PacketChatRemoveUserFromChatChannelGameServer* pPacket )
 {
+   /*
    stringhash userHashLookup = GenerateUniqueHash( userUuid );
    stringhash channelHash = GenerateUniqueHash( channelUuid );
 
@@ -1288,7 +1289,7 @@ bool     ChatChannelManager::RemoveUserFromChannel( const string& channelUuid, c
    UserUuidSet otherUsersToNotify;
    ChatChannel& channel = channelIter->second;
    RemoveUserFromChannelInternal( userHashLookup, channelHash, userUuid, otherUsersToNotify );
-   InformUsersAboutUserStatusChange( userHashLookup, otherUsersToNotify, UserStatusChange_UserRemovedFromChannel );
+   InformUsersAboutUserStatusChange( userHashLookup, otherUsersToNotify, UserStatusChange_UserRemovedFromChannel );*/
 
    return true;
 }

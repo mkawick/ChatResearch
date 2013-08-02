@@ -6,6 +6,7 @@
 
 #include "../NetworkCommon/Packets/DbPacket.h"
 #include "../NetworkCommon/Packets/GamePacket.h"
+#include "../NetworkCommon/Packets/ChatPacket.h"
 #include "../NetworkCommon/Packets/ServerToServerPacket.h"
 
 ///////////////////////////////////////////////////////////////////
@@ -233,7 +234,7 @@ bool  DiplodocusChat::HandlePacketFromOtherServer( BasePacket* packet, U32 conne
       case PacketGameToServer::GamePacketType_CreateGame:
          {
             PacketCreateGame* pPacket = static_cast< PacketCreateGame* > ( actualPacket );
-            success = m_chatChannelManager->CreateNewChannel( pPacket->name, serverIdLookup );
+            //success = m_chatChannelManager->CreateNewChannel( pPacket->name, serverIdLookup );
          }
          break;
       case PacketGameToServer::GamePacketType_DeleteGame:
@@ -259,13 +260,13 @@ bool  DiplodocusChat::HandlePacketFromOtherServer( BasePacket* packet, U32 conne
       case PacketGameToServer::GamePacketType_AddUser:
          {
             PacketAddUserToGame* pPacket = static_cast< PacketAddUserToGame* > ( actualPacket );
-            success = m_chatChannelManager->AddUserToChannel( pPacket->gameUuid, pPacket->userUuid, serverIdLookup );
+            //success = m_chatChannelManager->AddUserToChannel( pPacket->gameUuid, pPacket->userUuid, serverIdLookup );
          }
          break;
       case PacketGameToServer::GamePacketType_RemoveUser:
          {
             PacketRemoveUserFromGame* pPacket = static_cast< PacketRemoveUserFromGame* > ( actualPacket );
-            success = m_chatChannelManager->RemoveUserFromChannel( pPacket->gameUuid, pPacket->userUuid, serverIdLookup );
+            //success = m_chatChannelManager->RemoveUserFromChannel( pPacket->gameUuid, pPacket->userUuid, serverIdLookup );
          }
          break;
       case PacketGameToServer::GamePacketType_AdvanceTurn:
@@ -281,6 +282,47 @@ bool  DiplodocusChat::HandlePacketFromOtherServer( BasePacket* packet, U32 conne
             success = true;
          }
          break;
+      }
+      if( actualPacket->packetType == PacketType_Chat )
+      {
+         switch( actualPacket->packetSubType )
+         {
+         case PacketChatToServer::ChatType_CreateChatChannelFromGameServer:
+            {
+               PacketChatCreateChatChannelFromGameServer* pPacket = static_cast< PacketChatCreateChatChannelFromGameServer* > ( actualPacket );
+               m_chatChannelManager->CreateNewChannel( pPacket );
+            }
+            break;
+         case PacketChatToServer::ChatType_CreateChatChannelFromGameServerResponse:
+            {
+               assert( 0 );
+            }
+            break;
+         case PacketChatToServer::ChatType_AddUserToChatChannelGameServer:
+            {
+               PacketChatAddUserToChatChannelGameServer* pPacket = static_cast< PacketChatAddUserToChatChannelGameServer* > ( actualPacket );
+               m_chatChannelManager->AddUserToChannel( pPacket );
+            }
+            break;
+         case PacketChatToServer::ChatType_AddUserToChatChannelGameServerResponse:
+            {
+               assert( 0 );
+            }
+            break;
+         case PacketChatToServer::ChatType_RemoveUserFromChatChannelGameServer:
+            {
+               PacketChatRemoveUserFromChatChannelGameServer* pPacket = static_cast< PacketChatRemoveUserFromChatChannelGameServer* > ( actualPacket );
+               m_chatChannelManager->RemoveUserFromChannel( pPacket );
+            }
+            break;
+         case PacketChatToServer::ChatType_RemoveUserFromChatChannelGameServerResponse:
+            {
+               assert( 0 );
+            }
+            break;
+     /* ChatType_InviteUserToChatChannel,
+      ChatType_InviteUserToChatChannelResponse,*/
+         }
       }
    }
 

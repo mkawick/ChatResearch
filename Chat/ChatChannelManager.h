@@ -61,6 +61,9 @@ struct ChatChannelDbJob
 class UserConnection;
 class BasePacket;
 class DiplodocusChat;
+class PacketChatCreateChatChannelFromGameServer;
+class PacketChatAddUserToChatChannelGameServer;
+class PacketChatRemoveUserFromChatChannelGameServer;
 
 //////////////////////////////////////////////////////////////////////////////////
 
@@ -106,12 +109,11 @@ public:
    bool     RequestAllUsersInChatChannel( const string& channelUuid, bool fullList, const string& authUuid );
 
    // other servers requests
-
-   bool     CreateNewChannel( const string& channelName, const U32 serverId );
+   bool     CreateNewChannel( const PacketChatCreateChatChannelFromGameServer* pPacket );
    bool     DeleteChannel( const string& channelName, const U32 serverId );
    
-   bool     AddUserToChannel( const string& channelUuid, const string& userUuid, U32 serverId );
-   bool     RemoveUserFromChannel( const string& channelUuid, const string& userUuid, U32 serverId );
+   bool     AddUserToChannel( const PacketChatAddUserToChatChannelGameServer* pPacket );
+   bool     RemoveUserFromChannel( const PacketChatRemoveUserFromChatChannelGameServer* pPacket );
    bool     AdvanceGameTurn( const string& channelUuid, U32 serverId );
    void     RequestChatChannelList( U32 serverId );
 
