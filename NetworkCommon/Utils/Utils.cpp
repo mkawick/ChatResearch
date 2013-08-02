@@ -291,3 +291,15 @@ string OpenAndLoadFile( const string& path )
    
    return returnString;
 }
+
+U64 StringToU64( const char * str )
+{
+    U64 u64Result = 0;
+    while (*str != '\0')
+    {
+        u64Result *= 10 ;
+        u64Result += *str -  '0';
+        str ++;
+    }
+    return u64Result;
+}

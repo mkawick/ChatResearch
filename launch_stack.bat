@@ -2,9 +2,9 @@ REM cd C:/projects/MberSW/main
 REM start C:/projects/MberSW/main/WorkArea/game_serverD.exe listen.port=23550 db.address=10.16.4.44 db.port=3306 db.username=incinerator db.password=Cm8235 db.schema=playdek s2s.port=24604
 REM cd C:/projects/Mber/ServerStack
 
-Pushd C:/projects/MberSW/main
-start C:/projects/MberSW/main/WorkArea/game_serverD.exe listen.port=23550 db.address=10.16.4.44 db.port=3306 db.username=incinerator db.password=Cm8235 db.schema=playdek s2s.port=24604
-Popd
+REM Pushd C:/projects/MberSW/main
+REM start C:/projects/MberSW/main/WorkArea/game_serverD.exe listen.port=23550 db.address=10.16.4.44 db.port=3306 db.username=incinerator db.password=Cm8235 db.schema=playdek s2s.port=24604
+REM Popd
 
 
 start ./debug/LoginServer.exe listen.address=127.0.0.1 listen.port=3072 db.address=10.16.4.44 db.port=3306 db.username=admin db.password=Pz5328!@ db.schema=playdek game.port=24604 contact.port=9802 asset.port=10002

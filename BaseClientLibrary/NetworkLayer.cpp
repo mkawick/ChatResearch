@@ -19,8 +19,8 @@ NetworkLayer::NetworkLayer( U8 gameProductId ) : Fruitadens( "Networking Layer" 
       m_gameProductId( gameProductId ), 
       m_isLoggingIn( false ),
       m_isLoggedIn( false ),
-      m_connectionId( 0 )
-      //, m_selectedGame( 0 ), m_numEchoBytesSent( 0 ), m_packetEchoPacketsSent( 0 ) {}
+      m_connectionId( 0 ), 
+      m_selectedGame( 0 )
 {
    InitializeSockets();
 }
@@ -846,15 +846,17 @@ bool  NetworkLayer::HandlePacketIn( BasePacket* packetIn )
                PacketGameIdentification* gameId = 
                   static_cast<PacketGameIdentification*>( packetIn );
 
+               m_gameList.push_back( PacketGameIdentification( *gameId ) );
+               if( gameId->gameProductId == m_gameProductId ) 
+               {
+                  m_selectedGame = gameId->gameId;
+               }
+
              /*  cout << "Available game: " << gameId->gameId << endl;
                cout << "   **** game name: " << gameId->name << endl;
                cout << "   ***  game nik name: " << gameId->shortName << endl;*/
 
-              /* m_gameList.push_back( PacketGameIdentification( *gameId ) );
-               if( gameId->gameProductId == m_gameProductId ) 
-               {
-                  m_selectedGame = gameId->gameId;
-               }*/
+              /* */
             }
             break;
          case PacketGameToServer::GamePacketType_RawGameData:

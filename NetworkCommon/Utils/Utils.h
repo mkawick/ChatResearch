@@ -88,3 +88,37 @@ bool ConvertFromString( const std::string& InputString, T& Value )
    }
    return true;
 }
+
+template < class T >
+bool ConvertToString( T value, std::string& InputString )
+{
+   InputString.clear();
+   if( value == 0 )
+   {
+      InputString = "0";
+      return true;
+   }
+   bool positive = true;
+   if( value < 0 )
+   {
+      positive = false;
+   }
+   while( value != 0 )
+   {
+      char ins = ( value % 10 );
+      if( ins < 0 )
+      {
+         ins *= -1;
+      }
+      ins += '0';
+      InputString.insert( 0, 1, ins );
+      value /= 10;
+   }
+
+   if( positive == false )
+   {
+      InputString.insert( 0, 1, '-' );
+   }
+
+   return true;
+}

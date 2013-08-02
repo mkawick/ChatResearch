@@ -25,10 +25,11 @@ GameFramework::GameFramework( const char* name, const char* shortName, U8 gamePr
    m_callbacksObject( NULL ),
    m_serverName( name ),
    m_shortName( shortName ),
+   m_serverId( 0 ),
    m_gameProductId( gameProductId ),
    m_version( version )
 {
-   U64 serverUniqueHashValue = GenerateUniqueHash( m_serverName );
+   U64 serverUniqueHashValue = GenerateUniqueHash( GetServerName() );
    m_serverId = static_cast< U32 >( serverUniqueHashValue );
 
    // all of the standard connections
@@ -168,8 +169,8 @@ bool  GameFramework::SendGameData( U32 connectionId, const MarshalledData* data 
       
       PacketGameplayRawData* packet = new PacketGameplayRawData;
       packet->Prep( workingSize, ptr, packetIndex-- );
-      packet->gameInstanceId = m_serverId;
-      packet->gameProductId = m_gameProductId;
+      packet->gameInstanceId = GetServerId();
+      packet->gameProductId = GetGameProductId();
 
       size -= workingSize;
       ptr += workingSize;
@@ -177,6 +178,7 @@ bool  GameFramework::SendGameData( U32 connectionId, const MarshalledData* data 
       PacketGatewayWrapper* wrapper = new PacketGatewayWrapper;
       wrapper->pPacket = packet;
       wrapper->connectionId = connectionId;
+      wrapper->gameInstanceId = GetServerId();
       if( m_connectionManager->AddOutputChainData( wrapper, connectionId ) == false )
       {
          delete wrapper;
@@ -197,10 +199,11 @@ bool  GameFramework::SendChatData( BasePacket* packet )
 {
    PacketServerToServerWrapper* wrapper = new PacketServerToServerWrapper;
    wrapper->serverId = GetServerId();
-   wrapper->gameProductId = m_gameProductId;
+   wrapper->gameProductId = GetGameProductId();
    wrapper->pPacket = packet;
 
-   packet->gameProductId = m_gameProductId;
+   packet->gameProductId = GetGameProductId();
+   packet->gameInstanceId = GetServerId();
 
    m_chatServer->AddOutputChainData( wrapper, 0 );
 
@@ -215,7 +218,7 @@ bool  GameFramework::InformClientWhoThisServerIs( U32 connectionId )
    id->gameId = GetServerId();
    id->name = GetServerName();
    id->shortName = GetServerShortName();
-   id->gameProductId = m_gameProductId;
+   id->gameProductId = GetGameProductId();
 
    PacketGatewayWrapper* wrapper = new PacketGatewayWrapper;
    wrapper->pPacket = id;
@@ -268,15 +271,15 @@ bool  GameFramework::Run()
       return false;
    }
 
-   cout << m_serverName << ":" << endl;
+   cout << GetServerName() << ":" << endl;
    cout << "Version " << m_version << endl;
-   cout << "ServerId " << m_serverId << endl;
-   cout << "Product Id " << m_gameProductId << endl;
+   cout << "ServerId " << GetServerId() << endl;
+   cout << "Product Id " << GetGameProductId() << endl;
    cout << "Db " << m_dbIpAddress << ":" << m_dbPort << endl;
    cout << "------------------------------------------------------------------" << endl << endl << endl;
 
    //----------------------------------------------------------------
-   m_connectionManager = new DiplodocusGame( m_serverName, m_serverId, m_gameProductId );
+   m_connectionManager = new DiplodocusGame( GetServerName(), GetServerId(), GetGameProductId() );
    m_connectionManager->SetDatabaseIdentification( m_gameUuid );
 
    m_connectionManager->AddOutputChain( delta );
@@ -295,18 +298,18 @@ bool  GameFramework::Run()
 
    m_timers.clear();
 
-   string nameOfChatServerConnection = m_serverName;
+   string nameOfChatServerConnection = GetServerName();
    nameOfChatServerConnection += " to chat";
    m_chatServer = new FruitadensServerToServer( nameOfChatServerConnection.c_str() );
    m_chatServer->SetConnectedServerType( ServerType_Chat );
-   m_chatServer->SetServerId( m_serverId );
-   m_chatServer->SetGameProductId( m_gameProductId );
+   m_chatServer->SetServerId( GetServerId() );
+   m_chatServer->SetGameProductId( GetGameProductId() );
 
    m_chatServer->Connect( m_chatServerAddress.c_str(), m_chatServerPort );
    m_chatServer->Resume();
-   m_chatServer->NotifyEndpointOfIdentification( m_serverName, m_serverId, m_gameProductId, true, false, false, false );
+   m_chatServer->NotifyEndpointOfIdentification( GetServerName(), GetServerId(), GetGameProductId(), true, false, false, false );
 
-   DiplodocusServerToServer* s2s = new DiplodocusServerToServer( m_serverName, m_serverId, m_gameProductId );
+   DiplodocusServerToServer* s2s = new DiplodocusServerToServer( GetServerName(), GetServerId(), GetGameProductId() );
    s2s->SetAsGame();
    s2s->SetupListening( m_listenForS2SPort );
 

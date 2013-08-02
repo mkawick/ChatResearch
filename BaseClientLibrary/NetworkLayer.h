@@ -183,7 +183,7 @@ private:
    vector< ChatChannel >   m_channels;
    //vector< Group >         Groups;
    //KeyValueVector    m_availableGames;
-   //GameList          m_gameList;
+   GameList          m_gameList;
 
    U8                m_gameProductId;
    bool              m_isLoggingIn;
