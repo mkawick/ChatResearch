@@ -70,6 +70,8 @@ public:
 
    bool           Update();
 
+   void           SendThroughLibEvent( bool useLibeventToSend = true ) { m_useLibeventToSend = useLibeventToSend; }
+
 public:
 
    //void           SetupLibeventCallbacks( event_base* libEvent, int socket );
@@ -95,6 +97,8 @@ protected:
 	U32				m_socketId;
 	bufferevent*	m_bufferEvent;
 	sockaddr_in		m_ipAddress;
+
+   bool           m_useLibeventToSend;
 
    deque< BasePacket* > m_packetsOut;
    deque< BasePacket* > m_packetsIn;//ToBeProcessed;

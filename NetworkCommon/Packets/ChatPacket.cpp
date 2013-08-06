@@ -345,7 +345,9 @@ bool  PacketChatCreateChatChannelFromGameServerResponse::SerializeIn( const U8* 
 {
    BasePacket::SerializeIn( data, bufferOffset );
 
+   Serialize::In( data, bufferOffset, gameId );
    Serialize::In( data, bufferOffset, channelUuid );
+   Serialize::In( data, bufferOffset, success );
 
    return true;
 }
@@ -354,7 +356,9 @@ bool  PacketChatCreateChatChannelFromGameServerResponse::SerializeOut( U8* data,
 {
    BasePacket::SerializeOut( data, bufferOffset );
 
+   Serialize::Out( data, bufferOffset, gameId );
    Serialize::Out( data, bufferOffset, channelUuid );
+   Serialize::Out( data, bufferOffset, success );
 
    return true;
 }

@@ -288,6 +288,7 @@ Diplodocus< InputChain, OutputChain >::Diplodocus( string serverName, U32 server
                                     m_isControllerApp( false ),
                                     m_isGateway( false ),
                                     m_isGame( false ),
+                                    m_sendHelloPacket( true ),
                                     m_listeningPort( 0 ),
                                     m_listener( NULL ),
                                     
@@ -393,6 +394,11 @@ void  Diplodocus< InputChain, OutputChain >::OnAccept( evconnlistener* listenerO
    khaan->SetIPAddress( *((struct sockaddr_in*)ClientAddr) );
 
    Diplodocus< InputChain, OutputChain >* This = (Diplodocus< InputChain, OutputChain > *) context;
+   if( This->m_sendHelloPacket )
+   {
+      khaan->AddOutputChainData( new PacketHello(), -1 );
+   }
+
    This->AddClientConnection( khaan );
 }
  

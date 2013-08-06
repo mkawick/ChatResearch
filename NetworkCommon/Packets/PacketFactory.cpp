@@ -39,9 +39,9 @@ bool	PacketFactory::Parse( const U8* bufferIn, int& bufferOffset, BasePacket** p
    switch( firstPassParse.packetType )
    {
    case PacketType_Base:
-      //assert(0);// we should never receive one of these
-      return false;
-
+      {
+         return ParseBasePacket( bufferIn, bufferOffset, &firstPassParse, packetOut );
+      }
    case PacketType_Login:
       {
          return ParseLogin( bufferIn, bufferOffset, &firstPassParse, packetOut );
@@ -106,6 +106,30 @@ bool     PacketFactory::SafeParse( const U8* bufferIn, int& bufferOffset, BasePa
 //---------------------------------------------------------------------------------------------------------------------------------------
 //---------------------------------------------------------------------------------------------------------------------------------------
 
+bool  PacketFactory::ParseBasePacket( const U8* bufferIn, int& bufferOffset, const BasePacket* firstPassParse, BasePacket** packetOut ) const
+{
+   switch( firstPassParse->packetSubType )
+   {
+      case BasePacket::BasePacket_Type:
+         {
+            *packetOut = SerializeIn< BasePacket >( bufferIn, bufferOffset );
+         }
+         return true;
+      case BasePacket::BasePacket_Hello:
+         {
+            *packetOut = SerializeIn< PacketHello >( bufferIn, bufferOffset );
+         }
+         return true;
+      case BasePacket::BasePacket_CommsHandshake:
+         {
+            *packetOut = SerializeIn< PacketCommsHandshake >( bufferIn, bufferOffset );
+         }
+         return true;
+   }
+   return false;
+}
+
+//---------------------------------------------------------------------------------------------------------------------------------------
 bool  PacketFactory::ParseLogin( const U8* bufferIn, int& bufferOffset, const BasePacket* firstPassParse, BasePacket** packetOut ) const
 {
    switch( firstPassParse->packetSubType )

@@ -144,10 +144,15 @@ protected:
 
 class BasePacket
 {
-protected:
-   //enum SubType {};
 public:
-   BasePacket( int packet_type = PacketType_Base, int packet_sub_type = 0 ) :
+   enum SubType 
+   {
+      BasePacket_Type,
+      BasePacket_Hello,
+      BasePacket_CommsHandshake
+   };
+public:
+   BasePacket( int packet_type = PacketType_Base, int packet_sub_type = BasePacket_Type ) :
       packetType( packet_type ),
       packetSubType( packet_sub_type ),
       versionNumber( 0 ),
@@ -167,6 +172,29 @@ public:
    U32      gameInstanceId;
 };
 
+///////////////////////////////////////////////////////////////
+
+class PacketHello : public BasePacket
+{
+public:
+   PacketHello(): BasePacket( PacketType_Base, BasePacket::BasePacket_Hello ) {}
+   // serialize by base is good enough
+};
+
+///////////////////////////////////////////////////////////////
+
+class PacketCommsHandshake : public BasePacket
+{
+public:
+   PacketCommsHandshake(): BasePacket( PacketType_Base, BasePacket::BasePacket_CommsHandshake ), serverHashedKey( 0 ) {}
+
+   bool  SerializeIn( const U8* data, int& bufferOffset );
+   bool  SerializeOut( U8* data, int& bufferOffset ) const;
+
+   U32   serverHashedKey;
+};
+
+///////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////
 
 class PacketLogin : public BasePacket

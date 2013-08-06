@@ -22,6 +22,8 @@ NetworkLayer::NetworkLayer( U8 gameProductId ) : Fruitadens( "Networking Layer" 
       m_connectionId( 0 ), 
       m_selectedGame( 0 )
 {
+   //m_serverDns = "chat.mickey.playdekgames.com";
+   m_serverDns = "gateway.internal.playdekgames.com";
    InitializeSockets();
 }
 
@@ -38,14 +40,12 @@ void  NetworkLayer::Init( const char* serverDNS )
 {
    if( m_clientSocket != NULL || m_isConnected == true )
       return;
-   
-   string serverName = "chat.mickey.playdekgames.com";
-   serverName = "gateway.internal.playdekgames.com";
+
    if( serverDNS )
    {
-      serverName = serverDNS;
+      m_serverDns = serverDNS;
    }
-   Connect( serverName.c_str(), 9600 );
+   Connect( m_serverDns.c_str(), 9600 );
 }
 
 void  NetworkLayer::Exit()
@@ -81,7 +81,7 @@ bool  NetworkLayer::RequestLogin( const string& username, const string& password
 {
    if( m_isConnected == false )
    {
-      Init();
+      Init( NULL );
    }
    PacketLogin login;
    login.loginKey = "deadbeef";// currently unused

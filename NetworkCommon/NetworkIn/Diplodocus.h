@@ -53,9 +53,11 @@ public:
 	virtual ~Diplodocus();
    void           SetAsControllerApp( bool isController = true ) { m_isControllerApp = isController ; }
    void           SetAsGame( bool isGame = true ) { m_isGame = isGame; }
+   void           SetAsGateway( bool isGateway = true ) { m_isGateway = isGateway; }
 
    void           SetupListening( int port );
    bool           RequestUpdate( const string& connectionUuid ); // todo, update this
+   void           SetSendHelloPacketOnLogin( bool value ) { m_sendHelloPacket = value; }
 
    static bool    Run(); // None of the networking starts until this is invoked. This is a blocking call. Be sure to keep a thread running to call the exit.
    static bool    ExitApp();
@@ -102,7 +104,8 @@ protected:
    bool              m_isControllerApp;
    bool              m_isGateway;
    bool              m_isGame;
-   bool              m_updateGatewayConnections;
+   //bool              m_updateGatewayConnections;
+   bool              m_sendHelloPacket;
    int               m_listeningPort;
    evconnlistener*   m_listener;// libevent object
    U32               m_serverId; // just used for id

@@ -292,7 +292,9 @@ public:
    bool  SerializeIn( const U8* data, int& bufferOffset );
    bool  SerializeOut( U8* data, int& bufferOffset ) const;
 
+   U32            gameId;
    string         channelUuid;
+   bool           success;
 };
 
 ///////////////////////////////////////////////////////////////

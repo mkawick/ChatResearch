@@ -103,6 +103,7 @@ int main( int argc, const char* argv[] )
    cout << "------------------------------------------------------------------" << endl << endl << endl;
 
    DiplodocusGateway* gateway = new DiplodocusGateway( serverName, serverId );
+   gateway->SetAsGateway( true );
 
    FruitadensGateway chatOut( "fruity to chat" );
    chatOut.SetConnectedServerType( ServerType_Chat );
@@ -129,9 +130,6 @@ int main( int argc, const char* argv[] )
    
    //--------------------------------------------------------------
 
-   chatOut.Connect( chatIpAddressString.c_str(), chatPort );
-   chatOut.Resume();
-
    FruitadensGateway* game1 = PrepFruitadens( game1Address, game1Port, serverId, gateway );
    //FruitadensGateway* game2 = PrepFruitadens( "localhost", 23401, serverId, gateway );
    //FruitadensGateway* game3 = PrepFruitadens( "localhost", 23402, serverId, gateway );
@@ -143,19 +141,24 @@ int main( int argc, const char* argv[] )
    //game3->NotifyEndpointOfIdentification( serverName, serverId, gameProductId, false, false, true, true  );
    //game4->NotifyEndpointOfIdentification( serverName, serverId, gameProductId, false, false, true, true  );
 
+   cout << "Chat server: " << chatIpAddressString << ":" << chatPort << endl;
+   chatOut.Connect( chatIpAddressString.c_str(), chatPort );
+   chatOut.Resume();
+
+   cout << "Login server: " << loginIpAddressString << ":" << loginPort << endl;
    loginServerOut.Connect( loginIpAddressString.c_str(), loginPort );
    loginServerOut.Resume();
 
+   cout << "Asset server: " << assetDeliveryIpAddressString << ":" << assetPort << endl;
    assetServer.Connect( assetDeliveryIpAddressString.c_str(), assetPort );
    assetServer.Resume();
 
+   cout << "Contact server: " << contactIpAddressString << ":" << contactPort << endl;
    contactServer.Connect( contactIpAddressString.c_str(), contactPort );
    contactServer.Resume();
-
-  /* chatOut.NotifyEndpointOfIdentification( serverName, serverId, false, false, true );
-   gameServerOut.NotifyEndpointOfIdentification( serverName, serverId, false, false, true );
-   loginServerOut.NotifyEndpointOfIdentification( serverName, serverId, false, false, true );*/
    
+   cout << "---------------------------- finished connecting ----------------------------" << endl;
+
    gateway->Resume();
    gateway->Run();
 
@@ -173,6 +176,7 @@ FruitadensGateway* PrepFruitadens( const string& ipaddress, U16 port, U32 server
 
    loginServer->AddOutputChain( gameServerOut );
 
+   cout << "Game server: " << ipaddress << ":" << port << endl;
    gameServerOut->Connect( ipaddress.c_str(), port );
    gameServerOut->Resume();
 

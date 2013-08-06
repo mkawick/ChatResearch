@@ -12,7 +12,7 @@
 
 #include <boost/lexical_cast.hpp>
 
-
+#define _DEMO_13_Aug_2013
 //////////////////////////////////////////////////////////
 
 bool  CreateAccountResultsAggregator::HandleResult( const PacketDbQueryResult* dbResult )
@@ -291,28 +291,9 @@ bool     DiplodocusLogin::AddQueryToOutput( PacketDbQuery* packet )
 
 //---------------------------------------------------------------
 
-bool     DiplodocusLogin::FindUserAlreadyInGame( const string& username, U8 gameProductId )
-{
-   UserConnectionMapIterator it = m_userConnectionMap.begin();
-   while( it != m_userConnectionMap.end() )
-   {
-      UserConnectionPair pairObj = *it++;
-      ConnectionToUser& conn = pairObj.second;
-      if( conn.gameProductId == gameProductId &&// optimized for simplest test first
-         conn.username == username )
-      {
-         return true;
-      }
-   }
-   return false;
-}
-
-//---------------------------------------------------------------
-
 bool     DiplodocusLogin::LogUserIn( const string& username, const string& password, const string& loginKey, U8 gameProductId, U32 connectionId )
 {
-   UserConnectionMapIterator it = m_userConnectionMap.find( connectionId );
-   if( it != m_userConnectionMap.end() )
+   if( IsUserConnectionValid( connectionId ) )
    {
       // should we boot this user for hacking? Or is it bad code?
       Log( "Second attempt was made at login", 4 );
@@ -341,7 +322,8 @@ bool     DiplodocusLogin::LogUserIn( const string& username, const string& passw
 
    ConnectionToUser conn( username, password, loginKey );
    conn.gameProductId = gameProductId;
-   m_userConnectionMap.insert( UserConnectionPair( connectionId, conn ) );
+   AddUserConnection( UserConnectionPair( connectionId, conn ) );
+
    //*********************************************************************************
    // perhaps some validation here is in order like is this user valid based on the key
    //*********************************************************************************
@@ -365,31 +347,34 @@ bool     DiplodocusLogin::LogUserIn( const string& username, const string& passw
 
 bool     DiplodocusLogin::LogUserOut( U32 connectionId, bool wasDisconnectedByError )
 {
-   UserConnectionMapIterator it = m_userConnectionMap.find( connectionId );
-   if( it != m_userConnectionMap.end() )
+   ConnectionToUser* connection = GetUserConnection( connectionId );
+   if( connection )
    {
+      time( &connection->loggedOutTime ); // time stamp this guy
+
+      if( connection->userUuid.size() == 0 )
+         return false;
+
       PacketDbQuery* dbQuery = new PacketDbQuery;
       dbQuery->id =              connectionId;
       dbQuery->lookup =          QueryType_UserLoginInfo;
       dbQuery->isFireAndForget = true;// no result is needed
       
-      ConnectionToUser& connection = it->second;
+      
       string queryString = "UPDATE users AS user SET user.last_logout_timestamp=CURRENT_TIMESTAMP WHERE uuid = '";
-      queryString += connection.userUuid;
+      queryString +=             connection->userUuid;
       queryString += "'";
       dbQuery->query =           queryString;
 
-      SendLoginStatusToOtherServers( it->second.username, it->second.userUuid, connectionId, it->second.gameProductId, it->second.lastLoginTime, connection.active, connection.email, connection.passwordHash, connection.id, false, wasDisconnectedByError );
+      SendLoginStatusToOtherServers( connection->username, connection->userUuid, connectionId, connection->gameProductId, connection->lastLoginTime, connection->active, connection->email, connection->passwordHash, connection->id, false, wasDisconnectedByError );
 
       if( wasDisconnectedByError == false )
       {
          PacketLogoutToClient* logout = new PacketLogoutToClient();
-         logout->username = it->second.username;// just for loggin purposes
-         logout->uuid = it->second.userUuid;
+         logout->username =            connection->username;// just for loggin purposes
+         logout->uuid =                connection->userUuid;
          SendPacketToGateway( logout, connectionId );
       }
-      m_userConnectionMap.erase( it );
-
       return AddQueryToOutput( dbQuery );
    }
    else
@@ -401,8 +386,90 @@ bool     DiplodocusLogin::LogUserOut( U32 connectionId, bool wasDisconnectedByEr
 }
 
 //---------------------------------------------------------------
+//---------------------------------------------------------------
+
+bool  DiplodocusLogin::IsUserConnectionValid( U32 connectionId )
+{
+   Threading::MutexLock locker( m_inputChainListMutex );
+   UserConnectionMapConstIterator it = m_userConnectionMap.find( connectionId );
+   if( it != m_userConnectionMap.end() )
+      return true;
+   return false;
+}
+
+ConnectionToUser*     DiplodocusLogin::GetUserConnection( U32 connectionId )
+{
+   Threading::MutexLock locker( m_inputChainListMutex );
+   UserConnectionMapIterator it = m_userConnectionMap.find( connectionId );
+   if( it != m_userConnectionMap.end() )
+   {
+      return &( it->second );
+   }
+   return NULL;
+}
+
+bool     DiplodocusLogin::AddUserConnection( DiplodocusLogin::UserConnectionPair pair )
+{
+   Threading::MutexLock locker( m_inputChainListMutex );
+   m_userConnectionMap.insert( pair );
+   return true;
+}
+
+bool     DiplodocusLogin::RemoveUserConnection( U32 connectionId )
+{
+   Threading::MutexLock locker( m_inputChainListMutex );
+   UserConnectionMapIterator it = m_userConnectionMap.find( connectionId );
+   if( it != m_userConnectionMap.end() )
+   {
+      m_userConnectionMap.erase( it );
+      return true;
+   }
+   return false;
+}
+
+void     DiplodocusLogin::RemoveOldConnections()
+{
+   Threading::MutexLock locker( m_inputChainListMutex );
+   UserConnectionMapIterator it = m_userConnectionMap.begin();
+   time_t testTimer;
+   time( &testTimer );
+
+   while( it != m_userConnectionMap.end() )
+   {
+      UserConnectionMapIterator temp = it++;
+      if( temp->second.loggedOutTime )
+      {
+         const int normalExpireTime = 30; // seconds
+         if( difftime( testTimer, temp->second.loggedOutTime ) >= normalExpireTime )
+         {
+            m_userConnectionMap.erase( temp );
+         }
+      }
+   }
+}
+
+//---------------------------------------------------------------
+
+bool     DiplodocusLogin::FindUserAlreadyInGame( const string& username, U8 gameProductId )
+{
+   Threading::MutexLock locker( m_mutex );
+
+   UserConnectionMapIterator it = m_userConnectionMap.begin();
+   while( it != m_userConnectionMap.end() )
+   {
+      UserConnectionPair pairObj = *it++;
+      ConnectionToUser& conn = pairObj.second;
+      if( conn.gameProductId == gameProductId &&// optimized for simplest test first
+         conn.username == username )
+      {
+         return true;
+      }
+   }
+   return false;
+}
 
 
+//---------------------------------------------------------------
 //---------------------------------------------------------------
 
 void  DiplodocusLogin::TellUserThatAccountAlreadyMatched( const CreateAccountResultsAggregator* aggregator )
@@ -576,8 +643,8 @@ void  DiplodocusLogin::UpdatePendingUserRecord( const CreateAccountResultsAggreg
 
 void  DiplodocusLogin::CreateNewUserAccount( const CreateAccountResultsAggregator* aggregator, bool setGkHashTo0 )
 {
-   string query = "INSERT INTO users (user_name, user_name_match, user_pw_hash, user_email, user_gamekit_hash, active, language_id, game_id ) "
-                                 "VALUES ('%s', '%s', '%s', '%s', '%s', '1', '%s', '%s')";
+   string query = "INSERT INTO users (user_name, user_name_match, user_pw_hash, user_email, user_gamekit_hash, active, language_id ) "
+                                 "VALUES ('%s', '%s', '%s', '%s', '%s', '1', '%s')";
 
    PacketDbQuery* dbQuery = new PacketDbQuery;
    dbQuery->id =           aggregator->m_connectionId;
@@ -614,8 +681,7 @@ void  DiplodocusLogin::CreateNewUserAccount( const CreateAccountResultsAggregato
 
 bool  DiplodocusLogin::CreateUserAccount( U32 connectionId, const string& email, const string& password, const string& username, const string& deviceAccountId, const string& deviceId, U8 languageId, U8 gameProductId )
 {
-   UserConnectionMapIterator it = m_userConnectionMap.find( connectionId );
-   if( it != m_userConnectionMap.end() )
+   if( IsUserConnectionValid( connectionId ) )
    {
       string str = "ERROR: Login server, user attempted to create a second account while logged in, username: ";
       str += username;
@@ -714,22 +780,23 @@ bool  DiplodocusLogin::ForceUserLogoutAndBlock( U32 connectionId )
    string                     uuid;
    string                     lastLoginTime;
    string                     email;
-   UserConnectionMapIterator  it = m_userConnectionMap.find( connectionId );
    bool                       active = false;
    string                     passwordHash = "0";
    string                     userId = "0";
+   U8 gameProductId = 0;
 
-   if( it != m_userConnectionMap.end() )
+   ConnectionToUser* connection = GetUserConnection( connectionId );
+   if( connection )
    {
-      ConnectionToUser& user = it->second;
-      username = user.username;
-      uuid = user.userUuid;
-      lastLoginTime = user.lastLoginTime;
-      user.status = ConnectionToUser::LoginStatus_Invalid;
-      active =          user.active;
-      passwordHash =    user.passwordHash;
-      userId =          user.id;
-      email =           user.email;
+      username =              connection->username;
+      uuid =                  connection->userUuid;
+      lastLoginTime =         connection->lastLoginTime;
+      connection->status =    ConnectionToUser::LoginStatus_Invalid;
+      active =                connection->active;
+      passwordHash =          connection->passwordHash;
+      userId =                connection->id;
+      email =                 connection->email;
+      gameProductId =         connection->gameProductId;
    }
 
    // now disconnect him/her
@@ -740,7 +807,7 @@ bool  DiplodocusLogin::ForceUserLogoutAndBlock( U32 connectionId )
    loginStatus->wasLoginSuccessful = false;
 
    SendPacketToGateway( loginStatus, connectionId );
-   SendLoginStatusToOtherServers( username, uuid, connectionId, it->second.gameProductId, lastLoginTime, active, email, passwordHash, userId, false, false );
+   SendLoginStatusToOtherServers( username, uuid, connectionId, gameProductId, lastLoginTime, active, email, passwordHash, userId, false, false );
 
    return true;
 }
@@ -749,8 +816,7 @@ bool  DiplodocusLogin::ForceUserLogoutAndBlock( U32 connectionId )
 
 bool  DiplodocusLogin::SendListOfGamesToGameServers( U32 connectionId, const KeyValueVector& kvArray )
 {
-   UserConnectionMapIterator it = m_userConnectionMap.find( connectionId ); // user may have disconnected waiting for the db.
-   if( it != m_userConnectionMap.end() )
+   if( IsUserConnectionValid( connectionId ) ) // user may have disconnected waiting for the db.
    {
       BaseOutputContainer::iterator itOutputs = m_listOfOutputs.begin();
       while( itOutputs != m_listOfOutputs.end() )
@@ -776,8 +842,8 @@ bool  DiplodocusLogin::SendListOfGamesToGameServers( U32 connectionId, const Key
 
 bool  DiplodocusLogin::UpdateLastLoggedInTime( U32 connectionId )
 {
-   UserConnectionMapIterator it = m_userConnectionMap.find( connectionId );
-   if( it != m_userConnectionMap.end() )
+   ConnectionToUser* connection = GetUserConnection( connectionId );
+   if( connection )
    {
       PacketDbQuery* dbQuery = new PacketDbQuery;
       dbQuery->id =              connectionId ;
@@ -785,7 +851,7 @@ bool  DiplodocusLogin::UpdateLastLoggedInTime( U32 connectionId )
       dbQuery->isFireAndForget = true;// no result is needed
 
       string queryString = "UPDATE users AS user SET user.last_login_timestamp=CURRENT_TIMESTAMP WHERE uuid = '";
-      queryString += it->second.userUuid;
+      queryString +=             connection->userUuid;
       queryString += "'";
       dbQuery->query =           queryString;
 
@@ -799,8 +865,8 @@ bool  DiplodocusLogin::UpdateLastLoggedInTime( U32 connectionId )
 
 bool  DiplodocusLogin::UpdateLastLoggedOutTime( U32 connectionId )
 {
-   UserConnectionMapIterator it = m_userConnectionMap.find( connectionId );
-   if( it != m_userConnectionMap.end() )
+   ConnectionToUser* connection = GetUserConnection( connectionId );
+   if( connection )
    {
       PacketDbQuery* dbQuery = new PacketDbQuery;
       dbQuery->id =              connectionId ;
@@ -808,7 +874,7 @@ bool  DiplodocusLogin::UpdateLastLoggedOutTime( U32 connectionId )
       dbQuery->isFireAndForget = true;// no result is needed
 
       string queryString = "UPDATE users AS user SET user.last_logout_timestamp=CURRENT_TIMESTAMP WHERE uuid = '";
-      queryString += it->second.userUuid;
+      queryString += connection->userUuid;
       queryString += "'";
       dbQuery->query =           queryString;
 
@@ -821,27 +887,25 @@ bool  DiplodocusLogin::UpdateLastLoggedOutTime( U32 connectionId )
 
 bool    DiplodocusLogin::SuccessfulLogin( U32 connectionId )
 {
-   UserConnectionMapIterator it = m_userConnectionMap.find( connectionId );
-   if( it == m_userConnectionMap.end() || m_userConnectionMap.size() == 0 )
+   ConnectionToUser* connection = GetUserConnection( connectionId );
+   if( connection == NULL )
    {
-      Log( "Login server: major problem with successfull long.", 4 );
+      Log( "Login server: major problem with successful login", 4 );
       return false;
    }
 
-   ConnectionToUser& connection = it->second;
-
-   const string&  username =        connection.username;
-   const string&  userUuid =        connection.userUuid;
-   const string&  email =           connection.email;
-   const string&  lastLoginTime =   connection.lastLoginTime;
-   bool           active =          connection.active;
-   const string&  passwordHash =    connection.passwordHash;
-   const string&  userId =          connection.id;
-   U8 gameProductId =               connection.gameProductId;
+   string  username =        connection->username;
+   string  userUuid =        connection->userUuid;
+   string  email =           connection->email;
+   string  lastLoginTime =   connection->lastLoginTime;
+   bool    active =          connection->active;
+   string  passwordHash =    connection->passwordHash;
+   string  userId =          connection->id;
+   U8 gameProductId =        connection->gameProductId;
 
 
    PacketLoginToGateway* loginStatus = new PacketLoginToGateway();
-   if( it != m_userConnectionMap.end() )
+   if( connection != NULL )
    {
       loginStatus->username = username;
       loginStatus->uuid = userUuid;
@@ -946,7 +1010,12 @@ void  DiplodocusLogin::UpdateUserRecord( CreateAccountResultsAggregator* aggrega
    }
    else if( aggregator->ShouldInsertNewUserRecord() )
    {
+      //
+#ifdef _DEMO_13_Aug_2013
+      CreateNewUserAccount( aggregator, true );
+#else
       CreateNewPendingUserAccount( aggregator );
+#endif
    }
    else
    {
@@ -982,11 +1051,11 @@ bool     DiplodocusLogin::AddOutputChainData( BasePacket* packet, U32 connection
             return true;
          }
 
-         UserConnectionMapIterator it = m_userConnectionMap.end ();
+         ConnectionToUser* connection = NULL; 
          if( connectionId != 0 )
          {
-            it = m_userConnectionMap.find( connectionId );
-            if( it == m_userConnectionMap.end () || m_userConnectionMap.size() == 0 )
+            connection = GetUserConnection( connectionId );
+            if( connection == NULL )
             {
                string str = "Login server: Something seriously wrong where the db query came back from the server but no record.. ";
                Log( str, 4 );
@@ -996,7 +1065,6 @@ bool     DiplodocusLogin::AddOutputChainData( BasePacket* packet, U32 connection
                return false;
             }
          }
-
          switch( dbResult->lookup )
          {
             cout << "Db query type:"<< dbResult->lookup << ", success=" << dbResult->successfulQuery << endl;
@@ -1007,9 +1075,9 @@ bool     DiplodocusLogin::AddOutputChainData( BasePacket* packet, U32 connection
                      //assert( 0 );// begin teardown. Inform gateway that user is not available. Gateway will teardown the connection
                      // and send a reply to this game instance.
                      string str = "User not valid and db query failed, username: ";
-                     str += it->second.username;
+                     str += connection->username;
                      str += ", uuid: ";
-                     str += it->second.userUuid;
+                     str += connection->userUuid;
                      Log( str, 4 );
                      ForceUserLogoutAndBlock( connectionId );
                      return false;
@@ -1026,21 +1094,19 @@ bool     DiplodocusLogin::AddOutputChainData( BasePacket* packet, U32 connection
                   string lastLoginTime =    row[ TableUser::Column_last_logout_time ];
                   string isActive =         row[ TableUser::Column_active];
 
-                  it->second.username = name;
-                  it->second.userUuid = uuid;
-                  it->second.status = ConnectionToUser::LoginStatus_LoggedIn;
-                  it->second.lastLoginTime = lastLoginTime;
-                  it->second.email = email;
-                  it->second.id =   id;
-                  it->second.passwordHash = passwordHash;
-                  it->second.active = boost::lexical_cast<bool>( isActive );
+                  connection->username = name;
+                  connection->userUuid = uuid;
+                  connection->status = ConnectionToUser::LoginStatus_LoggedIn;
+                  connection->lastLoginTime = lastLoginTime;
+                  connection->email = email;
+                  connection->id =   id;
+                  connection->passwordHash = passwordHash;
+                  connection->active = boost::lexical_cast<bool>( isActive );
 
-                  it->second.gameProductId = dbResult->serverLookup;
+                  connection->gameProductId = dbResult->serverLookup;
 
                   SuccessfulLogin( connectionId );
                   UpdateLastLoggedInTime( dbResult->id ); // update the user logged in time
-                  
-
                }
                break;
             case QueryType_UserListOfGame:
@@ -1048,9 +1114,9 @@ bool     DiplodocusLogin::AddOutputChainData( BasePacket* packet, U32 connection
                   if( dbResult->successfulQuery == false || dbResult->bucket.bucket.size() == 0 )// no records found
                   {
                      string str = "List of games not valid db query failed, username: ";
-                     str += it->second.username;
+                     str += connection->username;
                      str += ", uuid: ";
-                     str += it->second.userUuid;
+                     str += connection->userUuid;
                      Log( str, 4 );
                      ForceUserLogoutAndBlock( connectionId );
                      return false;
@@ -1080,9 +1146,9 @@ bool     DiplodocusLogin::AddOutputChainData( BasePacket* packet, U32 connection
                   if( dbResult->successfulQuery == false )
                   {
                      string str = "Query failed looking up a user ";
-                     str += it->second.username;
+                     str += connection->username;
                      str += ", uuid: ";
-                     str += it->second.userUuid;
+                     str += connection->userUuid;
                      Log( str, 4 );
                      ForceUserLogoutAndBlock( connectionId );
                      return false;
@@ -1115,6 +1181,8 @@ int      DiplodocusLogin::CallbackFunction()
    m_mutex.unlock();*/
 
    UpdateAllConnections();
+
+   RemoveOldConnections();
 
    return 1;
 }

@@ -2,6 +2,7 @@
 
 #include "../NetworkCommon/DataTypes.h"
 #include "../NetworkCommon/ChainedArchitecture/ChainedInterface.h"
+//#include "../NetworkCommon/ChainedArchitecture/Thread.h"
 
 #include <set>
 
@@ -44,16 +45,21 @@ struct ChatChannelDbJob
       JobType_SelectAllChannelsToSendToAuth,
       JobType_SelectAllUsersToSendToAuth,
       JobType_FindChatters,
-      JobType_AllUsersInChannel
+      JobType_AllUsersInChannel,
+
+      JobType_CreateFromGameServer,
+      JobType_AddUserFromGameServer,
+      JobType_RemoveUserFromGameServer
    };
 
-   string      name;
-   string      uuid;
-   stringhash  chatUserLookup;
-   stringhash  authUserLookup;
-   int         jobId;
-   U32         serverId;
-   JobType     jobType;
+   string         name;
+   string         uuid;
+   stringhash     chatUserLookup;
+   stringhash     authUserLookup;
+   int            jobId;
+   U32            serverId;
+   JobType        jobType;
+   StringBucket   stringBucket;
 };
 
 //--------------------------------------
@@ -146,7 +152,7 @@ protected:
    typedef DbJobList::iterator               DbJobIterator;
 
    void              AddUserToChannelInternal( stringhash hashedUserUuid, const string& channelUuid, const string& channelName, UserUuidSet& otherUsersToNotify );
-   bool              AddChatChannel( const string& channelUuid, const string& channelName );
+   bool              LoadChatChannel( const string& channelUuid, const string& channelName );
    void              RemoveUserFromChannelInternal( stringhash hashedUserUuid, stringhash channelUuid, const string& userUuide, UserUuidSet& otherUsersToNotify );
    bool              RemoveChatChannel( const string& channelUuid );
    void              WriteChatToDb( const string& message, const string& senderUuid, const string& friendUuid, const string& channelUuid, U16 gameTurn, U32 connectionId );
@@ -156,8 +162,11 @@ protected:
 
    bool              FindDbJob( int jobId, DbJobList& listOfJobs, DbJobIterator& iter );
    bool              FinishJob( PacketDbQueryResult* result, ChatChannelDbJob& job );
-   void              DbQueryAndPacket( const string& channelName, const string& channelUuid, U32 serverId, const string& authUuid, stringhash chatUserLookup, const string& queryString, ChatChannelDbJob::JobType jobType, bool isFandF );
+   int               DbQueryAndPacket( const string& channelName, const string& channelUuid, U32 serverId, const string& authUuid, stringhash chatUserLookup, const string& queryString, ChatChannelDbJob::JobType jobType, bool isFandF );
 
+   bool              FinishAddingChatChannelFromGameServer( PacketDbQueryResult* dbResult, ChatChannelDbJob& job );
+   bool              FinishAddingAddingUserToChatchannelFromGameServer( PacketDbQueryResult* dbResult, ChatChannelDbJob& job );
+   bool              FinishAddingRemovingUserFromChatchannelFromGameServer( PacketDbQueryResult* dbResult, ChatChannelDbJob& job );
    //-------------------------------------------------------
 
    //U32                              m_connectionId;
@@ -168,6 +177,7 @@ protected:
    deque< BasePacket* >             m_packetsIn;
 
    static DiplodocusChat*           m_chatServer;
+   Threading::Mutex                 m_mutex, m_jobMutex;
    
 
    int               AddDbJob( const string& channelName, const string& channelUuid, U32 serverId, stringhash chatUserLookup, stringhash authUserLookup, ChatChannelDbJob::JobType type );

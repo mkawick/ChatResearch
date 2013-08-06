@@ -175,6 +175,7 @@ private:
 
    string            m_username, m_attemptedUsername;
    string            m_uuid;
+   string            m_serverDns;
    U32               m_selectedGame;
 
    SerializedKeyValueVector< InvitationInfo > m_invitationsreceived;

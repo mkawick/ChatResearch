@@ -18,7 +18,7 @@ class FruitadensServerToServer;
 class GameFramework
 {
 public:
-   GameFramework( const char* gameName, const char* shortName, U8 gameProductId, const char* version = "0.04" );
+   GameFramework( const char* gameName, const char* shortName, U8 gameProductId, const char* version = "0.05" );
    ~GameFramework();
 
    void  SetDatabaseIdentification( const string& uuid ) { m_gameUuid = uuid; }

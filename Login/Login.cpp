@@ -63,8 +63,8 @@ int main( int argc, const char* argv[] )
    string assetPortString = "10002";
    string assetIpAddressString = "localhost";
 
-   string agricolaPortString = "23996";
-   string agricolaIpAddressString = "localhost";
+   string gamePortString = "23996";
+   string gameIpAddressString = "localhost";
 
    //---------------------------------------
 
@@ -80,8 +80,8 @@ int main( int argc, const char* argv[] )
    parser.FindValue( "asset.port", assetPortString );
    parser.FindValue( "asset.address", assetIpAddressString );
    
-   parser.FindValue( "agricola.address", agricolaPortString );
-   parser.FindValue( "agricola.port", agricolaIpAddressString );
+   parser.FindValue( "game.port", gamePortString );
+   parser.FindValue( "game.address", gameIpAddressString );
 
 
    string dbPortString = "16384";
@@ -98,7 +98,7 @@ int main( int argc, const char* argv[] )
 
 
    int listenPort = 3072, dbPortAddress = 3306, chatPort = 9602, contactPort=9802, assetPort=10002;
-   int agricolaPort = 23996;
+   int gamePort = 23996;
    try 
    {
        listenPort = boost::lexical_cast<int>( listenPortString );
@@ -108,7 +108,7 @@ int main( int argc, const char* argv[] )
        contactPort = boost::lexical_cast<int>( contactPortString );
        assetPort = boost::lexical_cast<int>( assetPortString );
 
-       agricolaPort = boost::lexical_cast<int>( agricolaPortString );
+       gamePort = boost::lexical_cast<int>( gamePortString );
    } 
    catch( boost::bad_lexical_cast const& ) 
    {
@@ -171,7 +171,7 @@ int main( int argc, const char* argv[] )
    
 
    // various games. We will need to deal with allowing a dynamic number of games in future
-   FruitadensLogin* game1 = PrepFruitadensLogin( agricolaIpAddressString, agricolaPort, serverId, loginServer );
+   FruitadensLogin* game1 = PrepFruitadensLogin( gameIpAddressString, gamePort, serverId, loginServer );
    FruitadensLogin* game2 = PrepFruitadensLogin( "localhost", 24600, serverId, loginServer );
    FruitadensLogin* game3 = PrepFruitadensLogin( "localhost", 24602, serverId, loginServer );
    FruitadensLogin* game4 = PrepFruitadensLogin( "localhost", 24604, serverId, loginServer );

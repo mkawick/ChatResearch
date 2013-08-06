@@ -197,15 +197,16 @@ bool  GameFramework::SendGameData( U32 connectionId, const MarshalledData* data 
 
 bool  GameFramework::SendChatData( BasePacket* packet )
 {
-   PacketServerToServerWrapper* wrapper = new PacketServerToServerWrapper;
+   // this will be packed at a lower level
+   /*PacketServerToServerWrapper* wrapper = new PacketServerToServerWrapper;
    wrapper->serverId = GetServerId();
    wrapper->gameProductId = GetGameProductId();
-   wrapper->pPacket = packet;
+   wrapper->pPacket = packet;*/
 
    packet->gameProductId = GetGameProductId();
    packet->gameInstanceId = GetServerId();
 
-   m_chatServer->AddOutputChainData( wrapper, 0 );
+   m_chatServer->AddOutputChainData( packet, 0 );
 
    return false;
 }

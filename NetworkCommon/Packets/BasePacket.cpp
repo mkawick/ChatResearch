@@ -138,6 +138,24 @@ bool  BasePacket::SerializeOut( U8* data, int& bufferOffset ) const
 
 ///////////////////////////////////////////////////////////////
 
+bool  PacketCommsHandshake::SerializeIn( const U8* data, int& bufferOffset )
+{
+   BasePacket::SerializeIn( data, bufferOffset );
+   Serialize::In( data, bufferOffset, serverHashedKey );
+
+   return true;
+}
+
+bool  PacketCommsHandshake::SerializeOut( U8* data, int& bufferOffset ) const
+{
+   BasePacket::SerializeOut( data, bufferOffset );
+   Serialize::Out( data, bufferOffset, serverHashedKey );
+
+   return true;
+}
+
+///////////////////////////////////////////////////////////////
+
 bool  PacketLogin::SerializeIn( const U8* data, int& bufferOffset )
 {
    BasePacket::SerializeIn( data, bufferOffset );

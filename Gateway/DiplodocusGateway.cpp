@@ -11,6 +11,7 @@ DiplodocusGateway::DiplodocusGateway( const string& serverName, U32 serverId ) :
                                           m_connectionIdTracker( 12 )
 {
    SetSleepTime( 16 );// 30 fps
+   SetSendHelloPacketOnLogin( true );
 }
 
 DiplodocusGateway::~DiplodocusGateway()
@@ -33,6 +34,7 @@ U32      DiplodocusGateway::GetNextConnectionId()
 
 bool  DiplodocusGateway::AddInputChainData( BasePacket* packet, U32 connectionId ) // coming from the client-side socket
 {
+   cout << "AddInputChainData" << endl << endl;
    ConnectionMapIterator connIt = m_connectionMap.find( connectionId );
    if( connIt != m_connectionMap.end() )
    {
@@ -42,9 +44,9 @@ bool  DiplodocusGateway::AddInputChainData( BasePacket* packet, U32 connectionId
 
       //wrapper->serverType = ServerType_Chat;// we are cheating. we should look at the type of packet and route it appropriately.
       
-      m_mutex.lock();
+      m_inputChainListMutex.lock();
       m_packetsToBeSentInternally.push_back( wrapper );
-      m_mutex.unlock();
+      m_inputChainListMutex.unlock();
       return true;
    }
    else
@@ -58,6 +60,7 @@ bool  DiplodocusGateway::AddInputChainData( BasePacket* packet, U32 connectionId
 
 void     DiplodocusGateway::ClientConnectionFinishedAdding( KhaanConnector* khaan )
 {
+   cout << "** ClientConnectionFinishedAdding" << endl << endl;
    U32 newId = GetNextConnectionId();
    m_socketToConnectionMap.insert( SocketToConnectionPair( khaan->GetSocketId(), newId ) );
    m_connectionToSocketMap.insert( SocketToConnectionPair( newId, khaan->GetSocketId() ) );
@@ -66,12 +69,17 @@ void     DiplodocusGateway::ClientConnectionFinishedAdding( KhaanConnector* khaa
    khaan->SetConnectionId( newId );
 
    khaan->SetGateway( this );
+   //khaan->SendThroughLibEvent( true );
+
+   Threading::MutexLock locker( m_outputChainListMutex );
+   m_connectionsNeedingUpdate.push_back( newId );
 }
 
 //-----------------------------------------------------------------------------------------
 
 void  DiplodocusGateway::ClientConnectionIsAboutToRemove( KhaanConnector* khaan )
 {
+   cout << "** ClientConnectionIsAboutToRemove" << endl << endl;
    int connectionId = khaan->GetConnectionId();
    int socketId = khaan->GetSocketId();
 
@@ -90,34 +98,45 @@ void  DiplodocusGateway::ClientConnectionIsAboutToRemove( KhaanConnector* khaan 
 
 bool DiplodocusGateway::PushPacketToProperOutput( BasePacket* packet )
 {
-   Threading::MutexLock    locker( m_outputChainListMutex );
+   cout << "PushPacketToProperOutput" << endl << endl;
 
-   ChainLinkIteratorType itOutput = m_listOfOutputs.begin();
-   while( itOutput != m_listOfOutputs.end() )
+   BaseOutputContainer tempOutput;
+   // create new scope
+   {
+      Threading::MutexLock    locker( m_outputChainListMutex );// quickly copy the list before doing more serious work
+      ChainLinkIteratorType itOutput = m_listOfOutputs.begin();
+      while( itOutput != m_listOfOutputs.end() )
+      {
+         tempOutput.push_back( *itOutput++ );
+      }
+   }
+
+   ChainLinkIteratorType itOutput = tempOutput.begin();
+   while( itOutput != tempOutput.end() )
    {
       ChainedInterface* outputPtr = (*itOutput).m_interface;
       FruitadensGateway* fruity = static_cast< FruitadensGateway* >( outputPtr );
-      //if( fruity->GetConnectedServerType () == packet->serverType )
+      if( fruity->AddOutputChainData( packet, -1 ) == true )
       {
-         if( fruity->AddOutputChainData( packet, -1 ) == true )
-         {
-            return true;
-         }
+         return true;
       }
       itOutput++;
    }
+   
    return false;
 }
 //-----------------------------------------------------------------------------------------
 
-int  DiplodocusGateway::ProcessInputFunction()// should be simple throughput, we just match the packet types coming in to the proper server
+int  DiplodocusGateway::ProcessInputFunction()
 {
+   // m_inputChainListMutex.lock   // see CChainedThread<Type>::CallbackFunction()
    SendServerIdentification();
 
    if( m_packetsToBeSentInternally.size() == 0 )
       return 0;
 
-   Threading::MutexLock locker( m_mutex );
+   cout << "ProcessInputFunction" << endl;
+   //Threading::MutexLock locker( m_mutex );
    while( m_packetsToBeSentInternally.size() )
    {
       BasePacket* packet = m_packetsToBeSentInternally.front();
@@ -129,6 +148,7 @@ int  DiplodocusGateway::ProcessInputFunction()// should be simple throughput, we
       }
       m_packetsToBeSentInternally.pop_front();
    }
+   // m_inputChainListMutex.unlock
    return 1;
 }
 
@@ -136,25 +156,13 @@ int  DiplodocusGateway::ProcessInputFunction()// should be simple throughput, we
 
 bool  DiplodocusGateway::AddOutputChainData( BasePacket* packet, U32 serverType )
 {
+   cout << "AddOutputChainData" << endl;
    // pass through only
    if( packet->packetType == PacketType_GatewayWrapper )
    {
-      PacketGatewayWrapper* wrapper = static_cast< PacketGatewayWrapper* >( packet );
-      int connectionId = wrapper->connectionId;
-      BasePacket* dataPacket = wrapper->pPacket;
-      delete wrapper;
-
-      SocketToConnectionMapIterator it = m_connectionToSocketMap.find( connectionId );
-      if( it != m_connectionToSocketMap.end() )
-      {
-         Threading::MutexLock locker( m_inputChainListMutex );
-         ConnectionMapIterator connIt = m_connectionMap.find( connectionId );
-         if( connIt != m_connectionMap.end() )
-         {
-            KhaanConnector* khaan = connIt->second;
-            HandlePacketToKhaan( khaan, dataPacket );
-         }
-      }
+      m_outputChainListMutex.lock();
+      m_outputTempStorage.push_back( packet );
+      m_outputChainListMutex.unlock();
    }
    else
    {
@@ -169,6 +177,7 @@ bool  DiplodocusGateway::AddOutputChainData( BasePacket* packet, U32 serverType 
 // assuming that everything is thread protected at this point
 void  DiplodocusGateway::HandlePacketToKhaan( KhaanConnector* khaan, BasePacket* packet )
 {
+   cout << "HandlePacketToKhaan" << endl;
    U32 connectionId = khaan->GetConnectionId();
    if( packet->packetType == PacketType_Login && 
        packet->packetSubType == PacketLogin::LoginType_InformGatewayOfLoginStatus )
@@ -197,6 +206,7 @@ void  DiplodocusGateway::HandlePacketToKhaan( KhaanConnector* khaan, BasePacket*
    khaan->AddOutputChainData( packet );
 
    // this is a performance improvement to prevent duplicate entries in this deque.
+   //Threading::MutexLock locker( m_mutex );
    ConnectionIdQueue::iterator it = m_connectionsNeedingUpdate.begin();
    while( it != m_connectionsNeedingUpdate.end() )
    {
@@ -211,15 +221,39 @@ void  DiplodocusGateway::HandlePacketToKhaan( KhaanConnector* khaan, BasePacket*
 int   DiplodocusGateway::ProcessOutputFunction()
 {
    // lookup packet info and pass it back to the proper socket if we can find it.
-   if( m_connectionsNeedingUpdate.size() )
+   if( m_connectionsNeedingUpdate.size() || m_outputTempStorage.size() )
    {
-      m_mutex.lock();
-      while( m_connectionsNeedingUpdate.size() > 0 )
+      cout << "ProcessOutputFunction" << endl;
+
+      while( m_outputTempStorage.size() )
+      {
+         PacketGatewayWrapper* wrapper = static_cast< PacketGatewayWrapper* >( m_outputTempStorage.front() );
+         m_outputTempStorage.pop_front();
+         int connectionId = wrapper->connectionId;
+         BasePacket* dataPacket = wrapper->pPacket;
+         delete wrapper;
+
+         SocketToConnectionMapIterator it = m_connectionToSocketMap.find( connectionId );
+         if( it != m_connectionToSocketMap.end() )
+         {
+            
+            ConnectionMapIterator connIt = m_connectionMap.find( connectionId );
+            if( connIt != m_connectionMap.end() )
+            {
+               KhaanConnector* khaan = connIt->second;
+               HandlePacketToKhaan( khaan, dataPacket );
+            }
+
+            //m_inputChainListMutex.lock();
+
+         }
+      }
+
+      //m_mutex.lock();
+      while( m_connectionsNeedingUpdate.size() > 0 )// this has the m_outputChainListMutex protection
       {
          int connectionId = m_connectionsNeedingUpdate.front();
          m_connectionsNeedingUpdate.pop_front();
-         m_inputChainListMutex.lock();
-
          ConnectionMapIterator connIt = m_connectionMap.find( connectionId );
          if( connIt != m_connectionMap.end() )
          {
@@ -227,9 +261,8 @@ int   DiplodocusGateway::ProcessOutputFunction()
             khaan->Update();
          }
 
-         m_inputChainListMutex.unlock();
       }
-      m_mutex.unlock();
+      //m_mutex.unlock();
    }
    return 1;
 }

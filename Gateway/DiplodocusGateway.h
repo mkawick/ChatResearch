@@ -6,6 +6,8 @@
 
 #include "KhaanConnector.h"
 #include "GatewayCommon.h"
+#include <deque>
+class BasePacket;
 
 //-----------------------------------------------------------------------------
 
@@ -41,6 +43,7 @@ private:
    typedef map< int, KhaanConnector* >    ConnectionMap;
    typedef pair< int, KhaanConnector* >   ConnectionPair;
    typedef ConnectionMap::iterator        ConnectionMapIterator;
+   std::deque< BasePacket* >  m_outputTempStorage;
 
    SocketToConnectionMap      m_socketToConnectionMap;
    SocketToConnectionMap      m_connectionToSocketMap;

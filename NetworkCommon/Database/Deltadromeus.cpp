@@ -130,7 +130,8 @@ bool  DbJob::SubmitQuery( MYSQL* connection, const string& dbName )
       U32 errorCode = mysql_errno( connection );
       cout << "DB Error code: " << errorCode << endl;
       if( errorCode == CR_SERVER_LOST ||
-         errorCode == CR_CONNECTION_ERROR )
+         errorCode == CR_CONNECTION_ERROR ||
+         errorCode == CR_SERVER_GONE_ERROR )
       {
          m_errorConnectionNeedsToBeReset = true;
       }

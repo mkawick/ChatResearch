@@ -14,11 +14,11 @@
 
 //-----------------------------------------------------------------------
 
-Khaan :: Khaan() : ChainedInterface< BasePacket* >(), m_socketId (0), m_bufferEvent(NULL)
+Khaan :: Khaan() : ChainedInterface< BasePacket* >(), m_socketId (0), m_bufferEvent(NULL), m_useLibeventToSend( false )
 {
 }
 
-Khaan ::Khaan( int socketId, bufferevent* be, int connectionId ) : ChainedInterface< BasePacket* >(), m_socketId( socketId ), m_bufferEvent( be )
+Khaan ::Khaan( int socketId, bufferevent* be, int connectionId ) : ChainedInterface< BasePacket* >(), m_socketId( socketId ), m_bufferEvent( be ), m_useLibeventToSend( false )
 {
    SetConnectionId( connectionId );
 }
@@ -181,11 +181,21 @@ void	Khaan :: UpdateOutwardPacketList()
       numWrites ++;
       static int numBytes = 0;
       numBytes += length;
+
+      int result = 0;
+      if( m_useLibeventToSend )
+      {
+         // I cannot get the socket to write the first time... it alsways writes the second time and after.. 20 hours of research later...
+         bufferevent*	bev = GetBufferEvent();
+         struct evbuffer* outputBuffer = bufferevent_get_output( bev );
+         result = evbuffer_add( outputBuffer, buffer, length );
+      }
+      else
+      {
+         result = send( m_socketId, (const char* )buffer, length, 0 );
+      }
+
       
-      // I cannot get the socket to write the first time... it alsways writes the second time and after.. 20 hours of research later...
-      int result = send( m_socketId, (const char* )buffer, length, 0 );
-      //struct evbuffer* outputBuffer = bufferevent_get_output( GetBufferEvent() );
-     /// int result = evbuffer_add( outputBuffer, buffer, length );
    }
 }
 

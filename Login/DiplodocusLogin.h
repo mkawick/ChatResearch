@@ -5,7 +5,7 @@
 #include "../NetworkCommon/NetworkIn/Diplodocus.h"
 #include "KhaanLogin.h"
 #include "../NetworkCommon/Database/QueryHandler.h"
-
+#include <ctime>
 
 class PacketDbQuery;
 class PacketDbQueryResult;
@@ -22,7 +22,7 @@ struct ConnectionToUser
       LoginStatus_Hacker
    };
 
-   ConnectionToUser( const string& name, const string& pword, const string& key ) : username( name ), passwordHash( pword ), loginKey( key ), status( LoginStatus_Pending ), active( true ) {}
+   ConnectionToUser( const string& name, const string& pword, const string& key ) : username( name ), passwordHash( pword ), loginKey( key ), status( LoginStatus_Pending ), active( true ), loggedOutTime( 0 ) {}
    string   id;
    string   username;
    string   passwordHash;
@@ -34,6 +34,7 @@ struct ConnectionToUser
    LoginStatus status;
    U8       gameProductId;
    bool     active;
+   time_t   loggedOutTime;
 };
 
 //---------------------------------------------------------------
@@ -164,6 +165,7 @@ public:
 private:
 
    int      CallbackFunction();
+   void     RemoveOldConnections();
 
    bool     AddQueryToOutput( PacketDbQuery* query );
    bool     LogUserIn( const string& username, const string& password, const string& loginKey, U8 gameProductId, U32 connectionId );
@@ -197,6 +199,7 @@ private:
    typedef map< U32, ConnectionToUser >      UserConnectionMap;
    typedef pair< U32, ConnectionToUser >     UserConnectionPair;
    typedef UserConnectionMap::iterator       UserConnectionMapIterator;
+   typedef UserConnectionMap::const_iterator UserConnectionMapConstIterator;
 
    typedef map< stringhash, vector< string > >    StringTableLookup;
    typedef pair< stringhash, vector< string > >   StringTableLookupPair;
@@ -207,6 +210,11 @@ private:
 
    UserConnectionMap    m_userConnectionMap;
    UserCreateAccountMap m_userAccountCreationMap;
+
+   bool                       IsUserConnectionValid( U32 id );
+   ConnectionToUser*          GetUserConnection( U32 id );
+   bool                       AddUserConnection( UserConnectionPair );
+   bool                       RemoveUserConnection( U32 id );
 
 };
 

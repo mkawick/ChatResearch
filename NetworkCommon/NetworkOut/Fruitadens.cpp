@@ -117,6 +117,8 @@ bool  Fruitadens :: SetupConnection( const char* serverName, int port )
       Cleanup();
       closesocket( m_clientSocket );
       m_clientSocket = 0;
+
+      return false;
    }
 
    m_ipAddress.sin_family = AF_INET;
@@ -295,19 +297,44 @@ int  Fruitadens::ProcessOutputFunction()
 
 bool  Fruitadens::HandlePacketReceived( BasePacket* packetIn )
 {
+   if( packetIn->packetType == PacketType_Base && // our basic bahavior is to ignore these initialization packets
+      packetIn->packetSubType == BasePacket::BasePacket_Hello )
+   {
+      delete packetIn;
+      return false;
+   }
    // special case
    if( packetIn->packetType == PacketType_ServerToServerWrapper )
    {
       PacketServerToServerWrapper* wrapper = static_cast< PacketServerToServerWrapper* >( packetIn );
-      PacketServerIdentifier* unwrappedPacket = static_cast< PacketServerIdentifier * > ( wrapper->pPacket );
-      m_connectedServerId = wrapper->serverId;
-      m_connectedGameProductId = unwrappedPacket->gameProductId;
+      switch( wrapper->pPacket->packetType )
+      {
+      case PacketType_ServerInformation:
+         {
+            PacketServerIdentifier* unwrappedPacket = static_cast< PacketServerIdentifier * > ( wrapper->pPacket );
+            m_connectedServerId = wrapper->serverId;
+            m_connectedGameProductId = unwrappedPacket->gameProductId;
 
-      cout << "Downline Server sent connection info: " << endl;
-      cout << "name = '" << unwrappedPacket->serverName << "' : type " << static_cast<U32>( m_connectedGameProductId ) << ", id=" << m_connectedServerId << endl;
-      cout << "Server isGame = '" << unwrappedPacket->isGameServer << ", isController : " << unwrappedPacket->isController << endl;
+            cout << "Downline Server sent connection info: " << endl;
+            cout << "name = '" << unwrappedPacket->serverName << "' : type " << static_cast<U32>( m_connectedGameProductId ) << ", id=" << m_connectedServerId << endl;
+            cout << "Server isGame = '" << unwrappedPacket->isGameServer << ", isController : " << unwrappedPacket->isController << endl;
+            delete unwrappedPacket;
+         }
+         break;
+      case BasePacket::ChatType_CreateChatChannelFromGameServerResponse: 
+         {
+            PacketChatCreateChatChannelFromGameServerResponse* unwrappedPacket = static_cast< PacketChatCreateChatChannelFromGameServerResponse * > ( wrapper->pPacket ); 
+            if( unwrappedPacket->success )
+            {
+               CServerGameData* serverGameData = FindServerGameData( GAME_SELECT_SUMMONWAR, unwrappedPacket->gameId );
+               serverGameData->SetUUID();
+            }
+            delete unwrappedPacket;
+         }
+         break;
 
-      delete unwrappedPacket;
+      }
+      
       delete wrapper;
 
       return true;
