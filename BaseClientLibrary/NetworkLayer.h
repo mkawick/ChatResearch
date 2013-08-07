@@ -2,7 +2,9 @@
 #include "../NetworkCommon/NetworkOut/Fruitadens.h"
 #include "../NetworkCommon/Packets/BasePacket.h"
 #include "../NetworkCommon/Packets/GamePacket.h"
+
 #include "../NetworkCommon/Packets/ContactPacket.h"
+#include "../NetworkCommon/Packets/ChatPacket.h"
 
 namespace Mber
 {
@@ -13,12 +15,14 @@ struct Demographics
    bool     isPrivate;// if true, most of the rest of this info is invalid.
    string   username;
    string   email;
+   time_t   lastLoginTime;
    // ...
    list< string > listOfGamesOwned;
    int      gender;
    int      avatar;
    string   location;
    int      timeZoneGmt;
+
 };
 
 class BasicUser
@@ -78,6 +82,9 @@ public:
    virtual void  ListOfInvitationsReceived( const list< InvitationInfo >& listOfInvitations ) {}
    virtual void  ListOfInvitationsSent( const list< InvitationInfo >& listOfInvitations ) {}
    virtual void  InvitationAccepted( const string& sender, const string& receiver, bool wasAccepted ){}
+
+   virtual void  ChatChannelHistory( const string& channelUuid, const list< ChatEntry >& listOfChats ) {  }
+   virtual void  ChatP2PHistory( const string& userUuid, const list< ChatEntry >& listOfChats ) { }
 
    virtual void  OnError( int code ){}
 
@@ -141,6 +148,9 @@ public:
 
    bool     RequestListOfInvitationsSent() const;
    bool     RequestListOfInvitationsReceived() const;
+
+   bool     RequestChatChannelHistory( const string& channelUuid, int numRecords = 20, int startingIndex = 0 ) const;
+   bool     RequestChatP2PHistory( const string& userUuid, int numRecords = 20, int startingIndex = 0 ) const;
 
    //--------------------------------------------------------------
 

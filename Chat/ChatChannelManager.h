@@ -87,6 +87,8 @@ public:
    ChatChannelManager();
    ~ChatChannelManager();
 
+   void  Init();
+
    static void       SetDiplodocusChat( DiplodocusChat* chat ) { m_chatServer = chat; }
    //void              SetConnectionId( U32 connectionId ) { m_connectionId = connectionId; }
    //U32               GetConnectionId() const { return m_connectionId; }

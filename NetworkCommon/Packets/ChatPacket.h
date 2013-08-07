@@ -1,5 +1,5 @@
 // ChatPacket.h
-
+#pragma once
 
 class PacketChatToServer : public BasePacket 
 {
@@ -166,12 +166,15 @@ public:
 class PacketChatHistoryRequest : public BasePacket
 {
 public:
-   PacketChatHistoryRequest( int packet_type = PacketType_Chat, int packet_sub_type = PacketChatToServer::ChatType_RequestHistory ) : BasePacket( packet_type, packet_sub_type ){  }
+   PacketChatHistoryRequest( int packet_type = PacketType_Chat, int packet_sub_type = PacketChatToServer::ChatType_RequestHistory ) : BasePacket( packet_type, packet_sub_type ), numRecords( 20 ), startingIndex( 0 ){  }
 
    bool  SerializeIn( const U8* data, int& bufferOffset );
    bool  SerializeOut( U8* data, int& bufferOffset ) const;
 
    string   chatChannelUuid;
+   string   userUuid;
+   int      numRecords;
+   int      startingIndex;
 };
 
 ///////////////////////////////////////////////////////////////
@@ -182,7 +185,9 @@ struct ChatEntry
    bool  SerializeOut( U8* data, int& bufferOffset ) const;
 
    string   username;
+   string   useruuid;
    string   message;
+   string   timestamp;
    U16      gameTurn;
 };
 
@@ -194,7 +199,8 @@ public:
    bool  SerializeIn( const U8* data, int& bufferOffset );
    bool  SerializeOut( U8* data, int& bufferOffset ) const;
 
-   //string   chatChannel;
+   string   chatChannelUuid;
+   string   userUuid;
    SerializedVector< ChatEntry > chat;
 };
 

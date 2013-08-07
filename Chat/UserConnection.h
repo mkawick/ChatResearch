@@ -16,11 +16,12 @@ class UserConnection
    enum QueryType // move to deltadrmoeus?
    {
       QueryType_UserLoginInfo = 1,
-      QueryType_UserFriendsList = 2,
-      QueryType_UserChannelList = 3,
-      QueryType_ChatLog = 4,
-      QueryType_ChatHistory = 5,
-      QueryType_ChatHistoryMissedSinceLastLogin = 6
+      QueryType_UserFriendsList,
+      QueryType_UserChannelList,
+      QueryType_ChatLog,
+      QueryType_ChatChannelHistory,
+      QueryType_ChatP2PHistory,
+      QueryType_ChatHistoryMissedSinceLastLogin
    };
 public:
    typedef SerializedKeyValueVector< ChannelInfo > ChannelKeyValue;
@@ -89,7 +90,8 @@ protected:
    bool              RequestExtraUserInfo();
    bool              RequestFriends();
    bool              RequestChatChannels();
-   void              GetChatDiegest( const string& groupUuid );
+   void              GetChatChannelDigest( const string& groupUuid, int numRecords, int startingIndex );
+   void              GetChatP2PDigest( const string& groupUuid, int numRecords, int startingIndex );
    void              GetAllChatHistroySinceLastLogin();
 
    bool              InformUserOfSuccessfulLogin();

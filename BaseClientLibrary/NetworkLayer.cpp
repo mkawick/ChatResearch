@@ -38,7 +38,7 @@ NetworkLayer::~NetworkLayer()
 
 void  NetworkLayer::Init( const char* serverDNS )
 {
-   if( m_clientSocket != NULL || m_isConnected == true )
+   if( m_clientSocket != 0 || m_isConnected == true )
       return;
 
    if( serverDNS )
@@ -147,6 +147,33 @@ bool  NetworkLayer::RequestListOfFriends() const
 
    return true;
 }
+
+
+//-----------------------------------------------------------------------------
+  
+bool  NetworkLayer::RequestChatChannelHistory( const string& channelUuid, int numRecords, int startingIndex ) const
+{
+   PacketChatHistoryRequest history;
+   history.chatChannelUuid = channelUuid;
+   history.numRecords = numRecords;
+   history.startingIndex = startingIndex;
+   SerializePacketOut( &history );
+   return true;
+}
+
+//-----------------------------------------------------------------------------
+  
+bool  NetworkLayer::RequestChatP2PHistory( const string& userUuid, int numRecords, int startingIndex ) const
+{
+   PacketChatHistoryRequest history;
+   history.userUuid = userUuid;
+   history.numRecords = numRecords;
+   history.startingIndex = startingIndex;
+   SerializePacketOut( &history );
+   return true;
+}
+
+
 
 //-----------------------------------------------------------------------------
 /*
@@ -834,6 +861,52 @@ bool  NetworkLayer::HandlePacketIn( BasePacket* packetIn )
                }
              }
              break;
+          case PacketChatToServer::ChatType_RequestHistoryResult:
+            {
+               PacketChatHistoryResult* history = static_cast<PacketChatHistoryResult*>( packetIn );
+               int num = history->chat.size();
+
+               
+               /**/
+               if( m_callbacks.size() == 0 || ( history->chatChannelUuid.size() == 0 && history->userUuid.size() == 0 ) )
+               {
+                  cout << "Chat items for this channel are [" << num << "] = {";
+
+                  for( int i=0; i<num; i++ )
+                  {
+                     cout << history->chat[i].username << " said " << history->chat[i].message;
+                     if( i < num-1 )
+                         cout << ", ";
+                  }
+                  cout << "}" << endl;
+               }
+               else
+               {
+                  list< ChatEntry > listOfChats;
+                  for( int i=0; i<num; i++ )
+                  {
+                     listOfChats.push_back( history->chat[i] );
+                  }
+                  bool invokeChannelNotifier = false;
+
+                  if( history->chatChannelUuid.size() )
+                  {
+                     invokeChannelNotifier  = true;
+                  }
+                  for( list< UserNetworkEventNotifier* >::iterator it = m_callbacks.begin(); it != m_callbacks.end(); ++it )
+                  {
+                     if( invokeChannelNotifier )
+                     {
+                        (*it)->ChatChannelHistory( history->chatChannelUuid, listOfChats );
+                     }
+                     else
+                     {
+                        (*it)->ChatP2PHistory( history->userUuid, listOfChats );
+                     }
+                  }
+               }
+            }
+            break;
          }
       }
       break;

@@ -213,21 +213,100 @@ bool  UserConnection::RequestChatChannels()
 
 //------------------------------------------------------------------------------------------------
 
-void     UserConnection::GetChatDiegest( const string& channelUuid )
+void     UserConnection::GetChatChannelDigest( const string& channelUuid, int numRecords, int startingIndex  )
 {
    // SELECT chat.text, user.name, chat.timestamp, chat.game_turn
    // FROM chat as chat, user as user
    // where chat_channel_id='ABCDEFGHIJKLMNOP' 
    // AND chat.user_id_sender=user.uuid
 
+   if( channelUuid.size() == 0 )
+   {
+      m_chatServer->SendErrorReportToClient( PacketErrorReport::ErrorType_BadChatChannel, m_connectionId  );
+      return;
+   }
+
+   if( numRecords < 1 )
+      numRecords = 1;
+   if( numRecords > 100 )
+      numRecords = 100;
+
+   if( startingIndex < 0 )
+      startingIndex = 0;
+   if( startingIndex > 1000000 )
+      startingIndex = 1000000;
+
    PacketDbQuery* dbQuery = new PacketDbQuery;
    dbQuery->id = m_connectionId;
-   dbQuery->lookup = QueryType_ChatHistory;
+   dbQuery->lookup = QueryType_ChatChannelHistory;
 
-   string queryString = "SELECT chat.text, user.name, chat.game_turn, chat.timestamp FROM chat_message AS chat, users WHERE chat.user_id_sender=user.uuid AND chat_channel_id='";
-   queryString += channelUuid;
-   queryString += "'";
+   string queryString = "SELECT chat.text, users.user_name, users.uuid, chat.game_turn, chat.timestamp FROM chat_message AS chat, users WHERE chat.user_id_sender=users.uuid AND chat_channel_id='%s'";
+   queryString += " ORDER BY chat.timestamp DESC LIMIT ";
+   queryString += boost::lexical_cast< string >( startingIndex );
+   queryString += ",";
+   queryString += boost::lexical_cast< string >( numRecords );
+
    dbQuery->query = queryString;
+   dbQuery->escapedStrings.insert( channelUuid );
+   dbQuery->meta = channelUuid;
+
+   m_chatServer->AddPacketFromUserConnection( dbQuery, m_connectionId );
+}
+
+//------------------------------------------------------------------------------------------------
+
+void     UserConnection::GetChatP2PDigest( const string& userUuid, int numRecords, int startingIndex )
+{
+   /*
+   SELECT chat.text, users.user_name, users.uuid, chat.game_turn, chat.timestamp
+
+   FROM playdek.chat_message AS chat, users WHERE 
+   chat.user_id_sender=users.uuid  AND
+   chat_channel_id="" AND 
+   ( 
+   (user_id_sender='987654321' AND user_id_recipient='9635748152' ) or
+   (user_id_sender='9635748152' AND user_id_recipient='987654321' )
+   )
+   ORDER BY timestamp DESC LIMIT 0,20
+   */
+
+   
+   if( userUuid.size() == 0 )
+   {
+      m_chatServer->SendErrorReportToClient( PacketErrorReport::ErrorType_NoChatHistoryExistsForThisUser, m_connectionId  );
+      return;
+   }
+
+   if( numRecords < 1 )
+      numRecords = 1;
+   if( numRecords > 100 )
+      numRecords = 100;
+
+   if( startingIndex < 0 )
+      startingIndex = 0;
+   if( startingIndex > 1000000 )
+      startingIndex = 1000000;
+
+   PacketDbQuery* dbQuery = new PacketDbQuery;
+   dbQuery->id = m_connectionId;
+   dbQuery->lookup = QueryType_ChatP2PHistory;
+
+   string queryString = "SELECT chat.text, users.user_name, users.uuid, chat.game_turn, chat.timestamp FROM playdek.chat_message AS chat, users WHERE chat.user_id_sender=users.uuid  AND " \
+                  "chat_channel_id='' AND  ( "\
+                  "(user_id_sender='%s' AND user_id_recipient='%s' ) or " \
+                  "(user_id_sender='%s' AND user_id_recipient='%s' ) " \
+                  ") "\
+                  "ORDER BY timestamp DESC LIMIT ";
+   queryString += boost::lexical_cast< string >( startingIndex );
+   queryString += ",";
+   queryString += boost::lexical_cast< string >( numRecords );
+
+   dbQuery->query = queryString;
+   dbQuery->escapedStrings.insert( userUuid );
+   dbQuery->escapedStrings.insert( m_uuid );
+   dbQuery->escapedStrings.insert( m_uuid );
+   dbQuery->escapedStrings.insert( userUuid );
+   dbQuery->meta = userUuid;
 
    m_chatServer->AddPacketFromUserConnection( dbQuery, m_connectionId );
 }
@@ -249,13 +328,13 @@ void     UserConnection::GetAllChatHistroySinceLastLogin()
    dbQuery->id = m_connectionId;
    dbQuery->lookup = QueryType_ChatHistoryMissedSinceLastLogin;
 
-   string queryString = "SELECT * FROM chat_message AS chat where chat_channel_id in " \
+   string queryString = "SELECT * FROM chat_message AS chat WHERE chat_channel_id IN " \
       " (SELECT chat_channel.uuid from chat_channel"\
-      " join user_join_chat_channel"\
-      " on user_join_chat_channel.channel_uuid = chat_channel.uuid "\
-      " where user_join_chat_channel.user_uuid='";
+      " JOIN user_join_chat_channel"\
+      " ON user_join_chat_channel.channel_uuid = chat_channel.uuid "\
+      " WHERE user_join_chat_channel.user_uuid='";
    queryString += m_uuid;
-   queryString += "' ) and timestamp>='";
+   queryString += "' ) AND timestamp>='";
    queryString += m_lastLoginTime;//"2013-04-23 14:50:38";
    queryString += "'";
    dbQuery->query = queryString;
@@ -488,7 +567,14 @@ bool     UserConnection::ProcessPacket( BasePacket* packet )
          case PacketChatToServer::ChatType_RequestHistory:
             {
                PacketChatHistoryRequest* request = static_cast< PacketChatHistoryRequest* > ( packet );
-               GetChatDiegest( request->chatChannelUuid );
+               if( request->chatChannelUuid.size() )
+               {
+                  GetChatChannelDigest( request->chatChannelUuid, request->numRecords, request->startingIndex );
+               }
+               else
+               {
+                  GetChatP2PDigest( request->userUuid, request->numRecords, request->startingIndex );
+               }
             }
             break;
          case PacketChatToServer::ChatType_RequestHistorySinceLastLogin:
@@ -576,6 +662,8 @@ bool     UserConnection::ProcessPacket( BasePacket* packet )
 
 bool     UserConnection::HandleDbQueryResult( BasePacket* packet )
 {
+   const int maxNumMessagesPerPacket = 20;
+
    PacketDbQueryResult* dbResult = static_cast< PacketDbQueryResult* >( packet );
 
    switch( dbResult->lookup )
@@ -647,7 +735,7 @@ bool     UserConnection::HandleDbQueryResult( BasePacket* packet )
             InformUserOfSuccessfulLogin();
          }
          break;
-      case QueryType_ChatHistory:
+      case QueryType_ChatChannelHistory:
          {
             if( dbResult->bucket.bucket.size() == 0 )
             {
@@ -655,8 +743,8 @@ bool     UserConnection::HandleDbQueryResult( BasePacket* packet )
                break;
             }
 
-            const int maxNumMessagesPerPacket = 20;
             PacketChatHistoryResult* result = new PacketChatHistoryResult;
+            result->chatChannelUuid = dbResult->meta;
 
             SimpleChatTable              enigma( dbResult->bucket );
             SimpleChatTable::iterator    it = enigma.begin();
@@ -666,6 +754,8 @@ bool     UserConnection::HandleDbQueryResult( BasePacket* packet )
                ChatEntry            entry;
                entry.message =      row[ SimpleChat::Column_text ];
                entry.username =     row[ SimpleChat::Column_user_name ];
+               entry.useruuid =     row[ SimpleChat::Column_user_uuid ];
+               entry.timestamp =    row[ SimpleChat::Column_timestamp ];
 
                if( row[ SimpleChat::Column_game_turn ] != "NULL" )
                {
@@ -684,6 +774,7 @@ bool     UserConnection::HandleDbQueryResult( BasePacket* packet )
                   if( it != enigma.end() )
                   {
                      result = new PacketChatHistoryResult;
+                     result->chatChannelUuid = dbResult->meta;
                   }
                   else 
                   {
@@ -697,6 +788,59 @@ bool     UserConnection::HandleDbQueryResult( BasePacket* packet )
                SendPacketToGateway( result );
             }
 
+         }
+         break;
+      case QueryType_ChatP2PHistory:
+         {
+            if( dbResult->bucket.bucket.size() == 0 )
+            {
+               m_chatServer->SendErrorReportToClient( PacketErrorReport::ErrorType_NoChatHistoryExistsForThisUser, m_connectionId  );
+               break;
+            }
+            PacketChatHistoryResult* result = new PacketChatHistoryResult;
+            result->userUuid = dbResult->meta;
+
+            SimpleChatTable              enigma( dbResult->bucket );
+            SimpleChatTable::iterator    it = enigma.begin();
+            while( it != enigma.end() )
+            {
+               ChatTable::row       row = *it++;
+               ChatEntry            entry;
+               entry.message =      row[ SimpleChat::Column_text ];
+               entry.username =     row[ SimpleChat::Column_user_name ];
+               entry.useruuid =     row[ SimpleChat::Column_user_uuid ];
+               entry.timestamp =    row[ SimpleChat::Column_timestamp ];
+
+               if( row[ SimpleChat::Column_game_turn ] != "NULL" )
+               {
+                  entry.gameTurn =  boost::lexical_cast< int >( row[ SimpleChat::Column_game_turn ] );
+               }
+               else
+               {
+                  entry.gameTurn  = 0;
+               }
+              
+               result->chat.push_back( entry );
+               // send once we have so many items
+               if( ( result->chat.size() % maxNumMessagesPerPacket) == 0 )
+               {
+                  SendPacketToGateway( result );
+                  if( it != enigma.end() )
+                  {
+                     result = new PacketChatHistoryResult;
+                     result->userUuid = dbResult->meta;
+                  }
+                  else 
+                  {
+                     result = NULL;
+                  }
+               }
+            }
+            // send the 'residual'
+            if( result && result->chat.size() )
+            {
+               SendPacketToGateway( result );
+            }
          }
          break;
       case QueryType_ChatHistoryMissedSinceLastLogin:

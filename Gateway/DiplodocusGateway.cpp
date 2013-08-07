@@ -4,6 +4,19 @@
 #include "FruitadensGateway.h"
 #include "../NetworkCommon/ServerConstants.h"
 
+//#define VERBOSE
+void  PrintText( const char* text, int extraCr = 0 )
+{
+#if defined (VERBOSE)
+
+   cout << text << endl;
+   while( --extraCr >= 0 )
+   {
+      cout << endl;
+   }
+#endif
+}
+
 //-----------------------------------------------------------------------------------------
 //-----------------------------------------------------------------------------------------
 
@@ -22,19 +35,23 @@ DiplodocusGateway::~DiplodocusGateway()
 
 U32      DiplodocusGateway::GetNextConnectionId()
 {
+   m_inputChainListMutex.lock();
    m_connectionIdTracker ++;
    if( m_connectionIdTracker >= ConnectionIdExclusion.low &&  m_connectionIdTracker <= ConnectionIdExclusion.high )
    {
       m_connectionIdTracker = ConnectionIdExclusion.high + 1;
    }
-   return m_connectionIdTracker;
+   U32 returnValue = m_connectionIdTracker;
+
+   m_inputChainListMutex.unlock();
+   return returnValue;
 }
 
 //-----------------------------------------------------------------------------------------
 
 bool  DiplodocusGateway::AddInputChainData( BasePacket* packet, U32 connectionId ) // coming from the client-side socket
 {
-   cout << "AddInputChainData" << endl << endl;
+   PrintText( "AddInputChainData", 1);
    ConnectionMapIterator connIt = m_connectionMap.find( connectionId );
    if( connIt != m_connectionMap.end() )
    {
@@ -60,7 +77,7 @@ bool  DiplodocusGateway::AddInputChainData( BasePacket* packet, U32 connectionId
 
 void     DiplodocusGateway::ClientConnectionFinishedAdding( KhaanConnector* khaan )
 {
-   cout << "** ClientConnectionFinishedAdding" << endl << endl;
+   PrintText( "** ClientConnectionFinishedAdding" , 1 );
    U32 newId = GetNextConnectionId();
    m_socketToConnectionMap.insert( SocketToConnectionPair( khaan->GetSocketId(), newId ) );
    m_connectionToSocketMap.insert( SocketToConnectionPair( newId, khaan->GetSocketId() ) );
@@ -79,7 +96,7 @@ void     DiplodocusGateway::ClientConnectionFinishedAdding( KhaanConnector* khaa
 
 void  DiplodocusGateway::ClientConnectionIsAboutToRemove( KhaanConnector* khaan )
 {
-   cout << "** ClientConnectionIsAboutToRemove" << endl << endl;
+   PrintText( "** ClientConnectionIsAboutToRemove" , 1 );
    int connectionId = khaan->GetConnectionId();
    int socketId = khaan->GetSocketId();
 
@@ -98,7 +115,7 @@ void  DiplodocusGateway::ClientConnectionIsAboutToRemove( KhaanConnector* khaan 
 
 bool DiplodocusGateway::PushPacketToProperOutput( BasePacket* packet )
 {
-   cout << "PushPacketToProperOutput" << endl << endl;
+   PrintText( "PushPacketToProperOutput", 1 );
 
    BaseOutputContainer tempOutput;
    // create new scope
@@ -135,7 +152,7 @@ int  DiplodocusGateway::ProcessInputFunction()
    if( m_packetsToBeSentInternally.size() == 0 )
       return 0;
 
-   cout << "ProcessInputFunction" << endl;
+   PrintText( "ProcessInputFunction" );
    //Threading::MutexLock locker( m_mutex );
    while( m_packetsToBeSentInternally.size() )
    {
@@ -156,7 +173,7 @@ int  DiplodocusGateway::ProcessInputFunction()
 
 bool  DiplodocusGateway::AddOutputChainData( BasePacket* packet, U32 serverType )
 {
-   cout << "AddOutputChainData" << endl;
+   PrintText( "AddOutputChainData" );
    // pass through only
    if( packet->packetType == PacketType_GatewayWrapper )
    {
@@ -177,7 +194,7 @@ bool  DiplodocusGateway::AddOutputChainData( BasePacket* packet, U32 serverType 
 // assuming that everything is thread protected at this point
 void  DiplodocusGateway::HandlePacketToKhaan( KhaanConnector* khaan, BasePacket* packet )
 {
-   cout << "HandlePacketToKhaan" << endl;
+   PrintText( "HandlePacketToKhaan" );
    U32 connectionId = khaan->GetConnectionId();
    if( packet->packetType == PacketType_Login && 
        packet->packetSubType == PacketLogin::LoginType_InformGatewayOfLoginStatus )
@@ -223,7 +240,7 @@ int   DiplodocusGateway::ProcessOutputFunction()
    // lookup packet info and pass it back to the proper socket if we can find it.
    if( m_connectionsNeedingUpdate.size() || m_outputTempStorage.size() )
    {
-      cout << "ProcessOutputFunction" << endl;
+      PrintText( "ProcessOutputFunction" );
 
       while( m_outputTempStorage.size() )
       {

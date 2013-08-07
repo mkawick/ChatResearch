@@ -18,6 +18,7 @@ DiplodocusChat :: DiplodocusChat( const string& serverName, U32 serverId ) : Dip
    
    m_chatChannelManager = new ChatChannelManager();
    m_chatChannelManager->SetConnectionId( ChatChannelManagerConnectionId );
+   m_chatChannelManager->Init();
 
    UserConnection::SetDiplodocusChat( this );
    UserConnection::SetChatManager( m_chatChannelManager );

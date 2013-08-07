@@ -216,6 +216,9 @@ int   Fruitadens :: ProcessInputFunction()
 
    while( 1 )
    {
+      if( m_clientSocket == 0 )// the server went away
+         break;
+
       int numBytes = static_cast< int >( recv( m_clientSocket, (char*) buffer, MaxBufferSize, NULL ) );
 	   if( numBytes == SOCKET_ERROR)
 	   {
@@ -303,11 +306,16 @@ bool  Fruitadens::HandlePacketReceived( BasePacket* packetIn )
       delete packetIn;
       return false;
    }
-   // special case
+   // special case... we handle server id directly, but we simply pass through for other s2s comms.
    if( packetIn->packetType == PacketType_ServerToServerWrapper )
    {
       PacketServerToServerWrapper* wrapper = static_cast< PacketServerToServerWrapper* >( packetIn );
-      switch( wrapper->pPacket->packetType )
+
+      // ** note this reset
+      packetIn = wrapper->pPacket;
+      bool handled2SPacket = false;
+      // ** note
+      switch( packetIn->packetType )
       {
       case PacketType_ServerInformation:
          {
@@ -319,9 +327,11 @@ bool  Fruitadens::HandlePacketReceived( BasePacket* packetIn )
             cout << "name = '" << unwrappedPacket->serverName << "' : type " << static_cast<U32>( m_connectedGameProductId ) << ", id=" << m_connectedServerId << endl;
             cout << "Server isGame = '" << unwrappedPacket->isGameServer << ", isController : " << unwrappedPacket->isController << endl;
             delete unwrappedPacket;
+            handled2SPacket = true;
          }
          break;
-      case BasePacket::ChatType_CreateChatChannelFromGameServerResponse: 
+         // no other current needs
+  /*    case BasePacket::ChatType_CreateChatChannelFromGameServerResponse: 
          {
             PacketChatCreateChatChannelFromGameServerResponse* unwrappedPacket = static_cast< PacketChatCreateChatChannelFromGameServerResponse * > ( wrapper->pPacket ); 
             if( unwrappedPacket->success )
@@ -331,13 +341,17 @@ bool  Fruitadens::HandlePacketReceived( BasePacket* packetIn )
             }
             delete unwrappedPacket;
          }
-         break;
+         break;*/
 
       }
       
       delete wrapper;
 
-      return true;
+      if( handled2SPacket) 
+      {
+         return true;
+      }
+      // or we fall through
    }
 
    Threading::MutexLock locker( m_inputChainListMutex );
@@ -373,7 +387,7 @@ bool  Fruitadens :: SerializePacketOut( const BasePacket* packet )
 
 bool  Fruitadens :: SendPacket( const U8* buffer, int length ) const
 {
-   if( m_isConnected && ( length > 0 ) )
+   if( m_isConnected && ( length > 0 ) && m_clientSocket != 0 )
    {
       int nBytes = static_cast< int >( send( m_clientSocket, reinterpret_cast<const char*>( buffer ), length, 0 ) );
       if( nBytes == SOCKET_ERROR || nBytes < length )

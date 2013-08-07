@@ -176,6 +176,9 @@ bool  PacketChatHistoryRequest::SerializeIn( const U8* data, int& bufferOffset )
 {
    BasePacket::SerializeIn( data, bufferOffset );
    Serialize::In( data, bufferOffset, chatChannelUuid );
+   Serialize::In( data, bufferOffset, userUuid );
+   Serialize::In( data, bufferOffset, numRecords );   
+   Serialize::In( data, bufferOffset, startingIndex );
 
    return true;
 }
@@ -184,6 +187,9 @@ bool  PacketChatHistoryRequest::SerializeOut( U8* data, int& bufferOffset ) cons
 {
    BasePacket::SerializeOut( data, bufferOffset );
    Serialize::Out( data, bufferOffset, chatChannelUuid );
+   Serialize::Out( data, bufferOffset, userUuid );
+   Serialize::Out( data, bufferOffset, numRecords );
+   Serialize::Out( data, bufferOffset, startingIndex );
 
    return true;
 }
@@ -193,7 +199,9 @@ bool  PacketChatHistoryRequest::SerializeOut( U8* data, int& bufferOffset ) cons
 bool  ChatEntry::SerializeIn( const U8* data, int& bufferOffset )
 {
    Serialize::In( data, bufferOffset, username );
+   Serialize::In( data, bufferOffset, useruuid );
    Serialize::In( data, bufferOffset, message );
+   Serialize::In( data, bufferOffset, timestamp );
    Serialize::In( data, bufferOffset, gameTurn );
 
    return true;
@@ -202,7 +210,9 @@ bool  ChatEntry::SerializeIn( const U8* data, int& bufferOffset )
 bool  ChatEntry::SerializeOut( U8* data, int& bufferOffset ) const
 {
    Serialize::Out( data, bufferOffset, username );
+   Serialize::Out( data, bufferOffset, useruuid );
    Serialize::Out( data, bufferOffset, message );
+   Serialize::Out( data, bufferOffset, timestamp );
    Serialize::Out( data, bufferOffset, gameTurn );
 
    return true;
@@ -213,7 +223,8 @@ bool  ChatEntry::SerializeOut( U8* data, int& bufferOffset ) const
 bool  PacketChatHistoryResult::SerializeIn( const U8* data, int& bufferOffset )
 {
    BasePacket::SerializeIn( data, bufferOffset );
-//   Serialize::In( data, bufferOffset, chatChannel );
+   Serialize::In( data, bufferOffset, chatChannelUuid );
+   Serialize::In( data, bufferOffset, userUuid );
    Serialize::In( data, bufferOffset, chat );
 
    return true;
@@ -222,8 +233,8 @@ bool  PacketChatHistoryResult::SerializeIn( const U8* data, int& bufferOffset )
 bool  PacketChatHistoryResult::SerializeOut( U8* data, int& bufferOffset ) const
 {
    BasePacket::SerializeOut( data, bufferOffset );
-   //Serialize::Out( data, bufferOffset, chatChannel );
-
+   Serialize::Out( data, bufferOffset, chatChannelUuid );
+   Serialize::Out( data, bufferOffset, userUuid );
    Serialize::Out( data, bufferOffset, chat );
 
    return true;

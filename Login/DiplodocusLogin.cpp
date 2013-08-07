@@ -222,7 +222,7 @@ bool     DiplodocusLogin::AddInputChainData( BasePacket* packet, U32 connectionI
 
    LogMessage( LOG_PRIO_INFO, "Login::Data in" );
 
-   cout << "Login::Data in" << endl;
+   //cout << "Login::Data in" << endl;
 
    if( packet->packetType != PacketType_GatewayWrapper )
    {
@@ -293,6 +293,9 @@ bool     DiplodocusLogin::AddQueryToOutput( PacketDbQuery* packet )
 
 bool     DiplodocusLogin::LogUserIn( const string& username, const string& password, const string& loginKey, U8 gameProductId, U32 connectionId )
 {
+   cout << endl << "***********************" << endl;
+   cout << "attempt to login user: "<< username << ", pwHash:" << password << " for game id=" << (int) gameProductId << " and conn: " << connectionId << endl;
+   cout << "***********************" << endl;
    if( IsUserConnectionValid( connectionId ) )
    {
       // should we boot this user for hacking? Or is it bad code?
@@ -311,14 +314,14 @@ bool     DiplodocusLogin::LogUserIn( const string& username, const string& passw
    // Before we add the user, let's verify that s/he isn't already logged in with a different connectionId. Storing this in a map
    // makes sense, but it's overkill for now.
 
-   if( FindUserAlreadyInGame( username, gameProductId ) == true )
+   /*if( FindUserAlreadyInGame( username, gameProductId ) == true )
    {
       // should we boot this user for hacking? Or is it bad code?
       Log( "Second login from the same product attempt was made", 4 );
       Log( username.c_str(), 4 );
       ForceUserLogoutAndBlock( connectionId );
       return false;
-   }
+   }*/
 
    ConnectionToUser conn( username, password, loginKey );
    conn.gameProductId = gameProductId;

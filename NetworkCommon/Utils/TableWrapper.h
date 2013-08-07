@@ -91,7 +91,9 @@ public:
       Column_uuid,
       Column_is_active,
       Column_max_num_members,
-      Column_is_server_created,
+      Column_game_type, // summoner wars
+      Column_game_instance_id, // game instance
+      Column_date_created,
       Column_end
    };
    static const char* const column_names[];
@@ -130,7 +132,7 @@ public:
    {
       Column_text,
       Column_user_name,
-      
+      Column_user_uuid,
       Column_game_turn,
       Column_timestamp,
       Column_end
