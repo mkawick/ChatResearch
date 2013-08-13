@@ -68,6 +68,9 @@ int  FruitadensLogin::ProcessOutputFunction()
          if( packet->packetType == PacketType_ServerToServerWrapper )         
          {
             SerializePacketOut( packet );
+            PacketServerToServerWrapper* wrapper = static_cast< PacketServerToServerWrapper* >( packet );
+            packet = wrapper->pPacket;
+            delete wrapper;
          }
          else
          {

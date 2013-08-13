@@ -72,8 +72,10 @@ public:
       ContactType_InviteContact,
       ContactType_InviteSentNotification,
       ContactType_InviteReceived,
-      ContactType_RemoveInivtation,
+      ContactType_RemoveContact,
+      ContactType_RemoveInvitation,
       ContactType_AcceptInvite,
+      ContactType_DeclineInvitation,
       ContactType_InvitationAccepted,
       ContactType_BlockUser, // remove user from contacts or simply block an invitator. Make sure to remove invitations from that usr as well
 
@@ -222,12 +224,25 @@ public:
    InvitationInfo info;
 };
 
+
+class PacketContact_ContactRemove : public PacketContact
+{
+public:
+   PacketContact_ContactRemove() : PacketContact( PacketType_Contact, ContactType_RemoveContact ){  }
+
+   bool  SerializeIn( const U8* data, int& bufferOffset );
+   bool  SerializeOut( U8* data, int& bufferOffset ) const;
+
+   string contactUuid;
+   string message;
+};
+
 ///////////////////////////////////////////////////////////////////
 
 class PacketContact_RemoveInvitation : public PacketContact
 {
 public:
-   PacketContact_RemoveInvitation() : PacketContact( PacketType_Contact, ContactType_RemoveInivtation ){  }
+   PacketContact_RemoveInvitation() : PacketContact( PacketType_Contact, ContactType_RemoveInvitation ){  }
 
    bool  SerializeIn( const U8* data, int& bufferOffset );
    bool  SerializeOut( U8* data, int& bufferOffset ) const;
@@ -257,8 +272,23 @@ public:
 
    string   fromUsername;
    string   toUsername;
+   string   message;
    bool     wasAccepted;
 };
+
+
+class PacketContact_DeclineInvitation : public PacketContact
+{
+public:
+   PacketContact_DeclineInvitation() : PacketContact( PacketType_Contact, ContactType_DeclineInvitation ){  }
+
+   bool  SerializeIn( const U8* data, int& bufferOffset );
+   bool  SerializeOut( U8* data, int& bufferOffset ) const;
+
+   string   invitationUuid;
+   string   message;
+};
+
 
 
 class PacketContact_InviteBlockUser : public PacketContact

@@ -12,22 +12,37 @@ class PacketDbQueryResult;
 
 struct ChatUser 
 {
-   string            username;
+   string            userName;
    string            userUuid;
    UserConnection*   connection;
    list< stringhash > channels;
    bool              isOnline;
 };
 
+struct UserBasics
+{
+   UserBasics( const string& name, const string& uuid ) : userName( name ), userUuid( uuid ) {}
+   string            userName;
+   string            userUuid;
+};
+
 struct ChatChannel
 {
    ChatChannel() : gameTurn( 0 ) {}
 
+   int      recordId;
    string   name;
    string   uuid;
+   bool     isActive;
+   int      maxPlayers;
+   string   channelDetails;
+   U8       gameType;
+   U32      gameId;
+   string   createDate;
 
    vector< ChatUser >   admins;
    list< stringhash >   userUuidList;
+   list< UserBasics >   userBasics;
    U16         gameTurn;
 };
 
@@ -37,7 +52,9 @@ struct ChatChannelDbJob
    {
       JobType_Create,
       JobType_Delete,
+      JobType_LoadSingleChannel,
       JobType_LoadAllChannels,
+      //JobType_LoadAllUsersInChannel,
       JobType_SelectAllChannelsForAUser,
       JobType_Exists,
       JobType_AddUser,
@@ -78,8 +95,8 @@ class ChatChannelManager : public ChainedInterface< BasePacket* >
 private:
    enum UserStatusChange
    {
-      UserStatusChange_Login,
-      UserStatusChange_Logout,
+      UserStatusChange_Logout = 0,
+      UserStatusChange_Login,      
       UserStatusChange_UserAddedToChannel,
       UserStatusChange_UserRemovedFromChannel,
    };
@@ -110,6 +127,7 @@ public:
 
    string   FindChannel( const string& channelName ) const; 
    void     LoadAllChannels( const string& authUuid );
+   void     LoadSingleChannel( string uuid, int gameId, int chatChannelId );
 
    void     RequestChatChannelList( const string& authUuid, bool isFullList );
    void     RequestUsersList( const string& authUuid, bool isFullList );
@@ -127,6 +145,8 @@ public:
 
    bool     MoveChannelToDepricated( const string& channelUuid, const string& userUuid, const U32 serverId );
    bool     GetListOfGameBasedchannels( const U32 serverId );
+
+   bool     GetChatChannels( const string& uuid, ChannelKeyValue& listOfChannels );
 
 
    //-------------------------------------------------------
@@ -154,7 +174,11 @@ protected:
    typedef DbJobList::iterator               DbJobIterator;
 
    void              AddUserToChannelInternal( stringhash hashedUserUuid, const string& channelUuid, const string& channelName, UserUuidSet& otherUsersToNotify );
-   bool              LoadChatChannel( const string& channelUuid, const string& channelName );
+   void              AddChatchannel( int id, const string& channelName, const string& channelUuid, bool isActive, int maxPlayers, int gameType, int gameId, const string& createDate );
+   void              AddAllUsersToChannel( const string& channelUuid, const SerializedKeyValueVector< string >& usersAndIds );
+   void              AddUserToChannel( const string& channelUuid, UserBasics& ub );
+   bool              AddChatChannelToStorage( const string& channelUuid, const string& channelName );
+   void              AssembleListOfUsersToNotifyForAllChannelsForUser( stringhash userUuidHash, stringhash channelUuid, const string& userUuid, UserUuidSet& otherUsersToNotify );
    void              RemoveUserFromChannelInternal( stringhash hashedUserUuid, stringhash channelUuid, const string& userUuide, UserUuidSet& otherUsersToNotify );
    bool              RemoveChatChannel( const string& channelUuid );
    void              WriteChatToDb( const string& message, const string& senderUuid, const string& friendUuid, const string& channelUuid, U16 gameTurn, U32 connectionId );

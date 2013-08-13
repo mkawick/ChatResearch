@@ -14,18 +14,20 @@
 
 DiplodocusChat :: DiplodocusChat( const string& serverName, U32 serverId ) : Diplodocus< KhaanChat >( serverName, serverId, 0,  ServerType_Chat ), m_inputsNeedUpdate( false ), m_chatChannelManagerNeedsUpdate( false )
 {
+   this->SetSleepTime( 33 );// 30 fps
+}
+
+void  DiplodocusChat :: Init()
+{
    ChatChannelManager::SetDiplodocusChat( this );
    
    m_chatChannelManager = new ChatChannelManager();
    m_chatChannelManager->SetConnectionId( ChatChannelManagerConnectionId );
-   m_chatChannelManager->Init();
 
    UserConnection::SetDiplodocusChat( this );
    UserConnection::SetChatManager( m_chatChannelManager );
-
-   this->SetSleepTime( 33 );// 30 fps
+   m_chatChannelManager->Init();
 }
-
 //---------------------------------------------------------------
 
 void  DiplodocusChat::ClientConnectionFinishedAdding( KhaanChat* khaan )
@@ -163,12 +165,33 @@ void  DiplodocusChat::SetupForNewUserConnection( PacketPrepareForUserLogin* logi
       return;
    }
 
-   UserConnection* connection = new UserConnection( connectionId );
-   connection->SetupFromLogin( loginPacket->userId, loginPacket->username, loginPacket->uuid, loginPacket->loginKey, loginPacket->lastLoginTime );
-
+   bool found = false;
+   // if the user is already here but relogged, simply 
    m_mutex.lock();
-      m_connectionMap.insert( ConnectionPair ( connectionId, connection ) );
+      it = m_connectionMap.begin();
+      if( it != m_connectionMap.end() )
+      {
+         if( it->second->GetUuid() == loginPacket->uuid ) 
+         {
+            found = true;
+            it->second->SetConnectionId( connectionId );
+            it->second->InformUserOfSuccessfulLogin();
+
+            m_connectionMap.insert( ConnectionPair( connectionId, it->second ) );
+            m_connectionMap.erase( it );
+         }
+      }
    m_mutex.unlock();
+
+   if( found == false )// almost 100% true
+   {
+      UserConnection* connection = new UserConnection( connectionId );
+      connection->SetupFromLogin( loginPacket->userId, loginPacket->username, loginPacket->uuid, loginPacket->loginKey, loginPacket->lastLoginTime );
+
+      m_mutex.lock();
+         m_connectionMap.insert( ConnectionPair ( connectionId, connection ) );
+      m_mutex.unlock();
+   }
 }
 
 //---------------------------------------------------------------

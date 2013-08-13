@@ -113,6 +113,7 @@ int main(int argc, const char* argv[])
    s2s->AddOutputChain( middleware );
    middleware->AddOutputChain( &chatControl );
 
+   middleware->Init();
    middleware->Run();
 
    getch();

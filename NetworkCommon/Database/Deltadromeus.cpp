@@ -149,6 +149,9 @@ bool  DbJob::SubmitQuery( MYSQL* connection, const string& dbName )
          // This while is to store all rows and not just the first row found,
          while ( ( row = mysql_fetch_row( res_set ) ) != NULL )
          {
+            if( *row == NULL )
+               continue;
+
             Database::ResultRow oneRow;
             for( unsigned int i=0; i<numcolumns; i++ )
             {

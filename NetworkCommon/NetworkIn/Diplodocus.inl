@@ -359,7 +359,6 @@ void	Diplodocus< InputChain, OutputChain >::AddClientConnection( InputChainType*
    client->RegisterToReceiveNetworkTraffic();
 
    ClientConnectionFinishedAdding( client );
-   cout << "Accepted connection from " << inet_ntoa( client->GetIPAddress().sin_addr ) << endl;
 }
 
 //---------------------------------------------------------------
@@ -390,10 +389,12 @@ void  Diplodocus< InputChain, OutputChain >::OnAccept( evconnlistener* listenerO
    struct event_base*  base = evconnlistener_get_base( listenerObj );
    struct bufferevent* bufferEvent = bufferevent_socket_new( base, newSocketId, BEV_OPT_CLOSE_ON_FREE );
 
+   Diplodocus< InputChain, OutputChain >* This = (Diplodocus< InputChain, OutputChain > *) context;
+
    InputChainType* khaan = new InputChainType( newSocketId, bufferEvent );
    khaan->SetIPAddress( *((struct sockaddr_in*)ClientAddr) );
-
-   Diplodocus< InputChain, OutputChain >* This = (Diplodocus< InputChain, OutputChain > *) context;
+   khaan->SetPort( This->m_listeningPort );
+   
    if( This->m_sendHelloPacket )
    {
       khaan->AddOutputChainData( new PacketHello(), -1 );

@@ -50,18 +50,18 @@ bool  PacketChangeChatChannel::SerializeOut( U8* data, int& bufferOffset ) const
 
 bool  PacketChatToClient::SerializeIn( const U8* data, int& bufferOffset )
 {
-   PacketChangeChatChannel::SerializeIn( data, bufferOffset );
-   Serialize::In( data, bufferOffset, uuid );
+   PacketChatToServer::SerializeIn( data, bufferOffset );
    Serialize::In( data, bufferOffset, username );
+   Serialize::In( data, bufferOffset, timeStamp );
 
    return true;
 }
 
 bool  PacketChatToClient::SerializeOut( U8* data, int& bufferOffset ) const
 {
-   PacketChangeChatChannel::SerializeOut( data, bufferOffset );
-   Serialize::Out( data, bufferOffset, uuid );
+   PacketChatToServer::SerializeOut( data, bufferOffset );
    Serialize::Out( data, bufferOffset, username );
+   Serialize::Out( data, bufferOffset, timeStamp );
 
    return true;
 }

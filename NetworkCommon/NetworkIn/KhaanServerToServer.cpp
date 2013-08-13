@@ -115,13 +115,22 @@ bool  KhaanServerToServer :: PassPacketOn( BasePacket* packet, U32 connectionId 
 
 void  KhaanServerToServer :: SaveOffServerIdentification( const PacketServerIdentifier* packet )
 {
+   //if( m_serverName == packet->serverName && m_serverId == packet->serverId ) // prevent dups from reporting.
+   //   return;
+
    m_serverName = packet->serverName;
    m_serverId = packet->serverId;
    m_isGameServer = packet->isGameServer;
    m_isController = packet->isController;
    m_isGateway = packet->isGateway;
+   U8 gameProductId = packet->gameProductId;
 
-   cout << "Server has connected, name = '" << m_serverName << "' : " << m_serverId << endl;
+   std::string ip_txt( inet_ntoa( m_ipAddress.sin_addr ) );
+   cout << "---------  Connected as server to " << m_serverName << "  ------------------" << endl;
+   cout << "    " << ip_txt << " : " << static_cast<U32>( GetPort() ) << endl;
+   cout << "    type " << static_cast<U32>( gameProductId ) << " -- server ID = " << m_serverId << endl;
+   cout << "    isGame = " << boolalpha << m_isGameServer << ", isController : " << m_isController << noboolalpha << endl;
+   cout << "------------------------------------------------------" << endl;
 
    ChainLinkIteratorType itOutputs = m_listOfOutputs.begin();
    if( itOutputs != m_listOfOutputs.end() )// only one output currently supported.

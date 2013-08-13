@@ -49,16 +49,25 @@ bool	KhaanChat::OnDataReceived( unsigned char* data, int length )
       {
          PacketServerToServerWrapper* wrapper = static_cast< PacketServerToServerWrapper* >( packetIn );
          // so this is just server information about the gateway since we only accept connections about the gateway on this port
-         PacketServerIdentifier* serverId = static_cast< PacketServerIdentifier * > ( wrapper->pPacket );
+         PacketServerIdentifier* packet = static_cast< PacketServerIdentifier * > ( wrapper->pPacket );
 
-         m_serverName = serverId->serverName;
-         m_serverId = serverId->serverId;
-         m_isGameServer = serverId->isGameServer;
-         m_isController = serverId->isController;
+         //if( m_serverName != packet->serverName ||  m_serverId != packet->serverId )
+         {
+            m_serverName = packet->serverName;
+            m_serverId = packet->serverId;
+            m_isGameServer = packet->isGameServer;
+            m_isController = packet->isController;
+            U8 gameProductId = packet->gameProductId;
 
-         cout << "Gateway has connected, name = '" << m_serverName << "' : " << m_serverId << endl;
+            std::string ip_txt( inet_ntoa( m_ipAddress.sin_addr ) );
+            cout << "---------  Connected as server to " << m_serverName << "  ------------------" << endl;
+            cout << "    " << ip_txt << " : " << static_cast<U32>( GetPort() ) << endl;
+            cout << "    type " << static_cast<U32>( gameProductId ) << " -- server ID = " << m_serverId << endl;
+            cout << "    isGame = " << boolalpha << m_isGameServer << ", isController : " << m_isController << noboolalpha << endl;
+            cout << "------------------------------------------------------" << endl;
+         }
 
-         delete serverId;
+         delete packet;
          delete wrapper;// will not delete the package
          packetIn = NULL;
       }

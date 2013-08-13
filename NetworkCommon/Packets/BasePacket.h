@@ -141,6 +141,11 @@ protected:
 ///////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////
+#define _MEMORY_TEST_
+#ifdef _MEMORY_TEST_
+#include <iostream>
+using namespace std;
+#endif
 
 class BasePacket
 {
@@ -156,9 +161,19 @@ public:
       packetType( packet_type ),
       packetSubType( packet_sub_type ),
       versionNumber( 0 ),
-      gameInstanceId( 0 ){}
+      gameInstanceId( 0 )
+      {
+#ifdef _MEMORY_TEST_
+m_counter++;
+cout << "BasePacket +count: " << m_counter << endl;
+#endif
+      }
    ~BasePacket()
    {
+#ifdef _MEMORY_TEST_
+m_counter--;
+cout << "BasePacket ~count: " << m_counter << endl;
+#endif
       gameInstanceId = 0;// for a place to set breakpoints.
    }
 
@@ -170,6 +185,9 @@ public:
    U8       versionNumber;
    U8       gameProductId;
    U32      gameInstanceId;
+#ifdef _MEMORY_TEST_
+   static int      m_counter;
+#endif
 };
 
 ///////////////////////////////////////////////////////////////
@@ -261,8 +279,9 @@ public:
    bool  SerializeIn( const U8* data, int& bufferOffset );
    bool  SerializeOut( U8* data, int& bufferOffset ) const;
 
-   bool  wasLoginSuccessful;
-   U32   connectionId;  // used for a user ID.
+   string   lastLogoutTime;
+   bool     wasLoginSuccessful;
+   U32      connectionId;  // used for a user ID.
 };
 
 
@@ -276,7 +295,8 @@ public:
    bool  SerializeIn( const U8* data, int& bufferOffset );
    bool  SerializeOut( U8* data, int& bufferOffset ) const;
 
-   bool  wasLoginSuccessful;
+   string   lastLogoutTime;
+   bool     wasLoginSuccessful;
 };
 
 ///////////////////////////////////////////////////////////////
@@ -352,14 +372,21 @@ class ChannelInfo
 {
 public:
    ChannelInfo() {}
-   ChannelInfo( const string& name, bool active) : channelName( name ), isActive( active ) {}
+   ChannelInfo( const string& name, const string& uuid, int gameProductId, int _gameId, int _numNewChats, bool active) : 
+               channelName( name ), channelUuid( uuid ), gameProduct( gameProductId ), gameId( _gameId ), numNewChats( _numNewChats ), isActive( active ) {}
 
    bool  SerializeIn( const U8* data, int& bufferOffset );
    bool  SerializeOut( U8* data, int& bufferOffset ) const;
 
    string   channelName;
+   string   channelUuid;
+   int      gameProduct;
+   int      gameId;
+   int      numNewChats;
    bool     isActive;
 };
+
+typedef SerializedKeyValueVector< ChannelInfo > ChannelKeyValue;
 
 ///////////////////////////////////////////////////////////////////
 
@@ -373,7 +400,9 @@ public:
       InfoType_FriendsListRequest,
       InfoType_FriendsList,
       InfoType_GroupsListRequest,
-      InfoType_GroupsList
+      InfoType_GroupsList,
+      InfoType_ChatChannelListRequest,
+      InfoType_ChatChannelList
    };
 public:
    PacketUserInfo( int packet_type = PacketType_UserInfo, int packet_sub_type = InfoType_None ) : BasePacket( packet_type, packet_sub_type ){  }
@@ -385,9 +414,6 @@ class PacketFriendsListRequest : public PacketUserInfo
 {
 public:
    PacketFriendsListRequest( int packet_type = PacketType_UserInfo, int packet_sub_type = InfoType_FriendsListRequest ) : PacketUserInfo( packet_type, packet_sub_type ){  }
-
-   bool  SerializeIn( const U8* data, int& bufferOffset ) { return BasePacket::SerializeIn( data, bufferOffset ); }
-   bool  SerializeOut( U8* data, int& bufferOffset ) const { return BasePacket::SerializeOut( data, bufferOffset ); }
 };
 
 
@@ -410,9 +436,6 @@ class PacketGroupsListRequest : public PacketUserInfo
 {
 public:
    PacketGroupsListRequest( int packet_type = PacketType_UserInfo, int packet_sub_type = InfoType_GroupsListRequest ) : PacketUserInfo( packet_type, packet_sub_type ){  }
-
-   bool  SerializeIn( const U8* data, int& bufferOffset ) { return BasePacket::SerializeIn( data, bufferOffset ); }
-   bool  SerializeOut( U8* data, int& bufferOffset ) const { return BasePacket::SerializeOut( data, bufferOffset ); }
 };
 
 
@@ -427,6 +450,29 @@ public:
    bool  SerializeOut( U8* data, int& bufferOffset ) const;
 
    SerializedKeyValueVector< ChannelInfo >  groupList;
+};
+
+
+///////////////////////////////////////////////////////////////
+
+class PacketChatChannelListRequest : public PacketUserInfo
+{
+public:
+   PacketChatChannelListRequest( int packet_type = PacketType_UserInfo, int packet_sub_type = InfoType_ChatChannelListRequest ) : PacketUserInfo( packet_type, packet_sub_type ){  }
+};
+
+
+///////////////////////////////////////////////////////////////
+
+class PacketChatChannelList : public PacketUserInfo
+{
+public:
+   PacketChatChannelList( int packet_type = PacketType_UserInfo, int packet_sub_type = InfoType_ChatChannelList ) : PacketUserInfo( packet_type, packet_sub_type ){  }
+
+   bool  SerializeIn( const U8* data, int& bufferOffset );
+   bool  SerializeOut( U8* data, int& bufferOffset ) const;
+
+   SerializedKeyValueVector< ChannelInfo >  channelList;
 };
 
 ///////////////////////////////////////////////////////////////
@@ -513,7 +559,7 @@ public:
       ErrorType_UserBadLogin,
       ErrorType_UserDoesNotExist,
       ErrorType_UserBlocked,
-      ErrorType_UserLoggedOut,
+      ErrorType_UserLoggedOut, //4
 
       ErrorType_ChatNotCurrentlyAvailable,// reported at the gateway
       ErrorType_BadChatChannel,
@@ -523,7 +569,7 @@ public:
       ErrorType_YouAreTheOnlyPersonInThatChatChannel,
       ErrorType_CannotAddUserToChannel_AlreadyExists,
       ErrorType_NoChatHistoryExistsOnSelectedChannel,
-      ErrorType_NoChatHistoryExistsForThisUser,
+      ErrorType_NoChatHistoryExistsForThisUser, // 14
 
       ErrorType_CreateFailed_BadPassword,
       ErrorType_CreateFailed_DisallowedUsername,
@@ -531,13 +577,14 @@ public:
       ErrorType_CreateFailed_DuplicateEmail,
       ErrorType_CreateFailed_UserCreateAccountPending,
       ErrorType_CreateAccount_Success,
-      ErrorType_CreateAccount_AccountUpdated,
+      ErrorType_CreateAccount_AccountUpdated, // 21
 
-      ErrorType_Contact_Invitation_success,
+      ErrorType_Contact_Invitation_success, // 22
       ErrorType_Contact_Invitation_ProblemFindingUser,
       ErrorType_Contact_Invitation_InviteeAlreadyInvited,
       ErrorType_Contact_Invitation_InviteeAlreadyFriend,
       ErrorType_Contact_Invitation_InvalidUser,
+      ErrorType_Contact_Invitation_CannotInviteSelf,
       ErrorType_Contact_Invitation_Accepted,
       ErrorType_Contact_Invitation_BadInvitation,
    };

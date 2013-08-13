@@ -945,7 +945,7 @@ void  FruitadensClientChat::HandlePacketIn( BasePacket* packetIn )
                m_pyro->Log( " on chat channel: ", false );
 
                m_pyro->SetConsoleColor( Pyroraptor::ColorsResponseText );
-               m_pyro->Log( FindChatChannelFromUuid( chat->chatChannelUuid ) );
+               m_pyro->Log( FindChatChannelFromUuid( chat->channelUuid ) );
                m_pyro->SetConsoleColor( Pyroraptor::ColorsNormal );
             }
             break;

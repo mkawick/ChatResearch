@@ -421,6 +421,18 @@ bool     PacketFactory::ParseUserInfo( const U8* bufferIn, int& bufferOffset, co
       }
       return true;
 
+   case PacketUserInfo::InfoType_ChatChannelListRequest:
+      {
+         *packetOut = SerializeIn< PacketChatChannelListRequest >( bufferIn, bufferOffset );
+      }
+      return true;
+
+   case PacketUserInfo::InfoType_ChatChannelList:
+      {
+         *packetOut = SerializeIn< PacketChatChannelList >( bufferIn, bufferOffset );
+      }
+      return true;
+
    case PacketUserInfo::InfoType_GroupsListRequest:
       {
          *packetOut = SerializeIn< PacketGroupsListRequest >( bufferIn, bufferOffset );
@@ -503,7 +515,12 @@ bool     PacketFactory::ParseContact( const U8* bufferIn, int& bufferOffset, con
          *packetOut = SerializeIn< PacketContact_InviteReceivedNotification >( bufferIn, bufferOffset );
       }
       return true;
-    case PacketContact::ContactType_RemoveInivtation:
+   case PacketContact::ContactType_RemoveContact:
+      {
+         *packetOut = SerializeIn< PacketContact_ContactRemove >( bufferIn, bufferOffset );
+      }
+      return true;
+    case PacketContact::ContactType_RemoveInvitation:
       {
          *packetOut = SerializeIn< PacketContact_RemoveInvitation >( bufferIn, bufferOffset );
       }
@@ -516,6 +533,11 @@ bool     PacketFactory::ParseContact( const U8* bufferIn, int& bufferOffset, con
    case PacketContact::ContactType_InvitationAccepted:
       {
          *packetOut = SerializeIn< PacketContact_InvitationAccepted >( bufferIn, bufferOffset );
+      }
+      return true;
+   case PacketContact::ContactType_DeclineInvitation:
+      {
+         *packetOut = SerializeIn< PacketContact_DeclineInvitation >( bufferIn, bufferOffset );
       }
       return true;
 

@@ -130,6 +130,7 @@ int main( int argc, const char* argv[] )
    StatusUpdate* server = new StatusUpdate( serverName, serverId );
    server->AddOutputChain( delta );
    
+   //server->Init();
    server->Resume();
 
    //getch();

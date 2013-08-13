@@ -23,8 +23,6 @@ class UserConnection
       QueryType_ChatP2PHistory,
       QueryType_ChatHistoryMissedSinceLastLogin
    };
-public:
-   typedef SerializedKeyValueVector< ChannelInfo > ChannelKeyValue;
 
 public:
    UserConnection( U32 connectionId );
@@ -34,6 +32,7 @@ public:
 
 
    U32               GetConnectionId() const { return m_connectionId; }
+   void              SetConnectionId( U32 newConnectionId ) { m_connectionId = newConnectionId; } // be super careful here, this should only be invoked when relogging in
    const string&     GetName() const { return m_username; }
    const string&     GetUuid() const { return m_uuid; }
    const string&     GetLoginKey() const { return m_loginKey; }
@@ -46,10 +45,11 @@ public:
 
    const ChannelKeyValue& GetGroups() const { return availableChannels; }
    const KeyValueVector& GetFriends() const { return availableFriends; }
+   bool              InformUserOfSuccessfulLogin();
 
    //-------------------------------------------------------------------------
 
-   bool              SendChat( const string& message, const string& senderUuid, const string& senderDisplayName, string groupUuid );
+   bool              SendChat( const string& message, const string& senderUuid, const string& senderDisplayName, string groupUuid, string timeStamp );
 
    //-------------------------------------------------------------------------
 
@@ -93,8 +93,6 @@ protected:
    void              GetChatChannelDigest( const string& groupUuid, int numRecords, int startingIndex );
    void              GetChatP2PDigest( const string& groupUuid, int numRecords, int startingIndex );
    void              GetAllChatHistroySinceLastLogin();
-
-   bool              InformUserOfSuccessfulLogin();
 
    bool              SendPacketToGateway( BasePacket* packet ) const;
 

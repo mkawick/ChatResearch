@@ -40,11 +40,24 @@ public:
    ChatChannel(): gameInstanceId( 0 ) {}
    string   channelName;
    string   channelDetails;
-   string   UUID;
+   string   uuid;
+   U8       gameProductId;
    U32      gameInstanceId;
 
    SerializedKeyValueVector< string >   userList; // not necessarily friends
+
+   void  Clear()
+   {
+      channelName.clear();
+      channelDetails.clear();
+      uuid.clear();
+      gameProductId = 0;
+      gameInstanceId = 0;
+      userList.clear();
+   }
 };
+
+typedef vector< ChatChannel >    ChatChannelVector;
 
 class Group
 {
@@ -68,19 +81,21 @@ public:
 
    virtual void  GameData( U16 length, const U8* rawdata ) {}
 
-   virtual void  FriendUpdate() {}
+   virtual void  FriendsUpdate() {}
    virtual void  FriendOnlineStatusChanged( const string& uuid ) {}
-   virtual void  ChatChannelUpdate( string uuid ) {}
+   virtual void  ChatChannelUpdate( const string& uuid ) {}
    virtual void  ListOfFriendUpdate() {}
 
    virtual void  SearchResults( vector< string >& values ) {}
 
-   virtual void  ChatReceived( const string& message, const string& channelUUID, const string& userUUID ){}
+   virtual void  ReadyToStartSendingRequestsToGame() {}
+
+   virtual void  ChatReceived( const string& message, const string& channelUUID, const string& userUUID, const string& timeStamp ){}
    virtual void  AssetReceived( const U8* buffer, int size, const string& assetId ){}
 
    virtual void  InvitationReceived( const InvitationInfo& newInvitation ){}
-   virtual void  ListOfInvitationsReceived( const list< InvitationInfo >& listOfInvitations ) {}
-   virtual void  ListOfInvitationsSent( const list< InvitationInfo >& listOfInvitations ) {}
+   virtual void  InvitationsReceivedUpdate() {}
+   virtual void  InvitationsSentUpdate() {}
    virtual void  InvitationAccepted( const string& sender, const string& receiver, bool wasAccepted ){}
 
    virtual void  ChatChannelHistory( const string& channelUuid, const list< ChatEntry >& listOfChats ) {  }
@@ -92,11 +107,8 @@ public:
 
    
 };
-/*
-derived: public UserNetworkEventNotifier
-         {
-            void  GameData( U16 length, const U8* rawdata ) {};
-         }*/
+
+typedef list< UserNetworkEventNotifier* > MBerNotifierList;
 
 ///////////////////////////////////////////////////////
 
@@ -155,10 +167,13 @@ public:
    //--------------------------------------------------------------
 
    bool     AcceptInvitation( const string& uuid ) const;
+   bool     AcceptInvitationFromUsername( const string& userName ) const;
+   bool     DeclineInvitation( const string& uuid, string message ) const;
    bool     GetListOfInvitationsReceived( list< InvitationInfo >& keyValues );
+   bool     GetListOfInvitationsSent( list< InvitationInfo >& keyValues );
 
    bool     SendSearchForUsers( const string& searchString, int numRequested, int offset ) const; // min 2 char
-   bool     InviteUserToBeFriend( const string& uuid, const string& username );
+   bool     InviteUserToBeFriend( const string& uuid, const string& username, const string& message );
 
    //bool     ChangeGame( const string& gameName );
    bool	   SendTextMessage( const string& message, const string userUuid, const string chatChannel );// either can be empty but not both
@@ -173,6 +188,11 @@ public:
    int      GetNumFriends() const { return m_friends.size(); }
    bool     GetFriend( int index, const BasicUser*& user );
 
+   int      GetNumChannels() const { return m_channels.size(); }
+   bool     GetChannel( int index, ChatChannel& channel );
+
+   string   GetLocalUUID() { return m_uuid; }
+   
 private:
 
    // datatypes
@@ -188,10 +208,10 @@ private:
    string            m_serverDns;
    U32               m_selectedGame;
 
-   SerializedKeyValueVector< InvitationInfo > m_invitationsreceived;
-   SerializedKeyValueVector< InvitationInfo > m_invitationSent;
+   SerializedKeyValueVector< InvitationInfo > m_invitationsReceived;
+   SerializedKeyValueVector< InvitationInfo > m_invitationsSent;
    UserNameKeyValue  m_friends;
-   vector< ChatChannel >   m_channels;
+   ChatChannelVector m_channels;
    //vector< Group >         Groups;
    //KeyValueVector    m_availableGames;
    GameList          m_gameList;
@@ -201,16 +221,19 @@ private:
    bool              m_isLoggedIn;
    bool              m_isCreatingAccount;
    U32               m_connectionId;
+   string            m_lastLoggedOutTime;
 
    mutable U32       m_beginTime, m_endTime;
 
-   list< UserNetworkEventNotifier*>  m_callbacks;
+   MBerNotifierList  m_callbacks;
    RawDataAccumulator m_rawDataBuffer;
 
 private:
    bool     SerializePacketOut( BasePacket* packet ) const;
    int      ProcessInputFunction();
    bool     HandlePacketIn( BasePacket* packetIn );
+
+   bool     AddChatChannel( const ChatChannel& channel );
 };
 ///////////////////////////////////////////////////////
 

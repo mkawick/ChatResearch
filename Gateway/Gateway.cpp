@@ -159,7 +159,9 @@ int main( int argc, const char* argv[] )
    
    cout << "---------------------------- finished connecting ----------------------------" << endl;
 
-   gateway->Resume();
+   gateway->Init();
+
+   gateway->Resume();   
    gateway->Run();
 
    getch();

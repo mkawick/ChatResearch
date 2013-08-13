@@ -65,6 +65,9 @@ public:
 
 	void				SetIPAddress( const sockaddr_in& addr );
 	const sockaddr_in&	GetIPAddress() const { return m_ipAddress; }
+
+   void           SetPort( U16 port ) { m_listeningPort = port; }
+   U16            GetPort() const { return m_listeningPort; }
 	
 	//-----------------------------------------------
 
@@ -97,6 +100,7 @@ protected:
 	U32				m_socketId;
 	bufferevent*	m_bufferEvent;
 	sockaddr_in		m_ipAddress;
+   U16            m_listeningPort;
 
    bool           m_useLibeventToSend;
 

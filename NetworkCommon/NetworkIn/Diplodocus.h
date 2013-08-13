@@ -18,6 +18,8 @@
 #include "../ChainedArchitecture/ChainedThread.h"
 #include <map>
 
+////////////////////////////////////////////////////////////////////////////////////////////
+
 typedef string HashLookup;
 HashLookup CreateHash( const string& );
 static const int DefaultSleepTimeForPacketHandlers = 33;
@@ -37,7 +39,7 @@ protected:
 
 
 
-//-----------------------------------------------------------------------------
+////////////////////////////////////////////////////////////////////////////////////////////
 
 template< typename InputChain = BaseInputChainHandler, typename OutputChain = BasePacketChainHandler >
 class Diplodocus: public BasePacketChainHandler
@@ -51,6 +53,10 @@ public:
 public:
 	Diplodocus( string serverName, U32 serverId, U8 gameProductId, ServerType type );
 	virtual ~Diplodocus();
+
+   virtual void   Init() {}
+
+   //------------------------------------------------------------
    void           SetAsControllerApp( bool isController = true ) { m_isControllerApp = isController ; }
    void           SetAsGame( bool isGame = true ) { m_isGame = isGame; }
    void           SetAsGateway( bool isGateway = true ) { m_isGateway = isGateway; }

@@ -171,7 +171,7 @@ private:
    bool     LogUserIn( const string& username, const string& password, const string& loginKey, U8 gameProductId, U32 connectionId );
    bool     LogUserOut( U32 connectionId, bool wasDisconnectedByError );
    bool     CreateUserAccount( U32 connectionId, const string& email, const string& password, const string& username, const string& deviceAccountId, const string& deviceId, U8 languageId, U8 gameProductId );
-   bool     FindUserAlreadyInGame( const string& username, U8 gameProductId );
+   U32      FindUserAlreadyInGame( const string& username, U8 gameProductId );
 
    void     TellUserThatAccountAlreadyMatched( const CreateAccountResultsAggregator* aggregator );
    void     CreateNewUserAccount( const CreateAccountResultsAggregator* aggregator, bool setGkHashTo0 );
@@ -181,7 +181,7 @@ private:
    void     UpdateUserRecord( CreateAccountResultsAggregator* aggregator );
    //void     UpdateUserRecordToMatchingGamekitHash( const CreateAccountResultsAggregator* aggregator );
 
-   bool     SuccessfulLogin( U32 connectionId );
+   bool     SuccessfulLogin( U32 connectionId, bool isReloggedIn = false );
    bool     ForceUserLogoutAndBlock( U32 connectionId );
    bool     CreateAccount( const char* username, const char* emailAddress, const char* password, int userId, int gameId );
    bool     RequestListOfGames( U32 connectionId, const string& userUuid );
@@ -213,8 +213,11 @@ private:
 
    bool                       IsUserConnectionValid( U32 id );
    ConnectionToUser*          GetUserConnection( U32 id );
+   void                       ReinsertUserConnection( int oldIndex, int newIndex );
    bool                       AddUserConnection( UserConnectionPair );
    bool                       RemoveUserConnection( U32 id );
+
+   void                       FinalizeLogout( U32 connectionId, bool wasDisconnectedByError );
 
 };
 

@@ -3,6 +3,7 @@
 #include "DiplodocusGateway.h"
 #include "FruitadensGateway.h"
 #include "../NetworkCommon/ServerConstants.h"
+#include "../NetworkCommon/Packets/ServerToServerPacket.h"
 
 //#define VERBOSE
 void  PrintText( const char* text, int extraCr = 0 )
@@ -77,6 +78,8 @@ bool  DiplodocusGateway::AddInputChainData( BasePacket* packet, U32 connectionId
 
 void     DiplodocusGateway::ClientConnectionFinishedAdding( KhaanConnector* khaan )
 {
+   string currentTime = GetDateInUTC();
+   cout << "Accepted connection at time:" << currentTime << " from " << inet_ntoa( khaan->GetIPAddress().sin_addr ) << endl;
    PrintText( "** ClientConnectionFinishedAdding" , 1 );
    U32 newId = GetNextConnectionId();
    m_socketToConnectionMap.insert( SocketToConnectionPair( khaan->GetSocketId(), newId ) );
@@ -96,6 +99,9 @@ void     DiplodocusGateway::ClientConnectionFinishedAdding( KhaanConnector* khaa
 
 void  DiplodocusGateway::ClientConnectionIsAboutToRemove( KhaanConnector* khaan )
 {
+   string currentTime = GetDateInUTC();
+   cout << "Client disconnection at time:" << currentTime << " from " << inet_ntoa( khaan->GetIPAddress().sin_addr ) << endl;
+
    PrintText( "** ClientConnectionIsAboutToRemove" , 1 );
    int connectionId = khaan->GetConnectionId();
    int socketId = khaan->GetSocketId();
@@ -159,9 +165,19 @@ int  DiplodocusGateway::ProcessInputFunction()
       BasePacket* packet = m_packetsToBeSentInternally.front();
       if( PushPacketToProperOutput( packet ) == false )
       {
-         //assert( 0 );
-         //return false;
-         delete packet;
+         if( packet->packetType == PacketType_ServerToServerWrapper )
+         {
+            PacketServerToServerWrapper* wrapper = static_cast< PacketServerToServerWrapper* >( packet );
+            packet = wrapper->pPacket;
+            delete wrapper->pPacket;
+         }
+         else if( packet->packetType == PacketType_GatewayWrapper )
+         {
+            PacketGatewayWrapper* wrapper = static_cast< PacketGatewayWrapper* >( packet );
+            packet = wrapper->pPacket;
+            delete wrapper->pPacket;
+         }
+         //delete packet;
       }
       m_packetsToBeSentInternally.pop_front();
    }
@@ -214,6 +230,7 @@ void  DiplodocusGateway::HandlePacketToKhaan( KhaanConnector* khaan, BasePacket*
       clientNotify->wasLoginSuccessful = finishedLogin->wasLoginSuccessful;
       clientNotify->uuid = finishedLogin->uuid;
       clientNotify->username = finishedLogin->username;
+      clientNotify->lastLogoutTime = finishedLogin->lastLogoutTime;
       clientNotify->connectionId = connectionId;
 
       delete finishedLogin;
@@ -258,7 +275,7 @@ int   DiplodocusGateway::ProcessOutputFunction()
             if( connIt != m_connectionMap.end() )
             {
                KhaanConnector* khaan = connIt->second;
-               HandlePacketToKhaan( khaan, dataPacket );
+               HandlePacketToKhaan( khaan, dataPacket );// all deletion and such is handled lower
             }
 
             //m_inputChainListMutex.lock();

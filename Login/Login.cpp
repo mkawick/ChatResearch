@@ -172,20 +172,16 @@ int main( int argc, const char* argv[] )
 
    // various games. We will need to deal with allowing a dynamic number of games in future
    FruitadensLogin* game1 = PrepFruitadensLogin( gameIpAddressString, gamePort, serverId, loginServer );
-   FruitadensLogin* game2 = PrepFruitadensLogin( "localhost", 24600, serverId, loginServer );
+  /* FruitadensLogin* game2 = PrepFruitadensLogin( "localhost", 24600, serverId, loginServer );
    FruitadensLogin* game3 = PrepFruitadensLogin( "localhost", 24602, serverId, loginServer );
-   FruitadensLogin* game4 = PrepFruitadensLogin( "localhost", 24604, serverId, loginServer );
-
- /*  game1->NotifyEndpointOfIdentification( serverName, serverId, 0, false, false, true, false  );
-   game2->NotifyEndpointOfIdentification( serverName, serverId, 0, false, false, true, false  );
-   game3->NotifyEndpointOfIdentification( serverName, serverId, 0, false, false, true, false  );
-   game4->NotifyEndpointOfIdentification( serverName, serverId, 0, false, false, true, false  );*/
+   FruitadensLogin* game4 = PrepFruitadensLogin( "localhost", 24604, serverId, loginServer );*/
 
    SendServerNotification( serverName, serverId, game1 );
-   SendServerNotification( serverName, serverId, game2 );
+   /*SendServerNotification( serverName, serverId, game2 );
    SendServerNotification( serverName, serverId, game3 );
-   SendServerNotification( serverName, serverId, game4 );
+   SendServerNotification( serverName, serverId, game4 );*/
 
+   loginServer->Init();
    loginServer->Resume();
    loginServer->Run();
 

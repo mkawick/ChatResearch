@@ -38,10 +38,10 @@ NetworkLayer::~NetworkLayer()
 
 void  NetworkLayer::Init( const char* serverDNS )
 {
-   if( m_clientSocket != 0 || m_isConnected == true )
+   if( m_clientSocket != SOCKET_ERROR || m_isConnected == true )
       return;
 
-   if( serverDNS )
+   if( serverDNS && strlen( serverDNS ) > 5 )
    {
       m_serverDns = serverDNS;
    }
@@ -291,6 +291,32 @@ bool     NetworkLayer::GetFriend( int index, const BasicUser*& user )
 
 //-----------------------------------------------------------------------------
 
+bool    NetworkLayer::GetChannel( int index, ChatChannel& channel )
+{
+   if( index < 0 || index >= (int) m_channels.size() )
+   {
+      channel.Clear();
+      return false;
+   }
+
+   int i = 0;
+   vector< ChatChannel >::const_iterator itChannels = m_channels.begin();
+   while( itChannels != m_channels.end() )
+   {
+      if( i == index )
+      {
+         channel = *itChannels;
+         return true;
+      }
+      i ++;
+      itChannels++;
+   }
+
+   return false;
+}
+
+//-----------------------------------------------------------------------------
+
 bool     NetworkLayer::RequestListOfGames() const
 {
    PacketRequestListOfGames listOfGames;
@@ -346,7 +372,7 @@ bool     NetworkLayer::RequestListOfInvitationsReceived() const
 
 bool     NetworkLayer::AcceptInvitation( const string& uuid ) const
 {
-   const SerializedKeyValueVector< InvitationInfo >& kvVector = m_invitationsreceived;
+   const SerializedKeyValueVector< InvitationInfo >& kvVector = m_invitationsReceived;
    SerializedKeyValueVector< InvitationInfo >::const_KVIterator it = kvVector.begin();
    while (it != kvVector.end() )
    {
@@ -364,9 +390,55 @@ bool     NetworkLayer::AcceptInvitation( const string& uuid ) const
 
 //-----------------------------------------------------------------------------
 
+bool     NetworkLayer::AcceptInvitationFromUsername( const string& userName ) const
+{
+   const SerializedKeyValueVector< InvitationInfo >& kvVector = m_invitationsReceived;
+   SerializedKeyValueVector< InvitationInfo >::const_KVIterator it = kvVector.begin();
+   while (it != kvVector.end() )
+   {
+      if( it->value.inviterName == userName )
+      {
+         PacketContact_AcceptInvite invitationAccepted;
+         invitationAccepted.invitationUuid = it->key;
+        
+         return SerializePacketOut( &invitationAccepted );
+      }
+      it++;
+   }
+   return false;
+}
+
+//-----------------------------------------------------------------------------
+
+bool     NetworkLayer::DeclineInvitation( const string& uuid, string message ) const
+{
+   PacketContact_DeclineInvitation invitationDeclined;
+   invitationDeclined.invitationUuid = uuid;
+   invitationDeclined.message = message;
+
+   return SerializePacketOut( &invitationDeclined );
+}
+
+//-----------------------------------------------------------------------------
+
+bool     NetworkLayer::GetListOfInvitationsSent( list< InvitationInfo >& listOfInvites )
+{
+   listOfInvites.clear();
+   const SerializedKeyValueVector< InvitationInfo >& kvVector = m_invitationsSent;
+   SerializedKeyValueVector< InvitationInfo >::const_KVIterator it = kvVector.begin();
+   while (it != kvVector.end() )
+   {
+      listOfInvites.push_back( it->value );
+      it++;
+   }
+   return true;
+}
+//-----------------------------------------------------------------------------
+
 bool     NetworkLayer::GetListOfInvitationsReceived( list< InvitationInfo >& listOfInvites )
 {
-   const SerializedKeyValueVector< InvitationInfo >& kvVector = m_invitationsreceived;
+   listOfInvites.clear();
+   const SerializedKeyValueVector< InvitationInfo >& kvVector = m_invitationsReceived;
    SerializedKeyValueVector< InvitationInfo >::const_KVIterator it = kvVector.begin();
    while (it != kvVector.end() )
    {
@@ -414,7 +486,7 @@ bool     NetworkLayer::SendSearchForUsers( const string& searchString, int numRe
 
 //-----------------------------------------------------------------------------
 
-bool     NetworkLayer::InviteUserToBeFriend( const string& uuid, const string& username )
+bool     NetworkLayer::InviteUserToBeFriend( const string& uuid, const string& username, const string& message )
 {
    if( uuid.size() < 2 && username.size() < 2 )
       return false;
@@ -422,7 +494,7 @@ bool     NetworkLayer::InviteUserToBeFriend( const string& uuid, const string& u
    PacketContact_InviteContact invitation;
    invitation.username = username;
    invitation.uuid = uuid;
-   invitation.message = "wtf?";
+   invitation.message = message;
 
    return SerializePacketOut( &invitation );
 }
@@ -539,7 +611,6 @@ bool  NetworkLayer::HandlePacketIn( BasePacket* packetIn )
                cout << "num records: " << packet->friends.size() << endl;
                if( m_callbacks.size() )
                {
-                  //callbacks->friends.clear();
                   m_friends.clear();
 
                   SerializedKeyValueVector< FriendInfo >::const_KVIterator it = packet->friends.begin();
@@ -555,18 +626,15 @@ bool  NetworkLayer::HandlePacketIn( BasePacket* packetIn )
                   }
                   for( list< UserNetworkEventNotifier* >::iterator it = m_callbacks.begin(); it != m_callbacks.end(); ++it )
                   {
-                     (*it)->FriendUpdate();
+                     (*it)->FriendsUpdate();
                   }
                }
-
-               //SerializedKeyValueVector< BasicUser > m_friends;
             }
             break;
          case PacketContact::ContactType_UserOnlineStatusChange:
             {
                cout << "contacts received" << endl;
                PacketContact_FriendOnlineStatusChange* packet = static_cast< PacketContact_FriendOnlineStatusChange* >( packetIn );
-              // cout << "num records: " << packet->m_>friends.size() << endl;
                cout << packet->friendInfo.userName << " online status = " << boolalpha << packet->friendInfo.isOnline << noboolalpha << endl;
                
                if( m_callbacks.size() )
@@ -593,11 +661,11 @@ bool  NetworkLayer::HandlePacketIn( BasePacket* packetIn )
             {
                cout << "contacts received" << endl;
                PacketContact_GetListOfInvitationsResponse* packet = static_cast< PacketContact_GetListOfInvitationsResponse* >( packetIn );
-               cout << "Num invites: " << packet->invitations.size() << endl;
+               cout << "Num invites received: " << packet->invitations.size() << endl;
 
-               m_invitationsreceived.clear();
+               m_invitationsReceived.clear();
                SerializedKeyValueVector< InvitationInfo >& kvVector = packet->invitations;
-               m_invitationsreceived = kvVector;
+               m_invitationsReceived = kvVector;
 
                SerializedKeyValueVector< InvitationInfo >::const_KVIterator it = kvVector.begin();
                while (it != kvVector.end() )
@@ -611,16 +679,9 @@ bool  NetworkLayer::HandlePacketIn( BasePacket* packetIn )
 
                if( m_callbacks.size() )
                {
-                  list< InvitationInfo > listOfInvites;
-                  it = kvVector.begin();
-                  while (it != kvVector.end() )
-                  {
-                     listOfInvites.push_back( it->value );
-                     it++;
-                  }
                   for( list< UserNetworkEventNotifier* >::iterator it = m_callbacks.begin(); it != m_callbacks.end(); ++it )
                   {
-                     (*it)->ListOfInvitationsReceived( listOfInvites );
+                     (*it)->InvitationsReceivedUpdate();
                   }
                }
             }
@@ -629,11 +690,11 @@ bool  NetworkLayer::HandlePacketIn( BasePacket* packetIn )
             {
                cout << "contacts received" << endl;
                PacketContact_GetListOfInvitationsSentResponse* packet = static_cast< PacketContact_GetListOfInvitationsSentResponse* >( packetIn );
-               cout << "Num invites: " << packet->invitations.size() << endl;
+               cout << "Num invites sent: " << packet->invitations.size() << endl;
 
-               m_invitationSent.clear();
+               m_invitationsSent.clear();
                SerializedKeyValueVector< InvitationInfo >& kvVector = packet->invitations;
-               m_invitationSent = kvVector;
+               m_invitationsSent = kvVector;// expensive copy
 
                SerializedKeyValueVector< InvitationInfo >::const_KVIterator it = kvVector.begin();
                while (it != kvVector.end() )
@@ -644,18 +705,12 @@ bool  NetworkLayer::HandlePacketIn( BasePacket* packetIn )
                   cout << "   message: " << invite.message << endl;
                   it++;
                }
+
                if( m_callbacks.size() )
                {
-                  list< InvitationInfo > listOfInvites;
-                  it = kvVector.begin();
-                  while (it != kvVector.end() )
-                  {
-                     listOfInvites.push_back( it->value );
-                     it++;
-                  }
                   for( list< UserNetworkEventNotifier* >::iterator it = m_callbacks.begin(); it != m_callbacks.end(); ++it )
                   {
-                     (*it)->ListOfInvitationsSent( listOfInvites );
+                     (*it)->InvitationsSentUpdate();
                   }
                }
                
@@ -673,7 +728,7 @@ bool  NetworkLayer::HandlePacketIn( BasePacket* packetIn )
                      (*it)->InvitationReceived( packet->info );
                   }
                }
-               m_invitationsreceived.insert( packet->info.uuid, packet->info );
+               m_invitationsReceived.insert( packet->info.uuid, packet->info );
             }
             break;
          case PacketContact::ContactType_InvitationAccepted:
@@ -690,7 +745,6 @@ bool  NetworkLayer::HandlePacketIn( BasePacket* packetIn )
                }
 
                cout << "request a new list of friends" << endl;
-               //RequestListOfFriends();
             }
             break;
          }
@@ -723,13 +777,32 @@ bool  NetworkLayer::HandlePacketIn( BasePacket* packetIn )
             cout << "Account creation pending. Check your email." << endl;
             break;
 
-         /*ErrorType_Contact_Invitation_success,
-            ErrorType_Contact_Invitation_ProblemFindingUser,
-            ErrorType_Contact_Invitation_InviteeAlreadyInvited,
-            ErrorType_Contact_Invitation_InviteeAlreadyFriend,
-            ErrorType_Contact_Invitation_InvalidUser,
-            ErrorType_Contact_Invitation_Accepted,
-            ErrorType_Contact_Invitation_BadInvitation,*/
+         case PacketErrorReport::ErrorType_UserBadLogin:
+            cout << "Login not valid... either user email is wrong or the password." << endl;
+            break;
+
+         case PacketErrorReport::ErrorType_Contact_Invitation_success:
+         case PacketErrorReport::ErrorType_Contact_Invitation_ProblemFindingUser:
+         case PacketErrorReport::ErrorType_Contact_Invitation_InviteeAlreadyInvited:
+         case PacketErrorReport::ErrorType_Contact_Invitation_InviteeAlreadyFriend:
+         case PacketErrorReport::ErrorType_Contact_Invitation_InvalidUser:
+         case PacketErrorReport::ErrorType_Contact_Invitation_CannotInviteSelf:
+         case PacketErrorReport::ErrorType_Contact_Invitation_Accepted:
+         case PacketErrorReport::ErrorType_Contact_Invitation_BadInvitation:
+            cout << "Contacts code: " << (int)packetIn->packetSubType  << endl;
+            break;
+
+         case PacketErrorReport::ErrorType_ChatNotCurrentlyAvailable:// reported at the gateway
+         case PacketErrorReport::ErrorType_BadChatChannel:
+         case PacketErrorReport::ErrorType_NoChatChannel:
+         case PacketErrorReport::ErrorType_UserNotOnline:
+         case PacketErrorReport::ErrorType_NotAMemberOfThatChatChannel:
+         case PacketErrorReport::ErrorType_YouAreTheOnlyPersonInThatChatChannel:
+         case PacketErrorReport::ErrorType_CannotAddUserToChannel_AlreadyExists:
+         case PacketErrorReport::ErrorType_NoChatHistoryExistsOnSelectedChannel:
+         case PacketErrorReport::ErrorType_NoChatHistoryExistsForThisUser:
+            cout << "Chat code: " << (int)packetIn->packetSubType  << endl;
+            break;
          }
          m_isCreatingAccount = false;
          for( list< UserNetworkEventNotifier* >::iterator it = m_callbacks.begin(); it != m_callbacks.end(); ++it )
@@ -750,7 +823,10 @@ bool  NetworkLayer::HandlePacketIn( BasePacket* packetIn )
                      m_username = login->username;
                      m_uuid = login->uuid;
                      m_connectionId = login->connectionId;
+                     m_lastLoggedOutTime = login->lastLogoutTime;
                      m_isLoggedIn = true;
+                     //PacketChatChannelListRequest request;
+                     //SerializePacketOut( &request );
                   }
                   else
                   {
@@ -792,9 +868,31 @@ bool  NetworkLayer::HandlePacketIn( BasePacket* packetIn )
                //DumpFriends();
             }
             break;
-         case PacketUserInfo::InfoType_GroupsList:
+         case PacketUserInfo::InfoType_ChatChannelList:
             {
-               
+               PacketChatChannelList* channelList = static_cast<PacketChatChannelList*>( packetIn );
+
+               cout << " chat channel list received " << channelList->channelList.size() << endl;
+               const SerializedKeyValueVector< ChannelInfo >& kvVector = channelList->channelList;
+               SerializedKeyValueVector< ChannelInfo >::const_KVIterator channelIt = kvVector.begin();
+               while( channelIt != kvVector.end() )
+               {
+                  ChatChannel newChannel;
+                  newChannel.uuid = channelIt->value.channelUuid;
+                  newChannel.channelName = channelIt->value.channelName;
+                  newChannel.gameProductId = channelIt->value.gameProduct;
+                  newChannel.gameInstanceId = channelIt->value.gameId;
+                  newChannel.channelDetails= channelIt->value.channelName;
+                  //newChannel.userList = channelIt->value.userList;
+                  if( AddChatChannel( newChannel ) )
+                  {
+                     for( list< UserNetworkEventNotifier* >::iterator it = m_callbacks.begin(); it != m_callbacks.end(); ++it )
+                     {
+                        (*it)->ChatChannelUpdate( channelIt->value.channelUuid );
+                     }
+                  }
+                  channelIt++;
+               }
             }
             break;
             // demographics, winloss, etc.
@@ -813,7 +911,7 @@ bool  NetworkLayer::HandlePacketIn( BasePacket* packetIn )
                cout << "     message: " << chat->message << endl;
                for( list< UserNetworkEventNotifier* >::iterator it = m_callbacks.begin(); it != m_callbacks.end(); ++it )
                {
-                  (*it)->ChatReceived( chat->message, chat->channelUuid, chat->userUuid );
+                  (*it)->ChatReceived( chat->message, chat->channelUuid, chat->userUuid, chat->timeStamp );
                }
 
                // add to some form of history?
@@ -833,13 +931,13 @@ bool  NetworkLayer::HandlePacketIn( BasePacket* packetIn )
                   while( it != m_channels.end() )
                   {
                      ChatChannel& channel = *it;
-                     if( channel.UUID == chat->channelUuid )
+                     if( channel.uuid == chat->channelUuid )
                      {
                         found = true;
                         channel.userList = chat->userList;
                         for( list< UserNetworkEventNotifier* >::iterator it = m_callbacks.begin(); it != m_callbacks.end(); ++it )
                         {
-                           (*it)->ChatChannelUpdate( channel.UUID );
+                           (*it)->ChatChannelUpdate( channel.uuid );
                         }
                         break;
                      }
@@ -847,15 +945,17 @@ bool  NetworkLayer::HandlePacketIn( BasePacket* packetIn )
                   if( found == false )
                   {
                      ChatChannel newChannel;
-                     newChannel.UUID = chat->channelUuid;
+                     newChannel.uuid = chat->channelUuid;
                      newChannel.channelName = chat->gameName;
                      newChannel.gameInstanceId = chat->gameId;
                      newChannel.channelDetails= chat->gameName;
                      newChannel.userList = chat->userList;
-                     m_channels.push_back( newChannel );
-                     for( list< UserNetworkEventNotifier* >::iterator it = m_callbacks.begin(); it != m_callbacks.end(); ++it )
+                     if( AddChatChannel( newChannel ) )
                      {
-                        (*it)->ChatChannelUpdate( newChannel.UUID );
+                        for( list< UserNetworkEventNotifier* >::iterator it = m_callbacks.begin(); it != m_callbacks.end(); ++it )
+                        {
+                           (*it)->ChatChannelUpdate( newChannel.uuid );
+                        }
                      }
                   }
                }
@@ -907,6 +1007,32 @@ bool  NetworkLayer::HandlePacketIn( BasePacket* packetIn )
                }
             }
             break;
+          case PacketChatToServer::ChatType_UserChatStatusChange:
+            {
+               cout << "char contacts received" << endl;
+               PacketChatUserStatusChangeBase* packet = static_cast< PacketChatUserStatusChangeBase* >( packetIn );
+              // cout << "num records: " << packet->m_>friends.size() << endl;
+               cout << packet->username << " online status = " << boolalpha << packet->statusChange << noboolalpha << endl;
+               
+               if( m_callbacks.size() )
+               {
+                  bool updated = false;
+                  UserNameKeyValue::KVIterator  itFriends = m_friends.begin();
+                  while( itFriends != m_friends.end() )
+                  {
+                     if( itFriends->key == packet->uuid )
+                     {
+                        itFriends->value.isOnline = packet->statusChange ? true : false; // 0=offline, everything else is some kind of online
+                        updated = true;
+                     }
+                     itFriends++;
+                  }
+                  for( list< UserNetworkEventNotifier* >::iterator it = m_callbacks.begin(); it != m_callbacks.end(); ++it )
+                  {
+                     (*it)->FriendOnlineStatusChanged( packet->uuid );
+                  }
+               }
+             }
          }
       }
       break;
@@ -925,11 +1051,13 @@ bool  NetworkLayer::HandlePacketIn( BasePacket* packetIn )
                   m_selectedGame = gameId->gameId;
                }
 
-             /*  cout << "Available game: " << gameId->gameId << endl;
-               cout << "   **** game name: " << gameId->name << endl;
-               cout << "   ***  game nik name: " << gameId->shortName << endl;*/
-
-              /* */
+               if( m_selectedGame )
+               {
+                  for( list< UserNetworkEventNotifier* >::iterator it = m_callbacks.begin(); it != m_callbacks.end(); ++it )
+                  {
+                     (*it)->ReadyToStartSendingRequestsToGame();
+                  }
+               }
             }
             break;
          case PacketGameToServer::GamePacketType_RawGameData:
@@ -969,6 +1097,23 @@ bool  NetworkLayer::HandlePacketIn( BasePacket* packetIn )
       break;
    }
 
+   return true;
+}
+
+//------------------------------------------------------------------------
+
+bool     NetworkLayer::AddChatChannel( const ChatChannel& channel )
+{
+   vector< ChatChannel >::iterator it =  m_channels.begin();
+   while( it != m_channels.end() )
+   {
+      if( it->uuid == channel.uuid )
+      {
+         return false;
+      }
+      it++;
+   }
+   m_channels.push_back( channel );
    return true;
 }
 

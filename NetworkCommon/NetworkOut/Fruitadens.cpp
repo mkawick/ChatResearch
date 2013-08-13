@@ -5,7 +5,7 @@
 #include "../Utils/Utils.h"
 
 #include <iostream>
-
+#include <iomanip>
 #include <string>
 using namespace std;
 #include <assert.h>
@@ -18,6 +18,10 @@ using namespace std;
 
 #if PLATFORM != PLATFORM_WINDOWS
 #include <errno.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+
 #endif
 
 const int typicalSleepTime = 200;
@@ -26,7 +30,7 @@ const int typicalSleepTime = 200;
 //-----------------------------------------------------------------------------
 
 Fruitadens :: Fruitadens( const char* name ) : Threading::CChainedThread <BasePacket*>( true, typicalSleepTime ),
-               m_clientSocket( 0 ),
+               m_clientSocket( SOCKET_ERROR ),
                m_isConnected( false ),
                m_hasFailedCritically( false ),
                m_connectedServerId( 0 ),
@@ -71,6 +75,7 @@ bool        Fruitadens :: AddOutputChainData( BasePacket* packet, U32 filingData
 
 bool  Fruitadens :: Connect( const char* serverName, int port )// work off of DNS
 {
+   cout << m_name << " connecting to " << serverName << " : " << port  << endl;
    if( SetupConnection( serverName, port ) == false )
    {
       assert( 0 );
@@ -85,7 +90,7 @@ bool  Fruitadens :: Disconnect()
 {
    closesocket( m_clientSocket );
    
-   m_clientSocket = NULL;
+   m_clientSocket = SOCKET_ERROR;
    m_isConnected = false;
    m_hasFailedCritically = false;
 
@@ -116,7 +121,7 @@ bool  Fruitadens :: SetupConnection( const char* serverName, int port )
       m_hasFailedCritically = true;
       Cleanup();
       closesocket( m_clientSocket );
-      m_clientSocket = 0;
+      m_clientSocket = SOCKET_ERROR;
 
       return false;
    }
@@ -148,7 +153,7 @@ bool  Fruitadens :: CreateSocket()
       m_hasFailedCritically = true;
       Cleanup();
       closesocket( m_clientSocket );
-      m_clientSocket = 0;
+      m_clientSocket = SOCKET_ERROR;
 
       return false;
    }
@@ -192,7 +197,7 @@ void  Fruitadens :: AttemptConnection()
 
       Cleanup();
       closesocket( m_clientSocket );
-      m_clientSocket = 0;
+      m_clientSocket = SOCKET_ERROR;
       m_hasFailedCritically = true;
       return;
    }
@@ -216,7 +221,7 @@ int   Fruitadens :: ProcessInputFunction()
 
    while( 1 )
    {
-      if( m_clientSocket == 0 )// the server went away
+      if( m_clientSocket == SOCKET_ERROR )// the server went away
          break;
 
       int numBytes = static_cast< int >( recv( m_clientSocket, (char*) buffer, MaxBufferSize, NULL ) );
@@ -320,12 +325,21 @@ bool  Fruitadens::HandlePacketReceived( BasePacket* packetIn )
       case PacketType_ServerInformation:
          {
             PacketServerIdentifier* unwrappedPacket = static_cast< PacketServerIdentifier * > ( wrapper->pPacket );
-            m_connectedServerId = wrapper->serverId;
-            m_connectedGameProductId = unwrappedPacket->gameProductId;
 
-            cout << "Downline Server sent connection info: " << endl;
-            cout << "name = '" << unwrappedPacket->serverName << "' : type " << static_cast<U32>( m_connectedGameProductId ) << ", id=" << m_connectedServerId << endl;
-            cout << "Server isGame = '" << unwrappedPacket->isGameServer << ", isController : " << unwrappedPacket->isController << endl;
+            //if( m_connectedGameProductId != unwrappedPacket->gameProductId || m_connectedServerId != wrapper->serverId ) // prevent sups from reporting.
+            {
+               m_connectedServerId = wrapper->serverId;
+               m_connectedGameProductId = unwrappedPacket->gameProductId;
+
+               std::string ip_txt( inet_ntoa( m_ipAddress.sin_addr ) );
+               cout << endl;
+               cout << "*********  Connected as client to " << unwrappedPacket->serverName << "  **************" << endl;
+               cout << "    " << ip_txt << " : " << static_cast<U32>( m_port ) << endl;
+               cout << "    type " << static_cast<U32>( m_connectedGameProductId ) << " -- server ID = " << m_connectedServerId << endl;
+               cout << "    isGame = " << boolalpha << unwrappedPacket->isGameServer << ", isController : " << unwrappedPacket->isController << noboolalpha << endl;
+               cout << "**************************************************" << endl;
+            }
+
             delete unwrappedPacket;
             handled2SPacket = true;
          }
@@ -387,7 +401,7 @@ bool  Fruitadens :: SerializePacketOut( const BasePacket* packet )
 
 bool  Fruitadens :: SendPacket( const U8* buffer, int length ) const
 {
-   if( m_isConnected && ( length > 0 ) && m_clientSocket != 0 )
+   if( m_isConnected && ( length > 0 ) && m_clientSocket != SOCKET_ERROR )
    {
       int nBytes = static_cast< int >( send( m_clientSocket, reinterpret_cast<const char*>( buffer ), length, 0 ) );
       if( nBytes == SOCKET_ERROR || nBytes < length )

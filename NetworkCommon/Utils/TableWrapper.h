@@ -102,6 +102,29 @@ public:
 typedef Enigmosaurus <TableChatChannel> ChatChannelTable;
 
 //////////////////////////////////////////////////////////////
+/*
+class TableChatChannelWithNumChats
+{
+public:
+   enum Columns
+   {
+      Column_id,
+      Column_name,
+      Column_uuid,
+      Column_is_active,
+      Column_max_num_members,
+      Column_game_type, // summoner wars
+      Column_game_instance_id, // game instance
+      Column_date_created,
+      Column_record_count,
+      Column_end
+   };
+   static const char* const column_names[];
+};
+
+typedef Enigmosaurus <TableChatChannelWithNumChats> ChatChannelWithNumChatsTable;*/
+
+//////////////////////////////////////////////////////////////
 
 class TableChat
 {

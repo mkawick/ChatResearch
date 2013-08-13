@@ -100,16 +100,16 @@ public:
 
 ///////////////////////////////////////////////////////////////
 
-class PacketChatToClient : public PacketChangeChatChannel 
+class PacketChatToClient : public PacketChatToServer 
 {
 public:
-   PacketChatToClient( int packet_type = PacketType_Chat, int packet_sub_type = ChatType_ChatToClient ) : PacketChangeChatChannel( packet_type, packet_sub_type ) {}
+   PacketChatToClient( int packet_type = PacketType_Chat, int packet_sub_type = ChatType_ChatToClient ) : PacketChatToServer( packet_type, packet_sub_type ) {}
 
    bool  SerializeIn( const U8* data, int& bufferOffset );
    bool  SerializeOut( U8* data, int& bufferOffset ) const;
 
-   string   uuid;
    string   username;
+   string   timeStamp;
 };
 
 ///////////////////////////////////////////////////////////////

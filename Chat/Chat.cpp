@@ -93,7 +93,10 @@ int main( int argc, const char* argv[] )
    
    //----------------------------------------------------------------
    
+   middleware->Init();
+
    s2s->AddOutputChain( middleware );
+
    middleware->Run();
 
    getch();

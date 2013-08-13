@@ -112,6 +112,10 @@ void  DynamicDataBucket::operator = ( const list< list< string > >& copyData )
    }
 }
 
+#ifdef _MEMORY_TEST_
+int BasePacket::m_counter = 0;
+#endif
+
 ///////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////
 
@@ -206,6 +210,7 @@ bool  PacketLogout::SerializeOut( U8* data, int& bufferOffset ) const
 bool  PacketLoginToClient::SerializeIn( const U8* data, int& bufferOffset )
 {
    PacketLogin::SerializeIn( data, bufferOffset );
+   Serialize::In( data, bufferOffset, lastLogoutTime );
    Serialize::In( data, bufferOffset, wasLoginSuccessful );
    Serialize::In( data, bufferOffset, connectionId );
 
@@ -215,6 +220,7 @@ bool  PacketLoginToClient::SerializeIn( const U8* data, int& bufferOffset )
 bool  PacketLoginToClient::SerializeOut( U8* data, int& bufferOffset ) const
 {
    PacketLogin::SerializeOut( data, bufferOffset );
+   Serialize::Out( data, bufferOffset, lastLogoutTime );
    Serialize::Out( data, bufferOffset, wasLoginSuccessful );
    Serialize::Out( data, bufferOffset, connectionId );
 
@@ -226,6 +232,7 @@ bool  PacketLoginToClient::SerializeOut( U8* data, int& bufferOffset ) const
 bool  PacketLoginToGateway::SerializeIn( const U8* data, int& bufferOffset )
 {
    PacketLogin::SerializeIn( data, bufferOffset );
+   Serialize::In( data, bufferOffset, lastLogoutTime );
    Serialize::In( data, bufferOffset, wasLoginSuccessful );
 
    return true;
@@ -234,6 +241,7 @@ bool  PacketLoginToGateway::SerializeIn( const U8* data, int& bufferOffset )
 bool  PacketLoginToGateway::SerializeOut( U8* data, int& bufferOffset ) const
 {
    PacketLogin::SerializeOut( data, bufferOffset );
+   Serialize::Out( data, bufferOffset, lastLogoutTime );
    Serialize::Out( data, bufferOffset, wasLoginSuccessful );
 
    return true;
@@ -343,6 +351,10 @@ bool  PacketPrepareForUserLogout::SerializeOut( U8* data, int& bufferOffset ) co
 bool  ChannelInfo::SerializeIn( const U8* data, int& bufferOffset )
 {
    Serialize::In( data, bufferOffset, channelName );
+   Serialize::In( data, bufferOffset, channelUuid );
+   Serialize::In( data, bufferOffset, gameProduct );
+   Serialize::In( data, bufferOffset, gameId );
+   Serialize::In( data, bufferOffset, numNewChats );
    Serialize::In( data, bufferOffset, isActive );
 
    return true;
@@ -351,6 +363,10 @@ bool  ChannelInfo::SerializeIn( const U8* data, int& bufferOffset )
 bool  ChannelInfo::SerializeOut( U8* data, int& bufferOffset ) const
 {
    Serialize::Out( data, bufferOffset, channelName );
+   Serialize::Out( data, bufferOffset, channelUuid );
+   Serialize::Out( data, bufferOffset, gameProduct );
+   Serialize::Out( data, bufferOffset, gameId );
+   Serialize::Out( data, bufferOffset, numNewChats );
    Serialize::Out( data, bufferOffset, isActive );
 
    return true;
@@ -391,6 +407,25 @@ bool  PacketGroupsList::SerializeOut( U8* data, int& bufferOffset ) const
 {
    BasePacket::SerializeOut( data, bufferOffset );
    groupList.SerializeOut( data, bufferOffset );
+
+   return true;
+}
+
+///////////////////////////////////////////////////////////////
+
+
+bool  PacketChatChannelList::SerializeIn( const U8* data, int& bufferOffset )
+{
+   BasePacket::SerializeIn( data, bufferOffset );
+   channelList.SerializeIn( data, bufferOffset );
+
+   return true;
+}
+
+bool  PacketChatChannelList::SerializeOut( U8* data, int& bufferOffset ) const
+{
+   BasePacket::SerializeOut( data, bufferOffset );
+   channelList.SerializeOut( data, bufferOffset );
 
    return true;
 }

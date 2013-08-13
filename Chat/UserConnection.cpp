@@ -31,13 +31,14 @@ UserConnection::UserConnection( U32 connectionId ) :
 
 //---------------------------------------------------------------
 
-bool     UserConnection::SendChat( const string& message, const string& senderUuid, const string& senderDisplayName, string channelUuid )
+bool     UserConnection::SendChat( const string& message, const string& senderUuid, const string& senderDisplayName, string channelUuid, string timeStamp )
 {
    PacketChatToClient* packet = new PacketChatToClient;
    packet->message = message;
-   packet->uuid = senderUuid;
+   packet->userUuid = senderUuid;
    packet->username = senderDisplayName;
-   packet->chatChannelUuid = channelUuid;
+   packet->channelUuid = channelUuid;
+   packet->timeStamp = timeStamp;
 
    PacketGatewayWrapper* wrapper = new PacketGatewayWrapper();
    wrapper->connectionId = m_connectionId;
@@ -196,17 +197,36 @@ bool  UserConnection::RequestFriends()
 
 bool  UserConnection::RequestChatChannels()
 {
-   PacketDbQuery* dbQuery2 = new PacketDbQuery;
-   dbQuery2->id = m_connectionId ;
-   dbQuery2->lookup = QueryType_UserChannelList;
+ /*  PacketDbQuery* dbQuery = new PacketDbQuery;
+   dbQuery->id = m_connectionId ;
+   dbQuery->lookup = QueryType_UserChannelList;
 
    string queryString = "SELECT * FROM chat_channel WHERE uuid IN ";
    queryString += "(SELECT user_join_chat_channel.channel_uuid FROM user_join_chat_channel WHERE user_join_chat_channel.user_uuid='";
    queryString += m_uuid;
    queryString += "')";
-   dbQuery2->query = queryString;
+   dbQuery->query = queryString;*/
 
-   m_chatServer->AddPacketFromUserConnection( dbQuery2, m_connectionId );
+  
+  /* string queryString = "SELECT channel.id,channel.name,channel.uuid,channel.is_active,channel.max_num_users,channel.game_type,channel.game_instance_id,channel.date_created, COUNT(distinct msg.id) AS record_count " \
+                        " FROM playdek.chat_channel AS channel INNER JOIN playdek.chat_message AS msg " \
+                        " ON channel.uuid=msg.chat_channel_id  WHERE channel.uuid IN " \
+                        "(SELECT user_join_chat_channel.channel_uuid FROM user_join_chat_channel " \
+                        "WHERE user_join_chat_channel.user_uuid='%s') AND msg.timestamp>='%s'";*/
+
+   /*dbQuery->escapedStrings.insert( m_uuid );
+   dbQuery->escapedStrings.insert( m_lastLoginTime );
+
+   dbQuery->query = queryString;
+
+   m_chatServer->AddPacketFromUserConnection( dbQuery, m_connectionId );*/
+   m_chatChannelManager->GetChatChannels( m_uuid, availableChannels );
+
+   m_userChannelsComplete = true;
+
+   //availableChannels.insert( uuid, ChannelInfo( name, uuid, gameType, gameId, numNewChats, isActive ) );
+
+   InformUserOfSuccessfulLogin();
 
    return true;
 }
@@ -502,8 +522,8 @@ bool  UserConnection::SendListOfFriendsToGateway()
 
 bool  UserConnection::SendListOfChannelsToGateway()
 {
-   PacketGroupsList* packetGroups = new PacketGroupsList;
-   packetGroups->groupList = availableChannels;
+   PacketChatChannelList* packetGroups = new PacketChatChannelList;
+   packetGroups->channelList = availableChannels;
    SendPacketToGateway( packetGroups );  // slow?
 
    return true;
@@ -537,7 +557,7 @@ bool     UserConnection::ProcessPacket( BasePacket* packet )
                SendListOfFriendsToGateway();
             }
             break;
-         case PacketUserInfo::InfoType_GroupsListRequest:
+         case PacketUserInfo::InfoType_ChatChannelListRequest:
             {
                SendListOfChannelsToGateway();
             }
@@ -714,7 +734,7 @@ bool     UserConnection::HandleDbQueryResult( BasePacket* packet )
             InformUserOfSuccessfulLogin();
          }
          break;
-      case QueryType_UserChannelList:
+    /*  case QueryType_UserChannelList:
          {
             m_userChannelsComplete = true;
             availableChannels.clear();
@@ -725,16 +745,20 @@ bool     UserConnection::HandleDbQueryResult( BasePacket* packet )
             while( it != enigma.end() )
             {
                ChatChannelTable::row      row = *it++;
-               string   name =      row[ TableChatChannel::Column_name ];
-               string   uuid =      row[ TableChatChannel::Column_uuid ];
+               string   name =         row[ TableChatChannel::Column_name ];
+               string   uuid =         row[ TableChatChannel::Column_uuid ];
+               int      gameType =     boost::lexical_cast< int >( row[ TableChatChannel::Column_game_type ] );
+               int      gameId =       boost::lexical_cast< int >( row[ TableChatChannel::Column_game_instance_id ] );
+               //int      numNewChats =  boost::lexical_cast< int >( row[ TableChatChannel::Column_record_count ] );
+               int numNewChats = 0;
                bool     isActive = boost::lexical_cast< bool >( row[ TableChatChannel::Column_is_active ] );
 
-               availableChannels.insert( uuid, ChannelInfo( name, isActive ) );
+               availableChannels.insert( uuid, ChannelInfo( name, uuid, gameType, gameId, numNewChats, isActive ) );
             }
 
             InformUserOfSuccessfulLogin();
          }
-         break;
+         break;*/
       case QueryType_ChatChannelHistory:
          {
             if( dbResult->bucket.bucket.size() == 0 )

@@ -248,6 +248,27 @@ bool  PacketContact_InviteReceivedNotification::SerializeOut( U8* data, int& buf
    return true; 
 }
 
+
+///////////////////////////////////////////////////////////////
+
+bool  PacketContact_ContactRemove::SerializeIn( const U8* data, int& bufferOffset )
+{ 
+   BasePacket::SerializeIn( data, bufferOffset );
+   Serialize::In( data, bufferOffset, contactUuid );
+   Serialize::In( data, bufferOffset, message );
+
+   return true; 
+}
+
+bool  PacketContact_ContactRemove::SerializeOut( U8* data, int& bufferOffset ) const 
+{ 
+   BasePacket::SerializeOut( data, bufferOffset );
+   Serialize::Out( data, bufferOffset, contactUuid );
+   Serialize::Out( data, bufferOffset, message );
+
+   return true; 
+}
+
 ///////////////////////////////////////////////////////////////
 
 bool  PacketContact_RemoveInvitation::SerializeIn( const U8* data, int& bufferOffset )
@@ -291,6 +312,7 @@ bool  PacketContact_InvitationAccepted::SerializeIn( const U8* data, int& buffer
    BasePacket::SerializeIn( data, bufferOffset );
    Serialize::In( data, bufferOffset, fromUsername );
    Serialize::In( data, bufferOffset, toUsername );
+   Serialize::In( data, bufferOffset, message );
    Serialize::In( data, bufferOffset, wasAccepted );
 
    return true; 
@@ -301,7 +323,28 @@ bool  PacketContact_InvitationAccepted::SerializeOut( U8* data, int& bufferOffse
    BasePacket::SerializeOut( data, bufferOffset );
    Serialize::Out( data, bufferOffset, fromUsername );
    Serialize::Out( data, bufferOffset, toUsername );
+   Serialize::Out( data, bufferOffset, message );
    Serialize::Out( data, bufferOffset, wasAccepted );
+
+   return true; 
+}
+
+///////////////////////////////////////////////////////////////
+
+bool  PacketContact_DeclineInvitation::SerializeIn( const U8* data, int& bufferOffset )
+{ 
+   BasePacket::SerializeIn( data, bufferOffset );
+   Serialize::In( data, bufferOffset, invitationUuid );
+   Serialize::In( data, bufferOffset, message );
+
+   return true; 
+}
+
+bool  PacketContact_DeclineInvitation::SerializeOut( U8* data, int& bufferOffset ) const 
+{ 
+   BasePacket::SerializeOut( data, bufferOffset );
+   Serialize::Out( data, bufferOffset, invitationUuid );
+   Serialize::Out( data, bufferOffset, message );
 
    return true; 
 }

@@ -38,10 +38,13 @@ public:
    ~UserContact();
 
    const UserInfo& GetUserInfo() const { return m_userInfo;}
+   void  SetConnectionId( U32 newConnectionId ) { m_connectionId = newConnectionId; } // be super cautios here. this is meant for users who relog in.
 
    void  Init(); // send queries
    bool  HandleDbQueryResult( const PacketDbQueryResult* result );
    bool  HandleRequestFromClient( const PacketContact* packet );
+
+   void  FinishLoginBySendingUserFriendsAndInvitations();
 
    void  SetServer( DiplodocusContact* infoServer ) { m_infoServer = infoServer; }
 
@@ -57,15 +60,17 @@ private:
 
    void  InitContactsAndInvitations();
    bool  GetListOfContacts();
-   bool  GetListOfInvitations();
+   bool  GetListOfInvitationsReceived();
    bool  GetListOfInvitationsSent();
 
    bool  InviteUser( const PacketContact_InviteContact* packet );
    bool  AcceptInvitation( const PacketContact_AcceptInvite* packet );
+   bool  DeclineInvitation( const PacketContact_DeclineInvitation* packet );
    void  FinishAcceptingInvitation( const PacketDbQueryResult* result ); 
+   void  FinishDecliningingInvitation(  const PacketDbQueryResult* dbResult );
    void  FinishInvitation( U32 inviteeId, const string& message, UserContact* contact = NULL );
    void  YouHaveBeenInvitedToBeAFriend( const string& userName, const string& uuid, const string& message, const string& curentTime );
-   void  InvitationAccepted( const string& sentFromuserName, const string& sentToUserName, bool accepted );
+   void  InvitationAccepted( const string& sentFromuserName, const string& sentToUserName, const string& message, bool accepted );
    bool  InformFriendsOfOnlineStatus( bool isOnline );
 
    bool  YourFriendsOnlineStatusChange( U32 connectionId, const string& userName, const string& UUID, bool isOnline );
@@ -82,6 +87,7 @@ private:
       QueryType_GetInviteeDetails,
       QueryType_AddInvitationToUser,
       QueryType_GetInvitationPriorToAcceptance,
+      QueryType_GetInvitationPriorToDeclination,
       QueryType_DeleteInvitation,
       QueryType_InsertNewFriend,
    };
@@ -93,6 +99,9 @@ private:
    bool                 m_requiresUpdate;
    bool                 m_isLoggedOut;
    bool                 m_hasBeenInitialized;
+   bool                 m_friendListFilled;
+   bool                 m_friendRequestSentListFilled;
+   bool                 m_friendRequestReceivedListFilled;
 
    DiplodocusContact*   m_infoServer;
 

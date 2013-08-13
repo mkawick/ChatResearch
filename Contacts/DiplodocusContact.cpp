@@ -418,24 +418,53 @@ bool     DiplodocusContact::ConnectUser( PacketPrepareForUserLogin* loginPacket 
    if( it != m_users.end() )
       return false;
 
-   UserInfo ui;
-   ui.username =        loginPacket->username;
-   ui.uuid =            loginPacket->uuid;
-   ui.apple_id = "";
-   ui.connectionId =    connectionId;
-   ui.gameProductId =   loginPacket->gameProductId;
-   ui.active =          loginPacket->active;
-   ui.email =           loginPacket->email;
-   ui.passwordHash =    loginPacket->password;
-   ui.id =              loginPacket->userId;
-
-   UserContact user( ui, connectionId );
-   user.SetServer( this );
-
+   bool found = false;
+   // if the user is already here but relogged, simply 
    m_mutex.lock();
-   m_users.insert( UserContactPair( connectionId, user ) );
-   m_userLookupById.insert( UserIdToContactPair( ui.id, connectionId ) );
+      it = m_users.begin();
+      if( it != m_users.end() )
+      {
+         if( it->second.GetUserInfo().uuid == loginPacket->uuid ) 
+         {
+            found = true;
+            U32 id = it->second.GetUserInfo().id;
+            m_users.insert( UserContactPair( connectionId, it->second ) );
+          
+            UserIdToContactMapIterator itIdToContact = m_userLookupById.find( id );
+            if( itIdToContact != m_userLookupById.end() )
+            {
+               itIdToContact->second = connectionId;
+            }
+            it->second.SetConnectionId( connectionId );
+            it->second.FinishLoginBySendingUserFriendsAndInvitations();
+            
+            m_users.erase( it );
+         }
+      }
    m_mutex.unlock();
+
+   if( found == false )
+   {
+
+      UserInfo ui;
+      ui.username =        loginPacket->username;
+      ui.uuid =            loginPacket->uuid;
+      ui.apple_id = "";
+      ui.connectionId =    connectionId;
+      ui.gameProductId =   loginPacket->gameProductId;
+      ui.active =          loginPacket->active;
+      ui.email =           loginPacket->email;
+      ui.passwordHash =    loginPacket->password;
+      ui.id =              loginPacket->userId;
+
+      UserContact user( ui, connectionId );
+      user.SetServer( this );
+
+      m_mutex.lock();
+      m_users.insert( UserContactPair( connectionId, user ) );
+      m_userLookupById.insert( UserIdToContactPair( ui.id, connectionId ) );
+      m_mutex.unlock();
+   }
    return true;
 }
 

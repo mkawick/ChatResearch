@@ -264,6 +264,8 @@ void     GameFramework::AddTimer( U32 timerId, U32 callbackTimeMs ) // timers mu
 
 bool  GameFramework::Run()
 {
+   cout << "Game framework version 0.8" << endl;
+
    Database::Deltadromeus* delta = new Database::Deltadromeus;
    delta->SetConnectionInfo( m_dbIpAddress, m_dbPort, m_dbUsername, m_dbPassword, m_dbSchema );
    if( delta->IsConnected() == false )
@@ -318,7 +320,9 @@ bool  GameFramework::Run()
    s2s->AddOutputChain( m_connectionManager );
    m_connectionManager->AddOutputChain( m_chatServer );
 
+   m_connectionManager->Init();
    m_connectionManager->Run();
+
 
    return false;
 }

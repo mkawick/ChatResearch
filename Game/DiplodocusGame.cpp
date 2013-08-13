@@ -204,12 +204,30 @@ void  DiplodocusGame::ConnectUser( const PacketPrepareForUserLogin* loginPacket 
       return;
    }
 
+   bool found = false;
+   // if the user is already here but relogged, simply 
+ /*  m_mutex.lock();
+      it = m_connectionMap.begin();
+      while( it != m_connectionMap.end() )
+      {
+         if( it->second-> == loginPacket->uuid ) 
+         {
+            found = true;
+            m_connectionMap.insert( ConnectionPair( connectionId, it->second ) );
+            m_connectionMap.erase( it );
+         }
+      }
+   m_mutex.unlock();*/
+
+   if( found == false )
+   {
   /* UserConnection* connection = new UserConnection( connectionId );
    connection->SetupFromLogin( loginPacket->username, loginPacket->uuid, loginPacket->loginKey, loginPacket->lastLoginTime );
 
    m_mutex.lock();
       m_connectionMap.insert( ConnectionPair ( connectionId, connection ) );
    m_mutex.unlock();*/
+   }
 }
 
 //---------------------------------------------------------------

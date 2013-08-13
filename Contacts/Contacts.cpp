@@ -96,7 +96,10 @@ int main( int argc, const char* argv[] )
    
    //----------------------------------------------------------------
    
+   contactServer->Init();
+
    s2s->AddOutputChain( contactServer );
+
    contactServer->Run();
 
    getch();

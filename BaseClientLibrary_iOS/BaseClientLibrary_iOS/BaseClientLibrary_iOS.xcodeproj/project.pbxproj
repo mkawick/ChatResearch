@@ -6,6 +6,20 @@
 	objectVersion = 46;
 	objects = {
 
+/* Begin PBXAggregateTarget section */
+		3412CDB417AAD49100707FBB /* BaseClientLibrary_Combine */ = {
+			isa = PBXAggregateTarget;
+			buildConfigurationList = 3412CDB717AAD49100707FBB /* Build configuration list for PBXAggregateTarget "BaseClientLibrary_Combine" */;
+			buildPhases = (
+				3412CDB817AAD49D00707FBB /* ShellScript */,
+			);
+			dependencies = (
+			);
+			name = BaseClientLibrary_Combine;
+			productName = BaseClientLibrary_Combine;
+		};
+/* End PBXAggregateTarget section */
+
 /* Begin PBXBuildFile section */
 		34EA684D17611D8B00F07E19 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 34EA684C17611D8B00F07E19 /* Foundation.framework */; };
 		34EA685217611D8B00F07E19 /* BaseClientLibrary_iOS.h in CopyFiles */ = {isa = PBXBuildFile; fileRef = 34EA685117611D8B00F07E19 /* BaseClientLibrary_iOS.h */; };
@@ -21,6 +35,7 @@
 		34EA68A617611DD400F07E19 /* CommandLineParser.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 34EA688C17611DD400F07E19 /* CommandLineParser.cpp */; };
 		34EA68A917611DD400F07E19 /* Utils.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 34EA689317611DD400F07E19 /* Utils.cpp */; };
 		34EA68AF17612DF500F07E19 /* NetworkUtils.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 34EA68AE17612DF500F07E19 /* NetworkUtils.cpp */; };
+		7031249817A8404C00A83FA5 /* ContactPacket.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 7031249617A8404C00A83FA5 /* ContactPacket.cpp */; };
 		707B53F41794C1A6001D9BA1 /* DbPacket.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 707B53F21794C1A6001D9BA1 /* DbPacket.cpp */; };
 		707B53F71794C1BC001D9BA1 /* NetworkLayer.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 707B53F51794C1BC001D9BA1 /* NetworkLayer.cpp */; };
 /* End PBXBuildFile section */
@@ -73,6 +88,8 @@
 		34EA689317611DD400F07E19 /* Utils.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Utils.cpp; sourceTree = "<group>"; };
 		34EA689417611DD400F07E19 /* Utils.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Utils.h; sourceTree = "<group>"; };
 		34EA68AE17612DF500F07E19 /* NetworkUtils.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = NetworkUtils.cpp; path = ../NetworkUtils.cpp; sourceTree = "<group>"; };
+		7031249617A8404C00A83FA5 /* ContactPacket.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = ContactPacket.cpp; sourceTree = "<group>"; };
+		7031249717A8404C00A83FA5 /* ContactPacket.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ContactPacket.h; sourceTree = "<group>"; };
 		707B53F21794C1A6001D9BA1 /* DbPacket.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = DbPacket.cpp; sourceTree = "<group>"; };
 		707B53F31794C1A6001D9BA1 /* DbPacket.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = DbPacket.h; sourceTree = "<group>"; };
 		707B53F51794C1BC001D9BA1 /* NetworkLayer.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = NetworkLayer.cpp; path = ../BaseClientLibrary/NetworkLayer.cpp; sourceTree = "<group>"; };
@@ -180,6 +197,8 @@
 		34EA687817611DD400F07E19 /* Packets */ = {
 			isa = PBXGroup;
 			children = (
+				7031249617A8404C00A83FA5 /* ContactPacket.cpp */,
+				7031249717A8404C00A83FA5 /* ContactPacket.h */,
 				707B53F21794C1A6001D9BA1 /* DbPacket.cpp */,
 				707B53F31794C1A6001D9BA1 /* DbPacket.h */,
 				34EA687917611DD400F07E19 /* BasePacket.cpp */,
@@ -250,9 +269,26 @@
 			projectRoot = "";
 			targets = (
 				34EA684817611D8B00F07E19 /* BaseClientLibrary_iOS */,
+				3412CDB417AAD49100707FBB /* BaseClientLibrary_Combine */,
 			);
 		};
 /* End PBXProject section */
+
+/* Begin PBXShellScriptBuildPhase section */
+		3412CDB817AAD49D00707FBB /* ShellScript */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "XCODEBUILD_PATH=/Applications/Xcode.app/Contents/Developer/usr/bin\nXCODEBUILD=$XCODEBUILD_PATH/xcodebuild\n\n$XCODEBUILD -project BaseClientLibrary_iOS.xcodeproj -target \"BaseClientLibrary_iOS\" -sdk \"iphonesimulator\" -configuration \"Release\" clean build\n$XCODEBUILD -project BaseClientLibrary_iOS.xcodeproj -target \"BaseClientLibrary_iOS\" -sdk \"iphoneos\" -configuration \"Release\" clean build\nlipo -create -output \"build/libBaseClientLibrary_iOS.a\" \"build/Release-iphoneos/libBaseClientLibrary_iOS.a\" \"build/Release-iphonesimulator/libBaseClientLibrary_iOS.a\"\n";
+		};
+/* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
 		34EA684517611D8B00F07E19 /* Sources */ = {
@@ -273,12 +309,27 @@
 				34EA68AF17612DF500F07E19 /* NetworkUtils.cpp in Sources */,
 				707B53F41794C1A6001D9BA1 /* DbPacket.cpp in Sources */,
 				707B53F71794C1BC001D9BA1 /* NetworkLayer.cpp in Sources */,
+				7031249817A8404C00A83FA5 /* ContactPacket.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXSourcesBuildPhase section */
 
 /* Begin XCBuildConfiguration section */
+		3412CDB517AAD49100707FBB /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = Debug;
+		};
+		3412CDB617AAD49100707FBB /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = Release;
+		};
 		34EA685517611D8B00F07E19 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -325,6 +376,7 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu99;
+				GCC_GENERATE_DEBUGGING_SYMBOLS = NO;
 				GCC_WARN_ABOUT_RETURN_TYPE = YES;
 				GCC_WARN_UNINITIALIZED_AUTOS = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
@@ -354,6 +406,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				DSTROOT = /tmp/BaseClientLibrary_iOS.dst;
+				GCC_GENERATE_DEBUGGING_SYMBOLS = NO;
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
 				GCC_PREFIX_HEADER = "BaseClientLibrary_iOS/BaseClientLibrary_iOS-Prefix.pch";
 				OTHER_LDFLAGS = "-ObjC";
@@ -365,6 +418,15 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
+		3412CDB717AAD49100707FBB /* Build configuration list for PBXAggregateTarget "BaseClientLibrary_Combine" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				3412CDB517AAD49100707FBB /* Debug */,
+				3412CDB617AAD49100707FBB /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
 		34EA684417611D8B00F07E19 /* Build configuration list for PBXProject "BaseClientLibrary_iOS" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
