@@ -14,6 +14,7 @@ bool  PacketChatToServer::SerializeIn( const U8* data, int& bufferOffset )
    Serialize::In( data, bufferOffset, message );
    Serialize::In( data, bufferOffset, channelUuid );
    Serialize::In( data, bufferOffset, userUuid );
+   Serialize::In( data, bufferOffset, gameTurn );
 
    return true;
 }
@@ -24,6 +25,7 @@ bool  PacketChatToServer::SerializeOut( U8* data, int& bufferOffset ) const
    Serialize::Out( data, bufferOffset, message );
    Serialize::Out( data, bufferOffset, channelUuid );
    Serialize::Out( data, bufferOffset, userUuid );
+   Serialize::Out( data, bufferOffset, gameTurn );
   
    return true;
 }

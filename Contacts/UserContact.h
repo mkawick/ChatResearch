@@ -38,7 +38,7 @@ public:
    ~UserContact();
 
    const UserInfo& GetUserInfo() const { return m_userInfo;}
-   void  SetConnectionId( U32 newConnectionId ) { m_connectionId = newConnectionId; } // be super cautios here. this is meant for users who relog in.
+   void  SetConnectionId( U32 newConnectionId ) { m_connectionId = newConnectionId; m_userInfo.connectionId = newConnectionId; } // be super cautios here. this is meant for users who relog in.
 
    void  Init(); // send queries
    bool  HandleDbQueryResult( const PacketDbQueryResult* result );

@@ -16,6 +16,7 @@ class PacketFactory
 public:
 	PacketFactory();
    bool     Parse( const U8* bufferIn, int& bufferOffset, BasePacket** packetOut ) const;// be sure to check the return value
+   void     CleanupPacket( BasePacket*& packetOut );
 
    bool     SafeParse( const U8* bufferIn, int& bufferOffset, BasePacket& packetOut ) const;// only ever returns an instance of basepacket
 
@@ -33,6 +34,22 @@ private:
    bool     ParseServerToServerWrapper( const U8* bufferIn, int& bufferOffset, const BasePacket* firstPassParse, BasePacket** packetOut ) const;
    bool     ParseServerInfo( const U8* bufferIn, int& bufferOffset, const BasePacket* firstPassParse, BasePacket** packetOut ) const;
    bool     ParseGatewayWrapper( const U8* bufferIn, int& bufferOffset, const BasePacket* firstPassParse, BasePacket** packetOut ) const;
+};
+
+
+class PacketCleaner
+{
+public:
+   PacketCleaner( BasePacket* packet ): m_packet( packet ){}
+   ~PacketCleaner()
+   {
+      PacketFactory factory;
+      factory.CleanupPacket( m_packet );
+   }
+private:
+   PacketCleaner();
+
+   BasePacket* m_packet;
 };
 
 ///////////////////////////////////////////////////////////////

@@ -16,6 +16,7 @@
 #include "../NetworkCommon/Packets/ChatPacket.h"
 #include "../NetworkCommon/Packets/GamePacket.h"
 #include "../NetworkCommon/Packets/ServerToServerPacket.h"
+#include "../NetworkCommon/Packets/PacketFactory.h"
 
 //-----------------------------------------------------------------------------------------
 
@@ -61,19 +62,31 @@ int  FruitadensServerToServer::ProcessOutputFunction()
 
    if( m_packetsReadyToSend.size() > 0 )
    {
+      PacketFactory factory;
       m_mutex.lock();
       while( m_packetsReadyToSend.size() )
       {
          BasePacket* packet = m_packetsReadyToSend.front();
 
-         PacketServerToServerWrapper wrapper;
+          if( packet->packetType == PacketType_ServerToServerWrapper )         
+         {
+            SerializePacketOut( packet );
+         }
+         else
+         {
+            PacketServerToServerWrapper wrapper;
+            wrapper.serverId = m_serverId;
+            wrapper.pPacket = packet;
+            SerializePacketOut( &wrapper );
+         }
+        /* PacketServerToServerWrapper wrapper;
          wrapper.serverId = m_serverId;
-         wrapper.pPacket = packet;
+         wrapper.pPacket = packet;*/
 
-         SerializePacketOut( &wrapper );
+         //SerializePacketOut( &wrapper );
          m_packetsReadyToSend.pop_front();
 
-         delete packet;
+         factory.CleanupPacket( packet );
       }
       m_mutex.unlock();
    }

@@ -35,16 +35,16 @@ public:
    void              SetConnectionId( U32 newConnectionId ) { m_connectionId = newConnectionId; } // be super careful here, this should only be invoked when relogging in
    const string&     GetName() const { return m_username; }
    const string&     GetUuid() const { return m_uuid; }
-   const string&     GetLoginKey() const { return m_loginKey; }
+   //const string&     GetLoginKey() const { return m_loginKey; }
 
-   void              SetupFromLogin( U32 userId, const string& name, const string& uuid, const string& loginKey, const string& lastLoginTime );
+   void              SetupFromLogin( U32 userId, const string& name, const string& uuid, const string& lastLoginTime );
 
-   const string&     GetCurrentChatGroup() const { return m_currentChannel; }
+   //const string&     GetCurrentChatGroup() const { return m_currentChannel; }
    //void              SetCurrentChatGroup( const string& channel );
-   bool              SetChatChannel( const string& groupUuid );
+   //bool              SetChatChannel( const string& groupUuid );
 
-   const ChannelKeyValue& GetGroups() const { return availableChannels; }
-   const KeyValueVector& GetFriends() const { return availableFriends; }
+   const ChannelKeyValue& GetChatChannels() const { return availableChannels; }
+   //const KeyValueVector& GetFriends() const { return availableFriends; }
    bool              InformUserOfSuccessfulLogin();
 
    //-------------------------------------------------------------------------
@@ -88,7 +88,7 @@ protected:
 
    bool              PrepInitialLogin();
    bool              RequestExtraUserInfo();
-   bool              RequestFriends();
+   //bool              RequestFriends();
    bool              RequestChatChannels();
    void              GetChatChannelDigest( const string& groupUuid, int numRecords, int startingIndex );
    void              GetChatP2PDigest( const string& groupUuid, int numRecords, int startingIndex );
@@ -100,7 +100,7 @@ protected:
 
    //-------------------------------------------------------------------------
 
-   bool              SendChatOut( const string& message, const string& userUuid, const string& channelUuid );
+   bool              SendChatOut( const string& message, const string& userUuid, const string& channelUuid, U16 gameTurn );
 
    //-------------------------------------------------------------------------
 
@@ -115,16 +115,16 @@ protected:
 
    string                     m_username;
    string                     m_uuid;
-   string                     m_loginKey;
+   //string                     m_loginKey;
 
-   string                     m_currentChannel;// eventually replace with a uuid for the group
-   string                     m_currentFriendUuid;// eventually replace with a uuid for the group
+  // string                     m_currentChannel;// eventually replace with a uuid for the group
+   //string                     m_currentFriendUuid;// eventually replace with a uuid for the group
 
    string                     m_lastLoginTime;
 
    // todo, change these to structures
    ChannelKeyValue            availableChannels; // the key is the uuid and the value is the user name
-   KeyValueVector             availableFriends; // the key is the uuid and the value is the user name
+   //KeyValueVector             availableFriends; // the key is the uuid and the value is the user name
 
    deque< BasePacket* >       m_packetsIn;
 

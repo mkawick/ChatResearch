@@ -96,6 +96,29 @@ bool	PacketFactory::Parse( const U8* bufferIn, int& bufferOffset, BasePacket** p
 
 //---------------------------------------------------------------------------------------------------------------------------------------
 
+void     PacketFactory::CleanupPacket( BasePacket*& packet )
+{
+   if( packet )
+   {
+      if( packet->packetType == PacketType_GatewayWrapper )
+      {
+         PacketGatewayWrapper* wrapper = static_cast< PacketGatewayWrapper* >( packet );
+         delete wrapper->pPacket;
+      }
+      else if( packet->packetType == PacketType_ServerToServerWrapper )
+      {
+         PacketServerToServerWrapper* wrapper = static_cast< PacketServerToServerWrapper* >( packet );
+         delete wrapper->pPacket;
+      }
+
+      delete packet;
+
+      packet = NULL;
+   }
+}
+
+//---------------------------------------------------------------------------------------------------------------------------------------
+
 bool     PacketFactory::SafeParse( const U8* bufferIn, int& bufferOffset, BasePacket& packetOut ) const
 {
    int offset = bufferOffset;

@@ -20,6 +20,7 @@ using namespace std;
 #include "../NetworkCommon/Packets/GamePacket.h"
 #include "../NetworkCommon/Packets/ChatPacket.h"
 #include "../NetworkCommon/Packets/ServerToServerPacket.h"
+#include "../NetworkCommon/Packets/PacketFactory.h"
 
 DiplodocusChat*     ChatChannelManager::m_chatServer = NULL;
 //////////////////////////////////////////////////////////////////////////////////
@@ -52,7 +53,9 @@ bool     ChatChannelManager::AddInputChainData( BasePacket* packet ) // usually 
       m_mutex.lock();
       m_packetsIn.push_back( wrapper->pPacket );
       m_mutex.unlock();
-      delete packet;
+
+      PacketFactory factory;
+      factory.CleanupPacket( packet );
    }
    else
    {
@@ -260,7 +263,7 @@ bool     ChatChannelManager::FinishJob( PacketDbQueryResult* dbResult, ChatChann
          {
             if( connection )
             {
-               connection->SetChatChannel( job.uuid );
+               //connection->SetChatChannel( job.uuid );
             }
             
             PacketAddUserToGameResponse* packet = new PacketAddUserToGameResponse;
@@ -679,7 +682,7 @@ void     ChatChannelManager::UserLoggedIn( const string& userName, const string&
 
    UserUuidSet otherUsersToNotify;
 
-   if( newConnection->GetGroups().size() == 0 )
+   if( newConnection->GetChatChannels().size() == 0 )
    {
       string text = " User ";
       text += CreatePrintablePair( userUuid, userName );
@@ -688,8 +691,8 @@ void     ChatChannelManager::UserLoggedIn( const string& userName, const string&
    }
    else
    {
-      ChannelKeyValue::const_KVIterator kvIter = newConnection->GetGroups().begin();
-      while( kvIter != newConnection->GetGroups().end() )
+      ChannelKeyValue::const_KVIterator kvIter = newConnection->GetChatChannels().begin();
+      while( kvIter != newConnection->GetChatChannels().end() )
       {
          const string& channelUuid = kvIter->key;
          const string& channelName = kvIter->value.channelName;
@@ -698,13 +701,13 @@ void     ChatChannelManager::UserLoggedIn( const string& userName, const string&
          kvIter++;
       }
 
-      KeyValueConstIterator kvIter2 = newConnection->GetFriends().begin();
+    /*  KeyValueConstIterator kvIter2 = newConnection->GetFriends().begin();
       while( kvIter2 != newConnection->GetFriends().end() )
       {
          const string& friendUuid = kvIter2->key;
          otherUsersToNotify.insert( GenerateUniqueHash( friendUuid ) );
          kvIter2++;
-      }
+      }*/
    }
    
    //**************************************************************
@@ -1083,7 +1086,7 @@ bool     ChatChannelManager::RemoveChatChannel( const string& channelUuid )
 //---------------------------------------------------------------------
 //---------------------------------------------------------------------
 
-void     ChatChannelManager::UserSendsChatToChannel( const string& senderUuid, const string& channelUuid, const string& message )
+void     ChatChannelManager::UserSendsChatToChannel( const string& senderUuid, const string& channelUuid, const string& message, U16 gameTurn )
 {
    stringhash userHash = GenerateUniqueHash( senderUuid );
    stringhash channelHash = GenerateUniqueHash( channelUuid );
@@ -1147,7 +1150,7 @@ void     ChatChannelManager::UserSendsChatToChannel( const string& senderUuid, c
    }
 
    string friendUuid;
-   WriteChatToDb( message, senderUuid, friendUuid, channelUuid, channel.gameTurn, connectionId );
+   WriteChatToDb( message, senderUuid, friendUuid, channelUuid, gameTurn, connectionId );
 }
 
 //---------------------------------------------------------------------
@@ -1220,22 +1223,19 @@ bool   ChatChannelManager::CreateNewChannel( const string& channelName, const st
    // check for user permissions
    //***********************************************
 
-   string date = GetDateInUTC();
    U32 xorValue = 0xFFFFFFFF;
    xorValue  =  GetCurrentMilliseconds();
 
    string newId = GenerateUUID( xorValue );
 
-   string queryString = "INSERT INTO chat_channel VALUES( null, '";
-   queryString += channelName;
-   queryString += "', '";
+   string queryString = "INSERT INTO chat_channel VALUES( null, '%s','";
    queryString += newId;
-   queryString += "', 1, 32, 0, 0,'";
-   queryString += date;
-   queryString += "')";// note the 1 here used to indicate that this is a server created channel
+   queryString += "', 1, 32, 0, 0)";// note the 1 here used to indicate that this is a server created channel
 
+   list< string > listOfStrings;
+   listOfStrings.push_back( channelName );
    U32 serverId = 0;
-   DbQueryAndPacket( channelName, newId, serverId, authUuid, authHash, queryString, ChatChannelDbJob::JobType_Create, false );
+   int jobId = DbQueryAndPacket( channelName, newId, serverId, authUuid, authHash, queryString, ChatChannelDbJob::JobType_Create, false, &listOfStrings );
 
    return true;
 }
@@ -1280,6 +1280,7 @@ bool   ChatChannelManager::CreateNewChannel( const PacketChatCreateChatChannelFr
    queryString += date;
    queryString += "')";// note the 1 here used to indicate that this is a server created channel
 
+   // no need to escape these values
    string authUuid;
    stringhash authHash = 0;
    U32 serverId = pPacket->gameInstanceId;
@@ -1297,7 +1298,7 @@ bool   ChatChannelManager::CreateNewChannel( const PacketChatCreateChatChannelFr
 
 //---------------------------------------------------------------------
 
-int  ChatChannelManager::DbQueryAndPacket( const string& channelName, const string& channelUuid, U32 serverId, const string& authUuid, stringhash chatUserLookup, const string& queryString, ChatChannelDbJob::JobType jobType, bool isFandF )
+int  ChatChannelManager::DbQueryAndPacket( const string& channelName, const string& channelUuid, U32 serverId, const string& authUuid, stringhash chatUserLookup, const string& queryString, ChatChannelDbJob::JobType jobType, bool isFandF, list< string >* sanitizedStrings )
 {
    PacketDbQuery* dbQuery = new PacketDbQuery;
    dbQuery->id = GetConnectionId();
@@ -1305,9 +1306,23 @@ int  ChatChannelManager::DbQueryAndPacket( const string& channelName, const stri
    dbQuery->meta = authUuid;
    dbQuery->isFireAndForget = isFandF;
    dbQuery->query = queryString;
+
+   if( sanitizedStrings )
+   {
+      list< string >::iterator it = sanitizedStrings->begin();
+      while( it != sanitizedStrings->end() )
+      {
+         dbQuery->escapedStrings.insert( *it++ );
+      }
+   }
    int id = dbQuery->lookup;
 
-   m_chatServer->AddPacketFromUserConnection( dbQuery, GetConnectionId() );
+   if( m_chatServer->AddPacketFromUserConnection( dbQuery, GetConnectionId() ) == false )
+   {
+      cout << "ChatChannelManager:: Query packet rejected" << endl;
+      
+      delete dbQuery;
+   }
 
    return id;
 }
@@ -1356,12 +1371,12 @@ bool     ChatChannelManager::DeleteChannel( const string& channelUuid, const str
    // SET chat_channel.is_active=0 
    // WHERE chat_channel.uuid='abcdefghijklmnop'
 
-   string queryString = "UPDATE chat_channel SET chat_channel.is_active=0 WHERE chat_channel.uuid='";
-   queryString += channelUuid;
-   queryString += "'";
+   string queryString = "UPDATE chat_channel SET chat_channel.is_active=0 WHERE chat_channel.uuid='%s'";
 
+   list< string > listOfStrings;
+   listOfStrings.push_back( channelUuid );
    U32 serverId = 0;
-   DbQueryAndPacket( channelUuid, channelUuid, serverId, authUuid, authHash, queryString, ChatChannelDbJob::JobType_Delete, false );
+   DbQueryAndPacket( channelUuid, channelUuid, serverId, authUuid, authHash, queryString, ChatChannelDbJob::JobType_Delete, false, &listOfStrings );
 
    /*
    select count(*) from user_join_chat_channel 
@@ -1396,13 +1411,14 @@ bool    ChatChannelManager::DeleteChannel( const string& channelUuid, const U32 
    // SET chat_channel.is_active=0 
    // WHERE chat_channel.uuid='abcdefghijklmnop'
 
-   string queryString = "UPDATE chat_channel SET chat_channel.is_active=0 WHERE chat_channel.uuid='";
-   queryString += channelUuid;
-   queryString += "'";
+   string queryString = "UPDATE chat_channel SET chat_channel.is_active=0 WHERE chat_channel.uuid='%s'";
+
+   list< string > listOfStrings;
+   listOfStrings.push_back( channelUuid );
 
    string authUuid;
    stringhash authHash = 0;
-   DbQueryAndPacket( channelUuid, channelUuid, serverId, authUuid, authHash, queryString, ChatChannelDbJob::JobType_Delete, false );
+   DbQueryAndPacket( channelUuid, channelUuid, serverId, authUuid, authHash, queryString, ChatChannelDbJob::JobType_Delete, false, &listOfStrings );
 
    return true;
 }
@@ -1512,14 +1528,14 @@ bool     ChatChannelManager::AddUserToChannel( const string& channelUuid, const 
    // check for user permissions
    //***********************************************
 
-   string queryString = "INSERT INTO user_join_chat_channel VALUES ( '";
-   queryString += userUuid;
-   queryString += "', '";
-   queryString += channelUuid;
-   queryString += "', null, null, null )";
+   string queryString = "INSERT INTO user_join_chat_channel VALUES ('%s','%s', null, null, null )";
+
+   list< string > listOfStrings;
+   listOfStrings.push_back( userUuid );
+   listOfStrings.push_back( channelUuid );
 
    U32 serverId = 0;
-   DbQueryAndPacket( channelUuid, userUuid, serverId, authUuid, userHashLookup, queryString, ChatChannelDbJob::JobType_AddUser, false );
+   DbQueryAndPacket( channelUuid, userUuid, serverId, authUuid, userHashLookup, queryString, ChatChannelDbJob::JobType_AddUser, false, &listOfStrings );
 
    UserUuidSet otherUsersToNotify;
    AddUserToChannelInternal( userHashLookup, channelUuid, channel.name, otherUsersToNotify );
@@ -1622,14 +1638,14 @@ bool     ChatChannelManager::RemoveUserFromChannel( const string& channelUuid, c
    // WHERE user_join_chat_channel.userid ='FGHIJKLMNOPABCDE' 
    // AND user_join_chat_channel.user_groupid ='bcdefghijklmnopa';
 
-   string queryString = "DELETE FROM user_join_chat_channel WHERE user_join_chat_channel.user_uuid ='";
-   queryString += userUuid;
-   queryString += "' AND  user_join_chat_channel.channel_uuid='";
-   queryString += channelUuid;
-   queryString += "'";
+   string queryString = "DELETE FROM user_join_chat_channel WHERE user_join_chat_channel.user_uuid ='%s' AND  user_join_chat_channel.channel_uuid='%s'";
+   
+   list< string > listOfStrings;
+   listOfStrings.push_back( userUuid );
+   listOfStrings.push_back( channelUuid );
 
    U32 serverId = 0;
-   DbQueryAndPacket( channelUuid, userUuid, serverId, authUuid, userHashLookup, queryString, ChatChannelDbJob::JobType_RemoveUser, false );
+   DbQueryAndPacket( channelUuid, userUuid, serverId, authUuid, userHashLookup, queryString, ChatChannelDbJob::JobType_RemoveUser, false, &listOfStrings );
 
    UserUuidSet otherUsersToNotify;
    ChatChannel& channel = channelIter->second;
@@ -1706,11 +1722,12 @@ bool     ChatChannelManager::RequestChatters( const string& channelUuid, const s
    queryString += "join user_join_chat_channel as joiner on joiner.user_uuid=user.uuid ";
    queryString += "join chat_channel as channel on joiner.channel_uuid=channel.uuid ";
    queryString += "join chat as chat_log on channel.uuid=chat_log.chat_channel_id ";
-   queryString += "where channel.uuid='";
-   queryString += channelUuid;
-   queryString += "'";
+   queryString += "where channel.uuid='%s'";
 
-   return CreateAndSendUserListJob( queryString, channelIter->second.name, channelUuid, 0, authUuid, userHashLookup, ChatChannelDbJob::JobType_FindChatters );
+   list< string > listOfStrings;
+   listOfStrings.push_back( channelUuid );
+
+   return CreateAndSendUserListJob( queryString, channelIter->second.name, channelUuid, 0, authUuid, userHashLookup, ChatChannelDbJob::JobType_FindChatters, &listOfStrings );
 }
 //---------------------------------------------------------------------
 
@@ -1765,18 +1782,19 @@ bool     ChatChannelManager::RequestAllUsersInChatChannel( const string& channel
    queryString =  "SELECT user.user_name, user.uuid, user.user_id FROM users AS user ";
    queryString += "join user_join_chat_channel as joiner on joiner.user_uuid=user.uuid ";
    queryString += "join chat_channel as channel on joiner.channel_uuid=channel.uuid ";
-   queryString += "where channel.uuid='";
-   queryString += channelUuid;
-   queryString += "'";
+   queryString += "where channel.uuid='%s'";
 
-   return CreateAndSendUserListJob( queryString, channelIter->second.name, channelUuid, 0, authUuid, userHashLookup, ChatChannelDbJob::JobType_AllUsersInChannel );
+   list< string > listOfStrings;
+   listOfStrings.push_back( channelUuid );
+
+   return CreateAndSendUserListJob( queryString, channelIter->second.name, channelUuid, 0, authUuid, userHashLookup, ChatChannelDbJob::JobType_AllUsersInChannel, &listOfStrings );
 };
 
 //---------------------------------------------------------------------
 
-bool     ChatChannelManager::CreateAndSendUserListJob( const string& queryString, const string& channelName, const string& channelUuid, U32 serverId, const string& requestorUuid, stringhash chatUserLookup, ChatChannelDbJob::JobType type )
+bool     ChatChannelManager::CreateAndSendUserListJob( const string& queryString, const string& channelName, const string& channelUuid, U32 serverId, const string& requestorUuid, stringhash chatUserLookup, ChatChannelDbJob::JobType type, list< string >* sanitizedStrings )
 {
-   DbQueryAndPacket( channelName, channelUuid, serverId, requestorUuid, chatUserLookup, queryString, type, false );
+   DbQueryAndPacket( channelName, channelUuid, serverId, requestorUuid, chatUserLookup, queryString, type, false, sanitizedStrings );
 
    return true;
 }
@@ -1877,7 +1895,7 @@ void     ChatChannelManager::RequestChatChannelList( U32 serverId )
 }
 
 //---------------------------------------------------------------------
-
+/*
 bool     ChatChannelManager::AdvanceGameTurn( const string& channelUuid, U32 serverId )
 {
    stringhash channelHash = GenerateUniqueHash( channelUuid );
@@ -1902,7 +1920,7 @@ bool     ChatChannelManager::AdvanceGameTurn( const string& channelUuid, U32 ser
    PackageAndSendToDiplodocusChat( packet, serverId );
 
    return true;
-}
+}*/
 
 //---------------------------------------------------------------------
 
@@ -1961,31 +1979,32 @@ void     ChatChannelManager::WriteChatToDb( const string& message, const string&
    dbQuery->meta = connectionId;
    dbQuery->isFireAndForget = true;// no result is needed
    //insert into chat values( null, 'Damn sexy', 'ABCDEFGHIJKLMNOP', null, 'ABCDEFGHIJKLMNOP', null, 1, 1345);
-   string queryString = "INSERT INTO chat_message VALUES( null, '";
-   queryString += "%s";
-   queryString += "', '";
-   queryString += senderUuid;
-   queryString += "', ";//;
+   string queryString = "INSERT INTO chat_message VALUES( null, '%s', '%s', ";
    if( friendUuid.size() > 0 )
    {
-      queryString += "'";
-      queryString += friendUuid;
-      queryString += "'";
+      queryString += "'%s'";
    }
    else
    {
       queryString += "null";
    }
-   queryString += ", '";
-   queryString += channelUuid;
-   queryString += "', CURRENT_TIMESTAMP, ";
+   queryString += ", '%s', CURRENT_TIMESTAMP, ";
    queryString += boost::lexical_cast< string >( gameTurn );
-   queryString += ", ";
-   queryString += "0 )"; // game instance id
+   queryString += ")";
    dbQuery->escapedStrings.insert( message );
+   dbQuery->escapedStrings.insert( senderUuid );
+   if( friendUuid.size() > 0 )
+   {
+      dbQuery->escapedStrings.insert( friendUuid );
+   }
+   dbQuery->escapedStrings.insert( channelUuid );
 
    dbQuery->query = queryString;
-   m_chatServer->AddPacketFromUserConnection( dbQuery, connectionId );
+   if( m_chatServer->AddPacketFromUserConnection( dbQuery, connectionId ) == false )
+   {
+      cout << "ChatChannelManager:: Query packet rejected" << endl;
+      delete dbQuery;
+   }
 }
 
 //---------------------------------------------------------------------

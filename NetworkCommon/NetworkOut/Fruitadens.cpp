@@ -305,10 +305,12 @@ int  Fruitadens::ProcessOutputFunction()
 
 bool  Fruitadens::HandlePacketReceived( BasePacket* packetIn )
 {
+   PacketFactory factory;
+
    if( packetIn->packetType == PacketType_Base && // our basic bahavior is to ignore these initialization packets
       packetIn->packetSubType == BasePacket::BasePacket_Hello )
    {
-      delete packetIn;
+      factory.CleanupPacket( packetIn );
       return false;
    }
    // special case... we handle server id directly, but we simply pass through for other s2s comms.
@@ -340,7 +342,6 @@ bool  Fruitadens::HandlePacketReceived( BasePacket* packetIn )
                cout << "**************************************************" << endl;
             }
 
-            delete unwrappedPacket;
             handled2SPacket = true;
          }
          break;
@@ -358,8 +359,10 @@ bool  Fruitadens::HandlePacketReceived( BasePacket* packetIn )
          break;*/
 
       }
+
+
       
-      delete wrapper;
+      factory.CleanupPacket( packetIn );
 
       if( handled2SPacket) 
       {
@@ -381,8 +384,7 @@ bool  Fruitadens::HandlePacketReceived( BasePacket* packetIn )
       itInput++;
    }
    
-   delete packetIn;
-
+   factory.CleanupPacket( packetIn );
    return false;
 }
 

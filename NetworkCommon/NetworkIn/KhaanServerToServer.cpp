@@ -18,11 +18,11 @@ bool	KhaanServerToServer::OnDataReceived( unsigned char* data, int length )
 {
    BasePacket* packetIn = NULL;
    int offset = 0;
-   PacketFactory parser;
+   PacketFactory factory;
 
    while( offset < length )
    {
-      if( parser.Parse( data, offset, &packetIn ) == true )
+      if( factory.Parse( data, offset, &packetIn ) == true )
       {
          int packetType = packetIn->packetType;
          if( packetType != PacketType_GatewayWrapper &&
@@ -40,29 +40,28 @@ bool	KhaanServerToServer::OnDataReceived( unsigned char* data, int length )
             {
                PacketServerIdentifier* serverId = static_cast< PacketServerIdentifier * > ( wrapper->pPacket );
                SaveOffServerIdentification( serverId );
-
-               delete serverId;
             }
             else
             {
                m_connectionId = wrapper->serverId;
-               if( PassPacketOn( wrapper, m_connectionId ) == false )// should be rare unless other servers are sending info.
+               if( PassPacketOn( wrapper, m_connectionId ) == true )
+               {
+                  packetIn = NULL;// do not delete
+               }
+               else
                {
                   assert( 0 );
                }
             }
-            delete wrapper;
-            packetIn = NULL;
          }
          else if( packetType == PacketType_GatewayWrapper )// here we simply push the server packet up to the next layer
          {
             PacketGatewayWrapper* wrapper = static_cast< PacketGatewayWrapper* >( packetIn );
             m_connectionId = wrapper->connectionId;
-            if( PassPacketOn( wrapper, m_connectionId ) == false )
+            if( PassPacketOn( wrapper, m_connectionId ) == true )
             {
-               delete wrapper;// will not delete the package
+               packetIn = NULL;// do not delete
             }
-            packetIn = NULL;
          }
          else if ( packetType == PacketType_GatewayInformation )
          {
@@ -75,8 +74,6 @@ bool	KhaanServerToServer::OnDataReceived( unsigned char* data, int length )
 
                if( middle->HandleCommandFromGateway( packetIn, m_connectionId ) == false )// needs substance
                {
-                  delete packetIn;
-                  packetIn = NULL;
                   assert( 0 );// incomplete
                }
             }
@@ -85,10 +82,7 @@ bool	KhaanServerToServer::OnDataReceived( unsigned char* data, int length )
          {
             assert( 0 );
          }
-      }
-      if( packetIn )
-      {
-         delete packetIn;
+         factory.CleanupPacket( packetIn );
       }
    }
 

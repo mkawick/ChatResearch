@@ -501,13 +501,27 @@ bool     NetworkLayer::InviteUserToBeFriend( const string& uuid, const string& u
 
 //-----------------------------------------------------------------------------
 
-bool	   NetworkLayer::SendTextMessage( const string& message, const string userUuid, const string channelUuid )
+bool	   NetworkLayer::SendP2PTextMessage( const string& message, const string& destinationUserUuid )
+{
+   PacketChatToServer chat;
+   chat.message = message;
+   chat.userUuid = destinationUserUuid;
+   // chat.channelUuid; // not used
+   SerializePacketOut( &chat );
+
+   return true;
+}
+
+//-----------------------------------------------------------------------------
+
+bool	   NetworkLayer::SendChannelTextMessage( const string& message, const string& chatChannelUuid, U32 gameTurn )
 {
 
    PacketChatToServer chat;
    chat.message = message;
-   chat.userUuid = userUuid;
-   chat.channelUuid = channelUuid;
+   chat.gameTurn = gameTurn;
+   // chat.userUuid = m_uuid; // not used
+   chat.channelUuid = chatChannelUuid;
    SerializePacketOut( &chat );
 
    return true;
@@ -563,10 +577,10 @@ int   NetworkLayer::ProcessInputFunction()
          {
             offset = numBytes;
          }
-         if( packetIn && shouldDelete == true )
+        /* if( packetIn && shouldDelete == true )
          {
             delete packetIn;
-         }
+         }*/
       }
 	}
    else
@@ -598,6 +612,8 @@ int   NetworkLayer::ProcessInputFunction()
 
 bool  NetworkLayer::HandlePacketIn( BasePacket* packetIn )
 {
+   PacketCleaner cleaner( packetIn );
+
    switch( packetIn->packetType )
    {
       case PacketType_Contact:
@@ -733,7 +749,7 @@ bool  NetworkLayer::HandlePacketIn( BasePacket* packetIn )
             break;
          case PacketContact::ContactType_InvitationAccepted:
             {
-               cout << "new invite received" << endl;
+               cout << "invite accepted" << endl;
                PacketContact_InvitationAccepted* packet = static_cast< PacketContact_InvitationAccepted* >( packetIn );
                cout << "From " << packet->fromUsername << endl;
                cout << "To " << packet->toUsername << endl;
@@ -861,13 +877,6 @@ bool  NetworkLayer::HandlePacketIn( BasePacket* packetIn )
       {
          switch( packetIn->packetSubType )
          {
-          case PacketUserInfo::InfoType_FriendsList:
-            {
-               PacketFriendsList* login = static_cast<PacketFriendsList*>( packetIn );
-               //m_friends = login->friendList.GetData();
-               //DumpFriends();
-            }
-            break;
          case PacketUserInfo::InfoType_ChatChannelList:
             {
                PacketChatChannelList* channelList = static_cast<PacketChatChannelList*>( packetIn );
@@ -1079,9 +1088,10 @@ bool  NetworkLayer::HandlePacketIn( BasePacket* packetIn )
                   delete buffer;
                }
             }
-            return false;// this is important... we will delete the packets.
+            //return false;// this is important... we will delete the packets.
+            break;
          
-            case PacketGameToServer::GamePacketType_RequestUserWinLossResponse:
+         case PacketGameToServer::GamePacketType_RequestUserWinLossResponse:
             {
                PacketRequestUserWinLossResponse* response = 
                      static_cast<PacketRequestUserWinLossResponse*>( packetIn );

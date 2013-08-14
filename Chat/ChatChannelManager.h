@@ -113,7 +113,7 @@ public:
    void     UserLoggedIn( const string& username, const string& userUuid, UserConnection* connection );
    void     UserLoggedOut( const string& username, const string& userUuid, UserConnection* connection );
 
-   void     UserSendsChatToChannel( const string& userUuid, const string& channelUuid, const string& message ); 
+   void     UserSendsChatToChannel( const string& userUuid, const string& channelUuid, const string& message, U16 gameTurn ); 
    void     UserSendsChatToUser( const string& userUuid, const string& destinationUuid, const string& message ); 
 
    // user-based authenticated methods
@@ -188,7 +188,7 @@ protected:
 
    bool              FindDbJob( int jobId, DbJobList& listOfJobs, DbJobIterator& iter );
    bool              FinishJob( PacketDbQueryResult* result, ChatChannelDbJob& job );
-   int               DbQueryAndPacket( const string& channelName, const string& channelUuid, U32 serverId, const string& authUuid, stringhash chatUserLookup, const string& queryString, ChatChannelDbJob::JobType jobType, bool isFandF );
+   int               DbQueryAndPacket( const string& channelName, const string& channelUuid, U32 serverId, const string& authUuid, stringhash chatUserLookup, const string& queryString, ChatChannelDbJob::JobType jobType, bool isFandF, list< string >* sanitizedStrings = NULL );
 
    bool              FinishAddingChatChannelFromGameServer( PacketDbQueryResult* dbResult, ChatChannelDbJob& job );
    bool              FinishAddingAddingUserToChatchannelFromGameServer( PacketDbQueryResult* dbResult, ChatChannelDbJob& job );
@@ -207,7 +207,7 @@ protected:
    
 
    int               AddDbJob( const string& channelName, const string& channelUuid, U32 serverId, stringhash chatUserLookup, stringhash authUserLookup, ChatChannelDbJob::JobType type );
-   bool              CreateAndSendUserListJob( const string& queryString, const string& channelName, const string& channelUuid, U32 serverId, const string& requestorUuid, stringhash chatUserLookup, ChatChannelDbJob::JobType type );
+   bool              CreateAndSendUserListJob( const string& queryString, const string& channelName, const string& channelUuid, U32 serverId, const string& requestorUuid, stringhash chatUserLookup, ChatChannelDbJob::JobType type, list< string >* sanitizedStrings = NULL );
    int                              m_dbJobLookupId;
    DbJobList                        m_pendingDbJobs;
    

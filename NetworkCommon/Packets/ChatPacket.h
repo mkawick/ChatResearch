@@ -69,6 +69,7 @@ public:
    string   message;
    string   channelUuid;
    string   userUuid;
+   U16      gameTurn;
 };
 
 ///////////////////////////////////////////////////////////////

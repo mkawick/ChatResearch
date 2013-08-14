@@ -176,7 +176,8 @@ public:
    bool     InviteUserToBeFriend( const string& uuid, const string& username, const string& message );
 
    //bool     ChangeGame( const string& gameName );
-   bool	   SendTextMessage( const string& message, const string userUuid, const string chatChannel );// either can be empty but not both
+   bool	   SendP2PTextMessage( const string& message, const string& destinationUserUuid );
+   bool	   SendChannelTextMessage( const string& message, const string& chatChannelUuid, U32 gameTurn = 0 );
 
    // utility functions
 

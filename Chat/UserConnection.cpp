@@ -150,10 +150,9 @@ bool     UserConnection::PrepInitialLogin()
    dbQuery->id = m_connectionId;
    dbQuery->lookup = QueryType_UserLoginInfo;
 
-   string queryString = "SELECT * FROM users WHERE user_name='" ;
-   queryString += m_username;
-   queryString += "'";
+   string queryString = "SELECT * FROM users WHERE user_name='%s'" ;
    dbQuery->query = queryString;
+   dbQuery->escapedStrings.insert( m_username );
    
    m_isUserDbLookupPending = true;
    m_chatServer->AddPacketFromUserConnection( dbQuery, m_connectionId );
@@ -165,23 +164,23 @@ bool     UserConnection::PrepInitialLogin()
 
 bool     UserConnection::RequestExtraUserInfo()
 {
-   RequestFriends();
+   //RequestFriends();
    RequestChatChannels();
 
    return true;
 }
 
 //------------------------------------------------------------------------------------------------
-
+/*
 bool  UserConnection::RequestFriends()
 {
    PacketDbQuery* dbQuery = new PacketDbQuery;
    dbQuery->id = m_connectionId;
    dbQuery->lookup = QueryType_UserFriendsList;
 
-  /* string queryString = "SELECT * FROM users WHERE users.uuid IN (SELECT friends.userid2 as uuid FROM friends WHERE friends.userid1 = '" ;
-   queryString += m_userDbId;
-   queryString += "' union SELECT friends.userid1 as uuid FROM friends WHERE friends.userid2 = '";*/
+  // string queryString = "SELECT * FROM users WHERE users.uuid IN (SELECT friends.userid2 as uuid FROM friends WHERE friends.userid1 = '" ;
+  // queryString += m_userDbId;
+  // queryString += "' union SELECT friends.userid1 as uuid FROM friends WHERE friends.userid2 = '";
 
    string queryString = "SELECT * FROM users INNER JOIN friends ON users.user_id=friends.userid2 WHERE friends.userid1=";// get my list of friends
    queryString += boost::lexical_cast< string >( m_userDbId );
@@ -191,7 +190,7 @@ bool  UserConnection::RequestFriends()
    m_chatServer->AddPacketFromUserConnection( dbQuery, m_connectionId );
 
    return true;
-}
+}*/
 
 //------------------------------------------------------------------------------------------------
 
@@ -386,7 +385,7 @@ bool     UserConnection::SendLoginStatus( bool wasSuccessful )
 
 //------------------------------------------------------------------------------------------------
 
-bool     UserConnection::SendChatOut( const string& message, const string& userUuid, const string& channelUuid )
+bool     UserConnection::SendChatOut( const string& message, const string& userUuid, const string& channelUuid, U16 gameTurn )
 {
  /*  if( m_currentChannel.size() == 0 && m_currentFriendUuid.size() == 0 )
    {
@@ -396,7 +395,7 @@ bool     UserConnection::SendChatOut( const string& message, const string& userU
 
    if( channelUuid.size() )
    {
-      m_chatChannelManager->UserSendsChatToChannel( m_uuid, channelUuid, message );
+      m_chatChannelManager->UserSendsChatToChannel( m_uuid, channelUuid, message, gameTurn );
    }
    else
    {
@@ -406,7 +405,7 @@ bool     UserConnection::SendChatOut( const string& message, const string& userU
 }
 
 //------------------------------------------------------------------------------------------------
-
+/*
 bool     UserConnection::SetChatChannel( const string& channelUuid )
 {
    bool found = false;
@@ -445,15 +444,15 @@ bool     UserConnection::SetChatChannel( const string& channelUuid )
    }
 
    return false;
-}
+}*/
 
 //------------------------------------------------------------------------------------------------
 
-void     UserConnection::SetupFromLogin( U32 userId, const string& name, const string& uuid, const string& loginKey, const string& lastLoginTime )
+void     UserConnection::SetupFromLogin( U32 userId, const string& name, const string& uuid, const string& lastLoginTime )
 {
    m_username = name;
    m_uuid = uuid;
-   m_loginKey = loginKey;
+   //m_loginKey = loginKey;
    m_lastLoginTime = lastLoginTime;
    m_userDbId = userId;
 
@@ -476,12 +475,13 @@ bool     UserConnection::SendPacketToGateway( BasePacket* packet ) const
 
 bool     UserConnection::InformUserOfSuccessfulLogin()
 {
-   if( m_userFriendsComplete == true && m_userChannelsComplete == true )
+   if( //m_userFriendsComplete == true && 
+      m_userChannelsComplete == true )
    {
       m_chatServer->FinishedLogin( m_connectionId, m_uuid );
 
       SendListOfChannelsToGateway();
-      SendListOfFriendsToGateway();
+      //SendListOfFriendsToGateway();
       GetAllChatHistroySinceLastLogin();
 
    }
@@ -490,7 +490,7 @@ bool     UserConnection::InformUserOfSuccessfulLogin()
 
 //------------------------------------------------------------------------------------------------
 //------------------------------------------------------------------------------------------------
-
+/*
 bool  UserConnection::SendListOfFriendsToGateway()
 {
    const int maxUsersSentAtOnce = 50;
@@ -516,7 +516,7 @@ bool  UserConnection::SendListOfFriendsToGateway()
    }
 
    return true;
-}
+}*/
 
 //------------------------------------------------------------------------------------------------
 
@@ -554,7 +554,7 @@ bool     UserConnection::ProcessPacket( BasePacket* packet )
          {
          case PacketUserInfo::InfoType_FriendsListRequest:
             {
-               SendListOfFriendsToGateway();
+               //SendListOfFriendsToGateway();
             }
             break;
          case PacketUserInfo::InfoType_ChatChannelListRequest:
@@ -572,7 +572,7 @@ bool     UserConnection::ProcessPacket( BasePacket* packet )
          case PacketChatToServer::ChatType_ChatToServer:
             {
                PacketChatToServer* chat = static_cast< PacketChatToServer* >( packet );
-               SendChatOut( chat->message, chat->userUuid, chat->channelUuid );
+               SendChatOut( chat->message, chat->userUuid, chat->channelUuid, chat->gameTurn );
             }
             break;
          case PacketChatToServer::ChatType_ChangeChatChannel:
@@ -580,7 +580,7 @@ bool     UserConnection::ProcessPacket( BasePacket* packet )
                PacketChangeChatChannel* channelChange = static_cast< PacketChangeChatChannel* >( packet );
                //if( channelChange->chatChannelUuid != m_currentChannel )// ignore changes to the same channel
                {
-                  SetChatChannel( channelChange->chatChannelUuid );
+                  //SetChatChannel( channelChange->chatChannelUuid );
                }
             }
             break;
@@ -714,7 +714,7 @@ bool     UserConnection::HandleDbQueryResult( BasePacket* packet )
             RequestExtraUserInfo();
          }
          break;
-      case QueryType_UserFriendsList:
+     /* case QueryType_UserFriendsList:
          {
             m_userFriendsComplete = true;
 
@@ -733,7 +733,7 @@ bool     UserConnection::HandleDbQueryResult( BasePacket* packet )
 
             InformUserOfSuccessfulLogin();
          }
-         break;
+         break;*/
     /*  case QueryType_UserChannelList:
          {
             m_userChannelsComplete = true;

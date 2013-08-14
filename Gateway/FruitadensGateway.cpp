@@ -100,7 +100,7 @@ int  FruitadensGateway::ProcessOutputFunction()
       U8 buffer[ MaxBufferSize ];
       int dangerZone = MaxBufferSize * 3/4;// 25%
       int offset = 0;
-
+      PacketFactory factory;
       
       while( m_packetsReadyToSend.size() && offset < dangerZone )
       {
@@ -108,23 +108,11 @@ int  FruitadensGateway::ProcessOutputFunction()
          BasePacket* packet = m_packetsReadyToSend.front();
          m_packetsReadyToSend.pop_front();
          m_mutex.unlock();
+
          packet->SerializeOut( buffer, offset );
 
-         //SerializePacketOut( packet );
-
-         if( packet->packetType == PacketType_GatewayWrapper )
-         {
-            PacketGatewayWrapper* wrapper = static_cast< PacketGatewayWrapper* >( packet );
-            delete wrapper->pPacket;
-         }
-         if( packet->packetType == PacketType_ServerToServerWrapper )
-         {
-            PacketServerToServerWrapper* wrapper = static_cast< PacketServerToServerWrapper* >( packet );
-            delete wrapper->pPacket;
-         }
-         delete packet;
+         factory.CleanupPacket( packet );
       }
-      
 
       SendPacket( buffer, offset );
    }

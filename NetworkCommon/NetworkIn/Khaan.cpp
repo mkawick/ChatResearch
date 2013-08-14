@@ -145,6 +145,7 @@ void	Khaan :: UpdateOutwardPacketList()
    int bufferOffset = 0;
 
    U8 buffer[ MaxBufferSize ];
+   PacketFactory factory;
 
    int num = m_packetsOut.size();
    // todo, plan for the degenerate case where a single packet is over 2k
@@ -154,18 +155,7 @@ void	Khaan :: UpdateOutwardPacketList()
       packet->SerializeOut( buffer, bufferOffset ); 
       if( bufferOffset < (int)( MaxBufferSize - 256 ) )// do not write past the end
       {
-         if( packet->packetType == PacketType_GatewayWrapper )
-         {
-            PacketGatewayWrapper* wrapper = static_cast< PacketGatewayWrapper* >( packet );
-            delete wrapper->pPacket;
-         }
-         else if( packet->packetType == PacketType_ServerToServerWrapper )
-         {
-            PacketServerToServerWrapper* wrapper = static_cast< PacketServerToServerWrapper* >( packet );
-            delete wrapper->pPacket;
-         }
-
-         delete packet;
+         factory.CleanupPacket( packet );
          m_packetsOut.pop_front();
          length = bufferOffset;
       }

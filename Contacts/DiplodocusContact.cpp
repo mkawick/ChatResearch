@@ -422,14 +422,12 @@ bool     DiplodocusContact::ConnectUser( PacketPrepareForUserLogin* loginPacket 
    // if the user is already here but relogged, simply 
    m_mutex.lock();
       it = m_users.begin();
-      if( it != m_users.end() )
+      while( it != m_users.end() )
       {
          if( it->second.GetUserInfo().uuid == loginPacket->uuid ) 
          {
             found = true;
             U32 id = it->second.GetUserInfo().id;
-            m_users.insert( UserContactPair( connectionId, it->second ) );
-          
             UserIdToContactMapIterator itIdToContact = m_userLookupById.find( id );
             if( itIdToContact != m_userLookupById.end() )
             {
@@ -438,8 +436,11 @@ bool     DiplodocusContact::ConnectUser( PacketPrepareForUserLogin* loginPacket 
             it->second.SetConnectionId( connectionId );
             it->second.FinishLoginBySendingUserFriendsAndInvitations();
             
+            m_users.insert( UserContactPair( connectionId, it->second ) );
             m_users.erase( it );
+            break;
          }
+         it++;
       }
    m_mutex.unlock();
 

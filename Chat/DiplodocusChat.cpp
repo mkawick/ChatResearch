@@ -169,7 +169,7 @@ void  DiplodocusChat::SetupForNewUserConnection( PacketPrepareForUserLogin* logi
    // if the user is already here but relogged, simply 
    m_mutex.lock();
       it = m_connectionMap.begin();
-      if( it != m_connectionMap.end() )
+      while( it != m_connectionMap.end() )
       {
          if( it->second->GetUuid() == loginPacket->uuid ) 
          {
@@ -179,14 +179,16 @@ void  DiplodocusChat::SetupForNewUserConnection( PacketPrepareForUserLogin* logi
 
             m_connectionMap.insert( ConnectionPair( connectionId, it->second ) );
             m_connectionMap.erase( it );
+            break;
          }
+         it++;
       }
    m_mutex.unlock();
 
    if( found == false )// almost 100% true
    {
       UserConnection* connection = new UserConnection( connectionId );
-      connection->SetupFromLogin( loginPacket->userId, loginPacket->username, loginPacket->uuid, loginPacket->loginKey, loginPacket->lastLoginTime );
+      connection->SetupFromLogin( loginPacket->userId, loginPacket->username, loginPacket->uuid, loginPacket->lastLoginTime );
 
       m_mutex.lock();
          m_connectionMap.insert( ConnectionPair ( connectionId, connection ) );

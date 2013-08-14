@@ -3,7 +3,7 @@
 
 #include "../NetworkCommon/Packets/ServerToServerPacket.h"
 #include "../NetworkCommon/Packets/GamePacket.h"
-//#include "../NetworkCommon/Packets/GamePacket.h"
+#include "../NetworkCommon/Packets/PacketFactory.h"
 
 #include <iostream>
 using namespace std;
@@ -91,10 +91,10 @@ bool   DiplodocusGame::AddInputChainData( BasePacket* packet, U32 connectionId )
 
    if( packet->packetType == PacketType_GatewayWrapper )
    {
+      PacketCleaner cleaner( packet );
       PacketGatewayWrapper* wrapper = static_cast< PacketGatewayWrapper* >( packet );
       BasePacket* unwrappedPacket = wrapper->pPacket;
       U32 connectionIdToUse = wrapper->connectionId;
-      delete wrapper;
 
       if( unwrappedPacket->packetType == PacketType_Gameplay )
       {
@@ -109,7 +109,6 @@ bool   DiplodocusGame::AddInputChainData( BasePacket* packet, U32 connectionId )
                data.m_sizeOfData = rawData->size;
                m_callbacks->DataFromClient( connectionIdToUse, &data );
             }
-            delete unwrappedPacket;
             return true;
          }
          else if( unwrappedPacket->packetSubType == PacketGameToServer::GamePacketType_ListOfGames )
@@ -129,7 +128,6 @@ bool   DiplodocusGame::AddInputChainData( BasePacket* packet, U32 connectionId )
             {
                m_callbacks->UserConfirmedToOwnThisProduct( packet->connectionId, isUserValidForThisGame );
             }
-            delete unwrappedPacket;
             return true;
          }
         /* // for simplicity, we are simply going to send packets onto the chat server
@@ -150,8 +148,6 @@ bool   DiplodocusGame::AddInputChainData( BasePacket* packet, U32 connectionId )
       {
          assert( 0 );
       }
-
-      delete unwrappedPacket;
    }
    return false;
 }
