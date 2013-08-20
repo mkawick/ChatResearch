@@ -251,7 +251,7 @@ bool  FullChatChannelEntry::SerializeIn( const U8* data, int& bufferOffset )
    Serialize::In( data, bufferOffset, senderUuid );
    Serialize::In( data, bufferOffset, chatChannelUuid );
    Serialize::In( data, bufferOffset, timeStamp );
-   Serialize::In( data, bufferOffset, gameInstance );
+   //Serialize::In( data, bufferOffset, gameInstance );
    Serialize::In( data, bufferOffset, gameTurn );
 
    return true;
@@ -263,7 +263,7 @@ bool  FullChatChannelEntry::SerializeOut( U8* data, int& bufferOffset ) const
    Serialize::Out( data, bufferOffset, senderUuid );
    Serialize::Out( data, bufferOffset, chatChannelUuid );
    Serialize::Out( data, bufferOffset, timeStamp );
-   Serialize::Out( data, bufferOffset, gameInstance );
+  // Serialize::Out( data, bufferOffset, gameInstance );
    Serialize::Out( data, bufferOffset, gameTurn );
 
    return true;

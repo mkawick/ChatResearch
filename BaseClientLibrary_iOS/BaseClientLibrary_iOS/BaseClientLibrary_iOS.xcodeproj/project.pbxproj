@@ -286,7 +286,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "XCODEBUILD_PATH=/Applications/Xcode.app/Contents/Developer/usr/bin\nXCODEBUILD=$XCODEBUILD_PATH/xcodebuild\n\n$XCODEBUILD -project BaseClientLibrary_iOS.xcodeproj -target \"BaseClientLibrary_iOS\" -sdk \"iphonesimulator\" -configuration \"Release\" clean build\n$XCODEBUILD -project BaseClientLibrary_iOS.xcodeproj -target \"BaseClientLibrary_iOS\" -sdk \"iphoneos\" -configuration \"Release\" clean build\nlipo -create -output \"build/libBaseClientLibrary_iOS.a\" \"build/Release-iphoneos/libBaseClientLibrary_iOS.a\" \"build/Release-iphonesimulator/libBaseClientLibrary_iOS.a\"\n";
+			shellScript = "XCODEBUILD_PATH=/Applications/Xcode.app/Contents/Developer/usr/bin\nXCODEBUILD=$XCODEBUILD_PATH/xcodebuild\n\n$XCODEBUILD -project BaseClientLibrary_iOS.xcodeproj -target \"BaseClientLibrary_iOS\" -sdk \"iphonesimulator\" -configuration \"Debug\" clean build\n$XCODEBUILD -project BaseClientLibrary_iOS.xcodeproj -target \"BaseClientLibrary_iOS\" -sdk \"iphoneos\" -configuration \"Debug\" clean build\nlipo -create -output \"build/libBaseClientLibrary_iOS.a\" \"build/Debug-iphoneos/libBaseClientLibrary_iOS.a\" \"build/Debug-iphonesimulator/libBaseClientLibrary_iOS.a\"\n";
 		};
 /* End PBXShellScriptBuildPhase section */
 
@@ -358,7 +358,7 @@
 					"$(SRCROOT)/../../../libevent",
 				);
 				IPHONEOS_DEPLOYMENT_TARGET = 6.1;
-				ONLY_ACTIVE_ARCH = YES;
+				ONLY_ACTIVE_ARCH = NO;
 				SDKROOT = iphoneos;
 			};
 			name = Debug;
@@ -396,6 +396,7 @@
 				DSTROOT = /tmp/BaseClientLibrary_iOS.dst;
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
 				GCC_PREFIX_HEADER = "BaseClientLibrary_iOS/BaseClientLibrary_iOS-Prefix.pch";
+				ONLY_ACTIVE_ARCH = NO;
 				OTHER_LDFLAGS = "-ObjC";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;

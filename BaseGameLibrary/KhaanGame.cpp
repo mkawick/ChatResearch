@@ -18,7 +18,7 @@ bool	KhaanGame::OnDataReceived( unsigned char* data, int length )
 {
    counter ++;
 
-   cout << " k# " << counter << endl;
+   //cout << " k# " << counter << endl;
 
    if( m_mainInterfacePtr == NULL )
    {
@@ -74,7 +74,7 @@ bool   KhaanGame :: PassPacketOn( BasePacket* packetIn, U32 connectionId )
       }
       tracker = temp;
 
-      cout << " p# " << tracker  << endl;
+      //cout << " p# " << tracker  << endl;
    }
    m_mainInterfacePtr->AddInputChainData( packetIn, connectionId );
    return true;
@@ -97,7 +97,7 @@ void  KhaanGame :: UpdateInwardPacketList()
 
       delete ts;
 
-      cout << "process" << endl;
+      //cout << "process" << endl;
    }
 }
 //-----------------------------------------------------------------------------------------

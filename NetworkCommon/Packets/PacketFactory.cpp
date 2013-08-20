@@ -7,23 +7,26 @@ using namespace std;
 
 #include <assert.h>
 
+#include "../DataTypes.h"
 #include "PacketFactory.h"
+
 #include "BasePacket.h"
 #include "ChatPacket.h"
 #include "ContactPacket.h"
+#include "DbPacket.h"
 #include "GamePacket.h"
 #include "ServerToServerPacket.h"
-#include "DbPacket.h"
+
 
 PacketFactory::PacketFactory(){}
 
 template< typename PacketType >
 PacketType* SerializeIn( const U8* bufferIn, int& bufferOffset )
 {
-   PacketType* logout = new PacketType();
-   logout->SerializeIn( bufferIn, bufferOffset );
+   PacketType* newPacket = new PacketType();
+   newPacket->SerializeIn( bufferIn, bufferOffset );
 
-   return logout;
+   return newPacket;
 }
 
 //-----------------------------------------------------------------------------------------

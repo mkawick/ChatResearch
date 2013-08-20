@@ -117,12 +117,12 @@ class RawDataAccumulator
 public:
    RawDataAccumulator() : numBytes( 0 ) {}
 
-   void  AddPacket( const PacketGameplayRawData * );
+   void  AddPacket( PacketGameplayRawData * );
    bool  IsDone();
    void  PrepPackage( U8* & data, int& size );
 
    int   numBytes;
-   deque< const PacketGameplayRawData* > packetsOfData;
+   deque< PacketGameplayRawData* > packetsOfData;
 };
 
 ///////////////////////////////////////////////////////

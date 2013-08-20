@@ -30,12 +30,19 @@ bool     BlankUUIDQueryHandler::HandleResult( const PacketDbQueryResult* dbResul
       bool addedUuids = false;
       IndexTableParser              enigma( dbResult->bucket );
       IndexTableParser::iterator    it = enigma.begin();
+      if( enigma.m_bucket.size() > 0 )
+      {
+         cout << "Found user record with UUID blank matching" << endl;
+         cout << " Successful query = " << m_queryString << endl;
+      }
       while( it != enigma.end() )
       {
          addedUuids = true;
          IndexTableParser::row      row = *it++;
 
-         string userId =            row[ TableIndexOnly::Column_index ];
+         string   userId =            row[ TableIndexOnly::Column_index ];
+
+         cout << "User id replaced = " << userId << endl;
 
          UpdateUuidForUser( userId, true, "0" );
       }

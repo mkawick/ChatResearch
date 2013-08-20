@@ -227,7 +227,7 @@ struct FullChatChannelEntry
    string   senderUuid;
    string   chatChannelUuid;
    string   timeStamp;
-   U32      gameInstance;
+   //U32      gameInstance;
    U16      gameTurn;
    
 };

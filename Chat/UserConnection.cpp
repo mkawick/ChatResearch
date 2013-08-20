@@ -896,14 +896,14 @@ bool     UserConnection::HandleDbQueryResult( BasePacket* packet )
                {
                   entry.gameTurn  = 0;
                }
-               if( row[ TableChat::Column_game_instance_id ] != "NULL" )
+              /* if( row[ TableChat::Column_game_instance_id ] != "NULL" )
                {
                   entry.gameTurn =  boost::lexical_cast< int >( row[ TableChat::Column_game_instance_id ] );
                }
                else
                {
                   entry.gameTurn  = 0;
-               }
+               }*/
               
                result->history.push_back( entry );
                // send once we have so many items

@@ -188,11 +188,12 @@ void  DiplodocusChat::SetupForNewUserConnection( PacketPrepareForUserLogin* logi
    if( found == false )// almost 100% true
    {
       UserConnection* connection = new UserConnection( connectionId );
-      connection->SetupFromLogin( loginPacket->userId, loginPacket->username, loginPacket->uuid, loginPacket->lastLoginTime );
 
-      m_mutex.lock();
+      m_mutex.lock();// the user must be in the list before any further communicatins can continue.
          m_connectionMap.insert( ConnectionPair ( connectionId, connection ) );
       m_mutex.unlock();
+
+      connection->SetupFromLogin( loginPacket->userId, loginPacket->username, loginPacket->uuid, loginPacket->lastLoginTime );
    }
 }
 

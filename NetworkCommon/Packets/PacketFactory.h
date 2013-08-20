@@ -43,9 +43,13 @@ public:
    PacketCleaner( BasePacket* packet ): m_packet( packet ){}
    ~PacketCleaner()
    {
-      PacketFactory factory;
-      factory.CleanupPacket( m_packet );
+      if( m_packet )
+      {
+         PacketFactory factory;
+         factory.CleanupPacket( m_packet );
+      }
    }
+   void Clear() { m_packet = NULL; }
 private:
    PacketCleaner();
 

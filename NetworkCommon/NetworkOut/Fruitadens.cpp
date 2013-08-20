@@ -361,11 +361,9 @@ bool  Fruitadens::HandlePacketReceived( BasePacket* packetIn )
       }
 
 
-      
-      factory.CleanupPacket( packetIn );
-
-      if( handled2SPacket) 
+      if( handled2SPacket || packetIn == NULL ) 
       {
+         factory.CleanupPacket( packetIn );
          return true;
       }
       // or we fall through

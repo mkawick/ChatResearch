@@ -285,8 +285,10 @@ void     DiplodocusGame::UpdateAllTimers()
       time( &currentTime );
       if( timer.lastTimeMs < (currentTimeMs - timer.scheduleTimeMs ) )
       {
+         m_mutex.lock();
          m_callbacks->TimerCallback( timer.timerId, currentTime );
          timer.lastTimeMs = currentTimeMs;
+         m_mutex.unlock();
       }
    }
 }
@@ -429,7 +431,9 @@ void  DiplodocusGame::ConnectUser( const PacketPrepareForUserLogin* loginPacket 
       ui.passwordHash =    loginPacket->password;
       ui.id =              loginPacket->userId;
 
+      m_mutex.lock();
       m_callbacks->UserConnected( &ui, connectionId );
+      m_mutex.unlock();
    }
 }
 
@@ -441,7 +445,9 @@ void  DiplodocusGame::DisconnectUser( const PacketPrepareForUserLogout* logoutPa
    bool  errorDisconnect = logoutPacket->wasDisconnectedByError;
    if( m_callbacks )
    {
+      m_mutex.lock();
       m_callbacks->UserDisconnected( connectionId, errorDisconnect );
+      m_mutex.unlock();
    }
 }
 

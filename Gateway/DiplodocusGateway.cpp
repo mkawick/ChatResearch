@@ -4,6 +4,7 @@
 #include "FruitadensGateway.h"
 #include "../NetworkCommon/ServerConstants.h"
 #include "../NetworkCommon/Packets/ServerToServerPacket.h"
+#include "../NetworkCommon/Packets/PacketFactory.h"
 
 //#define VERBOSE
 void  PrintText( const char* text, int extraCr = 0 )
@@ -159,29 +160,17 @@ int  DiplodocusGateway::ProcessInputFunction()
       return 0;
 
    PrintText( "ProcessInputFunction" );
-   //Threading::MutexLock locker( m_mutex );
+
+   PacketFactory factory;
    while( m_packetsToBeSentInternally.size() )
    {
       BasePacket* packet = m_packetsToBeSentInternally.front();
       if( PushPacketToProperOutput( packet ) == false )
       {
-         if( packet->packetType == PacketType_ServerToServerWrapper )
-         {
-            PacketServerToServerWrapper* wrapper = static_cast< PacketServerToServerWrapper* >( packet );
-            packet = wrapper->pPacket;
-            delete wrapper->pPacket;
-         }
-         else if( packet->packetType == PacketType_GatewayWrapper )
-         {
-            PacketGatewayWrapper* wrapper = static_cast< PacketGatewayWrapper* >( packet );
-            packet = wrapper->pPacket;
-            delete wrapper->pPacket;
-         }
-         //delete packet;
+         factory.CleanupPacket( packet );
       }
       m_packetsToBeSentInternally.pop_front();
    }
-   // m_inputChainListMutex.unlock
    return 1;
 }
 
@@ -259,6 +248,7 @@ int   DiplodocusGateway::ProcessOutputFunction()
    {
       PrintText( "ProcessOutputFunction" );
 
+      PacketFactory factory;
       while( m_outputTempStorage.size() )
       {
          PacketGatewayWrapper* wrapper = static_cast< PacketGatewayWrapper* >( m_outputTempStorage.front() );
@@ -278,6 +268,10 @@ int   DiplodocusGateway::ProcessOutputFunction()
                HandlePacketToKhaan( khaan, dataPacket );// all deletion and such is handled lower
             }
 
+            else
+            {
+               factory.CleanupPacket( dataPacket );
+            }
             //m_inputChainListMutex.lock();
 
          }

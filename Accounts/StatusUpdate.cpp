@@ -37,7 +37,7 @@ StatusUpdate::StatusUpdate( const string& serverName, U32 serverId ) : Queryer()
    m_checkOnOldEmailsTimer -= OneDay; // always check on launch.. no waiting 24 hours.
    m_expireOldAccountRequestsTimer -= OneDay;
 
-   string queryForBlankUUIDs = "SELECT user_id FROM users WHERE uuid IS NULL OR uuid=0 LIMIT 30";
+   string queryForBlankUUIDs = "SELECT user_id FROM users WHERE uuid IS NULL OR uuid='0' LIMIT 30";
    m_blankUuidHandler = new BlankUUIDQueryHandler( QueryType_UserFindBlankUUID, this, queryForBlankUUIDs );
    m_blankUuidHandler->SetPeriodicty( timeoutBlankUUIDTimer );
 

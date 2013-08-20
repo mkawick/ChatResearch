@@ -124,9 +124,9 @@ bool  BasePacket::SerializeIn( const U8* data, int& bufferOffset )
    Serialize::In( data, bufferOffset, packetType );
    Serialize::In( data, bufferOffset, packetSubType );
    Serialize::In( data, bufferOffset, versionNumber );
-   Serialize::In( data, bufferOffset, gameProductId );
-   
+   Serialize::In( data, bufferOffset, gameProductId );   
    Serialize::In( data, bufferOffset, gameInstanceId );
+
    return true; 
 }
 
@@ -137,6 +137,7 @@ bool  BasePacket::SerializeOut( U8* data, int& bufferOffset ) const
    Serialize::Out( data, bufferOffset, versionNumber );
    Serialize::Out( data, bufferOffset, gameProductId );
    Serialize::Out( data, bufferOffset, gameInstanceId );
+
    return true; 
 }
 

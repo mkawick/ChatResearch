@@ -571,14 +571,16 @@ int   NetworkLayer::ProcessInputFunction()
          if( factory.Parse( buffer, offset, &packetIn ) == true )
          {
             m_endTime = GetCurrentMilliseconds();          
-            shouldDelete = HandlePacketIn( packetIn );
+            shouldDelete = HandlePacketIn( packetIn );// the packet is always deleted internally
          }
          else 
          {
             offset = numBytes;
          }
-        /* if( packetIn && shouldDelete == true )
+
+       /*  if( packetIn && shouldDelete == true )
          {
+            //factory.CleanupPacket( packetIn );
             delete packetIn;
          }*/
       }
@@ -1087,6 +1089,7 @@ bool  NetworkLayer::HandlePacketIn( BasePacket* packetIn )
 
                   delete buffer;
                }
+               cleaner.Clear();
             }
             //return false;// this is important... we will delete the packets.
             break;
@@ -1129,7 +1132,7 @@ bool     NetworkLayer::AddChatChannel( const ChatChannel& channel )
 
 ///////////////////////////////////////////////////////////////////////////////////
 
-void  RawDataAccumulator:: AddPacket( const PacketGameplayRawData * ptr )
+void  RawDataAccumulator:: AddPacket( PacketGameplayRawData * ptr )
 {
    numBytes += ptr->size;
    packetsOfData.push_back( ptr );
@@ -1149,18 +1152,23 @@ bool  RawDataAccumulator:: IsDone()
 
 void  RawDataAccumulator:: PrepPackage( U8* & data, int& size )
 {
+   PacketFactory factory;
    assert( IsDone() );
 
    size = numBytes;
    data = new U8[size+1];
    U8* workingPointer = data;
 
+   PacketGameplayRawData* packet = NULL;
    while( packetsOfData.size() )
    {
-      const PacketGameplayRawData * ptr = packetsOfData.front();
+      packet = packetsOfData.front();
       packetsOfData.pop_front();
-      memcpy( workingPointer, ptr->data, ptr->size );
-      workingPointer += ptr->size;
+      memcpy( workingPointer, packet->data, packet->size );
+      workingPointer += packet->size;
+
+      BasePacket* temp = static_cast< BasePacket* >( packet );
+      factory.CleanupPacket( temp );
    }
    data[size] = 0;
 
