@@ -213,6 +213,17 @@ DiplodocusLogin::DiplodocusLogin( const string& serverName, U32 serverId )  : Di
    cout << "Login::Login server created" << endl;
 }
 
+
+//---------------------------------------------------------------
+
+void     DiplodocusLogin::ServerWasIdentified( KhaanLogin* khaan )
+{
+   BasePacket* packet = NULL;
+   PackageForServerIdentification( m_serverName, m_serverId, m_gameProductId, m_isGame, m_isControllerApp, true, m_isGateway, &packet );
+   khaan->AddOutputChainData( packet, 0 );
+   m_clientsNeedingUpdate.push_back( khaan->GetChainedId() );
+}
+
 //---------------------------------------------------------------
 
 bool     DiplodocusLogin::AddInputChainData( BasePacket* packet, U32 connectionId )
@@ -325,8 +336,10 @@ bool     DiplodocusLogin::LogUserIn( const string& username, const string& passw
 
       ReinsertUserConnection( oldConnectionId, connectionId );// and we remove the old connection
 
-      SuccessfulLogin( connectionId, true );
-      UpdateLastLoggedInTime( connectionId ); // update the user logged in time
+      if( SuccessfulLogin( connectionId, true ) == true )
+      {
+         UpdateLastLoggedInTime( connectionId ); // update the user logged in time
+      }
    }
    else
    {
@@ -416,6 +429,7 @@ void  DiplodocusLogin::FinalizeLogout( U32 connectionId, bool wasDisconnectedByE
                                     connection->email, 
                                     connection->passwordHash, 
                                     connection->id, 
+                                    connection->loginKey,
                                     false, 
                                     wasDisconnectedByError );
       AddQueryToOutput( dbQuery );
@@ -842,6 +856,7 @@ bool  DiplodocusLogin::ForceUserLogoutAndBlock( U32 connectionId )
    bool                       active = false;
    string                     passwordHash = "0";
    string                     userId = "0";
+   string                     loginKey = "";
    U8 gameProductId = 0;
 
    ConnectionToUser* connection = GetUserConnection( connectionId );
@@ -867,7 +882,7 @@ bool  DiplodocusLogin::ForceUserLogoutAndBlock( U32 connectionId )
    loginStatus->wasLoginSuccessful = false;
 
    SendPacketToGateway( loginStatus, connectionId );
-   SendLoginStatusToOtherServers( username, uuid, connectionId, gameProductId, lastLoginTime, active, email, passwordHash, userId, false, false );
+   SendLoginStatusToOtherServers( username, uuid, connectionId, gameProductId, lastLoginTime, active, email, passwordHash, userId, loginKey, false, false );
 
    return true;
 }
@@ -948,7 +963,7 @@ bool  DiplodocusLogin::UpdateLastLoggedOutTime( U32 connectionId )
 bool    DiplodocusLogin::SuccessfulLogin( U32 connectionId, bool isReloggedIn )
 {
    ConnectionToUser* connection = GetUserConnection( connectionId );
-   if( connection == NULL )
+   if( connection == NULL || connection->status != ConnectionToUser::LoginStatus_LoggedIn )
    {
       Log( "Login server: major problem with successful login", 4 );
       return false;
@@ -956,14 +971,22 @@ bool    DiplodocusLogin::SuccessfulLogin( U32 connectionId, bool isReloggedIn )
 
    connection->loggedOutTime = 0;// for relogin, we need this to be cleared.
 
-   string  username =        connection->username;
-   string  userUuid =        connection->userUuid;
-   string  email =           connection->email;
-   string  lastLoginTime =   connection->lastLoginTime;
-   bool    active =          connection->active;
-   string  passwordHash =    connection->passwordHash;
-   string  userId =          connection->id;
-   U8 gameProductId =        connection->gameProductId;
+   string  username =         connection->username;
+   string  userUuid =         connection->userUuid;
+   string  email =            connection->email;
+   string  lastLoginTime =    connection->lastLoginTime;
+   bool    active =           connection->active;
+   string  passwordHash =     connection->passwordHash;
+   string  userId =           connection->id;
+   U8 gameProductId =         connection->gameProductId;
+   string  loginKey =         connection->loginKey;
+
+   if( loginKey.size() == 0 )
+   {
+      U32 hash = static_cast<U32>( GenerateUniqueHash( boost::lexical_cast< string >( connectionId ) + email ) );
+      loginKey = GenerateUUID( GetCurrentMilliseconds() + hash );
+      connection->loginKey = loginKey;
+   }
 
 
    PacketLoginToGateway* loginStatus = new PacketLoginToGateway();
@@ -982,7 +1005,7 @@ bool    DiplodocusLogin::SuccessfulLogin( U32 connectionId, bool isReloggedIn )
 
    //This is where we inform all of the games that the user is logged in.
 
-   return SendLoginStatusToOtherServers( username, userUuid, connectionId, gameProductId, lastLoginTime, active, email, passwordHash, userId, true, false );
+   return SendLoginStatusToOtherServers( username, userUuid, connectionId, gameProductId, lastLoginTime, active, email, passwordHash, userId, loginKey, true, false );
 }
 
 //------------------------------------------------------------------------------------------------
@@ -1009,7 +1032,18 @@ bool  DiplodocusLogin::RequestListOfGames( U32 connectionId, const string& userU
 
 //---------------------------------------------------------------
 
-bool  DiplodocusLogin::SendLoginStatusToOtherServers( const string& username, const string& userUuid, U32 connectionId, U8 gameProductId, const string& lastLoginTime, bool isActive, const string& email, const string& passwordHash, const string& userId, bool isLoggedIn, bool wasDisconnectedByError )
+bool  DiplodocusLogin::SendLoginStatusToOtherServers( const string& username, 
+                                                     const string& userUuid, 
+                                                     U32 connectionId, 
+                                                     U8 gameProductId, 
+                                                     const string& lastLoginTime, 
+                                                     bool isActive, 
+                                                     const string& email, 
+                                                     const string& passwordHash, 
+                                                     const string& userId, 
+                                                     const string& loginKey,
+                                                     bool isLoggedIn, 
+                                                     bool wasDisconnectedByError )
 {
    // send this to every other listening server
    BaseOutputContainer::iterator itOutputs = m_listOfOutputs.begin();
@@ -1031,6 +1065,7 @@ bool  DiplodocusLogin::SendLoginStatusToOtherServers( const string& username, co
          prepareForUser->email= email;
          prepareForUser->userId = boost::lexical_cast<U32>( userId );
          prepareForUser->password = passwordHash;
+         prepareForUser->loginKey = loginKey;
 
          packetToSend = prepareForUser;
          
@@ -1169,8 +1204,10 @@ bool     DiplodocusLogin::AddOutputChainData( BasePacket* packet, U32 connection
 
                   connection->gameProductId = dbResult->serverLookup;
 
-                  SuccessfulLogin( connectionId );
-                  UpdateLastLoggedInTime( dbResult->id ); // update the user logged in time
+                  if( SuccessfulLogin( connectionId ) == true )
+                  {
+                     UpdateLastLoggedInTime( dbResult->id ); // update the user logged in time
+                  }
                }
                break;
             case QueryType_UserListOfGame:

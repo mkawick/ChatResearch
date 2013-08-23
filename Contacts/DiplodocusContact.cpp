@@ -1,6 +1,7 @@
 #include "DiplodocusContact.h"
 #include "../NetworkCommon/Packets/ServerToServerPacket.h"
 #include "../NetworkCommon/Packets/ContactPacket.h"
+#include "../NetworkCommon/Packets/PacketFactory.h"
 
 #include <iostream>
 using namespace std;
@@ -46,11 +47,13 @@ bool     DiplodocusContact::AddInputChainData( BasePacket* packet, U32 connectio
 
    if( packet->packetType == PacketType_GatewayInformation )
    {
+      PacketCleaner cleaner( packet );
       return HandleCommandFromGateway( packet, connectionId );
    }
 
    if( packet->packetType == PacketType_ServerJobWrapper )
    {
+      PacketCleaner cleaner( packet );
       HandlePacketFromOtherServer( packet, connectionId );
       return true;
    }
@@ -154,7 +157,6 @@ bool  DiplodocusContact::HandlePacketFromOtherServer( BasePacket* packet, U32 co
    BasePacket* unwrappedPacket = wrapper->pPacket;
    U32  serverIdLookup = wrapper->serverId;
 
-   delete wrapper;
    bool success = false;
 
    if( unwrappedPacket->packetType == PacketType_Login )
@@ -163,12 +165,10 @@ bool  DiplodocusContact::HandlePacketFromOtherServer( BasePacket* packet, U32 co
       {
       case PacketLogin::LoginType_PrepareForUserLogin:
          ConnectUser( static_cast< PacketPrepareForUserLogin* >( unwrappedPacket ) );
-         delete unwrappedPacket;
          return true;
 
       case PacketLogin::LoginType_PrepareForUserLogout:
          DisconnectUser( static_cast< PacketPrepareForUserLogout* >( unwrappedPacket ) );
-         delete unwrappedPacket;
          return true;
       }
    }
@@ -260,7 +260,7 @@ bool     DiplodocusContact::HandleDbQueryResult( PacketDbQueryResult* dbResult )
 
 int      DiplodocusContact::CallbackFunction()
 {
- /*  while( m_serversNeedingUpdate.size() )
+   while( m_serversNeedingUpdate.size() )
    {
       U32 serverId = m_serversNeedingUpdate.front();
       m_serversNeedingUpdate.pop_front();
@@ -271,13 +271,13 @@ int      DiplodocusContact::CallbackFunction()
       {
          ChainLink& chainedInput = *itInputs++;
          ChainedInterface* interfacePtr = chainedInput.m_interface;
-         KhaanGame* khaan = static_cast< KhaanGame* >( interfacePtr );
+         KhaanContact* khaan = static_cast< KhaanContact* >( interfacePtr );
          if( khaan->GetServerId() == serverId )
          {
             khaan->Update();
          }
       }
-   }*/
+   }
    UpdateAllConnections();
 
    /*ContinueInitialization();*/

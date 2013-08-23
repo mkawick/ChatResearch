@@ -18,6 +18,7 @@ ResetPasswordQueryHandler.cpp \
 ../NetworkCommon/NetworkIn/KhaanServerToServer.cpp \
 ../NetworkCommon/NetworkOut/Fruitadens.cpp \
 ../NetworkCommon/Packets/BasePacket.cpp \
+../NetworkCommon/Packets/AssetPacket.cpp \
 ../NetworkCommon/Packets/ChatPacket.cpp \
 ../NetworkCommon/Packets/ContactPacket.cpp \
 ../NetworkCommon/Packets/DbPacket.cpp \

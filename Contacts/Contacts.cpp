@@ -28,6 +28,11 @@ int main( int argc, const char* argv[] )
 {
 	CommandLineParser    parser( argc, argv );
 
+   // listen.address=127.0.0.1 listen.port=9800 
+   // db.address=10.16.4.44 db.port=3306 db.username=incinerator db.password=Cm8235 db.schema=playdek 
+   // s2s.port=9802
+
+   // listen.address=127.0.0.1 listen.port=9800 db.address=10.16.4.44 db.port=3306 db.username=admin db.password=Pz5328!@ db.schema=playdek s2s.port=9802
    string listenPort = "9800";
    string listenAddress = "localhost";
 

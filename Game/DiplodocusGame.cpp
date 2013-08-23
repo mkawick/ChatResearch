@@ -21,13 +21,13 @@ int      DiplodocusGame::CallbackFunction()
 
 //---------------------------------------------------------------
 
-void     DiplodocusGame::ClientConnectionIsAboutToRemove( KhaanGame* khaan )
+void     DiplodocusGame::InputRemovalInProgress( ChainedInterface* chainedInput )
 {
 }
 
 //---------------------------------------------------------------
 
-void     DiplodocusGame::ClientConnectionFinishedAdding( KhaanGame* khaan )
+void     DiplodocusGame::InputConnected( ChainedInterface* chainedInput )
 {
 }
 //---------------------------------------------------------------

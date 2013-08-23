@@ -11,6 +11,7 @@ using namespace std;
 #include "PacketFactory.h"
 
 #include "BasePacket.h"
+#include "AssetPacket.h"
 #include "ChatPacket.h"
 #include "ContactPacket.h"
 #include "DbPacket.h"
@@ -587,6 +588,45 @@ bool     PacketFactory::ParseContact( const U8* bufferIn, int& bufferOffset, con
 
 bool     PacketFactory::ParseAsset( const U8* bufferIn, int& bufferOffset, const BasePacket* firstPassParse, BasePacket** packetOut ) const
 {
+   switch( firstPassParse->packetSubType )
+   {
+   case PacketAsset::AssetType_Base:
+      {
+         *packetOut = SerializeIn< PacketAsset >( bufferIn, bufferOffset );
+      }
+      return true;
+   case PacketAsset::AssetType_TestNotification:
+      {
+         *packetOut = SerializeIn< PacketAsset_TestNotification >( bufferIn, bufferOffset );
+      }
+      return true;
+
+   case PacketAsset::AssetType_GetListOfStaticAssets:
+      {
+         *packetOut = SerializeIn< PacketAsset_GetListOfStaticAssets >( bufferIn, bufferOffset );
+      }
+      return true;
+   case PacketAsset::AssetType_GetListOfStaticAssetsResponse:
+      {
+         *packetOut = SerializeIn< PacketAsset_GetListOfStaticAssetsResponse >( bufferIn, bufferOffset );
+      }
+      return true;
+   case PacketAsset::AssetType_GetListOfDynamicAssets:
+      {
+         *packetOut = SerializeIn< PacketAsset_GetListOfDynamicAssets >( bufferIn, bufferOffset );
+      }
+      return true;
+   case PacketAsset::AssetType_GetListOfDynamicAssetsResponse:
+      {
+         *packetOut = SerializeIn< PacketAsset_TestNotification >( bufferIn, bufferOffset );
+      }
+      return true;
+   case PacketAsset::AssetType_RequestAsset:
+      {
+         *packetOut = SerializeIn< PacketAsset_TestNotification >( bufferIn, bufferOffset );
+      }
+      return true;
+   }
    return false;
 }
 

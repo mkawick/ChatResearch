@@ -121,3 +121,16 @@ int  FruitadensGateway::ProcessOutputFunction()
 }
 
 //-----------------------------------------------------------------------------------------
+
+void FruitadensGateway::InitalConnectionCallback()
+{
+   ChainLinkIteratorType   itInputs = m_listOfInputs.begin();
+   while( itInputs != m_listOfInputs.end() )
+   {
+      ChainedInterface<BasePacket*>* inputPtr = itInputs->m_interface;
+      inputPtr->OutputConnected( this );
+      itInputs++;
+   }
+}
+
+//-----------------------------------------------------------------------------------------

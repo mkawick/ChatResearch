@@ -27,7 +27,7 @@ void  KhaanConnector::PreCleanup()
 {
    if( m_gateway )
    {
-      m_gateway->ClientConnectionIsAboutToRemove( this );
+      m_gateway->InputRemovalInProgress( this );
    }
 }
 

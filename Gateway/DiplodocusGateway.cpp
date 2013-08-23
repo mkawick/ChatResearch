@@ -77,11 +77,12 @@ bool  DiplodocusGateway::AddInputChainData( BasePacket* packet, U32 connectionId
 
 //-----------------------------------------------------------------------------------------
 
-void     DiplodocusGateway::ClientConnectionFinishedAdding( KhaanConnector* khaan )
+void     DiplodocusGateway::InputConnected( ChainedInterface * chainedInput )
 {
+   KhaanConnector* khaan = static_cast< KhaanConnector* >( chainedInput );
    string currentTime = GetDateInUTC();
    cout << "Accepted connection at time:" << currentTime << " from " << inet_ntoa( khaan->GetIPAddress().sin_addr ) << endl;
-   PrintText( "** ClientConnectionFinishedAdding" , 1 );
+   PrintText( "** InputConnected" , 1 );
    U32 newId = GetNextConnectionId();
    m_socketToConnectionMap.insert( SocketToConnectionPair( khaan->GetSocketId(), newId ) );
    m_connectionToSocketMap.insert( SocketToConnectionPair( newId, khaan->GetSocketId() ) );
@@ -98,12 +99,13 @@ void     DiplodocusGateway::ClientConnectionFinishedAdding( KhaanConnector* khaa
 
 //-----------------------------------------------------------------------------------------
 
-void  DiplodocusGateway::ClientConnectionIsAboutToRemove( KhaanConnector* khaan )
+void  DiplodocusGateway::InputRemovalInProgress( ChainedInterface * chainedInput )
 {
+   KhaanConnector* khaan = static_cast< KhaanConnector* >( chainedInput );
    string currentTime = GetDateInUTC();
    cout << "Client disconnection at time:" << currentTime << " from " << inet_ntoa( khaan->GetIPAddress().sin_addr ) << endl;
 
-   PrintText( "** ClientConnectionIsAboutToRemove" , 1 );
+   PrintText( "** InputRemovalInProgress" , 1 );
    int connectionId = khaan->GetConnectionId();
    int socketId = khaan->GetSocketId();
 

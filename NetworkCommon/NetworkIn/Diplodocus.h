@@ -76,10 +76,13 @@ public:
    bool           SendPacketToGateway( BasePacket* packet, U32 connectionId );
    bool           SendErrorToClient( U32 connectionId, PacketErrorReport::ErrorType error );
 
+   virtual void   InputConnected( ChainedInterface * );
+   virtual void   OutputConnected( ChainedInterface * );
+   virtual void   InputRemovalInProgress( ChainedInterface * );
+   virtual void   OutputRemovalInProgress( ChainedInterface * );
+
    //---------------------------------------------
 
-   virtual void   ClientConnectionFinishedAdding( InputChainType* khaan ) {}
-   virtual void   ClientConnectionIsAboutToRemove( InputChainType* khaan ) {}
    virtual void   ServerWasIdentified( InputChainType* khaan ){}
    void           AddGatewayConnection( U32 id ) { m_connectionIdGateway = id; }
    virtual bool   HandleCommandFromGateway( BasePacket* packet, U32 connectionId ) { return false; }
@@ -105,6 +108,7 @@ protected:
    ClientMap                                                m_connectedClients; // this is a duplicate of the chained list, but with mapping
    deque< U32 >                                             m_clientsNeedingUpdate;
 
+   BaseOutputContainer m_listOfOutputsNeedingToSendServerId;
    bool              m_isListeningWorking;
    bool              m_hasSentServerIdentification;
    bool              m_isControllerApp;

@@ -44,8 +44,8 @@ public:
    void     RemoveConnection( int connectionId );
 
    bool     SendErrorReportToClient( PacketErrorReport::ErrorType error, int connectionId );
-   void     ClientConnectionIsAboutToRemove( KhaanGame* khaan );
-   void     ClientConnectionFinishedAdding( KhaanGame* khaan );
+   void     InputRemovalInProgress( ChainedInterface* chainedInput );
+   void     InputConnected( ChainedInterface* chainedInput );
 
    //-----------------------------------------------------------------------------
 

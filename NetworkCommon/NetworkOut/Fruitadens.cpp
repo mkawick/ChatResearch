@@ -21,7 +21,10 @@ using namespace std;
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
-
+#include <sys/types.h>
+#define MSG_NOSIGNAL SO_NOSIGPIPE
+#else
+#define MSG_NOSIGNAL 0
 #endif
 
 const int typicalSleepTime = 200;
@@ -172,20 +175,27 @@ void  Fruitadens :: AttemptConnection()
    string portString = boost::lexical_cast<string>( m_port );
    string notification = "Client on port " + portString;
 
-   // this failure can happen for a lot of reasons, like the server hasn't been launched yet.
-   if (connect( m_clientSocket, (sockaddr*)&m_ipAddress, sizeof(m_ipAddress)) == SOCKET_ERROR)
+   try
    {
-#if PLATFORM != PLATFORM_WINDOWS
-      if( errno == EINPROGRESS )
+      // this failure can happen for a lot of reasons, like the server hasn't been launched yet.
+      if (connect( m_clientSocket, (sockaddr*)&m_ipAddress, sizeof(m_ipAddress)) == SOCKET_ERROR)
       {
+   #if PLATFORM != PLATFORM_WINDOWS
+         if( errno == EINPROGRESS )
+         {
+            return;
+         }
+   #endif
+         notification += " failed to connect ";
+         Log( notification.c_str() );
          return;
       }
-#endif
-      notification += " failed to connect ";
-      Log( notification.c_str() );
+   }
+   catch(...)
+   {
+      m_hasFailedCritically = true;
       return;
    }
-
 
    notification += " has connected ";
    Log( notification.c_str() );
@@ -203,6 +213,8 @@ void  Fruitadens :: AttemptConnection()
    }
 
    m_isConnected = true;
+
+   InitalConnectionCallback();
 }
 
 //-----------------------------------------------------------------------------
@@ -403,13 +415,22 @@ bool  Fruitadens :: SendPacket( const U8* buffer, int length ) const
 {
    if( m_isConnected && ( length > 0 ) && m_clientSocket != SOCKET_ERROR )
    {
-      int nBytes = static_cast< int >( send( m_clientSocket, reinterpret_cast<const char*>( buffer ), length, 0 ) );
+      int nBytes = SOCKET_ERROR;
+      try
+      {
+         nBytes = static_cast< int >( send( m_clientSocket, reinterpret_cast<const char*>( buffer ), length, MSG_NOSIGNAL ) ); // we aren't handling sigpipe errors here so don't send them (crash/exit since we dont handle them)
+      }
+      catch(...)
+      {
+         nBytes = SOCKET_ERROR;
+      }
+      
       if( nBytes == SOCKET_ERROR || nBytes < length )
       {
          Log( "Client: It wont go through sir!!" );
          return false;
       }
-   }
+   } 
    else
    {
       return false;

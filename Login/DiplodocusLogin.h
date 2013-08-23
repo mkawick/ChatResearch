@@ -158,6 +158,7 @@ public:
 
 public:
    DiplodocusLogin( const string& serverName, U32 serverId );
+   void     ServerWasIdentified( KhaanLogin* khaan );
 
    bool     AddInputChainData( BasePacket* packet, U32 connectionId );
    bool     AddOutputChainData( BasePacket* packet, U32 connectionId );
@@ -190,7 +191,8 @@ private:
    bool     UpdateLastLoggedOutTime( U32 connectionId );
    bool     UpdateLastLoggedInTime( U32 connectionId );
 
-   bool     SendLoginStatusToOtherServers( const string& username, const string& userUuid, U32 connectionId, U8 gameProductId, const string& lastLoginTime, bool isActive, const string& email, const string& passwordHash, const string& userId, bool isLoggedIn, bool wasDisconnectedByError );
+   bool     SendLoginStatusToOtherServers( const string& username, const string& userUuid, U32 connectionId, U8 gameProductId, const string& lastLoginTime, bool isActive, const string& email, const string& passwordHash, const string& userId,  
+                                                    const string& loginKey, bool isLoggedIn, bool wasDisconnectedByError );
 
    //bool     SendPacketToGateway( BasePacket*, U32 connectionId );
    //bool     SendErrorToClient( U32 connectionId, PacketErrorReport::ErrorType );

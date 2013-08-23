@@ -44,6 +44,9 @@ public:
    void           AddOutputChain( ChainedInterface*, bool recurse = true );
    void           RemoveOutputChain( ChainedInterface*, bool recurse = true );
 
+   virtual void   InputConnected( ChainedInterface * ){}// notification scheme
+   virtual void   OutputConnected( ChainedInterface * ){}// notification scheme
+
    // TODO: convert this to a const reference instead
    virtual bool   AddInputChainData( Type t, U32 filingData = -1 ) { return false; }// a false value means that the data was rejected
    virtual bool   AddOutputChainData( Type t, U32 filingData = -1 ) { return false; }// a false value means that the data was rejected

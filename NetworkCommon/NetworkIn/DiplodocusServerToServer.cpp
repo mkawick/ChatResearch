@@ -24,13 +24,13 @@ DiplodocusServerToServer::~DiplodocusServerToServer()
 
 //---------------------------------------------------------------
 
-void  DiplodocusServerToServer::ClientConnectionFinishedAdding( BaseInputChainHandler* khaan ) 
+void  DiplodocusServerToServer::InputConnected( ChainedInterface* khaan ) 
 {
 }
 
 //---------------------------------------------------------------
 
-void  DiplodocusServerToServer::ClientConnectionIsAboutToRemove( BaseInputChainHandler* khaan )
+void  DiplodocusServerToServer::InputRemovalInProgress( ChainedInterface* khaan )
 {
    // remove all pending jobs.
 }

@@ -358,7 +358,7 @@ void	Diplodocus< InputChain, OutputChain >::AddClientConnection( InputChainType*
 
    client->RegisterToReceiveNetworkTraffic();
 
-   ClientConnectionFinishedAdding( client );
+   InputConnected( client );
 }
 
 //---------------------------------------------------------------
@@ -566,10 +566,11 @@ void	Diplodocus< InputChain, OutputChain >::UpdateAllConnections()
 template< typename InputChain, typename OutputChain >
 void     Diplodocus< InputChain, OutputChain >::SendServerIdentification()
 {
-   if( m_hasSentServerIdentification == false )
+   if( m_listOfOutputsNeedingToSendServerId.size() )
    {
-      ChainLinkIteratorType   itOutputs = m_listOfOutputs.begin();
-      while( itOutputs != m_listOfOutputs.end() )
+      LockMutex();
+      ChainLinkIteratorType   itOutputs = m_listOfOutputsNeedingToSendServerId.begin();
+      while( itOutputs != m_listOfOutputsNeedingToSendServerId.end() )
       {
          ChainLink& chainedOutput = *itOutputs++;
          OutputChain* interfacePtr = static_cast<OutputChain*>( chainedOutput.m_interface );
@@ -583,11 +584,45 @@ void     Diplodocus< InputChain, OutputChain >::SendServerIdentification()
             delete packet;
          }
       }
-
-      m_hasSentServerIdentification = true;
+      m_listOfOutputsNeedingToSendServerId.clear();
+      UnlockMutex();
    }
 }
 
+//------------------------------------------------------------------------------------------
+
+template< typename InputChain, typename OutputChain >
+void  Diplodocus< InputChain, OutputChain >::InputConnected( ChainedInterface * )
+{
+   // nothing to do.
+}
+
+//------------------------------------------------------------------------------------------
+
+template< typename InputChain, typename OutputChain >
+void  Diplodocus< InputChain, OutputChain >::OutputConnected( ChainedInterface * chainedOutput )
+{
+   LockMutex();
+   m_listOfOutputsNeedingToSendServerId.push_back( chainedOutput );
+   UnlockMutex();
+}
+
+
+//------------------------------------------------------------------------------------------
+
+template< typename InputChain, typename OutputChain >
+void  Diplodocus< InputChain, OutputChain >::InputRemovalInProgress( ChainedInterface * )
+{
+   // nothing to do.
+}
+
+//------------------------------------------------------------------------------------------
+
+template< typename InputChain, typename OutputChain >
+void  Diplodocus< InputChain, OutputChain >::OutputRemovalInProgress( ChainedInterface * )
+{
+   // nothing to do.
+}
 
 //------------------------------------------------------------------------------------------
 
@@ -611,7 +646,6 @@ int      Diplodocus< InputChain, OutputChain >::ProcessOutputFunction()
       return 1;
 
    UpdateAllConnections();
-   //
 
    return 0; 
 }

@@ -347,6 +347,14 @@
 				Name="Packets"
 				>
 				<File
+					RelativePath="..\NetworkCommon\Packets\AssetPacket.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\NetworkCommon\Packets\AssetPacket.h"
+					>
+				</File>
+				<File
 					RelativePath="..\NetworkCommon\Packets\BasePacket.cpp"
 					>
 				</File>

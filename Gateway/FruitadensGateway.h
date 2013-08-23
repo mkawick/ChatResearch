@@ -12,6 +12,8 @@ public:
    FruitadensGateway( const char* name );
    ~FruitadensGateway();
 
+   void     InitalConnectionCallback();
+
 private:
 
    bool     FilterOutwardPacket( BasePacket* packet ) const;

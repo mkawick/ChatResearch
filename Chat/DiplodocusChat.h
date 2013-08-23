@@ -48,8 +48,9 @@ public:
    void     RemoveConnection( int connectionId );
  
    bool     SendErrorReportToClient( PacketErrorReport::ErrorType error, int connectionId );
-   void     ClientConnectionIsAboutToRemove( KhaanChat* khaan );
-   void     ClientConnectionFinishedAdding( KhaanChat* khaan );
+   
+   void     InputConnected( ChainedInterface* chainedInput );
+   void     InputRemovalInProgress( ChainedInterface* chainedInput );
 
    //-----------------------------------------------------------------------------
 

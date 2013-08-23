@@ -39,7 +39,9 @@ NetworkLayer::~NetworkLayer()
 void  NetworkLayer::Init( const char* serverDNS )
 {
    if( m_clientSocket != SOCKET_ERROR || m_isConnected == true )
-      return;
+   {
+      Disconnect();
+   }
 
    if( serverDNS && strlen( serverDNS ) > 5 )
    {
@@ -601,6 +603,7 @@ int   NetworkLayer::ProcessInputFunction()
                cout << "attempting a reconnect" << endl;
                cout << "***********************************************************" << endl;
                closesocket( m_clientSocket );
+               m_clientSocket = SOCKET_ERROR;
                CreateSocket();
             }
          }

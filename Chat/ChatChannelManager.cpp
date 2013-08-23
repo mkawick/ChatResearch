@@ -1979,7 +1979,7 @@ void     ChatChannelManager::WriteChatToDb( const string& message, const string&
    dbQuery->meta = connectionId;
    dbQuery->isFireAndForget = true;// no result is needed
    //insert into chat values( null, 'Damn sexy', 'ABCDEFGHIJKLMNOP', null, 'ABCDEFGHIJKLMNOP', null, 1, 1345);
-   string queryString = "INSERT INTO chat_message VALUES( null, '%s', '%s', ";
+   string queryString = "INSERT INTO chat_message VALUES( null, _utf8'%s', '%s', ";
    if( friendUuid.size() > 0 )
    {
       queryString += "'%s'";

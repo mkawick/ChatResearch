@@ -30,15 +30,17 @@ void  DiplodocusChat :: Init()
 }
 //---------------------------------------------------------------
 
-void  DiplodocusChat::ClientConnectionFinishedAdding( KhaanChat* khaan )
+void  DiplodocusChat::InputConnected( ChainedInterface* chainedInput )
 {
+   KhaanChat* khaan = static_cast< KhaanChat* >( chainedInput );
 }
 
-void  DiplodocusChat::ClientConnectionIsAboutToRemove( KhaanChat* khaan )
+void  DiplodocusChat::InputRemovalInProgress( ChainedInterface* chainedInput )
 {
    // inheritance is hurting us here. the base class GetConnectionId which is invoked later
    // hides the derived version due to the type of pointers.
    
+   KhaanChat* khaan = static_cast< KhaanChat* >( chainedInput );
    ClientMapIterator it = m_connectedClients.find( khaan->GetConnectionId() );
    if( it != m_connectedClients.end() )
    {

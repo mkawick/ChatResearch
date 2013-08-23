@@ -15,7 +15,6 @@ public:
    // inherited classes must provide ths function. Mutexes will be locked
    virtual int       ProcessInputFunction() { return 0; };
    virtual int       ProcessOutputFunction() { return 0; };
-   
 
    //------------------------------------------------------
 

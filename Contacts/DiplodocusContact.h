@@ -15,28 +15,6 @@ class DiplodocusContact :  public Diplodocus< KhaanContact >
 {
 public:
    typedef Diplodocus< KhaanContact > Parent;
-  /* enum QueryType 
-   {
-      QueryType_UserLoginInfo = 1,
-      QueryType_AllUsers,
-      QueryType_AllUserProfiles,
-      QueryType_Friends,
-      QueryType_FriendRequest,
-      QueryType_FriendRequestsSent,
-      QueryType_End
-   };
-
-   enum  InitializationStage
-   {
-      InitializationStage_Begin,
-      InitializationStage_LoadAllUsers,
-      InitializationStage_LoadAllUsersProfiles,
-      InitializationStage_LoadFriends,
-      InitializationStage_LoadFriendsRequests,
-      InitializationStage_MatchFriends,
-      InitializationStage_MatchRequestsToUsers,
-      InitializationStage_Complete
-   };*/
    enum { SecondsBeforeRemovingLoggedOutUser = 10
    };
 

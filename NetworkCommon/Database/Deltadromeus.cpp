@@ -133,7 +133,7 @@ bool  DbJob::SubmitQuery( MYSQL* connection, const string& dbName )
          errorCode == CR_CONNECTION_ERROR ||
          errorCode == CR_SERVER_GONE_ERROR )
       {
-         m_errorConnectionNeedsToBeReset = true;
+         m_errorConnectionNeedsToBeReset = true; // verified
       }
    }
    else
@@ -418,6 +418,9 @@ void     Deltadromeus::Connect()
       LogMessage(LOG_PRIO_ERR, "MySQL Initialization Failed\n");
       return;
    }
+   int zeroMeansSuccess = mysql_options( m_DbConnection, MYSQL_SET_CHARSET_NAME, "utf8" );
+   zeroMeansSuccess = mysql_options( m_DbConnection, MYSQL_INIT_COMMAND, "SET NAMES utf8"); 
+
    // Now we will actually connect to the specific database.
 
    m_DbConnection = mysql_real_connect( m_DbConnection, m_serverName.c_str(), m_username.c_str(), m_password.c_str(), m_dbName.c_str(), m_port, NULL, 0 );
@@ -440,9 +443,10 @@ void     Deltadromeus::Connect()
       cout << "Successful" << output << endl;
       LogMessage(LOG_PRIO_ERR, "Successful%s\n", output.c_str());
 
-      mysql_set_character_set( m_DbConnection, "utf8" );
-      my_bool reconnect = 0;
-      mysql_options( m_DbConnection, MYSQL_OPT_RECONNECT, &reconnect );
+      //zeroMeansSuccess = mysql_set_character_set( m_DbConnection, "utf8" );
+
+      my_bool reconnect = true;
+      zeroMeansSuccess = mysql_options( m_DbConnection, MYSQL_OPT_RECONNECT, &reconnect );
    }
    else
    {
@@ -485,33 +489,40 @@ int     Deltadromeus::CallbackFunction()
          {
             m_isConnected = false;
             m_needsReconnection = true;
-         }
-         LogEverything( "DB query is complete " );
-         if( currentJob->IsFireAndForget() == true )
-         {
-            LogEverything( "DB query is f&f " );
-            delete currentJob;
-         }
-         else if( PutQueryResultInProperChain( currentJob ) == false )
-         {
-            LogEverything( "DB query result stored " );
-            m_jobsComplete.push_back( currentJob );
-         }
-         m_mutex.lock();
-         m_jobsInProgress.pop_front();
-         m_mutex.unlock(); 
-
-         // now start the next job
-         if( m_jobsInProgress.size() > 0 )
-         {
-            LogEverything( "DB has more jobs to start " );
-            DbJobBase* currentJob = m_jobsInProgress.front();
-            currentJob->SubmitQuery( m_DbConnection, m_dbName );
+            cout << "-> Bad connection leads to a reconnect and resetting the state of the query." << endl;
+            Connect();
+            currentJob->ResetErrorState();// keep trying until the connection resets.
+            currentJob->ResetToResubmitSameQuery();
          }
          else
          {
-            Pause();
-            LogEverything( "DB queue is empty" );
+            LogEverything( "DB query is complete " );
+            if( currentJob->IsFireAndForget() == true )
+            {
+               LogEverything( "DB query is f&f " );
+               delete currentJob;
+            }
+            else if( PutQueryResultInProperChain( currentJob ) == false )
+            {
+               LogEverything( "DB query result stored " );
+               m_jobsComplete.push_back( currentJob );
+            }
+            m_mutex.lock();
+            m_jobsInProgress.pop_front();
+            m_mutex.unlock(); 
+
+            // now start the next job
+            if( m_jobsInProgress.size() > 0 )
+            {
+               LogEverything( "DB has more jobs to start " );
+               DbJobBase* currentJob = m_jobsInProgress.front();
+               currentJob->SubmitQuery( m_DbConnection, m_dbName );
+            }
+            else
+            {
+               Pause();
+               LogEverything( "DB queue is empty" );
+            }
          }
       }
    } 

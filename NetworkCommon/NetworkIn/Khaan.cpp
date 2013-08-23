@@ -49,7 +49,7 @@ void   Khaan ::PreCleanup()
    if( chain )
    {
       Diplodocus <Khaan> * chatServer = static_cast< Diplodocus <Khaan> * >( chain );
-      chatServer->ClientConnectionIsAboutToRemove( this );
+      chatServer->InputRemovalInProgress( this );
    }
 }
 

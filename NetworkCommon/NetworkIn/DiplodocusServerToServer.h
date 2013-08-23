@@ -26,8 +26,8 @@ public:
    bool     AddInputChainData( BasePacket* packet, U32 connectionId );
    bool     AddOutputChainData( BasePacket* packet, U32 connectionId ) ;
 
-   void     ClientConnectionFinishedAdding( BaseInputChainHandler* khaan );
-   void     ClientConnectionIsAboutToRemove( BaseInputChainHandler* khaan );
+   void     InputConnected( ChainedInterface* khaan );
+   void     InputRemovalInProgress( ChainedInterface* khaan );
 
    //---------------------------------------------------
 

@@ -20,13 +20,13 @@ public:
    bool           AddInputChainData( BasePacket* packet, U32 socketId );
    bool           AddOutputChainData( BasePacket* packet, U32 serverType );
 
-   void           ClientConnectionIsAboutToRemove( KhaanConnector* khaan );
+   void           InputRemovalInProgress( ChainedInterface * chainedInput );
 
    //-----------------------------------------
 
 private:
-
-   void           ClientConnectionFinishedAdding( KhaanConnector* khaan );
+   
+   void           InputConnected( ChainedInterface * );
    bool           PushPacketToProperOutput( BasePacket* packet );
 
    void           HandlePacketToKhaan( KhaanConnector* khaan, BasePacket* packet );

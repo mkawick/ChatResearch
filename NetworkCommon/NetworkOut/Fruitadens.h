@@ -48,6 +48,8 @@ protected:
    virtual bool   SerializePacketOut( const BasePacket* packet );
    bool           SendPacket( const U8* buffer, int length ) const;
 
+   virtual void   InitalConnectionCallback() {} // this will be invoked on every reconnect 
+
 protected:
 
    virtual bool   FilterOutwardPacket( BasePacket* packet ) const { return true; }// true means acceptable

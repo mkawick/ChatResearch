@@ -44,7 +44,7 @@
 				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
-				RuntimeLibrary="3"
+				RuntimeLibrary="1"
 				UsePrecompiledHeader="0"
 				WarningLevel="3"
 				DebugInformationFormat="4"
@@ -62,6 +62,7 @@
 				Name="VCLinkerTool"
 				OutputFile="$(OutDir)\$(ProjectName)Server.exe"
 				LinkIncremental="2"
+				IgnoreDefaultLibraryNames="libcmt.lib"
 				GenerateDebugInformation="true"
 				SubSystem="1"
 				TargetMachine="1"
@@ -175,12 +176,40 @@
 				RelativePath=".\AssetDelivery.cpp"
 				>
 			</File>
+			<File
+				RelativePath=".\DiplodocusAsset.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\KhaanAsset.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\UserAccountAssetDelivery.cpp"
+				>
+			</File>
 		</Filter>
 		<Filter
 			Name="Header Files"
 			Filter="h;hpp;hxx;hm;inl;inc;xsd"
 			UniqueIdentifier="{93995380-89BD-4b04-88EB-625FBE52EBFB}"
 			>
+			<File
+				RelativePath=".\AssetCommon.h"
+				>
+			</File>
+			<File
+				RelativePath=".\DiplodocusAsset.h"
+				>
+			</File>
+			<File
+				RelativePath=".\KhaanAsset.h"
+				>
+			</File>
+			<File
+				RelativePath=".\UserAccountAssetDelivery.h"
+				>
+			</File>
 		</Filter>
 		<Filter
 			Name="Resource Files"
@@ -291,6 +320,14 @@
 				Name="Packets"
 				>
 				<File
+					RelativePath="..\NetworkCommon\Packets\AssetPacket.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\NetworkCommon\Packets\AssetPacket.h"
+					>
+				</File>
+				<File
 					RelativePath="..\NetworkCommon\Packets\BasePacket.cpp"
 					>
 				</File>
@@ -380,6 +417,46 @@
 				</File>
 				<File
 					RelativePath="..\NetworkCommon\Utils\Utils.h"
+					>
+				</File>
+			</Filter>
+			<Filter
+				Name="NetworkIn"
+				>
+				<File
+					RelativePath="..\NetworkCommon\NetworkIn\Diplodocus.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\NetworkCommon\NetworkIn\Diplodocus.h"
+					>
+				</File>
+				<File
+					RelativePath="..\NetworkCommon\NetworkIn\Diplodocus.inl"
+					>
+				</File>
+				<File
+					RelativePath="..\NetworkCommon\NetworkIn\DiplodocusServerToServer.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\NetworkCommon\NetworkIn\DiplodocusServerToServer.h"
+					>
+				</File>
+				<File
+					RelativePath="..\NetworkCommon\NetworkIn\Khaan.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\NetworkCommon\NetworkIn\Khaan.h"
+					>
+				</File>
+				<File
+					RelativePath="..\NetworkCommon\NetworkIn\KhaanServerToServer.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\NetworkCommon\NetworkIn\KhaanServerToServer.h"
 					>
 				</File>
 			</Filter>

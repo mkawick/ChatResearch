@@ -41,6 +41,9 @@ namespace Database
       bool        GetErrorCondition() const { return m_errorCondition; }
       bool        GetIsConnectionBad() const { return m_errorConnectionNeedsToBeReset; }
 
+      void        ResetToResubmitSameQuery() { m_isComplete = false; m_cancelled = false; m_hasStarted = false; m_hasResultSet = false; }
+      void        ResetErrorState() { m_errorCondition = false; m_errorConnectionNeedsToBeReset = false; }
+
       void        SetSenderMeta( const string* meta ) { m_senderMeta = *meta; }
       void        SetSenderLookup( U32 lookup ) { m_senderLookup = lookup; }
       void        SetServerLookup( U32 serverId ) { m_serverId = serverId; }

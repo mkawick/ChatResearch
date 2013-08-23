@@ -35,7 +35,7 @@ void     DiplodocusGame::AddTimer( U32 timerId, U32 callbackTimeMs )
 
 //---------------------------------------------------------------
 
-void     DiplodocusGame::ClientConnectionIsAboutToRemove( KhaanGame* khaan )
+void     DiplodocusGame::InputRemovalInProgress( ChainedInterface* chainedInput )
 {
    cout << "Gateway has disconnected" << endl;
 
@@ -43,7 +43,7 @@ void     DiplodocusGame::ClientConnectionIsAboutToRemove( KhaanGame* khaan )
 
 //---------------------------------------------------------------
 
-void     DiplodocusGame::ClientConnectionFinishedAdding( KhaanGame* khaan )
+void     DiplodocusGame::InputConnected( ChainedInterface* chainedInput )
 {
    cout << "Gateway has connected" << endl;
    //m_connectionIdGateway = khaan->GetServerId();
