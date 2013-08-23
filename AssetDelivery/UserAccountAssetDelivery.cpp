@@ -1,5 +1,10 @@
 #include "UserAccountAssetDelivery.h"
 
+#include "../NetworkCommon/Packets/AssetPacket.h"
+
+///////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////
+
 UserAccountAssetDelivery::UserAccountAssetDelivery( const UserTicket& ticket ) : m_userTicket( ticket ), m_status( Status_initial_login ), m_readyForCleanup( false ), m_assetManager( NULL )
 {
 }
@@ -24,27 +29,39 @@ void     UserAccountAssetDelivery::UserLoggedOut()
 
 bool     UserAccountAssetDelivery::HandleRequestFromClient( const PacketAsset* packet )
 {
-  /* switch( packet->packetSubType )
+   switch( packet->packetSubType )
    {
-   case PacketContact::ContactType_GetListOfContacts:
-      return GetListOfContacts();
+   case PacketAsset::AssetType_GetListOfStaticAssets:
+      return GetListOfStaticAssets( static_cast< const PacketAsset_GetListOfStaticAssets* >( packet ) );
 
-   case PacketContact::ContactType_GetListOfInvitations:
-      return GetListOfInvitationsReceived();
+   case PacketAsset::AssetType_GetListOfDynamicAssets:
+      return GetListOfDynamicAssets( static_cast< const PacketAsset_GetListOfDynamicAssets* >( packet ) );
 
-   case PacketContact::ContactType_GetListOfInvitationsSent:
-      return GetListOfInvitationsSent();
+   case PacketAsset::AssetType_RequestAsset:
+      return GetAsset( static_cast< const PacketAsset_RequestAsset* >( packet ) );
+   }
 
-   case PacketContact::ContactType_InviteContact:
-      return InviteUser( static_cast< const PacketContact_InviteContact* >( packet ) );
-      
-   case PacketContact::ContactType_AcceptInvite:
-      return AcceptInvitation( static_cast< const PacketContact_AcceptInvite* >( packet ) );
+   return false;
+}
 
-   case PacketContact::ContactType_DeclineInvitation:
-      return DeclineInvitation( static_cast< const PacketContact_DeclineInvitation* >( packet ) );
-   }*/
+//------------------------------------------------------------------------------------------------
 
+bool     UserAccountAssetDelivery::GetListOfStaticAssets( const PacketAsset_GetListOfStaticAssets* packet )
+{
+   return false;
+}
+
+//------------------------------------------------------------------------------------------------
+
+bool     UserAccountAssetDelivery::GetListOfDynamicAssets( const PacketAsset_GetListOfDynamicAssets* packet )
+{
+   return false;
+}
+
+//------------------------------------------------------------------------------------------------
+
+bool     UserAccountAssetDelivery::GetAsset( const PacketAsset_RequestAsset* packet )
+{
    return false;
 }
 

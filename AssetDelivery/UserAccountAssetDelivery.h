@@ -5,6 +5,10 @@
 
 class DiplodocusAsset;
 class PacketAsset;
+class PacketAsset_GetListOfStaticAssets;
+class PacketAsset_GetListOfDynamicAssets;
+class PacketAsset_RequestAsset;
+
 ///////////////////////////////////////////////////////////////////
 
 class UserAccountAssetDelivery
@@ -33,6 +37,11 @@ public:
    void              Update();
 
 private:
+
+   bool              GetListOfStaticAssets( const PacketAsset_GetListOfStaticAssets* packet );
+   bool              GetListOfDynamicAssets( const PacketAsset_GetListOfDynamicAssets* packet );
+   bool              GetAsset( const PacketAsset_RequestAsset* packet );
+
    UserTicket        m_userTicket;
    Status            m_status;
    bool              m_readyForCleanup;

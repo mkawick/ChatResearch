@@ -55,28 +55,41 @@ bool     DiplodocusAsset::AddInputChainData( BasePacket* packet, U32 connectionI
       
       if( unwrappedPacket->packetType == PacketType_Asset)
       {
-         switch( unwrappedPacket->packetSubType )
+         int type = unwrappedPacket->packetSubType;
+         string uuid;
+
+         switch( type )
          {
          case PacketAsset::AssetType_GetListOfStaticAssets:
             {
                PacketAsset_GetListOfStaticAssets* packetAsset = static_cast< PacketAsset_GetListOfStaticAssets* >( unwrappedPacket );
-               U64 userHash = GenerateUniqueHash( packetAsset->uuid );
-
-               UAADMapIterator found = m_userTickets.find( userHash );
-               if( found == m_userTickets.end() )
-                  return true;
-
-               //bool result = found->second.HandleRequestFromClient( packetContact, userHash );
+               uuid = packetAsset->uuid;
             }
          case PacketAsset::AssetType_GetListOfDynamicAssets:
             {
+               PacketAsset_GetListOfDynamicAssets* packetAsset = static_cast< PacketAsset_GetListOfDynamicAssets* >( unwrappedPacket );
+               uuid = packetAsset->uuid;
             }
             break;
+         case PacketAsset::AssetType_RequestAsset:
+            {
+               PacketAsset_RequestAsset* packetAsset = static_cast< PacketAsset_RequestAsset* >( unwrappedPacket );
+               uuid = packetAsset->uuid;
+            }
+            break;
+         }
+         if( uuid.size() )
+         {
+             U64 userHash = GenerateUniqueHash( uuid );
+             UAADMapIterator found = m_userTickets.find( userHash );
+               if( found == m_userTickets.end() )
+                  return true;
+            bool result = found->second.HandleRequestFromClient( static_cast< PacketAsset* >( unwrappedPacket ) );
          }
          
 
          
-        
+        // we will cleanup here... see cleaner
          return true;
       }
       else
@@ -180,7 +193,6 @@ bool     DiplodocusAsset::ConnectUser( PacketPrepareForUserLogin* loginPacket )
 
       m_mutex.lock();
       m_userTickets.insert( UAADPair( hashForUser, user ) );
-      //m_userLookupById.insert( UserIdToContactPair( ui.id, connectionId ) );
       m_mutex.unlock();
    }
    return true;
