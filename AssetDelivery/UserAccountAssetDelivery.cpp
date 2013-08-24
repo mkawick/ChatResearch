@@ -1,6 +1,8 @@
 #include "UserAccountAssetDelivery.h"
+#include "DiplodocusAsset.h"
 
 #include "../NetworkCommon/Packets/AssetPacket.h"
+#include "../NetworkCommon/Packets/GamePacket.h"
 
 ///////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////
@@ -62,6 +64,38 @@ bool     UserAccountAssetDelivery::GetListOfDynamicAssets( const PacketAsset_Get
 
 bool     UserAccountAssetDelivery::GetAsset( const PacketAsset_RequestAsset* packet )
 {
+   bool didSend = false;
+
+   if( m_userTicket.connectionId != 0 )
+   {
+      U32 connectionId = m_userTicket.connectionId;
+      PacketGameplayRawData* packet = new PacketGameplayRawData();
+      const char* testData = "this is a test";
+      int size = strlen( testData );
+      packet->Prep( size, reinterpret_cast< const U8* >( testData ), 1 );
+
+      packet->gameInstanceId = m_assetManager->GetServerId();
+      packet->gameProductId = m_assetManager->GetGameProductId();
+
+      //size -= workingSize;
+      //ptr += workingSize;
+
+      PacketGatewayWrapper* wrapper = new PacketGatewayWrapper;
+      wrapper->pPacket = packet;
+      wrapper->connectionId = connectionId;
+      wrapper->gameInstanceId = m_assetManager->GetServerId();
+
+      if( m_assetManager->AddOutputChainData( wrapper, connectionId ) == false )
+      {
+         delete wrapper;
+         delete packet;
+         return false;
+         didSend =  false;
+      }
+   }
+   if( didSend )
+      return true;
+
    return false;
 }
 

@@ -61,6 +61,10 @@ public:
    void           SetAsGame( bool isGame = true ) { m_isGame = isGame; }
    void           SetAsGateway( bool isGateway = true ) { m_isGateway = isGateway; }
 
+   string&        GetServerName() const { return m_serverName; }
+   U32            GetServerId() const { return m_serverId; }
+   U8             GetGameProductId() const { return m_gameProductId; }
+
    void           SetupListening( int port );
    bool           RequestUpdate( const string& connectionUuid ); // todo, update this
    void           SetSendHelloPacketOnLogin( bool value ) { m_sendHelloPacket = value; }
