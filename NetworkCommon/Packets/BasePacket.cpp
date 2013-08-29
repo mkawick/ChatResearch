@@ -330,6 +330,7 @@ bool  PacketPrepareForUserLogin::SerializeOut( U8* data, int& bufferOffset ) con
 bool  PacketPrepareForUserLogout::SerializeIn( const U8* data, int& bufferOffset )
 {
    BasePacket::SerializeIn( data, bufferOffset );
+   Serialize::In( data, bufferOffset, uuid );
    Serialize::In( data, bufferOffset, connectionId );
    Serialize::In( data, bufferOffset, wasDisconnectedByError );
 
@@ -339,6 +340,7 @@ bool  PacketPrepareForUserLogout::SerializeIn( const U8* data, int& bufferOffset
 bool  PacketPrepareForUserLogout::SerializeOut( U8* data, int& bufferOffset ) const
 {
    BasePacket::SerializeOut( data, bufferOffset );
+   Serialize::Out( data, bufferOffset, uuid );
    Serialize::Out( data, bufferOffset, connectionId );
    Serialize::Out( data, bufferOffset, wasDisconnectedByError );
 

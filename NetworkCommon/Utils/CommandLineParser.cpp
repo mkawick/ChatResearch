@@ -7,6 +7,7 @@
 //#include <conio.h>
 #include <assert.h>
 #include <boost/lexical_cast.hpp>
+#include "Utils.h"
 
 struct AcceptanceTest
 {
@@ -27,13 +28,6 @@ struct AcceptanceTest
       return modString; 
    }
 };
-
-string  ConvertStringToLower( const string& str )
-{
-   string retString = str;
-   std::transform( retString.begin(), retString.end(), retString.begin(), ::tolower );
-   return retString;
-}
 
 //--------------------------------------------------------------------------
 //--------------------------------------------------------------------------
@@ -180,16 +174,29 @@ bool  CommandLineParser::GetKeyValue( int index, string& key, int& value ) const
 void  CommandLineParser::ProcessCommandLine( int num, const char* arguments[], ValuesList& values ) const
 {
    // because the first few args are for the app itself, we will not parse those
-   typedef boost::tokenizer< boost::char_separator< char > > tokenizer;
-   boost::char_separator< char > separator( ":,=|" );
+  /* typedef boost::tokenizer< boost::char_separator< char > > tokenizer;
+   boost::char_separator< char > separator( ":,=|" );*/
+
+   string separator1("");//dont let quoted arguments escape themselves
+   string separator2("=:");//split on = and :
+   string separator3("\"\'");//let it have quoted arguments
+
+
+   boost::escaped_list_separator<char> els( separator1, separator2, separator3 );
 
    for( int i=1; i< num; i++ )
    {
-      string temp = arguments[i];
+      string line = arguments[i];
       vector< string > listOfStuff;
-      tokenizer tok( temp, separator );
 
-      transform( tok.begin(), tok.end(), back_inserter( listOfStuff ), AcceptanceTest() );
+      boost::tokenizer<boost::escaped_list_separator<char> > tokens( line, els );
+      for( boost::tokenizer<boost::escaped_list_separator<char> >::iterator i(tokens.begin()); i!=tokens.end(); ++i) 
+      {
+         listOfStuff.push_back(*i);
+      }
+     /* tokenizer tok( temp, separator );
+
+      transform( tok.begin(), tok.end(), back_inserter( listOfStuff ), AcceptanceTest() );*/
 
       if( listOfStuff.size() != 0 )
       {

@@ -4,6 +4,7 @@
 #include "../ServerStack/NetworkCommon/Packets/PacketFactory.h"
 #include "../ServerStack/NetworkCommon/Packets/ContactPacket.h"
 #include "../ServerStack/NetworkCommon/Packets/ChatPacket.h"
+#include "../ServerStack/NetworkCommon/Packets/AssetPacket.h"
 
 #include <assert.h>
 #include <iostream>
@@ -518,13 +519,52 @@ bool	   NetworkLayer::SendP2PTextMessage( const string& message, const string& d
 
 bool	   NetworkLayer::SendChannelTextMessage( const string& message, const string& chatChannelUuid, U32 gameTurn )
 {
-
    PacketChatToServer chat;
    chat.message = message;
    chat.gameTurn = gameTurn;
    // chat.userUuid = m_uuid; // not used
    chat.channelUuid = chatChannelUuid;
    SerializePacketOut( &chat );
+
+   return true;
+}
+
+//-----------------------------------------------------------------------------
+
+bool     NetworkLayer::GetListOfStaticAssets()
+{
+   PacketAsset_GetListOfStaticAssets assetRequest;
+   assetRequest.uuid = m_uuid;
+   assetRequest.loginKey = m_loginKey;
+   SerializePacketOut( &assetRequest );
+
+   return true;
+}
+
+//-----------------------------------------------------------------------------
+
+bool     NetworkLayer::GetListOfDynamicAssets()
+{
+   PacketAsset_GetListOfDynamicAssets assetRequest;
+   assetRequest.uuid = m_uuid;
+   assetRequest.loginKey = m_loginKey;
+   SerializePacketOut( &assetRequest );
+   return true;
+}
+
+//-----------------------------------------------------------------------------
+
+bool     NetworkLayer::RequestAsset( const string& assetName )
+{
+   PacketAsset_RequestAsset assetRequest;
+   assetRequest.uuid = m_uuid;
+   assetRequest.loginKey = m_loginKey;
+   assetRequest.asset.assetHash = assetName;
+   assetRequest.asset.version = "1.0";
+   assetRequest.asset.productId = m_gameProductId;
+   assetRequest.asset.date = "";
+
+   SerializePacketOut( &assetRequest );
 
    return true;
 }
@@ -547,75 +587,9 @@ bool     NetworkLayer::SerializePacketOut( BasePacket* packet ) const
 
 //-----------------------------------------------------------------------------
 
-int   NetworkLayer::ProcessInputFunction()
-{
-   if( m_isConnected == false )
-   {
-      AttemptConnection();
-   }
-
-   U8 buffer[ MaxBufferSize ];
-
-   int numBytes = static_cast< int >( recv( m_clientSocket, (char*) buffer, MaxBufferSize, NULL ) );
-	if( numBytes != SOCKET_ERROR )
-	{
-		buffer[ numBytes ] = 0;// NULL terminate
-      string str = "RECEIVED: ";
-      str += (char*) buffer;
-		Log( str );
-
-      PacketFactory factory;
-      int offset = 0;
-      while( offset < numBytes )
-      {
-         BasePacket* packetIn = NULL;
-         bool  shouldDelete = true;
-         if( factory.Parse( buffer, offset, &packetIn ) == true )
-         {
-            m_endTime = GetCurrentMilliseconds();          
-            shouldDelete = HandlePacketIn( packetIn );// the packet is always deleted internally
-         }
-         else 
-         {
-            offset = numBytes;
-         }
-
-       /*  if( packetIn && shouldDelete == true )
-         {
-            //factory.CleanupPacket( packetIn );
-            delete packetIn;
-         }*/
-      }
-	}
-   else
-   {
-#if PLATFORM == PLATFORM_WINDOWS
-         U32 error = WSAGetLastError();
-         if( error != WSAEWOULDBLOCK )
-         {
-            if( error == WSAECONNRESET )
-            {
-               m_isConnected = false;
-               //m_hasFailedCritically = true;
-               cout << "***********************************************************" << endl;
-               cout << "Socket error was: " << hex << error << dec << endl;
-               cout << "Socket has been reset" << endl;
-               cout << "attempting a reconnect" << endl;
-               cout << "***********************************************************" << endl;
-               closesocket( m_clientSocket );
-               m_clientSocket = SOCKET_ERROR;
-               CreateSocket();
-            }
-         }
-#endif
-   }
-   
-   return 1;
-}
-
 //-----------------------------------------------------------------------------
 
-bool  NetworkLayer::HandlePacketIn( BasePacket* packetIn )
+bool  NetworkLayer::HandlePacketReceived( BasePacket* packetIn )
 {
    PacketCleaner cleaner( packetIn );
 
@@ -845,6 +819,7 @@ bool  NetworkLayer::HandlePacketIn( BasePacket* packetIn )
                      m_uuid = login->uuid;
                      m_connectionId = login->connectionId;
                      m_lastLoggedOutTime = login->lastLogoutTime;
+                     m_loginKey = login->loginKey;
                      m_isLoggedIn = true;
                      //PacketChatChannelListRequest request;
                      //SerializePacketOut( &request );
@@ -1080,6 +1055,8 @@ bool  NetworkLayer::HandlePacketIn( BasePacket* packetIn )
                   static_cast<PacketGameplayRawData*>( packetIn );
 
                m_rawDataBuffer.AddPacket( data );
+
+               cout << "packet type: " << (int) data->dataType << ", index: " << (int) data->index << ", size:" << (int) data->size << endl;
                if( m_rawDataBuffer.IsDone() )
                {
                   U8* buffer = NULL;
@@ -1138,6 +1115,21 @@ bool     NetworkLayer::AddChatChannel( const ChatChannel& channel )
 void  RawDataAccumulator:: AddPacket( PacketGameplayRawData * ptr )
 {
    numBytes += ptr->size;
+   int index = ptr->index;
+   if( ptr->index > 1 )// need to keep them ordered
+   {
+      deque< PacketGameplayRawData* >::iterator it = packetsOfData.begin();
+      while( it != packetsOfData.end() )
+      {
+         if( (*it)->index < index )
+         {
+            packetsOfData.insert( it, ptr );
+            return;
+         }
+         it ++;
+      }
+   }
+
    packetsOfData.push_back( ptr );
 }
 

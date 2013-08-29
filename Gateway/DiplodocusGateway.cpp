@@ -223,6 +223,7 @@ void  DiplodocusGateway::HandlePacketToKhaan( KhaanConnector* khaan, BasePacket*
       clientNotify->username = finishedLogin->username;
       clientNotify->lastLogoutTime = finishedLogin->lastLogoutTime;
       clientNotify->connectionId = connectionId;
+      clientNotify->loginKey = finishedLogin->loginKey;
 
       delete finishedLogin;
       packet = clientNotify;
@@ -245,6 +246,8 @@ void  DiplodocusGateway::HandlePacketToKhaan( KhaanConnector* khaan, BasePacket*
 
 int   DiplodocusGateway::ProcessOutputFunction()
 {
+   // mutex is locked already
+
    // lookup packet info and pass it back to the proper socket if we can find it.
    if( m_connectionsNeedingUpdate.size() || m_outputTempStorage.size() )
    {
@@ -269,17 +272,14 @@ int   DiplodocusGateway::ProcessOutputFunction()
                KhaanConnector* khaan = connIt->second;
                HandlePacketToKhaan( khaan, dataPacket );// all deletion and such is handled lower
             }
-
             else
             {
                factory.CleanupPacket( dataPacket );
             }
-            //m_inputChainListMutex.lock();
-
          }
       }
 
-      //m_mutex.lock();
+      ConnectionIdQueue moreTimeNeededQueue;
       while( m_connectionsNeedingUpdate.size() > 0 )// this has the m_outputChainListMutex protection
       {
          int connectionId = m_connectionsNeedingUpdate.front();
@@ -288,11 +288,15 @@ int   DiplodocusGateway::ProcessOutputFunction()
          if( connIt != m_connectionMap.end() )
          {
             KhaanConnector* khaan = connIt->second;
-            khaan->Update();
+            bool didFinish = khaan->Update();
+            if( didFinish == false )
+            {
+               moreTimeNeededQueue.push_back( connectionId );
+            }
          }
-
       }
-      //m_mutex.unlock();
+
+      m_connectionsNeedingUpdate = moreTimeNeededQueue; // copy 
    }
    return 1;
 }

@@ -393,7 +393,7 @@ public:
 class PacketGameplayRawData : public PacketGameToServer
 {
 public:
-   PacketGameplayRawData(): PacketGameToServer( PacketType_Gameplay, GamePacketType_RawGameData ),size( 0 ) {}
+   PacketGameplayRawData(): PacketGameToServer( PacketType_Gameplay, GamePacketType_RawGameData ), size( 0 ), dataType( Game ), index( 1 ) {}
    //PacketGameplayRawData( PacketGameplayRawData& packet ) ;
    //~PacketGameplayRawData();
    //PacketGameplayRawData& operator = ( PacketGameplayRawData& packet ) ;
@@ -403,10 +403,12 @@ public:
 
    void  Prep( U16 numBytes, const U8* ptr, int packetIndex );
 
-   enum { MaxBufferSize = 1024 };
-   U16     size;
-   U8      index; // when subdividing these, these are reverse ordered. 6.5.4.3.2.1 so that we can send up to 254k.We still rely on high layers to serialize properly.
-   U8      data[ MaxBufferSize ];
+   enum { MaxBufferSize = 1020-sizeof( PacketGameToServer) }; // 1024 - the other variables
+   enum DataType{ Game, Asset };
+   U16      size;
+   U8       dataType;
+   U8       index; // when subdividing these, these are reverse ordered. 6.5.4.3.2.1 so that we can send up to 254k.We still rely on high layers to serialize properly.
+   U8       data[ MaxBufferSize ];
 };
 
 ///////////////////////////////////////////////////////////////

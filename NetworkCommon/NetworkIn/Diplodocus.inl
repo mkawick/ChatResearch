@@ -651,3 +651,48 @@ int      Diplodocus< InputChain, OutputChain >::ProcessOutputFunction()
 }
 
 //------------------------------------------------------------------------------------------
+
+template< typename PacketType, typename Processor >
+bool  SendRawData( const U8* data, int size, int dataType, int maxPacketSize, U32 serverId, U8 productId, U32 connectionId, Processor* sender ) // diplodocus supposedly
+{
+   PacketFactory factory;
+   const U8* workingData = data;
+   int remainingSize = size;
+   int numSends = remainingSize / maxPacketSize + 1;
+
+   while( numSends > 0 )
+   {
+      int sizeToSend = remainingSize;
+      if( sizeToSend > maxPacketSize )
+      {
+         sizeToSend = maxPacketSize;
+      }
+
+      PacketType* responsePacket = new PacketType();
+            
+      responsePacket->Prep( sizeToSend, workingData, numSends );
+      responsePacket->gameInstanceId   = serverId;
+      responsePacket->gameProductId    = productId;
+      responsePacket->dataType         = dataType;
+      
+      PacketGatewayWrapper* wrapper    = new PacketGatewayWrapper;
+      wrapper->pPacket                 = responsePacket;
+      wrapper->connectionId            = connectionId;
+      wrapper->gameInstanceId          = serverId;
+
+      if( sender->AddOutputChainData( wrapper, connectionId ) == false )
+      {
+         BasePacket* tempPack = static_cast< BasePacket* >( wrapper );
+         factory.CleanupPacket( tempPack );
+         
+         return false;
+      }
+
+      remainingSize -= sizeToSend;
+      workingData += sizeToSend;// offset the pointer
+      numSends --;
+   }
+   return true;
+}
+
+//------------------------------------------------------------------------------------------

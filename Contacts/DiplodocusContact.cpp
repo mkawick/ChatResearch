@@ -1,7 +1,9 @@
-#include "DiplodocusContact.h"
+// DiplodocusContact.cpp
 #include "../NetworkCommon/Packets/ServerToServerPacket.h"
 #include "../NetworkCommon/Packets/ContactPacket.h"
 #include "../NetworkCommon/Packets/PacketFactory.h"
+
+#include "DiplodocusContact.h"
 
 #include <iostream>
 using namespace std;

@@ -99,6 +99,10 @@ bool	Khaan :: Update()
 
    // I think that this makes sense
    CleanupAllEvents();
+
+   if( m_packetsIn.size() || m_packetsOut.size() )// we didn't finish
+      return false;
+
    return true;
 }
 
@@ -144,7 +148,7 @@ void	Khaan :: UpdateOutwardPacketList()
    int length = 0;
    int bufferOffset = 0;
 
-   U8 buffer[ MaxBufferSize ];
+   U8 buffer[ MaxBufferSize + 1024 ];
    PacketFactory factory;
 
    int num = m_packetsOut.size();
@@ -153,7 +157,7 @@ void	Khaan :: UpdateOutwardPacketList()
    {
       BasePacket* packet = m_packetsOut.front();
       packet->SerializeOut( buffer, bufferOffset ); 
-      if( bufferOffset < (int)( MaxBufferSize - 256 ) )// do not write past the end
+      if( bufferOffset < (int)( MaxBufferSize - sizeof( BasePacket ) ) )// do not write past the end
       {
          factory.CleanupPacket( packet );
          m_packetsOut.pop_front();

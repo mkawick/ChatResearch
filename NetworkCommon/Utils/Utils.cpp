@@ -303,3 +303,11 @@ U64 StringToU64( const char * str )
     }
     return u64Result;
 }
+
+
+string  ConvertStringToLower( const string& str )
+{
+   string retString = str;
+   std::transform( retString.begin(), retString.end(), retString.begin(), ::tolower );
+   return retString;
+}

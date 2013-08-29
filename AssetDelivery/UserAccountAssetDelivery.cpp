@@ -1,8 +1,10 @@
 #include "UserAccountAssetDelivery.h"
 #include "DiplodocusAsset.h"
+#include "AssetOrganizer.h"
 
 #include "../NetworkCommon/Packets/AssetPacket.h"
 #include "../NetworkCommon/Packets/GamePacket.h"
+#include "../NetworkCommon/Packets/PacketFactory.h"
 
 ///////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////
@@ -26,6 +28,28 @@ void     UserAccountAssetDelivery::UserLoggedOut()
    m_status = Status_awaiting_cleanup;
    m_readyForCleanup = true;
    time( &m_logoutTime );
+}
+
+bool     UserAccountAssetDelivery::LogoutExpired()
+{
+   if( m_readyForCleanup == false )
+      return false;
+
+   time_t currentTime;
+   time( &currentTime );
+   if( difftime( currentTime, m_logoutTime ) >= 3 ) // 3 seconds
+   {
+      return true;
+   }
+   return false;
+}
+
+bool     UserAccountAssetDelivery::LoginKeyMatches( const string& loginKey ) const
+{
+   if( loginKey == m_userTicket.userTicket )
+      return true;
+
+   return false;
 }
 //------------------------------------------------------------------------------------------------
 
@@ -64,37 +88,22 @@ bool     UserAccountAssetDelivery::GetListOfDynamicAssets( const PacketAsset_Get
 
 bool     UserAccountAssetDelivery::GetAsset( const PacketAsset_RequestAsset* packet )
 {
-   bool didSend = false;
-
    if( m_userTicket.connectionId != 0 )
    {
       U32 connectionId = m_userTicket.connectionId;
-      PacketGameplayRawData* packet = new PacketGameplayRawData();
-      const char* testData = "this is a test";
-      int size = strlen( testData );
-      packet->Prep( size, reinterpret_cast< const U8* >( testData ), 1 );
-
-      packet->gameInstanceId = m_assetManager->GetServerId();
-      packet->gameProductId = m_assetManager->GetGameProductId();
-
-      //size -= workingSize;
-      //ptr += workingSize;
-
-      PacketGatewayWrapper* wrapper = new PacketGatewayWrapper;
-      wrapper->pPacket = packet;
-      wrapper->connectionId = connectionId;
-      wrapper->gameInstanceId = m_assetManager->GetServerId();
-
-      if( m_assetManager->AddOutputChainData( wrapper, connectionId ) == false )
+      const AssetDefinition* asset;
+      bool found = m_assetManager->GetAssetOrganizer()->FindByHash( packet->asset.assetHash, asset );
+      if( found )
       {
-         delete wrapper;
-         delete packet;
-         return false;
-         didSend =  false;
+         U8* data = asset->fileData;
+         int size = asset->fileSize;
+
+         const int MaxSize = PacketGameplayRawData::MaxBufferSize  - sizeof( PacketGatewayWrapper );
+
+         return SendRawData< PacketGameplayRawData, DiplodocusAsset > 
+            ( data, size, PacketGameplayRawData::Asset, MaxSize, m_assetManager->GetServerId(), asset->productId, connectionId, m_assetManager );
       }
    }
-   if( didSend )
-      return true;
 
    return false;
 }

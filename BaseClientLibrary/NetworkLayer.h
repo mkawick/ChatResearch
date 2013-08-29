@@ -68,7 +68,7 @@ class Group
    vector< BasicUser > usersInGroup;
 };
 
-//-----------------------------------------------------
+///////////////////////////////////////////////////////
 
 class UserNetworkEventNotifier
 {
@@ -100,6 +100,10 @@ public:
 
    virtual void  ChatChannelHistory( const string& channelUuid, const list< ChatEntry >& listOfChats ) {  }
    virtual void  ChatP2PHistory( const string& userUuid, const list< ChatEntry >& listOfChats ) { }
+
+   virtual void  StaticAssetManifestAvalable() const {}
+   virtual void  DynamicicAssetManifestAvalable() const {}
+   virtual bool  AssetLoaded( const string& name, const U8* buffer, int size ) { return true; }
 
    virtual void  OnError( int code ){}
 
@@ -179,6 +183,13 @@ public:
    bool	   SendP2PTextMessage( const string& message, const string& destinationUserUuid );
    bool	   SendChannelTextMessage( const string& message, const string& chatChannelUuid, U32 gameTurn = 0 );
 
+   //--------------------------------------------------------------
+
+   bool     GetListOfStaticAssets();
+   bool     GetListOfDynamicAssets();
+   bool     RequestAsset( const string& assetName );
+
+   //--------------------------------------------------------------
    // utility functions
 
    U32      FindGame( const string& name ) const;
@@ -207,6 +218,7 @@ private:
    string            m_username, m_attemptedUsername;
    string            m_uuid;
    string            m_serverDns;
+   string            m_loginKey;
    U32               m_selectedGame;
 
    SerializedKeyValueVector< InvitationInfo > m_invitationsReceived;
@@ -230,9 +242,11 @@ private:
    RawDataAccumulator m_rawDataBuffer;
 
 private:
-   bool     SerializePacketOut( BasePacket* packet ) const;
-   int      ProcessInputFunction();
-   bool     HandlePacketIn( BasePacket* packetIn );
+   bool     SerializePacketOut( BasePacket* packet ) const;// helper
+
+   bool     HandlePacketReceived( BasePacket* packetIn );
+   //int      ProcessInputFunction();
+   //bool     HandlePacketIn( BasePacket* packetIn );
 
    bool     AddChatChannel( const ChatChannel& channel );
 };

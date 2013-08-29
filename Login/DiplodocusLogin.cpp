@@ -871,6 +871,7 @@ bool  DiplodocusLogin::ForceUserLogoutAndBlock( U32 connectionId )
       userId =                connection->id;
       email =                 connection->email;
       gameProductId =         connection->gameProductId;
+      loginKey =              connection->loginKey;
    }
 
    // now disconnect him/her
@@ -878,6 +879,7 @@ bool  DiplodocusLogin::ForceUserLogoutAndBlock( U32 connectionId )
    loginStatus->username = username;
    loginStatus->uuid = uuid;
    loginStatus->lastLogoutTime = GetDateInUTC();
+   loginStatus->loginKey = loginKey;
 
    loginStatus->wasLoginSuccessful = false;
 
@@ -995,6 +997,7 @@ bool    DiplodocusLogin::SuccessfulLogin( U32 connectionId, bool isReloggedIn )
       loginStatus->username = username;
       loginStatus->uuid = userUuid;
       loginStatus->lastLogoutTime = lastLoginTime;
+      loginStatus->loginKey = loginKey;
    }
    loginStatus->wasLoginSuccessful = true;
 
@@ -1073,6 +1076,7 @@ bool  DiplodocusLogin::SendLoginStatusToOtherServers( const string& username,
       else
       {
          PacketPrepareForUserLogout* logout = new PacketPrepareForUserLogout;
+         logout->uuid = userUuid;
          logout->connectionId = connectionId;
          logout->wasDisconnectedByError = wasDisconnectedByError;
 

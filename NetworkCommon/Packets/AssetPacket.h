@@ -126,6 +126,7 @@ public:
    bool  SerializeOut( U8* data, int& bufferOffset ) const;
 
    string      uuid;
+   string      loginKey;
    AssetInfo   asset;
 };
 

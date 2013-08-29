@@ -3,6 +3,8 @@
 #include "../NetworkCommon/Packets/AssetPacket.h"
 #include "../NetworkCommon/Packets/Packetfactory.h"
 
+#include "AssetOrganizer.h"
+
 #include <iostream>
 using namespace std;
 #include <time.h>
@@ -10,7 +12,7 @@ using namespace std;
 ///////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////
 
-DiplodocusAsset::DiplodocusAsset( const string& serverName, U32 serverId ): Diplodocus< KhaanAsset >( serverName, serverId, 0,  ServerType_Contact )
+DiplodocusAsset::DiplodocusAsset( const string& serverName, U32 serverId ): Diplodocus< KhaanAsset >( serverName, serverId, 0,  ServerType_Contact ), m_assets( NULL )
 /*, 
                         //m_initializationStage( InitializationStage_Begin ),
                         m_queryPeriodicity( 10000 ),
@@ -19,6 +21,10 @@ DiplodocusAsset::DiplodocusAsset( const string& serverName, U32 serverId ): Dipl
     //time( &m_lastTimeStamp );
 }
 
+DiplodocusAsset :: ~DiplodocusAsset()
+{
+   delete m_assets;
+}
 //---------------------------------------------------------------
 
 void     DiplodocusAsset::ServerWasIdentified( KhaanAsset* khaan )
@@ -27,6 +33,37 @@ void     DiplodocusAsset::ServerWasIdentified( KhaanAsset* khaan )
    PackageForServerIdentification( m_serverName, m_serverId, m_gameProductId, m_isGame, m_isControllerApp, true, m_isGateway, &packet );
    khaan->AddOutputChainData( packet, 0 );
    m_serversNeedingUpdate.push_back( khaan->GetServerId() );
+}
+
+//---------------------------------------------------------------
+
+bool     DiplodocusAsset::SetIniFilePath( const string& assetPath, const string& assetDictionary )
+{
+   if( m_assets )
+   {
+      delete m_assets;
+   }
+   m_assets = new AssetOrganizer();
+
+   string   finalPath = assetPath;
+
+   char endValue = *assetPath.rbegin() ;   
+   if( endValue != '/' && endValue != '\\' ) // the back slash is windows support. Obviously will not work on linux.
+   {
+      char beginValue = *assetDictionary.begin(); // note... different value from above
+      if( beginValue != '/' && beginValue != '\\' )
+      {
+         finalPath += '/';
+      }
+   }
+
+   finalPath += assetDictionary;
+   std::replace( finalPath.begin(), finalPath.end(), '\\', '/'); // convert everything to forward slashes
+
+   bool success = m_assets->Init( finalPath );
+
+   return success;
+   
 }
 
 //---------------------------------------------------------------
@@ -57,6 +94,7 @@ bool     DiplodocusAsset::AddInputChainData( BasePacket* packet, U32 connectionI
       {
          int type = unwrappedPacket->packetSubType;
          string uuid;
+         string loginKey;
 
          switch( type )
          {
@@ -64,27 +102,40 @@ bool     DiplodocusAsset::AddInputChainData( BasePacket* packet, U32 connectionI
             {
                PacketAsset_GetListOfStaticAssets* packetAsset = static_cast< PacketAsset_GetListOfStaticAssets* >( unwrappedPacket );
                uuid = packetAsset->uuid;
+               loginKey = packetAsset->loginKey;
             }
          case PacketAsset::AssetType_GetListOfDynamicAssets:
             {
                PacketAsset_GetListOfDynamicAssets* packetAsset = static_cast< PacketAsset_GetListOfDynamicAssets* >( unwrappedPacket );
                uuid = packetAsset->uuid;
+               loginKey = packetAsset->loginKey;
             }
             break;
          case PacketAsset::AssetType_RequestAsset:
             {
                PacketAsset_RequestAsset* packetAsset = static_cast< PacketAsset_RequestAsset* >( unwrappedPacket );
                uuid = packetAsset->uuid;
+               loginKey = packetAsset->loginKey;
             }
             break;
          }
          if( uuid.size() )
          {
-             U64 userHash = GenerateUniqueHash( uuid );
-             UAADMapIterator found = m_userTickets.find( userHash );
-               if( found == m_userTickets.end() )
-                  return true;
-            bool result = found->second.HandleRequestFromClient( static_cast< PacketAsset* >( unwrappedPacket ) );
+            U64 userHash = GenerateUniqueHash( uuid );
+            Threading::MutexLock locker( m_mutex );
+            UAADMapIterator found = m_userTickets.find( userHash );
+            if( found == m_userTickets.end() )
+               return true;
+            if( found->second.LoginKeyMatches( loginKey ) == false )
+            {
+               SendErrorToClient( connectionId, PacketErrorReport::ErrorType_Contact_Asset_BadLoginKey );
+            }
+            else
+            {
+               found->second.SetConnectionId( connectionId );
+               Threading::MutexLock locker( m_mutex );
+               bool result = found->second.HandleRequestFromClient( static_cast< PacketAsset* >( unwrappedPacket ) );
+            }
          }
          
 
@@ -144,6 +195,7 @@ bool     DiplodocusAsset::ConnectUser( PacketPrepareForUserLogin* loginPacket )
 {
    U64 hashForUser = GenerateUniqueHash( loginPacket->uuid );
 
+   Threading::MutexLock locker( m_mutex );
    UAADMapIterator it = m_userTickets.find( hashForUser );
    if( it != m_userTickets.end() )// user may be reloggin and such.. no biggie.. just ignore
    {
@@ -152,31 +204,6 @@ bool     DiplodocusAsset::ConnectUser( PacketPrepareForUserLogin* loginPacket )
    }
 
    bool found = false;
-   // if the user is already here but relogged, simply 
-  /* m_mutex.lock();
-      it = m_users.begin();
-      while( it != m_users.end() )
-      {
-         if( it->second.GetUserInfo().uuid == loginPacket->uuid ) 
-         {
-            found = true;
-            U32 id = it->second.GetUserInfo().id;
-            UserIdToContactMapIterator itIdToContact = m_userLookupById.find( id );
-            if( itIdToContact != m_userLookupById.end() )
-            {
-               itIdToContact->second = connectionId;
-            }
-            it->second.SetConnectionId( connectionId );
-            it->second.FinishLoginBySendingUserFriendsAndInvitations();
-            
-            m_users.insert( UAADPair( connectionId, it->second ) );
-            m_users.erase( it );
-            break;
-         }
-         it++;
-      }
-   m_mutex.unlock();*/
-
    if( found == false )
    {
 
@@ -203,8 +230,11 @@ bool     DiplodocusAsset::ConnectUser( PacketPrepareForUserLogin* loginPacket )
 bool     DiplodocusAsset::DisconnectUser( PacketPrepareForUserLogout* loginPacket )
 {
    U32 connectionId = loginPacket->connectionId;
+   string uuid = loginPacket->uuid;
+   U64 hashForUser = GenerateUniqueHash( uuid );
 
-   UAADMapIterator it = m_userTickets.find( connectionId );
+   Threading::MutexLock locker( m_mutex );
+   UAADMapIterator it = m_userTickets.find( hashForUser );
    if( it == m_userTickets.end() )
       return false;
 
@@ -213,6 +243,88 @@ bool     DiplodocusAsset::DisconnectUser( PacketPrepareForUserLogout* loginPacke
    // we need to send notifications
 
    return true;
+}
+
+
+//---------------------------------------------------------------
+
+// make sure to follow the model of the account server regarding queries. Look at CreateAccount
+// 
+bool     DiplodocusAsset::AddOutputChainData( BasePacket* packet, U32 connectionId )
+{
+   if( packet->packetType == PacketType_GatewayWrapper )
+   {
+      if( m_connectionIdGateway == 0 )
+         return false;
+
+      Threading::MutexLock locker( m_mutex );
+
+      ChainLinkIteratorType itInputs = m_listOfInputs.begin();
+      while( itInputs != m_listOfInputs.end() )
+      {
+         ChainLink& chainedInput = *itInputs++;
+         ChainedInterface* interfacePtr = chainedInput.m_interface;
+         KhaanAsset* khaan = static_cast< KhaanAsset* >( interfacePtr );
+         if( khaan->GetServerId() == m_connectionIdGateway )
+         {
+            interfacePtr->AddOutputChainData( packet );
+            //khaan->Update();// the gateway may not have a proper connection id.
+
+            m_serversNeedingUpdate.push_back( khaan->GetServerId() );
+            return true;
+         }
+      }
+      return false;
+   }
+   if( m_userTickets.size() )
+   {
+      Threading::MutexLock locker( m_mutex );
+      UAADMapIterator it = m_userTickets.begin();
+      while( it != m_userTickets.end() )
+      {
+         if( it->second.LogoutExpired() )
+         {
+            //delete it->second;// bad idea
+            m_userTickets.erase( it );
+         }
+         else
+         {
+            it++;
+         }
+      }
+   }
+
+   return false;
+}
+
+//---------------------------------------------------------------
+
+int      DiplodocusAsset::CallbackFunction()
+{
+   while( m_serversNeedingUpdate.size() )
+   {
+      U32 serverId = m_serversNeedingUpdate.front();
+      m_serversNeedingUpdate.pop_front();
+
+      Threading::MutexLock locker( m_mutex );
+      ChainLinkIteratorType itInputs = m_listOfInputs.begin();
+      while( itInputs != m_listOfInputs.end() )
+      {
+         ChainLink& chainedInput = *itInputs++;
+         ChainedInterface* interfacePtr = chainedInput.m_interface;
+         KhaanAsset* khaan = static_cast< KhaanAsset* >( interfacePtr );
+         if( khaan->GetServerId() == serverId )
+         {
+            khaan->Update();
+         }
+      }
+   }
+   UpdateAllConnections();
+
+   /*ContinueInitialization();*/
+   // check for new friend requests and send a small list of notifications
+
+   return 1;
 }
 
 

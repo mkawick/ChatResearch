@@ -359,6 +359,7 @@ public:
    bool  SerializeIn( const U8* data, int& bufferOffset );
    bool  SerializeOut( U8* data, int& bufferOffset ) const;
 
+   string uuid;
    U32   connectionId;
    bool  wasDisconnectedByError;
 };
@@ -587,6 +588,8 @@ public:
       ErrorType_Contact_Invitation_CannotInviteSelf,
       ErrorType_Contact_Invitation_Accepted,
       ErrorType_Contact_Invitation_BadInvitation,
+
+      ErrorType_Contact_Asset_BadLoginKey,
    };
 public:
    PacketErrorReport( int packet_sub_type = ErrorType_Generic ): BasePacket( PacketType_ErrorReport, packet_sub_type ) {}

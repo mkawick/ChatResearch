@@ -122,3 +122,5 @@ bool ConvertToString( T value, std::string& InputString )
 
    return true;
 }
+
+std::string  ConvertStringToLower( const std::string& str );

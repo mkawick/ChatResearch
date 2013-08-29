@@ -618,12 +618,12 @@ bool     PacketFactory::ParseAsset( const U8* bufferIn, int& bufferOffset, const
       return true;
    case PacketAsset::AssetType_GetListOfDynamicAssetsResponse:
       {
-         *packetOut = SerializeIn< PacketAsset_TestNotification >( bufferIn, bufferOffset );
+         *packetOut = SerializeIn< PacketAsset_GetListOfDynamicAssetsResponse >( bufferIn, bufferOffset );
       }
       return true;
    case PacketAsset::AssetType_RequestAsset:
       {
-         *packetOut = SerializeIn< PacketAsset_TestNotification >( bufferIn, bufferOffset );
+         *packetOut = SerializeIn< PacketAsset_RequestAsset >( bufferIn, bufferOffset );
       }
       return true;
    }

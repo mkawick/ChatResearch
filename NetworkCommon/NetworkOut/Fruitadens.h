@@ -16,6 +16,13 @@
 #endif
 
 class BasePacket;
+
+struct TempPacket
+{
+   U8    buffer [ MaxBufferSize ];
+   int   size;
+};
+
 //-------------------------------------------------------------------------
 
 class Fruitadens : public Threading::CChainedThread <BasePacket*>
@@ -43,6 +50,9 @@ protected:
 
    int            ProcessInputFunction();
    int            ProcessOutputFunction();
+
+   void           PostProcessPackets( int bytesRead );
+
    virtual bool   HandlePacketReceived( BasePacket* packetIn );
 
    virtual bool   SerializePacketOut( const BasePacket* packet );
@@ -56,17 +66,21 @@ protected:
 
    void           AttemptConnection();
 
-   int               m_clientSocket;
-   bool              m_isConnected;
-   bool              m_hasFailedCritically;
-   U32               m_connectedServerId;
-   U8                m_connectedGameProductId;
-   sockaddr_in       m_ipAddress;
-   U16               m_port;
-   ServerType        m_serverType;
-   std::string       m_name;
-   PacketQueue       m_packetsReadyToSend;
-   U32               m_serverId;
+   int                  m_clientSocket;
+   bool                 m_isConnected;
+   bool                 m_hasFailedCritically;
+   U32                  m_connectedServerId;
+   U8                   m_connectedGameProductId;
+   sockaddr_in          m_ipAddress;
+   U16                  m_port;
+   ServerType           m_serverType;
+   std::string          m_name;
+   PacketQueue          m_packetsReadyToSend;
+   U32                  m_serverId;
+   U32                  m_numPacketsReceived; // tracking only.. no other purpose
+
+   U32                  m_receiveBufferSize;
+   U8*                  m_receiveBuffer;
 };
 
 //-------------------------------------------------------------------------

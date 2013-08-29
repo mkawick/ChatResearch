@@ -40,15 +40,21 @@ Fruitadens :: Fruitadens( const char* name ) : Threading::CChainedThread <BasePa
                m_connectedGameProductId( 0 ),
                m_port( 0 ),
                m_serverType( ServerType_General ),
-               m_serverId( 0 )
+               m_serverId( 0 ),
+               m_numPacketsReceived( 0 )
 {
    m_name = name;
    memset( &m_ipAddress, 0, sizeof( m_ipAddress ) );
+
+   m_receiveBufferSize = 1024 * 128;// 128k
+
+   m_receiveBuffer = new U8[ m_receiveBufferSize ];
 }
 
 Fruitadens::~Fruitadens()
 {
    Cleanup();
+   delete [] m_receiveBuffer;
 }
 
 //-----------------------------------------------------------------------------
@@ -229,58 +235,77 @@ int   Fruitadens :: ProcessInputFunction()
          return 0;
       }
    }
-   U8 buffer[ MaxBufferSize ];
 
-   while( 1 )
+   U8* buffer = m_receiveBuffer;
+   int remainingBufferSize = m_receiveBufferSize;
+   int numBytesReceived = SOCKET_ERROR;
+   do    
    {
-      if( m_clientSocket == SOCKET_ERROR )// the server went away
-         break;
+      // pull everything off of the socket as quickly as possible to prevent packet loss 
+      // witnessed during the development of the asset server. Over 1/3 of packets were lost.   
+      numBytesReceived = static_cast< int >( recv( m_clientSocket, (char*) buffer, remainingBufferSize, NULL ) );
 
-      int numBytes = static_cast< int >( recv( m_clientSocket, (char*) buffer, MaxBufferSize, NULL ) );
-	   if( numBytes == SOCKET_ERROR)
-	   {
-#if PLATFORM == PLATFORM_WINDOWS
-         U32 error = WSAGetLastError();
-         if( error != WSAEWOULDBLOCK )
-         {
-            if( error == WSAECONNRESET )
-            {
-               m_isConnected = false;
-               //m_hasFailedCritically = true;
-               cout << "***********************************************************" << endl;
-               cout << "Socket error was: " << hex << error << dec << endl;
-               cout << "Socket has been reset" << endl;
-               cout << "attempting a reconnect" << endl;
-               cout << "***********************************************************" << endl;
-               closesocket( m_clientSocket );
-               CreateSocket();
-            }
-         }
-#endif
-         break;
-      }
-      else
+      if( numBytesReceived != SOCKET_ERROR )
       {
-         PacketFactory factory;
-         int offset = 0;
-         while( offset < numBytes )// there might be multiple packets in the same recv.
-         {
-            BasePacket* packetIn;
-            if( factory.Parse( buffer, offset, &packetIn ) == true )
-            {
-               HandlePacketReceived( packetIn );
-            }
-            else 
-            {
-               offset = numBytes;// jump to the end
-            }
-         }
+         buffer += numBytesReceived;
+         remainingBufferSize -= numBytesReceived;
+      }
+   } while( numBytesReceived != SOCKET_ERROR );
+
+   // error checking
+#if PLATFORM == PLATFORM_WINDOWS
+   U32 error = WSAGetLastError();
+   if( error != WSAEWOULDBLOCK )
+   {
+      if( error == WSAECONNRESET )
+      {
+         m_isConnected = false;
+         //m_hasFailedCritically = true;
+         cout << "***********************************************************" << endl;
+         cout << "Socket error was: " << hex << error << dec << endl;
+         cout << "Socket has been reset" << endl;
+         cout << "attempting a reconnect" << endl;
+         cout << "***********************************************************" << endl;
+         closesocket( m_clientSocket );
+         m_clientSocket = SOCKET_ERROR;
+         CreateSocket();
       }
    }
+#endif
+
+
+   // process the data in the queue
+   PostProcessPackets( m_receiveBufferSize - remainingBufferSize );
 
    return 1;
 }
 
+//-----------------------------------------------------------------------------------------
+
+void  Fruitadens::PostProcessPackets( int bytesRead )
+{
+   if( bytesRead < 1 )
+   {
+      return;
+   }
+
+   PacketFactory factory;
+   int offset = 0;
+   while( offset < bytesRead )
+   {
+      BasePacket* packetIn = NULL;
+      if( factory.Parse( m_receiveBuffer, offset, &packetIn ) == true )
+      {
+         m_numPacketsReceived ++;
+         HandlePacketReceived( packetIn );
+      }
+      else 
+      {
+         offset = m_numPacketsReceived;// major failure here
+      }
+   }
+
+}
 
 //-----------------------------------------------------------------------------------------
 

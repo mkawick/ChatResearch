@@ -60,6 +60,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
+				AdditionalDependencies="ws2_32.lib winmm.lib "
 				OutputFile="$(OutDir)\$(ProjectName)Server.exe"
 				LinkIncremental="2"
 				IgnoreDefaultLibraryNames="libcmt.lib"
@@ -177,6 +178,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\AssetOrganizer.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\DiplodocusAsset.cpp"
 				>
 			</File>
@@ -196,6 +201,10 @@
 			>
 			<File
 				RelativePath=".\AssetCommon.h"
+				>
+			</File>
+			<File
+				RelativePath=".\AssetOrganizer.h"
 				>
 			</File>
 			<File
@@ -281,26 +290,6 @@
 				</File>
 				<File
 					RelativePath="..\NetworkCommon\Daemon\Daemonizer.h"
-					>
-				</File>
-			</Filter>
-			<Filter
-				Name="Database"
-				>
-				<File
-					RelativePath="..\NetworkCommon\Database\Deltadromeus.cpp"
-					>
-				</File>
-				<File
-					RelativePath="..\NetworkCommon\Database\Deltadromeus.h"
-					>
-				</File>
-				<File
-					RelativePath="..\NetworkCommon\Database\QueryHandler.cpp"
-					>
-				</File>
-				<File
-					RelativePath="..\NetworkCommon\Database\QueryHandler.h"
 					>
 				</File>
 			</Filter>

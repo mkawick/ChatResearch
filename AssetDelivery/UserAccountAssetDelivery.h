@@ -27,6 +27,7 @@ public:
    UserAccountAssetDelivery( const UserTicket& ticket );
    ~UserAccountAssetDelivery();
 
+   bool              LoginKeyMatches( const string& loginKey ) const;
    const UserTicket& GetUserTicket() const { return m_userTicket; }
    void              SetConnectionId( U32 connId ) { m_userTicket.connectionId = connId; }
 
@@ -34,6 +35,7 @@ public:
    bool              HandleRequestFromClient( const PacketAsset* packet );
 
    void              UserLoggedOut();
+   bool              LogoutExpired();
    void              Update();
 
 private:

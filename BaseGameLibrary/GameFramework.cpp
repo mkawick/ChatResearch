@@ -1,6 +1,5 @@
 // GameFramework.cpp
 
-#include "GameFramework.h"
 #include <assert.h>
 #include <iostream>
 using namespace std;
@@ -10,13 +9,16 @@ using namespace std;
 #include "../NetworkCommon/Utils/CommandLineParser.h"
 #include "../NetworkCommon/Utils/Utils.h"
 
-#include "../NetworkCommon/Database/Deltadromeus.h"
-
-#include "DiplodocusGame.h"
-#include "FruitadensServerToServer.h"
-#include "../NetworkCommon/NetworkIn/DiplodocusServerToServer.h"
 #include "../NetworkCommon/Packets/GamePacket.h"
 #include "../NetworkCommon/Packets/ServerToServerPacket.h"
+#include "../NetworkCommon/Packets/PacketFactory.h"
+
+#include "DiplodocusGame.h"
+#include "../NetworkCommon/NetworkIn/DiplodocusServerToServer.h"
+#include "../NetworkCommon/Database/Deltadromeus.h"
+#include "GameFramework.h"
+#include "FruitadensServerToServer.h"
+
 
 //-----------------------------------------------------
 //-----------------------------------------------------
@@ -154,7 +156,7 @@ void  GameFramework::UseCommandlineOverrides( int argc, const char* argv[] )
 bool  GameFramework::SendGameData( U32 connectionId, const MarshalledData* data )
 {
    //if( m_connectionManager->IsConnectionValid( connectionId ) == true )
-   int size = data->m_sizeOfData;
+  /* int size = data->m_sizeOfData;
    bool didSend = true;
    const U8* ptr = data->m_data;
    int packetIndex = size / PacketGameplayRawData::MaxBufferSize + 1; // always start at 1.
@@ -190,7 +192,12 @@ bool  GameFramework::SendGameData( U32 connectionId, const MarshalledData* data 
    if( didSend )
       return true;
 
-   return false;
+   return false;*/
+
+   const int MaxSize = PacketGameplayRawData::MaxBufferSize  - sizeof( PacketGatewayWrapper );
+
+   return SendRawData< PacketGameplayRawData, DiplodocusGame > 
+      ( data->m_data, data->m_sizeOfData, PacketGameplayRawData::Game, MaxSize, GetServerId(), GetGameProductId(), connectionId, m_connectionManager );
 }
 
 //-----------------------------------------------------
