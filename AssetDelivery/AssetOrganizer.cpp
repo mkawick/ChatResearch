@@ -97,18 +97,40 @@ const char* platformStrings[] = {
    "android",
    "pc",
    "mac",
-   "blackberry"
+   "vita",
+   "xbox",
+   "blackberry",
+   "wii"
+};
+
+
+const char* assetPriotityType[] = {
+   "default",
+   "primary",
+   "secondary"
 };
 
 //////////////////////////////////////////////////////////////////////////
 
-AssetDefinition:: AssetDefinition(): productId( 0 ), platform( 0 ), fileData( NULL ), fileSize( 0 ), compressionType( 0 )
+AssetDefinition:: AssetDefinition(): productId( 0 ), platform( 0 ), fileData( NULL ), fileSize( 0 ), compressionType( 0 ), version( "0.5" )
 {
 }
 
 AssetDefinition::~AssetDefinition()
 {
    delete [] fileData;
+}
+
+void  AssetDefinition:: SetupHash()
+{
+   if( name.size() > 0 )
+   {
+      ConvertToString( GenerateUniqueHash( name ), hash );
+   }
+   else
+   {
+      ConvertToString( GenerateUniqueHash( path ), hash );
+   }
 }
 
 bool  AssetDefinition:: LoadFile()
@@ -127,14 +149,7 @@ bool  AssetDefinition:: LoadFile()
       return false;
    }
 
-   if( name.size() > 0 )
-   {
-      ConvertToString( GenerateUniqueHash( name ), hash );
-   }
-   else
-   {
-      ConvertToString( GenerateUniqueHash( path ), hash );
-   }
+   
    return true;
 }
 
@@ -196,6 +211,19 @@ int   FindPlatformName( const string& value )
    return 0;
 }
 
+int   FindPriorityType( const string& value )
+{
+   int numAssetTypes = sizeof( assetPriotityType ) / sizeof( assetPriotityType[0] );
+   for( int i=0; i< numAssetTypes; i++ )
+   {
+      if( value == assetPriotityType[i] )
+      {
+         return i;
+      }
+   }
+   return 0;
+}
+
 //////////////////////////////////////////////////////////////////////////
 
 bool  FillInAsset( string& line, AssetDefinition& asset )
@@ -227,6 +255,11 @@ bool  FillInAsset( string& line, AssetDefinition& asset )
             asset.productId = FindProductName( value );
             if( asset.productId != 0 ) // bad id
                return true;
+         }
+         else if( potentionalKey == "prioritytype" )
+         {
+            asset.priorityType = FindPriorityType( value );
+            return true;
          }
          else if( potentionalKey == "platform" )
          {
@@ -302,13 +335,46 @@ bool  AssetOrganizer::ParseNextAsset( ifstream& infile, int& lineCount )
 
       if( asset.IsDefinitionComplete() == true )// we will skip right over version and platform so be careful
       {
+         asset.SetupHash();
          //asset.Print();
-         m_assets.push_back( asset );
+         AddAssetDefinition( asset );
          return true;
       }
       
    }
    return false;
+}
+
+//////////////////////////////////////////////////////////////////////////
+
+void  AssetOrganizer::AddAssetDefinition( AssetDefinition& asset )
+{
+   AssetVectorIterator it = m_assets.begin();
+   while( it != m_assets.end() )
+   {
+      AssetDefinition& testAsset = *it;
+
+      if( testAsset.productId == asset.productId )
+      {
+         if( testAsset.hash == asset.hash || 
+            ( testAsset.name.size() > 0 && testAsset.name == asset.name )// these are the same item...
+             )
+         {
+            if( testAsset.version > asset.version )
+            {
+               // toss the new one since it is an older version
+            }
+            else
+            {
+               *it = asset;// simple replacement
+               return;
+            }
+         }
+         
+      }
+      it++;
+   }
+   m_assets.push_back( asset );
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -344,7 +410,9 @@ bool  AssetOrganizer::Init( const string& assetManifestFile )
          bool result = ParseNextAsset( infile, lineCount );
          if( result == false )
          {
+            cout << "**********************************************" << endl;
             cout << "Error in asset file reading line " << lineCount << endl;
+            cout << "**********************************************" << endl;
             errorCode = true;
             break;
          }
@@ -371,7 +439,7 @@ bool  AssetOrganizer::Init( const string& assetManifestFile )
 
 //////////////////////////////////////////////////////////////////////////
 
-bool  AssetOrganizer::GetListOfAssets( U8 productId, vector< string >& listOfAssetsByHash ) const
+bool  AssetOrganizer::GetListOfAssets( U8 productId, int platformId, vector< string >& listOfAssetsByHash ) const
 {
    listOfAssetsByHash.clear();
 

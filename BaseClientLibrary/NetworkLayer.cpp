@@ -58,6 +58,13 @@ void  NetworkLayer::Exit()
    m_isLoggedIn = false;
 }
 
+string   NetworkLayer::GenerateHash( const string& stringThatIWantHashed )
+{
+   string value;
+   ::ConvertToString( ::GenerateUniqueHash( stringThatIWantHashed ), value );
+   return value;
+}
+
 //------------------------------------------------------------
 
 static inline U64 CreatePasswordHash( const char *pPassword )
@@ -320,6 +327,59 @@ bool    NetworkLayer::GetChannel( int index, ChatChannel& channel )
 
 //-----------------------------------------------------------------------------
 
+bool    NetworkLayer::GetStaticAssetInfo( int index, AssetInfo& asset )
+{
+   if( index < 0 || index >= (int) m_staticAssets.size() )
+   {
+      asset.Clear();
+      return false;
+   }
+
+   int i = 0;
+   vector< AssetInfo >::const_iterator itAssets = m_staticAssets.begin();
+   while( itAssets != m_staticAssets.end() )
+   {
+      if( i == index )
+      {
+         asset = *itAssets;
+         return true;
+      }
+      i ++;
+      itAssets++;
+   }
+
+   return false;
+}
+
+
+//-----------------------------------------------------------------------------
+
+bool    NetworkLayer::GetDynamicAssetInfo( int index, AssetInfo& asset )
+{
+   if( index < 0 || index >= (int) m_dynamicAssets.size() )
+   {
+      asset.Clear();
+      return false;
+   }
+
+   int i = 0;
+   vector< AssetInfo >::const_iterator itAssets = m_dynamicAssets.begin();
+   while( itAssets != m_dynamicAssets.end() )
+   {
+      if( i == index )
+      {
+         asset = *itAssets;
+         return true;
+      }
+      i ++;
+      itAssets++;
+   }
+
+   return false;
+}
+
+//-----------------------------------------------------------------------------
+
 bool     NetworkLayer::RequestListOfGames() const
 {
    PacketRequestListOfGames listOfGames;
@@ -531,11 +591,12 @@ bool	   NetworkLayer::SendChannelTextMessage( const string& message, const strin
 
 //-----------------------------------------------------------------------------
 
-bool     NetworkLayer::GetListOfStaticAssets()
+bool     NetworkLayer::RequestListOfStaticAssets( int platformId )
 {
    PacketAsset_GetListOfStaticAssets assetRequest;
    assetRequest.uuid = m_uuid;
    assetRequest.loginKey = m_loginKey;
+   assetRequest.platformId = platformId;
    SerializePacketOut( &assetRequest );
 
    return true;
@@ -543,7 +604,7 @@ bool     NetworkLayer::GetListOfStaticAssets()
 
 //-----------------------------------------------------------------------------
 
-bool     NetworkLayer::GetListOfDynamicAssets()
+bool     NetworkLayer::RequestListOfDynamicAssets()
 {
    PacketAsset_GetListOfDynamicAssets assetRequest;
    assetRequest.uuid = m_uuid;
@@ -559,10 +620,11 @@ bool     NetworkLayer::RequestAsset( const string& assetName )
    PacketAsset_RequestAsset assetRequest;
    assetRequest.uuid = m_uuid;
    assetRequest.loginKey = m_loginKey;
-   assetRequest.asset.assetHash = assetName;
-   assetRequest.asset.version = "1.0";
+   assetRequest.assetHash = assetName;
+  /* assetRequest.asset.version = "1.0";
    assetRequest.asset.productId = m_gameProductId;
-   assetRequest.asset.date = "";
+   assetRequest.asset.beginDate = "";
+   assetRequest.asset.beginDate = "";*/
 
    SerializePacketOut( &assetRequest );
 
@@ -1054,17 +1116,28 @@ bool  NetworkLayer::HandlePacketReceived( BasePacket* packetIn )
                PacketGameplayRawData* data = 
                   static_cast<PacketGameplayRawData*>( packetIn );
 
-               m_rawDataBuffer.AddPacket( data );
+               int dataType = data->dataType;
+               RawDataAccumulator& rawDataBuffer = m_rawDataBuffer[ dataType ];
+               rawDataBuffer.AddPacket( data );
+               string hash = data->identifier;
 
-               cout << "packet type: " << (int) data->dataType << ", index: " << (int) data->index << ", size:" << (int) data->size << endl;
-               if( m_rawDataBuffer.IsDone() )
+               cout << "packet type: " << dataType << ", index: " << (int) data->index << ", size:" << (int) data->size << endl;
+
+               if( rawDataBuffer.IsDone() )
                {
                   U8* buffer = NULL;
                   int size = 0;
-                  m_rawDataBuffer.PrepPackage( buffer, size );
+                  rawDataBuffer.PrepPackage( buffer, size );
                   for( list< UserNetworkEventNotifier* >::iterator it = m_callbacks.begin(); it != m_callbacks.end(); ++it )
                   {
-                     (*it)->GameData( size, buffer );
+                     if( dataType == PacketGameplayRawData::Game )
+                     {
+                        (*it)->GameData( size, buffer );
+                     }
+                     else
+                     {
+                        (*it)->AssetData( size, buffer, hash );
+                     }
                   }
 
                   delete buffer;
@@ -1086,6 +1159,59 @@ bool  NetworkLayer::HandlePacketReceived( BasePacket* packetIn )
             }
             break;
          }
+      }
+      break;
+      case PacketType_Asset:
+      {
+          switch( packetIn->packetSubType )
+         {
+         case PacketAsset::AssetType_GetListOfStaticAssetsResponse:
+            {
+               PacketAsset_GetListOfStaticAssetsResponse* assetList = 
+                  static_cast<PacketAsset_GetListOfStaticAssetsResponse*>( packetIn );
+
+
+               m_staticAssets.clear();
+               SerializedKeyValueVector< AssetInfo >::KeyValueVectorIterator it = assetList->updatedAssets.begin();
+               while ( it != assetList->updatedAssets.end() )
+               {
+                  m_staticAssets.push_back( it->value );
+                  it ++;
+               }
+
+               if( m_staticAssets.size() )
+               {
+                  for( list< UserNetworkEventNotifier* >::iterator it = m_callbacks.begin(); it != m_callbacks.end(); ++it )
+                  {
+                     (*it)->StaticAssetManifestAvalable();
+                  }
+               }
+            }
+            break;
+          
+          case PacketAsset::AssetType_GetListOfDynamicAssetsResponse:
+            {
+               PacketAsset_GetListOfDynamicAssetsResponse* assetList = 
+                  static_cast<PacketAsset_GetListOfDynamicAssetsResponse*>( packetIn );
+
+
+               m_dynamicAssets.clear();
+               SerializedKeyValueVector< AssetInfo >::KeyValueVectorIterator it = assetList->updatedAssets.begin();
+               while ( it != assetList->updatedAssets.end() )
+               {
+                  m_dynamicAssets.push_back( it->value );
+               }
+
+               if( m_dynamicAssets.size() )
+               {
+                  for( list< UserNetworkEventNotifier* >::iterator it = m_callbacks.begin(); it != m_callbacks.end(); ++it )
+                  {
+                     (*it)->DynamicicAssetManifestAvalable();
+                  }
+               }
+            }
+            break;
+          }
       }
       break;
    }

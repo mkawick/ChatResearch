@@ -4,6 +4,7 @@
 #include "../NetworkCommon/Packets/GamePacket.h"
 
 #include "../NetworkCommon/Packets/ContactPacket.h"
+#include "../NetworkCommon/Packets/AssetPacket.h"
 #include "../NetworkCommon/Packets/ChatPacket.h"
 
 namespace Mber
@@ -25,6 +26,8 @@ struct Demographics
 
 };
 
+//-------------------------------------------
+
 class BasicUser
 {
 public:
@@ -33,6 +36,8 @@ public:
    string    UUID;
    bool      isOnline;
 };
+
+//-------------------------------------------
 
 class ChatChannel
 {
@@ -57,6 +62,8 @@ public:
    }
 };
 
+//-------------------------------------------
+
 typedef vector< ChatChannel >    ChatChannelVector;
 
 class Group
@@ -67,6 +74,32 @@ class Group
    string chatChannel; // the venn diagrap for groups and channels may not be 1-1
    vector< BasicUser > usersInGroup;
 };
+/*
+
+const char* productNames [] = {
+   "",
+   "ascension",
+   "dominion",
+   "thunderstone",
+   "wowcmg",
+   "summonwar",
+   "foodfight",
+   "nightfall",
+   "pennyarcade",
+   "infinitecity",
+   "agricola",
+   "fluxx",
+   "smashup"
+};
+
+const char* platformStrings[] = {
+   "",
+   "ios",
+   "android",
+   "pc",
+   "mac",
+   "blackberry"
+};*/
 
 ///////////////////////////////////////////////////////
 
@@ -80,6 +113,7 @@ public:
    virtual void  UserWinLoss( const string& username, const WinLoss& userWinLoss ) {}
 
    virtual void  GameData( U16 length, const U8* rawdata ) {}
+   virtual void  AssetData( U32 length, const U8* rawdata, const string& assetHash ) {}
 
    virtual void  FriendsUpdate() {}
    virtual void  FriendOnlineStatusChanged( const string& uuid ) {}
@@ -139,6 +173,8 @@ public:
 
    void     Init( const char* serverDNS = "gateway.internal.playdekgames.com" );
    void     Exit();
+
+   string   GenerateHash( const string& stringThatIWantHashed );
    
    bool     IsLoggingIn() const { return m_isLoggingIn; }
    bool     IsLoggedIn() const { return m_isLoggedIn; }
@@ -185,8 +221,8 @@ public:
 
    //--------------------------------------------------------------
 
-   bool     GetListOfStaticAssets();
-   bool     GetListOfDynamicAssets();
+   bool     RequestListOfStaticAssets( int platformId = Platform_ios );
+   bool     RequestListOfDynamicAssets();
    bool     RequestAsset( const string& assetName );
 
    //--------------------------------------------------------------
@@ -202,6 +238,12 @@ public:
 
    int      GetNumChannels() const { return m_channels.size(); }
    bool     GetChannel( int index, ChatChannel& channel );
+
+   int      GetNumStaticAssets() const { return m_staticAssets.size(); }
+   bool     GetStaticAssetInfo( int index, AssetInfo& assetHash );
+
+   int      GetNumDynamicAssets() const { return m_dynamicAssets.size(); }
+   bool     GetDynamicAssetInfo( int index, AssetInfo& assetHash );
 
    string   GetLocalUUID() { return m_uuid; }
    
@@ -239,7 +281,10 @@ private:
    mutable U32       m_beginTime, m_endTime;
 
    MBerNotifierList  m_callbacks;
-   RawDataAccumulator m_rawDataBuffer;
+   RawDataAccumulator m_rawDataBuffer[ PacketGameplayRawData::NumDataTypes ];
+
+   vector< AssetInfo >  m_staticAssets;
+   vector< AssetInfo >  m_dynamicAssets;
 
 private:
    bool     SerializePacketOut( BasePacket* packet ) const;// helper

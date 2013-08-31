@@ -74,6 +74,41 @@ bool     UserAccountAssetDelivery::HandleRequestFromClient( const PacketAsset* p
 
 bool     UserAccountAssetDelivery::GetListOfStaticAssets( const PacketAsset_GetListOfStaticAssets* packet )
 {
+   if( m_assetManager == NULL )
+      assert( 0 );
+
+   U32 connectionId = m_userTicket.connectionId;
+
+   //PacketAsset_GetListOfStaticAssets
+   U8 gameProductId = packet->gameProductId;
+   vector< string > assetIds;
+   m_assetManager->GetAssetOrganizer()->GetListOfAssets( gameProductId, packet->platformId, assetIds );
+
+
+   PacketAsset_GetListOfStaticAssetsResponse*    response = new PacketAsset_GetListOfStaticAssetsResponse;
+   vector< string >::iterator it = assetIds.begin();
+   while( it != assetIds.end() )
+   {
+      const AssetDefinition * asset;
+      bool  found = m_assetManager->GetAssetOrganizer()->FindByHash( *it++ , asset );
+      if( found )
+      {
+         AssetInfo assetInfo;
+         assetInfo.productId  = gameProductId;
+         assetInfo.assetHash  = asset->hash;
+         assetInfo.version    = asset->version;
+         assetInfo.beginDate  = asset->beginTime;
+         assetInfo.endDate    = asset->endTime;
+
+         response->updatedAssets.insert( assetInfo.assetHash, assetInfo );
+      }
+   }
+
+   PacketGatewayWrapper* wrapper = new PacketGatewayWrapper;
+   wrapper->connectionId = connectionId;
+   wrapper->pPacket = response;
+   
+   m_assetManager->AddOutputChainData( wrapper, connectionId );
    return false;
 }
 
@@ -88,11 +123,14 @@ bool     UserAccountAssetDelivery::GetListOfDynamicAssets( const PacketAsset_Get
 
 bool     UserAccountAssetDelivery::GetAsset( const PacketAsset_RequestAsset* packet )
 {
+   if( m_assetManager == NULL )
+      assert( 0 );
+
    if( m_userTicket.connectionId != 0 )
    {
       U32 connectionId = m_userTicket.connectionId;
       const AssetDefinition* asset;
-      bool found = m_assetManager->GetAssetOrganizer()->FindByHash( packet->asset.assetHash, asset );
+      bool found = m_assetManager->GetAssetOrganizer()->FindByHash( packet->assetHash, asset );
       if( found )
       {
          U8* data = asset->fileData;
@@ -101,7 +139,7 @@ bool     UserAccountAssetDelivery::GetAsset( const PacketAsset_RequestAsset* pac
          const int MaxSize = PacketGameplayRawData::MaxBufferSize  - sizeof( PacketGatewayWrapper );
 
          return SendRawData< PacketGameplayRawData, DiplodocusAsset > 
-            ( data, size, PacketGameplayRawData::Asset, MaxSize, m_assetManager->GetServerId(), asset->productId, connectionId, m_assetManager );
+            ( data, size, PacketGameplayRawData::Asset, MaxSize, m_assetManager->GetServerId(), asset->productId, asset->hash, connectionId, m_assetManager );
       }
    }
 

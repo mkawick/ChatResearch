@@ -104,6 +104,7 @@ bool     DiplodocusAsset::AddInputChainData( BasePacket* packet, U32 connectionI
                uuid = packetAsset->uuid;
                loginKey = packetAsset->loginKey;
             }
+            break;
          case PacketAsset::AssetType_GetListOfDynamicAssets:
             {
                PacketAsset_GetListOfDynamicAssets* packetAsset = static_cast< PacketAsset_GetListOfDynamicAssets* >( unwrappedPacket );
@@ -137,8 +138,6 @@ bool     DiplodocusAsset::AddInputChainData( BasePacket* packet, U32 connectionI
                bool result = found->second.HandleRequestFromClient( static_cast< PacketAsset* >( unwrappedPacket ) );
             }
          }
-         
-
          
         // we will cleanup here... see cleaner
          return true;
@@ -282,14 +281,11 @@ bool     DiplodocusAsset::AddOutputChainData( BasePacket* packet, U32 connection
       UAADMapIterator it = m_userTickets.begin();
       while( it != m_userTickets.end() )
       {
-         if( it->second.LogoutExpired() )
+         UAADMapIterator currentIt = it++;
+         if( currentIt->second.LogoutExpired() )
          {
             //delete it->second;// bad idea
-            m_userTickets.erase( it );
-         }
-         else
-         {
-            it++;
+            m_userTickets.erase( currentIt );
          }
       }
    }

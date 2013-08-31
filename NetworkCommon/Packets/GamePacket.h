@@ -403,11 +403,12 @@ public:
 
    void  Prep( U16 numBytes, const U8* ptr, int packetIndex );
 
-   enum { MaxBufferSize = 1020-sizeof( PacketGameToServer) }; // 1024 - the other variables
-   enum DataType{ Game, Asset };
+   enum { MaxBufferSize = 1007-sizeof( PacketGameToServer) }; // 1024 - the other variables
+   enum DataType{ Game, Asset, NumDataTypes };
+   string   identifier;
    U16      size;
+   U16      index; // when subdividing these, these are reverse ordered. 6.5.4.3.2.1 so that we can send up to 254k.We still rely on high layers to serialize properly.
    U8       dataType;
-   U8       index; // when subdividing these, these are reverse ordered. 6.5.4.3.2.1 so that we can send up to 254k.We still rely on high layers to serialize properly.
    U8       data[ MaxBufferSize ];
 };
 

@@ -7,6 +7,7 @@ struct AssetDefinition
 {
    unsigned char  productId;
    int            platform;
+   int            priorityType;
    string         version;
    string         path;
    string         beginTime;
@@ -21,6 +22,8 @@ struct AssetDefinition
 
    AssetDefinition();
    ~AssetDefinition();
+
+   void  SetupHash();
    bool  LoadFile();
 
    bool  IsDefinitionComplete();
@@ -41,12 +44,12 @@ public:
    bool  Find( const string& name, AssetDefinition*& asset );
    bool  FindByHash( const string& hash, AssetDefinition const *& asset ) const; // returns a reference const... you cannot modify the result.
 
-   bool  GetListOfAssets( U8 productId, vector< string >& listOfAssetsByHash ) const;
+   bool  GetListOfAssets( U8 productId, int platformType, vector< string >& listOfAssetsByHash ) const;
    
 
 private:
 
-   
+   void  AddAssetDefinition( AssetDefinition& asset );
    bool  ParseNextAsset( ifstream& infile, int& lineCount );
    bool  LoadAllFiles();
 

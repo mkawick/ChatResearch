@@ -653,7 +653,7 @@ int      Diplodocus< InputChain, OutputChain >::ProcessOutputFunction()
 //------------------------------------------------------------------------------------------
 
 template< typename PacketType, typename Processor >
-bool  SendRawData( const U8* data, int size, int dataType, int maxPacketSize, U32 serverId, U8 productId, U32 connectionId, Processor* sender ) // diplodocus supposedly
+bool  SendRawData( const U8* data, int size, int dataType, int maxPacketSize, U32 serverId, U8 productId, const string& identifier, U32 connectionId, Processor* sender ) // diplodocus supposedly
 {
    PacketFactory factory;
    const U8* workingData = data;
@@ -671,6 +671,7 @@ bool  SendRawData( const U8* data, int size, int dataType, int maxPacketSize, U3
       PacketType* responsePacket = new PacketType();
             
       responsePacket->Prep( sizeToSend, workingData, numSends );
+      responsePacket->identifier       = identifier;
       responsePacket->gameInstanceId   = serverId;
       responsePacket->gameProductId    = productId;
       responsePacket->dataType         = dataType;

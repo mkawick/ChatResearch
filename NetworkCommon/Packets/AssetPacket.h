@@ -9,7 +9,16 @@ struct AssetInfo
    U8       productId;
    string   assetHash;
    string   version;
-   string   date;
+   string   beginDate, endDate;
+
+   void  Clear()
+   {
+      productId = 0;
+      assetHash.clear();
+      version.clear();
+      beginDate.clear();
+      endDate.clear();
+   }
 
    bool  SerializeIn( const U8* data, int& bufferOffset );
    bool  SerializeOut( U8* data, int& bufferOffset ) const;
@@ -71,7 +80,8 @@ public:
 
    string   uuid;
    string   loginKey;
-   SerializedKeyValueVector< AssetInfo >   currentAssets;
+   int      platformId;
+   //SerializedKeyValueVector< AssetInfo >   currentAssets;
 };
 
 ///////////////////////////////////////////////////////////////////
@@ -127,7 +137,7 @@ public:
 
    string      uuid;
    string      loginKey;
-   AssetInfo   asset;
+   string      assetHash;
 };
 
 ///////////////////////////////////////////////////////////////////

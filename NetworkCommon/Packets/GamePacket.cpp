@@ -521,7 +521,9 @@ PacketGameplayRawData::~PacketGameplayRawData()
 bool  PacketGameplayRawData::SerializeIn( const U8* buffer, int& bufferOffset )
 {
    PacketGameToServer::SerializeIn( buffer, bufferOffset );
+   Serialize::In( buffer, bufferOffset, identifier );
    Serialize::In( buffer, bufferOffset, size );
+   Serialize::In( buffer, bufferOffset, dataType );
    Serialize::In( buffer, bufferOffset, index );
    assert( size > 0 && size <= MaxBufferSize );
 
@@ -538,7 +540,9 @@ bool  PacketGameplayRawData::SerializeOut( U8* buffer, int& bufferOffset ) const
    assert( size > 0 && size <= MaxBufferSize );
 
    PacketGameToServer::SerializeOut( buffer, bufferOffset );
+   Serialize::Out( buffer, bufferOffset, identifier );
    Serialize::Out( buffer, bufferOffset, size );
+   Serialize::Out( buffer, bufferOffset, dataType );
    Serialize::Out( buffer, bufferOffset, index );
 
    memcpy( buffer + bufferOffset, data, size );

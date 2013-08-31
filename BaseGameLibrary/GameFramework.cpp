@@ -197,7 +197,7 @@ bool  GameFramework::SendGameData( U32 connectionId, const MarshalledData* data 
    const int MaxSize = PacketGameplayRawData::MaxBufferSize  - sizeof( PacketGatewayWrapper );
 
    return SendRawData< PacketGameplayRawData, DiplodocusGame > 
-      ( data->m_data, data->m_sizeOfData, PacketGameplayRawData::Game, MaxSize, GetServerId(), GetGameProductId(), connectionId, m_connectionManager );
+      ( data->m_data, data->m_sizeOfData, PacketGameplayRawData::Game, MaxSize, GetServerId(), GetGameProductId(), "raw", connectionId, m_connectionManager );
 }
 
 //-----------------------------------------------------

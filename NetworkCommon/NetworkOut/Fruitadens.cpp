@@ -250,7 +250,7 @@ int   Fruitadens :: ProcessInputFunction()
          buffer += numBytesReceived;
          remainingBufferSize -= numBytesReceived;
       }
-   } while( numBytesReceived != SOCKET_ERROR );
+   } while( numBytesReceived != SOCKET_ERROR && remainingBufferSize > 0 );
 
    // error checking
 #if PLATFORM == PLATFORM_WINDOWS

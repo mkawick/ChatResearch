@@ -33,3 +33,17 @@ struct   TimerInfo
    U32   lastTimeMs;
    U32   timerId;
 };
+
+enum PlatformType
+{
+   Platform_None,
+   Platform_ios,
+   Platform_android,
+   Platform_pc,
+   Platform_mac,
+   Platform_vita,
+   Platform_xbox,
+   Platform_blackberry,
+   Platform_wii,
+   Platform_count
+};
