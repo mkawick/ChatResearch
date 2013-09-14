@@ -26,6 +26,16 @@ struct Demographics
 
 };
 
+struct RegisteredProduct
+{
+   string   id; 
+   string   title; 
+   string   description; 
+   string   price; 
+   string   localized_price; 
+   double   number_price;
+};
+
 //-------------------------------------------
 
 class BasicUser
@@ -74,6 +84,30 @@ class Group
    string chatChannel; // the venn diagrap for groups and channels may not be 1-1
    vector< BasicUser > usersInGroup;
 };
+
+struct AssetInfoExtended : public AssetInfo
+{
+   U8*   data;
+   int   size;
+
+   AssetInfoExtended();
+   AssetInfoExtended( const AssetInfo& asset );
+   ~AssetInfoExtended();
+
+   void  operator = ( const AssetInfo& asset );
+   void  operator = ( const AssetInfoExtended& asset );
+
+   void  SetData( const U8* data, int size );
+   void  ClearData();
+   bool  IsDataValid() const { if( data && size ) return true; return false; }
+
+   bool  SerializeIn( const U8* data, int& bufferOffset ) { return false; } // do not serialize
+   bool  SerializeOut( U8* data, int& bufferOffset ) const { return false; }
+
+private:
+   
+
+};
 /*
 
 const char* productNames [] = {
@@ -108,12 +142,14 @@ class UserNetworkEventNotifier
 public:
    virtual void  UserLogin( bool success ) {}
    virtual void  UserLogout() {}
+   virtual void  RequestListOfUserPurchases() {}
+   virtual void  ListOfUserPurchases( const SerializedVector< PurchaseEntry >& purchases, int platformId, bool isCompleteList ) {}
 
    virtual void  UserDemographics( const string& username, const Demographics& userDemographics ) {}
    virtual void  UserWinLoss( const string& username, const WinLoss& userWinLoss ) {}
 
    virtual void  GameData( U16 length, const U8* rawdata ) {}
-   virtual void  AssetData( U32 length, const U8* rawdata, const string& assetHash ) {}
+   virtual void  AssetData( const string& assetHash ) {}
 
    virtual void  FriendsUpdate() {}
    virtual void  FriendOnlineStatusChanged( const string& uuid ) {}
@@ -158,6 +194,15 @@ public:
    void  AddPacket( PacketGameplayRawData * );
    bool  IsDone();
    void  PrepPackage( U8* & data, int& size );
+   void  PrepPackage( AssetInfoExtended& asset );
+
+   int   GetRemainingSize() { 
+      if( packetsOfData.size() > 1 )
+      {
+         return (*packetsOfData.begin())->index * PacketGameplayRawData::MaxBufferSize;// only an estimate
+      }
+      return 0;
+   }
 
    int   numBytes;
    deque< PacketGameplayRawData* > packetsOfData;
@@ -172,23 +217,21 @@ public:
    ~NetworkLayer();
 
    void     Init( const char* serverDNS = "gateway.internal.playdekgames.com" );
-   void     Exit();
-
-   string   GenerateHash( const string& stringThatIWantHashed );
-   
-   bool     IsLoggingIn() const { return m_isLoggingIn; }
-   bool     IsLoggedIn() const { return m_isLoggedIn; }
-
    bool     RegisterCallbackInterface( UserNetworkEventNotifier* _callbacks );
-   string   GetUsername() const { return m_username; }
 
-   bool     SendRawPacket( const char* buffer, int length ) const;
+   void     Exit();
 
    //--------------------------------------------------------------
 
    bool     RequestLogin( const string& username, const string& password, const string& languageCode );
    bool     RequestAccountCreate( const string& username, const string& useremail, const string& password, int languageId, const string& deviceId, const string& gkHash ); // deviceId could be NULL except in andriod world
    bool     RequestLogout() const;
+
+   bool     IsLoggingIn() const { return m_isLoggingIn; }
+   bool     IsLoggedIn() const { return m_isLoggedIn; }   
+   string   GetUsername() const { return m_username; }
+
+   //--------------------------------------------------------------
 
    //--------------------------------------------------------------
 
@@ -221,9 +264,16 @@ public:
 
    //--------------------------------------------------------------
 
+   bool     RequestListOfPurchases( bool userOnly = true ) const;
    bool     RequestListOfStaticAssets( int platformId = Platform_ios );
-   bool     RequestListOfDynamicAssets();
+   bool     RequestListOfDynamicAssets( int platformId = Platform_ios );
    bool     RequestAsset( const string& assetName );
+
+   bool     SendPurchases( const vector< RegisteredProduct >& purchases, int platformId = Platform_ios );
+
+   //--------------------------------------------------------------
+
+   bool     SendRawPacket( const char* buffer, int length ) const;
 
    //--------------------------------------------------------------
    // utility functions
@@ -240,14 +290,24 @@ public:
    bool     GetChannel( int index, ChatChannel& channel );
 
    int      GetNumStaticAssets() const { return m_staticAssets.size(); }
-   bool     GetStaticAssetInfo( int index, AssetInfo& assetHash );
+   bool     GetStaticAssetInfo( int index, AssetInfoExtended& assetInfo );
 
    int      GetNumDynamicAssets() const { return m_dynamicAssets.size(); }
-   bool     GetDynamicAssetInfo( int index, AssetInfo& assetHash );
+   bool     GetDynamicAssetInfo( int index, AssetInfoExtended& assetInfo );
+
+   bool     GetAssetInfo( const string& hash, AssetInfoExtended& asset ) { return GetAsset( hash, asset ); }
+   bool     ClearAssetInfo( const string& hash );
 
    string   GetLocalUUID() { return m_uuid; }
+
+   string   GenerateHash( const string& stringThatIWantHashed );
    
 private:
+
+   void   InputConnected( ChainedInterface * ) {}
+   void   OutputConnected( ChainedInterface * ) {}
+   void   InputRemovalInProgress( ChainedInterface * ) {}
+   void   OutputRemovalInProgress( ChainedInterface * ) {}
 
    // datatypes
    bool  Log( const std::string& text, int priority = 1 ) const { return true; }
@@ -277,23 +337,34 @@ private:
    bool              m_isCreatingAccount;
    U32               m_connectionId;
    string            m_lastLoggedOutTime;
+   int               m_lastRawDataIndex;
 
    mutable U32       m_beginTime, m_endTime;
+
+   int               m_normalSleepTime, m_boostedSleepTime;
+   bool              m_isThreadPerformanceBoosted;
+   time_t            m_timeWhenThreadPerformanceBoosted;
 
    MBerNotifierList  m_callbacks;
    RawDataAccumulator m_rawDataBuffer[ PacketGameplayRawData::NumDataTypes ];
 
-   vector< AssetInfo >  m_staticAssets;
-   vector< AssetInfo >  m_dynamicAssets;
+   vector< AssetInfoExtended >  m_staticAssets;
+   vector< AssetInfoExtended >  m_dynamicAssets;
 
 private:
    bool     SerializePacketOut( BasePacket* packet ) const;// helper
 
    bool     HandlePacketReceived( BasePacket* packetIn );
-   //int      ProcessInputFunction();
+   int      ProcessInputFunction();
    //bool     HandlePacketIn( BasePacket* packetIn );
 
    bool     AddChatChannel( const ChatChannel& channel );
+
+   void     BoostThreadPerformance();
+   void     RestoreNormalThreadPerformance();
+   void     ExpireThreadPerformanceBoost();
+
+   bool     GetAsset( const string& hash, AssetInfoExtended& asset );
 };
 ///////////////////////////////////////////////////////
 

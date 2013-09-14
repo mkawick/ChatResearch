@@ -93,8 +93,9 @@ bool   DiplodocusChat::AddInputChainData( BasePacket* packet, U32 connectionId )
 bool     DiplodocusChat::SendErrorReportToClient( PacketErrorReport::ErrorType error, int connectionId )
 {
    PacketGatewayWrapper* wrapper = new PacketGatewayWrapper;
-   wrapper->connectionId = connectionId;
-   wrapper->pPacket = new PacketErrorReport( error );
+   wrapper->SetupPacket( new PacketErrorReport( error ), connectionId );
+   /*wrapper->connectionId = connectionId;
+   wrapper->pPacket = new PacketErrorReport( error );*/
    AddPacketFromUserConnection( wrapper, connectionId );
 
    return true;
@@ -489,6 +490,7 @@ int   DiplodocusChat::CallbackFunction()
          (*it).second->Update();
       }
       UnlockMutex();
+
    }
 
 

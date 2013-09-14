@@ -58,8 +58,9 @@ bool  DiplodocusGateway::AddInputChainData( BasePacket* packet, U32 connectionId
    if( connIt != m_connectionMap.end() )
    {
       PacketGatewayWrapper* wrapper = new PacketGatewayWrapper;
-      wrapper->connectionId = connectionId;
-      wrapper->pPacket = packet;
+     /* wrapper->connectionId = connectionId;
+      wrapper->pPacket = packet;*/
+      wrapper->SetupPacket( packet, connectionId );
 
       //wrapper->serverType = ServerType_Chat;// we are cheating. we should look at the type of packet and route it appropriately.
       

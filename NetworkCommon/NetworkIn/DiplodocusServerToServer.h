@@ -31,7 +31,7 @@ public:
 
    //---------------------------------------------------
 
-   void     ServerWasIdentified( KhaanServerToServer* khaan );
+   void     ServerWasIdentified( ChainedInterface* khaan );
 
 private:
 

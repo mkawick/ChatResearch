@@ -11,7 +11,7 @@
 #include <time.h>
 #include <string>
 #include <iostream>
-using namespace std;
+
 
 #if PLATFORM != PLATFORM_WINDOWS
 //#include "config.h"
@@ -23,7 +23,7 @@ using namespace std;
 #else
 #endif
 
-
+using namespace std;
 
 void daemonize( const char* PACKAGE_NAME )
 {

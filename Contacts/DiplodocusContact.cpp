@@ -22,12 +22,12 @@ DiplodocusContact::DiplodocusContact( const string& serverName, U32 serverId ): 
 
 //---------------------------------------------------------------
 
-void     DiplodocusContact::ServerWasIdentified( KhaanContact* khaan )
+void     DiplodocusContact::ServerWasIdentified( ChainedInterface* khaan )
 {
    BasePacket* packet = NULL;
    PackageForServerIdentification( m_serverName, m_serverId, m_gameProductId, m_isGame, m_isControllerApp, true, m_isGateway, &packet );
    khaan->AddOutputChainData( packet, 0 );
-   m_serversNeedingUpdate.push_back( khaan->GetServerId() );
+   m_serversNeedingUpdate.push_back( static_cast<InputChainType*>( khaan )->GetServerId() );
 }
 
 //---------------------------------------------------------------
@@ -276,7 +276,10 @@ int      DiplodocusContact::CallbackFunction()
          KhaanContact* khaan = static_cast< KhaanContact* >( interfacePtr );
          if( khaan->GetServerId() == serverId )
          {
-            khaan->Update();
+            if( khaan->Update() == false )
+            {
+               m_serversNeedingUpdate.push_back( serverId );
+            }
          }
       }
    }

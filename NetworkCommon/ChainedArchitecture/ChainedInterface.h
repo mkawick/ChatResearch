@@ -32,6 +32,8 @@ public:
 template <typename Type> 
 class ChainedInterface
 {
+protected:
+   typedef ChainedInterface<Type> ChainType;
 public:
    ChainedInterface();
 
@@ -44,8 +46,10 @@ public:
    void           AddOutputChain( ChainedInterface*, bool recurse = true );
    void           RemoveOutputChain( ChainedInterface*, bool recurse = true );
 
-   virtual void   InputConnected( ChainedInterface * ){}// notification scheme
-   virtual void   OutputConnected( ChainedInterface * ){}// notification scheme
+   virtual void   InputConnected( ChainType * ) {};
+   virtual void   OutputConnected( ChainType * ) {};
+   virtual void   InputRemovalInProgress( ChainType * ) {};
+   virtual void   OutputRemovalInProgress( ChainType * ) {};
 
    // TODO: convert this to a const reference instead
    virtual bool   AddInputChainData( Type t, U32 filingData = -1 ) { return false; }// a false value means that the data was rejected

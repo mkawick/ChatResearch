@@ -1,7 +1,7 @@
 // Diplodocus.cpp
 
 #include <iostream>
-using namespace std;
+
 #include <memory.h>
 #include <stdio.h>
 
@@ -14,7 +14,7 @@ using namespace std;
 #include "Platform.h"
 #include "DataTypes.h"
 #include "Serialize.h"
-
+using namespace std;
 
 // prototypes
 

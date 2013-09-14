@@ -2,12 +2,15 @@
 
 #include "AssetCommon.h"
 #include <time.h>
+#include <set>
+using namespace std;
 
 class DiplodocusAsset;
 class PacketAsset;
 class PacketAsset_GetListOfStaticAssets;
 class PacketAsset_GetListOfDynamicAssets;
 class PacketAsset_RequestAsset;
+class StringBucket;
 
 ///////////////////////////////////////////////////////////////////
 
@@ -24,8 +27,13 @@ class UserAccountAssetDelivery
    };
 
 public:
+   
+   //---------------------------------------
+
    UserAccountAssetDelivery( const UserTicket& ticket );
    ~UserAccountAssetDelivery();
+
+   //---------------------------------------
 
    bool              LoginKeyMatches( const string& loginKey ) const;
    const UserTicket& GetUserTicket() const { return m_userTicket; }
@@ -38,6 +46,10 @@ public:
    bool              LogoutExpired();
    void              Update();
 
+   void              SetupProductFilterNames( const StringBucket& bucket );
+
+   //---------------------------------------
+
 private:
 
    bool              GetListOfStaticAssets( const PacketAsset_GetListOfStaticAssets* packet );
@@ -49,6 +61,7 @@ private:
    bool              m_readyForCleanup;
    DiplodocusAsset*  m_assetManager;
    time_t            m_logoutTime;
+   set< string >     m_productFilterNames;
 };
 
 ///////////////////////////////////////////////////////////////////

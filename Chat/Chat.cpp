@@ -4,8 +4,9 @@
 #include <iostream>
 #include <list>
 #include <vector>
+#if PLATFORM == PLATFORM_WINDOWS
 #pragma warning (disable:4996)
-using namespace std;
+#endif
 
 #include <assert.h>
 
@@ -19,6 +20,7 @@ using namespace std;
 #include <conio.h>
 #endif   
 
+using namespace std;
 //-----------------------------------------------------------------------------
 
 int main( int argc, const char* argv[] )

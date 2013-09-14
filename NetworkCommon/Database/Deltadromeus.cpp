@@ -15,7 +15,7 @@
 #include <boost/algorithm/string/replace.hpp>
 #include <boost/lexical_cast.hpp>
 #include <iostream>
-using namespace std;
+
 
 #include "../Platform.h"
 #include "../Logging/server_log.h"
@@ -26,16 +26,15 @@ using namespace std;
 
 #include <memory.h>
 #include "../DataTypes.h"
-
 #include "../Packets/DbPacket.h"
-
 #include "Deltadromeus.h"
-using namespace Database;
-
 
 #include <my_global.h> // Include this file first to avoid problems
 #include <mysql.h> // MySQL Include File
 #include <errmsg.h> // MySQL Include File
+
+using namespace Database;
+using namespace std;
 
 void  LogEverything( const char* text )
 {

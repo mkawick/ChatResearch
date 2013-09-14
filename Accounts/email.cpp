@@ -12,7 +12,6 @@
 #include <algorithm>
 #include <fstream>
 #include <memory>
-using namespace std;
 
 #include "../NetworkCommon/Platform.h"
 #include "../NetworkCommon/Serialize.h"
@@ -36,6 +35,9 @@ using namespace std;
 #define SOCKET_ERROR -1
 
 #endif
+
+using namespace std;
+
 
 #define LogToFile 1
 ofstream dumpFile;

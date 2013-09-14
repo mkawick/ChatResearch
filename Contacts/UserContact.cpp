@@ -1,12 +1,13 @@
 // UserContact.cpp
 
 #include <string>
-using namespace std;
 
 #include "../NetworkCommon/Packets/BasePacket.h"
 #include "UserContact.h"
 #include "DiplodocusContact.h"
 #include <boost/lexical_cast.hpp>
+
+using namespace std;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 

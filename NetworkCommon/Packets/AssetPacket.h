@@ -11,6 +11,10 @@ struct AssetInfo
    string   version;
    string   beginDate, endDate;
 
+   AssetInfo()
+   {
+      Clear();
+   }
    void  Clear()
    {
       productId = 0;
@@ -109,7 +113,7 @@ public:
 
    string   uuid;
    string   loginKey;
-   SerializedKeyValueVector< AssetInfo >   currentAssets;
+   int      platformId;
 };
 
 ///////////////////////////////////////////////////////////////////

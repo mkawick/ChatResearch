@@ -5,10 +5,11 @@
 #include <string>
 #include <list>
 #include <deque>
-using namespace std;
+
 
 #include "../DataTypes.h"
 #include "../ChainedArchitecture/ChainedThread.h"
+using namespace std;
 
 class    BasePacket;
 struct st_mysql;

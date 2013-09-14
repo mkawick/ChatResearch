@@ -16,6 +16,7 @@
 #include "../DataTypes.h"
 #include "../ServerType.h"
 #include "../ChainedArchitecture/ChainedThread.h"
+#include "../ChainedArchitecture/ChainedInterface.h"
 #include <map>
 
 ////////////////////////////////////////////////////////////////////////////////////////////
@@ -80,14 +81,14 @@ public:
    bool           SendPacketToGateway( BasePacket* packet, U32 connectionId );
    bool           SendErrorToClient( U32 connectionId, PacketErrorReport::ErrorType error );
 
-   virtual void   InputConnected( ChainedInterface * );
-   virtual void   OutputConnected( ChainedInterface * );
-   virtual void   InputRemovalInProgress( ChainedInterface * );
-   virtual void   OutputRemovalInProgress( ChainedInterface * );
+   //void           InputConnected( ChainedInterface * ) {}
+   void           OutputConnected( ChainType * );
+   //void           InputRemovalInProgress( ChainedInterface * ) {}
+   //void           OutputRemovalInProgress( ChainedInterface * ) {}
 
    //---------------------------------------------
 
-   virtual void   ServerWasIdentified( InputChainType* khaan ){}
+   virtual void   ServerWasIdentified( ChainType* khaan ){}
    void           AddGatewayConnection( U32 id ) { m_connectionIdGateway = id; }
    virtual bool   HandleCommandFromGateway( BasePacket* packet, U32 connectionId ) { return false; }
 

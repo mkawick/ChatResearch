@@ -13,9 +13,13 @@ UserAccountAssetDelivery::UserAccountAssetDelivery( const UserTicket& ticket ) :
 {
 }
 
+   //---------------------------------------
+
 UserAccountAssetDelivery::~UserAccountAssetDelivery()
 {
 }
+
+   //---------------------------------------
 
 void  UserAccountAssetDelivery::Update()
 {
@@ -23,12 +27,16 @@ void  UserAccountAssetDelivery::Update()
       return;
 }
 
+   //---------------------------------------
+
 void     UserAccountAssetDelivery::UserLoggedOut()
 {
    m_status = Status_awaiting_cleanup;
    m_readyForCleanup = true;
    time( &m_logoutTime );
 }
+
+   //---------------------------------------
 
 bool     UserAccountAssetDelivery::LogoutExpired()
 {
@@ -44,6 +52,21 @@ bool     UserAccountAssetDelivery::LogoutExpired()
    return false;
 }
 
+   //---------------------------------------
+
+void     UserAccountAssetDelivery::SetupProductFilterNames( const StringBucket& bucket )
+{
+   m_productFilterNames.clear();
+
+   list< string >::const_iterator it = bucket.bucket.begin();
+   while( it != bucket.bucket.end() )
+   {
+      m_productFilterNames.insert( *it++ );
+   }
+}
+
+   //---------------------------------------
+
 bool     UserAccountAssetDelivery::LoginKeyMatches( const string& loginKey ) const
 {
    if( loginKey == m_userTicket.userTicket )
@@ -51,6 +74,7 @@ bool     UserAccountAssetDelivery::LoginKeyMatches( const string& loginKey ) con
 
    return false;
 }
+
 //------------------------------------------------------------------------------------------------
 
 bool     UserAccountAssetDelivery::HandleRequestFromClient( const PacketAsset* packet )
@@ -82,15 +106,17 @@ bool     UserAccountAssetDelivery::GetListOfStaticAssets( const PacketAsset_GetL
    //PacketAsset_GetListOfStaticAssets
    U8 gameProductId = packet->gameProductId;
    vector< string > assetIds;
-   m_assetManager->GetAssetOrganizer()->GetListOfAssets( gameProductId, packet->platformId, assetIds );
+   const AssetOrganizer* assetOrganizer = m_assetManager->GetDynamicAssetOrganizer();
+   assetOrganizer->GetListOfAssets( gameProductId, packet->platformId, assetIds );
 
+   //-----------------------------
 
    PacketAsset_GetListOfStaticAssetsResponse*    response = new PacketAsset_GetListOfStaticAssetsResponse;
    vector< string >::iterator it = assetIds.begin();
    while( it != assetIds.end() )
    {
       const AssetDefinition * asset;
-      bool  found = m_assetManager->GetAssetOrganizer()->FindByHash( *it++ , asset );
+      bool  found = assetOrganizer->FindByHash( *it++ , asset );
       if( found )
       {
          AssetInfo assetInfo;
@@ -105,18 +131,52 @@ bool     UserAccountAssetDelivery::GetListOfStaticAssets( const PacketAsset_GetL
    }
 
    PacketGatewayWrapper* wrapper = new PacketGatewayWrapper;
-   wrapper->connectionId = connectionId;
-   wrapper->pPacket = response;
+   wrapper->SetupPacket( response, connectionId );
    
    m_assetManager->AddOutputChainData( wrapper, connectionId );
-   return false;
+   return true;
 }
 
 //------------------------------------------------------------------------------------------------
 
 bool     UserAccountAssetDelivery::GetListOfDynamicAssets( const PacketAsset_GetListOfDynamicAssets* packet )
 {
-   return false;
+   U32 connectionId = m_userTicket.connectionId;
+   //m_userTicket.
+
+   U8 gameProductId = packet->gameProductId;
+   vector< string > assetIds;
+   const AssetOrganizer* assetOrganizer = m_assetManager->GetDynamicAssetOrganizer();
+   assetOrganizer->GetListOfAssets( packet->platformId, m_productFilterNames, assetIds );
+   // 1) reduce the set of products by device type.
+
+   //-----------------------------
+   PacketAsset_GetListOfDynamicAssetsResponse*    response = new PacketAsset_GetListOfDynamicAssetsResponse;
+   vector< string >::iterator it = assetIds.begin();
+   while( it != assetIds.end() )
+   {
+      const AssetDefinition * asset;
+      bool  found = assetOrganizer->FindByHash( *it++ , asset );
+      if( found )
+      {
+         AssetInfo assetInfo;
+         assetInfo.productId  = gameProductId;
+         assetInfo.assetHash  = asset->hash;
+         assetInfo.version    = asset->version;
+         assetInfo.beginDate  = asset->beginTime;
+         assetInfo.endDate    = asset->endTime;
+
+         response->updatedAssets.insert( assetInfo.assetHash, assetInfo );
+      }
+   }
+
+   PacketGatewayWrapper* wrapper = new PacketGatewayWrapper;
+   wrapper->SetupPacket( response, connectionId );
+   
+   m_assetManager->AddOutputChainData( wrapper, connectionId );
+
+   /// product filter
+   return true;
 }
 
 //------------------------------------------------------------------------------------------------
@@ -128,19 +188,37 @@ bool     UserAccountAssetDelivery::GetAsset( const PacketAsset_RequestAsset* pac
 
    if( m_userTicket.connectionId != 0 )
    {
+      U8* data = NULL;
+      int size = 0;
+
       U32 connectionId = m_userTicket.connectionId;
       const AssetDefinition* asset;
-      bool found = m_assetManager->GetAssetOrganizer()->FindByHash( packet->assetHash, asset );
+      bool found = m_assetManager->GetStaticAssetOrganizer()->FindByHash( packet->assetHash, asset );
+      if( found == false )
+      {
+         found = m_assetManager->GetDynamicAssetOrganizer()->FindByHash( packet->assetHash, asset );
+      }
       if( found )
       {
-         U8* data = asset->fileData;
-         int size = asset->fileSize;
+         data = asset->fileData;
+         size = asset->fileSize;
 
          const int MaxSize = PacketGameplayRawData::MaxBufferSize  - sizeof( PacketGatewayWrapper );
+         cout << "File being sent = " << asset->name << endl;
+         cout << "   path = " << asset->path << endl;
+         cout << "   size = " << asset->fileSize << endl;
 
          return SendRawData< PacketGameplayRawData, DiplodocusAsset > 
             ( data, size, PacketGameplayRawData::Asset, MaxSize, m_assetManager->GetServerId(), asset->productId, asset->hash, connectionId, m_assetManager );
       }
+      else
+      {
+         cout << " Attempt to load unknown file: " << packet->assetHash << endl;
+      }
+   }
+   else
+   {
+      cout << " Attempt to load file but user is not connected: " << packet->assetHash << endl;
    }
 
    return false;

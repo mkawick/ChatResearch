@@ -1,8 +1,9 @@
 // ContactPacket.cpp
 
 #include <string>
-using namespace std;
+
 #include "ContactPacket.h"
+using namespace std;
 
 ///////////////////////////////////////////////////////////////
 

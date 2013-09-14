@@ -1,11 +1,8 @@
 #include <time.h>
 #include <iostream>
-using namespace std;
 
 #include <boost/lexical_cast.hpp>
 #include <boost/algorithm/string/replace.hpp>
-#include <iostream>
-using namespace std;
 
 #include "../NetworkCommon/Utils/Utils.h"
 #include "../NetworkCommon/Utils/TableWrapper.h"
@@ -15,6 +12,7 @@ using namespace std;
 #include "email.h"
 #include "../NetworkCommon/Logging/server_log.h"
 
+using namespace std;
 
 const char* newAccountEmailAddress = "account_create@playdekgames.com";
 

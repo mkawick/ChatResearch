@@ -25,15 +25,28 @@ bool FruitadensLogin::FilterOutwardPacket( BasePacket* packet ) const
 
    assert( m_serverId != 0 );
 
+   //PacketType type = static_cast< PacketType > ( wrapper->pPacket->packetType );
+
    if( packet->packetType == PacketType_ServerToServerWrapper )
+   {
       return true;
+   }
 
    if( packet->packetType == PacketType_Login ) 
    {
-      if( packet->packetSubType == PacketLogin::LoginType_PrepareForUserLogin ||
-         packet->packetSubType == PacketLogin::LoginType_PrepareForUserLogout)
+      PacketType subtype = static_cast< PacketType > ( packet->packetSubType );
+
+      if( subtype == PacketLogin::LoginType_PrepareForUserLogin ||
+         subtype == PacketLogin::LoginType_PrepareForUserLogout)
       {
          return true;
+      }
+      
+      if( subtype == PacketLogin::LoginType_ListOfProductsS2S )
+      {
+         if( m_serverType == ServerType_Asset )
+            return true;
+         return false;
       }
    }
 

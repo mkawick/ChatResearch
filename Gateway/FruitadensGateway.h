@@ -18,6 +18,9 @@ private:
 
    bool     FilterOutwardPacket( BasePacket* packet ) const;
    int      ProcessOutputFunction();
+   void     PostProcessInputPackets( int bytesRead );
+
+   int      ProcessInputFunction();
 };
 
 //-----------------------------------------------------------------------------

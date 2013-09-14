@@ -1,13 +1,16 @@
 #pragma once
 
+#include <set>
 
 //////////////////////////////////////////////////////////////////////////
 
 struct AssetDefinition
 {
+   bool           isLoaded;
+   bool           isLayout;
    unsigned char  productId;
    int            platform;
-   int            priorityType;
+   int            priority;
    string         version;
    string         path;
    string         beginTime;
@@ -15,6 +18,8 @@ struct AssetDefinition
    string         payload;
    string         name;
    string         hash;
+
+   vector< string > filters;
 
    U8*            fileData;
    int            fileSize;
@@ -27,6 +32,8 @@ struct AssetDefinition
    bool  LoadFile();
 
    bool  IsDefinitionComplete();
+
+   bool  IsLoaded() const { return isLoaded; }
    void  Print();
 };
 
@@ -40,17 +47,22 @@ public:
 
    bool  Init( const string& assetManifestFile );
    bool  IsInitialized() const { return m_isInitializedProperly; }
+   bool  IsFullyLoaded() const { return m_allFilesAreNowLoaded; }
 
    bool  Find( const string& name, AssetDefinition*& asset );
    bool  FindByHash( const string& hash, AssetDefinition const *& asset ) const; // returns a reference const... you cannot modify the result.
 
    bool  GetListOfAssets( U8 productId, int platformType, vector< string >& listOfAssetsByHash ) const;
-   
+   bool  GetListOfAssets( int platformId, const set< string >& listOfFilters, vector< string >& listOfAssetsByHash ) const;
+
+   void  Update();
 
 private:
 
    void  AddAssetDefinition( AssetDefinition& asset );
+   bool  ReplaceExistingAssetBasedOnHash( AssetDefinition& asset );
    bool  ParseNextAsset( ifstream& infile, int& lineCount );
+   bool  ParseNextLayout( ifstream& infile, int& lineCount );
    bool  LoadAllFiles();
 
    typedef vector< AssetDefinition >   AssetVector;
@@ -58,6 +70,8 @@ private:
 
    //----------------------------------------
    bool              m_isInitializedProperly;
+   bool              m_allFilesAreNowLoaded;
+   time_t            m_lastFileLoadedTime;
 
    AssetVector       m_assets;
 };

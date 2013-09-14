@@ -8,8 +8,6 @@
 #include <list>
 #include <vector>
 
-using namespace std;
-
 //#include <conio.h>
 #include <assert.h>
 
@@ -35,6 +33,9 @@ using namespace std;
 #include <conio.h>
 #pragma warning (disable:4996)
 #endif
+
+
+using namespace std;
 
 // db.address=10.16.4.44 db.port=3306 db.username=admin db.password=Pz5328!@ db.schema=pleiades
 ////////////////////////////////////////////////////////////////////////

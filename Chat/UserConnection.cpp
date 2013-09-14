@@ -41,8 +41,9 @@ bool     UserConnection::SendChat( const string& message, const string& senderUu
    packet->timeStamp = timeStamp;
 
    PacketGatewayWrapper* wrapper = new PacketGatewayWrapper();
-   wrapper->connectionId = m_connectionId;
-   wrapper->pPacket = packet;
+   wrapper->SetupPacket( packet, m_connectionId );
+  /* wrapper->connectionId = m_connectionId;
+   wrapper->pPacket = packet;*/
 
    m_chatServer->AddPacketFromUserConnection( wrapper, m_connectionId );
 
@@ -84,11 +85,12 @@ bool     UserConnection::HandleInvalidSetup()
      m_packetsIn.pop_front();
    }
 
-   PacketGatewayWrapper* gatewayPacket = new PacketGatewayWrapper;
-   gatewayPacket->connectionId = m_connectionId;
-   gatewayPacket->pPacket = new PacketLogout();
+   PacketGatewayWrapper* wrapper = new PacketGatewayWrapper;
+   wrapper->SetupPacket( new PacketLogout(), m_connectionId );
+   /*gatewayPacket->connectionId = m_connectionId;
+   gatewayPacket->pPacket = new PacketLogout();*/
 
-   m_chatServer->AddPacketFromUserConnection( gatewayPacket, m_connectionId );// the gateway will tell us when the user has been disconnected.
+   m_chatServer->AddPacketFromUserConnection( wrapper, m_connectionId );// the gateway will tell us when the user has been disconnected.
 
    return true;
 }
@@ -371,8 +373,9 @@ bool     UserConnection::SendLoginStatus( bool wasSuccessful )
    loginStatus->wasLoginSuccessful = wasSuccessful;
 
    PacketGatewayWrapper* wrapper = new PacketGatewayWrapper();
-   wrapper->connectionId = m_connectionId;
-   wrapper->pPacket = loginStatus;
+   wrapper->SetupPacket( loginStatus, m_connectionId );
+   /*wrapper->connectionId = m_connectionId;
+   wrapper->pPacket = loginStatus;*/
 
    m_chatServer->AddPacketFromUserConnection( wrapper, m_connectionId );
 
@@ -464,8 +467,9 @@ void     UserConnection::SetupFromLogin( U32 userId, const string& name, const s
 bool     UserConnection::SendPacketToGateway( BasePacket* packet ) const
 {
    PacketGatewayWrapper* wrapper = new PacketGatewayWrapper();
-   wrapper->connectionId = m_connectionId;
-   wrapper->pPacket = packet;
+   wrapper->SetupPacket( packet, m_connectionId );
+  /* wrapper->connectionId = m_connectionId;
+   wrapper->pPacket = packet;*/
 
    m_chatServer->AddPacketFromUserConnection( wrapper, m_connectionId );
    return true;

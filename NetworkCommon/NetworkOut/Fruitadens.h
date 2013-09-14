@@ -51,7 +51,7 @@ protected:
    int            ProcessInputFunction();
    int            ProcessOutputFunction();
 
-   void           PostProcessPackets( int bytesRead );
+   virtual void   PostProcessInputPackets( int bytesRead );
 
    virtual bool   HandlePacketReceived( BasePacket* packetIn );
 
@@ -80,7 +80,13 @@ protected:
    U32                  m_numPacketsReceived; // tracking only.. no other purpose
 
    U32                  m_receiveBufferSize;
+   U32                  m_receiveBufferOffset;
    U8*                  m_receiveBuffer;
+
+   enum { OverflowBufferSize = 12*1024 };
+
+   U8       m_overflowBuffer[ OverflowBufferSize ];
+   int      m_bytesInOverflow;
 };
 
 //-------------------------------------------------------------------------

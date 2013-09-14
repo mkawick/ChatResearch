@@ -6,7 +6,6 @@
 #include <vector>
 #include <deque>
 #include <iomanip>
-using namespace std;
 
 #include "ChatChannelManager.h"
 #include "DiplodocusChat.h"
@@ -21,6 +20,9 @@ using namespace std;
 #include "../NetworkCommon/Packets/ChatPacket.h"
 #include "../NetworkCommon/Packets/ServerToServerPacket.h"
 #include "../NetworkCommon/Packets/PacketFactory.h"
+
+
+using namespace std;
 
 DiplodocusChat*     ChatChannelManager::m_chatServer = NULL;
 //////////////////////////////////////////////////////////////////////////////////

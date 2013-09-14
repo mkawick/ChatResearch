@@ -39,7 +39,7 @@ public:
    void     AddTimer( U32 timerId, U32 callbackTimeMs = 100 ); // timers must be unique
    void     InputRemovalInProgress( ChainedInterface* chainedInput );
    void     InputConnected( ChainedInterface* chainedInput );
-   void     ServerWasIdentified( KhaanGame* khaan );
+   void     ServerWasIdentified( ChainedInterface* khaan );
 
    //-----------------------------------------------------------------------------
    void     SetDatabaseIdentification( const string& uuid ) { m_gameUuid = uuid; }

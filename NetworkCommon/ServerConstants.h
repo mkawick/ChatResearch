@@ -6,7 +6,7 @@
 const static Range<U32> ConnectionIdExclusion = { 0xFFFFFF00, 0xFFFFFFFF };
 
 const U32   ServerToServerConnectionId = ConnectionIdExclusion.high;
-const static U32 MaxBufferSize = 2048;
+const static U32 MaxBufferSize = 2440;
 
 
 /*
@@ -43,3 +43,11 @@ enum GameProductId
    GameProductId_MONKEYS_FROM_MARS,
    GameProductId_NUM_GAMES 
 };
+
+/*const char* productNames [];
+const char* platformStrings[];*/
+
+int   FindProductId( const char* value );
+int   FindPlatformId( const char* value );
+const char*   FindProductName( int productId );
+const char*   FindPlatformName( int platformId );

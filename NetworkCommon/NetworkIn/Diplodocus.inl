@@ -10,11 +10,8 @@
 #include <event2/thread.h>
 
 #include "../Packets/BasePacket.h"
+#include "../Packets/PacketFactory.h"
 
-#ifndef cout
-#include <iostream>
-using namespace std;
-#endif
 
 #if PLATFORM != PLATFORM_WINDOWS
 //#include <sys/socket.h>
@@ -26,7 +23,11 @@ using namespace std;
 #include <event2/event-config.h>
 #include <stdarg.h>
 #include <errno.h>
+#endif
 
+#ifndef cout
+#include <iostream>
+using namespace std;
 #endif
 
 void	   SetupListenAddress( struct sockaddr_in& ListenAddress, U16 ServerPort );
@@ -248,15 +249,13 @@ template< typename InputChain, typename OutputChain >
 bool     Diplodocus< InputChain, OutputChain >::SendPacketToGateway( BasePacket* packet, U32 connectionId )
 {
    PacketGatewayWrapper* wrapper = new PacketGatewayWrapper();
-   wrapper->connectionId = connectionId;
-   wrapper->pPacket = packet;
+   wrapper->SetupPacket( packet, connectionId );
 
    ChainLinkIteratorType itInputs = m_listOfInputs.begin();
    while( itInputs != m_listOfInputs.end() )// only one output currently supported.
    {
-      ChainedInterface<BasePacket*>* inputPtr = itInputs->m_interface;
-      itInputs++;
-      InputChainType* connection = static_cast< InputChainType* >( inputPtr );
+      ChainLink & chainedInput = *itInputs++;
+      InputChainType* connection = static_cast< InputChainType* >( chainedInput.m_interface );
       if( connection->AddOutputChainData( wrapper, connectionId ) == true )
       {
          LockMutex();
@@ -397,7 +396,10 @@ void  Diplodocus< InputChain, OutputChain >::OnAccept( evconnlistener* listenerO
    
    if( This->m_sendHelloPacket )
    {
-      khaan->AddOutputChainData( new PacketHello(), -1 );
+      PacketGatewayWrapper* wrapper    = new PacketGatewayWrapper;
+      wrapper->SetupPacket( new PacketHello(), -1 );
+
+      khaan->AddOutputChainData( wrapper, -1 );
    }
 
    This->AddClientConnection( khaan );
@@ -590,12 +592,12 @@ void     Diplodocus< InputChain, OutputChain >::SendServerIdentification()
 }
 
 //------------------------------------------------------------------------------------------
-
+/*
 template< typename InputChain, typename OutputChain >
 void  Diplodocus< InputChain, OutputChain >::InputConnected( ChainedInterface * )
 {
    // nothing to do.
-}
+}*/
 
 //------------------------------------------------------------------------------------------
 
@@ -609,9 +611,9 @@ void  Diplodocus< InputChain, OutputChain >::OutputConnected( ChainedInterface *
 
 
 //------------------------------------------------------------------------------------------
-
+/*
 template< typename InputChain, typename OutputChain >
-void  Diplodocus< InputChain, OutputChain >::InputRemovalInProgress( ChainedInterface * )
+void  Diplodocus< InputChain, OutputChain >::InputRemovalInProgress( InputChainType * )
 {
    // nothing to do.
 }
@@ -619,11 +621,11 @@ void  Diplodocus< InputChain, OutputChain >::InputRemovalInProgress( ChainedInte
 //------------------------------------------------------------------------------------------
 
 template< typename InputChain, typename OutputChain >
-void  Diplodocus< InputChain, OutputChain >::OutputRemovalInProgress( ChainedInterface * )
+void  Diplodocus< InputChain, OutputChain >::OutputRemovalInProgress( OutputChainType * )
 {
    // nothing to do.
 }
-
+*/
 //------------------------------------------------------------------------------------------
 
 template< typename InputChain, typename OutputChain >
@@ -677,9 +679,7 @@ bool  SendRawData( const U8* data, int size, int dataType, int maxPacketSize, U3
       responsePacket->dataType         = dataType;
       
       PacketGatewayWrapper* wrapper    = new PacketGatewayWrapper;
-      wrapper->pPacket                 = responsePacket;
-      wrapper->connectionId            = connectionId;
-      wrapper->gameInstanceId          = serverId;
+      wrapper->SetupPacket( responsePacket, connectionId );
 
       if( sender->AddOutputChainData( wrapper, connectionId ) == false )
       {

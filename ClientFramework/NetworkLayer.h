@@ -71,6 +71,11 @@ public:
 
 private:
 
+   void   InputConnected( ChainedInterface * ) {}
+   void   OutputConnected( ChainedInterface * ) {}
+   void   InputRemovalInProgress( ChainedInterface * ) {}
+   void   OutputRemovalInProgress( ChainedInterface * ) {}
+
    // datatypes
    typedef SerializedKeyValueVector< string >      UserNameKeyValue;
    typedef vector< PacketGameIdentification >      GameList;

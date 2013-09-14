@@ -6,6 +6,22 @@
 
 //////////////////////////////////////////////////////////////
 
+class TableSingleColumn
+{
+public:
+   enum Columns
+   {
+      Column_text,
+      Column_end
+   };
+   static const char* const column_names[];
+};
+
+typedef Enigmosaurus <TableSingleColumn> SingleColumnTable;
+
+
+//////////////////////////////////////////////////////////////
+
 class TableUser
 {
 public:
@@ -358,5 +374,26 @@ public:
 };
 
 typedef Enigmosaurus <TableFriendPending> UserFriendPendingTable;
+
+//////////////////////////////////////////////////////////////
+
+class TableProduct
+{
+public:
+   enum Columns
+   {
+      Column_id,
+      Column_product_id,
+      Column_uuid,
+      Column_name,
+      Column_filter_name,
+      Column_begin_date,
+      Column_product_type,
+      Column_notes,
+      Column_end
+   };
+};
+
+typedef Enigmosaurus <TableProduct> ProductTable;
 
 //////////////////////////////////////////////////////////////

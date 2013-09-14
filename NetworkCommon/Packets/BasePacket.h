@@ -9,7 +9,7 @@
 #include <string>
 #include <vector>
 #include <list>
-using namespace std;
+//using namespace std;
 
 ///////////////////////////////////////////////////////////////
 
@@ -30,7 +30,8 @@ enum PacketType
    PacketType_ServerJobWrapper,
    PacketType_ServerInformation,
    PacketType_GatewayInformation, // user logged out, prepare to shutdown, etc.
-   PacketType_ErrorReport
+   PacketType_ErrorReport,
+   PacketType_Cheat
 };
 
 ///////////////////////////////////////////////////////////////
@@ -51,16 +52,37 @@ public:
 
 ///////////////////////////////////////////////////////////////
 
+class DataRow : public vector< string >  
+{
+public:
+   const_reference operator[](size_type _Pos) const{
+      const_reference ref = vector< string >::operator []( _Pos );
+      if( ref == "NULL")
+         return empty;
+      else 
+         return ref;
+   }
+   reference operator[](size_type _Pos){
+      reference ref = vector< string >::operator []( _Pos );
+      if( ref == "NULL")
+         return empty;
+      else 
+         return ref;
+   };
+   string empty;
+};
+
+
 class DynamicDataBucket
 {
 public:
-   typedef vector< string >   DataRow;
    typedef list< DataRow >  DataSet;
 
    bool  SerializeIn( const U8* data, int& bufferOffset );
    bool  SerializeOut( U8* data, int& bufferOffset ) const;
 
-   void  operator = ( const list< list< string > >& copyData );
+   void  operator = ( const list< DataRow >& copyData );
+   void  operator = ( const list< list<string> >& copyData );
    DataSet  bucket;   
 };
 
@@ -133,6 +155,7 @@ public:
    void           push_back( type value ) { m_data.push_back( value ); }
    int            size() const { return static_cast< int >( m_data.size() ); }
    const type&    operator[]( int index ) { return m_data[ index ]; }
+   const type&    operator[]( int index ) const { return m_data[ index ]; }
 
 protected:
    vector< type >    m_data;
@@ -228,7 +251,11 @@ public:
       LoginType_PrepareForUserLogin,
       LoginType_PrepareForUserLogout,
       LoginType_CreateAccount,
-      LoginType_CreateAccountResponse
+      LoginType_CreateAccountResponse,
+      LoginType_RequestListOfPurchases,
+      LoginType_ListOfPurchases,
+      LoginType_ListOfProductsS2S,
+      LoginType_ListOfPurchases_Cheat
    };
 public:
    PacketLogin( int packet_type = PacketType_Login, int packet_sub_type = LoginType_Login ): BasePacket( packet_type, packet_sub_type ) {}
@@ -331,6 +358,65 @@ public:
    string   useremail;
    bool     wasSuccessful;
 };
+
+///////////////////////////////////////////////////////////////
+
+struct PurchaseEntry
+{
+   bool  SerializeIn( const U8* data, int& bufferOffset );
+   bool  SerializeOut( U8* data, int& bufferOffset ) const;
+
+   string   productStoreId; // apple's name for it.
+   string   name;
+   string   price;
+   double   number_price;
+   string   date; // not currently available
+};
+
+//--------------------------------
+
+class PacketRequestListOfUserPurchases : public BasePacket
+{
+public:
+   PacketRequestListOfUserPurchases(): BasePacket( PacketType_Login, PacketLogin::LoginType_RequestListOfPurchases ) {}
+   
+   bool  SerializeIn( const U8* data, int& bufferOffset );
+   bool  SerializeOut( U8* data, int& bufferOffset ) const;
+
+   int   platformId;
+   bool  requestUserOnly;
+};
+
+//--------------------------------
+
+class PacketListOfUserPurchases : public BasePacket
+{
+public:
+   PacketListOfUserPurchases(): BasePacket( PacketType_Login, PacketLogin::LoginType_ListOfPurchases ), isAllProducts( false ) {}
+
+   bool  SerializeIn( const U8* data, int& bufferOffset );
+   bool  SerializeOut( U8* data, int& bufferOffset ) const;
+   
+   int   platformId;
+   bool  isAllProducts;
+   SerializedVector< PurchaseEntry > purchases;
+};
+
+//--------------------------------
+
+class PacketListOfUserProductsS2S : public BasePacket
+{
+public:
+   PacketListOfUserProductsS2S(): BasePacket( PacketType_Login, PacketLogin::LoginType_ListOfProductsS2S ) {}
+
+   bool  SerializeIn( const U8* data, int& bufferOffset );
+   bool  SerializeOut( U8* data, int& bufferOffset ) const;
+   
+   string         uuid;
+   U32            connectionId;
+   StringBucket   products;
+};
+
 
 ///////////////////////////////////////////////////////////////
 
@@ -536,13 +622,22 @@ public:
 class PacketGatewayWrapper : public BasePacket
 {
 public:
-   PacketGatewayWrapper( int packet_type = PacketType_GatewayWrapper, int packet_sub_type = 0  ): BasePacket( packet_type, packet_sub_type ), connectionId( -1 ), pPacket( NULL ) {}
+   PacketGatewayWrapper( int packet_type = PacketType_GatewayWrapper, int packet_sub_type = 0  ): BasePacket( packet_type, packet_sub_type ), connectionId( -1 ), size( 0 ), pPacket( NULL ) {}
 
    bool  SerializeIn( const U8* data, int& bufferOffset );
    bool  SerializeOut( U8* data, int& bufferOffset ) const;
 
+   bool  HeaderSerializeIn( const U8* data, int bufferOffset );// NOTE: we pass by value here because we do not want to modify variables passed in.
+
+   enum { BufferSize=12*1024 };
    U32         connectionId;
+   U16         size;
    BasePacket* pPacket;
+
+   void  SetupPacket( BasePacket* packet, U32 connectionId );
+
+protected:
+   static U8 SerializeBuffer [BufferSize];
 };
 
 ///////////////////////////////////////////////////////////////

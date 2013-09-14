@@ -94,6 +94,24 @@ bool  DynamicDataBucket::SerializeOut( U8* data, int& bufferOffset ) const
 }
 
 
+void  DynamicDataBucket::operator = ( const list< DataRow >& copydata )
+{
+   bucket.clear(); 
+   list< DataRow >::const_iterator    it = copydata.begin();
+   while( it != copydata.end() )
+   {
+      const DataRow& listref = *it++;
+      DataRow::const_iterator rowit = listref.begin();
+
+      bucket.push_back( DataRow() );
+      DataRow& newrow = *bucket.rbegin();
+      while( rowit != listref.end() )
+      {
+         newrow.push_back( *rowit++ );
+      }
+   }
+}
+
 void  DynamicDataBucket::operator = ( const list< list< string > >& copyData )
 {
    bucket.clear(); 
@@ -111,6 +129,7 @@ void  DynamicDataBucket::operator = ( const list< list< string > >& copyData )
       }
    }
 }
+
 
 #ifdef _MEMORY_TEST_
 int BasePacket::m_counter = 0;
@@ -299,6 +318,98 @@ bool  PacketCreateAccountResponse::SerializeOut( U8* data, int& bufferOffset ) c
 }
 
 ///////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////
+
+bool  PurchaseEntry::SerializeIn( const U8* data, int& bufferOffset )
+{
+   Serialize::In( data, bufferOffset, name );
+   Serialize::In( data, bufferOffset, productStoreId );
+   Serialize::In( data, bufferOffset, price );
+   Serialize::In( data, bufferOffset, number_price );
+   Serialize::In( data, bufferOffset, date );
+
+   return true;
+}
+
+bool  PurchaseEntry::SerializeOut( U8* data, int& bufferOffset ) const
+{
+   Serialize::Out( data, bufferOffset, name );
+   Serialize::Out( data, bufferOffset, productStoreId );
+   Serialize::Out( data, bufferOffset, price );
+   Serialize::Out( data, bufferOffset, number_price );
+   Serialize::Out( data, bufferOffset, date );
+
+   return true;
+}
+
+///////////////////////////////////////////////////////////////
+
+bool  PacketRequestListOfUserPurchases::SerializeIn( const U8* data, int& bufferOffset )
+{
+   BasePacket::SerializeIn( data, bufferOffset );
+   Serialize::In( data, bufferOffset, platformId );
+   Serialize::In( data, bufferOffset, requestUserOnly );
+
+   return true;
+}
+
+bool  PacketRequestListOfUserPurchases::SerializeOut( U8* data, int& bufferOffset ) const
+{
+   BasePacket::SerializeOut( data, bufferOffset );
+   Serialize::Out( data, bufferOffset, platformId );
+   Serialize::Out( data, bufferOffset, requestUserOnly );
+
+   return true;
+}
+
+///////////////////////////////////////////////////////////////
+
+bool  PacketListOfUserPurchases::SerializeIn( const U8* data, int& bufferOffset )
+{
+   BasePacket::SerializeIn( data, bufferOffset );
+   Serialize::In( data, bufferOffset, platformId );
+   Serialize::In( data, bufferOffset, isAllProducts );
+   Serialize::In( data, bufferOffset, purchases );
+
+   return true;
+}
+
+bool  PacketListOfUserPurchases::SerializeOut( U8* data, int& bufferOffset ) const
+{
+   BasePacket::SerializeOut( data, bufferOffset );
+   Serialize::Out( data, bufferOffset, platformId );
+   Serialize::Out( data, bufferOffset, isAllProducts );
+   Serialize::Out( data, bufferOffset, purchases );
+
+   return true;
+}
+
+///////////////////////////////////////////////////////////////
+
+bool  PacketListOfUserProductsS2S::SerializeIn( const U8* data, int& bufferOffset )
+{
+   BasePacket::SerializeIn( data, bufferOffset );
+   Serialize::In( data, bufferOffset, uuid );
+   Serialize::In( data, bufferOffset, connectionId );
+   Serialize::In( data, bufferOffset, products );
+
+   return true;
+}
+
+bool  PacketListOfUserProductsS2S::SerializeOut( U8* data, int& bufferOffset ) const
+{
+   BasePacket::SerializeOut( data, bufferOffset );
+   Serialize::Out( data, bufferOffset, uuid );
+   Serialize::Out( data, bufferOffset, connectionId );
+   Serialize::Out( data, bufferOffset, products );
+
+   return true;
+}
+
+
+///////////////////////////////////////////////////////////////
+
+///////////////////////////////////////////////////////////////
 
 bool  PacketPrepareForUserLogin::SerializeIn( const U8* data, int& bufferOffset )
 {
@@ -455,6 +566,23 @@ bool  PacketUserStateChange::SerializeOut( U8* data, int& bufferOffset ) const
 }
 
 ///////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////
+
+U8 PacketGatewayWrapper::SerializeBuffer[ PacketGatewayWrapper::BufferSize ];
+void  PacketGatewayWrapper::SetupPacket( BasePacket* packet, U32 connId )
+{
+   size = 0;
+   int tempSize = 0;
+   packet->SerializeOut( SerializeBuffer, tempSize ); // get the size info
+   size = tempSize;
+   pPacket = packet;
+   connectionId = connId;
+
+   gameInstanceId = packet->gameInstanceId;
+   gameProductId = packet->gameProductId;
+   //packet->
+}
 
 ///////////////////////////////////////////////////////////////
 
@@ -462,6 +590,7 @@ bool  PacketGatewayWrapper::SerializeIn( const U8* data, int& bufferOffset )
 {
    BasePacket::SerializeIn( data, bufferOffset );
    Serialize::In( data, bufferOffset, connectionId );
+   Serialize::In( data, bufferOffset, size );
 
    delete pPacket; pPacket = NULL;
    PacketFactory packetFactory;
@@ -476,10 +605,23 @@ bool  PacketGatewayWrapper::SerializeIn( const U8* data, int& bufferOffset )
 
 ///////////////////////////////////////////////////////////////
 
+bool  PacketGatewayWrapper::HeaderSerializeIn( const U8* data, int bufferOffset )
+{
+   BasePacket::SerializeIn( data, bufferOffset );
+   Serialize::In( data, bufferOffset, connectionId );
+   Serialize::In( data, bufferOffset, size );
+
+   delete pPacket; pPacket = NULL;
+   return true;
+}
+
+///////////////////////////////////////////////////////////////
+
 bool  PacketGatewayWrapper::SerializeOut( U8* data, int& bufferOffset ) const
 {
    BasePacket::SerializeOut( data, bufferOffset );   
    Serialize::Out( data, bufferOffset, connectionId );
+   Serialize::Out( data, bufferOffset, size );
 
    if( pPacket == NULL )
    {

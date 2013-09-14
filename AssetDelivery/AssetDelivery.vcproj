@@ -250,6 +250,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\NetworkCommon\ServerConstants.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\NetworkCommon\ServerConstants.h"
 				>
 			</File>
@@ -334,6 +338,14 @@
 				</File>
 				<File
 					RelativePath="..\NetworkCommon\Packets\ChatPacket.h"
+					>
+				</File>
+				<File
+					RelativePath="..\NetworkCommon\Packets\CheatPacket.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\NetworkCommon\Packets\CheatPacket.h"
 					>
 				</File>
 				<File

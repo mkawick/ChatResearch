@@ -6,61 +6,83 @@
 #include "AssetOrganizer.h"
 
 #include <iostream>
-using namespace std;
 #include <time.h>
 
+using namespace std;
+
 ///////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////
 
-DiplodocusAsset::DiplodocusAsset( const string& serverName, U32 serverId ): Diplodocus< KhaanAsset >( serverName, serverId, 0,  ServerType_Contact ), m_assets( NULL )
+DiplodocusAsset::DiplodocusAsset( const string& serverName, U32 serverId ): Diplodocus< KhaanAsset >( serverName, serverId, 0,  ServerType_Contact ), m_staticAssets( NULL ), m_dynamicAssets( NULL )
 /*, 
                         //m_initializationStage( InitializationStage_Begin ),
                         m_queryPeriodicity( 10000 ),
                         m_isExecutingQuery( false )*/
 {
     //time( &m_lastTimeStamp );
+   SetSleepTime( 100 );
 }
 
 DiplodocusAsset :: ~DiplodocusAsset()
 {
-   delete m_assets;
+   delete m_staticAssets;
+   delete m_dynamicAssets;
 }
 //---------------------------------------------------------------
 
-void     DiplodocusAsset::ServerWasIdentified( KhaanAsset* khaan )
+void     DiplodocusAsset::ServerWasIdentified( ChainedInterface* khaan )
 {
    BasePacket* packet = NULL;
    PackageForServerIdentification( m_serverName, m_serverId, m_gameProductId, m_isGame, m_isControllerApp, true, m_isGateway, &packet );
    khaan->AddOutputChainData( packet, 0 );
-   m_serversNeedingUpdate.push_back( khaan->GetServerId() );
+   m_serversNeedingUpdate.push_back( static_cast<InputChainType*>( khaan )->GetServerId() );
 }
 
 //---------------------------------------------------------------
 
-bool     DiplodocusAsset::SetIniFilePath( const string& assetPath, const string& assetDictionary )
+string AssembleFullPath( const string& path, const string& fileName )
 {
-   if( m_assets )
-   {
-      delete m_assets;
-   }
-   m_assets = new AssetOrganizer();
+   string finalPath = path;
 
-   string   finalPath = assetPath;
-
-   char endValue = *assetPath.rbegin() ;   
+   char endValue = *path.rbegin() ;   
    if( endValue != '/' && endValue != '\\' ) // the back slash is windows support. Obviously will not work on linux.
    {
-      char beginValue = *assetDictionary.begin(); // note... different value from above
+      char beginValue = *fileName.begin(); // note... different value from above
       if( beginValue != '/' && beginValue != '\\' )
       {
          finalPath += '/';
       }
    }
 
-   finalPath += assetDictionary;
+   finalPath += fileName;
    std::replace( finalPath.begin(), finalPath.end(), '\\', '/'); // convert everything to forward slashes
 
-   bool success = m_assets->Init( finalPath );
+   return finalPath;
+}
+
+bool     DiplodocusAsset::SetIniFilePath( const string& assetPath, const string& assetDictionary, const string& dynamicAssetDictionary )
+{
+   if( m_staticAssets )
+   {
+      delete m_staticAssets;
+   }
+   m_staticAssets = new AssetOrganizer();
+
+   if( m_dynamicAssets )
+   {
+      delete m_dynamicAssets;
+   }
+   m_dynamicAssets = new AssetOrganizer();
+
+   string   finalPath = AssembleFullPath( assetPath, assetDictionary );
+
+   bool success = m_staticAssets->Init( finalPath );
+
+   //-----------------------------------------------
+
+   finalPath = AssembleFullPath( assetPath, dynamicAssetDictionary );
+
+   success &= m_dynamicAssets->Init( finalPath );
 
    return success;
    
@@ -79,8 +101,8 @@ bool     DiplodocusAsset::AddInputChainData( BasePacket* packet, U32 connectionI
    if( packet->packetType == PacketType_ServerJobWrapper )
    {
       PacketCleaner cleaner( packet );
-      HandlePacketFromOtherServer( packet, connectionId );
-      return true;
+      return HandlePacketFromOtherServer( packet, connectionId );
+      //return true;
    }
 
    if( packet->packetType == PacketType_GatewayWrapper )
@@ -178,6 +200,10 @@ bool  DiplodocusAsset::HandlePacketFromOtherServer( BasePacket* packet, U32 conn
       case PacketLogin::LoginType_PrepareForUserLogout:
          DisconnectUser( static_cast< PacketPrepareForUserLogout* >( unwrappedPacket ) );
          return true;
+
+      case PacketLogin::LoginType_ListOfProductsS2S:
+         StoreUserProductsOwned( static_cast< PacketListOfUserProductsS2S* >( unwrappedPacket ) );
+         return true;
       }
    }
  /*  else if( unwrappedPacket->packetType == PacketType_Contact)
@@ -244,6 +270,22 @@ bool     DiplodocusAsset::DisconnectUser( PacketPrepareForUserLogout* loginPacke
    return true;
 }
 
+//---------------------------------------------------------------
+
+bool     DiplodocusAsset::StoreUserProductsOwned( PacketListOfUserProductsS2S* productNamesPacket )
+{
+   string uuid = productNamesPacket->uuid;
+   U64 hashForUser = GenerateUniqueHash( uuid );
+
+   Threading::MutexLock locker( m_mutex );
+   UAADMapIterator it = m_userTickets.find( hashForUser );
+   if( it == m_userTickets.end() )
+      return false;
+
+   it->second.SetupProductFilterNames( productNamesPacket->products );
+
+   return true;
+}
 
 //---------------------------------------------------------------
 
@@ -269,7 +311,7 @@ bool     DiplodocusAsset::AddOutputChainData( BasePacket* packet, U32 connection
             interfacePtr->AddOutputChainData( packet );
             //khaan->Update();// the gateway may not have a proper connection id.
 
-            m_serversNeedingUpdate.push_back( khaan->GetServerId() );
+            AddServerNeedingUpdate( khaan->GetServerId() );
             return true;
          }
       }
@@ -293,16 +335,30 @@ bool     DiplodocusAsset::AddOutputChainData( BasePacket* packet, U32 connection
    return false;
 }
 
+void     DiplodocusAsset::AddServerNeedingUpdate( U32 serverId )
+{
+   deque< U32 >::iterator it = m_serversNeedingUpdate.begin();
+   while( it != m_serversNeedingUpdate.end() )
+   {
+      if( *it == serverId )
+         return;
+      it++;
+   }
+   m_serversNeedingUpdate.push_back( serverId );
+
+}
+
 //---------------------------------------------------------------
 
 int      DiplodocusAsset::CallbackFunction()
 {
    while( m_serversNeedingUpdate.size() )
    {
+      Threading::MutexLock locker( m_mutex );
+
       U32 serverId = m_serversNeedingUpdate.front();
       m_serversNeedingUpdate.pop_front();
-
-      Threading::MutexLock locker( m_mutex );
+      
       ChainLinkIteratorType itInputs = m_listOfInputs.begin();
       while( itInputs != m_listOfInputs.end() )
       {
@@ -311,11 +367,23 @@ int      DiplodocusAsset::CallbackFunction()
          KhaanAsset* khaan = static_cast< KhaanAsset* >( interfacePtr );
          if( khaan->GetServerId() == serverId )
          {
-            khaan->Update();
+            if( khaan->Update() == false )
+            {
+               AddServerNeedingUpdate( serverId );// more updating needed
+            }
          }
       }
    }
    UpdateAllConnections();
+
+   if( m_staticAssets->IsFullyLoaded() == false )
+   {
+      m_staticAssets->Update();
+   }
+   if( m_dynamicAssets->IsFullyLoaded() == false )
+   {
+      m_dynamicAssets->Update();
+   }
 
    /*ContinueInitialization();*/
    // check for new friend requests and send a small list of notifications

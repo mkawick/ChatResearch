@@ -403,7 +403,7 @@ public:
 
    void  Prep( U16 numBytes, const U8* ptr, int packetIndex );
 
-   enum { MaxBufferSize = 1007-sizeof( PacketGameToServer) }; // 1024 - the other variables
+   enum { MaxBufferSize = 1008-sizeof( PacketGameToServer) }; // 1024 - the other variables
    enum DataType{ Game, Asset, NumDataTypes };
    string   identifier;
    U16      size;

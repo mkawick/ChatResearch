@@ -8,4 +8,8 @@ public:
    KhaanAsset() : KhaanServerToServer() {}
    KhaanAsset( int id, bufferevent* be ) : KhaanServerToServer( id, be ) {}
 
+private:
+   void	UpdateInwardPacketList();
+   void	UpdateOutwardPacketList();
+
 };

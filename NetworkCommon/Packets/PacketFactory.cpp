@@ -3,8 +3,6 @@
 #include <algorithm>
 #include <iostream>
 #include <map>
-using namespace std;
-
 #include <assert.h>
 
 #include "../DataTypes.h"
@@ -18,6 +16,7 @@ using namespace std;
 #include "GamePacket.h"
 #include "ServerToServerPacket.h"
 
+using namespace std;
 
 PacketFactory::PacketFactory(){}
 
@@ -92,6 +91,10 @@ bool	PacketFactory::Parse( const U8* bufferIn, int& bufferOffset, BasePacket** p
          error->SerializeIn( bufferIn, bufferOffset );
          *packetOut = error;
          return true;
+      }
+   case PacketType_Cheat:
+      {
+         return ParseCheat( bufferIn, bufferOffset, &firstPassParse, packetOut );
       }
    }
 
@@ -206,6 +209,27 @@ bool  PacketFactory::ParseLogin( const U8* bufferIn, int& bufferOffset, const Ba
             *packetOut = SerializeIn< PacketCreateAccountResponse >( bufferIn, bufferOffset );
          }
          return true;
+
+      case PacketLogin::LoginType_RequestListOfPurchases:
+         {
+            *packetOut = SerializeIn< PacketRequestListOfUserPurchases >( bufferIn, bufferOffset );
+         }
+         return true;
+      case PacketLogin::LoginType_ListOfPurchases:
+         {
+            *packetOut = SerializeIn< PacketListOfUserPurchases >( bufferIn, bufferOffset );
+         }
+         return true;
+      case PacketLogin::LoginType_ListOfProductsS2S:
+         {
+            *packetOut = SerializeIn< PacketListOfUserProductsS2S >( bufferIn, bufferOffset );
+         }
+         return true;
+     /* case PacketLogin::LoginType_ListOfPurchases_Cheat:
+         {
+            *packetOut = SerializeIn< PacketSubmitListOfUserPurchases_Cheat >( bufferIn, bufferOffset );
+         }
+         return true;*/
    }
 
    return false;
@@ -782,6 +806,23 @@ bool     PacketFactory::ParseGame( const U8* bufferIn, int& bufferOffset, const 
 
    return false;
 }
+
+//-----------------------------------------------------------------------------------------
+
+bool     PacketFactory::ParseCheat( const U8* bufferIn, int& bufferOffset, const BasePacket* firstPassParse, BasePacket** packetOut ) const
+{
+   switch( firstPassParse->packetSubType )
+   {
+   case PacketGameToServer::GamePacketType_LoginToServer:
+      {
+         *packetOut = SerializeIn< PacketGameToServer >( bufferIn, bufferOffset );
+      }
+      return true;
+   }
+   return false;
+}
+
+
 
 //-----------------------------------------------------------------------------------------
 

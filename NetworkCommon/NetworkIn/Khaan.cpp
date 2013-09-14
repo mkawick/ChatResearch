@@ -100,8 +100,11 @@ bool	Khaan :: Update()
    // I think that this makes sense
    CleanupAllEvents();
 
-   if( m_packetsIn.size() || m_packetsOut.size() )// we didn't finish
+   if( m_packetsOut.size() || m_packetsIn.size() )// we didn't finish
+   {
+      cout << "Remaining packet out count: " << m_packetsOut.size() << endl;
       return false;
+   }
 
    return true;
 }
@@ -140,6 +143,23 @@ void	Khaan :: UpdateInwardPacketList()
 
 //------------------------------------------------------------------------------
 
+int	Khaan :: SendData( const U8* buffer, int length )
+{
+   if( m_useLibeventToSend )
+   {
+      // I cannot get the socket to write the first time... it alsways writes the second time and after.. 20 hours of research later...
+      bufferevent*	bev = GetBufferEvent();
+      struct evbuffer* outputBuffer = bufferevent_get_output( bev );
+      return evbuffer_add( outputBuffer, buffer, length );
+   }
+
+
+   return send( m_socketId, (const char* )buffer, length, 0 );
+
+}
+
+//------------------------------------------------------------------------------
+
 void	Khaan :: UpdateOutwardPacketList()
 {
    if( m_packetsOut.size() == 0 )
@@ -156,7 +176,16 @@ void	Khaan :: UpdateOutwardPacketList()
    for( int i=0; i< num; i++ )
    {
       BasePacket* packet = m_packetsOut.front();
+
+      int temp = bufferOffset;
+      U16 sizeOfLastWrite = 0;
+      bufferOffset += sizeof( sizeOfLastWrite );// reserve space
       packet->SerializeOut( buffer, bufferOffset ); 
+
+      sizeOfLastWrite = bufferOffset - temp - sizeof( sizeOfLastWrite );// set aside two bytes
+      Serialize::Out( buffer, temp, sizeOfLastWrite );// write in the size
+
+     // packet->SerializeOut( buffer, bufferOffset ); 
       if( bufferOffset < (int)( MaxBufferSize - sizeof( BasePacket ) ) )// do not write past the end
       {
          factory.CleanupPacket( packet );
@@ -176,20 +205,8 @@ void	Khaan :: UpdateOutwardPacketList()
       static int numBytes = 0;
       numBytes += length;
 
-      int result = 0;
-      if( m_useLibeventToSend )
-      {
-         // I cannot get the socket to write the first time... it alsways writes the second time and after.. 20 hours of research later...
-         bufferevent*	bev = GetBufferEvent();
-         struct evbuffer* outputBuffer = bufferevent_get_output( bev );
-         result = evbuffer_add( outputBuffer, buffer, length );
-      }
-      else
-      {
-         result = send( m_socketId, (const char* )buffer, length, 0 );
-      }
-
-      
+      int result = SendData( buffer, length );
+      cout << "Send result: " << result << endl;
    }
 }
 

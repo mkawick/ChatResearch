@@ -1,11 +1,12 @@
 
 #include <time.h>
 #include <iostream>
-using namespace std;
 
 #include "../NetworkCommon/Utils/Utils.h"
 #include "../NetworkCommon/Utils/TableWrapper.h"
 #include "BlankUUIDQueryHandler.h"
+
+using namespace std;
 
 ///////////////////////////////////////////////////////////////////////////////////////////
 

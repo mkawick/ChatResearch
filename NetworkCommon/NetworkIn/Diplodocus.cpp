@@ -2,8 +2,6 @@
 
 
 #include <iostream>
-using namespace std;
-
 #include <memory.h>
 
 #include "../Platform.h"
@@ -11,11 +9,13 @@ using namespace std;
 #include "../Serialize.h"
 #include "Diplodocus.h"
 
+using namespace std;
 
 #if PLATFORM == PLATFORM_WINDOWS
 #pragma comment( lib, "ws2_32.lib" )
-#endif
 #pragma comment(lib, "libevent.lib")
+#endif
+
 
 
 event_base* BasePacketChainHandler::m_LibEventInstance = NULL;

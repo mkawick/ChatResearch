@@ -7,7 +7,6 @@
 #include <iostream>
 #include <iomanip>
 #include <fstream>
-using namespace std;
 
 #include <ctime>
 #include <time.h>
@@ -28,6 +27,7 @@ using namespace std;
    #include <fcntl.h>
 #endif
 
+using namespace std;
 //-------------------------------------------------------------------------
 
 string   GenerateUUID( U32 xorValue )
@@ -52,7 +52,7 @@ string   GenerateUUID( U32 xorValue )
 
 //-------------------------------------------------------------------------
 
-U64      GenerateUniqueHash( const std::string& str )
+U64      GenerateUniqueHash( const std::string& str, int maxHexLen )
 {
    size_t seed = 1027; // a good starting point
    std::string randomtext("playdek.games"); // add an unpredictable starting point
@@ -62,8 +62,18 @@ U64      GenerateUniqueHash( const std::string& str )
    boost::hash_combine( seed, randomtext );
    temp = ( temp << 32 ) + seed;
 
+   if( maxHexLen < 16 )
+   {
+      U64 mask = -1;
+      int numToStrip = ( 16 - maxHexLen ) * 4;// 4 bits per hex char
+      mask <<= numToStrip; // push off the most significant which are the most likely to be similar.
+      mask >>= numToStrip;
+      temp &= mask;
+   }
+
    return temp;
 }
+
 
 //-------------------------------------------------------------------------
 //-------------------------------------------------------------------------
@@ -105,7 +115,7 @@ string GetDateInUTC( int diffDays, int diffHours, int diffMinutes )
    }
 
    string strMonth = Get0PrefixedValue( now->tm_mon + 1 ) ;
-   string strDay = Get0PrefixedValue( now->tm_mday + 1 );
+   string strDay = Get0PrefixedValue( now->tm_mday );
    string strHour = Get0PrefixedValue( now->tm_hour );
    string strMin = Get0PrefixedValue( now->tm_min );
    string strSec = Get0PrefixedValue( now->tm_sec );

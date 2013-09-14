@@ -2,7 +2,7 @@
 
 #include <assert.h>
 #include <iostream>
-using namespace std;
+
 
 #include <boost/lexical_cast.hpp>
 #include "../NetworkCommon/Version.h"
@@ -19,6 +19,7 @@ using namespace std;
 #include "GameFramework.h"
 #include "FruitadensServerToServer.h"
 
+using namespace std;
 
 //-----------------------------------------------------
 //-----------------------------------------------------
@@ -229,8 +230,7 @@ bool  GameFramework::InformClientWhoThisServerIs( U32 connectionId )
    id->gameProductId = GetGameProductId();
 
    PacketGatewayWrapper* wrapper = new PacketGatewayWrapper;
-   wrapper->pPacket = id;
-   wrapper->connectionId = connectionId;
+   wrapper->SetupPacket( id, connectionId );
 
    // it is likely that we don not have any information about this client.. that is, we do not have the connection id
    // stored in the connectionManager here.

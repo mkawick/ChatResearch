@@ -9,6 +9,22 @@
 
 class PacketDbQuery;
 class PacketDbQueryResult;
+class PacketCheat;
+
+//-----------------------------------------------------------------------------------------
+
+struct ProductInfo
+{
+   ProductInfo() : productId( 0 ), productType( 0 ) {}
+   int      productId;
+   string   uuid;
+   string   name;
+   string   filterName;
+   string   Begindate;
+   int      productType;
+
+   double   price;
+};
 
 //-----------------------------------------------------------------------------------------
 
@@ -23,18 +39,24 @@ struct ConnectionToUser
    };
 
    ConnectionToUser( const string& name, const string& pword, const string& key ) : username( name ), passwordHash( pword ), loginKey( key ), status( LoginStatus_Pending ), active( true ), loggedOutTime( 0 ) {}
-   string   id;
-   string   username;
-   string   passwordHash;
-   string   email;
-   string   userUuid;
-   string   loginKey;
-   string   lastLoginTime;
+   string               id;
+   string               username;
+   string               passwordHash;
+   string               email;
+   string               userUuid;
+   string               loginKey;
+   string               lastLoginTime;
+   //U32                  
 
-   LoginStatus status;
-   U8       gameProductId;
-   bool     active;
-   time_t   loggedOutTime;
+   vector< string >     productFilterNames;
+   vector< ProductInfo > productsWaitingForInsertionToDb;
+   LoginStatus          status;
+   U8                   gameProductId;
+   bool                 active;
+   time_t               loggedOutTime;
+
+   void  AddProductFilterName( const string& text );
+   int   FindProductFilterName( const string& text ); 
 };
 
 //---------------------------------------------------------------
@@ -146,6 +168,7 @@ public:
       QueryType_UpdateLastLoggedInTime,
       QueryType_UpdateLastLoggedOutTime,
       QueryType_UserListOfGame,
+      QueryType_UserListOfUserProducts,
 
       QueryType_LookupUserNameForInvalidName,
       QueryType_LookupUserByUsernameOrEmail,
@@ -153,12 +176,20 @@ public:
       QueryType_UpdateUseraccount,
       QueryType_CreateUseraccount,
       QueryType_UpdatePendingUseraccount,
-      QueryType_CreatePendingUseraccount
+      QueryType_CreatePendingUseraccount,
+
+
+      QueryType_LoadProductInfo,
+      QueryType_AddProductInfo,
+      QueryType_GetSingleProductInfo,
+      QueryType_UpdateProductFileInfo,
+      QueryType_AddProductInfoToUser,
+      QueryType_GetProductListForUser
    };
 
 public:
    DiplodocusLogin( const string& serverName, U32 serverId );
-   void     ServerWasIdentified( KhaanLogin* khaan );
+   void     ServerWasIdentified( ChainedInterface* khaan );
 
    bool     AddInputChainData( BasePacket* packet, U32 connectionId );
    bool     AddOutputChainData( BasePacket* packet, U32 connectionId );
@@ -167,6 +198,10 @@ private:
 
    int      CallbackFunction();
    void     RemoveOldConnections();
+
+   void     LoadInitializationData();
+   void     StoreAllProducts( PacketDbQueryResult* dbResult );
+   void     StoreSingleProduct( PacketDbQueryResult* dbResult );
 
    bool     AddQueryToOutput( PacketDbQuery* query );
    bool     LogUserIn( const string& username, const string& password, const string& loginKey, U8 gameProductId, U32 connectionId );
@@ -186,6 +221,7 @@ private:
    bool     ForceUserLogoutAndBlock( U32 connectionId );
    bool     CreateAccount( const char* username, const char* emailAddress, const char* password, int userId, int gameId );
    bool     RequestListOfGames( U32 connectionId, const string& userUuid );
+   bool     RequestListOfProducts( U32 connectionId, const string& userUuid );
    bool     SendListOfGamesToGameServers( U32 connectionId, const KeyValueVector& kv_array );
 
    bool     UpdateLastLoggedOutTime( U32 connectionId );
@@ -193,6 +229,21 @@ private:
 
    bool     SendLoginStatusToOtherServers( const string& username, const string& userUuid, U32 connectionId, U8 gameProductId, const string& lastLoginTime, bool isActive, const string& email, const string& passwordHash, const string& userId,  
                                                     const string& loginKey, bool isLoggedIn, bool wasDisconnectedByError );
+   bool     SendListOfUserProductsToOtherServers( const string& userUuid, U32 connectionId, const vector< string >& productNames );
+
+   bool     StoreUserPurchases( U32 connectionId, const PacketListOfUserPurchases* purchase );
+   bool     RequestListOfPurchases( U32 connectionId, const PacketRequestListOfUserPurchases* purchase );
+   bool     HandleCheats( U32 connectionId, const PacketCheat* cheat );
+   
+   void     WriteProductToUserRecord( const string& productFilterName, const string& uuid, double pricePaid );
+   void     StoreListOfUsersProductsFromDB( U32 connectionId, PacketDbQueryResult* dbResult );
+   void     AddGameProductIdToUserProducts( U32 connectionId );
+   void     SendListOfUserProductsToAssetServer( U32 connectionId );
+   void     AddNewProductToDb( const PurchaseEntry& product );
+   bool     UpdateProductFilterName( int index, const string& newFilterName );
+   void     RequestListOfProductsFromClient( U32 connectionId );
+   void     SendProductListResultToUser( U32 connectionId, PacketDbQueryResult* dbResult );
+   int      FindProductByName( const string& name );
 
    //bool     SendPacketToGateway( BasePacket*, U32 connectionId );
    //bool     SendErrorToClient( U32 connectionId, PacketErrorReport::ErrorType );
@@ -210,14 +261,19 @@ private:
    typedef pair< U32, CreateAccountResultsAggregator*>   UserCreateAccountPair;
    typedef UserCreateAccountMap::iterator                UserCreateAccountIterator;
 
-   UserConnectionMap    m_userConnectionMap;
-   UserCreateAccountMap m_userAccountCreationMap;
+   typedef vector< ProductInfo >             ProductList;
+
+   UserConnectionMap          m_userConnectionMap;
+   UserCreateAccountMap       m_userAccountCreationMap;
+   bool                       m_isInitialized, m_isInitializing;
 
    bool                       IsUserConnectionValid( U32 id );
    ConnectionToUser*          GetUserConnection( U32 id );
    void                       ReinsertUserConnection( int oldIndex, int newIndex );
    bool                       AddUserConnection( UserConnectionPair );
    bool                       RemoveUserConnection( U32 id );
+
+   ProductList                m_productList;
 
    void                       FinalizeLogout( U32 connectionId, bool wasDisconnectedByError );
 

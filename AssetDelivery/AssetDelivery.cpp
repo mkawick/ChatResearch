@@ -35,6 +35,7 @@ int main( int argc, const char* argv[] )
    string listenForS2SAddress = "localHost";
 
    string assetDictionary = "assets.ini";
+   string assetDynamicDictionary = "assets_dynamic.ini";
    string assetPath = "C:/projects/Mber/ServerStack/X_testFiles_X";
 
    //---------------------------------------
@@ -45,6 +46,7 @@ int main( int argc, const char* argv[] )
    parser.FindValue( "s2s.address", listenForS2SAddress );
 
    parser.FindValue( "asset.dictionary", assetDictionary );
+   parser.FindValue( "asset_dynamic.dictionary", assetDynamicDictionary );
    parser.FindValue( "asset.path", assetPath );
 
    int listenPortAddress = 9800, listenS2SPort = 9802;
@@ -74,7 +76,7 @@ int main( int argc, const char* argv[] )
 
    DiplodocusAsset*    assetServer = new DiplodocusAsset( serverName, serverId );
    assetServer->SetupListening( listenPortAddress );
-   assetServer->SetIniFilePath( assetPath, assetDictionary );
+   assetServer->SetIniFilePath( assetPath, assetDictionary, assetDynamicDictionary );
 
    DiplodocusServerToServer* s2s = new DiplodocusServerToServer( serverName, serverId );
    s2s->SetupListening( listenS2SPort );

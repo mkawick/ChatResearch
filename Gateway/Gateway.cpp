@@ -4,10 +4,10 @@
 #include <list>
 #include <vector>
 #include <iostream>
+
+#if PLATFORM == PLATFORM_WINDOWS
 #pragma warning (disable:4996)
-using namespace std;
-
-
+#endif
 
 #include <assert.h>
 
@@ -22,6 +22,8 @@ using namespace std;
 #include "KhaanConnector.h"
 #include "DiplodocusGateway.h"
 #include "FruitadensGateway.h"
+
+using namespace std;
 
 #if PLATFORM == PLATFORM_WINDOWS
 

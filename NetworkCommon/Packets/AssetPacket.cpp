@@ -1,8 +1,9 @@
 // AssetPacket.cpp
 
 #include <string>
-using namespace std;
+
 #include "AssetPacket.h"
+using namespace std;
 
 ///////////////////////////////////////////////////////////////
 
@@ -116,7 +117,7 @@ bool  PacketAsset_GetListOfDynamicAssets::SerializeIn( const U8* data, int& buff
    PacketAsset::SerializeIn( data, bufferOffset );
    Serialize::In( data, bufferOffset, uuid );
    Serialize::In( data, bufferOffset, loginKey );
-   Serialize::In( data, bufferOffset, currentAssets );
+   Serialize::In( data, bufferOffset, platformId );
 
    return true; 
 }
@@ -126,7 +127,7 @@ bool  PacketAsset_GetListOfDynamicAssets::SerializeOut( U8* data, int& bufferOff
    PacketAsset::SerializeOut( data, bufferOffset );
    Serialize::Out( data, bufferOffset, uuid );
    Serialize::Out( data, bufferOffset, loginKey );
-   Serialize::Out( data, bufferOffset, currentAssets );
+   Serialize::Out( data, bufferOffset, platformId );
 
    return true; 
 }

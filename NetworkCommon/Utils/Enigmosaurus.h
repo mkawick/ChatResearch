@@ -21,7 +21,7 @@ class Enigmosaurus
 {
 private:
    typedef  TabelInterface  tabletype;
-   typedef vector< string >         DataRow;
+   //typedef vector< string >         DataRow;
    typedef list< DataRow >          DataSet;
 
 public:

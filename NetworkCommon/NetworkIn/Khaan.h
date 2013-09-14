@@ -22,14 +22,9 @@
 
 #endif
 
-//#include <list>
+
 #include <deque>
 #include <algorithm>
-//#include <iostream>
-//#include <map>
-using namespace std;
-
-
 #include <assert.h>
 
 #include <event2/listener.h>
@@ -38,6 +33,8 @@ using namespace std;
 
 #include "../ChainedArchitecture/Thread.h"
 #include "../ChainedArchitecture/ChainedInterface.h"
+
+using namespace std;
 
 ///////////////////////////////////////////////////////////////
 
@@ -87,6 +84,7 @@ public:
    bool           AddInputChainData( BasePacket*, U32 filingData = -1 );
    bool           AddOutputChainData( BasePacket*, U32 filingData = -1 );
 
+   int	         SendData( const U8* buffer, int length );
    static void    SignalledUpdate( evutil_socket_t fd, short what, void *arg );
 protected:
    

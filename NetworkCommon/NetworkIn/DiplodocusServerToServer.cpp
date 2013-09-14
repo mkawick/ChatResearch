@@ -47,7 +47,9 @@ bool   DiplodocusServerToServer::AddInputChainData( BasePacket* packet, U32 conn
       BasePacket* unwrappedPacket = wrapper->pPacket;
       U32         serverId = wrapper->serverId;
 
-      LockMutex();
+      cout << "AddInputChainData start lock" << endl;
+      Threading::MutexLock locker( m_mutex );
+      cout << "AddInputChainData finish lock" << endl;
 
       bool  found = false;
       KhaanServerToServer* khaan = NULL;
@@ -78,8 +80,6 @@ bool   DiplodocusServerToServer::AddInputChainData( BasePacket* packet, U32 conn
       // potentially needed
       //m_serversNeedingUpdate.push_back( khaan->GetServerId() );
 
-      UnlockMutex();
-
       return true;
    }
 
@@ -88,12 +88,12 @@ bool   DiplodocusServerToServer::AddInputChainData( BasePacket* packet, U32 conn
 
 //---------------------------------------------------------------
 
-void  DiplodocusServerToServer::ServerWasIdentified( KhaanServerToServer* khaan )
+void  DiplodocusServerToServer::ServerWasIdentified( ChainedInterface* khaan )
 {
    BasePacket* packet = NULL;
    PackageForServerIdentification( m_serverName, m_serverId, m_gameProductId, m_isGame, m_isControllerApp, true, m_isGateway, &packet );
    khaan->AddOutputChainData( packet, 0 );
-   m_serversNeedingUpdate.push_back( khaan->GetServerId() );
+   m_serversNeedingUpdate.push_back( static_cast<InputChainType*>( khaan )->GetServerId() );
 }
 
 //---------------------------------------------------------------
@@ -182,7 +182,10 @@ int   DiplodocusServerToServer::CallbackFunction()
          KhaanServerToServer* khaan = static_cast< KhaanServerToServer* >( interfacePtr );
          if( khaan->GetServerId() == serverId )
          {
-            khaan->Update();
+            if( khaan->Update() == false )
+            {
+               m_serversNeedingUpdate.push_back( serverId );
+            }
          }
       }
       UnlockMutex();

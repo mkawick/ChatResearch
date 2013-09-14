@@ -7,12 +7,51 @@
 #include "../NetworkCommon/Packets/ServerToServerPacket.h"
 #include "../NetworkCommon/Packets/GamePacket.h"
 #include "../NetworkCommon/Packets/DbPacket.h"
+#include "../NetworkCommon/Packets/CheatPacket.h"
+#include "../NetworkCommon/Packets/PacketFactory.h"
 
 #include "../NetworkCommon/Logging/server_log.h"
 
 #include <boost/lexical_cast.hpp>
 
 #define _DEMO_13_Aug_2013
+
+
+//////////////////////////////////////////////////////////
+
+void  ConnectionToUser::AddProductFilterName( const string& text )
+{
+   bool found = false;
+   vector< string >::iterator searchIt = productFilterNames.begin();
+   while( searchIt != productFilterNames.end() )
+   {
+      if( *searchIt == text )
+      {
+         found = true;
+         break;
+      }
+      searchIt++;
+   }
+   if( found == false )
+   {
+      productFilterNames.push_back( text );
+   }
+}
+
+int   ConnectionToUser::FindProductFilterName( const string& text )
+{
+   vector< string >::iterator searchIt = productFilterNames.begin();
+   while( searchIt != productFilterNames.end() )
+   {
+      if( *searchIt == text )
+      {
+         return ( searchIt - productFilterNames.begin() );
+      }
+      searchIt++;
+   }
+   return -1;
+}
+
 //////////////////////////////////////////////////////////
 
 bool  CreateAccountResultsAggregator::HandleResult( const PacketDbQueryResult* dbResult )
@@ -25,7 +64,7 @@ bool  CreateAccountResultsAggregator::HandleResult( const PacketDbQueryResult* d
    // we really don't care about the results, but the error results are important
    switch( dbResult->lookup )
    {
-   case DiplodocusLogin::QueryType_LookupUserByUsernameOrEmail:
+   case DiplodocusLogin:: QueryType_LookupUserByUsernameOrEmail:
       {
          UserTable            enigma( dbResult->bucket );
          UserTable::iterator  it = enigma.begin();
@@ -63,7 +102,7 @@ bool  CreateAccountResultsAggregator::HandleResult( const PacketDbQueryResult* d
          }
       }
       return true;
-   case DiplodocusLogin::QueryType_LookupTempUserByUsernameOrEmail:
+   case DiplodocusLogin:: QueryType_LookupTempUserByUsernameOrEmail:
       {
          NewUsersTable              enigma( dbResult->bucket );
          UserTable::iterator        it = enigma.begin();
@@ -94,7 +133,7 @@ bool  CreateAccountResultsAggregator::HandleResult( const PacketDbQueryResult* d
          }
       }
       return true;
-   case DiplodocusLogin::QueryType_LookupUserNameForInvalidName:
+   case DiplodocusLogin:: QueryType_LookupUserNameForInvalidName:
       {
          if( dbResult->bucket.bucket.size() != 0 )
          {
@@ -205,7 +244,7 @@ bool     CreateAccountResultsAggregator::IsMatching_GKHashRecord_DifferentFrom_U
 
 //////////////////////////////////////////////////////////
 
-DiplodocusLogin::DiplodocusLogin( const string& serverName, U32 serverId )  : Diplodocus< KhaanLogin >( serverName, serverId, 0, ServerType_Login )
+DiplodocusLogin:: DiplodocusLogin( const string& serverName, U32 serverId )  : Diplodocus< KhaanLogin >( serverName, serverId, 0, ServerType_Login ), m_isInitialized( false ), m_isInitializing( false )
 {
    SetSleepTime( 30 );
    LogOpen();
@@ -216,7 +255,7 @@ DiplodocusLogin::DiplodocusLogin( const string& serverName, U32 serverId )  : Di
 
 //---------------------------------------------------------------
 
-void     DiplodocusLogin::ServerWasIdentified( KhaanLogin* khaan )
+void     DiplodocusLogin:: ServerWasIdentified( ChainedInterface* khaan )
 {
    BasePacket* packet = NULL;
    PackageForServerIdentification( m_serverName, m_serverId, m_gameProductId, m_isGame, m_isControllerApp, true, m_isGateway, &packet );
@@ -226,7 +265,7 @@ void     DiplodocusLogin::ServerWasIdentified( KhaanLogin* khaan )
 
 //---------------------------------------------------------------
 
-bool     DiplodocusLogin::AddInputChainData( BasePacket* packet, U32 connectionId )
+bool     DiplodocusLogin:: AddInputChainData( BasePacket* packet, U32 connectionId )
 {
    // if packet is a login or a logout packet we'll handle it, otherwise.. no deal.
    // all packets coming in should be from the gateway only 
@@ -251,6 +290,7 @@ bool     DiplodocusLogin::AddInputChainData( BasePacket* packet, U32 connectionI
    {
       case PacketType_Login:
       {
+         PacketFactory factory;
          switch( actualPacket->packetSubType )
          {
          case PacketLogin::LoginType_Login:
@@ -272,18 +312,41 @@ bool     DiplodocusLogin::AddInputChainData( BasePacket* packet, U32 connectionI
                CreateUserAccount( userConnectionId, createAccount->useremail, createAccount->password, createAccount->username, createAccount->deviceAccountId, createAccount->deviceId, createAccount->languageId, createAccount->gameProductId );
             }
             break;
+         case PacketLogin::LoginType_ListOfPurchases:
+            {
+               PacketListOfUserPurchases* purchases = static_cast<PacketListOfUserPurchases*>( actualPacket );
+               StoreUserPurchases( userConnectionId, purchases );
+            }
+            break;
+         case PacketLogin::LoginType_RequestListOfPurchases:
+            {
+               PacketRequestListOfUserPurchases* purchaseRequest = static_cast<PacketRequestListOfUserPurchases*>( actualPacket );
+               RequestListOfPurchases( userConnectionId, purchaseRequest );
+            }
+            break;
+         
+         factory.CleanupPacket( packet );
+         /*delete wrapper;
+         delete actualPacket;*/
          }
-         delete wrapper;
-         delete actualPacket;
-         return true;
       }
+      return true;
+      case PacketType_Cheat:
+         {
+            PacketFactory factory;
+            PacketCheat* cheat = static_cast<PacketCheat*>( actualPacket );
+            HandleCheats( userConnectionId, cheat );
+            factory.CleanupPacket( packet );
+         }
+         return true;
+      
    }
    return false;
 }
 
 //---------------------------------------------------------------
 
-bool     DiplodocusLogin::AddQueryToOutput( PacketDbQuery* packet )
+bool     DiplodocusLogin:: AddQueryToOutput( PacketDbQuery* packet )
 {
    ChainLinkIteratorType itOutputs = m_listOfOutputs.begin();
    while( itOutputs != m_listOfOutputs.end() )// only one output currently supported.
@@ -302,7 +365,7 @@ bool     DiplodocusLogin::AddQueryToOutput( PacketDbQuery* packet )
 
 //---------------------------------------------------------------
 
-bool     DiplodocusLogin::LogUserIn( const string& username, const string& password, const string& loginKey, U8 gameProductId, U32 connectionId )
+bool     DiplodocusLogin:: LogUserIn( const string& username, const string& password, const string& loginKey, U8 gameProductId, U32 connectionId )
 {
    cout << endl << "***********************" << endl;
    cout << "attempt to login user: "<< username << ", pwHash:" << password << " for game id=" << (int) gameProductId << " and conn: " << connectionId << endl;
@@ -371,7 +434,7 @@ bool     DiplodocusLogin::LogUserIn( const string& username, const string& passw
 
 //---------------------------------------------------------------
 
-bool     DiplodocusLogin::LogUserOut( U32 connectionId, bool wasDisconnectedByError )
+bool     DiplodocusLogin:: LogUserOut( U32 connectionId, bool wasDisconnectedByError )
 {
    ConnectionToUser* connection = GetUserConnection( connectionId );
    if( connection )
@@ -402,7 +465,7 @@ bool     DiplodocusLogin::LogUserOut( U32 connectionId, bool wasDisconnectedByEr
 
 //---------------------------------------------------------------
 
-void  DiplodocusLogin::FinalizeLogout( U32 connectionId, bool wasDisconnectedByError )
+void     DiplodocusLogin:: FinalizeLogout( U32 connectionId, bool wasDisconnectedByError )
 {
    ConnectionToUser* connection = GetUserConnection( connectionId );
    if( connection )
@@ -439,7 +502,7 @@ void  DiplodocusLogin::FinalizeLogout( U32 connectionId, bool wasDisconnectedByE
 //---------------------------------------------------------------
 //---------------------------------------------------------------
 
-bool  DiplodocusLogin::IsUserConnectionValid( U32 connectionId )
+bool  DiplodocusLogin:: IsUserConnectionValid( U32 connectionId )
 {
    Threading::MutexLock locker( m_inputChainListMutex );
    UserConnectionMapConstIterator it = m_userConnectionMap.find( connectionId );
@@ -448,7 +511,7 @@ bool  DiplodocusLogin::IsUserConnectionValid( U32 connectionId )
    return false;
 }
 
-ConnectionToUser*     DiplodocusLogin::GetUserConnection( U32 connectionId )
+ConnectionToUser*     DiplodocusLogin:: GetUserConnection( U32 connectionId )
 {
    Threading::MutexLock locker( m_inputChainListMutex );
    UserConnectionMapIterator it = m_userConnectionMap.find( connectionId );
@@ -459,25 +522,25 @@ ConnectionToUser*     DiplodocusLogin::GetUserConnection( U32 connectionId )
    return NULL;
 }
 
-void    DiplodocusLogin::ReinsertUserConnection( int oldIndex, int newIndex )
+void    DiplodocusLogin:: ReinsertUserConnection( int oldIndex, int newIndex )
 {
    Threading::MutexLock locker( m_inputChainListMutex );
     UserConnectionMapIterator it = m_userConnectionMap.find( oldIndex );
     if( it != m_userConnectionMap.end() )
     {
-        m_userConnectionMap.insert( DiplodocusLogin::UserConnectionPair( newIndex, it->second ) );
+        m_userConnectionMap.insert( DiplodocusLogin:: UserConnectionPair( newIndex, it->second ) );
         m_userConnectionMap.erase( it );
     }
 }
 
-bool     DiplodocusLogin::AddUserConnection( DiplodocusLogin::UserConnectionPair pair )
+bool     DiplodocusLogin:: AddUserConnection( DiplodocusLogin:: UserConnectionPair pair )
 {
    Threading::MutexLock locker( m_inputChainListMutex );
    m_userConnectionMap.insert( pair );
    return true;
 }
 
-bool     DiplodocusLogin::RemoveUserConnection( U32 connectionId )
+bool     DiplodocusLogin:: RemoveUserConnection( U32 connectionId )
 {
    Threading::MutexLock locker( m_inputChainListMutex );
    UserConnectionMapIterator it = m_userConnectionMap.find( connectionId );
@@ -492,7 +555,7 @@ bool     DiplodocusLogin::RemoveUserConnection( U32 connectionId )
 //---------------------------------------------------------------
 //---------------------------------------------------------------
 
-void     DiplodocusLogin::RemoveOldConnections()
+void     DiplodocusLogin:: RemoveOldConnections()
 {
    Threading::MutexLock    locker( m_inputChainListMutex );
    UserConnectionMapIterator it = m_userConnectionMap.begin();
@@ -516,7 +579,7 @@ void     DiplodocusLogin::RemoveOldConnections()
 
 //---------------------------------------------------------------
 
-U32     DiplodocusLogin::FindUserAlreadyInGame( const string& username, U8 gameProductId )
+U32     DiplodocusLogin:: FindUserAlreadyInGame( const string& username, U8 gameProductId )
 {
    Threading::MutexLock locker( m_mutex );
 
@@ -539,7 +602,7 @@ U32     DiplodocusLogin::FindUserAlreadyInGame( const string& username, U8 gameP
 //---------------------------------------------------------------
 //---------------------------------------------------------------
 
-void  DiplodocusLogin::TellUserThatAccountAlreadyMatched( const CreateAccountResultsAggregator* aggregator )
+void     DiplodocusLogin:: TellUserThatAccountAlreadyMatched( const CreateAccountResultsAggregator* aggregator )
 {
    if( aggregator->GetMatchingRecordType( CreateAccountResultsAggregator::MatchingRecord_Name ) )
    {
@@ -555,7 +618,7 @@ void  DiplodocusLogin::TellUserThatAccountAlreadyMatched( const CreateAccountRes
 
 //---------------------------------------------------------------
 
-void DiplodocusLogin::UpdateUserAccount( const CreateAccountResultsAggregator* aggregator )
+void DiplodocusLogin:: UpdateUserAccount( const CreateAccountResultsAggregator* aggregator )
 {
    U32 user_id = 0;
    if( aggregator->m_userRecordMatchingGKHash != 0 )
@@ -637,7 +700,7 @@ void DiplodocusLogin::UpdateUserAccount( const CreateAccountResultsAggregator* a
 
 //---------------------------------------------------------------
 
-void  DiplodocusLogin::CreateNewPendingUserAccount( const CreateAccountResultsAggregator* aggregator, bool setGameKitHashToNUll )
+void     DiplodocusLogin:: CreateNewPendingUserAccount( const CreateAccountResultsAggregator* aggregator, bool setGameKitHashToNUll )
 {
    string query = "INSERT INTO user_temp_new_user (user_name, user_name_match, user_pw_hash, user_email, user_gamekit_hash, game_id, language_id) "
                                  "VALUES ('%s', '%s', '%s', '%s', '%s', '%s', '%s')";
@@ -673,7 +736,7 @@ void  DiplodocusLogin::CreateNewPendingUserAccount( const CreateAccountResultsAg
 
 //---------------------------------------------------------------
 
-void  DiplodocusLogin::UpdatePendingUserRecord( const CreateAccountResultsAggregator* aggregator )
+void     DiplodocusLogin:: UpdatePendingUserRecord( const CreateAccountResultsAggregator* aggregator )
 {
    string query = "UPDATE user_temp_new_user SET user_name='%s', user_name_match='%s', "
          "user_pw_hash='%s', user_email='%s', user_gamekit_hash='%s', game_id='%s', "
@@ -708,7 +771,7 @@ void  DiplodocusLogin::UpdatePendingUserRecord( const CreateAccountResultsAggreg
 
 //---------------------------------------------------------------
 
-void  DiplodocusLogin::CreateNewUserAccount( const CreateAccountResultsAggregator* aggregator, bool setGkHashTo0 )
+void     DiplodocusLogin:: CreateNewUserAccount( const CreateAccountResultsAggregator* aggregator, bool setGkHashTo0 )
 {
    U32 hash = static_cast<U32>( GenerateUniqueHash( boost::lexical_cast< string >( aggregator->GetConnectionId() ) + aggregator->m_useremail ) );
 
@@ -752,7 +815,7 @@ void  DiplodocusLogin::CreateNewUserAccount( const CreateAccountResultsAggregato
 
 //---------------------------------------------------------------
 
-bool  DiplodocusLogin::CreateUserAccount( U32 connectionId, const string& email, const string& password, const string& username, const string& deviceAccountId, const string& deviceId, U8 languageId, U8 gameProductId )
+bool        DiplodocusLogin:: CreateUserAccount( U32 connectionId, const string& email, const string& password, const string& username, const string& deviceAccountId, const string& deviceId, U8 languageId, U8 gameProductId )
 {
    if( IsUserConnectionValid( connectionId ) )
    {
@@ -845,7 +908,140 @@ bool  DiplodocusLogin::CreateUserAccount( U32 connectionId, const string& email,
 
 //---------------------------------------------------------------
 
-bool  DiplodocusLogin::ForceUserLogoutAndBlock( U32 connectionId )
+int         DiplodocusLogin:: FindProductByName( const string& name )
+{
+   ProductList::iterator it = m_productList.begin();
+   while( it != m_productList.end() )
+   {
+      if( it->filterName == name )   // NOTE: these names may vary
+      {
+         return ( it - m_productList.begin() );
+      }
+      it++;
+   }
+   return -1;
+}
+
+//---------------------------------------------------------------
+
+// how can we trust these values?
+bool        DiplodocusLogin:: StoreUserPurchases( U32 connectionId, const PacketListOfUserPurchases* deviceReportedPurchases )
+{
+   Threading::MutexLock locker( m_inputChainListMutex );
+   ConnectionToUser* connection = GetUserConnection( connectionId );
+   if( connection == NULL )
+   {
+      cout << "Error: could not find user by connection id" << endl;
+      return false;
+   }
+
+   int numItems = deviceReportedPurchases->purchases.size();
+   for( int i=0; i< numItems; i++ )
+   {
+      const PurchaseEntry& purchaseEntry = deviceReportedPurchases->purchases[i];
+      int  originalProductNameIndex = FindProductByName( purchaseEntry.name );
+      //----------------
+      if( purchaseEntry.name.size() == 0 )// we can't do anything with this.
+      {
+         cout << "   ***Invalid product id...title: " << purchaseEntry.productStoreId << "   price: " << purchaseEntry.price <<  "   number price: " << purchaseEntry.number_price << endl;
+      }
+      else
+      {
+         // the order ot the next two lines matters a lot.
+         int userProductIndex = connection->FindProductFilterName( purchaseEntry.name );
+         connection->AddProductFilterName( purchaseEntry.name );// we're gonna save the name, regardless. The device told us about the purchase.
+
+         //**  find the item in the user record and add it to the db if not **
+         if( userProductIndex == -1 && originalProductNameIndex != -1 )// the user doesn't have the record, but the rest of the DB does.
+         {
+            const string& uuid = m_productList[originalProductNameIndex].uuid;
+            WriteProductToUserRecord( uuid, connection->userUuid, purchaseEntry.number_price );
+         }
+
+         if( originalProductNameIndex == -1 )
+         {
+            ProductInfo pi;
+            pi.name = purchaseEntry.name;
+            pi.filterName = purchaseEntry.name;
+            // productStoreId .. I don't know what to do with this.
+            pi.price = purchaseEntry.number_price;
+
+            connection->productsWaitingForInsertionToDb.push_back( pi );
+            AddNewProductToDb( purchaseEntry );
+         }
+         cout << "   title: " << purchaseEntry.name << "   price: " << purchaseEntry.price <<  "   number price: " << purchaseEntry.number_price << endl;
+      }
+      
+   }
+
+   if( connection->productsWaitingForInsertionToDb.size() == 0 )
+   {
+      SendListOfUserProductsToAssetServer( connectionId );
+   }
+   return false;
+}
+
+//---------------------------------------------------------------
+
+bool   DiplodocusLogin:: RequestListOfPurchases( U32 connectionId, const PacketRequestListOfUserPurchases* purchase )
+{
+   ConnectionToUser* connection = GetUserConnection( connectionId );
+   if( connection == NULL || connection->status != ConnectionToUser::LoginStatus_LoggedIn )
+   {
+      Log( "Login server: major problem with successful login", 4 );
+      return false;
+   }
+
+   PacketDbQuery* dbQuery = new PacketDbQuery;
+   dbQuery->id =     connectionId ;
+   dbQuery->lookup = QueryType_GetProductListForUser;
+   dbQuery->meta = "all";
+
+
+   string queryString = "SELECT * FROM product";
+   if( purchase->requestUserOnly == true )
+   {
+      dbQuery->meta = "user";
+      queryString += " INNER JOIN user_join_product AS user_join_product ON product.uuid=user_join_product.product_id WHERE user_join_product.user_uuid='%s'";
+      dbQuery->escapedStrings.insert( connection->userUuid );
+   }
+   dbQuery->query =  queryString;   
+
+   return AddQueryToOutput( dbQuery );
+
+}
+
+//---------------------------------------------------------------
+
+bool   DiplodocusLogin:: HandleCheats( U32 connectionId, const PacketCheat* cheat )
+{
+   //QueryType_GetProductListForUser
+   return false;
+}
+
+
+//---------------------------------------------------------------
+
+bool  DiplodocusLogin:: UpdateProductFilterName( int index, const string& newFilterName )
+{
+   m_productList[ index ].filterName = newFilterName;
+
+   PacketDbQuery* dbQuery = new PacketDbQuery;
+   dbQuery->id =              0 ;
+   dbQuery->lookup =          QueryType_UpdateProductFileInfo;
+   dbQuery->isFireAndForget = true;// no result is needed
+
+   string queryString = "UPDATE product SET filter_name='%s' WHERE uuid='%s'";
+   dbQuery->escapedStrings.insert( newFilterName );
+   dbQuery->escapedStrings.insert( m_productList[ index ].uuid );
+   dbQuery->query =           queryString;
+
+   return AddQueryToOutput( dbQuery );
+}
+
+//---------------------------------------------------------------
+
+bool  DiplodocusLogin:: ForceUserLogoutAndBlock( U32 connectionId )
 {
    SendErrorToClient( connectionId, PacketErrorReport::ErrorType_UserBadLogin );
 
@@ -891,7 +1087,7 @@ bool  DiplodocusLogin::ForceUserLogoutAndBlock( U32 connectionId )
 
 //------------------------------------------------------------------------------------------------
 
-bool  DiplodocusLogin::SendListOfGamesToGameServers( U32 connectionId, const KeyValueVector& kvArray )
+bool  DiplodocusLogin:: SendListOfGamesToGameServers( U32 connectionId, const KeyValueVector& kvArray )
 {
    if( IsUserConnectionValid( connectionId ) ) // user may have disconnected waiting for the db.
    {
@@ -917,7 +1113,7 @@ bool  DiplodocusLogin::SendListOfGamesToGameServers( U32 connectionId, const Key
 
 //------------------------------------------------------------------------------------------------
 
-bool  DiplodocusLogin::UpdateLastLoggedInTime( U32 connectionId )
+bool  DiplodocusLogin:: UpdateLastLoggedInTime( U32 connectionId )
 {
    ConnectionToUser* connection = GetUserConnection( connectionId );
    if( connection )
@@ -940,7 +1136,7 @@ bool  DiplodocusLogin::UpdateLastLoggedInTime( U32 connectionId )
 
 //------------------------------------------------------------------------------------------------
 
-bool  DiplodocusLogin::UpdateLastLoggedOutTime( U32 connectionId )
+bool  DiplodocusLogin:: UpdateLastLoggedOutTime( U32 connectionId )
 {
    ConnectionToUser* connection = GetUserConnection( connectionId );
    if( connection )
@@ -962,7 +1158,7 @@ bool  DiplodocusLogin::UpdateLastLoggedOutTime( U32 connectionId )
 
 //------------------------------------------------------------------------------------------------
 
-bool    DiplodocusLogin::SuccessfulLogin( U32 connectionId, bool isReloggedIn )
+bool    DiplodocusLogin:: SuccessfulLogin( U32 connectionId, bool isReloggedIn )
 {
    ConnectionToUser* connection = GetUserConnection( connectionId );
    if( connection == NULL || connection->status != ConnectionToUser::LoginStatus_LoggedIn )
@@ -973,15 +1169,18 @@ bool    DiplodocusLogin::SuccessfulLogin( U32 connectionId, bool isReloggedIn )
 
    connection->loggedOutTime = 0;// for relogin, we need this to be cleared.
 
-   string  username =         connection->username;
-   string  userUuid =         connection->userUuid;
-   string  email =            connection->email;
-   string  lastLoginTime =    connection->lastLoginTime;
-   bool    active =           connection->active;
-   string  passwordHash =     connection->passwordHash;
-   string  userId =           connection->id;
-   U8 gameProductId =         connection->gameProductId;
-   string  loginKey =         connection->loginKey;
+   string   username =        connection->username;
+   string   userUuid =        connection->userUuid;
+   string   email =           connection->email;
+   string   lastLoginTime =   connection->lastLoginTime;
+   bool     active =          connection->active;
+   string   passwordHash =    connection->passwordHash;
+   string   userId =          connection->id;
+   U8       gameProductId =   connection->gameProductId;
+   string   loginKey =        connection->loginKey;
+
+   connection->productFilterNames.clear();
+   connection->productsWaitingForInsertionToDb.clear();
 
    if( loginKey.size() == 0 )
    {
@@ -1006,6 +1205,8 @@ bool    DiplodocusLogin::SuccessfulLogin( U32 connectionId, bool isReloggedIn )
 
    RequestListOfGames( connectionId, userUuid );
 
+   RequestListOfProducts( connectionId, userUuid );
+
    //This is where we inform all of the games that the user is logged in.
 
    return SendLoginStatusToOtherServers( username, userUuid, connectionId, gameProductId, lastLoginTime, active, email, passwordHash, userId, loginKey, true, false );
@@ -1014,7 +1215,7 @@ bool    DiplodocusLogin::SuccessfulLogin( U32 connectionId, bool isReloggedIn )
 //------------------------------------------------------------------------------------------------
 //------------------------------------------------------------------------------------------------
 
-bool  DiplodocusLogin::RequestListOfGames( U32 connectionId, const string& userUuid )
+bool  DiplodocusLogin:: RequestListOfGames( U32 connectionId, const string& userUuid )
 {
    return false;// not working this way anymore
    if( userUuid.size() && connectionId != 0 )
@@ -1023,10 +1224,27 @@ bool  DiplodocusLogin::RequestListOfGames( U32 connectionId, const string& userU
       dbQuery->id =     connectionId ;
       dbQuery->lookup = QueryType_UserListOfGame;
 
-      string queryString = "SELECT game.uuid, game.name FROM game INNER JOIN user_join_game AS user_game ON game.uuid=user_game.game_uuid WHERE user_game.user_uuid = '";
-      queryString += userUuid;
-      queryString += "'";
+      string queryString = "SELECT game.uuid, game.name FROM game INNER JOIN user_join_game AS user_game ON game.uuid=user_game.game_uuid WHERE user_game.user_uuid = '%s'";
+      dbQuery->escapedStrings.insert( userUuid );
       dbQuery->query =  queryString;
+
+      return AddQueryToOutput( dbQuery );
+   }
+   return false;
+}
+
+bool  DiplodocusLogin:: RequestListOfProducts( U32 connectionId, const string& userUuid )
+{
+   //return false;// not working this way anymore
+   if( userUuid.size() && connectionId != 0 )
+   {
+      PacketDbQuery* dbQuery = new PacketDbQuery;
+      dbQuery->id =     connectionId ;
+      dbQuery->lookup = QueryType_UserListOfUserProducts;
+
+      string queryString = "SELECT product.product_id, filter_name FROM product INNER JOIN user_join_product AS user_join_product ON product.uuid=user_join_product.product_id WHERE user_join_product.user_uuid='%s'";
+      dbQuery->query =  queryString;
+      dbQuery->escapedStrings.insert( userUuid );
 
       return AddQueryToOutput( dbQuery );
    }
@@ -1035,7 +1253,7 @@ bool  DiplodocusLogin::RequestListOfGames( U32 connectionId, const string& userU
 
 //---------------------------------------------------------------
 
-bool  DiplodocusLogin::SendLoginStatusToOtherServers( const string& username, 
+bool  DiplodocusLogin:: SendLoginStatusToOtherServers( const string& username, 
                                                      const string& userUuid, 
                                                      U32 connectionId, 
                                                      U8 gameProductId, 
@@ -1095,7 +1313,18 @@ bool  DiplodocusLogin::SendLoginStatusToOtherServers( const string& username,
 
 //---------------------------------------------------------------
 
-void  DiplodocusLogin::UpdateUserRecord( CreateAccountResultsAggregator* aggregator )
+bool     DiplodocusLogin:: SendListOfUserProductsToOtherServers( const string& userUuid, U32 connectionId, const vector< string >& productNames )
+{
+   PacketListOfUserProductsS2S packet;
+
+   
+
+   return false;
+}
+
+//---------------------------------------------------------------
+
+void     DiplodocusLogin:: UpdateUserRecord( CreateAccountResultsAggregator* aggregator )
 {
    // any duplicates should simply report back to the user that this account email or user id is already taken
    if( aggregator->IsDuplicateRecord() && aggregator->ShouldUpdatePendingUserRecord() == false )
@@ -1127,7 +1356,7 @@ void  DiplodocusLogin::UpdateUserRecord( CreateAccountResultsAggregator* aggrega
 
 //---------------------------------------------------------------
 
-bool     DiplodocusLogin::AddOutputChainData( BasePacket* packet, U32 connectionId )
+bool     DiplodocusLogin:: AddOutputChainData( BasePacket* packet, U32 connectionId )
 {
    // this should be a DB Query Response only. Lookup the appropriate gateway connection and push the login result back out.
    // If 
@@ -1244,6 +1473,22 @@ bool     DiplodocusLogin::AddOutputChainData( BasePacket* packet, U32 connection
                   SendListOfGamesToGameServers( connectionId, key_value_array );
                }
                break;
+            case QueryType_UserListOfUserProducts:
+               {
+                  if( dbResult->successfulQuery == false )
+                  {
+                     string str = "Query failed looking up a user products ";
+                     str += connection->username;
+                     str += ", uuid: ";
+                     str += connection->userUuid;
+                     Log( str, 4 );
+                     ForceUserLogoutAndBlock( connectionId );
+                     return false;
+                  }
+
+                  StoreListOfUsersProductsFromDB( connectionId, dbResult );
+               }
+               break;
             case QueryType_LookupUserByUsernameOrEmail:// these should never happen since these are handled elsewhere
             case QueryType_LookupTempUserByUsernameOrEmail:
             case QueryType_LookupUserNameForInvalidName:
@@ -1260,6 +1505,33 @@ bool     DiplodocusLogin::AddOutputChainData( BasePacket* packet, U32 connection
                   }
                }
                break;
+            case QueryType_LoadProductInfo:
+               {
+                  if( dbResult->successfulQuery == false )
+                  {
+                     string str = "Initialization failed: table does not exist ";
+                     return false;
+                  }
+                  StoreAllProducts( dbResult );
+               }
+               break;
+            case QueryType_GetSingleProductInfo:
+               {
+                  if( dbResult->successfulQuery == false )
+                  {
+                     string str = "Product not found ";
+                     str += dbResult->meta;
+                     Log( str, 4 );
+                     return false;
+                  }
+                  StoreSingleProduct( dbResult );
+               }
+               break;
+            case QueryType_GetProductListForUser:
+               {
+                  SendProductListResultToUser( connectionId, dbResult );
+               }
+               break;
          }
       }
    }
@@ -1268,9 +1540,362 @@ bool     DiplodocusLogin::AddOutputChainData( BasePacket* packet, U32 connection
 
 //---------------------------------------------------------------
 
-int      DiplodocusLogin::CallbackFunction()
+void     DiplodocusLogin:: StoreAllProducts( PacketDbQueryResult* dbResult )
+{
+   ProductTable            enigma( dbResult->bucket );
+
+   ProductTable::iterator  it = enigma.begin();
+   int numProducts = dbResult->bucket.bucket.size();
+            
+   while( it != enigma.end() )
+   {
+      ProductTable::row       row = *it++;
+
+      ProductInfo productDefn;
+      productDefn.productId  = boost::lexical_cast< int >( row[ TableProduct::Column_product_id ] );
+      productDefn.uuid =                 row[ TableProduct::Column_uuid ];
+      productDefn.name =                 row[ TableProduct::Column_name ];
+      productDefn.filterName =           row[ TableProduct::Column_filter_name ];
+      productDefn.Begindate =            row[ TableProduct::Column_begin_date ];
+      string temp = row[ TableProduct::Column_product_type ];
+      if( temp == "" )
+         temp = "0";
+
+      productDefn.productType  = boost::lexical_cast< int >( temp );
+      
+
+      m_productList.push_back( productDefn );
+   }
+
+   m_isInitialized = true;
+}
+
+//---------------------------------------------------------------
+
+void     DiplodocusLogin:: StoreSingleProduct( PacketDbQueryResult* dbResult )
+{
+   ProductTable            enigma( dbResult->bucket );
+
+   string filterName;
+   string filterUuid;
+   ProductTable::row row = *enigma.begin();
+   //if( it != enigma.end() )
+   {
+      ProductInfo productDefn;
+      productDefn.productId  = boost::lexical_cast< int >( row[ TableProduct::Column_product_id ] );
+      productDefn.uuid =                 row[ TableProduct::Column_uuid ];
+      productDefn.name =                 row[ TableProduct::Column_name ];
+      productDefn.filterName =           row[ TableProduct::Column_filter_name ];
+      productDefn.Begindate =            row[ TableProduct::Column_begin_date ];
+
+      string temp = row[ TableProduct::Column_product_type ];
+      if( temp == "" )
+         temp = "0";
+      productDefn.productType  = boost::lexical_cast< int >( temp );
+      
+      filterName = productDefn.filterName;
+      filterUuid = productDefn.uuid;
+
+      m_productList.push_back( productDefn );
+   }
+
+   // now that we've added the new product, see which users needed it.
+   Threading::MutexLock locker( m_inputChainListMutex );
+   UserConnectionMapIterator userIt = m_userConnectionMap.begin();
+   while( userIt != m_userConnectionMap.end() )
+   {
+      vector< ProductInfo >& userProducts = userIt->second.productsWaitingForInsertionToDb;
+      vector< ProductInfo >::iterator productIt = userProducts.begin();
+      while( productIt != userProducts.end() )
+      {
+         if( productIt->filterName == filterName )
+         {
+            double price = productIt->price;
+            WriteProductToUserRecord( filterUuid, userIt->second.userUuid, price );
+            userProducts.erase( productIt );
+
+            if( userProducts.size() == 0 )
+            {
+               SendListOfUserProductsToAssetServer( userIt->first );
+            }
+            break;
+         }
+         productIt ++;
+      }
+
+
+      userIt ++;
+   }
+   
+}
+
+//---------------------------------------------------------------
+
+void     DiplodocusLogin:: SendProductListResultToUser( U32 connectionId, PacketDbQueryResult* dbResult )
+{
+   ConnectionToUser* connection = GetUserConnection( connectionId );
+   if( connection )
+   {
+      ProductTable            enigma( dbResult->bucket );
+
+      ProductTable::iterator  it = enigma.begin();
+      int numProducts = dbResult->bucket.bucket.size();
+               
+      PacketListOfUserPurchases* purchasePacket = new PacketListOfUserPurchases();
+      purchasePacket->isAllProducts = false;
+      if( dbResult->meta == "all" )
+         purchasePacket->isAllProducts = true;
+      purchasePacket->platformId = 0;
+
+
+      while( it != enigma.end() )
+      {
+         ProductTable::row       row = *it++;
+
+         PurchaseEntry pe;
+         pe.productStoreId = row[ TableProduct::Column_name ];
+         pe.name = row[ TableProduct::Column_filter_name ];
+         purchasePacket->purchases.push_back( pe );
+        /* ProductInfo productDefn;
+         productDefn.productId  = boost::lexical_cast< int >( row[ TableProduct::Column_product_id ] );
+         productDefn.uuid =                 row[ TableProduct::Column_uuid ];
+         productDefn.name =                 row[ TableProduct::Column_name ];
+         productDefn.filterName =           row[ TableProduct::Column_filter_name ];
+         productDefn.Begindate =            row[ TableProduct::Column_begin_date ];
+         string temp = row[ TableProduct::Column_product_type ];
+         if( temp == "" )
+            temp = "0";
+
+         productDefn.productType  = boost::lexical_cast< int >( temp );
+         
+
+         m_productList.push_back( productDefn );*/
+      }
+
+      SendPacketToGateway( purchasePacket, connectionId );
+   }
+   
+}
+
+//---------------------------------------------------------------
+
+void     DiplodocusLogin:: WriteProductToUserRecord( const string& productFilterName, const string& uuid, double pricePaid )
+{
+   PacketDbQuery* dbQuery = new PacketDbQuery;
+   dbQuery->id =           0;
+   dbQuery->lookup =       QueryType_AddProductInfoToUser;
+   dbQuery->meta =         productFilterName;
+   dbQuery->serverLookup = 0;
+   dbQuery->isFireAndForget = true;
+
+   dbQuery->query = "INSERT INTO user_join_product VALUES( NULL, '%s', '%s', NULL, ";
+   dbQuery->query += boost::lexical_cast< string >( pricePaid );
+   dbQuery->query += ", 1, NULL)";
+
+   dbQuery->escapedStrings.insert( uuid );
+   dbQuery->escapedStrings.insert( productFilterName );
+
+   AddQueryToOutput( dbQuery );
+}
+
+//---------------------------------------------------------------
+
+void     DiplodocusLogin:: StoreListOfUsersProductsFromDB( U32 connectionId, PacketDbQueryResult* dbResult )
+{
+   ConnectionToUser* connection = GetUserConnection( connectionId );
+   if( connection )
+   {
+      bool  didFindGameProduct = false;
+      int   loggedInGameProductId = connection->gameProductId;
+      // verify that this product is owned by the player and if not, then add an entry
+
+      KeyValueParser  enigma( dbResult->bucket );
+      KeyValueParser::iterator      it = enigma.begin();
+      int   numProducts = dbResult->bucket.bucket.size();
+      while( it != enigma.end() )
+      {
+         KeyValueParser::row       row = *it++;
+
+         int productId = boost::lexical_cast< int> ( row[ TableKeyValue::Column_key ] );
+         if( loggedInGameProductId == productId )
+         {
+            didFindGameProduct = true;
+         }
+         connection->productFilterNames.push_back( row[ TableKeyValue::Column_value ] );
+      }
+
+      if( didFindGameProduct == false )
+      {
+         AddGameProductIdToUserProducts( connectionId );
+      }
+   }
+
+   RequestListOfProductsFromClient( connectionId );
+}
+
+//---------------------------------------------------------------
+
+void     DiplodocusLogin:: AddGameProductIdToUserProducts( U32 connectionId )
+{
+   ConnectionToUser* connection = GetUserConnection( connectionId );
+   if( connection )
+   {
+      int   loggedInGameProductId = connection->gameProductId;
+      const char* loggedInGameProductName = FindProductName( loggedInGameProductId );
+      if( loggedInGameProductName == NULL )
+      {
+         cout << "Major error: user logging in with a product not identified" << endl;
+         return;
+      }
+
+      ProductInfo productInfo;
+      bool found = false;
+      vector< ProductInfo >::iterator it = m_productList.begin();
+      while( it != m_productList.end() )
+      {
+         if( it->productId == loggedInGameProductId )
+         {
+            found = true;
+            productInfo = *it;
+            break;
+         }
+         it++;
+      }
+
+      if( found == false )
+      {
+         cout << "Major error: user logging in with a product not in our list of loaded products" << endl;
+         return;
+      }
+
+      PacketDbQuery* dbQuery = new PacketDbQuery;
+      dbQuery->id =           0;
+      dbQuery->lookup =       QueryType_AddProductInfoToUser;
+      dbQuery->meta =         loggedInGameProductName;
+      dbQuery->serverLookup = 0;
+      dbQuery->isFireAndForget = true;
+
+
+      dbQuery->query = "INSERT INTO user_join_product VALUES( NULL, '";
+      dbQuery->query += connection->userUuid;
+      dbQuery->query += "', '";
+      dbQuery->query += productInfo.uuid;
+      dbQuery->query += "', NULL, 0, 0, 0 )";
+
+      AddQueryToOutput( dbQuery );
+   }
+}
+
+//---------------------------------------------------------------
+
+void     DiplodocusLogin:: RequestListOfProductsFromClient( U32 connectionId )
+{
+   PacketRequestListOfUserPurchases* purchaseRequest = new PacketRequestListOfUserPurchases;
+   SendPacketToGateway( purchaseRequest, connectionId );
+}
+
+//---------------------------------------------------------------
+
+void     DiplodocusLogin:: AddNewProductToDb( const PurchaseEntry& product )
+{
+   PacketDbQuery* dbQuery = new PacketDbQuery;
+   dbQuery->id =           0;
+   dbQuery->lookup =       QueryType_AddProductInfo;
+   dbQuery->meta =         product.name;
+   dbQuery->serverLookup = 0;
+   dbQuery->isFireAndForget = true;
+
+   U32 hash = static_cast<U32>( GenerateUniqueHash( boost::lexical_cast< string >( product.name ) ) );
+   string newUuid = GenerateUUID( hash );
+
+   std::string lowercase_username = product.name; 
+   std::transform( lowercase_username.begin(), lowercase_username.end(), lowercase_username.begin(), ::tolower );
+
+   dbQuery->query = "INSERT INTO product VALUES( NULL, 0, '";// new products haven an id of 0
+   dbQuery->query += newUuid;
+   dbQuery->query += "', '%s', '%s', NULL, 0, NULL)";
+
+   dbQuery->escapedStrings.insert( product.productStoreId );
+   dbQuery->escapedStrings.insert( product.name );
+
+   AddQueryToOutput( dbQuery );
+
+   //--------------------------------------------------
+
+   // pull back the results so that we have the index.
+   dbQuery = new PacketDbQuery;
+   dbQuery->id =           0;
+   dbQuery->lookup =       QueryType_GetSingleProductInfo;
+   dbQuery->meta =         product.name;
+   dbQuery->serverLookup = 0;
+
+   dbQuery->query = "SELECT * FROM product WHERE filter_name = '%s'";
+   dbQuery->escapedStrings.insert( product.name );
+
+   AddQueryToOutput( dbQuery );
+}
+
+//---------------------------------------------------------------
+
+void     DiplodocusLogin:: SendListOfUserProductsToAssetServer( U32 connectionId )
+{
+   ConnectionToUser* connection = GetUserConnection( connectionId );
+   if( connection )
+   {
+      PacketListOfUserProductsS2S* packet = new PacketListOfUserProductsS2S;
+      packet->uuid = connection->userUuid;
+      vector< string >::iterator it =  connection->productFilterNames.begin();
+      while( it != connection->productFilterNames.end() )
+      {
+         packet->products.insert( *it++ );
+      }
+
+
+      BaseOutputContainer::iterator itOutputs = m_listOfOutputs.begin();
+      while( itOutputs != m_listOfOutputs.end() )
+      {
+         ChainedInterface<BasePacket*>*  outputPtr = (*itOutputs).m_interface;
+
+         if( outputPtr->AddOutputChainData( packet, m_chainId ) == true )
+         {
+            return;
+         }
+         itOutputs++;
+      }
+
+      delete packet;
+   }
+}
+
+//---------------------------------------------------------------
+
+void     DiplodocusLogin:: LoadInitializationData()
+{
+   PacketDbQuery* dbQuery = new PacketDbQuery;
+   dbQuery->id =           0;
+   dbQuery->lookup =       QueryType_LoadProductInfo;
+   dbQuery->meta =         "";
+   dbQuery->serverLookup = 0;
+
+   dbQuery->query = "SELECT * FROM product";
+
+   AddQueryToOutput( dbQuery );
+}
+
+//---------------------------------------------------------------
+
+int      DiplodocusLogin:: CallbackFunction()
 {
    SendServerIdentification();
+
+   if( m_isInitializing == false )
+   {
+      if( m_isInitialized == false )
+      {
+         LoadInitializationData();
+         m_isInitializing = true;
+      }
+   }
 
  /*  m_mutex.lock();
   /* ChainLinkIteratorType itInputs = m_listOfInputs.begin();

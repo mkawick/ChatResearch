@@ -7,7 +7,7 @@
 #include <iostream>
 #include <iomanip>
 #include <string>
-using namespace std;
+
 #include <assert.h>
 #include <boost/lexical_cast.hpp>
 
@@ -27,6 +27,8 @@ using namespace std;
 #define MSG_NOSIGNAL 0
 #endif
 
+using namespace std;
+
 const int typicalSleepTime = 200;
 
 
@@ -41,7 +43,9 @@ Fruitadens :: Fruitadens( const char* name ) : Threading::CChainedThread <BasePa
                m_port( 0 ),
                m_serverType( ServerType_General ),
                m_serverId( 0 ),
-               m_numPacketsReceived( 0 )
+               m_numPacketsReceived( 0 ),
+               m_receiveBufferOffset( 0 ), 
+               m_bytesInOverflow( 0 )
 {
    m_name = name;
    memset( &m_ipAddress, 0, sizeof( m_ipAddress ) );
@@ -236,8 +240,13 @@ int   Fruitadens :: ProcessInputFunction()
       }
    }
 
-   U8* buffer = m_receiveBuffer;
-   int remainingBufferSize = m_receiveBufferSize;
+   memcpy( m_receiveBuffer, m_overflowBuffer, m_bytesInOverflow );
+   m_receiveBufferOffset = m_bytesInOverflow;// save the offset
+   m_bytesInOverflow = 0;
+
+   int remainingBufferSize = m_receiveBufferSize - m_receiveBufferOffset;
+   U8* buffer = m_receiveBuffer + m_receiveBufferOffset;
+
    int numBytesReceived = SOCKET_ERROR;
    do    
    {
@@ -251,6 +260,8 @@ int   Fruitadens :: ProcessInputFunction()
          remainingBufferSize -= numBytesReceived;
       }
    } while( numBytesReceived != SOCKET_ERROR && remainingBufferSize > 0 );
+
+   
 
    // error checking
 #if PLATFORM == PLATFORM_WINDOWS
@@ -275,14 +286,14 @@ int   Fruitadens :: ProcessInputFunction()
 
 
    // process the data in the queue
-   PostProcessPackets( m_receiveBufferSize - remainingBufferSize );
+   PostProcessInputPackets( m_receiveBufferSize - remainingBufferSize );
 
    return 1;
 }
 
 //-----------------------------------------------------------------------------------------
 
-void  Fruitadens::PostProcessPackets( int bytesRead )
+void  Fruitadens::PostProcessInputPackets( int bytesRead )
 {
    if( bytesRead < 1 )
    {
@@ -291,8 +302,22 @@ void  Fruitadens::PostProcessPackets( int bytesRead )
 
    PacketFactory factory;
    int offset = 0;
+   U16 size;
+
    while( offset < bytesRead )
    {
+      int preOffset = offset;
+      Serialize::In( m_receiveBuffer, offset, size );
+
+      if( offset + size > bytesRead )
+      {
+         // copy remainder into temp buffer.
+         m_bytesInOverflow = bytesRead - preOffset;
+         memcpy( m_overflowBuffer, m_receiveBuffer + preOffset, m_bytesInOverflow );
+         cout << "--- Overflow packets: " << m_bytesInOverflow << endl;
+         return;
+      }
+
       BasePacket* packetIn = NULL;
       if( factory.Parse( m_receiveBuffer, offset, &packetIn ) == true )
       {
@@ -301,6 +326,7 @@ void  Fruitadens::PostProcessPackets( int bytesRead )
       }
       else 
       {
+         assert( 0 );// major problem
          offset = m_numPacketsReceived;// major failure here
       }
    }

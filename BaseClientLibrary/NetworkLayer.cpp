@@ -14,6 +14,62 @@
 using namespace Mber;
 
 ///////////////////////////////////////////////////////////////////////////////////
+
+AssetInfoExtended:: AssetInfoExtended() : data(NULL), size( NULL ), AssetInfo() 
+{
+}
+
+AssetInfoExtended:: AssetInfoExtended( const AssetInfo& asset ) : data(NULL), size( NULL ), AssetInfo( asset ) 
+{
+}
+
+AssetInfoExtended:: ~AssetInfoExtended()
+{
+   ClearData();
+}
+
+void  AssetInfoExtended:: SetData( const U8* _data, int _size )
+{
+   ClearData();
+
+   if( _size == 0 || _data == NULL )
+      return;
+
+   size = _size;
+   data = new U8[ size ];
+   memcpy( data, _data, size );
+}
+
+void  AssetInfoExtended:: ClearData()
+{
+   if( data )
+      delete [] data;
+   data = NULL;
+   size = 0;
+}
+
+void  AssetInfoExtended:: operator = ( const AssetInfo& asset )
+{
+   productId = asset.productId;
+   assetHash = asset.assetHash;
+   version = asset.version;
+   beginDate = asset.beginDate;
+   endDate = asset.endDate;
+
+}
+
+void  AssetInfoExtended:: operator = ( const AssetInfoExtended& asset )
+{
+   productId = asset.productId;
+   assetHash = asset.assetHash;
+   version = asset.version;
+   beginDate = asset.beginDate;
+   endDate = asset.endDate;
+
+   SetData( asset.data, asset.size );
+}
+
+///////////////////////////////////////////////////////////////////////////////////
 //------------------------------------------------------------
 
 NetworkLayer::NetworkLayer( U8 gameProductId ) : Fruitadens( "Networking Layer" ),
@@ -21,8 +77,13 @@ NetworkLayer::NetworkLayer( U8 gameProductId ) : Fruitadens( "Networking Layer" 
       m_isLoggingIn( false ),
       m_isLoggedIn( false ),
       m_connectionId( 0 ), 
-      m_selectedGame( 0 )
+      m_selectedGame( 0 ),
+      m_normalSleepTime( 50 ),
+      m_boostedSleepTime( 8 ),
+      m_isThreadPerformanceBoosted( 0 ),
+      m_lastRawDataIndex( 0 )
 {
+   SetSleepTime( m_normalSleepTime );
    //m_serverDns = "chat.mickey.playdekgames.com";
    m_serverDns = "gateway.internal.playdekgames.com";
    InitializeSockets();
@@ -61,7 +122,8 @@ void  NetworkLayer::Exit()
 string   NetworkLayer::GenerateHash( const string& stringThatIWantHashed )
 {
    string value;
-   ::ConvertToString( ::GenerateUniqueHash( stringThatIWantHashed ), value );
+   string lowerCaseString = ConvertStringToLower( stringThatIWantHashed );
+   ::ConvertToString( ::GenerateUniqueHash( lowerCaseString ), value );
    return value;
 }
 
@@ -154,6 +216,17 @@ bool  NetworkLayer::RequestListOfFriends() const
 {
    PacketContact_GetListOfContacts friends;
    SerializePacketOut( &friends );
+
+   return true;
+}
+
+//-----------------------------------------------------------------------------
+
+bool  NetworkLayer::RequestListOfPurchases( bool userOnly ) const
+{
+   PacketRequestListOfUserPurchases purchases;
+   purchases.requestUserOnly = userOnly;
+   SerializePacketOut( &purchases );
 
    return true;
 }
@@ -327,7 +400,7 @@ bool    NetworkLayer::GetChannel( int index, ChatChannel& channel )
 
 //-----------------------------------------------------------------------------
 
-bool    NetworkLayer::GetStaticAssetInfo( int index, AssetInfo& asset )
+bool    NetworkLayer::GetStaticAssetInfo( int index, AssetInfoExtended& asset )
 {
    if( index < 0 || index >= (int) m_staticAssets.size() )
    {
@@ -336,7 +409,7 @@ bool    NetworkLayer::GetStaticAssetInfo( int index, AssetInfo& asset )
    }
 
    int i = 0;
-   vector< AssetInfo >::const_iterator itAssets = m_staticAssets.begin();
+   vector< AssetInfoExtended >::const_iterator itAssets = m_staticAssets.begin();
    while( itAssets != m_staticAssets.end() )
    {
       if( i == index )
@@ -354,7 +427,7 @@ bool    NetworkLayer::GetStaticAssetInfo( int index, AssetInfo& asset )
 
 //-----------------------------------------------------------------------------
 
-bool    NetworkLayer::GetDynamicAssetInfo( int index, AssetInfo& asset )
+bool    NetworkLayer::GetDynamicAssetInfo( int index, AssetInfoExtended& asset )
 {
    if( index < 0 || index >= (int) m_dynamicAssets.size() )
    {
@@ -363,7 +436,7 @@ bool    NetworkLayer::GetDynamicAssetInfo( int index, AssetInfo& asset )
    }
 
    int i = 0;
-   vector< AssetInfo >::const_iterator itAssets = m_dynamicAssets.begin();
+   vector< AssetInfoExtended >::const_iterator itAssets = m_dynamicAssets.begin();
    while( itAssets != m_dynamicAssets.end() )
    {
       if( i == index )
@@ -372,6 +445,37 @@ bool    NetworkLayer::GetDynamicAssetInfo( int index, AssetInfo& asset )
          return true;
       }
       i ++;
+      itAssets++;
+   }
+
+   return false;
+}
+
+//-----------------------------------------------------------------------------
+
+bool     NetworkLayer:: ClearAssetInfo( const string& hash )
+{
+   vector< AssetInfoExtended >::iterator itAssets = m_dynamicAssets.begin();
+   while( itAssets != m_dynamicAssets.end() )
+   {
+      if( itAssets->assetHash == hash )
+      {
+         //itAssets->Clear();
+         itAssets->ClearData();
+         return true;
+      }
+      itAssets++;
+   }
+
+   itAssets = m_staticAssets.begin();
+   while( itAssets != m_staticAssets.end() )
+   {
+      if( itAssets->assetHash == hash )
+      {
+         //itAssets->Clear();
+         itAssets->ClearData();
+         return true;
+      }
       itAssets++;
    }
 
@@ -604,11 +708,12 @@ bool     NetworkLayer::RequestListOfStaticAssets( int platformId )
 
 //-----------------------------------------------------------------------------
 
-bool     NetworkLayer::RequestListOfDynamicAssets()
+bool     NetworkLayer::RequestListOfDynamicAssets( int platformId )
 {
    PacketAsset_GetListOfDynamicAssets assetRequest;
    assetRequest.uuid = m_uuid;
    assetRequest.loginKey = m_loginKey;
+   assetRequest.platformId = platformId;
    SerializePacketOut( &assetRequest );
    return true;
 }
@@ -631,6 +736,32 @@ bool     NetworkLayer::RequestAsset( const string& assetName )
    return true;
 }
 
+//-----------------------------------------------------------------------------
+
+bool     NetworkLayer::SendPurchases( const vector< RegisteredProduct >& purchases, int platformId )
+{
+   PacketListOfUserPurchases packet;
+   packet.platformId = platformId;
+
+   vector< RegisteredProduct >::const_iterator it = purchases.begin();
+   while( it != purchases.end() )
+   {
+      const RegisteredProduct& rp = *it++;
+      
+      PurchaseEntry pe;
+      pe.productStoreId = rp.id;
+      pe.name = rp.title;
+      pe.number_price = rp.number_price;
+      pe.price = rp.price;
+      pe.date = GetDateInUTC();
+
+      packet.purchases.push_back( pe );
+   }
+
+   SerializePacketOut( &packet );
+
+   return true;
+}
 
 //-----------------------------------------------------------------------------
 
@@ -649,6 +780,39 @@ bool     NetworkLayer::SerializePacketOut( BasePacket* packet ) const
 
 //-----------------------------------------------------------------------------
 
+int      NetworkLayer::ProcessInputFunction()
+{
+   ExpireThreadPerformanceBoost();
+   return Fruitadens::ProcessInputFunction();
+}
+
+void     NetworkLayer::BoostThreadPerformance()
+{
+   SetSleepTime( m_boostedSleepTime );
+   SetPriority( ePriorityHigh );
+   m_isThreadPerformanceBoosted = true;
+   time( &m_timeWhenThreadPerformanceBoosted );
+}
+
+void     NetworkLayer::RestoreNormalThreadPerformance()
+{
+   SetSleepTime( m_normalSleepTime );
+   m_isThreadPerformanceBoosted = false;
+   SetPriority( ePriorityNormal );
+}
+
+void     NetworkLayer::ExpireThreadPerformanceBoost()
+{
+   if( m_isThreadPerformanceBoosted )
+   {
+      time_t currentTime;// expire after 5 seconds.
+      time( &currentTime );
+      if( difftime( currentTime, m_timeWhenThreadPerformanceBoosted ) > 5.0 )
+      {
+         RestoreNormalThreadPerformance();
+      }
+   }
+}
 //-----------------------------------------------------------------------------
 
 bool  NetworkLayer::HandlePacketReceived( BasePacket* packetIn )
@@ -910,7 +1074,23 @@ bool  NetworkLayer::HandlePacketReceived( BasePacket* packetIn )
                   m_isLoggedIn = false;
                }
                break;
-
+            case PacketLogin::LoginType_RequestListOfPurchases:
+               {
+                  for( list< UserNetworkEventNotifier* >::iterator it = m_callbacks.begin(); it != m_callbacks.end(); ++it )
+                  {
+                     (*it)->RequestListOfUserPurchases();
+                  }
+               }
+               break;
+            case PacketLogin::LoginType_ListOfPurchases:
+               {
+                  PacketListOfUserPurchases* purchases = static_cast<PacketListOfUserPurchases*>( packetIn );
+                  for( list< UserNetworkEventNotifier* >::iterator it = m_callbacks.begin(); it != m_callbacks.end(); ++it )
+                  {  
+                     (*it)->ListOfUserPurchases( purchases->purchases, purchases->platformId, purchases->isAllProducts );
+                  }
+               }
+               break;
          }
          
       }
@@ -1120,27 +1300,52 @@ bool  NetworkLayer::HandlePacketReceived( BasePacket* packetIn )
                RawDataAccumulator& rawDataBuffer = m_rawDataBuffer[ dataType ];
                rawDataBuffer.AddPacket( data );
                string hash = data->identifier;
+               if( rawDataBuffer.GetRemainingSize() > 10*1024 )
+               {
+                  BoostThreadPerformance();
+               }
 
-               cout << "packet type: " << dataType << ", index: " << (int) data->index << ", size:" << (int) data->size << endl;
+               
+               cout << "packet type: " << dataType << ", index: " << (int) data->index << ", size:" << (int) data->size;
+               if( m_lastRawDataIndex - data->index > 1 )
+               {
+                  cout << "***";
+               }
+               m_lastRawDataIndex = data->index;
+               cout << endl;
 
                if( rawDataBuffer.IsDone() )
                {
-                  U8* buffer = NULL;
-                  int size = 0;
-                  rawDataBuffer.PrepPackage( buffer, size );
-                  for( list< UserNetworkEventNotifier* >::iterator it = m_callbacks.begin(); it != m_callbacks.end(); ++it )
+                  
+                  if( dataType == PacketGameplayRawData::Game )
                   {
-                     if( dataType == PacketGameplayRawData::Game )
+                     U8* buffer = NULL;
+                     int size = 0;
+                     rawDataBuffer.PrepPackage( buffer, size );
+                     for( list< UserNetworkEventNotifier* >::iterator it = m_callbacks.begin(); it != m_callbacks.end(); ++it )
                      {
                         (*it)->GameData( size, buffer );
                      }
+                     delete buffer;
+                  }
+                  else
+                  {
+                     AssetInfoExtended asset;
+                     if( GetAsset( hash, asset ) )
+                     {
+                        rawDataBuffer.PrepPackage( asset );
+                        for( list< UserNetworkEventNotifier* >::iterator it = m_callbacks.begin(); it != m_callbacks.end(); ++it )
+                        {
+                           (*it)->AssetData( hash );
+                        }
+                     }
                      else
                      {
-                        (*it)->AssetData( size, buffer, hash );
+                        cout << " unknown asset has arrived " << hash << endl;
                      }
                   }
-
-                  delete buffer;
+                  
+                  RestoreNormalThreadPerformance();
                }
                cleaner.Clear();
             }
@@ -1175,7 +1380,8 @@ bool  NetworkLayer::HandlePacketReceived( BasePacket* packetIn )
                SerializedKeyValueVector< AssetInfo >::KeyValueVectorIterator it = assetList->updatedAssets.begin();
                while ( it != assetList->updatedAssets.end() )
                {
-                  m_staticAssets.push_back( it->value );
+                  AssetInfoExtended extender( it->value );
+                  m_staticAssets.push_back( extender );
                   it ++;
                }
 
@@ -1185,6 +1391,10 @@ bool  NetworkLayer::HandlePacketReceived( BasePacket* packetIn )
                   {
                      (*it)->StaticAssetManifestAvalable();
                   }
+               }
+               else
+               {
+                  cout << "No static assets available" << endl;
                }
             }
             break;
@@ -1199,7 +1409,9 @@ bool  NetworkLayer::HandlePacketReceived( BasePacket* packetIn )
                SerializedKeyValueVector< AssetInfo >::KeyValueVectorIterator it = assetList->updatedAssets.begin();
                while ( it != assetList->updatedAssets.end() )
                {
-                  m_dynamicAssets.push_back( it->value );
+                  AssetInfoExtended extender = it->value;
+                  m_dynamicAssets.push_back( extender );
+                  it++;
                }
 
                if( m_dynamicAssets.size() )
@@ -1208,6 +1420,10 @@ bool  NetworkLayer::HandlePacketReceived( BasePacket* packetIn )
                   {
                      (*it)->DynamicicAssetManifestAvalable();
                   }
+               }
+               else
+               {
+                  cout << "No dynamic assets available" << endl;
                }
             }
             break;
@@ -1234,6 +1450,35 @@ bool     NetworkLayer::AddChatChannel( const ChatChannel& channel )
    }
    m_channels.push_back( channel );
    return true;
+}
+
+//------------------------------------------------------------------------
+
+bool     NetworkLayer::GetAsset( const string& hash, AssetInfoExtended& asset )
+{
+   vector< AssetInfoExtended >::iterator it = m_staticAssets.begin();
+   while( it != m_staticAssets.end() )
+   {
+      if( it->assetHash == hash )
+      {
+         asset = *it;
+         return true;
+      }
+      it ++;
+   }
+
+   it = m_dynamicAssets.begin();
+   while( it != m_staticAssets.end() )
+   {
+      if( it->assetHash == hash )
+      {
+         asset = *it;
+         return true;
+      }
+      it ++;
+   }
+
+   return false;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////
@@ -1292,6 +1537,33 @@ void  RawDataAccumulator:: PrepPackage( U8* & data, int& size )
       factory.CleanupPacket( temp );
    }
    data[size] = 0;
+
+
+   numBytes = 0;
+}
+
+void  RawDataAccumulator:: PrepPackage( AssetInfoExtended& asset )
+{
+   PacketFactory factory;
+   assert( IsDone() );
+   asset.ClearData();
+
+   asset.size = numBytes;
+   asset.data = new U8[ asset.size + 1];
+   U8* workingPointer = asset.data;
+
+   PacketGameplayRawData* packet = NULL;
+   while( packetsOfData.size() )
+   {
+      packet = packetsOfData.front();
+      packetsOfData.pop_front();
+      memcpy( workingPointer, packet->data, packet->size );
+      workingPointer += packet->size;
+
+      BasePacket* temp = static_cast< BasePacket* >( packet );
+      factory.CleanupPacket( temp );
+   }
+   asset.data[ asset.size ] = 0;
 
 
    numBytes = 0;

@@ -8,6 +8,7 @@
 
 #include <iostream>
 #include <iomanip>
+#include <assert.h>
 
 //-----------------------------------------------------------------------------------------
 
@@ -88,6 +89,20 @@ bool FruitadensGateway::FilterOutwardPacket( BasePacket* packet ) const
 
 //-----------------------------------------------------------------------------------------
 
+int   FruitadensGateway::ProcessInputFunction()
+{
+   // take any overflow data and save it.
+   //memcpy( m_receiveBuffer, m_overflowBuffer, m_bytesInOverflow );
+   //m_receiveBufferOffset = m_bytesInOverflow;// save the offset
+
+   int returnVal = Fruitadens :: ProcessInputFunction();
+
+   //m_bytesInOverflow = 0;
+   return returnVal;
+}
+
+//-----------------------------------------------------------------------------------------
+
 int  FruitadensGateway::ProcessOutputFunction()
 {
    if( m_isConnected == false )
@@ -102,22 +117,70 @@ int  FruitadensGateway::ProcessOutputFunction()
       int offset = 0;
       PacketFactory factory;
       
+      m_mutex.lock();
       while( m_packetsReadyToSend.size() && offset < dangerZone )
       {
-         m_mutex.lock();
          BasePacket* packet = m_packetsReadyToSend.front();
          m_packetsReadyToSend.pop_front();
-         m_mutex.unlock();
-
+         
          packet->SerializeOut( buffer, offset );
 
          factory.CleanupPacket( packet );
       }
+      m_mutex.unlock();
 
       SendPacket( buffer, offset );
    }
 
    return 0;
+}
+
+
+//-----------------------------------------------------------------------------------------
+
+void  FruitadensGateway::PostProcessInputPackets( int bytesRead )
+{
+   if( bytesRead < 1 )
+   {
+      return;
+   }
+
+   // we should always be receiving Gateway Wrappers.
+   PacketGatewayWrapper wrapper;
+
+   PacketFactory factory;
+   int offset = 0;
+   U16 size;
+   while( offset < bytesRead )
+   { 
+      int preOffset = offset;
+      Serialize::In( m_receiveBuffer, offset, size );
+
+      wrapper.HeaderSerializeIn( m_receiveBuffer, offset );
+//      if( offset + wrapper.size > bytesRead )// we must have cut off a packet in the middle.
+      if( offset + size > bytesRead )
+      {
+         // copy remainder into temp buffer.
+         m_bytesInOverflow = bytesRead - preOffset;
+         memcpy( m_overflowBuffer, m_receiveBuffer + preOffset, m_bytesInOverflow );
+         cout << "--- Overflow packets: " << m_bytesInOverflow << endl;
+         return;
+      }
+
+      int previousOffset = offset;
+      BasePacket* packetIn = NULL;
+      if( factory.Parse( m_receiveBuffer, offset, &packetIn ) == true )
+      {
+         m_numPacketsReceived ++;
+         HandlePacketReceived( packetIn );
+      }
+      else 
+      {
+         assert( 0 );
+         offset = m_numPacketsReceived;// major failure here
+      }
+   }
+
 }
 
 //-----------------------------------------------------------------------------------------
