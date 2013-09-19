@@ -2,6 +2,9 @@
 
 #pragma once
 
+#include "ProductInfo.h"
+#include "ConnectionToUser.h"
+
 #include "../NetworkCommon/NetworkIn/Diplodocus.h"
 #include "KhaanLogin.h"
 #include "../NetworkCommon/Database/QueryHandler.h"
@@ -11,53 +14,10 @@ class PacketDbQuery;
 class PacketDbQueryResult;
 class PacketCheat;
 
-//-----------------------------------------------------------------------------------------
 
-struct ProductInfo
-{
-   ProductInfo() : productId( 0 ), productType( 0 ) {}
-   int      productId;
-   string   uuid;
-   string   name;
-   string   filterName;
-   string   Begindate;
-   int      productType;
-
-   double   price;
-};
 
 //-----------------------------------------------------------------------------------------
 
-struct ConnectionToUser
-{
-   enum LoginStatus
-   {
-      LoginStatus_Pending,
-      LoginStatus_Invalid,
-      LoginStatus_LoggedIn,
-      LoginStatus_Hacker
-   };
-
-   ConnectionToUser( const string& name, const string& pword, const string& key ) : username( name ), passwordHash( pword ), loginKey( key ), status( LoginStatus_Pending ), active( true ), loggedOutTime( 0 ) {}
-   string               id;
-   string               username;
-   string               passwordHash;
-   string               email;
-   string               userUuid;
-   string               loginKey;
-   string               lastLoginTime;
-   //U32                  
-
-   vector< string >     productFilterNames;
-   vector< ProductInfo > productsWaitingForInsertionToDb;
-   LoginStatus          status;
-   U8                   gameProductId;
-   bool                 active;
-   time_t               loggedOutTime;
-
-   void  AddProductFilterName( const string& text );
-   int   FindProductFilterName( const string& text ); 
-};
 
 //---------------------------------------------------------------
 
@@ -165,6 +125,8 @@ public:
    enum QueryType 
    {
       QueryType_UserLoginInfo = 1,
+      QueryType_UserProfile,
+      QueryType_CreateBlankUserProfile,
       QueryType_UpdateLastLoggedInTime,
       QueryType_UpdateLastLoggedOutTime,
       QueryType_UserListOfGame,
@@ -184,12 +146,17 @@ public:
       QueryType_GetSingleProductInfo,
       QueryType_UpdateProductFileInfo,
       QueryType_AddProductInfoToUser,
-      QueryType_GetProductListForUser
+      QueryType_GetProductListForUser,
+      QueryType_RemoveAllProductInfoForUser,
+
+      QueryType_AdminLoadUserProfile, // profile, etc
+      QueryType_AdminLoadUserProducts
    };
 
 public:
    DiplodocusLogin( const string& serverName, U32 serverId );
    void     ServerWasIdentified( ChainedInterface* khaan );
+   void     AutoAddTheProductFromWhichYouLogin( bool addIt = false ) { m_autoAddProductFromWhichUsersLogin = addIt; }
 
    bool     AddInputChainData( BasePacket* packet, U32 connectionId );
    bool     AddOutputChainData( BasePacket* packet, U32 connectionId );
@@ -217,7 +184,12 @@ private:
    void     UpdateUserRecord( CreateAccountResultsAggregator* aggregator );
    //void     UpdateUserRecordToMatchingGamekitHash( const CreateAccountResultsAggregator* aggregator );
 
+   //--------------------------------------------
+   bool     HandleLoginResultFromDb( U32 connectionId, PacketDbQueryResult* dbResult );
+   bool     HandleUserProfileFromDb( U32 connectionId, PacketDbQueryResult* dbResult );
    bool     SuccessfulLogin( U32 connectionId, bool isReloggedIn = false );
+   bool     LoadUserProfile( U32 connectionId );
+   bool     AddBlankUserProfile( U32 connectionId );
    bool     ForceUserLogoutAndBlock( U32 connectionId );
    bool     CreateAccount( const char* username, const char* emailAddress, const char* password, int userId, int gameId );
    bool     RequestListOfGames( U32 connectionId, const string& userUuid );
@@ -227,15 +199,20 @@ private:
    bool     UpdateLastLoggedOutTime( U32 connectionId );
    bool     UpdateLastLoggedInTime( U32 connectionId );
 
+   //--------------------------------------------
+
    bool     SendLoginStatusToOtherServers( const string& username, const string& userUuid, U32 connectionId, U8 gameProductId, const string& lastLoginTime, bool isActive, const string& email, const string& passwordHash, const string& userId,  
                                                     const string& loginKey, bool isLoggedIn, bool wasDisconnectedByError );
    bool     SendListOfUserProductsToOtherServers( const string& userUuid, U32 connectionId, const vector< string >& productNames );
 
    bool     StoreUserPurchases( U32 connectionId, const PacketListOfUserPurchases* purchase );
    bool     RequestListOfPurchases( U32 connectionId, const PacketRequestListOfUserPurchases* purchase );
+
    bool     HandleCheats( U32 connectionId, const PacketCheat* cheat );
+   bool     HandleCheat_RemoveAll( U32 connectionId, const string& command );
+   bool     HandleCheat_AddProduct( U32 connectionId, const string& command );
    
-   void     WriteProductToUserRecord( const string& productFilterName, const string& uuid, double pricePaid );
+   void     WriteProductToUserRecord( U32 connectionId, const string& productFilterName, const string& uuid, double pricePaid );
    void     StoreListOfUsersProductsFromDB( U32 connectionId, PacketDbQueryResult* dbResult );
    void     AddGameProductIdToUserProducts( U32 connectionId );
    void     SendListOfUserProductsToAssetServer( U32 connectionId );
@@ -266,6 +243,7 @@ private:
    UserConnectionMap          m_userConnectionMap;
    UserCreateAccountMap       m_userAccountCreationMap;
    bool                       m_isInitialized, m_isInitializing;
+   bool                       m_autoAddProductFromWhichUsersLogin;
 
    bool                       IsUserConnectionValid( U32 id );
    ConnectionToUser*          GetUserConnection( U32 id );

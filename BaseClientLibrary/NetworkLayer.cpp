@@ -5,6 +5,7 @@
 #include "../ServerStack/NetworkCommon/Packets/ContactPacket.h"
 #include "../ServerStack/NetworkCommon/Packets/ChatPacket.h"
 #include "../ServerStack/NetworkCommon/Packets/AssetPacket.h"
+#include "../ServerStack/NetworkCommon/Packets/CheatPacket.h"
 
 #include <assert.h>
 #include <iostream>
@@ -12,6 +13,18 @@
 #include <boost/lexical_cast.hpp>
 
 using namespace Mber;
+
+
+///////////////////////////////////////////////////////////////////////////////////
+
+void UserNetworkEventNotifier::RequestListOfUserPurchases() 
+{
+   if( network )
+   {
+      vector< RegisteredProduct > purchases;
+      network->SendPurchases( purchases, Platform_ios );// default is an empty list
+   }
+}
 
 ///////////////////////////////////////////////////////////////////////////////////
 
@@ -69,10 +82,16 @@ void  AssetInfoExtended:: operator = ( const AssetInfoExtended& asset )
    SetData( asset.data, asset.size );
 }
 
+void  AssetInfoExtended:: MoveData( AssetInfoExtended& source )
+{
+   data = source.data; source.data = NULL;
+   size = source.size; source.size = 0;
+}
+
 ///////////////////////////////////////////////////////////////////////////////////
 //------------------------------------------------------------
 
-NetworkLayer::NetworkLayer( U8 gameProductId ) : Fruitadens( "Networking Layer" ),
+NetworkLayer::NetworkLayer( U8 gameProductId, bool processOnlyOneIncommingPacketPerLoop  ) : Fruitadens( "Networking Layer", processOnlyOneIncommingPacketPerLoop ),
       m_gameProductId( gameProductId ), 
       m_isLoggingIn( false ),
       m_isLoggedIn( false ),
@@ -626,6 +645,8 @@ bool     NetworkLayer::RegisterCallbackInterface( UserNetworkEventNotifier* _cal
    }
    
    m_callbacks.push_back( _callbacks );  
+
+   _callbacks->network = this;
    return true;
 }
 
@@ -759,6 +780,18 @@ bool     NetworkLayer::SendPurchases( const vector< RegisteredProduct >& purchas
    }
 
    SerializePacketOut( &packet );
+
+   return true;
+}
+
+//-----------------------------------------------------------------------------
+
+bool     NetworkLayer::SendCheat( const string& cheatText )
+{
+   PacketCheat cheat;
+   cheat.cheat = cheatText;
+   cheat.whichServer = ServerType_Login;// needs improvement
+   SerializePacketOut( &cheat );
 
    return true;
 }
@@ -1026,9 +1059,10 @@ bool  NetworkLayer::HandlePacketReceived( BasePacket* packetIn )
             break;
          }
          m_isCreatingAccount = false;
+         PacketErrorReport* errorPacket = static_cast<PacketErrorReport*>( packetIn );
          for( list< UserNetworkEventNotifier* >::iterator it = m_callbacks.begin(); it != m_callbacks.end(); ++it )
          {
-            (*it)->OnError( packetIn->packetSubType );
+            (*it)->OnError( errorPacket->packetSubType, errorPacket->statusInfo );
          }
       }
       break;
@@ -1334,9 +1368,10 @@ bool  NetworkLayer::HandlePacketReceived( BasePacket* packetIn )
                      if( GetAsset( hash, asset ) )
                      {
                         rawDataBuffer.PrepPackage( asset );
+                        UpdateAssetData( hash, asset );
                         for( list< UserNetworkEventNotifier* >::iterator it = m_callbacks.begin(); it != m_callbacks.end(); ++it )
                         {
-                           (*it)->AssetData( hash );
+                           (*it)->AssetDataAvailable( hash );
                         }
                      }
                      else
@@ -1468,7 +1503,7 @@ bool     NetworkLayer::GetAsset( const string& hash, AssetInfoExtended& asset )
    }
 
    it = m_dynamicAssets.begin();
-   while( it != m_staticAssets.end() )
+   while( it != m_dynamicAssets.end() )
    {
       if( it->assetHash == hash )
       {
@@ -1480,6 +1515,34 @@ bool     NetworkLayer::GetAsset( const string& hash, AssetInfoExtended& asset )
 
    return false;
 }
+
+bool     NetworkLayer::UpdateAssetData( const string& hash, AssetInfoExtended& asset )
+{
+   vector< AssetInfoExtended >::iterator it = m_staticAssets.begin();
+   while( it != m_staticAssets.end() )
+   {
+      if( it->assetHash == hash )
+      {
+         it->MoveData( asset );
+         return true;
+      }
+      it ++;
+   }
+
+   it = m_dynamicAssets.begin();
+   while( it != m_dynamicAssets.end() )
+   {
+      if( it->assetHash == hash )
+      {
+         it->MoveData( asset );
+         return true;
+      }
+      it ++;
+   }
+
+   return false;
+}
+
 
 ///////////////////////////////////////////////////////////////////////////////////
 

@@ -47,7 +47,7 @@ public:
    void     SetupGroup( const string& groupId, const KeyValueVector& userList );// as users load in, group list will be maintained.
    void     RemoveConnection( int connectionId );
  
-   bool     SendErrorReportToClient( PacketErrorReport::ErrorType error, int connectionId );
+   //bool     SendErrorReportToClient( PacketErrorReport::ErrorType error, int connectionId );
    
    void     InputConnected( ChainedInterface* chainedInput );
    void     InputRemovalInProgress( ChainedInterface* chainedInput );

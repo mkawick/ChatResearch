@@ -11,6 +11,7 @@
 #include "BasePacket.h"
 #include "AssetPacket.h"
 #include "ChatPacket.h"
+#include "CheatPacket.h"
 #include "ContactPacket.h"
 #include "DbPacket.h"
 #include "GamePacket.h"
@@ -811,11 +812,11 @@ bool     PacketFactory::ParseGame( const U8* bufferIn, int& bufferOffset, const 
 
 bool     PacketFactory::ParseCheat( const U8* bufferIn, int& bufferOffset, const BasePacket* firstPassParse, BasePacket** packetOut ) const
 {
-   switch( firstPassParse->packetSubType )
+   switch( firstPassParse->packetSubType ) //PacketType_Cheat
    {
-   case PacketGameToServer::GamePacketType_LoginToServer:
+   case PacketCheat::Cheat_Basic:
       {
-         *packetOut = SerializeIn< PacketGameToServer >( bufferIn, bufferOffset );
+         *packetOut = SerializeIn< PacketCheat >( bufferIn, bufferOffset );
       }
       return true;
    }

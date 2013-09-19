@@ -310,6 +310,9 @@ public:
       Column_home_phone,
       Column_alt_phone,
       Column_show_gender_profile,
+      Column_admin_level,
+      Column_show_win_loss_record,
+      Column_time_zone,
       Column_end
    };
    static const char* const column_names[];

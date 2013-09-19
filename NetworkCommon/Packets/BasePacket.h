@@ -324,6 +324,7 @@ public:
 
    string   lastLogoutTime;
    bool     wasLoginSuccessful;
+   U8       adminLevel;
 };
 
 ///////////////////////////////////////////////////////////////
@@ -652,10 +653,13 @@ public:
    enum ErrorType
    {
       ErrorType_Generic,
+      ErrorType_Status, // most of the time, all we have is status
+      ErrorType_Login,
+
       ErrorType_UserBadLogin,
       ErrorType_UserDoesNotExist,
       ErrorType_UserBlocked,
-      ErrorType_UserLoggedOut, //4
+      ErrorType_UserLoggedOut, //6
 
       ErrorType_ChatNotCurrentlyAvailable,// reported at the gateway
       ErrorType_BadChatChannel,
@@ -665,7 +669,7 @@ public:
       ErrorType_YouAreTheOnlyPersonInThatChatChannel,
       ErrorType_CannotAddUserToChannel_AlreadyExists,
       ErrorType_NoChatHistoryExistsOnSelectedChannel,
-      ErrorType_NoChatHistoryExistsForThisUser, // 14
+      ErrorType_NoChatHistoryExistsForThisUser, // 16
 
       ErrorType_CreateFailed_BadPassword,
       ErrorType_CreateFailed_DisallowedUsername,
@@ -673,9 +677,9 @@ public:
       ErrorType_CreateFailed_DuplicateEmail,
       ErrorType_CreateFailed_UserCreateAccountPending,
       ErrorType_CreateAccount_Success,
-      ErrorType_CreateAccount_AccountUpdated, // 21
+      ErrorType_CreateAccount_AccountUpdated, // 23
 
-      ErrorType_Contact_Invitation_success, // 22
+      ErrorType_Contact_Invitation_success, // 24
       ErrorType_Contact_Invitation_ProblemFindingUser,
       ErrorType_Contact_Invitation_InviteeAlreadyInvited,
       ErrorType_Contact_Invitation_InviteeAlreadyFriend,
@@ -685,9 +689,31 @@ public:
       ErrorType_Contact_Invitation_BadInvitation,
 
       ErrorType_Contact_Asset_BadLoginKey,
+      
+      ErrorType_Cheat_BadPermissions,
+      ErrorType_Cheat_UnrecognizedCommand,
+      ErrorType_Cheat_UnknownError,
+      ErrorType_Cheat_ProductUnknown,
+      ErrorType_Login_CannotAddCurrentProductToUser,
+
+   };
+
+   enum StatusSubtype
+   {
+      StatusSubtype_ProductAdded,
+      StatusSubtype_AllProductsRemoved,
+      StatusSubtype_UserIsAdminAccount,
+
+      StatusSubtype_ExtendedPermissionsGiven
    };
 public:
-   PacketErrorReport( int packet_sub_type = ErrorType_Generic ): BasePacket( PacketType_ErrorReport, packet_sub_type ) {}
+   PacketErrorReport( int packet_sub_type = ErrorType_Generic ): BasePacket( PacketType_ErrorReport, packet_sub_type ), statusInfo( 0 ) {}
+   PacketErrorReport( int packet_sub_type, int subType = 0 ): BasePacket( PacketType_ErrorReport, packet_sub_type ), statusInfo( subType ) {}
+
+   bool  SerializeIn( const U8* data, int& bufferOffset );
+   bool  SerializeOut( U8* data, int& bufferOffset ) const;
+
+   int   statusInfo;
 };
 
 ///////////////////////////////////////////////////////////////

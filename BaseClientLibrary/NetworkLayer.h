@@ -9,6 +9,8 @@
 
 namespace Mber
 {
+
+   typedef void (__stdcall * SignalReady)(int);
 ///////////////////////////////////////////////////////
 
 struct Demographics
@@ -100,6 +102,7 @@ struct AssetInfoExtended : public AssetInfo
    void  SetData( const U8* data, int size );
    void  ClearData();
    bool  IsDataValid() const { if( data && size ) return true; return false; }
+   void  MoveData( AssetInfoExtended& source );
 
    bool  SerializeIn( const U8* data, int& bufferOffset ) { return false; } // do not serialize
    bool  SerializeOut( U8* data, int& bufferOffset ) const { return false; }
@@ -137,19 +140,20 @@ const char* platformStrings[] = {
 
 ///////////////////////////////////////////////////////
 
+class NetworkLayer;
 class UserNetworkEventNotifier
 {
 public:
    virtual void  UserLogin( bool success ) {}
    virtual void  UserLogout() {}
-   virtual void  RequestListOfUserPurchases() {}
+   virtual void  RequestListOfUserPurchases();
    virtual void  ListOfUserPurchases( const SerializedVector< PurchaseEntry >& purchases, int platformId, bool isCompleteList ) {}
 
    virtual void  UserDemographics( const string& username, const Demographics& userDemographics ) {}
    virtual void  UserWinLoss( const string& username, const WinLoss& userWinLoss ) {}
 
    virtual void  GameData( U16 length, const U8* rawdata ) {}
-   virtual void  AssetData( const string& assetHash ) {}
+   virtual void  AssetDataAvailable( const string& assetHash ) {}
 
    virtual void  FriendsUpdate() {}
    virtual void  FriendOnlineStatusChanged( const string& uuid ) {}
@@ -175,12 +179,14 @@ public:
    virtual void  DynamicicAssetManifestAvalable() const {}
    virtual bool  AssetLoaded( const string& name, const U8* buffer, int size ) { return true; }
 
-   virtual void  OnError( int code ){}
+   virtual void  OnError( int code, int subCode ){}
 
    UserNetworkEventNotifier(){}
 
-   
+   NetworkLayer* network;
 };
+
+///////////////////////////////////////////////////////
 
 typedef list< UserNetworkEventNotifier* > MBerNotifierList;
 
@@ -213,7 +219,7 @@ public:
 class NetworkLayer :  public Fruitadens
 {
 public:
-   NetworkLayer( U8 gameProductId = GameProductId_MONKEYS_FROM_MARS );
+   NetworkLayer( U8 gameProductId, bool processOnlyOneIncommingPacketPerLoop );
    ~NetworkLayer();
 
    void     Init( const char* serverDNS = "gateway.internal.playdekgames.com" );
@@ -270,6 +276,7 @@ public:
    bool     RequestAsset( const string& assetName );
 
    bool     SendPurchases( const vector< RegisteredProduct >& purchases, int platformId = Platform_ios );
+   bool     SendCheat( const string& cheat );
 
    //--------------------------------------------------------------
 
@@ -365,6 +372,7 @@ private:
    void     ExpireThreadPerformanceBoost();
 
    bool     GetAsset( const string& hash, AssetInfoExtended& asset );
+   bool     UpdateAssetData( const string& hash, AssetInfoExtended& asset );
 };
 ///////////////////////////////////////////////////////
 

@@ -106,7 +106,7 @@ bool     UserAccountAssetDelivery::GetListOfStaticAssets( const PacketAsset_GetL
    //PacketAsset_GetListOfStaticAssets
    U8 gameProductId = packet->gameProductId;
    vector< string > assetIds;
-   const AssetOrganizer* assetOrganizer = m_assetManager->GetDynamicAssetOrganizer();
+   const AssetOrganizer* assetOrganizer = m_assetManager->GetStaticAssetOrganizer();
    assetOrganizer->GetListOfAssets( gameProductId, packet->platformId, assetIds );
 
    //-----------------------------

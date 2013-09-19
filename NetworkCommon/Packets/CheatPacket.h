@@ -10,6 +10,7 @@
 
 class PacketCheat : public BasePacket
 {
+public:
    enum
    {
       Cheat_Basic = 1

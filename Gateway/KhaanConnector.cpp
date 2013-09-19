@@ -94,7 +94,7 @@ bool	KhaanConnector::OnDataReceived( unsigned char* data, int length )
 
       if( result == true )
       {
-         if( IsWhiteListedIn( packetIn ) )
+         if( IsWhiteListedIn( packetIn ) || HasPermission( packetIn ) )
          {
             m_gateway->AddInputChainData( packetIn , m_connectionId );
          }
@@ -143,6 +143,22 @@ bool  KhaanConnector::IsWhiteListedIn( const BasePacket* packet ) const
       return false;
    case PacketType_ErrorReport:
       return false;
+   }
+
+   return false;
+}
+
+//-----------------------------------------------------------------------------------------
+
+bool  KhaanConnector::HasPermission( const BasePacket* packet ) const
+{
+   if( m_adminLevel > 0 )
+   {
+      switch( packet->packetType )
+      {
+      case  PacketType_Cheat:
+         return true;
+      }
    }
 
    return false;

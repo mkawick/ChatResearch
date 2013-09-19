@@ -17,6 +17,7 @@ public:
 
    void     AuthorizeConnection() { m_authorizedConnection = true; }
    void     DenyAllFutureData() { m_denyAllFutureData = true; }
+   void     SetAdminLevelOperations( int level ) { m_adminLevel = level; }
    U32      GetConnectionId() const { return m_connectionId; }
    void     SetConnectionId( U32 id ) { m_connectionId = id; }
 
@@ -26,12 +27,14 @@ public:
 private:
    
    bool  IsWhiteListedIn( const BasePacket* packet ) const;
+   bool  HasPermission( const BasePacket* packet ) const;
 
    U32                  m_connectionId;
    U32                  m_numPacketsReceivedBeforeAuth;
    U32                  m_randomNumberOfPacketsBeforeLogin;
    bool                 m_authorizedConnection;
    bool                 m_denyAllFutureData;
+   int                  m_adminLevel;
    DiplodocusGateway*   m_gateway;
 
    void  PreCleanup();

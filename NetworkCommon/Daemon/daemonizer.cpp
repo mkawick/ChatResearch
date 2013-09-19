@@ -21,6 +21,7 @@
 #include <sys/time.h>
 #include <sys/resource.h>
 #else
+#pragma warning ( disable:4996 )
 #endif
 
 using namespace std;

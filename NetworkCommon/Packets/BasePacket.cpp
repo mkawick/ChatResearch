@@ -253,7 +253,8 @@ bool  PacketLoginToGateway::SerializeIn( const U8* data, int& bufferOffset )
 {
    PacketLogin::SerializeIn( data, bufferOffset );
    Serialize::In( data, bufferOffset, lastLogoutTime );
-   Serialize::In( data, bufferOffset, wasLoginSuccessful );
+   Serialize::In( data, bufferOffset, wasLoginSuccessful ); 
+   Serialize::In( data, bufferOffset, adminLevel );
 
    return true;
 }
@@ -263,6 +264,7 @@ bool  PacketLoginToGateway::SerializeOut( U8* data, int& bufferOffset ) const
    PacketLogin::SerializeOut( data, bufferOffset );
    Serialize::Out( data, bufferOffset, lastLogoutTime );
    Serialize::Out( data, bufferOffset, wasLoginSuccessful );
+   Serialize::Out( data, bufferOffset, adminLevel );
 
    return true;
 }
@@ -628,6 +630,25 @@ bool  PacketGatewayWrapper::SerializeOut( U8* data, int& bufferOffset ) const
       assert( 0 );
    }
    pPacket->SerializeOut( data, bufferOffset );
+
+   return true;
+}
+
+///////////////////////////////////////////////////////////////
+
+
+bool  PacketErrorReport::SerializeIn( const U8* data, int& bufferOffset )
+{
+   BasePacket::SerializeIn( data, bufferOffset );
+   Serialize::In( data, bufferOffset, statusInfo );
+
+   return true;
+}
+
+bool  PacketErrorReport::SerializeOut( U8* data, int& bufferOffset ) const
+{
+   BasePacket::SerializeOut( data, bufferOffset );
+   Serialize::Out( data, bufferOffset, statusInfo );
 
    return true;
 }

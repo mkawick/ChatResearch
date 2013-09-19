@@ -7,7 +7,7 @@
 
 ///////////////////////////////////////////////////////////////////////////////////
 
-NetworkLayer::NetworkLayer() : Fruitadens( "Networking Layer" )//, m_selectedGame( 0 ), m_numEchoBytesSent( 0 ), m_packetEchoPacketsSent( 0 ) {}
+NetworkLayer::NetworkLayer() : Fruitadens( "Networking Layer" )
 {
 }
 

@@ -1108,7 +1108,7 @@ void     ChatChannelManager::UserSendsChatToChannel( const string& senderUuid, c
    U32 connectionId = userSender.connection->GetConnectionId();
    if( channelUuid.size() == 0 )
    {
-      m_chatServer->SendErrorReportToClient( PacketErrorReport::ErrorType_NoChatChannel, connectionId  );
+      m_chatServer->SendErrorToClient( connectionId, PacketErrorReport::ErrorType_NoChatChannel );
       return;
    }
 
@@ -1129,7 +1129,7 @@ void     ChatChannelManager::UserSendsChatToChannel( const string& senderUuid, c
    ChatChannel& channel = channelIter->second;
    if( channel.userUuidList.size() < 1 )
    {
-      m_chatServer->SendErrorReportToClient( PacketErrorReport::ErrorType_YouAreTheOnlyPersonInThatChatChannel, connectionId  );
+      m_chatServer->SendErrorToClient( connectionId, PacketErrorReport::ErrorType_YouAreTheOnlyPersonInThatChatChannel  );
       string text = " User ";
       text += senderUuid;
       text += " tried to send text on chat channel ";
@@ -1188,7 +1188,7 @@ void     ChatChannelManager::UserSendsChatToUser( const string& senderUuid, cons
       m_chatServer->Log( text, 1 );
       //return;
       // this is totally fine.. you can send a message to another player who is not online
-      m_chatServer->SendErrorReportToClient( PacketErrorReport::ErrorType_UserNotOnline, connectionId  );
+      m_chatServer->SendErrorToClient( connectionId, PacketErrorReport::ErrorType_UserNotOnline );
     }
 
    else //( receiverIter
@@ -1473,7 +1473,7 @@ bool     ChatChannelManager::AddUserToChannel( const string& channelUuid, const 
    {
       if( authIter != m_userUuidMap.end() )
       {
-         m_chatServer->SendErrorReportToClient( PacketErrorReport::ErrorType_UserDoesNotExist, authIter->second.connection->GetConnectionId()  );
+         m_chatServer->SendErrorToClient( PacketErrorReport::ErrorType_UserDoesNotExist, authIter->second.connection->GetConnectionId()  );
       }
 
       string text = " User ";
@@ -1491,7 +1491,7 @@ bool     ChatChannelManager::AddUserToChannel( const string& channelUuid, const 
    ChannelMapIterator channelIter = m_channelMap.find( channelHash );
    if( channelIter == m_channelMap.end() )
    {
-      //m_chatServer->SendErrorReportToClient( PacketErrorReport::ErrorType_BadChatChannel, userIter->second.connection->GetConnectionId()  );
+      //m_chatServer->SendErrorToClient( PacketErrorReport::ErrorType_BadChatChannel, userIter->second.connection->GetConnectionId()  );
 
       string text = " User ";
       text += authUuid;
@@ -1512,7 +1512,7 @@ bool     ChatChannelManager::AddUserToChannel( const string& channelUuid, const 
    {
       if( userHashLookup == *userIt++ )
       {
-         //m_chatServer->SendErrorReportToClient( PacketErrorReport::ErrorType_CannotAddUserToChannel_AlreadyExists, userIter->second.connection->GetConnectionId()  );
+         //m_chatServer->SendErrorToClient( PacketErrorReport::ErrorType_CannotAddUserToChannel_AlreadyExists, userIter->second.connection->GetConnectionId()  );
          string text = " User ";
          text += authUuid;
          text += " tried to add a user ";
@@ -1598,7 +1598,7 @@ bool     ChatChannelManager::RemoveUserFromChannel( const string& channelUuid, c
    {
       if( authIter != m_userUuidMap.end() )
       {
-         m_chatServer->SendErrorReportToClient( PacketErrorReport::ErrorType_UserDoesNotExist, authIter->second.connection->GetConnectionId()  );
+         m_chatServer->SendErrorToClient( authIter->second.connection->GetConnectionId(), PacketErrorReport::ErrorType_UserDoesNotExist  );
       }
       string text = " User id=";
       text += authUuid;
@@ -1616,7 +1616,7 @@ bool     ChatChannelManager::RemoveUserFromChannel( const string& channelUuid, c
    ChannelMapIterator channelIter = m_channelMap.find( channelHash );
    if( channelIter == m_channelMap.end() )
    {
-      m_chatServer->SendErrorReportToClient( PacketErrorReport::ErrorType_BadChatChannel, userIter->second.connection->GetConnectionId()  );
+      m_chatServer->SendErrorToClient( userIter->second.connection->GetConnectionId(), PacketErrorReport::ErrorType_BadChatChannel  );
 
       string text = " User id=";
       text += authUuid;
@@ -1700,7 +1700,7 @@ bool     ChatChannelManager::RequestChatters( const string& channelUuid, const s
    ChannelMapIterator channelIter = m_channelMap.find( channelHash );
    if( channelIter == m_channelMap.end() )
    {
-      m_chatServer->SendErrorReportToClient( PacketErrorReport::ErrorType_BadChatChannel, userIter->second.connection->GetConnectionId()  );
+      m_chatServer->SendErrorToClient( userIter->second.connection->GetConnectionId(), PacketErrorReport::ErrorType_BadChatChannel  );
 
       string text = " User ";
       text += authUuid;
@@ -1761,7 +1761,7 @@ bool     ChatChannelManager::RequestAllUsersInChatChannel( const string& channel
    {
       if( userIter != m_userUuidMap.end() )
       {
-         m_chatServer->SendErrorReportToClient( PacketErrorReport::ErrorType_BadChatChannel, userIter->second.connection->GetConnectionId()  );
+         m_chatServer->SendErrorToClient( userIter->second.connection->GetConnectionId(), PacketErrorReport::ErrorType_BadChatChannel  );
       }
 
       string text = " User ";

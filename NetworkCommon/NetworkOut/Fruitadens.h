@@ -28,7 +28,7 @@ struct TempPacket
 class Fruitadens : public Threading::CChainedThread <BasePacket*>
 {
 public:
-   Fruitadens( const char* name );
+   Fruitadens( const char* name, bool processOnlyOneIncommingPacketPerLoop = false );
    ~Fruitadens();
 
    bool        AddOutputChainData( BasePacket* packet, U32 filingData );// standard code, no need to modify
@@ -69,6 +69,7 @@ protected:
    int                  m_clientSocket;
    bool                 m_isConnected;
    bool                 m_hasFailedCritically;
+   bool                 m_processOnlyOneIncommingPacketPerLoop;
    U32                  m_connectedServerId;
    U8                   m_connectedGameProductId;
    sockaddr_in          m_ipAddress;

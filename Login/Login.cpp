@@ -14,6 +14,7 @@
 #include <memory.h>
 
 #include "../NetworkCommon/Version.h"
+#include "../NetworkCommon/Utils/BoostExtensions.h"
 #include "../NetworkCommon/Utils/Utils.h"
 
 #include "../NetworkCommon/Utils/CommandLineParser.h"
@@ -66,6 +67,8 @@ int main( int argc, const char* argv[] )
    string gamePortString = "23996";
    string gameIpAddressString = "localhost";
 
+   string autoAddLoginProductString = "true";
+
    //---------------------------------------
 
    parser.FindValue( "listen.port", listenPortString );
@@ -82,6 +85,7 @@ int main( int argc, const char* argv[] )
    
    parser.FindValue( "game.port", gamePortString );
    parser.FindValue( "game.address", gameIpAddressString );
+   parser.FindValue( "autoAddLoginProduct", autoAddLoginProductString );
 
 
    string dbPortString = "16384";
@@ -99,6 +103,8 @@ int main( int argc, const char* argv[] )
 
    int listenPort = 3072, dbPortAddress = 3306, chatPort = 9602, contactPort=9802, assetPort=10002;
    int gamePort = 23996;
+   bool autoAddLoginProduct = true;
+
    try 
    {
        listenPort = boost::lexical_cast<int>( listenPortString );
@@ -109,11 +115,19 @@ int main( int argc, const char* argv[] )
        assetPort = boost::lexical_cast<int>( assetPortString );
 
        gamePort = boost::lexical_cast<int>( gamePortString );
+
+       std::transform( autoAddLoginProductString.begin(), autoAddLoginProductString.end(), autoAddLoginProductString.begin(), ::tolower );
+       if( autoAddLoginProductString == "1" || autoAddLoginProductString == "true" )
+          autoAddLoginProduct = true;
+       else
+          autoAddLoginProduct = false;
    } 
    catch( boost::bad_lexical_cast const& ) 
    {
        std::cout << "Error: input string was not valid" << std::endl;
    }
+
+   
 
    //--------------------------------------------------------------
 
@@ -137,11 +151,13 @@ int main( int argc, const char* argv[] )
    cout << "Version " << version << endl;
    cout << "ServerId " << serverId << endl;
    cout << "Db " << dbIpAddress << ":" << dbPortAddress << endl;
+   cout << "   flag: autoAddLoginProduct = " << std::boolalpha << autoAddLoginProduct << endl;
    cout << "------------------------------------------------------------------" << endl << endl << endl;
 
    DiplodocusLogin* loginServer = new DiplodocusLogin( serverName, serverId );
    loginServer->AddOutputChain( delta );
    loginServer->SetupListening( listenPort );
+   loginServer->AutoAddTheProductFromWhichYouLogin( autoAddLoginProduct );
    
    //----------------------------------
 

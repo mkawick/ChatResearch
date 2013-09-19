@@ -34,10 +34,12 @@ const int typicalSleepTime = 200;
 
 //-----------------------------------------------------------------------------
 
-Fruitadens :: Fruitadens( const char* name ) : Threading::CChainedThread <BasePacket*>( true, typicalSleepTime ),
+Fruitadens :: Fruitadens( const char* name, bool processOnlyOneIncommingPacketPerLoop  ) : 
+               Threading::CChainedThread <BasePacket*>( true, typicalSleepTime ),
                m_clientSocket( SOCKET_ERROR ),
                m_isConnected( false ),
                m_hasFailedCritically( false ),
+               m_processOnlyOneIncommingPacketPerLoop( processOnlyOneIncommingPacketPerLoop ),
                m_connectedServerId( 0 ),
                m_connectedGameProductId( 0 ),
                m_port( 0 ),
@@ -329,6 +331,8 @@ void  Fruitadens::PostProcessInputPackets( int bytesRead )
          assert( 0 );// major problem
          offset = m_numPacketsReceived;// major failure here
       }
+      if( m_processOnlyOneIncommingPacketPerLoop == true )
+         break;
    }
 
 }

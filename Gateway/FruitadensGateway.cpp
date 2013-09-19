@@ -4,6 +4,7 @@
 #include "FruitadensGateway.h"
 #include "../NetworkCommon/Packets/PacketFactory.h"
 #include "../NetworkCommon/Packets/BasePacket.h"
+#include "../NetworkCommon/Packets/CheatPacket.h"
 #include "../NetworkCommon/Packets/ServerToServerPacket.h"
 
 #include <iostream>
@@ -32,6 +33,17 @@ bool FruitadensGateway::FilterOutwardPacket( BasePacket* packet ) const
       PacketGatewayWrapper* wrapper = static_cast< PacketGatewayWrapper* >( packet );
 
       PacketType type = static_cast< PacketType > ( wrapper->pPacket->packetType );
+      
+      if( type == PacketType_Cheat )// these are filtered differently
+      {
+         PacketCheat* cheatPacket = static_cast <PacketCheat*> ( wrapper->pPacket );
+         int serverType = cheatPacket->whichServer;
+
+         if( m_serverType == serverType )
+            return true;
+         return false;
+      }
+
       if( m_serverType == ServerType_GameInstance )
       {
          if( type == PacketType_Gameplay )

@@ -211,6 +211,7 @@ void  DiplodocusGateway::HandlePacketToKhaan( KhaanConnector* khaan, BasePacket*
       if( finishedLogin->wasLoginSuccessful )
       {
          khaan->AuthorizeConnection();
+         khaan->SetAdminLevelOperations( finishedLogin->adminLevel );
       }
       else
       {

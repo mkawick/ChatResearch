@@ -243,7 +243,7 @@ void     UserConnection::GetChatChannelDigest( const string& channelUuid, int nu
 
    if( channelUuid.size() == 0 )
    {
-      m_chatServer->SendErrorReportToClient( PacketErrorReport::ErrorType_BadChatChannel, m_connectionId  );
+      m_chatServer->SendErrorToClient( m_connectionId, PacketErrorReport::ErrorType_BadChatChannel );
       return;
    }
 
@@ -294,7 +294,7 @@ void     UserConnection::GetChatP2PDigest( const string& userUuid, int numRecord
    
    if( userUuid.size() == 0 )
    {
-      m_chatServer->SendErrorReportToClient( PacketErrorReport::ErrorType_NoChatHistoryExistsForThisUser, m_connectionId  );
+      m_chatServer->SendErrorToClient( m_connectionId, PacketErrorReport::ErrorType_NoChatHistoryExistsForThisUser  );
       return;
    }
 
@@ -381,7 +381,7 @@ bool     UserConnection::SendLoginStatus( bool wasSuccessful )
 
    if( wasSuccessful == false )
    {
-      m_chatServer->SendErrorReportToClient( PacketErrorReport::ErrorType_UserBadLogin, m_connectionId  );
+      m_chatServer->SendErrorToClient( m_connectionId, PacketErrorReport::ErrorType_UserBadLogin );
    }
    return true;
 }
@@ -392,7 +392,7 @@ bool     UserConnection::SendChatOut( const string& message, const string& userU
 {
  /*  if( m_currentChannel.size() == 0 && m_currentFriendUuid.size() == 0 )
    {
-      m_chatServer->SendErrorReportToClient( PacketErrorReport::ErrorType_NoChatChannel, m_connectionId  );
+      m_chatServer->SendErrorToClient( PacketErrorReport::ErrorType_NoChatChannel, m_connectionId  );
       return false;
    }*/
 
@@ -443,7 +443,7 @@ bool     UserConnection::SetChatChannel( const string& channelUuid )
    {
       // we could go to the db and verify that the channel does exist?
       // ErrorType_NotAMemberOfThatChatChannel 
-      m_chatServer->SendErrorReportToClient( PacketErrorReport::ErrorType_BadChatChannel, m_connectionId  );
+      m_chatServer->SendErrorToClient( PacketErrorReport::ErrorType_BadChatChannel, m_connectionId  );
    }
 
    return false;
@@ -767,7 +767,7 @@ bool     UserConnection::HandleDbQueryResult( BasePacket* packet )
          {
             if( dbResult->bucket.bucket.size() == 0 )
             {
-               m_chatServer->SendErrorReportToClient( PacketErrorReport::ErrorType_NoChatHistoryExistsOnSelectedChannel, m_connectionId  );
+               m_chatServer->SendErrorToClient( m_connectionId, PacketErrorReport::ErrorType_NoChatHistoryExistsOnSelectedChannel );
                break;
             }
 
@@ -822,7 +822,7 @@ bool     UserConnection::HandleDbQueryResult( BasePacket* packet )
          {
             if( dbResult->bucket.bucket.size() == 0 )
             {
-               m_chatServer->SendErrorReportToClient( PacketErrorReport::ErrorType_NoChatHistoryExistsForThisUser, m_connectionId  );
+               m_chatServer->SendErrorToClient( m_connectionId, PacketErrorReport::ErrorType_NoChatHistoryExistsForThisUser );
                break;
             }
             PacketChatHistoryResult* result = new PacketChatHistoryResult;
@@ -875,7 +875,7 @@ bool     UserConnection::HandleDbQueryResult( BasePacket* packet )
          {
             if( dbResult->bucket.bucket.size() == 0 )
             {
-               m_chatServer->SendErrorReportToClient( PacketErrorReport::ErrorType_NoChatHistoryExistsForThisUser, m_connectionId  );
+               m_chatServer->SendErrorToClient( m_connectionId, PacketErrorReport::ErrorType_NoChatHistoryExistsForThisUser );
                break;
             }
 

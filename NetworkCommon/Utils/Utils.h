@@ -4,6 +4,7 @@
 
 #include "../DataTypes.h"
 #include <string>
+#include <vector>
 
 std::string    GenerateUUID( U32 xorValue = 0 );
 U64            GenerateUniqueHash( const std::string& str, int maxHexLen = 16 );
@@ -29,6 +30,8 @@ std::string    Trim(const std::string& str,
 std::string    Reduce(const std::string& str,
                    const std::string& fill = " ",
                    const std::string& whitespace = " \t");
+unsigned int split( const std::string& txt, std::vector< std::string >& strs, char ch = ' ');
+
 std::string    OpenAndLoadFile( const std::string& path );
 
 #if PLATFORM != PLATFORM_WINDOWS

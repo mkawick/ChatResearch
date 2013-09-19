@@ -7,6 +7,7 @@
 #include <iostream>
 #include <iomanip>
 #include <fstream>
+#include <algorithm>
 
 #include <ctime>
 #include <time.h>
@@ -210,6 +211,31 @@ std::string    Reduce( const std::string& str,
     }
 
     return result;
+}
+
+
+//-------------------------------------------------------------------------
+
+unsigned int split( const std::string &txt, std::vector<std::string> &strs, char ch )
+{
+   unsigned int pos = txt.find( ch );
+   unsigned int initialPos = 0;
+   strs.clear();
+
+   // Decompose statement
+   while( pos != std::string::npos ) 
+   {
+      string temp = Trim( txt.substr( initialPos, pos - initialPos + 1 ) );
+      strs.push_back( temp );
+      initialPos = pos + 1;
+
+      pos = txt.find( ch, initialPos );
+   }
+
+   // Add the last one
+   strs.push_back( txt.substr( initialPos, min( pos, txt.size() ) - initialPos + 1 ) );
+
+   return strs.size();
 }
 
 //-------------------------------------------------------------------------

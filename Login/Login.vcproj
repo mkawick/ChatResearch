@@ -176,6 +176,10 @@
 			UniqueIdentifier="{4FC737F1-C7A5-4376-A066-2A32D752A2FF}"
 			>
 			<File
+				RelativePath=".\ConnectionToUser.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\DiplodocusLogin.cpp"
 				>
 			</File>
@@ -198,6 +202,10 @@
 			UniqueIdentifier="{93995380-89BD-4b04-88EB-625FBE52EBFB}"
 			>
 			<File
+				RelativePath=".\ConnectionToUser.h"
+				>
+			</File>
+			<File
 				RelativePath=".\DiplodocusLogin.h"
 				>
 			</File>
@@ -207,6 +215,10 @@
 			</File>
 			<File
 				RelativePath=".\KhaanLogin.h"
+				>
+			</File>
+			<File
+				RelativePath=".\ProductInfo.h"
 				>
 			</File>
 		</Filter>
@@ -426,6 +438,10 @@
 			<Filter
 				Name="Utils"
 				>
+				<File
+					RelativePath="..\NetworkCommon\Utils\BoostExtensions.h"
+					>
+				</File>
 				<File
 					RelativePath="..\NetworkCommon\Utils\CommandLineParser.cpp"
 					>

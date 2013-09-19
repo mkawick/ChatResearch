@@ -271,9 +271,9 @@ bool     Diplodocus< InputChain, OutputChain >::SendPacketToGateway( BasePacket*
 //---------------------------------------------------------------
 
 template< typename InputChain, typename OutputChain >
-bool  Diplodocus< InputChain, OutputChain >::SendErrorToClient( U32 connectionId, PacketErrorReport::ErrorType error )
+bool  Diplodocus< InputChain, OutputChain >::SendErrorToClient( U32 connectionId, PacketErrorReport::ErrorType error, int subType )
 {
-   SendPacketToGateway( new PacketErrorReport( error ), connectionId );
+   SendPacketToGateway( new PacketErrorReport( error, subType ), connectionId );
    return false;
 }
 

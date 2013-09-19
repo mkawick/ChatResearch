@@ -379,6 +379,14 @@
 					>
 				</File>
 				<File
+					RelativePath="..\NetworkCommon\Packets\CheatPacket.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\NetworkCommon\Packets\CheatPacket.h"
+					>
+				</File>
+				<File
 					RelativePath="..\NetworkCommon\Packets\ContactPacket.cpp"
 					>
 				</File>
