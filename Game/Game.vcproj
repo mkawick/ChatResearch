@@ -60,6 +60,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
+				AdditionalDependencies="../Debug/PacketLibrary.lib"
 				OutputFile="$(OutDir)\$(ProjectName)Server.exe"
 				LinkIncremental="2"
 				IgnoreDefaultLibraryNames="libcmt.lib"
@@ -135,6 +136,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
+				AdditionalDependencies="../Release/PacketLibrary.lib"
 				OutputFile="$(OutDir)\$(ProjectName)Server.exe"
 				LinkIncremental="1"
 				IgnoreDefaultLibraryNames="libcmt.lib"
@@ -348,78 +350,6 @@
 				</File>
 				<File
 					RelativePath="..\NetworkCommon\NetworkOut\Fruitadens.h"
-					>
-				</File>
-			</Filter>
-			<Filter
-				Name="Packets"
-				>
-				<File
-					RelativePath="..\NetworkCommon\Packets\AssetPacket.cpp"
-					>
-				</File>
-				<File
-					RelativePath="..\NetworkCommon\Packets\AssetPacket.h"
-					>
-				</File>
-				<File
-					RelativePath="..\NetworkCommon\Packets\BasePacket.cpp"
-					>
-				</File>
-				<File
-					RelativePath="..\NetworkCommon\Packets\BasePacket.h"
-					>
-				</File>
-				<File
-					RelativePath="..\NetworkCommon\Packets\BasePacket.inl"
-					>
-				</File>
-				<File
-					RelativePath="..\NetworkCommon\Packets\ChatPacket.cpp"
-					>
-				</File>
-				<File
-					RelativePath="..\NetworkCommon\Packets\ChatPacket.h"
-					>
-				</File>
-				<File
-					RelativePath="..\NetworkCommon\Packets\ContactPacket.cpp"
-					>
-				</File>
-				<File
-					RelativePath="..\NetworkCommon\Packets\ContactPacket.h"
-					>
-				</File>
-				<File
-					RelativePath="..\NetworkCommon\Packets\DbPacket.cpp"
-					>
-				</File>
-				<File
-					RelativePath="..\NetworkCommon\Packets\DbPacket.h"
-					>
-				</File>
-				<File
-					RelativePath="..\NetworkCommon\Packets\GamePacket.cpp"
-					>
-				</File>
-				<File
-					RelativePath="..\NetworkCommon\Packets\GamePacket.h"
-					>
-				</File>
-				<File
-					RelativePath="..\NetworkCommon\Packets\PacketFactory.cpp"
-					>
-				</File>
-				<File
-					RelativePath="..\NetworkCommon\Packets\PacketFactory.h"
-					>
-				</File>
-				<File
-					RelativePath="..\NetworkCommon\Packets\ServerToServerPacket.cpp"
-					>
-				</File>
-				<File
-					RelativePath="..\NetworkCommon\Packets\ServerToServerPacket.h"
 					>
 				</File>
 			</Filter>

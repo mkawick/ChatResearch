@@ -545,7 +545,7 @@ bool     Deltadromeus::PutQueryResultInProperChain( DbJobBase* testJob )
       while( it != m_listOfInputs.end() )
       {
          //ChainLink& link = (*it);
-         ChainedInterface< BasePacket*>*	chainObj = (*it).m_interface;
+         ChainType*	chainObj = static_cast< ChainType*> ( (*it).m_interface );
 
          if( chainObj->GetChainedId() == matchingId )
          {

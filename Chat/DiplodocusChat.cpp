@@ -7,6 +7,7 @@
 #include "../NetworkCommon/Packets/DbPacket.h"
 #include "../NetworkCommon/Packets/GamePacket.h"
 #include "../NetworkCommon/Packets/ChatPacket.h"
+#include "../NetworkCommon/Packets/LoginPacket.h"
 #include "../NetworkCommon/Packets/ServerToServerPacket.h"
 
 ///////////////////////////////////////////////////////////////////
@@ -30,12 +31,22 @@ void  DiplodocusChat :: Init()
 }
 //---------------------------------------------------------------
 
-void  DiplodocusChat::InputConnected( ChainedInterface* chainedInput )
+void     DiplodocusChat:: ServerWasIdentified( ChainedInterface* khaan )
+{
+   BasePacket* packet = NULL;
+   PackageForServerIdentification( m_serverName, m_serverId, m_gameProductId, m_isGame, m_isControllerApp, true, m_isGateway, &packet );
+   khaan->AddOutputChainData( packet, 0 );
+   m_clientsNeedingUpdate.push_back( khaan->GetChainedId() );
+}
+
+//---------------------------------------------------------------
+
+void  DiplodocusChat::InputConnected( IChainedInterface* chainedInput )
 {
    KhaanChat* khaan = static_cast< KhaanChat* >( chainedInput );
 }
 
-void  DiplodocusChat::InputRemovalInProgress( ChainedInterface* chainedInput )
+void  DiplodocusChat::InputRemovalInProgress( IChainedInterface* chainedInput )
 {
    // inheritance is hurting us here. the base class GetConnectionId which is invoked later
    // hides the derived version due to the type of pointers.
@@ -355,7 +366,7 @@ bool  DiplodocusChat::HandlePacketToOtherServer( BasePacket* packet, U32 connect
    ChainLinkIteratorType itInputs = m_listOfInputs.begin();
    while( itInputs != m_listOfInputs.end() )// only one output currently supported.
    {
-      ChainedInterface* inputPtr = itInputs->m_interface;
+      ChainType* inputPtr = static_cast< ChainType*> ( itInputs->m_interface );
       if( inputPtr->GetConnectionId() == ServerToServerConnectionId )
       {
          if( inputPtr->AddOutputChainData( packet, connectionId ) )
@@ -397,7 +408,7 @@ bool  DiplodocusChat::AddPacketFromUserConnection( BasePacket* packet, U32 conne
       ChainLinkIteratorType itOutputs = m_listOfOutputs.begin();
       while( itOutputs != m_listOfOutputs.end() )// only one output currently supported.
       {
-         ChainedInterface* outputPtr = (*itOutputs).m_interface;
+         ChainType* outputPtr = static_cast< ChainType*> ( (*itOutputs).m_interface );
          if( outputPtr->AddInputChainData( packet, m_chainId ) == true )
          {
             break;

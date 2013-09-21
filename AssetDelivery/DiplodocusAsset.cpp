@@ -1,6 +1,7 @@
 #include "DiplodocusAsset.h"
 #include "../NetworkCommon/Packets/ServerToServerPacket.h"
 #include "../NetworkCommon/Packets/AssetPacket.h"
+#include "../NetworkCommon/Packets/LoginPacket.h"
 #include "../NetworkCommon/Packets/Packetfactory.h"
 
 #include "AssetOrganizer.h"
@@ -304,11 +305,11 @@ bool     DiplodocusAsset::AddOutputChainData( BasePacket* packet, U32 connection
       while( itInputs != m_listOfInputs.end() )
       {
          ChainLink& chainedInput = *itInputs++;
-         ChainedInterface* interfacePtr = chainedInput.m_interface;
+         IChainedInterface* interfacePtr = chainedInput.m_interface;
          KhaanAsset* khaan = static_cast< KhaanAsset* >( interfacePtr );
          if( khaan->GetServerId() == m_connectionIdGateway )
          {
-            interfacePtr->AddOutputChainData( packet );
+            khaan->AddOutputChainData( packet );
             //khaan->Update();// the gateway may not have a proper connection id.
 
             AddServerNeedingUpdate( khaan->GetServerId() );
@@ -363,7 +364,7 @@ int      DiplodocusAsset::CallbackFunction()
       while( itInputs != m_listOfInputs.end() )
       {
          ChainLink& chainedInput = *itInputs++;
-         ChainedInterface* interfacePtr = chainedInput.m_interface;
+         IChainedInterface* interfacePtr = chainedInput.m_interface;
          KhaanAsset* khaan = static_cast< KhaanAsset* >( interfacePtr );
          if( khaan->GetServerId() == serverId )
          {

@@ -25,6 +25,7 @@ bool	KhaanChat::OnDataReceived( unsigned char* data, int length )
       {
          assert( 0 );
       }
+
       if( type == PacketType_GatewayWrapper )
       {
          PacketGatewayWrapper* wrapper = static_cast< PacketGatewayWrapper* >( packetIn );
@@ -33,17 +34,16 @@ bool	KhaanChat::OnDataReceived( unsigned char* data, int length )
          if( itOutputs != m_listOfOutputs.end() )// only one output currently supported.
          {
             const ChainLink& chain = *itOutputs++;
-            ChainedInterface* interfacePtr = chain.m_interface;
+            ChainType* interfacePtr = static_cast< ChainType*> ( chain.m_interface );
             //DiplodocusChat * middle = static_cast<DiplodocusChat*>( interfacePtr );
 
             m_connectionId = wrapper->connectionId;
             if( interfacePtr->AddInputChainData( wrapper->pPacket, m_connectionId ) == false )
             {
                delete wrapper->pPacket;
+               wrapper->pPacket = NULL;
             }
          }
-         delete wrapper;// will not delete the package
-         packetIn = NULL;
       }
       else if( type == PacketType_ServerToServerWrapper )
       {
@@ -51,32 +51,50 @@ bool	KhaanChat::OnDataReceived( unsigned char* data, int length )
          // so this is just server information about the gateway since we only accept connections about the gateway on this port
          PacketServerIdentifier* packet = static_cast< PacketServerIdentifier * > ( wrapper->pPacket );
 
-         //if( m_serverName != packet->serverName ||  m_serverId != packet->serverId )
-         {
-            m_serverName = packet->serverName;
-            m_serverId = packet->serverId;
-            m_isGameServer = packet->isGameServer;
-            m_isController = packet->isController;
-            U8 gameProductId = packet->gameProductId;
+         SaveOffServerIdentification( packet );
 
-            std::string ip_txt( inet_ntoa( m_ipAddress.sin_addr ) );
-            cout << "---------  Connected as server to " << m_serverName << "  ------------------" << endl;
-            cout << "    " << ip_txt << " : " << static_cast<U32>( GetPort() ) << endl;
-            cout << "    type " << static_cast<U32>( gameProductId ) << " -- server ID = " << m_serverId << endl;
-            cout << "    isGame = " << boolalpha << m_isGameServer << ", isController : " << m_isController << noboolalpha << endl;
-            cout << "------------------------------------------------------" << endl;
-         }
-
-         delete packet;
-         delete wrapper;// will not delete the package
-         packetIn = NULL;
       }
    }
-   if( packetIn )
-      delete packetIn;
+   parser.CleanupPacket( packetIn );
    return true;
 }
 
+//---------------------------------------------------------------
+
+void  KhaanChat :: SaveOffServerIdentification( const PacketServerIdentifier* packet )
+{
+   //if( m_serverName == packet->serverName && m_serverId == packet->serverId ) // prevent dups from reporting.
+   //   return;
+
+   m_serverName = packet->serverName;
+   m_serverId = packet->serverId;
+   m_isGameServer = packet->isGameServer;
+   m_isController = packet->isController;
+   m_isGateway = packet->isGateway;
+   U8 gameProductId = packet->gameProductId;
+
+   std::string ip_txt( inet_ntoa( m_ipAddress.sin_addr ) );
+   cout << "---------  Connected as server to " << m_serverName << "  ------------------" << endl;
+   cout << "    " << ip_txt << " : " << static_cast<U32>( GetPort() ) << endl;
+   cout << "    type " << static_cast<U32>( gameProductId ) << " -- server ID = " << m_serverId << endl;
+   cout << "    isGame = " << boolalpha << m_isGameServer << ", isController : " << m_isController << noboolalpha << endl;
+   cout << "------------------------------------------------------" << endl;
+
+   ChainLinkIteratorType itOutputs = m_listOfOutputs.begin();
+   if( itOutputs != m_listOfOutputs.end() )// only one output currently supported.
+   {
+      const ChainLink& chain = *itOutputs++;
+      IChainedInterface* interfacePtr = chain.m_interface;
+      DiplodocusChat * middle = static_cast<DiplodocusChat*>( interfacePtr );
+
+      middle->ServerWasIdentified( this );
+
+      if( m_isGateway )
+      {
+         middle->AddGatewayConnection( m_serverId );
+      }
+   }
+}
 
 //---------------------------------------------------------------
 
@@ -88,7 +106,7 @@ void  KhaanChat::PreStart()
 
    ChainLinkIteratorType output = m_listOfOutputs.begin();
 
-   ChainedInterface*	chain = (*output).m_interface;
+   IChainedInterface*	chain = (*output).m_interface;
    if( chain )
    {
       DiplodocusChat* chatServer = static_cast<DiplodocusChat*>( chain );
@@ -105,7 +123,7 @@ void   KhaanChat ::PreCleanup()
 
    ChainLinkIteratorType output = m_listOfOutputs.begin();
 
-   ChainedInterface*	chain = (*output).m_interface;
+   IChainedInterface*	chain = (*output).m_interface;
    if( chain )
    {
       DiplodocusChat* chatServer = static_cast< DiplodocusChat * >( chain );

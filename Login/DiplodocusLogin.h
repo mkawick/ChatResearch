@@ -8,102 +8,20 @@
 #include "../NetworkCommon/NetworkIn/Diplodocus.h"
 #include "KhaanLogin.h"
 #include "../NetworkCommon/Database/QueryHandler.h"
+#include "CreateAccountResultsAggregator.h"
 #include <ctime>
 
 class PacketDbQuery;
 class PacketDbQueryResult;
 class PacketCheat;
+struct PurchaseEntry;
 
-
-
-//-----------------------------------------------------------------------------------------
-
-
-//---------------------------------------------------------------
-
-class CreateAccountResultsAggregator
-{
-public:
-   enum     MatchingRecord
-   {
-      MatchingRecord_None,
-      MatchingRecord_Name = 1,
-      MatchingRecord_Email = 2,
-      MatchingRecord_Gamekithash = 4
-   };
-
-   CreateAccountResultsAggregator( U32 _connectionId, const string& email, const string& _password, const string& _username, const string& _gamekitHashId, 
-                                 const string& _deviceId, U8 _languageId, U8 _gameProductId, int numQueriesToComplete = 3 ) : 
-         m_numQueriesToAggregate( numQueriesToComplete ), 
-         m_numUserRecordsMatching( 0 ), 
-         m_numPendingUserRecordsMatching( 0 ),
-         m_whichRecordMatched( MatchingRecord_None ),
-         m_connectionId( _connectionId ), 
-         m_useremail( email ), 
-         m_password( _password ), 
-         m_username( _username ), 
-         m_gamekitHashId( _gamekitHashId ), 
-         m_deviceId( _deviceId ), 
-         m_gameProductId( _gameProductId ),
-         m_languageId( _languageId ),
-         m_userNameIsInvalid( false ),
-         m_userRecordMatchingGKHash( 0 ),
-         m_userRecordMatchingName( 0 ),
-         m_userRecordMatchingEmail( 0 ),
-         m_userRecordMatchingActive( 0 ),
-         m_pendingUserRecordMatchingGKHash( 0 ),
-         m_pendingUserRecordMatchingName( 0 ),
-         m_pendingUserRecordMatchingEmail( 0 )
-         {}
-
-   bool     HandleResult( const PacketDbQueryResult* dbResult );
-   U32      GetConnectionId() const { return m_connectionId; }
-   bool     IsComplete() const { if( m_numQueriesToAggregate == 0 ) return true; return false; }
-   bool     HasFoundAnyMatchingRecords() const;
-   bool     HasMatchingGamekitHash() const { if( m_whichRecordMatched == MatchingRecord_Gamekithash ) return true; return false; }
-
-   bool     GetMatchingRecordType( MatchingRecord recordType ) const { return (m_whichRecordMatched & recordType )? true: false; }
-   //U32      Get
-
-   // decision making
-   bool     IsDuplicateRecord() const;
-   bool     ShouldUpdateUserRecord() const;
-   bool     ShouldUpdatePendingUserRecord() const;
-   bool     ShouldInsertNewUserRecord() const;
-
-   bool     IsMatching_GKHashRecord_DifferentFrom_UserEmail( const string& testEmail ) const;
-   
-public:
-   int            m_numQueriesToAggregate; // when it drops to 0, we are done.
-   int            m_numUserRecordsMatching;
-   int            m_numPendingUserRecordsMatching;
-   U32            m_connectionId;
-   string         m_useremail;
-   string         m_password;
-   string         m_username;
-   string         m_gamekitHashId;
-   string         m_deviceId;
-   U8             m_gameProductId;
-   U8             m_languageId;
-   bool           m_userNameIsInvalid;
-   
-public:// we don't need accessors for all these
-   U32            m_whichRecordMatched;
-
-   U32            m_userRecordMatchingGKHash;
-   U32            m_userRecordMatchingName;
-   U32            m_userRecordMatchingEmail;
-   U32            m_userRecordMatchingActive;
-
-   U32            m_pendingUserRecordMatchingGKHash;
-   U32            m_pendingUserRecordMatchingName;
-   U32            m_pendingUserRecordMatchingEmail;
-
-   string         m_emailForMatchingRecord_GamekitHashId;
-};
+class PacketRequestListOfUserPurchases;
+//class PacketRequestUserProfile;
 
 //-----------------------------------------------------------------------------------------
 
+/*
 enum LanguageList // corresponds to the db-language table
 {
    LanguageList_english = 1,
@@ -116,6 +34,7 @@ enum LanguageList // corresponds to the db-language table
    LanguageList_japanese,
    LanguageList_chinese
 };
+*/
 
 //-----------------------------------------------------------------------------------------
 
@@ -161,6 +80,20 @@ public:
    bool     AddInputChainData( BasePacket* packet, U32 connectionId );
    bool     AddOutputChainData( BasePacket* packet, U32 connectionId );
 
+   bool     AddQueryToOutput( PacketDbQuery* query );
+
+   //--------------------------------------
+   //bool     LoadUserProfile( U32 connectionId );
+   bool     RequestListOfGames( U32 connectionId, const string& userUuid );
+   bool     RequestListOfProducts( U32 connectionId, const string& userUuid );
+
+   int      FindProductByName( const string& name );
+   void     AddNewProductToDb( const PurchaseEntry& product );   
+   void     SendListOfUserProductsToAssetServer( U32 connectionId );
+
+   bool     GetProductByIndex( int index, ProductInfo& returnPi );
+   bool     GetProductByProductId( int productId, ProductInfo& returnPi );
+
 private:
 
    int      CallbackFunction();
@@ -170,7 +103,7 @@ private:
    void     StoreAllProducts( PacketDbQueryResult* dbResult );
    void     StoreSingleProduct( PacketDbQueryResult* dbResult );
 
-   bool     AddQueryToOutput( PacketDbQuery* query );
+   
    bool     LogUserIn( const string& username, const string& password, const string& loginKey, U8 gameProductId, U32 connectionId );
    bool     LogUserOut( U32 connectionId, bool wasDisconnectedByError );
    bool     CreateUserAccount( U32 connectionId, const string& email, const string& password, const string& username, const string& deviceAccountId, const string& deviceId, U8 languageId, U8 gameProductId );
@@ -188,12 +121,10 @@ private:
    bool     HandleLoginResultFromDb( U32 connectionId, PacketDbQueryResult* dbResult );
    bool     HandleUserProfileFromDb( U32 connectionId, PacketDbQueryResult* dbResult );
    bool     SuccessfulLogin( U32 connectionId, bool isReloggedIn = false );
-   bool     LoadUserProfile( U32 connectionId );
+   
    bool     AddBlankUserProfile( U32 connectionId );
    bool     ForceUserLogoutAndBlock( U32 connectionId );
    bool     CreateAccount( const char* username, const char* emailAddress, const char* password, int userId, int gameId );
-   bool     RequestListOfGames( U32 connectionId, const string& userUuid );
-   bool     RequestListOfProducts( U32 connectionId, const string& userUuid );
    bool     SendListOfGamesToGameServers( U32 connectionId, const KeyValueVector& kv_array );
 
    bool     UpdateLastLoggedOutTime( U32 connectionId );
@@ -207,20 +138,15 @@ private:
 
    bool     StoreUserPurchases( U32 connectionId, const PacketListOfUserPurchases* purchase );
    bool     RequestListOfPurchases( U32 connectionId, const PacketRequestListOfUserPurchases* purchase );
+   bool     RequestProfile( U32 connectionId, const PacketRequestUserProfile* profileRequest );
+   bool     UpdateProfile( U32 connectionId, const PacketUpdateUserProfile* profileRequest );
 
    bool     HandleCheats( U32 connectionId, const PacketCheat* cheat );
-   bool     HandleCheat_RemoveAll( U32 connectionId, const string& command );
-   bool     HandleCheat_AddProduct( U32 connectionId, const string& command );
    
-   void     WriteProductToUserRecord( U32 connectionId, const string& productFilterName, const string& uuid, double pricePaid );
    void     StoreListOfUsersProductsFromDB( U32 connectionId, PacketDbQueryResult* dbResult );
-   void     AddGameProductIdToUserProducts( U32 connectionId );
-   void     SendListOfUserProductsToAssetServer( U32 connectionId );
-   void     AddNewProductToDb( const PurchaseEntry& product );
    bool     UpdateProductFilterName( int index, const string& newFilterName );
    void     RequestListOfProductsFromClient( U32 connectionId );
    void     SendProductListResultToUser( U32 connectionId, PacketDbQueryResult* dbResult );
-   int      FindProductByName( const string& name );
 
    //bool     SendPacketToGateway( BasePacket*, U32 connectionId );
    //bool     SendErrorToClient( U32 connectionId, PacketErrorReport::ErrorType );

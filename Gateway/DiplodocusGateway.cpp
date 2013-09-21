@@ -4,6 +4,7 @@
 #include "FruitadensGateway.h"
 #include "../NetworkCommon/ServerConstants.h"
 #include "../NetworkCommon/Packets/ServerToServerPacket.h"
+#include "../NetworkCommon/Packets/LoginPacket.h"
 #include "../NetworkCommon/Packets/PacketFactory.h"
 
 //#define VERBOSE
@@ -78,7 +79,7 @@ bool  DiplodocusGateway::AddInputChainData( BasePacket* packet, U32 connectionId
 
 //-----------------------------------------------------------------------------------------
 
-void     DiplodocusGateway::InputConnected( ChainedInterface * chainedInput )
+void     DiplodocusGateway::InputConnected( IChainedInterface * chainedInput )
 {
    KhaanConnector* khaan = static_cast< KhaanConnector* >( chainedInput );
    string currentTime = GetDateInUTC();
@@ -100,7 +101,7 @@ void     DiplodocusGateway::InputConnected( ChainedInterface * chainedInput )
 
 //-----------------------------------------------------------------------------------------
 
-void  DiplodocusGateway::InputRemovalInProgress( ChainedInterface * chainedInput )
+void  DiplodocusGateway::InputRemovalInProgress( IChainedInterface * chainedInput )
 {
    KhaanConnector* khaan = static_cast< KhaanConnector* >( chainedInput );
    string currentTime = GetDateInUTC();
@@ -141,7 +142,7 @@ bool DiplodocusGateway::PushPacketToProperOutput( BasePacket* packet )
    ChainLinkIteratorType itOutput = tempOutput.begin();
    while( itOutput != tempOutput.end() )
    {
-      ChainedInterface* outputPtr = (*itOutput).m_interface;
+      IChainedInterface* outputPtr = (*itOutput).m_interface;
       FruitadensGateway* fruity = static_cast< FruitadensGateway* >( outputPtr );
       if( fruity->AddOutputChainData( packet, -1 ) == true )
       {

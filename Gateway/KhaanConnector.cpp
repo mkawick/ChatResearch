@@ -1,6 +1,8 @@
 // KhaanConnector.cpp
 #include "KhaanConnector.h"
 #include "DiplodocusGateway.h"
+
+#include "../NetworkCommon/Packets/LoginPacket.h"
 #include "../NetworkCommon/Packets/PacketFactory.h"
 
 //-----------------------------------------------------------------------------------------

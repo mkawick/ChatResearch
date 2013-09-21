@@ -22,6 +22,9 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <sys/types.h>
+#endif
+
+#if PLATFORM == PLATFORM_MAC
 #define MSG_NOSIGNAL SO_NOSIGPIPE
 #else
 #define MSG_NOSIGNAL 0
@@ -441,7 +444,7 @@ bool  Fruitadens::HandlePacketReceived( BasePacket* packetIn )
    ChainLinkIteratorType itInput = m_listOfInputs.begin();
    while( itInput != m_listOfInputs.end() )// only one input currently supported.
    {
-      ChainedInterface<BasePacket*>* inputPtr = (*itInput).m_interface;
+      ChainType* inputPtr = static_cast< ChainType*> ( (*itInput).m_interface );
       if( inputPtr->AddOutputChainData( packetIn ) == true )
       {
          return true;

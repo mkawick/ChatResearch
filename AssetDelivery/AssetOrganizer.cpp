@@ -731,7 +731,7 @@ bool  AssetOrganizer::GetListOfAssets( int platformId, const set< string >& list
             vector< string >::const_iterator filterIt = it->filters.begin();
             while( filterIt != it->filters.end() )
             {
-               if( listOfFilters.find( *filterIt ) == listOfFilters.end() )
+               if( listOfFilters.find( *filterIt ) != listOfFilters.end() )
                {
                   filterFound = true;
                   break;

@@ -15,6 +15,7 @@
 #include "ContactPacket.h"
 #include "DbPacket.h"
 #include "GamePacket.h"
+#include "LoginPacket.h"
 #include "ServerToServerPacket.h"
 
 using namespace std;
@@ -226,11 +227,26 @@ bool  PacketFactory::ParseLogin( const U8* bufferIn, int& bufferOffset, const Ba
             *packetOut = SerializeIn< PacketListOfUserProductsS2S >( bufferIn, bufferOffset );
          }
          return true;
-     /* case PacketLogin::LoginType_ListOfPurchases_Cheat:
+      case PacketLogin::LoginType_RequestUserProfile:
          {
-            *packetOut = SerializeIn< PacketSubmitListOfUserPurchases_Cheat >( bufferIn, bufferOffset );
+            *packetOut = SerializeIn< PacketRequestUserProfile >( bufferIn, bufferOffset );
          }
-         return true;*/
+         return true;
+      case PacketLogin::LoginType_RequestUserProfileResponse:
+         {
+            *packetOut = SerializeIn< PacketRequestUserProfileResponse >( bufferIn, bufferOffset );
+         }
+         return true;
+      case PacketLogin::LoginType_UpdateUserProfile:
+         {
+            *packetOut = SerializeIn< PacketUpdateUserProfile >( bufferIn, bufferOffset );
+         }
+         return true;
+      case PacketLogin::LoginType_UpdateUserProfileResponse:
+         {
+            *packetOut = SerializeIn< PacketUpdateUserProfileResponse >( bufferIn, bufferOffset );
+         }
+         return true;
    }
 
    return false;

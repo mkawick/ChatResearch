@@ -6,6 +6,7 @@
 #include "../NetworkCommon/Packets/BasePacket.h"
 #include "../NetworkCommon/Packets/ServerToServerPacket.h"
 #include "../NetworkCommon/Packets/GamePacket.h"
+#include "../NetworkCommon/Packets/LoginPacket.h"
 
 #include <assert.h>
 

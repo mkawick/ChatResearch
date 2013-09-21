@@ -18,7 +18,8 @@
 using namespace std;
 
 class UserSession;
-
+class PacketPrepareForUserLogin;
+class PacketPrepareForUserLogout;
 
 ////////////////////////////////////////////////////////////////////////////////////////
 
@@ -37,8 +38,8 @@ public:
    //-----------------------------------------------------------------------------
 
    void     AddTimer( U32 timerId, U32 callbackTimeMs = 100 ); // timers must be unique
-   void     InputRemovalInProgress( ChainedInterface* chainedInput );
-   void     InputConnected( ChainedInterface* chainedInput );
+   void     InputRemovalInProgress( IChainedInterface* chainedInput );
+   void     InputConnected( IChainedInterface* chainedInput );
    void     ServerWasIdentified( ChainedInterface* khaan );
 
    //-----------------------------------------------------------------------------

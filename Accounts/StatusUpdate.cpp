@@ -466,7 +466,7 @@ bool     StatusUpdate::AddQueryToOutput( PacketDbQuery* packet )
    ChainLinkIteratorType itOutputs = m_listOfOutputs.begin();
    while( itOutputs != m_listOfOutputs.end() )// only one output currently supported.
    {
-      ChainedInterface<BasePacket*>* outputPtr = (*itOutputs).m_interface;
+      ChainType* outputPtr = static_cast< ChainType*> ( (*itOutputs).m_interface );
       if( outputPtr->AddInputChainData( packet, m_chainId ) == true )
       {
          return true;

@@ -97,10 +97,10 @@ bool  KhaanServerToServer :: PassPacketOn( BasePacket* packet, U32 connectionId 
    if( itOutputs != m_listOfOutputs.end() )// only one output currently supported.
    {
       const ChainLink& chain = *itOutputs++;
-      ChainedInterface<BasePacket*>* interfacePtr = chain.m_interface;
+      IChainedInterface* interfacePtr = chain.m_interface;
       DiplodocusServerToServer * middle = static_cast<DiplodocusServerToServer*>( interfacePtr );
 
-      return interfacePtr->AddInputChainData( packet, connectionId );
+      return middle->AddInputChainData( packet, connectionId );
    }
    return false;
 }
@@ -130,7 +130,7 @@ void  KhaanServerToServer :: SaveOffServerIdentification( const PacketServerIden
    if( itOutputs != m_listOfOutputs.end() )// only one output currently supported.
    {
       const ChainLink& chain = *itOutputs++;
-      ChainedInterface<BasePacket*>* interfacePtr = chain.m_interface;
+      IChainedInterface* interfacePtr = chain.m_interface;
       DiplodocusServerToServer * middle = static_cast<DiplodocusServerToServer*>( interfacePtr );
 
       middle->ServerWasIdentified( this );

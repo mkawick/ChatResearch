@@ -8,6 +8,8 @@
 #include <map>
 #include <deque>
 using namespace std;
+class PacketPrepareForUserLogin;
+class PacketPrepareForUserLogout;
 
 ///////////////////////////////////////////////////////////////////
 

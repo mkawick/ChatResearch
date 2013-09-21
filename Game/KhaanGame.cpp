@@ -57,11 +57,11 @@ bool	KhaanGame::OnDataReceived( unsigned char* data, int length )
          if( itOutputs != m_listOfOutputs.end() )// only one output currently supported.
          {
             const ChainLink& chain = *itOutputs++;
-            ChainedInterface* interfacePtr = chain.m_interface;
+            IChainedInterface* interfacePtr = chain.m_interface;
             DiplodocusGame * middle = static_cast<DiplodocusGame*>( interfacePtr );
 
             m_connectionId = wrapper->connectionId;
-            interfacePtr->AddInputChainData( wrapper, m_connectionId );
+            middle->AddInputChainData( wrapper, m_connectionId );
 
          }
          delete wrapper;// will not delete the package

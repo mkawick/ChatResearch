@@ -30,7 +30,7 @@ void	KhaanAsset :: UpdateInwardPacketList()
    ChainLinkIteratorType output = m_listOfOutputs.begin();
 
    //ChainedInterface*	chain = (*output).m_interface;
-   ChainedInterface<BasePacket*>* chain = (*output).m_interface;
+   ChainType* chain = static_cast< ChainType*> ( (*output).m_interface );
 
    if( chain )
    {

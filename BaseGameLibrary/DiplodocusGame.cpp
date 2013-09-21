@@ -3,6 +3,7 @@
 
 #include "../NetworkCommon/Packets/ServerToServerPacket.h"
 #include "../NetworkCommon/Packets/GamePacket.h"
+#include "../NetworkCommon/Packets/LoginPacket.h"
 #include "../NetworkCommon/Packets/PacketFactory.h"
 
 #include <iostream>
@@ -35,7 +36,7 @@ void     DiplodocusGame::AddTimer( U32 timerId, U32 callbackTimeMs )
 
 //---------------------------------------------------------------
 
-void     DiplodocusGame::InputRemovalInProgress( ChainedInterface* chainedInput )
+void     DiplodocusGame::InputRemovalInProgress( IChainedInterface* chainedInput )
 {
    cout << "Gateway has disconnected" << endl;
 
@@ -43,7 +44,7 @@ void     DiplodocusGame::InputRemovalInProgress( ChainedInterface* chainedInput 
 
 //---------------------------------------------------------------
 
-void     DiplodocusGame::InputConnected( ChainedInterface* chainedInput )
+void     DiplodocusGame::InputConnected( IChainedInterface* chainedInput )
 {
    cout << "Gateway has connected" << endl;
    //m_connectionIdGateway = khaan->GetServerId();
@@ -204,11 +205,11 @@ bool   DiplodocusGame::AddOutputChainData( BasePacket* packet, U32 connectionId 
       while( itInputs != m_listOfInputs.end() )
       {
          ChainLink& chainedInput = *itInputs++;
-         ChainedInterface* interfacePtr = chainedInput.m_interface;
+         IChainedInterface* interfacePtr = chainedInput.m_interface;
          KhaanGame* khaan = static_cast< KhaanGame* >( interfacePtr );
          if( khaan->GetServerId() == m_connectionIdGateway )
          {
-            interfacePtr->AddOutputChainData( packet );
+            khaan->AddOutputChainData( packet );
             //khaan->Update();// the gateway may not have a proper connection id.
 
             m_serversNeedingUpdate.push_back( khaan->GetServerId() );
@@ -308,7 +309,7 @@ int   DiplodocusGame::CallbackFunction()
       while( itInputs != m_listOfInputs.end() )
       {
          ChainLink& chainedInput = *itInputs++;
-         ChainedInterface* interfacePtr = chainedInput.m_interface;
+         IChainedInterface* interfacePtr = chainedInput.m_interface;
          KhaanGame* khaan = static_cast< KhaanGame* >( interfacePtr );
          if( khaan->GetServerId() == serverId )
          {
@@ -400,7 +401,7 @@ bool  DiplodocusGame::HandlePacketToOtherServer( BasePacket* packet, U32 connect
    ChainLinkIteratorType itInputs = m_listOfInputs.begin();
    while( itInputs != m_listOfInputs.end() )// only one output currently supported.
    {
-      ChainedInterface* inputPtr = itInputs->m_interface;
+      ChainType* inputPtr = static_cast< ChainType*> ( itInputs->m_interface );
       if( inputPtr->GetConnectionId() == ServerToServerConnectionId )
       {
          if( inputPtr->AddOutputChainData( packet, connectionId ) == true )

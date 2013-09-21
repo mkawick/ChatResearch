@@ -6,6 +6,7 @@
 using namespace std;
 
 #include "FruitadensClientChat.h"
+#include "../NetworkCommon/Packets/LoginPacket.h"
 
 #include "../NetworkCommon/Utils/Utils.h"
 
@@ -34,7 +35,7 @@ bool  FruitadensClientChat::FinalFixup()
    ChainLinkIteratorType itOutputs = m_listOfOutputs.begin();
    if( itOutputs != m_listOfOutputs.end() )// only one output currently supported.
    {
-      ChainedInterface* outputPtr = (*itOutputs).m_interface;
+      IChainedInterface* outputPtr = (*itOutputs).m_interface;
       m_pyro = static_cast< Pyroraptor* > ( outputPtr );
       return true;
    }

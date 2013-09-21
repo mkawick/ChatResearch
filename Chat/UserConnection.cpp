@@ -3,6 +3,7 @@
 #include "../NetworkCommon/Packets/BasePacket.h"
 #include "../NetworkCommon/Packets/ChatPacket.h"
 #include "../NetworkCommon/Packets/DbPacket.h"
+#include "../NetworkCommon/Packets/LoginPacket.h"
 
 #include "DiplodocusChat.h"
 #include "chatChannelManager.h"

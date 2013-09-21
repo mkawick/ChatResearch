@@ -24,13 +24,13 @@ DiplodocusServerToServer::~DiplodocusServerToServer()
 
 //---------------------------------------------------------------
 
-void  DiplodocusServerToServer::InputConnected( ChainedInterface* khaan ) 
+void  DiplodocusServerToServer::InputConnected( IChainedInterface* khaan ) 
 {
 }
 
 //---------------------------------------------------------------
 
-void  DiplodocusServerToServer::InputRemovalInProgress( ChainedInterface* khaan )
+void  DiplodocusServerToServer::InputRemovalInProgress( IChainedInterface* khaan )
 {
    // remove all pending jobs.
 }
@@ -57,7 +57,7 @@ bool   DiplodocusServerToServer::AddInputChainData( BasePacket* packet, U32 conn
       while( itInputs != m_listOfInputs.end() )
       {
          ChainLink& chainedInput = *itInputs++;
-	      ChainedInterface* interfacePtr = chainedInput.m_interface;
+	      IChainedInterface* interfacePtr = chainedInput.m_interface;
          khaan = static_cast< KhaanServerToServer* >( interfacePtr );
 
          if( serverId == khaan->GetServerId() )
@@ -110,7 +110,7 @@ void  DiplodocusServerToServer::CreateJob( const KhaanServerToServer* khaan, Bas
    ChainLinkIteratorType itOutputs = m_listOfOutputs.begin();
    if( itOutputs != m_listOfOutputs.end() )// we should only have one of these
    {
-      if( itOutputs->m_interface->AddInputChainData( wrapper, khaan->GetServerId() ) == false )
+      if( static_cast< ChainType*> ( itOutputs->m_interface)->AddInputChainData( wrapper, khaan->GetServerId() ) == false )
       {
          Log(" Bad S2S packet ", 4);
          delete packet;
@@ -136,7 +136,7 @@ bool  DiplodocusServerToServer::AddOutputChainData( BasePacket* packet, U32 conn
       while( itInputs != m_listOfInputs.end() )
       {
          ChainLink& chainedInput = *itInputs++;
-         ChainedInterface* interfacePtr = chainedInput.m_interface;
+         IChainedInterface* interfacePtr = chainedInput.m_interface;
          KhaanServerToServer* khaan = static_cast< KhaanServerToServer* >( interfacePtr );
          if( khaan->GetServerId() == connectionId )// 
          {
@@ -178,7 +178,7 @@ int   DiplodocusServerToServer::CallbackFunction()
       while( itInputs != m_listOfInputs.end() )
       {
          ChainLink& chainedInput = *itInputs++;
-         ChainedInterface* interfacePtr = chainedInput.m_interface;
+         IChainedInterface* interfacePtr = chainedInput.m_interface;
          KhaanServerToServer* khaan = static_cast< KhaanServerToServer* >( interfacePtr );
          if( khaan->GetServerId() == serverId )
          {

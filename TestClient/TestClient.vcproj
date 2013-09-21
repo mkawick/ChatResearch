@@ -60,7 +60,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="..\Debug\BaseClientLibrary.lib"
+				AdditionalDependencies="..\Debug\BaseClientLibrary.lib ../Debug/PacketLibrary.lib"
 				LinkIncremental="2"
 				IgnoreDefaultLibraryNames="libcmt.lib"
 				GenerateDebugInformation="true"
@@ -135,7 +135,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="..\Release\BaseClientLibrary.lib"
+				AdditionalDependencies="..\Release\BaseClientLibrary.lib  ../Debug/PacketLibrary.lib"
 				LinkIncremental="1"
 				IgnoreDefaultLibraryNames="libcmt.lib"
 				GenerateDebugInformation="true"
@@ -272,50 +272,6 @@
 				</File>
 				<File
 					RelativePath="..\NetworkCommon\Utils\Utils.h"
-					>
-				</File>
-			</Filter>
-			<Filter
-				Name="Packets"
-				>
-				<File
-					RelativePath="..\NetworkCommon\Packets\BasePacket.cpp"
-					>
-				</File>
-				<File
-					RelativePath="..\NetworkCommon\Packets\BasePacket.h"
-					>
-				</File>
-				<File
-					RelativePath="..\NetworkCommon\Packets\BasePacket.inl"
-					>
-				</File>
-				<File
-					RelativePath="..\NetworkCommon\Packets\ChatPacket.h"
-					>
-				</File>
-				<File
-					RelativePath="..\NetworkCommon\Packets\DbPacket.cpp"
-					>
-				</File>
-				<File
-					RelativePath="..\NetworkCommon\Packets\DbPacket.h"
-					>
-				</File>
-				<File
-					RelativePath="..\NetworkCommon\Packets\GamePacket.cpp"
-					>
-				</File>
-				<File
-					RelativePath="..\NetworkCommon\Packets\GamePacket.h"
-					>
-				</File>
-				<File
-					RelativePath="..\NetworkCommon\Packets\PacketFactory.h"
-					>
-				</File>
-				<File
-					RelativePath="..\NetworkCommon\Packets\ServerToServerPacket.h"
 					>
 				</File>
 			</Filter>

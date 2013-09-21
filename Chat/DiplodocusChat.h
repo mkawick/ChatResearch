@@ -15,6 +15,9 @@
 
 class ChatChannelManager;
 class DiplodocusServerToServer;
+class PacketPrepareForUserLogin;
+class PacketPrepareForUserLogout;
+class PacketListOfUserProductsS2S;
 
 const int ChatChannelManagerConnectionId = ConnectionIdExclusion.low;
 
@@ -25,6 +28,8 @@ class DiplodocusChat : public Diplodocus< KhaanChat >
 public:
    DiplodocusChat( const string& serverName, U32 serverId );
    void     Init();
+
+   void     ServerWasIdentified( ChainedInterface* khaan );
 
    bool     AddInputChainData( BasePacket* packet, U32 connectionId );
    // data going out can go only a few directions
@@ -49,8 +54,8 @@ public:
  
    //bool     SendErrorReportToClient( PacketErrorReport::ErrorType error, int connectionId );
    
-   void     InputConnected( ChainedInterface* chainedInput );
-   void     InputRemovalInProgress( ChainedInterface* chainedInput );
+   void     InputConnected( IChainedInterface* chainedInput );
+   void     InputRemovalInProgress( IChainedInterface* chainedInput );
 
    //-----------------------------------------------------------------------------
 

@@ -44,7 +44,7 @@
 				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
-				RuntimeLibrary="3"
+				RuntimeLibrary="1"
 				UsePrecompiledHeader="0"
 				WarningLevel="3"
 				DebugInformationFormat="4"
@@ -60,6 +60,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
+				AdditionalDependencies="../Debug/PacketLibrary.lib"
 				LinkIncremental="2"
 				GenerateDebugInformation="true"
 				SubSystem="1"
@@ -132,6 +133,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
+				AdditionalDependencies="../Release/PacketLibrary.lib"
 				LinkIncremental="1"
 				GenerateDebugInformation="true"
 				SubSystem="1"
@@ -329,82 +331,6 @@
 			<Filter
 				Name="Packets"
 				>
-				<File
-					RelativePath="..\NetworkCommon\Packets\AssetPacket.cpp"
-					>
-				</File>
-				<File
-					RelativePath="..\NetworkCommon\Packets\AssetPacket.h"
-					>
-				</File>
-				<File
-					RelativePath="..\NetworkCommon\Packets\BasePacket.cpp"
-					>
-				</File>
-				<File
-					RelativePath="..\NetworkCommon\Packets\BasePacket.h"
-					>
-				</File>
-				<File
-					RelativePath="..\NetworkCommon\Packets\BasePacket.inl"
-					>
-				</File>
-				<File
-					RelativePath="..\NetworkCommon\Packets\ChatPacket.cpp"
-					>
-				</File>
-				<File
-					RelativePath="..\NetworkCommon\Packets\ChatPacket.h"
-					>
-				</File>
-				<File
-					RelativePath="..\NetworkCommon\Packets\CheatPacket.cpp"
-					>
-				</File>
-				<File
-					RelativePath="..\NetworkCommon\Packets\CheatPacket.h"
-					>
-				</File>
-				<File
-					RelativePath="..\NetworkCommon\Packets\ContactPacket.cpp"
-					>
-				</File>
-				<File
-					RelativePath="..\NetworkCommon\Packets\ContactPacket.h"
-					>
-				</File>
-				<File
-					RelativePath="..\NetworkCommon\Packets\DbPacket.cpp"
-					>
-				</File>
-				<File
-					RelativePath="..\NetworkCommon\Packets\DbPacket.h"
-					>
-				</File>
-				<File
-					RelativePath="..\NetworkCommon\Packets\GamePacket.cpp"
-					>
-				</File>
-				<File
-					RelativePath="..\NetworkCommon\Packets\GamePacket.h"
-					>
-				</File>
-				<File
-					RelativePath="..\NetworkCommon\Packets\PacketFactory.cpp"
-					>
-				</File>
-				<File
-					RelativePath="..\NetworkCommon\Packets\PacketFactory.h"
-					>
-				</File>
-				<File
-					RelativePath="..\NetworkCommon\Packets\ServerToServerPacket.cpp"
-					>
-				</File>
-				<File
-					RelativePath="..\NetworkCommon\Packets\ServerToServerPacket.h"
-					>
-				</File>
 			</Filter>
 			<Filter
 				Name="Utils"

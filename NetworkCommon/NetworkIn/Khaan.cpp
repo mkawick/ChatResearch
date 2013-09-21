@@ -45,7 +45,7 @@ void   Khaan ::PreCleanup()
 
    ChainLinkIteratorType output = m_listOfOutputs.begin();
 
-   ChainedInterface<BasePacket*>* chain = (*output).m_interface;
+   IChainedInterface* chain = (*output).m_interface;
    if( chain )
    {
       Diplodocus <Khaan> * chatServer = static_cast< Diplodocus <Khaan> * >( chain );
@@ -75,12 +75,12 @@ bool	Khaan :: OnDataReceived( unsigned char* data, int length )
       while( itOutputs != m_listOfOutputs.end() )
       {
          ChainLink& chain = *itOutputs++;
-         ChainedInterface<BasePacket*>* interfacePtr = chain.m_interface;
+         IChainedInterface* interfacePtr = chain.m_interface;
 
          ThreadEvent te;
          te.type = ThreadEvent_NeedsService;
          te.identifier = m_chainId;
-         interfacePtr->PushInputEvent( &te );
+         static_cast< ChainType*> ( interfacePtr )->PushInputEvent( &te );
       }
    }
 
@@ -123,9 +123,7 @@ void	Khaan :: UpdateInwardPacketList()
    }
 
    ChainLinkIteratorType output = m_listOfOutputs.begin();
-
-   //ChainedInterface*	chain = (*output).m_interface;
-   ChainedInterface<BasePacket*>* chain = (*output).m_interface;
+   IChainedInterface* chain = (*output).m_interface;
 
    if( chain )
    {
@@ -134,7 +132,7 @@ void	Khaan :: UpdateInwardPacketList()
          BasePacket* packet = m_packetsIn.front();
       
          Threading::MutexLock  locker( m_inputChainListMutex );
-         chain->AddInputChainData( packet, m_socketId );
+         static_cast< ChainType*> ( chain )->AddInputChainData( packet, m_socketId );
 
          m_packetsIn.pop_front();
       }

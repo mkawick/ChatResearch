@@ -3,6 +3,7 @@
 
 #include "../NetworkCommon/Packets/DbPacket.h"
 #include "../NetworkCommon/Packets/ServerToServerPacket.h"
+#include "../NetworkCommon/Packets/LoginPacket.h"
 
 ///////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////
@@ -21,13 +22,13 @@ int      DiplodocusGame::CallbackFunction()
 
 //---------------------------------------------------------------
 
-void     DiplodocusGame::InputRemovalInProgress( ChainedInterface* chainedInput )
+void     DiplodocusGame::InputRemovalInProgress( IChainedInterface* chainedInput )
 {
 }
 
 //---------------------------------------------------------------
 
-void     DiplodocusGame::InputConnected( ChainedInterface* chainedInput )
+void     DiplodocusGame::InputConnected( IChainedInterface* chainedInput )
 {
 }
 //---------------------------------------------------------------
@@ -72,7 +73,7 @@ bool   DiplodocusGame::AddInputChainData( BasePacket* packet, U32 connectionId )
          ChainLinkIteratorType itOutputs = m_listOfOutputs.begin();
          while( itOutputs != m_listOfOutputs.end() )// only one output currently supported.
          {
-            ChainedInterface* outputPtr = itOutputs->m_interface;
+            ChainType* outputPtr = static_cast< ChainType* >( itOutputs->m_interface );
             if( outputPtr->AddOutputChainData( pPacket, -1 ) == true )
             {
                
@@ -175,7 +176,7 @@ bool  DiplodocusGame::HandlePacketToOtherServer( BasePacket* packet, U32 connect
    ChainLinkIteratorType itInputs = m_listOfInputs.begin();
    while( itInputs != m_listOfInputs.end() )// only one output currently supported.
    {
-      ChainedInterface* inputPtr = itInputs->m_interface;
+      ChainType* inputPtr = static_cast< ChainType* >( itInputs->m_interface );
       if( inputPtr->GetConnectionId() == ServerToServerConnectionId )
       {
          if( inputPtr->AddOutputChainData( packet, connectionId ) == true )

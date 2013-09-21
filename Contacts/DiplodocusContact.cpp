@@ -1,6 +1,7 @@
 // DiplodocusContact.cpp
 #include "../NetworkCommon/Packets/ServerToServerPacket.h"
 #include "../NetworkCommon/Packets/ContactPacket.h"
+#include "../NetworkCommon/Packets/LoginPacket.h"
 #include "../NetworkCommon/Packets/PacketFactory.h"
 
 #include "DiplodocusContact.h"
@@ -199,11 +200,11 @@ bool     DiplodocusContact::AddOutputChainData( BasePacket* packet, U32 connecti
       while( itInputs != m_listOfInputs.end() )
       {
          ChainLink& chainedInput = *itInputs++;
-         ChainedInterface* interfacePtr = chainedInput.m_interface;
+         IChainedInterface* interfacePtr = chainedInput.m_interface;
          KhaanContact* khaan = static_cast< KhaanContact* >( interfacePtr );
          if( khaan->GetServerId() == m_connectionIdGateway )
          {
-            interfacePtr->AddOutputChainData( packet );
+            khaan->AddOutputChainData( packet );
             //khaan->Update();// the gateway may not have a proper connection id.
 
             m_serversNeedingUpdate.push_back( khaan->GetServerId() );
@@ -272,7 +273,7 @@ int      DiplodocusContact::CallbackFunction()
       while( itInputs != m_listOfInputs.end() )
       {
          ChainLink& chainedInput = *itInputs++;
-         ChainedInterface* interfacePtr = chainedInput.m_interface;
+         IChainedInterface* interfacePtr = chainedInput.m_interface;
          KhaanContact* khaan = static_cast< KhaanContact* >( interfacePtr );
          if( khaan->GetServerId() == serverId )
          {
@@ -525,7 +526,7 @@ bool     DiplodocusContact::AddQueryToOutput( PacketDbQuery* packet )
    ChainLinkIteratorType itOutputs = m_listOfOutputs.begin();
    while( itOutputs != m_listOfOutputs.end() )// only one output currently supported.
    {
-      ChainedInterface<BasePacket*>* outputPtr = (*itOutputs).m_interface;
+      ChainType* outputPtr = static_cast< ChainType*> ( (*itOutputs).m_interface );
       if( outputPtr->AddInputChainData( packet, m_chainId ) == true )
       {
          return true;

@@ -592,40 +592,19 @@ void     Diplodocus< InputChain, OutputChain >::SendServerIdentification()
 }
 
 //------------------------------------------------------------------------------------------
-/*
-template< typename InputChain, typename OutputChain >
-void  Diplodocus< InputChain, OutputChain >::InputConnected( ChainedInterface * )
-{
-   // nothing to do.
-}*/
-
 //------------------------------------------------------------------------------------------
 
 template< typename InputChain, typename OutputChain >
-void  Diplodocus< InputChain, OutputChain >::OutputConnected( ChainedInterface * chainedOutput )
+void  Diplodocus< InputChain, OutputChain >::OutputConnected( IChainedInterface * chainedOutput )
 {
    LockMutex();
-   m_listOfOutputsNeedingToSendServerId.push_back( chainedOutput );
+   ChainType* ptr = static_cast< ChainType* >( chainedOutput );
+   m_listOfOutputsNeedingToSendServerId.push_back( ptr );
    UnlockMutex();
 }
 
-
-//------------------------------------------------------------------------------------------
-/*
-template< typename InputChain, typename OutputChain >
-void  Diplodocus< InputChain, OutputChain >::InputRemovalInProgress( InputChainType * )
-{
-   // nothing to do.
-}
-
 //------------------------------------------------------------------------------------------
 
-template< typename InputChain, typename OutputChain >
-void  Diplodocus< InputChain, OutputChain >::OutputRemovalInProgress( OutputChainType * )
-{
-   // nothing to do.
-}
-*/
 //------------------------------------------------------------------------------------------
 
 template< typename InputChain, typename OutputChain >

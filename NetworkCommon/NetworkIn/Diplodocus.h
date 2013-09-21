@@ -81,10 +81,7 @@ public:
    bool           SendPacketToGateway( BasePacket* packet, U32 connectionId );
    bool           SendErrorToClient( U32 connectionId, PacketErrorReport::ErrorType error, int subType = 0 );
 
-   //void           InputConnected( ChainedInterface * ) {}
-   void           OutputConnected( ChainType * );
-   //void           InputRemovalInProgress( ChainedInterface * ) {}
-   //void           OutputRemovalInProgress( ChainedInterface * ) {}
+   void           OutputConnected( IChainedInterface * );
 
    //---------------------------------------------
 

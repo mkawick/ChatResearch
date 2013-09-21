@@ -71,10 +71,10 @@ public:
 
 private:
 
-   void   InputConnected( ChainedInterface * ) {}
-   void   OutputConnected( ChainedInterface * ) {}
-   void   InputRemovalInProgress( ChainedInterface * ) {}
-   void   OutputRemovalInProgress( ChainedInterface * ) {}
+   void   InputConnected( IChainedInterface * ) {}
+   void   OutputConnected( IChainedInterface * ) {}
+   void   InputRemovalInProgress( IChainedInterface * ) {}
+   void   OutputRemovalInProgress( IChainedInterface * ) {}
 
    // datatypes
    typedef SerializedKeyValueVector< string >      UserNameKeyValue;

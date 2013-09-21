@@ -33,6 +33,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Contacts", "Contacts\Contac
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Tournament", "Tournament\Tournament.vcproj", "{02236CEF-05E3-46DE-9322-813209ABD6D9}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "PacketLibrary", "PacketLibrary\PacketLibrary.vcproj", "{78928F69-C7AC-44BB-B4E1-BC050C188EDE}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Win32 = Debug|Win32
@@ -112,6 +114,12 @@ Global
 		{02236CEF-05E3-46DE-9322-813209ABD6D9}.DebugForCLR|Win32.Build.0 = Debug|Win32
 		{02236CEF-05E3-46DE-9322-813209ABD6D9}.Release|Win32.ActiveCfg = Release|Win32
 		{02236CEF-05E3-46DE-9322-813209ABD6D9}.Release|Win32.Build.0 = Release|Win32
+		{78928F69-C7AC-44BB-B4E1-BC050C188EDE}.Debug|Win32.ActiveCfg = Debug|Win32
+		{78928F69-C7AC-44BB-B4E1-BC050C188EDE}.Debug|Win32.Build.0 = Debug|Win32
+		{78928F69-C7AC-44BB-B4E1-BC050C188EDE}.DebugForCLR|Win32.ActiveCfg = DebugForCLR|Win32
+		{78928F69-C7AC-44BB-B4E1-BC050C188EDE}.DebugForCLR|Win32.Build.0 = DebugForCLR|Win32
+		{78928F69-C7AC-44BB-B4E1-BC050C188EDE}.Release|Win32.ActiveCfg = Release|Win32
+		{78928F69-C7AC-44BB-B4E1-BC050C188EDE}.Release|Win32.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

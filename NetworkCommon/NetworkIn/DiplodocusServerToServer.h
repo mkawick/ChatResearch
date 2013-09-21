@@ -26,8 +26,8 @@ public:
    bool     AddInputChainData( BasePacket* packet, U32 connectionId );
    bool     AddOutputChainData( BasePacket* packet, U32 connectionId ) ;
 
-   void     InputConnected( ChainedInterface* khaan );
-   void     InputRemovalInProgress( ChainedInterface* khaan );
+   void     InputConnected( IChainedInterface* khaan );
+   void     InputRemovalInProgress( IChainedInterface* khaan );
 
    //---------------------------------------------------
 

@@ -53,7 +53,7 @@ void  KhaanGame :: SetupMainInterfacePointer()
    if( itOutputs != m_listOfOutputs.end() )// only ever one
    {
       const ChainLink& chain = *itOutputs++;
-      m_mainInterfacePtr = chain.m_interface;
+      m_mainInterfacePtr = static_cast< ChainType*> ( chain.m_interface );
    }
 }
 

@@ -15,6 +15,8 @@
 
 #include "KhaanGame.h"
 class UserSession;
+class PacketPrepareForUserLogin;
+class PacketPrepareForUserLogout;
 //#include "UserConnection.h"
 
 //class ChatChannelManager;
@@ -44,8 +46,8 @@ public:
    void     RemoveConnection( int connectionId );
 
    bool     SendErrorReportToClient( PacketErrorReport::ErrorType error, int connectionId );
-   void     InputRemovalInProgress( ChainedInterface* chainedInput );
-   void     InputConnected( ChainedInterface* chainedInput );
+   void     InputRemovalInProgress( IChainedInterface* chainedInput );
+   void     InputConnected( IChainedInterface* chainedInput );
 
    //-----------------------------------------------------------------------------
 

@@ -26,6 +26,11 @@
    #include <termios.h>
    #include <unistd.h>
    #include <fcntl.h>
+
+   #ifndef min
+   #define min(a,b)            (((a) < (b)) ? (a) : (b))
+   #endif
+
 #endif
 
 using namespace std;

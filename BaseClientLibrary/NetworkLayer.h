@@ -6,6 +6,7 @@
 #include "../NetworkCommon/Packets/ContactPacket.h"
 #include "../NetworkCommon/Packets/AssetPacket.h"
 #include "../NetworkCommon/Packets/ChatPacket.h"
+#include "../NetworkCommon/Packets/LoginPacket.h"
 
 namespace Mber
 {
@@ -311,10 +312,10 @@ public:
    
 private:
 
-   void   InputConnected( ChainedInterface * ) {}
-   void   OutputConnected( ChainedInterface * ) {}
-   void   InputRemovalInProgress( ChainedInterface * ) {}
-   void   OutputRemovalInProgress( ChainedInterface * ) {}
+   void   InputConnected( IChainedInterface * ) {}
+   void   OutputConnected( IChainedInterface * ) {}
+   void   InputRemovalInProgress( IChainedInterface * ) {}
+   void   OutputRemovalInProgress( IChainedInterface * ) {}
 
    // datatypes
    bool  Log( const std::string& text, int priority = 1 ) const { return true; }

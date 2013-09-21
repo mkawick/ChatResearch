@@ -27,10 +27,21 @@ public:
 
 /////////////////////////////////////////////////////////////////////////////
 
+class IChainedInterface
+{
+public:
+   virtual void   InputConnected( IChainedInterface * ) {}
+   virtual void   OutputConnected( IChainedInterface * ) {}
+   virtual void   InputRemovalInProgress( IChainedInterface * ) {}
+   virtual void   OutputRemovalInProgress( IChainedInterface * ) {}
+};
+
+/////////////////////////////////////////////////////////////////////////////
+
    // this is a strange feature, but while rare, the importance of providing a clean
    // mechanism for allowing threads to chain and unchain correctly became obvious during test
-template <typename Type> 
-class ChainedInterface
+template<typename Type>
+class ChainedInterface : public IChainedInterface
 {
 protected:
    typedef ChainedInterface<Type> ChainType;
@@ -41,15 +52,11 @@ public:
    U32				GetConnectionId() const { return m_connectionId; }
 	void	         SetConnectionId( int connectionId ) { m_connectionId = connectionId; }
 
-   void           AddInputChain( ChainedInterface*, bool recurse = true );
-   void           RemoveInputChain( ChainedInterface*, bool recurse = true );
-   void           AddOutputChain( ChainedInterface*, bool recurse = true );
-   void           RemoveOutputChain( ChainedInterface*, bool recurse = true );
+   void           AddInputChain( IChainedInterface*, bool recurse = true );
+   void           RemoveInputChain( IChainedInterface*, bool recurse = true );
+   void           AddOutputChain( IChainedInterface*, bool recurse = true );
+   void           RemoveOutputChain( IChainedInterface*, bool recurse = true );
 
-   virtual void   InputConnected( ChainType * ) {};
-   virtual void   OutputConnected( ChainType * ) {};
-   virtual void   InputRemovalInProgress( ChainType * ) {};
-   virtual void   OutputRemovalInProgress( ChainType * ) {};
 
    // TODO: convert this to a const reference instead
    virtual bool   AddInputChainData( Type t, U32 filingData = -1 ) { return false; }// a false value means that the data was rejected
@@ -73,12 +80,12 @@ protected:
 		Type	            RemoveData() { Type t = m_data.front(); m_data.pop_front(); return t; }
       bool              HasData() const { return m_data.size() > 0; }
 
-		ChainedInterface<Type>*	   m_interface;
+		IChainedInterface*	   m_interface;
 		std::deque<Type>	         m_data;
 	};
 
-   virtual void   NotifyFinishedAdding( ChainedInterface* obj = NULL ) {} 
-   virtual void   NotifyFinishedRemoving( ChainedInterface* obj = NULL ) {} // when NULL, this means all nodes have been removed
+   virtual void   NotifyFinishedAdding( IChainedInterface* obj = NULL ) {} 
+   virtual void   NotifyFinishedRemoving( IChainedInterface* obj = NULL ) {} // when NULL, this means all nodes have been removed
 
 protected:
 
@@ -126,7 +133,7 @@ ChainedInterface< Type >::ChainedInterface() : m_chainId ( m_chainIdCounter++ ),
 //----------------------------------------------------------------
 
 template <typename Type> 
-void  ChainedInterface<Type>::AddInputChain( ChainedInterface<Type>* chainedInterfaceObject, bool recurse )
+void  ChainedInterface<Type>::AddInputChain( IChainedInterface* chainedInterfaceObject, bool recurse )
 {
    bool found = false;
    m_inputChainListMutex.lock();
@@ -137,7 +144,7 @@ void  ChainedInterface<Type>::AddInputChain( ChainedInterface<Type>* chainedInte
       while( itInputs != m_listOfInputs.end() )
       {
          ChainLink& chainedInput = *itInputs++;
-		   ChainedInterface* interfacePtr = chainedInput.m_interface;
+		   IChainedInterface* interfacePtr = chainedInput.m_interface;
          if( interfacePtr == chainedInterfaceObject )
          {
             found = true;
@@ -146,7 +153,7 @@ void  ChainedInterface<Type>::AddInputChain( ChainedInterface<Type>* chainedInte
       }
       if( found == false )
       {
-         m_listOfInputs.push_back( ChainLink( chainedInterfaceObject ) );
+         m_listOfInputs.push_back( ChainLink( static_cast< ChainType*> ( chainedInterfaceObject ) ) );
       }
 
       // the indentation here is to show that we are in the 'scope' of the locks
@@ -156,7 +163,7 @@ void  ChainedInterface<Type>::AddInputChain( ChainedInterface<Type>* chainedInte
    // notice that we are outside of the locks now.
    if( found == false && recurse == true )
    {
-      chainedInterfaceObject->AddOutputChain( this, false ); // note, output
+      static_cast< ChainType*> ( chainedInterfaceObject )->AddOutputChain( this, false ); // note, output
    }
    NotifyFinishedAdding( chainedInterfaceObject );
 }
@@ -164,7 +171,7 @@ void  ChainedInterface<Type>::AddInputChain( ChainedInterface<Type>* chainedInte
 //----------------------------------------------------------------
 
 template <typename Type> 
-void  ChainedInterface<Type>::RemoveInputChain( ChainedInterface<Type>* chainedInterfaceObject, bool recurse )
+void  ChainedInterface<Type>::RemoveInputChain( IChainedInterface* chainedInterfaceObject, bool recurse )
 {
    bool found = false;
    m_inputChainListMutex.lock();
@@ -175,7 +182,7 @@ void  ChainedInterface<Type>::RemoveInputChain( ChainedInterface<Type>* chainedI
       while( itInputs != m_listOfInputs.end() )
       {
          ChainLink& chainedInput = *itInputs;
-		   ChainedInterface* interfacePtr = chainedInput.m_interface;
+		   IChainedInterface* interfacePtr = chainedInput.m_interface;
          if( interfacePtr == chainedInterfaceObject )
          {
             found = true;
@@ -194,7 +201,7 @@ void  ChainedInterface<Type>::RemoveInputChain( ChainedInterface<Type>* chainedI
    // notice that we are outside of the locks now.
    if( found == true && recurse == true )
    {
-      chainedInterfaceObject->RemoveOutputChain( this, false ); // note, output
+      static_cast<ChainType*>( chainedInterfaceObject )->RemoveOutputChain( this, false ); // note, output
    }
    NotifyFinishedRemoving( chainedInterfaceObject );
 }
@@ -202,7 +209,7 @@ void  ChainedInterface<Type>::RemoveInputChain( ChainedInterface<Type>* chainedI
 //----------------------------------------------------------------
 
 template <typename Type> 
-void  ChainedInterface<Type>::AddOutputChain( ChainedInterface<Type>* chainedInterfaceObject, bool recurse )
+void  ChainedInterface<Type>::AddOutputChain( IChainedInterface* chainedInterfaceObject, bool recurse )
 {
    bool found = false;
    m_outputChainListMutex.lock();
@@ -213,7 +220,7 @@ void  ChainedInterface<Type>::AddOutputChain( ChainedInterface<Type>* chainedInt
       while( itOutputs != m_listOfOutputs.end() )
       {
          const ChainLink& chain = *itOutputs++;
-         ChainedInterface* interfacePtr = chain.m_interface;
+         IChainedInterface* interfacePtr = chain.m_interface;
          if( interfacePtr == chainedInterfaceObject )
          {
             found = true;
@@ -223,7 +230,7 @@ void  ChainedInterface<Type>::AddOutputChain( ChainedInterface<Type>* chainedInt
 
       if( found == false )// insert into the list
       {
-         m_listOfOutputs.push_back( ChainLink( chainedInterfaceObject ) );
+         m_listOfOutputs.push_back( ChainLink( static_cast< ChainType*> ( chainedInterfaceObject ) ) );
       }
 
       // the indentation here is to show that we are in the 'scope' of the locks
@@ -233,7 +240,7 @@ void  ChainedInterface<Type>::AddOutputChain( ChainedInterface<Type>* chainedInt
    // notice that we are outside of the locks now.
    if( found == false && recurse == true )
    {
-      chainedInterfaceObject->AddInputChain( this, false ); // note, input
+      static_cast<ChainType*>( chainedInterfaceObject )->AddInputChain( this, false ); // note, input
    }
    NotifyFinishedAdding( chainedInterfaceObject );
 }
@@ -241,7 +248,7 @@ void  ChainedInterface<Type>::AddOutputChain( ChainedInterface<Type>* chainedInt
 //----------------------------------------------------------------
 
 template <typename Type> 
-void  ChainedInterface<Type>::RemoveOutputChain( ChainedInterface<Type>* chainedInterfaceObject, bool recurse )
+void  ChainedInterface<Type>::RemoveOutputChain( IChainedInterface* chainedInterfaceObject, bool recurse )
 {
    bool found = false;
    m_outputChainListMutex.lock();
@@ -252,7 +259,7 @@ void  ChainedInterface<Type>::RemoveOutputChain( ChainedInterface<Type>* chained
       while( itOutputs != m_listOfOutputs.end() )
       {
          ChainLink& chainedOutput = *itOutputs;
-		   ChainedInterface* interfacePtr = chainedOutput.m_interface;
+		   IChainedInterface* interfacePtr = chainedOutput.m_interface;
          if( interfacePtr == chainedInterfaceObject )
          {
             found = true;
@@ -271,7 +278,7 @@ void  ChainedInterface<Type>::RemoveOutputChain( ChainedInterface<Type>* chained
    // notice that we are outside of the locks now.
    if( found == true && recurse == true )
    {
-      chainedInterfaceObject->RemoveInputChain( this, false );// note, input
+      static_cast<ChainType*>( chainedInterfaceObject )->RemoveInputChain( this, false );// note, input
    }
    NotifyFinishedRemoving( chainedInterfaceObject );
 }
@@ -289,8 +296,9 @@ void  ChainedInterface<Type>::CleanupAllChainDependencies()
       while( itInputs != m_listOfInputs.end() )
       {
          ChainLink& chainedInput = *itInputs++;
-		   ChainedInterface* interfacePtr = chainedInput.m_interface;
-         interfacePtr->RemoveOutputChain( this );// note the output
+		   IChainedInterface* interfacePtr = chainedInput.m_interface;
+         ChainType* chainPtr = static_cast< ChainType* >( interfacePtr );
+         chainPtr->RemoveOutputChain( this );// note the output
       }
       m_listOfInputs.clear();
 
@@ -308,8 +316,10 @@ void  ChainedInterface<Type>::CleanupAllChainDependencies()
       while( itOutputs != m_listOfOutputs.end() )
       {
          ChainLink& chainedOutput = *itOutputs++;
-         ChainedInterface* interfacePtr = chainedOutput.m_interface;
-         interfacePtr->RemoveInputChain( this );// note the input
+         //ChainedInterface<Type>* interfacePtr = static_cast< ChainedInterface<Type>* >( chainedOutput.m_interface );
+         IChainedInterface* interfacePtr = chainedOutput.m_interface;
+         ChainType* chainPtr = static_cast< ChainType* >( interfacePtr );
+         chainPtr->RemoveInputChain( this );// note the input
       }
       m_listOfOutputs.clear();
 
@@ -371,7 +381,7 @@ bool     ChainedInterface<Type>::Log( const char* text, int priority ) const
       while( itOutputs != m_listOfOutputs.end() )
       {
          const ChainLink& chainedOutput = *itOutputs++;
-         const ChainedInterface* interfacePtr = chainedOutput.m_interface;
+         const ChainedInterface<Type>* interfacePtr = static_cast<const ChainedInterface<Type>*>( chainedOutput.m_interface );
          didLog = interfacePtr->Log( text, priority );
          if( didLog )// someone captured the log so stop sending it.
             break;

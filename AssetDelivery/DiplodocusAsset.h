@@ -12,6 +12,9 @@
 #include <deque>
 using namespace std;
 class AssetOrganizer;
+class PacketPrepareForUserLogin;
+class PacketPrepareForUserLogout;
+class PacketListOfUserProductsS2S;
 
 ///////////////////////////////////////////////////////////////////
 
