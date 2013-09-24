@@ -2,6 +2,7 @@
 #pragma once
 
 #include "../NetworkCommon/DataTypes.h"
+#include "../NetworkCommon/Utils/TableWrapper.h"
 #include "../NetworkCommon/Packets/LoginPacket.h"
 #include "ProductInfo.h"
 #include <string>
@@ -45,16 +46,18 @@ struct ConnectionToUser
    bool     UpdateLastLoggedInTime();
    bool     UpdateLastLoggedOutTime();
    bool     SuccessfulLogin( U32 connectionId, bool isReloggedIn );
-   bool     LoadUserProfile( U32 whoseProfileIsLoaded = 0 );
-   bool     AddBlankUserProfile();
+   //bool     LoadUserProfile( U32 whoseProfileIsLoaded = 0 );
+   //bool     AddBlankUserProfile();
    bool     RequestListOfGames( const string& userUuid );
    bool     RequestListOfProducts( const string& userUuid );
    bool     HandleGameReportedListOfPurchases( const PacketRequestListOfUserPurchases* purchase );
-   bool     HandleUserProfileFromDb( PacketDbQueryResult* dbResult );
+   bool     AddPurchase( const PacketRequestListOfUserPurchases* purchase );
+   //bool     HandleUserProfileFromDb( PacketDbQueryResult* dbResult );
    bool     StoreUserPurchases( const PacketListOfUserPurchases* deviceReportedPurchases );
 
    void     AddCurrentlyLoggedInProductToUserPurchases();
    void     WriteProductToUserRecord( const string& productFilterName, double pricePaid );
+   void     WriteProductToUserRecord( const string& userUuid, const string& productFilterName, double pricePaid, float numPurchased, bool providedByAdmin, string adminNotes );
    void     StoreListOfUsersProductsFromDB( PacketDbQueryResult* dbResult, bool shouldAddLoggedInProduct );
 
    bool     RequestProfile( const PacketRequestUserProfile* profileRequest );
@@ -80,6 +83,7 @@ struct ConnectionToUser
    
    time_t                  loggedOutTime;
 
+   int                     languageId;
    bool                    isActive;
    int                     adminLevel;
    bool                    showWinLossRecord;
@@ -105,12 +109,20 @@ struct ConnectionToUser
    
 
 protected:
-   DiplodocusLogin*        userManager;
-   map< U32, ConnectionToUser> adminUserData; // if you are logged in as an admin, you may be querying other users.
+   ConnectionToUser() {};
+   
+
+   static DiplodocusLogin* userManager;
+   typedef pair< string, ConnectionToUser> UserConnectionPair;
+   map< string, ConnectionToUser> adminUserData; // if you are logged in as an admin, you may be querying other users. use hashed user_name
 
    bool     HandleCheat_RemoveAll( const string& command );
    bool     HandleCheat_AddProduct( const string& command );
-   //void     LoadOtherUserProfile();
+
+   bool     StoreUserInfo( PacketDbQueryResult* dbResult );
+   void     SaveUserSettings( UserPlusProfileTable& enigma, U8 gameProductId );
+   void     SaveUpdatedProfile( const PacketUpdateUserProfile* profileUpdate, int adminLevelOfCaller, bool writeToDB );
+   void     PackUserProfileRequestAndSendToClient( U32 connectionId );
    
 };
 

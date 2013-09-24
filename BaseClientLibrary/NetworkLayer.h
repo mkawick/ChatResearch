@@ -37,6 +37,7 @@ struct RegisteredProduct
    string   price; 
    string   localized_price; 
    double   number_price;
+   float    quantity;
 };
 
 //-------------------------------------------
@@ -148,6 +149,8 @@ public:
    virtual void  UserLogin( bool success ) {}
    virtual void  UserLogout() {}
    virtual void  RequestListOfUserPurchases();
+   virtual void  UserProfileResponse( string username, string email, string userUuid, string lastLoginTime, string loggedOutTime, int adminLevel, bool isActive, bool showWinLossRecord, bool marketingOptOut, bool showGenderProfile ) {}
+
    virtual void  ListOfUserPurchases( const SerializedVector< PurchaseEntry >& purchases, int platformId, bool isCompleteList ) {}
 
    virtual void  UserDemographics( const string& username, const Demographics& userDemographics ) {}
@@ -229,7 +232,7 @@ public:
    void     Exit();
 
    //--------------------------------------------------------------
-
+   // ********************   Login/Profile   *******************
    bool     RequestLogin( const string& username, const string& password, const string& languageCode );
    bool     RequestAccountCreate( const string& username, const string& useremail, const string& password, int languageId, const string& deviceId, const string& gkHash ); // deviceId could be NULL except in andriod world
    bool     RequestLogout() const;
@@ -238,10 +241,15 @@ public:
    bool     IsLoggedIn() const { return m_isLoggedIn; }   
    string   GetUsername() const { return m_username; }
 
-   //--------------------------------------------------------------
+   bool     RequestProfile( const string userName ); //if empty, profile for currently logged in user is used.
+
+   // note that changing a username, email, or uuid is not possible. This is for lookup only.
+   bool     UpdateUserProfile( const string userName, const string& email, const string& userUuid, int adminLevel, int languageId, bool isActive, bool showWinLossRecord, bool marketingOptOut, bool showGenderProfile );
 
    //--------------------------------------------------------------
 
+   //--------------------------------------------------------------
+   // ********************   Friends/Chat     *******************
    bool     RequestListOfFriends() const;
    bool     RequestListOfGames() const;
    bool     RequestListOfUsersLoggedIntoGame( ) const;
@@ -270,13 +278,14 @@ public:
    bool	   SendChannelTextMessage( const string& message, const string& chatChannelUuid, U32 gameTurn = 0 );
 
    //--------------------------------------------------------------
-
+   // ********************   Purchases/Products   *******************
    bool     RequestListOfPurchases( bool userOnly = true ) const;
    bool     RequestListOfStaticAssets( int platformId = Platform_ios );
    bool     RequestListOfDynamicAssets( int platformId = Platform_ios );
    bool     RequestAsset( const string& assetName );
 
    bool     SendPurchases( const vector< RegisteredProduct >& purchases, int platformId = Platform_ios );
+   bool     GiveProduct( const string& userName, const RegisteredProduct& purchase, const string& notes, int platformId = Platform_ios );
    bool     SendCheat( const string& cheat );
 
    //--------------------------------------------------------------

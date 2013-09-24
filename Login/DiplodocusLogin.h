@@ -45,6 +45,8 @@ public:
    {
       QueryType_UserLoginInfo = 1,
       QueryType_UserProfile,
+      QueryType_UpdateUserProfile,
+      QueryType_UpdateUsers,
       QueryType_CreateBlankUserProfile,
       QueryType_UpdateLastLoggedInTime,
       QueryType_UpdateLastLoggedOutTime,
@@ -91,6 +93,7 @@ public:
    void     AddNewProductToDb( const PurchaseEntry& product );   
    void     SendListOfUserProductsToAssetServer( U32 connectionId );
 
+   ConnectionToUser* GetLoadedUserConnectionByUuid(const string & uuid );
    bool     GetProductByIndex( int index, ProductInfo& returnPi );
    bool     GetProductByProductId( int productId, ProductInfo& returnPi );
 
@@ -119,7 +122,7 @@ private:
 
    //--------------------------------------------
    bool     HandleLoginResultFromDb( U32 connectionId, PacketDbQueryResult* dbResult );
-   bool     HandleUserProfileFromDb( U32 connectionId, PacketDbQueryResult* dbResult );
+   //bool     HandleUserProfileFromDb( U32 connectionId, PacketDbQueryResult* dbResult );
    bool     SuccessfulLogin( U32 connectionId, bool isReloggedIn = false );
    
    bool     AddBlankUserProfile( U32 connectionId );
@@ -138,6 +141,7 @@ private:
 
    bool     StoreUserPurchases( U32 connectionId, const PacketListOfUserPurchases* purchase );
    bool     RequestListOfPurchases( U32 connectionId, const PacketRequestListOfUserPurchases* purchase );
+   bool     AddPurchase( U32 userConnectionId, PacketAddPurchaseEntry* addPurchase );
    bool     RequestProfile( U32 connectionId, const PacketRequestUserProfile* profileRequest );
    bool     UpdateProfile( U32 connectionId, const PacketUpdateUserProfile* profileRequest );
 

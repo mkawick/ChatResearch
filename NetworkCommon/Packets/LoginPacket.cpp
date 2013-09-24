@@ -154,6 +154,8 @@ bool  PurchaseEntry::SerializeIn( const U8* data, int& bufferOffset )
    Serialize::In( data, bufferOffset, productStoreId );
    Serialize::In( data, bufferOffset, price );
    Serialize::In( data, bufferOffset, number_price );
+   Serialize::In( data, bufferOffset, quantity );
+   
    Serialize::In( data, bufferOffset, date );
 
    return true;
@@ -165,6 +167,8 @@ bool  PurchaseEntry::SerializeOut( U8* data, int& bufferOffset ) const
    Serialize::Out( data, bufferOffset, productStoreId );
    Serialize::Out( data, bufferOffset, price );
    Serialize::Out( data, bufferOffset, number_price );
+   Serialize::Out( data, bufferOffset, quantity );
+
    Serialize::Out( data, bufferOffset, date );
 
    return true;
@@ -189,6 +193,35 @@ bool  PacketRequestListOfUserPurchases::SerializeOut( U8* data, int& bufferOffse
 
    return true;
 }
+
+///////////////////////////////////////////////////////////////
+
+bool  PacketAddPurchaseEntry::SerializeIn( const U8* data, int& bufferOffset )
+{
+   BasePacket::SerializeIn( data, bufferOffset );
+   Serialize::In( data, bufferOffset, userUuid );
+   Serialize::In( data, bufferOffset, userEmail );
+   Serialize::In( data, bufferOffset, userName );
+   Serialize::In( data, bufferOffset, item );
+   Serialize::In( data, bufferOffset, adminNotes );
+   Serialize::In( data, bufferOffset, platformId );
+
+   return true;
+}
+
+bool  PacketAddPurchaseEntry::SerializeOut( U8* data, int& bufferOffset ) const
+{
+   BasePacket::SerializeOut( data, bufferOffset );
+   Serialize::Out( data, bufferOffset, userUuid );
+   Serialize::Out( data, bufferOffset, userEmail );
+   Serialize::Out( data, bufferOffset, userName );
+   Serialize::Out( data, bufferOffset, item );
+   Serialize::Out( data, bufferOffset, adminNotes );
+   Serialize::Out( data, bufferOffset, platformId );
+
+   return true;
+}
+
 
 ///////////////////////////////////////////////////////////////
 
@@ -319,7 +352,8 @@ bool  PacketRequestUserProfileResponse::SerializeIn( const U8* data, int& buffer
    Serialize::In( data, bufferOffset, userUuid );
    Serialize::In( data, bufferOffset, lastLoginTime );
    Serialize::In( data, bufferOffset, loggedOutTime );   
-   Serialize::In( data, bufferOffset, adminLevel );   
+   Serialize::In( data, bufferOffset, adminLevel );     
+   Serialize::In( data, bufferOffset, languageId ); 
    Serialize::In( data, bufferOffset, isActive );
    Serialize::In( data, bufferOffset, showWinLossRecord );
    Serialize::In( data, bufferOffset, marketingOptOut );
@@ -338,6 +372,7 @@ bool  PacketRequestUserProfileResponse::SerializeOut( U8* data, int& bufferOffse
    Serialize::Out( data, bufferOffset, lastLoginTime );
    Serialize::Out( data, bufferOffset, loggedOutTime );   
    Serialize::Out( data, bufferOffset, adminLevel );   
+   Serialize::Out( data, bufferOffset, languageId );  
    Serialize::Out( data, bufferOffset, isActive );
    Serialize::Out( data, bufferOffset, showWinLossRecord );
    Serialize::Out( data, bufferOffset, marketingOptOut );
@@ -357,9 +392,10 @@ bool  PacketUpdateUserProfile::SerializeIn( const U8* data, int& bufferOffset )
    Serialize::In( data, bufferOffset, passwordHash );
    Serialize::In( data, bufferOffset, email );
    Serialize::In( data, bufferOffset, userUuid );
-   Serialize::In( data, bufferOffset, lastLoginTime );
-   Serialize::In( data, bufferOffset, loggedOutTime );   
-   Serialize::In( data, bufferOffset, adminLevel );   
+   //Serialize::In( data, bufferOffset, lastLoginTime );
+   //Serialize::In( data, bufferOffset, loggedOutTime );   
+   Serialize::In( data, bufferOffset, adminLevel );  
+   Serialize::In( data, bufferOffset, languageId ); 
    Serialize::In( data, bufferOffset, isActive );
    Serialize::In( data, bufferOffset, showWinLossRecord );
    Serialize::In( data, bufferOffset, marketingOptOut );
@@ -375,9 +411,10 @@ bool  PacketUpdateUserProfile::SerializeOut( U8* data, int& bufferOffset ) const
    Serialize::Out( data, bufferOffset, passwordHash );
    Serialize::Out( data, bufferOffset, email );
    Serialize::Out( data, bufferOffset, userUuid );
-   Serialize::Out( data, bufferOffset, lastLoginTime );
-   Serialize::Out( data, bufferOffset, loggedOutTime );   
-   Serialize::Out( data, bufferOffset, adminLevel );   
+   //Serialize::Out( data, bufferOffset, lastLoginTime );
+   //Serialize::Out( data, bufferOffset, loggedOutTime );   
+   Serialize::Out( data, bufferOffset, adminLevel );  
+   Serialize::Out( data, bufferOffset, languageId ); 
    Serialize::Out( data, bufferOffset, isActive );
    Serialize::Out( data, bufferOffset, showWinLossRecord );
    Serialize::Out( data, bufferOffset, marketingOptOut );

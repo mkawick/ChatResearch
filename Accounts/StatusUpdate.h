@@ -6,6 +6,7 @@
 #include "../NetworkCommon/ServerType.h"
 #include "../NetworkCommon/ChainedArchitecture/ChainedThread.h"
 #include "BlankUUIDQueryHandler.h"
+#include "BlankUserProfileHandler.h"
 #include "NewAccountQueryHandler.h"
 #include "ResetPasswordQueryHandler.h"
 #include <map>
@@ -31,6 +32,7 @@ public:
       QueryType_UserCreateTempAccount = 1,
       QueryType_UserCheckForNewAccount,
       QueryType_UserFindBlankUUID,
+      QueryType_UserFindBlankUserProfile,
       QueryType_LoadStrings,
       QueryType_LoadWeblinks,
       QueryType_AutoCreateUsers,
@@ -121,9 +123,11 @@ private:
    void     HandleResetPassword( const PacketDbQueryResult* dbResult );*/
 
    BlankUUIDQueryHandler* m_blankUuidHandler;
+   BlankUserProfileHandler* m_blankUserProfileHandler;
    NewAccountQueryHandler* m_newAccountHandler;
    ResetPasswordQueryHandler* m_resetPasswordHandler;
 
+   static const U32 timeoutBlankUserProfileTimer = 60;
    static const U32 timeoutBlankUUIDTimer = 60;
    static const U32 timeoutNewAccount = 48;
    static const U32 timeoutResetPassword = 30;

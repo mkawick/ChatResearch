@@ -324,6 +324,51 @@ typedef Enigmosaurus <TableUserProfile> UserProfileTable;
 
 //////////////////////////////////////////////////////////////
 
+class TableUserPlusProfile
+{
+public:
+   enum Columns
+   {
+      Column_id,
+      Column_name,
+      Column_name_match,
+      Column_password_hash,
+      Column_email,
+      Column_user_gamekit_id,
+      Column_user_gamekit_id_hash,
+      Column_user_creation_date,
+      Column_uuid,
+      Column_last_login_time,
+      Column_last_logout_time,
+      Column_active,
+      Column_language_id,
+      Column_user_confirmation_date,
+      Column_id_from_profile,
+      Column_address1,
+      Column_address2,
+      Column_city,
+      Column_provence,
+      Column_mail_code,
+      Column_country,
+      Column_marketing_opt_out,
+      Column_screen_name,
+      Column_gender,
+      Column_mber_avatar,
+      Column_home_phone,
+      Column_alt_phone,
+      Column_show_gender_profile,
+      Column_admin_level,
+      Column_show_win_loss_record,
+      Column_time_zone,
+      Column_end
+   };
+   static const char* const column_names[];
+};
+
+typedef Enigmosaurus <TableUserPlusProfile> UserPlusProfileTable;
+
+//////////////////////////////////////////////////////////////
+
 class TableUserJoinPending
 {
 public:
@@ -398,5 +443,27 @@ public:
 };
 
 typedef Enigmosaurus <TableProduct> ProductTable;
+
+//////////////////////////////////////////////////////////////
+
+class TableUserProduct
+{
+public:
+   enum Columns
+   {
+      Column_id,
+      Column_user_uuid,
+      Column_product_id,
+      Column_purchase_date,
+      Column_price_paid,
+      Column_currency_type,
+      Column_num_purchased,
+      Column_admin_provided,
+      Column_retail_campaign,
+      Column_end
+   };
+};
+
+typedef Enigmosaurus <TableUserProduct> UserProductTable;
 
 //////////////////////////////////////////////////////////////

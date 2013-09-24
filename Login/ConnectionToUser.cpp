@@ -1,7 +1,7 @@
 // ConnectionToUser.cpp
 
 #include "ConnectionToUser.h"
-#include "../NetworkCommon/Utils/TableWrapper.h"
+
 #include "../NetworkCommon/Packets/DbPacket.h"
 #include "../NetworkCommon/Packets/LoginPacket.h"
 #include "../NetworkCommon/Packets/CheatPacket.h"
@@ -13,6 +13,10 @@
 
 //////////////////////////////////////////////////////////////////////////
 
+DiplodocusLogin* ConnectionToUser::userManager = NULL;
+
+//////////////////////////////////////////////////////////////////////////
+
 ConnectionToUser:: ConnectionToUser( const string& name, const string& pword, const string& key ) : 
                      username( name ), 
                      passwordHash( pword ), 
@@ -21,6 +25,7 @@ ConnectionToUser:: ConnectionToUser( const string& name, const string& pword, co
                      isActive( true ), 
                      loggedOutTime( 0 ),
                      adminLevel( 0 ),
+                     languageId( 1 ),
                      showWinLossRecord( true ),
                      marketingOptOut( false ),
                      showGenderProfile( false )
@@ -30,27 +35,180 @@ ConnectionToUser:: ConnectionToUser( const string& name, const string& pword, co
 
 void  ConnectionToUser::LoginResult( PacketDbQueryResult* dbResult )
 {
-   UserTable            enigma( dbResult->bucket );
-   UserTable::row       row = *enigma.begin();
-   id =                    row[ TableUser::Column_id ];
-   username =              row[ TableUser::Column_name ];
-   userUuid =              row[ TableUser::Column_uuid ];
-   email =                 row[ TableUser::Column_email ];
-   passwordHash =          row[ TableUser::Column_password_hash ];
-   // note that we are using logout for our last login time.
-   lastLoginTime =         row[ TableUser::Column_last_logout_time ];
-   isActive =              boost::lexical_cast<bool>( row[ TableUser::Column_active] );
+   StoreUserInfo( dbResult );
+}
 
-   status =                ConnectionToUser::LoginStatus_LoggedIn;
+//-----------------------------------------------------------------
 
-   gameProductId =         dbResult->serverLookup;
-   connectionId =          0;
+bool  ConnectionToUser::StoreUserInfo( PacketDbQueryResult* dbResult )
+{
+   string lookupKey = dbResult->meta;
 
-   if( loginKey.size() == 0 )
+   UserPlusProfileTable             enigma( dbResult->bucket );
+   UserPlusProfileTable::row        row = *enigma.begin();
+   string lookup_email;
+   if( dbResult->successfulQuery == true )
    {
-      U32 hash = static_cast<U32>( GenerateUniqueHash( boost::lexical_cast< string >( dbResult->id ) + email ) );
-      loginKey = GenerateUUID( GetCurrentMilliseconds() + hash );
+      lookup_email = row[ TableUserPlusProfile::Column_email ];
    }
+
+   if( lookupKey == username && dbResult->id == connectionId )//&& lookupkey)
+   {
+      if( dbResult->successfulQuery == false || dbResult->bucket.bucket.size() == 0 )// no records found
+      {
+         return false;
+      }
+
+      SaveUserSettings( enigma, dbResult->serverLookup );
+      connectionId =                   dbResult->id;
+      if( loginKey.size() == 0 )
+      {
+         U32 hash = static_cast<U32>( GenerateUniqueHash( boost::lexical_cast< string >( dbResult->id ) + email ) );
+         loginKey = GenerateUUID( GetCurrentMilliseconds() + hash );
+      }
+   }
+   else
+   {
+      map< string, ConnectionToUser>:: iterator it = adminUserData.find( lookupKey );
+      if( it != adminUserData.end() )
+      {
+         if( dbResult->bucket.bucket.size() == 0 )// no records found
+         {
+            userManager->SendErrorToClient( connectionId, PacketErrorReport::ErrorType_Cheat_BadUserLookup );
+            return false;
+         }
+         if( dbResult->successfulQuery == true )
+         {
+            ConnectionToUser& conn = it->second;
+            conn.SaveUserSettings( enigma, 0 );
+            conn.PackUserProfileRequestAndSendToClient( connectionId );
+         }
+         else
+         {
+            adminUserData.erase( it );
+         }
+      }
+      else
+      {
+         assert( 0 );// we submitted a query and got an invalid result
+      }
+   }
+
+   return true;
+}
+
+//-----------------------------------------------------------------
+
+void  ConnectionToUser::SaveUserSettings( UserPlusProfileTable& enigma, U8 productId )
+{
+   UserPlusProfileTable::row row = *enigma.begin();
+
+   id =                             row[ TableUserPlusProfile::Column_id ];
+   username =                       row[ TableUserPlusProfile::Column_name ];
+   userUuid =                       row[ TableUserPlusProfile::Column_uuid ];
+   email =                          row[ TableUserPlusProfile::Column_email ];
+   passwordHash =                   row[ TableUserPlusProfile::Column_password_hash ];
+   
+   lastLoginTime =                  row[ TableUserPlusProfile::Column_last_logout_time ]; // note that we are using logout for our last login time.
+   loggedOutTime =                  0;
+
+   isActive =                       boost::lexical_cast<bool>( row[ TableUserPlusProfile::Column_active] );
+
+   if( row[ TableUserPlusProfile::Column_language_id] != "NULL" )
+   {
+      languageId =                     boost::lexical_cast<int>( row[ TableUserPlusProfile::Column_language_id] );
+   }
+
+   adminLevel =                     boost::lexical_cast< int > ( row[ TableUserPlusProfile::Column_admin_level] );
+   marketingOptOut =                boost::lexical_cast< bool >( row[ TableUserPlusProfile::Column_marketing_opt_out] );
+   showWinLossRecord =              boost::lexical_cast< bool >( row[ TableUserPlusProfile::Column_show_win_loss_record] );
+   showGenderProfile =              boost::lexical_cast< bool >( row[ TableUserPlusProfile::Column_show_gender_profile] );
+
+   gameProductId =                  productId;
+}
+
+//-----------------------------------------------------------------
+
+void  ConnectionToUser::SaveUpdatedProfile( const PacketUpdateUserProfile* profileUpdate, int adminLevelOfCaller, bool writeToDB )
+{
+   if( adminLevelOfCaller > 0 ) // only admins can change a user's name etc.
+   {
+      // some fields may be blank
+      if( profileUpdate->username.size() > 0 )
+      {
+         username =                       profileUpdate->username;
+      }
+      //userUuid =                       profileUpdate->userUuid;
+      if( profileUpdate->email.size() > 0 )
+      {
+         email =                          profileUpdate->email;
+      }
+      if( profileUpdate->passwordHash.size() > 0 )
+      {
+         passwordHash =                   profileUpdate->passwordHash;
+      }
+   }
+   
+   //lastLoginTime =                  profileUpdate->lastLoginTime;
+   //loggedOutTime =                  GetDateFromString( profileUpdate->loggedOutTime.c_str() );
+
+   isActive =                       profileUpdate->isActive;
+   languageId =                     profileUpdate->languageId;
+
+   adminLevel =                     profileUpdate->adminLevel;
+   marketingOptOut =                profileUpdate->marketingOptOut;
+   showWinLossRecord =              profileUpdate->showWinLossRecord;
+   showGenderProfile =              profileUpdate->showGenderProfile;
+
+   ConnectionToUser* loadedConnection = userManager->GetLoadedUserConnectionByUuid( userUuid );
+   if( loadedConnection != NULL )
+   {
+      loadedConnection->SaveUpdatedProfile( profileUpdate, adminLevelOfCaller, false );// we will write if needed... no pass thru required
+   }
+
+   if( writeToDB )
+   {
+      PacketDbQuery* dbQuery = new PacketDbQuery;
+      dbQuery->id =           connectionId;
+      dbQuery->lookup =       DiplodocusLogin::QueryType_UpdateUsers; 
+      dbQuery->meta =         "";
+      dbQuery->serverLookup = gameProductId;
+      dbQuery->isFireAndForget = true;
+
+      string query = "UPDATE playdek.users SET user_name='%s',user_email='%s',user_pw_hash='%s',active=";
+      query += boost::lexical_cast<string>( isActive?1:0 );
+      query += ",language_id=";
+      query += boost::lexical_cast<string>( languageId );
+      query += "  WHERE user_id=";
+      query += boost::lexical_cast<string>( id );
+      dbQuery->query = query;
+      dbQuery->escapedStrings.insert( username );
+      dbQuery->escapedStrings.insert( email );
+      dbQuery->escapedStrings.insert( passwordHash );
+
+      userManager->AddQueryToOutput( dbQuery );
+
+      //---------------------------------------
+      dbQuery = new PacketDbQuery;
+      dbQuery->id =           connectionId;
+      dbQuery->lookup =       DiplodocusLogin::QueryType_UpdateUserProfile;
+      dbQuery->meta =         "";
+      dbQuery->serverLookup = gameProductId;
+      dbQuery->isFireAndForget = true;
+
+      query = "UPDATE playdek.user_profile SET admin_level=";
+      query += boost::lexical_cast<string>( adminLevel );
+      query += ",marketing_opt_out=";
+      query += boost::lexical_cast<string>( marketingOptOut?1:0 );
+      query += ",show_win_loss_record=";
+      query += boost::lexical_cast<string>( showWinLossRecord?1:0 );
+      query += ",show_profile_gender=";
+      query += boost::lexical_cast<string>( showGenderProfile?1:0 );
+      dbQuery->query = query;
+
+      userManager->AddQueryToOutput( dbQuery );
+   }
+   PackUserProfileRequestAndSendToClient( connectionId );
 }
 
 //-----------------------------------------------------------------
@@ -59,6 +217,8 @@ bool  ConnectionToUser::BeginLogout( bool wasDisconnectedByError )
 {
    if( loggedOutTime ) /// we are already logging out. The gateway may send us multiple logouts so we simply have to ignore further attemps
       return false;
+
+   status = LoginStatus_Invalid;
 
    time( &loggedOutTime ); // time stamp this guy
    if( wasDisconnectedByError )
@@ -187,16 +347,14 @@ bool    ConnectionToUser:: SuccessfulLogin( U32 connectId, bool isReloggedIn )
       loginStatus->loginKey = loginKey;
    }
    loginStatus->wasLoginSuccessful = true;
+   loginStatus->adminLevel = adminLevel;
 
-   //*************************** this is a hack. This should be based on user profiles.
-   loginStatus->adminLevel = 1;
-   
-   //***************************
-
-   if( isReloggedIn == false )
+  /* if( isReloggedIn == false )
    {
       LoadUserProfile();
-   }
+   }*/
+
+   status = LoginStatus_LoggedIn;
 
    userManager->SendPacketToGateway( loginStatus, connectionId );
 
@@ -215,7 +373,7 @@ bool    ConnectionToUser:: SuccessfulLogin( U32 connectId, bool isReloggedIn )
 }
 
 //------------------------------------------------------------------------------------------------
-
+/*
 bool     ConnectionToUser:: LoadUserProfile( U32 whoseProfileIsLoaded )
 {
    PacketDbQuery* dbQuery = new PacketDbQuery;
@@ -252,7 +410,7 @@ bool     ConnectionToUser:: AddBlankUserProfile()
    LoadUserProfile();
 
    return success;
-}
+}*/
 
 //---------------------------------------------------------------
 
@@ -318,6 +476,12 @@ bool     ConnectionToUser:: HandleGameReportedListOfPurchases( const PacketReque
 
 //---------------------------------------------------------------
 
+bool     ConnectionToUser:: AddPurchase( const PacketRequestListOfUserPurchases* purchase )
+{
+}
+
+//---------------------------------------------------------------
+/*
 bool     ConnectionToUser:: HandleUserProfileFromDb( PacketDbQueryResult* dbResult )
 {
    UserProfileTable            enigma( dbResult->bucket );
@@ -339,7 +503,7 @@ bool     ConnectionToUser:: HandleUserProfileFromDb( PacketDbQueryResult* dbResu
    }
 
    return true;
-}
+}*/
 
 //---------------------------------------------------------------
 
@@ -369,7 +533,8 @@ bool     ConnectionToUser:: StoreUserPurchases( const PacketListOfUserPurchases*
             if( result == true )
             {
                const string& productUuid = productInfo.uuid;
-               WriteProductToUserRecord( productUuid, purchaseEntry.number_price );
+               //WriteProductToUserRecord( productUuid, purchaseEntry.number_price );
+               WriteProductToUserRecord( userUuid, productUuid, purchaseEntry.number_price, purchaseEntry.quantity, false, "" );
             }
          }
 
@@ -413,26 +578,19 @@ void     ConnectionToUser:: AddCurrentlyLoggedInProductToUserPurchases()
       return;
    }
 
-   PacketDbQuery* dbQuery = new PacketDbQuery;
-   dbQuery->id =           0;
-   dbQuery->lookup =       DiplodocusLogin::QueryType_AddProductInfoToUser;
-   dbQuery->meta =         loggedInGameProductName;
-   dbQuery->serverLookup = 0;
-   dbQuery->isFireAndForget = true;
-
-
-   dbQuery->query = "INSERT INTO user_join_product VALUES( NULL, '";
-   dbQuery->query += userUuid;
-   dbQuery->query += "', '";
-   dbQuery->query += productInfo.uuid;
-   dbQuery->query += "', NULL, 0, 0, 0 )";
-
-   userManager->AddQueryToOutput( dbQuery );
+   WriteProductToUserRecord( userUuid, productInfo.uuid, 0.0, 1, 1, "default by login" );
 }
 
 //---------------------------------------------------------------
 
 void     ConnectionToUser:: WriteProductToUserRecord( const string& productFilterName, double pricePaid )
+{
+   WriteProductToUserRecord( userUuid, productFilterName, pricePaid, 1, 1, "new product reported by user login" );
+}
+
+//---------------------------------------------------------------
+
+void     ConnectionToUser:: WriteProductToUserRecord( const string& userUuid, const string& productFilterName, double pricePaid, float numPurchased, bool providedByAdmin, string adminNotes )
 {
    PacketDbQuery* dbQuery = new PacketDbQuery;
    dbQuery->id =           0;
@@ -441,17 +599,21 @@ void     ConnectionToUser:: WriteProductToUserRecord( const string& productFilte
    dbQuery->serverLookup = 0;
    dbQuery->isFireAndForget = true;
 
-   dbQuery->query = "INSERT INTO user_join_product VALUES( NULL, '%s', '%s', NULL, ";
+   dbQuery->query = "INSERT INTO user_join_product VALUES( DEFAULT, '%s', '%s', DEFAULT, ";
    dbQuery->query += boost::lexical_cast< string >( pricePaid );
-   dbQuery->query += ", 1, NULL)";
+   dbQuery->query += ", 1, 1,";
+   dbQuery->query += boost::lexical_cast< string >( providedByAdmin? 1:0 );
+   dbQuery->query += ", '%s', NULL)";
 
    dbQuery->escapedStrings.insert( userUuid );
    dbQuery->escapedStrings.insert( productFilterName );
+   dbQuery->escapedStrings.insert( adminNotes );
 
    userManager->AddQueryToOutput( dbQuery );
 
    userManager->SendErrorToClient( connectionId, PacketErrorReport::ErrorType_Status, PacketErrorReport::StatusSubtype_ProductAdded );
 }
+
 
 //---------------------------------------------------------------
 
@@ -563,29 +725,135 @@ bool     ConnectionToUser:: HandleCheat_AddProduct( const string& productName )
    bool result = userManager->GetProductByIndex( productIndex, product );
    if( result == true )
    {
-      WriteProductToUserRecord( product.uuid, product.price );
+      //WriteProductToUserRecord( userUuid, product.uuid, product.price );
+      WriteProductToUserRecord( userUuid, productName, 0.0, 1, 1, "added by cheat" );
    }
 
    return true;
 }
 
+//-----------------------------------------------------------------
+
+void     ConnectionToUser:: PackUserProfileRequestAndSendToClient( U32 connectionId )
+{
+   PacketRequestUserProfileResponse* response = new PacketRequestUserProfileResponse;
+   // string username, string email, string userUuid, string lastLoginTime, string loggedOutTime, int adminLevel, bool isActive, bool showWinLossRecord, bool marketingOptOut, bool showGenderProfile
+   response->username =          username;
+   response->userUuid =          userUuid;
+   response->email =             email;
+   response->lastLoginTime =     lastLoginTime;
+   response->loggedOutTime =     GetDateInUTC( loggedOutTime );
+
+   response->adminLevel =        adminLevel;
+   response->isActive =          isActive;
+   response->showWinLossRecord = showWinLossRecord;
+   response->marketingOptOut =   marketingOptOut;
+   response->showGenderProfile = showGenderProfile;
+
+   userManager->SendPacketToGateway( response, connectionId );
+}
+
+//-----------------------------------------------------------------
+
 bool     ConnectionToUser:: RequestProfile( const PacketRequestUserProfile* profileRequest )
 {
    if( profileRequest->uuid == userUuid )
    {
-      
-      return false;
+      PackUserProfileRequestAndSendToClient( connectionId );
+      return true;
    }
    if( adminLevel < 1 )
    {
       userManager->SendErrorToClient( connectionId, PacketErrorReport::ErrorType_Cheat_BadPermissions );
+      return false;
    }
+
+   string requestId = profileRequest->userEmail + profileRequest->uuid + profileRequest->userName;
+   if( requestId.size() == 0 )
+   {
+      userManager->SendErrorToClient( connectionId, PacketErrorReport::ErrorType_Cheat_BadUserLookup );
+      return true;
+   }
+   else
+   {
+      map< string, ConnectionToUser> ::iterator it = adminUserData.find( requestId );// just use the existing data.
+      if( it != adminUserData.end() )
+      {
+         it->second.PackUserProfileRequestAndSendToClient( connectionId );
+         return true;
+      }
+      
+   }
+
   // submit request for user profile with this connection id
+   PacketDbQuery* dbQuery = new PacketDbQuery;
+   dbQuery->id =           connectionId;
+   dbQuery->lookup =       DiplodocusLogin::QueryType_UserLoginInfo;
+   dbQuery->meta =         boost::lexical_cast<string>( GenerateUniqueHash( requestId ) );
+   dbQuery->serverLookup = gameProductId;
+
+   string temp = "select * from users JOIN user_profile ON users.user_id=user_profile.user_id WHERE users.user_email='%s' OR users.uuid='%s' OR users.user_name='%s' LIMIT 1";
+   dbQuery->escapedStrings.insert( profileRequest->userEmail );
+   dbQuery->escapedStrings.insert( profileRequest->uuid );
+   dbQuery->escapedStrings.insert( profileRequest->userName );
+   dbQuery->query = temp;
+
+   adminUserData.insert( UserConnectionPair( dbQuery->meta, ConnectionToUser() ) );
+   userManager->AddQueryToOutput( dbQuery );
+
    return false;
 }
 
+//-----------------------------------------------------------------
+
 bool     ConnectionToUser:: UpdateProfile( const PacketUpdateUserProfile* updateProfileRequest )
 {
+   if( updateProfileRequest->adminLevel >= adminLevel )
+   {
+      userManager->SendErrorToClient( connectionId, PacketErrorReport::ErrorType_Cheat_BadPermissions );
+      return false;
+   }
+
+   if( updateProfileRequest->userUuid == userUuid )
+   {
+      SaveUpdatedProfile( updateProfileRequest, adminLevel, true );
+      return true;
+   }
+    
+   string requestId = updateProfileRequest->email + updateProfileRequest->userUuid + updateProfileRequest->username;
+   if( requestId.size() != 0 )
+   {
+      map< string, ConnectionToUser> ::iterator it = adminUserData.find( requestId );// just use the existing data.
+      if( it != adminUserData.end() )
+      {
+         it->second.SaveUpdatedProfile( updateProfileRequest, adminLevel,true );
+         return true;
+      }
+   }
+   
+   map< string, ConnectionToUser> ::iterator it = adminUserData.begin();
+   while( it != adminUserData.end() )
+   {
+      if( updateProfileRequest->username.size() != 0 && it->second.username == updateProfileRequest->username )
+      {
+         it->second.SaveUpdatedProfile( updateProfileRequest, adminLevel,true );
+         return true;
+      }
+      if( updateProfileRequest->userUuid.size() != 0 && it->second.userUuid == updateProfileRequest->userUuid )
+      {
+         it->second.SaveUpdatedProfile( updateProfileRequest, adminLevel,true );
+         return true;
+      }
+      if( updateProfileRequest->email.size() != 0 && it->second.email == updateProfileRequest->email )
+      {
+         it->second.SaveUpdatedProfile( updateProfileRequest, adminLevel,true );
+         return true;
+      }
+      it++;
+   }
+
+   userManager->SendErrorToClient( connectionId, PacketErrorReport::ErrorType_Cheat_BadUserLookup_TryLoadingUserFirst );
+
    return false;
 }
 

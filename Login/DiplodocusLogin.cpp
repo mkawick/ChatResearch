@@ -216,6 +216,7 @@ bool     DiplodocusLogin:: LogUserIn( const string& username, const string& pass
    {
       ConnectionToUser conn( username, password, loginKey );
       conn.gameProductId = gameProductId;
+      conn.connectionId = connectionId;
       AddUserConnection( UserConnectionPair( connectionId, conn ) );
 
       //*********************************************************************************
@@ -228,11 +229,15 @@ bool     DiplodocusLogin:: LogUserIn( const string& username, const string& pass
       dbQuery->meta =         username;
       dbQuery->serverLookup = gameProductId;
 
-      string queryString = "SELECT * FROM users as user WHERE user_email='%s' and user_pw_hash='" ;
+      dbQuery->query = "select * from users JOIN user_profile ON users.user_id=user_profile.user_id WHERE users.user_email='%s' AND users.user_pw_hash='%s'";
+      dbQuery->escapedStrings.insert( username );
+      dbQuery->escapedStrings.insert( boost::lexical_cast< string >( password ) );
+
+      /*string queryString = "SELECT * FROM users as user WHERE user_email='%s' and user_pw_hash='" ;
       queryString += boost::lexical_cast< string >( password );
       queryString += "'";
       dbQuery->query = queryString;
-      dbQuery->escapedStrings.insert( username );
+      dbQuery->escapedStrings.insert( username );*/
       
       return AddQueryToOutput( dbQuery );
    }
@@ -829,6 +834,22 @@ bool     DiplodocusLogin:: UpdateProfile( U32 connectionId, const PacketUpdateUs
 
 //---------------------------------------------------------------
 
+ConnectionToUser*     DiplodocusLogin:: GetLoadedUserConnectionByUuid(const string & uuid )
+{
+   Threading::MutexLock locker( m_inputChainListMutex );
+   UserConnectionMapIterator it = m_userConnectionMap.begin();
+   while( it != m_userConnectionMap.end() )
+   {
+      if( it->second.userUuid == uuid )
+         return &it->second;
+      it++;
+   }
+
+   return NULL;
+}; 
+
+//---------------------------------------------------------------
+
 bool   DiplodocusLogin:: HandleCheats( U32 connectionId, const PacketCheat* cheat )
 {
    ConnectionToUser* connection = GetUserConnection( connectionId );
@@ -964,7 +985,7 @@ bool  DiplodocusLogin:: UpdateLastLoggedOutTime( U32 connectionId )
 //------------------------------------------------------------------------------------------------
 
 //------------------------------------------------------------------------------------------------
-
+/*
 bool     DiplodocusLogin:: HandleUserProfileFromDb( U32 connectionId, PacketDbQueryResult* dbResult )
 {
    ConnectionToUser* connection = GetUserConnection( connectionId );
@@ -990,7 +1011,7 @@ bool     DiplodocusLogin:: HandleUserProfileFromDb( U32 connectionId, PacketDbQu
    }
 
    else return false;
-}
+}*/
 
 //------------------------------------------------------------------------------------------------
 //------------------------------------------------------------------------------------------------
@@ -1165,12 +1186,11 @@ bool     DiplodocusLogin:: AddOutputChainData( BasePacket* packet, U32 chainId )
          switch( dbResult->lookup )
          {
             cout << "Db query type:"<< dbResult->lookup << ", success=" << dbResult->successfulQuery << endl;
+
             case QueryType_UserLoginInfo:
                {
-                  if( dbResult->successfulQuery == false || dbResult->bucket.bucket.size() == 0 )// no records found
+                  if( HandleLoginResultFromDb( connectionId, dbResult ) == false )
                   {
-                     //assert( 0 );// begin teardown. Inform gateway that user is not available. Gateway will teardown the connection
-                     // and send a reply to this game instance.
                      SendErrorToClient( connectionId, PacketErrorReport::ErrorType_UserBadLogin );  
                      string str = "User not valid and db query failed, username: ";
                      str += connection->username;
@@ -1180,11 +1200,9 @@ bool     DiplodocusLogin:: AddOutputChainData( BasePacket* packet, U32 chainId )
                      ForceUserLogoutAndBlock( connectionId );
                      return false;
                   }
-                  
-                  HandleLoginResultFromDb( connectionId, dbResult );
                }
                break;
-            case QueryType_UserProfile:
+         /*   case QueryType_UserProfile:
                {
                   // in some weird circustance, we could end up in an infinite loop here.
                   if( dbResult->successfulQuery == false || dbResult->bucket.bucket.size() == 0 )// no records found
@@ -1196,7 +1214,7 @@ bool     DiplodocusLogin:: AddOutputChainData( BasePacket* packet, U32 chainId )
                      HandleUserProfileFromDb( connectionId, dbResult );
                   }
                }
-               break;
+               break;*/
             case QueryType_UserListOfGame:
                {
                   if( dbResult->successfulQuery == false || dbResult->bucket.bucket.size() == 0 )// no records found

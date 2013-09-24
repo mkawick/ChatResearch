@@ -231,8 +231,54 @@ bool  NetworkLayer::RequestLogout() const
 
 //-----------------------------------------------------------------------------
 
+bool  NetworkLayer::RequestProfile( const string userName )//if empty, profile for currently logged in user is used
+{
+   if( m_isConnected == false )
+   {
+      return false;
+   }
+   PacketRequestUserProfile request;
+   request.userName = userName;
+   if( userName == "" )
+      request.uuid = m_uuid;
+   SerializePacketOut( &request );
+
+   return true;
+}
+
+//-----------------------------------------------------------------------------
+
+bool  NetworkLayer::UpdateUserProfile( const string userName, const string& email, const string& userUuid, int adminLevel, int languageId, bool isActive, bool showWinLossRecord, bool marketingOptOut, bool showGenderProfile )
+{
+   if( m_isConnected == false )
+   {
+      return false;
+   }
+   PacketUpdateUserProfile       update;
+   update.username =             userName;
+   update.email =                email;
+   update.userUuid =             userUuid;
+   
+   update.adminLevel =           adminLevel;
+   update.languageId =           languageId;
+   update.isActive =             isActive;
+   update.showWinLossRecord =    showWinLossRecord;
+   update.marketingOptOut =      marketingOptOut;
+   update.showGenderProfile =    showGenderProfile;
+
+   SerializePacketOut( &update );
+
+   return true;
+}
+
+//-----------------------------------------------------------------------------
+
 bool  NetworkLayer::RequestListOfFriends() const
 {
+   if( m_isConnected == false )
+   {
+      return false;
+   }
    PacketContact_GetListOfContacts friends;
    SerializePacketOut( &friends );
 
@@ -243,6 +289,10 @@ bool  NetworkLayer::RequestListOfFriends() const
 
 bool  NetworkLayer::RequestListOfPurchases( bool userOnly ) const
 {
+   if( m_isConnected == false )
+   {
+      return false;
+   }
    PacketRequestListOfUserPurchases purchases;
    purchases.requestUserOnly = userOnly;
    SerializePacketOut( &purchases );
@@ -255,6 +305,10 @@ bool  NetworkLayer::RequestListOfPurchases( bool userOnly ) const
   
 bool  NetworkLayer::RequestChatChannelHistory( const string& channelUuid, int numRecords, int startingIndex ) const
 {
+   if( m_isConnected == false )
+   {
+      return false;
+   }
    PacketChatHistoryRequest history;
    history.chatChannelUuid = channelUuid;
    history.numRecords = numRecords;
@@ -267,6 +321,10 @@ bool  NetworkLayer::RequestChatChannelHistory( const string& channelUuid, int nu
   
 bool  NetworkLayer::RequestChatP2PHistory( const string& userUuid, int numRecords, int startingIndex ) const
 {
+   if( m_isConnected == false )
+   {
+      return false;
+   }
    PacketChatHistoryRequest history;
    history.userUuid = userUuid;
    history.numRecords = numRecords;
@@ -786,6 +844,27 @@ bool     NetworkLayer::SendPurchases( const vector< RegisteredProduct >& purchas
 
 //-----------------------------------------------------------------------------
 
+bool     NetworkLayer::GiveProduct( const string& userName, const RegisteredProduct& purchase, const string& notes, int platformId )
+{
+   PacketAddPurchaseEntry purchaseEntry;
+   purchaseEntry.userName = userName;
+   
+   purchaseEntry.item.productStoreId = purchase.id;
+   purchaseEntry.item.quantity = purchase.quantity;
+   purchaseEntry.item.number_price = purchase.number_price;
+   purchaseEntry.item.price = purchase.price;
+   purchaseEntry.item.name = purchase.title;
+
+   purchaseEntry.adminNotes  = notes;
+   purchaseEntry.platformId = platformId;
+
+   SerializePacketOut( &purchaseEntry );
+
+   return true;
+}
+
+//-----------------------------------------------------------------------------
+
 bool     NetworkLayer::SendCheat( const string& cheatText )
 {
    PacketCheat cheat;
@@ -1122,6 +1201,24 @@ bool  NetworkLayer::HandlePacketReceived( BasePacket* packetIn )
                   for( list< UserNetworkEventNotifier* >::iterator it = m_callbacks.begin(); it != m_callbacks.end(); ++it )
                   {  
                      (*it)->ListOfUserPurchases( purchases->purchases, purchases->platformId, purchases->isAllProducts );
+                  }
+               }
+               break;
+            case PacketLogin::LoginType_RequestUserProfileResponse:
+               {
+                  PacketRequestUserProfileResponse* profile = static_cast<PacketRequestUserProfileResponse*>( packetIn );
+                  for( list< UserNetworkEventNotifier* >::iterator it = m_callbacks.begin(); it != m_callbacks.end(); ++it )
+                  {  
+                     (*it)->UserProfileResponse( profile->username, 
+                                          profile->email, 
+                                          profile->userUuid, 
+                                          profile->lastLoginTime, 
+                                          profile->loggedOutTime, 
+                                          profile->adminLevel, 
+                                          profile->isActive, 
+                                          profile->showWinLossRecord, 
+                                          profile->marketingOptOut, 
+                                          profile->showGenderProfile );
                   }
                }
                break;

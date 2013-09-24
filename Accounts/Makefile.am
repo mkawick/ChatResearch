@@ -6,6 +6,7 @@ account_serverd_SOURCES = StatusUpdate.cpp \
 email.cpp \
 Accounts.cpp \
 BlankUUIDQueryHandler.cpp \
+BlankUserProfileHandler.cpp \
 NewAccountQueryHandler.cpp \
 ResetPasswordQueryHandler.cpp \
 ../NetworkCommon/NetworkUtils.cpp \

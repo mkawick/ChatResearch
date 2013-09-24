@@ -41,6 +41,10 @@ StatusUpdate::StatusUpdate( const string& serverName, U32 serverId ) : Queryer()
    m_blankUuidHandler = new BlankUUIDQueryHandler( QueryType_UserFindBlankUUID, this, queryForBlankUUIDs );
    m_blankUuidHandler->SetPeriodicty( timeoutBlankUUIDTimer );
 
+   string queryForBlankProfiles = "SELECT user_id FROM users WHERE user_confirmation_date IS NOT NULL AND user_id NOT IN (SELECT user_id FROM user_profile) LIMIT 20";
+   m_blankUserProfileHandler = new BlankUserProfileHandler( QueryType_UserFindBlankUserProfile, this, queryForBlankProfiles );
+   m_blankUserProfileHandler->SetPeriodicty( timeoutBlankUserProfileTimer );
+
    string queryForNewAccounts = "SELECT * FROM user_temp_new_user WHERE was_email_sent='0' AND flagged_as_invalid='0'";
    m_newAccountHandler = new NewAccountQueryHandler( QueryType_UserCheckForNewAccount, this, queryForNewAccounts );
    m_newAccountHandler->SetPeriodicty( timeoutNewAccount );
@@ -62,6 +66,7 @@ StatusUpdate::StatusUpdate( const string& serverName, U32 serverId ) : Queryer()
 StatusUpdate::~StatusUpdate()
 {
    delete m_blankUuidHandler;
+   delete m_blankUserProfileHandler;
    //delete m_newAccountHandler;
    //delete m_resetPasswordHandler;
 }
@@ -452,6 +457,7 @@ int      StatusUpdate::CallbackFunction()
      
       m_blankUuidHandler->Update( currentTime );
       m_newAccountHandler->Update( currentTime );
+      m_blankUserProfileHandler->Update( currentTime );
       //PreloadLanguageStrings();
       //PreloadWeblinks();
    }
@@ -491,6 +497,10 @@ bool     StatusUpdate::AddOutputChainData( BasePacket* packet, U32 connectionId 
          bool wasHandled = false;
          PacketDbQueryResult* dbResult = static_cast<PacketDbQueryResult*>( packet );
          if( m_blankUuidHandler->HandleResult( dbResult ) == true )
+         {
+            wasHandled = true;
+         }
+         else if( m_blankUserProfileHandler->HandleResult( dbResult ) == true )
          {
             wasHandled = true;
          }
@@ -912,6 +922,8 @@ void     StatusUpdate::HandleAutoCreateAccounts( const PacketDbQueryResult* dbRe
       AddQueryToOutput( dbQuery );
 
       LogMessage( LOG_PRIO_INFO, "Accounts::HandleAutoCreateAccounts\n" );
+
+      m_blankUserProfileHandler->CreateBlankProfile( userId );
    }
 }
 

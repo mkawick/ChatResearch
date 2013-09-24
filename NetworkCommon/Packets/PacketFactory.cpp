@@ -217,6 +217,11 @@ bool  PacketFactory::ParseLogin( const U8* bufferIn, int& bufferOffset, const Ba
             *packetOut = SerializeIn< PacketRequestListOfUserPurchases >( bufferIn, bufferOffset );
          }
          return true;
+      case PacketLogin::LoginType_AddPurchaseEntry:
+         {
+            *packetOut = SerializeIn< PacketAddPurchaseEntry >( bufferIn, bufferOffset );
+         }
+         return true;
       case PacketLogin::LoginType_ListOfPurchases:
          {
             *packetOut = SerializeIn< PacketListOfUserPurchases >( bufferIn, bufferOffset );

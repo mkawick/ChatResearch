@@ -476,6 +476,8 @@ public:
       ErrorType_Contact_Asset_BadLoginKey,
       
       ErrorType_Cheat_BadPermissions,
+      ErrorType_Cheat_BadUserLookup,
+      ErrorType_Cheat_BadUserLookup_TryLoadingUserFirst,
       ErrorType_Cheat_UnrecognizedCommand,
       ErrorType_Cheat_UnknownError,
       ErrorType_Cheat_ProductUnknown,

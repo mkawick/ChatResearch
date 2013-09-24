@@ -21,6 +21,7 @@ public:
       LoginType_CreateAccount,
       LoginType_CreateAccountResponse,
       LoginType_RequestListOfPurchases,
+      LoginType_AddPurchaseEntry,
       LoginType_ListOfPurchases,
       LoginType_ListOfProductsS2S,
       LoginType_RequestUserProfile,
@@ -142,6 +143,7 @@ struct PurchaseEntry
    string   name;
    string   price;
    double   number_price;
+   float    quantity;
    string   date; // not currently available
 };
 
@@ -157,6 +159,26 @@ public:
 
    int   platformId;
    bool  requestUserOnly;
+};
+
+//--------------------------------
+
+class PacketAddPurchaseEntry : public BasePacket
+{
+public:
+   PacketAddPurchaseEntry(): BasePacket( PacketType_Login, PacketLogin::LoginType_AddPurchaseEntry ) {}
+   
+   bool  SerializeIn( const U8* data, int& bufferOffset );
+   bool  SerializeOut( U8* data, int& bufferOffset ) const;
+
+   // the beneficiary's data
+   string         userUuid; 
+   string         userEmail;
+   string         userName;
+
+   PurchaseEntry  item;
+   string         adminNotes;
+   int            platformId; // for which platforms is this item. 0=all. -1=none
 };
 
 //--------------------------------
@@ -260,6 +282,7 @@ public:
    string   lastLoginTime;
    string   loggedOutTime;
    int      adminLevel;
+   int      languageId;
 
    bool     isActive;
    bool     showWinLossRecord;
@@ -285,9 +308,8 @@ public:
    string   passwordHash;
    string   email;
    string   userUuid;
-   string   lastLoginTime;
-   string   loggedOutTime;
    int      adminLevel;
+   int      languageId;
 
    bool     isActive;
    bool     showWinLossRecord;

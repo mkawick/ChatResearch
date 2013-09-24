@@ -136,6 +136,28 @@ string GetDateInUTC( int diffDays, int diffHours, int diffMinutes )
    return Convert.str();
 }
 
+//-------------------------------------------------------------------------
+
+string GetDateInUTC( time_t t )
+{
+   ostringstream Convert;
+   struct tm * now = localtime( & t );
+   string strMonth = Get0PrefixedValue( now->tm_mon + 1 ) ;
+   string strDay = Get0PrefixedValue( now->tm_mday );
+   string strHour = Get0PrefixedValue( now->tm_hour );
+   string strMin = Get0PrefixedValue( now->tm_min );
+   string strSec = Get0PrefixedValue( now->tm_sec );
+
+   Convert << (now->tm_year + 1900) << '-'  
+         << strMonth << '-' 
+         << strDay << " "
+         << strHour << ":"
+         << strMin << ":"
+         << strSec;
+
+   return Convert.str();
+}
+
 U64   GetDateFromString( const char* UTCFormatted )
 {   
    time_t now = time(0);

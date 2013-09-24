@@ -103,7 +103,7 @@ void     NewAccountQueryHandler::PreloadLanguageStrings()
          dbQuery->id = 0;
          dbQuery->lookup = m_loadStringsQueryType;
 
-         dbQuery->query = "SELECT * FROM string where category='account' or category='reset_password'";
+         dbQuery->query = "SELECT * FROM string WHERE category='account' OR category='reset_password'";
          m_parent->AddQueryToOutput( dbQuery );
 
          //LogMessage( LOG_PRIO_INFO, "Accounts::PreloadLanguageStrings\n" );
