@@ -5,13 +5,16 @@
 #include <memory.h>
 #include <stdio.h>
 
+#include "Platform.h"
+
 #if PLATFORM == PLATFORM_WINDOWS
 #pragma comment( lib, "ws2_32.lib" )
-#endif
 #pragma comment(lib, "libevent.lib")
+#endif
 
 
-#include "Platform.h"
+
+
 #include "DataTypes.h"
 #include "Serialize.h"
 using namespace std;

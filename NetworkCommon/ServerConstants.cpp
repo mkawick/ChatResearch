@@ -2,12 +2,19 @@
 
 #include "ServerConstants.h"
 
+#include <stdio.h>
 #include <string.h>
 #if PLATFORM == PLATFORM_WINDOWS
    #include <windows.h>
    #include <mmsystem.h>
 #pragma warning (disable:4996)
+
+#else
+
+#define stricmp strcasecmp
+
 #endif
+
 
 const char* productNames [] = {
    "",
@@ -74,7 +81,8 @@ int   FindPlatformId( const char* value )
 
 const char*   FindProductName( int productId )
 {
-   if( productId < 0 || productId >= sizeof(productNames)/sizeof( productNames[0]) )
+   const int numItems = static_cast< int >( sizeof(productNames)/sizeof( productNames[0]) );
+   if( productId < 0 || productId >= numItems )
       return NULL;
    return productNames[ productId ];
 }
@@ -83,7 +91,8 @@ const char*   FindProductName( int productId )
 
 const char*   FindPlatformName( int platformId )
 {
-   if( platformId < 0 || platformId >= sizeof(platformStrings)/sizeof( platformStrings[0]) )
+   const int numItems = static_cast< int >( sizeof(platformStrings)/sizeof( platformStrings[0]) );
+   if( platformId < 0 || platformId >= numItems )
       return NULL;
    return platformStrings[ platformId ];
 }

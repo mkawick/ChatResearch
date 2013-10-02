@@ -147,20 +147,21 @@ void     NewAccountQueryHandler::PreloadWeblinks()
 
 bool     NewAccountQueryHandler::HandleResult( const PacketDbQueryResult* dbResult )
 {
-   if( dbResult->lookup != m_queryType && 
-      dbResult->lookup != m_loadStringsQueryType && 
-      dbResult->lookup != m_loadWebLinksQueryType && 
-      dbResult->lookup != m_olderEmailsQueryType )
+   U32 queryType = static_cast< U32 >( dbResult->lookup );
+   if( queryType != m_queryType && 
+      queryType != m_loadStringsQueryType && 
+      queryType != m_loadWebLinksQueryType && 
+      queryType != m_olderEmailsQueryType )
       return false;
 
    SetValueOnExit< bool >     setter( m_isServicingNewAccounts, false );// due to multiple exit points...
 
-   if( dbResult->lookup == m_loadStringsQueryType )
+   if( queryType == m_loadStringsQueryType )
    {
       SaveStrings( dbResult );
       return true;
    }
-   else if( dbResult->lookup == m_loadWebLinksQueryType )
+   else if( queryType == m_loadWebLinksQueryType )
    {
       HandleWeblinks( dbResult );
       return true;
@@ -412,7 +413,12 @@ void     NewAccountQueryHandler::HandleWeblinks( const PacketDbQueryResult* dbRe
       string str = "Config table does not contain a useful value for 'user_account.web_account_created'; db query failed";
       //Log( str );
    }
-   assert( accountCreated.size() > 2 );// minimal string size
+   if( accountCreated.size() < 3 )
+   {
+      cout << "Error: Account created link is too short" << endl;
+      assert( accountCreated.size() > 2 );// minimal string size
+   }
+   
    m_linkToResetPasswordConfirm = m_linkToAccountCreated;
    m_linkToAccountCreated += accountCreated;
    m_linkToResetPasswordConfirm += resetPassword;
@@ -429,6 +435,10 @@ void     NewAccountQueryHandler::HandleWeblinks( const PacketDbQueryResult* dbRe
    {
       cout << "Error email: confirmation email file not found" << endl;
    }
+   else
+   {
+      cout << "Success email: confirmation email file found" << endl;
+   }
 
    if( pathToResetPasswordEmailFile.size() )
    {
@@ -441,6 +451,10 @@ void     NewAccountQueryHandler::HandleWeblinks( const PacketDbQueryResult* dbRe
    if( m_passwordResetEmailTemplate.size() == 0 )
    {
       cout << "Error email: reset password email file not found" << endl;
+   }
+   else
+   {
+      cout << "Success email: reset password email file found" << endl;
    }
 }
 

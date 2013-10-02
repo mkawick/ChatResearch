@@ -393,7 +393,7 @@ public:
 class PacketGameplayRawData : public PacketGameToServer
 {
 public:
-   PacketGameplayRawData(): PacketGameToServer( PacketType_Gameplay, GamePacketType_RawGameData ), size( 0 ), dataType( Game ), index( 1 ) {}
+   PacketGameplayRawData(): PacketGameToServer( PacketType_Gameplay, GamePacketType_RawGameData ), size( 0 ), index( 1 ), dataType( Game ) { data[0] = 0; }
    //PacketGameplayRawData( PacketGameplayRawData& packet ) ;
    //~PacketGameplayRawData();
    //PacketGameplayRawData& operator = ( PacketGameplayRawData& packet ) ;

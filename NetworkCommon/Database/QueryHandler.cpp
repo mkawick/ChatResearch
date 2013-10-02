@@ -6,7 +6,11 @@
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-QueryHandler :: QueryHandler( U32 type, int periodicity, Queryer* parent ) : m_queryType( type ), m_periodicitySeconds( periodicity ), m_parent( parent ), m_runSlower( false )
+QueryHandler :: QueryHandler( U32 type, int periodicity, Queryer* parent ) : 
+                              m_queryType( type ), 
+                              m_periodicitySeconds( periodicity ), 
+                              m_runSlower( false ),
+                              m_parent( parent )
 {
    time( &m_lastTimeStamp );
 }

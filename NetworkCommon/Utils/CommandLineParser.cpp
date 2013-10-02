@@ -227,6 +227,7 @@ void  CommandLineParser::ProcessCommandLine( int num, const char* arguments[], V
          }
          else // no support for 0, 3 or more
          {
+            cout << "Command line parser detected too many params" << endl;
             assert( 0 );
          }
          

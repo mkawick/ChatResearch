@@ -40,6 +40,11 @@ namespace Threading
 {
 /////////////////////////////////////////////////////////////////////////////
 
+   enum ThreadEnum
+   {
+      InvalidThread = 0
+   };
+
 class Mutex
 {
 public:

@@ -8,6 +8,7 @@
 #include <assert.h>
 #include <deque>
 #include <memory.h>
+#include <iostream>
 
 #include "../Platform.h"
 
@@ -100,7 +101,7 @@ CAbstractThread::CAbstractThread( bool needsThreadProtections, int sleepTime, bo
                   m_markedForCleanup( false ),
                   m_needsThreadProtection( needsThreadProtections ), 
                   m_sleepTime( sleepTime ),
-                  m_thread( NULL )
+                  m_thread( (int)InvalidThread )
 {
 #if PLATFORM == PLATFORM_WINDOWS
    m_threadId = 0;
@@ -119,7 +120,7 @@ void  CAbstractThread::Cleanup()
    DestroyThread();
    
 #ifndef WIN32
-   if( m_thread )
+   if( m_thread != InvalidThread )
    {
       void* result;
       pthread_join( m_thread, &result );
@@ -161,6 +162,7 @@ void  CAbstractThread::SetPriority( ePriority priority )
       break;
 
    default:
+      cout << "thread priority set badly" << endl;
       assert( 0 );
    }
    
@@ -177,8 +179,10 @@ void  CAbstractThread::SetPriority( ePriority priority )
 void CAbstractThread::Resume() 
 { 
    m_isPaused = false; 
-   if( m_thread == NULL ) 
+   if( m_thread == (int) InvalidThread ) 
+   {
       CreateThread(); 
+   }
 }
 
 //----------------------------------------------------------------
@@ -201,7 +205,7 @@ int CAbstractThread::CreateThread()
             this,				                     // argument to thread function 
             0,                                  // use default creation flags 
             &m_threadId);				            // returns the thread identifier 
-   if( m_thread == NULL )
+   if( m_thread == (int)InvalidThread )
       threadError = 1;
    else
       m_running = true;
@@ -279,7 +283,10 @@ void*    CAbstractThread::ThreadFunction( void* data )
    }
 
    while( thread->m_mutex.NumPendingLockRequests() > 0 )
-	   Sleep( 200 );
+   {
+      Sleep( 200 );
+   }
+
    delete thread;
 
 #if PLATFORM == PLATFORM_WINDOWS

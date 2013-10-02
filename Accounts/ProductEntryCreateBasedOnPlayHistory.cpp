@@ -4,7 +4,8 @@
 #include "../NetworkCommon/Utils/Utils.h"
 #include "../NetworkCommon/Utils/TableWrapper.h"
 #include <boost/lexical_cast.hpp>
-
+#include <iostream>
+using namespace std;
 
 struct UserJoinProduct
 {
@@ -84,7 +85,11 @@ void     ProductEntryCreateBasedOnPlayHistory::SubmitQuery()
    }
    while( m_lastQueryIndexRun < (int)m_listOfQueries.size() );
 
-   assert( m_lastQueryIndexRun < (int)m_listOfQueries.size() );
+   if( m_lastQueryIndexRun >= (int)m_listOfQueries.size() )
+   {
+      cout << "ProductEntryCreateBasedOnPlayHistory:: m_lastQueryIndexRun too large for the array it's indexing" << endl;
+      assert( m_lastQueryIndexRun < (int)m_listOfQueries.size() );
+   }
 
    PacketDbQuery* dbQuery = new PacketDbQuery;
    dbQuery->id = 0;
@@ -94,6 +99,8 @@ void     ProductEntryCreateBasedOnPlayHistory::SubmitQuery()
    dbQuery->query = m_listOfQueries[m_lastQueryIndexRun].queryToRun;
 
    m_parent->AddQueryToOutput( dbQuery );
+
+   cout << "ProductEntryCreateBasedOnPlayHistory: looking for users who have played but have no purchase record" << endl;
 }
 
 //---------------------------------------------------------------
@@ -114,7 +121,12 @@ void     ProductEntryCreateBasedOnPlayHistory::RequestProducts()
 void     ProductEntryCreateBasedOnPlayHistory:: SetupQueryForUserBoughtProductBasedOnFirstDatePlayed( U32 user_id, const string& userUuid, const string& userCreationDate, const string& productUuid )
 {
    QueryPerProduct qpg;
-   assert( FindQueryPerProduct( productUuid, qpg ) );
+   bool result = FindQueryPerProduct( productUuid, qpg );
+   if( result == false )
+   {
+      cout << "ProductEntryCreateBasedOnPlayHistory:: could not find product... FindQueryPerProduct " << endl;
+      assert( 0 );
+   }
 
    string productName = FindProductName( qpg.productId );
    string playersTable = "players_";
@@ -156,7 +168,11 @@ void     ProductEntryCreateBasedOnPlayHistory::AddQueryPerProduct( int productId
    if( productId >= GameProductId_ASCENSION &&
       productId < GameProductId_NUM_GAMES )
    {
-      assert( productUuid.size() > 0 );
+      if( productUuid.size() == 0 )
+      {
+         cout << "product ID is invalid == \"\"" << endl;
+         assert( 0 );
+      }
 
       if( productId == GameProductId_DOMINION || // to support a sparse array, we need to eliminate games that we do not support.
           productId == GameProductId_THUNDERSTONE ||
@@ -194,7 +210,7 @@ void     ProductEntryCreateBasedOnPlayHistory::AddQueryPerProduct( int productId
 
 bool     ProductEntryCreateBasedOnPlayHistory::HandleResult( const PacketDbQueryResult* dbResult )
 {
-   int queryType = dbResult->lookup;
+   U32 queryType = dbResult->lookup;
    if( queryType != m_queryType &&
       queryType != StatusUpdate::QueryType_LoadProductIds &&
       queryType != StatusUpdate::QueryType_FindEarliestPlayDateForProduct )
@@ -206,19 +222,26 @@ bool     ProductEntryCreateBasedOnPlayHistory::HandleResult( const PacketDbQuery
 
    if( queryType == m_queryType )
    {
+      int whichProductIndex = boost::lexical_cast< int >( dbResult->meta );
+      if( whichProductIndex >= (int) m_listOfQueries.size() )
+      {
+         cout << " ProductEntryCreateBasedOnPlayHistory:: Query result.. whichProductIndex is too large for array it indexes" << endl;
+         assert( 0 );
+      }
+      const QueryPerProduct& qpg = m_listOfQueries[whichProductIndex];
+
       User_IdUUidDateParser    enigma( dbResult->bucket );
       User_IdUUidDateParser::iterator    it = enigma.begin();
       if( enigma.m_bucket.size() > 0 )
       {
-        ///cout << " Successful query = " << dbResult-> << endl;
+         cout << " Successful query: found users who have played " << qpg.productUuid << " and do not have purchase records" << endl;
 
          while (it != enigma.end() )
          {
             User_IdUUidDateParser::row      row = *it++;
 
-            int whichProductIndex = boost::lexical_cast< int >( dbResult->meta );
-            assert( whichProductIndex < (int) m_listOfQueries.size() );
-            const QueryPerProduct& qpg = m_listOfQueries[whichProductIndex];
+            
+            
 
             string productUuid = qpg.productUuid;
 
@@ -231,6 +254,7 @@ bool     ProductEntryCreateBasedOnPlayHistory::HandleResult( const PacketDbQuery
       }
       else
       {
+         cout << " Failed query: no users who have played " << qpg.productUuid << " and do not have purchase records" << endl;
          m_lastQueryIndexRun ++;// rotate to the next game title.
       }
 
@@ -286,6 +310,10 @@ bool     ProductEntryCreateBasedOnPlayHistory::HandleResult( const PacketDbQuery
 
 void     ProductEntryCreateBasedOnPlayHistory::AddGenericProductEntry( const string& productUuid, const string& userUuid, const string& date )
 {
+   if( productUuid.size()==0 || userUuid.size()==0 || date.size()==0 )
+   {
+      cout << "ProductEntryCreateBasedOnPlayHistory::params to AddGenericProductEntry are invalid" << endl;
+   }
    assert( productUuid.size() > 0 );
    assert( userUuid.size() > 0 );
    assert( date.size() > 0 );
@@ -305,6 +333,8 @@ void     ProductEntryCreateBasedOnPlayHistory::AddGenericProductEntry( const str
    dbQuery->isFireAndForget = true;
 
    m_parent->AddQueryToOutput( dbQuery );
+
+   cout << "Adding product entry for user:" << query << endl;
 }
 
 //---------------------------------------------------------------

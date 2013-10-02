@@ -195,8 +195,9 @@ void  DbJobBase::Cancel()
 Deltadromeus::Deltadromeus() : Threading::CChainedThread< BasePacket* >(),
    m_isConnected( false ),
    m_port( 0 ),
-   m_DbConnection( NULL ),
-   m_needsReconnection( true )
+   m_needsReconnection( true ),
+   m_DbConnection( NULL )
+   
 {
    SetSleepTime( 65 );// only check for db needs once in a while
 }
@@ -287,6 +288,7 @@ bool     Deltadromeus::AddInputChainData( BasePacket* packet, U32 senderId )
    {
       PacketDbQuery* dbPacket = static_cast< PacketDbQuery* >( packet );
       Database::JobId id = SendQuery( dbPacket->query, senderId, dbPacket->id, &(dbPacket->escapedStrings.bucket), dbPacket->isFireAndForget, true, dbPacket->lookup, &dbPacket->meta, dbPacket->serverLookup, dbPacket->customData );
+      id = id;// remove warning.
       delete packet;
       return true;
    }
