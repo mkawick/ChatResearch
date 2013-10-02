@@ -425,7 +425,7 @@ void  DiplodocusGame::ConnectUser( const PacketPrepareForUserLogin* loginPacket 
    if( m_callbacks )
    {
       UserInfo ui;
-      ui.username =        loginPacket->username;
+      ui.userName =        loginPacket->userName;
       ui.uuid =            loginPacket->uuid;
       ui.apple_id = "";
       ui.connectionId =    connectionId;

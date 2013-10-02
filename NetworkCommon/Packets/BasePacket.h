@@ -487,7 +487,7 @@ public:
 
    enum StatusSubtype
    {
-      StatusSubtype_ProductAdded,
+      StatusSubtype_ProductAdded = 1,
       StatusSubtype_AllProductsRemoved,
       StatusSubtype_UserIsAdminAccount,
 

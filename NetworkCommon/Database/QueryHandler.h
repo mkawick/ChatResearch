@@ -33,13 +33,22 @@ public:
    void  SetParent( Queryer* parent ) { m_parent = parent; }
    void  SetPeriodicty( int timeoutSeconds ) { m_periodicitySeconds = timeoutSeconds; }
 
+
+   void  SetRunSlower( bool runSlower ) { m_runSlower = runSlower; }
+   bool  IsRunningSlower() const { return m_runSlower; }
+
    virtual void     Update( time_t currentTime, bool& flagToSet );
    virtual void     Fire();// not based on a timer.
-   virtual bool     HandleResult( const PacketDbQueryResult* dbResult ) = 0;
+   
 
 protected:
+
+   virtual bool     HandleResult( const PacketDbQueryResult* dbResult ) = 0;
+   virtual void     SubmitQuery();
+
    U32      m_queryType;
    int      m_periodicitySeconds;
+   bool     m_runSlower;// there are various timeout reasons to run slower.
    time_t   m_lastTimeStamp;
    string   m_queryString;
    Queryer* m_parent;

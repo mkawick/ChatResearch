@@ -33,7 +33,7 @@ public:
 class PacketDbQuery : public BasePacketDbQuery
 {
 public:
-   PacketDbQuery( int packet_type = PacketType_DbQuery, int packet_sub_type = QueryType_Query ): BasePacketDbQuery( packet_type, packet_sub_type ), isFireAndForget( false ) {}
+   PacketDbQuery( int packet_type = PacketType_DbQuery, int packet_sub_type = QueryType_Query ): BasePacketDbQuery( packet_type, packet_sub_type ), isFireAndForget( false ), customData( NULL ) {}
 
    bool  SerializeIn( const U8* data, int& bufferOffset );
    bool  SerializeOut( U8* data, int& bufferOffset ) const;
@@ -41,6 +41,8 @@ public:
    bool           isFireAndForget;
    string         query;
    StringBucket   escapedStrings;
+
+   void*          customData;
 };
 
 
@@ -49,13 +51,15 @@ public:
 class PacketDbQueryResult : public BasePacketDbQuery
 {
 public:
-   PacketDbQueryResult( int packet_type = PacketType_DbQuery, int packet_sub_type = QueryType_Result  ): BasePacketDbQuery( packet_type, packet_sub_type ), successfulQuery( false ) {}
+   PacketDbQueryResult( int packet_type = PacketType_DbQuery, int packet_sub_type = QueryType_Result  ): BasePacketDbQuery( packet_type, packet_sub_type ), successfulQuery( false ), customData( NULL ) {}
 
    bool  SerializeIn( const U8* data, int& bufferOffset );
    bool  SerializeOut( U8* data, int& bufferOffset ) const;
 
    bool                 successfulQuery;
    DynamicDataBucket    bucket;// this could be slow with large datasets.. look into optimizations here
+
+   void*                customData;
 };
 
 ///////////////////////////////////////////////////////////////

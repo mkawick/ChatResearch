@@ -459,11 +459,77 @@ public:
       Column_currency_type,
       Column_num_purchased,
       Column_admin_provided,
+      Column_admin_notes,
       Column_retail_campaign,
       Column_end
    };
 };
 
 typedef Enigmosaurus <TableUserProduct> UserProductTable;
+
+//////////////////////////////////////////////////////////////
+
+class TableProductJoinUserProduct
+{
+public:
+   enum Columns
+   {
+      Column_id,
+      Column_product_id,
+      Column_uuid,
+      Column_name,
+      Column_filter_name,
+      Column_begin_date,
+      Column_product_type,
+      Column_notes,
+      Column_id_user_join_product,
+      Column_user_uuid,
+      Column_product_id2,
+      Column_purchase_date,
+      Column_price_paid,
+      Column_currency_type,
+      Column_num_purchased,
+      Column_admin_provided,
+      Column_admin_notes,
+      Column_retail_campaign,
+      Column_end
+   };
+};
+
+typedef Enigmosaurus <TableProductJoinUserProduct> ProductJoinUserProductTable;
+
+//////////////////////////////////////////////////////////////
+
+class TableUserOwnedProductSimple
+{
+public:
+   enum Columns
+   {
+      Column_product_id,  // product_id, filter_name, product.uuid, num_purchased
+      Column_product_name,
+      Column_product_uuid,
+      Column_quantity,
+      Column_end
+   };
+};
+
+typedef Enigmosaurus <TableUserOwnedProductSimple> UserOwnedProductSimpleTable;
+
+//////////////////////////////////////////////////////////////
+
+class TableUser_IdUUidDate
+{
+public:
+   enum Columns
+   {
+      Column_id,
+      Column_uuid,
+      Column_date,
+      Column_end
+   };
+   static const char* const column_names[];
+};
+
+typedef Enigmosaurus <TableUser_IdUUidDate> User_IdUUidDateParser;
 
 //////////////////////////////////////////////////////////////

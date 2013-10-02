@@ -52,6 +52,7 @@ DbJobBase :: DbJobBase( Database::JobId id, const std::string& query, U32 sender
       m_senderKey( senderKey ),
       m_senderLookup( 0 ),
       m_serverId( 0 ),
+      m_customData( NULL ),
       m_hasStarted( false ),
       m_hasResultSet( false ),
       m_isComplete( false ),
@@ -223,7 +224,16 @@ void     Deltadromeus::SetConnectionInfo( const string& serverName, U16 port, co
 //------------------------------------------------------------
 
 Database::JobId    
-   Deltadromeus::SendQuery( const string& query, int myId, int senderReference, const list<string>* stringsToEscape, bool isFireAndForget, bool isChainData, int extraLookupInfo, string* meta, U32 serverId )
+   Deltadromeus::SendQuery( const string& query, 
+                            int myId, 
+                            int senderReference, 
+                            const list<string>* stringsToEscape, 
+                            bool isFireAndForget, 
+                            bool isChainData, 
+                            int extraLookupInfo, 
+                            string* meta, 
+                            U32 serverId, 
+                            void* customData )
 {
    if( m_isConnected == false )
    {
@@ -259,6 +269,8 @@ Database::JobId
 
    job->SetFireAndForget( isFireAndForget );
 
+   job->SetCustomData( customData );
+
    m_mutex.lock();
    m_jobsInProgress.push_back( job );
    m_mutex.unlock();   
@@ -274,7 +286,7 @@ bool     Deltadromeus::AddInputChainData( BasePacket* packet, U32 senderId )
    if( packet->packetType == PacketType_DbQuery )
    {
       PacketDbQuery* dbPacket = static_cast< PacketDbQuery* >( packet );
-      SendQuery( dbPacket->query, senderId, dbPacket->id, &(dbPacket->escapedStrings.bucket), dbPacket->isFireAndForget, true, dbPacket->lookup, &dbPacket->meta, dbPacket->serverLookup );
+      Database::JobId id = SendQuery( dbPacket->query, senderId, dbPacket->id, &(dbPacket->escapedStrings.bucket), dbPacket->isFireAndForget, true, dbPacket->lookup, &dbPacket->meta, dbPacket->serverLookup, dbPacket->customData );
       delete packet;
       return true;
    }
@@ -555,6 +567,7 @@ bool     Deltadromeus::PutQueryResultInProperChain( DbJobBase* testJob )
             resultPacket->serverLookup = testJob->GetServerId();
             resultPacket->meta = testJob->GetSenderMeta();
             resultPacket->successfulQuery = testJob->GetErrorCondition() == false;
+            resultPacket->customData = testJob->GetCustomData();
 
             if( resultPacket->successfulQuery == true )
             {

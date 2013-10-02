@@ -10,7 +10,7 @@ bool  PacketLogin::SerializeIn( const U8* data, int& bufferOffset )
 {
    BasePacket::SerializeIn( data, bufferOffset );
    Serialize::In( data, bufferOffset, uuid );
-   Serialize::In( data, bufferOffset, username );
+   Serialize::In( data, bufferOffset, userName );
    
    Serialize::In( data, bufferOffset, password );
    Serialize::In( data, bufferOffset, loginKey );
@@ -23,7 +23,7 @@ bool  PacketLogin::SerializeOut( U8* data, int& bufferOffset ) const
 {
    BasePacket::SerializeOut( data, bufferOffset );
    Serialize::Out( data, bufferOffset, uuid );
-   Serialize::Out( data, bufferOffset, username );
+   Serialize::Out( data, bufferOffset, userName );
 
    Serialize::Out( data, bufferOffset, password );
    Serialize::Out( data, bufferOffset, loginKey );
@@ -100,7 +100,7 @@ bool  PacketLoginToGateway::SerializeOut( U8* data, int& bufferOffset ) const
 bool  PacketCreateAccount::SerializeIn( const U8* data, int& bufferOffset )
 {
    BasePacket::SerializeIn( data, bufferOffset );
-   Serialize::In( data, bufferOffset, username );
+   Serialize::In( data, bufferOffset, userName );
    Serialize::In( data, bufferOffset, useremail );
    Serialize::In( data, bufferOffset, password );
    Serialize::In( data, bufferOffset, deviceId );
@@ -113,7 +113,7 @@ bool  PacketCreateAccount::SerializeIn( const U8* data, int& bufferOffset )
 bool  PacketCreateAccount::SerializeOut( U8* data, int& bufferOffset ) const
 {
    BasePacket::SerializeOut( data, bufferOffset );
-   Serialize::Out( data, bufferOffset, username );
+   Serialize::Out( data, bufferOffset, userName );
    Serialize::Out( data, bufferOffset, useremail );
    Serialize::Out( data, bufferOffset, password );
    Serialize::Out( data, bufferOffset, deviceId );
@@ -128,7 +128,7 @@ bool  PacketCreateAccount::SerializeOut( U8* data, int& bufferOffset ) const
 bool  PacketCreateAccountResponse::SerializeIn( const U8* data, int& bufferOffset )
 {
    BasePacket::SerializeIn( data, bufferOffset );
-   Serialize::In( data, bufferOffset, username );
+   Serialize::In( data, bufferOffset, userName );
    Serialize::In( data, bufferOffset, useremail );
    Serialize::In( data, bufferOffset, wasSuccessful );
 
@@ -138,7 +138,7 @@ bool  PacketCreateAccountResponse::SerializeIn( const U8* data, int& bufferOffse
 bool  PacketCreateAccountResponse::SerializeOut( U8* data, int& bufferOffset ) const
 {
    BasePacket::SerializeOut( data, bufferOffset );
-   Serialize::Out( data, bufferOffset, username );
+   Serialize::Out( data, bufferOffset, userName );
    Serialize::Out( data, bufferOffset, useremail );
    Serialize::Out( data, bufferOffset, wasSuccessful );
 
@@ -173,23 +173,43 @@ bool  PurchaseEntry::SerializeOut( U8* data, int& bufferOffset ) const
 
    return true;
 }
-
 ///////////////////////////////////////////////////////////////
 
-bool  PacketRequestListOfUserPurchases::SerializeIn( const U8* data, int& bufferOffset )
+bool  ProductBriefPacketed::SerializeIn( const U8* data, int& bufferOffset )
 {
-   BasePacket::SerializeIn( data, bufferOffset );
-   Serialize::In( data, bufferOffset, platformId );
-   Serialize::In( data, bufferOffset, requestUserOnly );
+   Serialize::In( data, bufferOffset, uuid );
+   Serialize::In( data, bufferOffset, filterName );
+   Serialize::In( data, bufferOffset, quantity );
 
    return true;
 }
 
-bool  PacketRequestListOfUserPurchases::SerializeOut( U8* data, int& bufferOffset ) const
+bool  ProductBriefPacketed::SerializeOut( U8* data, int& bufferOffset ) const
+{
+   Serialize::Out( data, bufferOffset, uuid );
+   Serialize::Out( data, bufferOffset, filterName );
+   Serialize::Out( data, bufferOffset, quantity );
+
+   return true;
+}
+
+
+///////////////////////////////////////////////////////////////
+
+bool  PacketListOfUserPurchasesRequest::SerializeIn( const U8* data, int& bufferOffset )
+{
+   BasePacket::SerializeIn( data, bufferOffset );
+   Serialize::In( data, bufferOffset, platformId );
+   Serialize::In( data, bufferOffset, userUuid );
+
+   return true;
+}
+
+bool  PacketListOfUserPurchasesRequest::SerializeOut( U8* data, int& bufferOffset ) const
 {
    BasePacket::SerializeOut( data, bufferOffset );
    Serialize::Out( data, bufferOffset, platformId );
-   Serialize::Out( data, bufferOffset, requestUserOnly );
+   Serialize::Out( data, bufferOffset, userUuid );
 
    return true;
 }
@@ -202,9 +222,10 @@ bool  PacketAddPurchaseEntry::SerializeIn( const U8* data, int& bufferOffset )
    Serialize::In( data, bufferOffset, userUuid );
    Serialize::In( data, bufferOffset, userEmail );
    Serialize::In( data, bufferOffset, userName );
-   Serialize::In( data, bufferOffset, item );
+   Serialize::In( data, bufferOffset, productUuid );
    Serialize::In( data, bufferOffset, adminNotes );
    Serialize::In( data, bufferOffset, platformId );
+   Serialize::In( data, bufferOffset, quantity );
 
    return true;
 }
@@ -215,9 +236,10 @@ bool  PacketAddPurchaseEntry::SerializeOut( U8* data, int& bufferOffset ) const
    Serialize::Out( data, bufferOffset, userUuid );
    Serialize::Out( data, bufferOffset, userEmail );
    Serialize::Out( data, bufferOffset, userName );
-   Serialize::Out( data, bufferOffset, item );
+   Serialize::Out( data, bufferOffset, productUuid );
    Serialize::Out( data, bufferOffset, adminNotes );
    Serialize::Out( data, bufferOffset, platformId );
+   Serialize::Out( data, bufferOffset, quantity );
 
    return true;
 }
@@ -225,21 +247,19 @@ bool  PacketAddPurchaseEntry::SerializeOut( U8* data, int& bufferOffset ) const
 
 ///////////////////////////////////////////////////////////////
 
-bool  PacketListOfUserPurchases::SerializeIn( const U8* data, int& bufferOffset )
+bool  PacketListOfUserAggregatePurchases::SerializeIn( const U8* data, int& bufferOffset )
 {
    BasePacket::SerializeIn( data, bufferOffset );
    Serialize::In( data, bufferOffset, platformId );
-   Serialize::In( data, bufferOffset, isAllProducts );
    Serialize::In( data, bufferOffset, purchases );
 
    return true;
 }
 
-bool  PacketListOfUserPurchases::SerializeOut( U8* data, int& bufferOffset ) const
+bool  PacketListOfUserAggregatePurchases::SerializeOut( U8* data, int& bufferOffset ) const
 {
    BasePacket::SerializeOut( data, bufferOffset );
    Serialize::Out( data, bufferOffset, platformId );
-   Serialize::Out( data, bufferOffset, isAllProducts );
    Serialize::Out( data, bufferOffset, purchases );
 
    return true;
@@ -346,7 +366,7 @@ bool  PacketRequestUserProfile::SerializeOut( U8* data, int& bufferOffset ) cons
 bool  PacketRequestUserProfileResponse::SerializeIn( const U8* data, int& bufferOffset )
 {
    BasePacket::SerializeIn( data, bufferOffset );
-   Serialize::In( data, bufferOffset, username );
+   Serialize::In( data, bufferOffset, userName );
    Serialize::In( data, bufferOffset, passwordHash );
    Serialize::In( data, bufferOffset, email );
    Serialize::In( data, bufferOffset, userUuid );
@@ -365,7 +385,7 @@ bool  PacketRequestUserProfileResponse::SerializeIn( const U8* data, int& buffer
 bool  PacketRequestUserProfileResponse::SerializeOut( U8* data, int& bufferOffset ) const
 {
    BasePacket::SerializeOut( data, bufferOffset );
-   Serialize::Out( data, bufferOffset, username );
+   Serialize::Out( data, bufferOffset, userName );
    Serialize::Out( data, bufferOffset, passwordHash );
    Serialize::Out( data, bufferOffset, email );
    Serialize::Out( data, bufferOffset, userUuid );
@@ -388,7 +408,7 @@ bool  PacketRequestUserProfileResponse::SerializeOut( U8* data, int& bufferOffse
 bool  PacketUpdateUserProfile::SerializeIn( const U8* data, int& bufferOffset )
 {
    BasePacket::SerializeIn( data, bufferOffset );
-   Serialize::In( data, bufferOffset, username );
+   Serialize::In( data, bufferOffset, userName );
    Serialize::In( data, bufferOffset, passwordHash );
    Serialize::In( data, bufferOffset, email );
    Serialize::In( data, bufferOffset, userUuid );
@@ -407,7 +427,7 @@ bool  PacketUpdateUserProfile::SerializeIn( const U8* data, int& bufferOffset )
 bool  PacketUpdateUserProfile::SerializeOut( U8* data, int& bufferOffset ) const
 {
    BasePacket::SerializeOut( data, bufferOffset );
-   Serialize::Out( data, bufferOffset, username );
+   Serialize::Out( data, bufferOffset, userName );
    Serialize::Out( data, bufferOffset, passwordHash );
    Serialize::Out( data, bufferOffset, email );
    Serialize::Out( data, bufferOffset, userUuid );
@@ -443,3 +463,41 @@ bool  PacketUpdateUserProfileResponse::SerializeOut( U8* data, int& bufferOffset
    return true;
 }
 ///////////////////////////////////////////////////////////////
+
+bool  PacketRequestListOfProducts::SerializeIn( const U8* data, int& bufferOffset )
+{
+   BasePacket::SerializeIn( data, bufferOffset );
+   Serialize::In( data, bufferOffset, platformId );
+
+   return true;
+}
+
+bool  PacketRequestListOfProducts::SerializeOut( U8* data, int& bufferOffset ) const
+{
+   BasePacket::SerializeOut( data, bufferOffset );
+   Serialize::Out( data, bufferOffset, platformId );
+
+   return true;
+}
+///////////////////////////////////////////////////////////////
+
+
+bool  PacketRequestListOfProductsResponse::SerializeIn( const U8* data, int& bufferOffset )
+{
+   BasePacket::SerializeIn( data, bufferOffset );
+   Serialize::In( data, bufferOffset, platformId );
+   Serialize::In( data, bufferOffset, products );
+
+   return true;
+}
+
+bool  PacketRequestListOfProductsResponse::SerializeOut( U8* data, int& bufferOffset ) const
+{
+   BasePacket::SerializeOut( data, bufferOffset );
+   Serialize::Out( data, bufferOffset, platformId );
+   Serialize::Out( data, bufferOffset, products );
+
+   return true;
+}
+///////////////////////////////////////////////////////////////
+

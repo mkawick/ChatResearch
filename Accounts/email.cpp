@@ -233,6 +233,7 @@ int  SendConfirmationEmail( const char* toAddr, const char* fromAddr, const char
   if(connect(socketId, (sockaddr*) &SockAddr, sizeof(SockAddr)))
   {
     cout << "Error connecting to Server socket" << endl;
+    closesocket( socketId );
 
     return 1;
   }

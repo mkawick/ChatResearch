@@ -37,7 +37,7 @@ bool     UserConnection::SendChat( const string& message, const string& senderUu
    PacketChatToClient* packet = new PacketChatToClient;
    packet->message = message;
    packet->userUuid = senderUuid;
-   packet->username = senderDisplayName;
+   packet->userName = senderDisplayName;
    packet->channelUuid = channelUuid;
    packet->timeStamp = timeStamp;
 
@@ -155,7 +155,7 @@ bool     UserConnection::PrepInitialLogin()
 
    string queryString = "SELECT * FROM users WHERE user_name='%s'" ;
    dbQuery->query = queryString;
-   dbQuery->escapedStrings.insert( m_username );
+   dbQuery->escapedStrings.insert( m_userName );
    
    m_isUserDbLookupPending = true;
    m_chatServer->AddPacketFromUserConnection( dbQuery, m_connectionId );
@@ -369,7 +369,7 @@ void     UserConnection::GetAllChatHistroySinceLastLogin()
 bool     UserConnection::SendLoginStatus( bool wasSuccessful )
 {
    PacketLoginToGateway* loginStatus = new PacketLoginToGateway();
-   loginStatus->username = m_username;
+   loginStatus->userName = m_userName;
    loginStatus->uuid = m_uuid;
    loginStatus->wasLoginSuccessful = wasSuccessful;
 
@@ -421,7 +421,7 @@ bool     UserConnection::SetChatChannel( const string& channelUuid )
          m_currentChannel = it->key;
 
          string text = " User ";
-         text += CreatePrintablePair( m_uuid, m_username );
+         text += CreatePrintablePair( m_uuid, m_userName );
          text += " changed chat channel to ";
          string name = it->value.channelName;
          text += CreatePrintablePair( it->key, name );
@@ -436,7 +436,7 @@ bool     UserConnection::SetChatChannel( const string& channelUuid )
    if( found == true )
    {
       PacketChangeChatChannelToClient* packet = new PacketChangeChatChannelToClient();
-      packet->username = m_username;
+      packet->userName = m_userName;
       packet->chatChannel = channelUuid;
       SendPacketToGateway( packet );
    }
@@ -454,7 +454,7 @@ bool     UserConnection::SetChatChannel( const string& channelUuid )
 
 void     UserConnection::SetupFromLogin( U32 userId, const string& name, const string& uuid, const string& lastLoginTime )
 {
-   m_username = name;
+   m_userName = name;
    m_uuid = uuid;
    //m_loginKey = loginKey;
    m_lastLoginTime = lastLoginTime;
@@ -699,8 +699,8 @@ bool     UserConnection::HandleDbQueryResult( BasePacket* packet )
             {
                //assert( 0 );// begin teardown. Inform gateway that user is not available. Gateway will teardown the connection
                // and send a reply to this game instance.
-               string str = "User not valid and db query failed, username: ";
-               str += m_username;
+               string str = "User not valid and db query failed, userName: ";
+               str += m_userName;
                str += ", uuid: ";
                str += m_uuid;
                m_chatServer->Log( str, 4 );
@@ -782,7 +782,7 @@ bool     UserConnection::HandleDbQueryResult( BasePacket* packet )
                ChatTable::row       row = *it++;
                ChatEntry            entry;
                entry.message =      row[ SimpleChat::Column_text ];
-               entry.username =     row[ SimpleChat::Column_user_name ];
+               entry.userName =     row[ SimpleChat::Column_user_name ];
                entry.useruuid =     row[ SimpleChat::Column_user_uuid ];
                entry.timestamp =    row[ SimpleChat::Column_timestamp ];
 
@@ -836,7 +836,7 @@ bool     UserConnection::HandleDbQueryResult( BasePacket* packet )
                ChatTable::row       row = *it++;
                ChatEntry            entry;
                entry.message =      row[ SimpleChat::Column_text ];
-               entry.username =     row[ SimpleChat::Column_user_name ];
+               entry.userName =     row[ SimpleChat::Column_user_name ];
                entry.useruuid =     row[ SimpleChat::Column_user_uuid ];
                entry.timestamp =    row[ SimpleChat::Column_timestamp ];
 
@@ -955,7 +955,7 @@ void     UserConnection::Update()
 
 bool     UserConnection::IsLoggedIn() const
 {
-   if( m_uuid.size() == 0 || m_username.size() == 0 || m_connectionId == 0 )
+   if( m_uuid.size() == 0 || m_userName.size() == 0 || m_connectionId == 0 )
    {
       return false;
    }
@@ -1021,7 +1021,7 @@ bool  UserConnection::NotifyAllChannelsLoaded( bool loaded )
 bool     UserConnection::NotifyUserStatusHasChanged( const string& userName, const string& userUuid, int statusChange )
 {
    PacketChatUserStatusChangeBase* notification = new PacketChatUserStatusChangeBase;
-   notification->username = userName;
+   notification->userName = userName;
    notification->uuid = userUuid;
    notification->statusChange = statusChange;
 

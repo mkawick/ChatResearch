@@ -7,7 +7,7 @@
 
 struct UserInfo
 {
-   string   username;
+   string   userName;
    string   uuid;
    string   apple_id;
    U32      connectionId;
@@ -196,7 +196,7 @@ public:
    bool  SerializeIn( const U8* data, int& bufferOffset );
    bool  SerializeOut( U8* data, int& bufferOffset ) const;
 
-   string username;// one or the other
+   string userName;// one or the other
    string uuid;
    string message;
 };
@@ -298,7 +298,7 @@ public:
    bool  SerializeIn( const U8* data, int& bufferOffset );
    bool  SerializeOut( U8* data, int& bufferOffset ) const;
 
-   string username;
+   string userName;
    string uuid;
 };
 

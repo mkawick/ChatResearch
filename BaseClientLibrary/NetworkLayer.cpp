@@ -168,7 +168,7 @@ static inline U64 CreatePasswordHash( const char *pPassword )
 
 //-----------------------------------------------------------------------------
 
-bool  NetworkLayer::RequestLogin( const string& username, const string& password, const string& languageCode )
+bool  NetworkLayer::RequestLogin( const string& userName, const string& password, const string& languageCode )
 {
    if( m_isConnected == false )
    {
@@ -176,12 +176,12 @@ bool  NetworkLayer::RequestLogin( const string& username, const string& password
    }
    PacketLogin login;
    login.loginKey = "deadbeef";// currently unused
-   login.uuid = username;
-   login.username = username;
+   login.uuid = userName;
+   login.userName = userName;
    login.loginKey = password;
    login.languageCode = languageCode;
    login.password = boost::lexical_cast< string >( CreatePasswordHash( password.c_str() ) );
-   m_attemptedUsername = username;
+   m_attemptedUsername = userName;
 
    m_isLoggingIn = true;
    SerializePacketOut( &login );
@@ -191,7 +191,7 @@ bool  NetworkLayer::RequestLogin( const string& username, const string& password
 
 //-----------------------------------------------------------------------------
 
-bool     NetworkLayer::RequestAccountCreate( const string& username, const string& useremail, const string& password, int languageId, const string& deviceId, const string& gkHash )
+bool     NetworkLayer::RequestAccountCreate( const string& userName, const string& useremail, const string& password, int languageId, const string& deviceId, const string& gkHash )
 {
    if( m_isConnected == false )
    {
@@ -200,14 +200,14 @@ bool     NetworkLayer::RequestAccountCreate( const string& username, const strin
    assert( m_isLoggedIn == false );
 
    PacketCreateAccount createAccount;
-   createAccount.username = username;
+   createAccount.userName = userName;
    createAccount.useremail = useremail;
    createAccount.password = boost::lexical_cast< string >( CreatePasswordHash( password.c_str() ) );
    createAccount.deviceId = deviceId;
    createAccount.deviceAccountId = boost::lexical_cast< string >( CreatePasswordHash( gkHash.c_str() ) );
    createAccount.languageId = languageId;
 
-   m_attemptedUsername = username;
+   m_attemptedUsername = userName;
 
    m_isCreatingAccount = true;
    SerializePacketOut( &createAccount );
@@ -255,7 +255,7 @@ bool  NetworkLayer::UpdateUserProfile( const string userName, const string& emai
       return false;
    }
    PacketUpdateUserProfile       update;
-   update.username =             userName;
+   update.userName =             userName;
    update.email =                email;
    update.userUuid =             userUuid;
    
@@ -287,14 +287,28 @@ bool  NetworkLayer::RequestListOfFriends() const
 
 //-----------------------------------------------------------------------------
 
-bool  NetworkLayer::RequestListOfPurchases( bool userOnly ) const
+bool  NetworkLayer::RequestListOfProducts() const
 {
    if( m_isConnected == false )
    {
       return false;
    }
-   PacketRequestListOfUserPurchases purchases;
-   purchases.requestUserOnly = userOnly;
+   PacketRequestListOfProducts products;
+   SerializePacketOut( &products );
+
+   return true;
+}
+
+//-----------------------------------------------------------------------------
+
+bool  NetworkLayer::RequestListOfPurchases( const string& userUuid ) const
+{
+   if( m_isConnected == false )
+   {
+      return false;
+   }
+   PacketListOfUserPurchasesRequest purchases;
+   purchases.userUuid = userUuid;
    SerializePacketOut( &purchases );
 
    return true;
@@ -398,7 +412,7 @@ string   NetworkLayer::FindFriend( const string& name ) const
       }
       itFriends++;
    }
-   if( name == m_username )// this method is commonly used as a lookup.. let's make it simple to use
+   if( name == m_userName )// this method is commonly used as a lookup.. let's make it simple to use
       return m_uuid;
 
    return string();
@@ -417,7 +431,7 @@ string   NetworkLayer::FindFriendFromUuid( const string& uuid ) const
       }
    }
    if( uuid == m_uuid )// this method is commonly used as a lookup.. let's make it simple to use
-      return m_username;
+      return m_userName;
 
    return string();
 }
@@ -579,7 +593,7 @@ bool     NetworkLayer::RequestListOfUsersLoggedIntoGame( ) const
 
 //-----------------------------------------------------------------------------
 
-bool     NetworkLayer::RequestFriendDemographics( const string& username ) const
+bool     NetworkLayer::RequestFriendDemographics( const string& userName ) const
 {
    assert( 0 );// not finished
    return true;
@@ -587,7 +601,7 @@ bool     NetworkLayer::RequestFriendDemographics( const string& username ) const
 
 //-----------------------------------------------------------------------------
 
-bool     NetworkLayer::RequestUserWinLossRecord( const string& username ) const
+bool     NetworkLayer::RequestUserWinLossRecord( const string& userName ) const
 {
    PacketRequestUserWinLoss packet;
    packet.userUuid;
@@ -732,13 +746,13 @@ bool     NetworkLayer::SendSearchForUsers( const string& searchString, int numRe
 
 //-----------------------------------------------------------------------------
 
-bool     NetworkLayer::InviteUserToBeFriend( const string& uuid, const string& username, const string& message )
+bool     NetworkLayer::InviteUserToBeFriend( const string& uuid, const string& userName, const string& message )
 {
-   if( uuid.size() < 2 && username.size() < 2 )
+   if( uuid.size() < 2 && userName.size() < 2 )
       return false;
 
    PacketContact_InviteContact invitation;
-   invitation.username = username;
+   invitation.userName = userName;
    invitation.uuid = uuid;
    invitation.message = message;
 
@@ -819,7 +833,7 @@ bool     NetworkLayer::RequestAsset( const string& assetName )
 
 bool     NetworkLayer::SendPurchases( const vector< RegisteredProduct >& purchases, int platformId )
 {
-   PacketListOfUserPurchases packet;
+   PacketListOfUserAggregatePurchases packet;
    packet.platformId = platformId;
 
    vector< RegisteredProduct >::const_iterator it = purchases.begin();
@@ -844,16 +858,14 @@ bool     NetworkLayer::SendPurchases( const vector< RegisteredProduct >& purchas
 
 //-----------------------------------------------------------------------------
 
-bool     NetworkLayer::GiveProduct( const string& userName, const RegisteredProduct& purchase, const string& notes, int platformId )
+bool     NetworkLayer::GiveProduct( const string& userUuid, const string& productUuid, int quantity, const string& notes, int platformId )
 {
    PacketAddPurchaseEntry purchaseEntry;
-   purchaseEntry.userName = userName;
-   
-   purchaseEntry.item.productStoreId = purchase.id;
-   purchaseEntry.item.quantity = purchase.quantity;
-   purchaseEntry.item.number_price = purchase.number_price;
-   purchaseEntry.item.price = purchase.price;
-   purchaseEntry.item.name = purchase.title;
+   purchaseEntry.userName = userUuid;
+   purchaseEntry.userEmail = userUuid;
+   purchaseEntry.userUuid = userUuid;
+   purchaseEntry.productUuid = productUuid;
+   purchaseEntry.quantity = quantity;
 
    purchaseEntry.adminNotes  = notes;
    purchaseEntry.platformId = platformId;
@@ -1154,7 +1166,7 @@ bool  NetworkLayer::HandlePacketReceived( BasePacket* packetIn )
                   PacketLoginToClient* login = static_cast<PacketLoginToClient*>( packetIn );
                   if( login->wasLoginSuccessful == true )
                   {
-                     m_username = login->username;
+                     m_userName = login->userName;
                      m_uuid = login->uuid;
                      m_connectionId = login->connectionId;
                      m_lastLoggedOutTime = login->lastLogoutTime;
@@ -1195,12 +1207,12 @@ bool  NetworkLayer::HandlePacketReceived( BasePacket* packetIn )
                   }
                }
                break;
-            case PacketLogin::LoginType_ListOfPurchases:
+            case PacketLogin::LoginType_ListOfAggregatePurchases:
                {
-                  PacketListOfUserPurchases* purchases = static_cast<PacketListOfUserPurchases*>( packetIn );
+                  PacketListOfUserAggregatePurchases* purchases = static_cast<PacketListOfUserAggregatePurchases*>( packetIn );
                   for( list< UserNetworkEventNotifier* >::iterator it = m_callbacks.begin(); it != m_callbacks.end(); ++it )
                   {  
-                     (*it)->ListOfUserPurchases( purchases->purchases, purchases->platformId, purchases->isAllProducts );
+                     (*it)->ListOfAggregateUserPurchases( purchases->purchases, purchases->platformId );
                   }
                }
                break;
@@ -1209,7 +1221,7 @@ bool  NetworkLayer::HandlePacketReceived( BasePacket* packetIn )
                   PacketRequestUserProfileResponse* profile = static_cast<PacketRequestUserProfileResponse*>( packetIn );
                   for( list< UserNetworkEventNotifier* >::iterator it = m_callbacks.begin(); it != m_callbacks.end(); ++it )
                   {  
-                     (*it)->UserProfileResponse( profile->username, 
+                     (*it)->UserProfileResponse( profile->userName, 
                                           profile->email, 
                                           profile->userUuid, 
                                           profile->lastLoginTime, 
@@ -1222,6 +1234,14 @@ bool  NetworkLayer::HandlePacketReceived( BasePacket* packetIn )
                   }
                }
                break;
+            case PacketLogin::LoginType_RequestListOfProductsResponse:
+               {
+                  PacketRequestListOfProductsResponse* products = static_cast<PacketRequestListOfProductsResponse*>( packetIn );
+                  for( list< UserNetworkEventNotifier* >::iterator it = m_callbacks.begin(); it != m_callbacks.end(); ++it )
+                  {  
+                     (*it)->ListOfAvailableProducts( products->products, products->platformId );
+                  }
+               }
          }
          
       }
@@ -1269,7 +1289,7 @@ bool  NetworkLayer::HandlePacketReceived( BasePacket* packetIn )
             {
                cout << "You received a message: " << endl;
                PacketChatToClient* chat = static_cast<PacketChatToClient*>( packetIn );
-               cout << " *** from: " << chat->username;
+               cout << " *** from: " << chat->userName;
                cout << "     message: " << chat->message << endl;
                for( list< UserNetworkEventNotifier* >::iterator it = m_callbacks.begin(); it != m_callbacks.end(); ++it )
                {
@@ -1336,7 +1356,7 @@ bool  NetworkLayer::HandlePacketReceived( BasePacket* packetIn )
 
                   for( int i=0; i<num; i++ )
                   {
-                     cout << history->chat[i].username << " said " << history->chat[i].message;
+                     cout << history->chat[i].userName << " said " << history->chat[i].message;
                      if( i < num-1 )
                          cout << ", ";
                   }
@@ -1374,7 +1394,7 @@ bool  NetworkLayer::HandlePacketReceived( BasePacket* packetIn )
                cout << "char contacts received" << endl;
                PacketChatUserStatusChangeBase* packet = static_cast< PacketChatUserStatusChangeBase* >( packetIn );
               // cout << "num records: " << packet->m_>friends.size() << endl;
-               cout << packet->username << " online status = " << boolalpha << packet->statusChange << noboolalpha << endl;
+               cout << packet->userName << " online status = " << boolalpha << packet->statusChange << noboolalpha << endl;
                
                if( m_callbacks.size() )
                {

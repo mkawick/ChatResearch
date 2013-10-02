@@ -107,12 +107,12 @@ bool     DiplodocusContact::AddInputChainData( BasePacket* packet, U32 connectio
 
 //---------------------------------------------------------------
 
-UserContact* DiplodocusContact::GetUserByUsername( const string& username )
+UserContact* DiplodocusContact::GetUserByUsername( const string& userName )
 {
    UserContactMapIterator it = m_users.begin(); //find( it->second );
    while( it != m_users.end() )
    {
-      if( it->second.GetUserInfo().username == username )
+      if( it->second.GetUserInfo().userName == userName )
          return &it->second;
       it++;
    }
@@ -454,7 +454,7 @@ bool     DiplodocusContact::ConnectUser( PacketPrepareForUserLogin* loginPacket 
    {
 
       UserInfo ui;
-      ui.username =        loginPacket->username;
+      ui.userName =        loginPacket->userName;
       ui.uuid =            loginPacket->uuid;
       ui.apple_id = "";
       ui.connectionId =    connectionId;

@@ -196,7 +196,7 @@ bool  PacketContact_GetListOfInvitationsSentResponse::SerializeOut( U8* data, in
 bool  PacketContact_InviteContact::SerializeIn( const U8* data, int& bufferOffset )
 { 
    PacketContact::SerializeIn( data, bufferOffset );
-   Serialize::In( data, bufferOffset, username );
+   Serialize::In( data, bufferOffset, userName );
    Serialize::In( data, bufferOffset, uuid );
    Serialize::In( data, bufferOffset, message );
 
@@ -206,7 +206,7 @@ bool  PacketContact_InviteContact::SerializeIn( const U8* data, int& bufferOffse
 bool  PacketContact_InviteContact::SerializeOut( U8* data, int& bufferOffset ) const 
 { 
    PacketContact::SerializeOut( data, bufferOffset );
-   Serialize::Out( data, bufferOffset, username );
+   Serialize::Out( data, bufferOffset, userName );
    Serialize::Out( data, bufferOffset, uuid );
    Serialize::Out( data, bufferOffset, message );
 
@@ -355,7 +355,7 @@ bool  PacketContact_DeclineInvitation::SerializeOut( U8* data, int& bufferOffset
 bool  PacketContact_InviteBlockUser::SerializeIn( const U8* data, int& bufferOffset )
 { 
    PacketContact::SerializeIn( data, bufferOffset );
-   Serialize::In( data, bufferOffset, username );
+   Serialize::In( data, bufferOffset, userName );
    Serialize::In( data, bufferOffset, uuid );
 
    return true; 
@@ -364,7 +364,7 @@ bool  PacketContact_InviteBlockUser::SerializeIn( const U8* data, int& bufferOff
 bool  PacketContact_InviteBlockUser::SerializeOut( U8* data, int& bufferOffset ) const 
 { 
    PacketContact::SerializeOut( data, bufferOffset );
-   Serialize::Out( data, bufferOffset, username );
+   Serialize::Out( data, bufferOffset, userName );
    Serialize::Out( data, bufferOffset, uuid );
 
    return true; 

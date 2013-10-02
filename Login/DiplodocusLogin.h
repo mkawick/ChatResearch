@@ -16,7 +16,7 @@ class PacketDbQueryResult;
 class PacketCheat;
 struct PurchaseEntry;
 
-class PacketRequestListOfUserPurchases;
+class PacketListOfUserPurchasesRequest;
 //class PacketRequestUserProfile;
 
 //-----------------------------------------------------------------------------------------
@@ -44,7 +44,7 @@ public:
    enum QueryType 
    {
       QueryType_UserLoginInfo = 1,
-      QueryType_UserProfile,
+      QueryType_AdminRequestUserProfile,
       QueryType_UpdateUserProfile,
       QueryType_UpdateUsers,
       QueryType_CreateBlankUserProfile,
@@ -94,6 +94,7 @@ public:
    void     SendListOfUserProductsToAssetServer( U32 connectionId );
 
    ConnectionToUser* GetLoadedUserConnectionByUuid(const string & uuid );
+   bool     FindProductByUuid( const string& uuid, ProductInfo& returnPi  );
    bool     GetProductByIndex( int index, ProductInfo& returnPi );
    bool     GetProductByProductId( int productId, ProductInfo& returnPi );
 
@@ -122,6 +123,7 @@ private:
 
    //--------------------------------------------
    bool     HandleLoginResultFromDb( U32 connectionId, PacketDbQueryResult* dbResult );
+   bool     HandleAdminRequestUserProfile( U32 connectionId, PacketDbQueryResult* dbResult );
    //bool     HandleUserProfileFromDb( U32 connectionId, PacketDbQueryResult* dbResult );
    bool     SuccessfulLogin( U32 connectionId, bool isReloggedIn = false );
    
@@ -139,18 +141,19 @@ private:
                                                     const string& loginKey, bool isLoggedIn, bool wasDisconnectedByError );
    bool     SendListOfUserProductsToOtherServers( const string& userUuid, U32 connectionId, const vector< string >& productNames );
 
-   bool     StoreUserPurchases( U32 connectionId, const PacketListOfUserPurchases* purchase );
-   bool     RequestListOfPurchases( U32 connectionId, const PacketRequestListOfUserPurchases* purchase );
-   bool     AddPurchase( U32 userConnectionId, PacketAddPurchaseEntry* addPurchase );
+   bool     StoreUserPurchases( U32 connectionId, const PacketListOfUserAggregatePurchases* purchase );
+   bool     RequestListOfPurchases( U32 connectionId, const PacketListOfUserPurchasesRequest* purchase );
+   bool     AddPurchase( U32 userConnectionId, const PacketAddPurchaseEntry* addPurchase );
    bool     RequestProfile( U32 connectionId, const PacketRequestUserProfile* profileRequest );
    bool     UpdateProfile( U32 connectionId, const PacketUpdateUserProfile* profileRequest );
+   bool     HandleRequestListOfProducts( U32 connectionId, PacketRequestListOfProducts* purchaseRequest );
 
    bool     HandleCheats( U32 connectionId, const PacketCheat* cheat );
    
    void     StoreListOfUsersProductsFromDB( U32 connectionId, PacketDbQueryResult* dbResult );
    bool     UpdateProductFilterName( int index, const string& newFilterName );
    void     RequestListOfProductsFromClient( U32 connectionId );
-   void     SendProductListResultToUser( U32 connectionId, PacketDbQueryResult* dbResult );
+   void     SendListOfPurchasesToUser( U32 connectionId, PacketDbQueryResult* dbResult );
 
    //bool     SendPacketToGateway( BasePacket*, U32 connectionId );
    //bool     SendErrorToClient( U32 connectionId, PacketErrorReport::ErrorType );

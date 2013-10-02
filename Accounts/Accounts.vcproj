@@ -193,7 +193,15 @@
 				>
 			</File>
 			<File
+				RelativePath=".\ProductEntryCreateBasedOnPlayHistory.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\ResetPasswordQueryHandler.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\NetworkCommon\ServerConstants.cpp"
 				>
 			</File>
 			<File
@@ -220,6 +228,10 @@
 			</File>
 			<File
 				RelativePath=".\NewAccountQueryHandler.h"
+				>
+			</File>
+			<File
+				RelativePath=".\ProductEntryCreateBasedOnPlayHistory.h"
 				>
 			</File>
 			<File

@@ -14,14 +14,14 @@ using namespace std;
 //-----------------------------------------------------------------------------
 
 // remember to wrap all of these in Gateway wrappers.
-bool  FruitadensClientChat::Login( const string& username, const string& password )
+bool  FruitadensClientChat::Login( const string& userName, const string& password )
 {
    PacketLogin login;
    login.loginKey = "deadbeef";
-   login.uuid = username;
-   login.username = username;
+   login.uuid = userName;
+   login.userName = userName;
    login.loginKey = password;
-   m_attemptedUsername = username;
+   m_attemptedUsername = userName;
 
    SerializePacketOut( &login );
 
@@ -849,9 +849,9 @@ void  FruitadensClientChat::HandlePacketIn( BasePacket* packetIn )
                m_pyro->SetConsoleColor( Pyroraptor::ColorsNormal );
                m_pyro->Log( "User login ", false ); 
                m_pyro->SetConsoleColor( Pyroraptor::ColorsUsername );
-               m_pyro->Log( login->username );
+               m_pyro->Log( login->userName );
                m_pyro->SetConsoleColor( Pyroraptor::ColorsNormal );
-               m_username = login->username;
+               m_username = login->userName;
                m_uuid = login->uuid;
             }
             break;
@@ -861,7 +861,7 @@ void  FruitadensClientChat::HandlePacketIn( BasePacket* packetIn )
                m_pyro->SetConsoleColor( Pyroraptor::ColorsNormal );
                m_pyro->Log( "User logged out ", false ); 
                m_pyro->SetConsoleColor( Pyroraptor::ColorsUsername );
-               m_pyro->Log( login->username );
+               m_pyro->Log( login->userName );
                m_pyro->SetConsoleColor( Pyroraptor::ColorsNormal );
             }
             break;
@@ -878,7 +878,7 @@ void  FruitadensClientChat::HandlePacketIn( BasePacket* packetIn )
                   //RequestFriends();
                   //RequestGroups();
                   //RequestMissedHistoryRequest();
-                  m_username = login->username;
+                  m_username = login->userName;
                   m_uuid = login->uuid;
                }
                else
@@ -934,7 +934,7 @@ void  FruitadensClientChat::HandlePacketIn( BasePacket* packetIn )
                PacketChatToClient* chat = static_cast<PacketChatToClient*>( packetIn );
 
                m_pyro->SetConsoleColor( Pyroraptor::ColorsUsername );
-               m_pyro->Log( chat->username, false ) ;
+               m_pyro->Log( chat->userName, false ) ;
 
                m_pyro->SetConsoleColor( Pyroraptor::ColorsNormal );
                m_pyro->Log( " says ", false ); 
@@ -958,7 +958,7 @@ void  FruitadensClientChat::HandlePacketIn( BasePacket* packetIn )
                m_pyro->SetConsoleColor( Pyroraptor::ColorsNormal );
                m_pyro->Log( "Channel change ", false ); 
                m_pyro->SetConsoleColor( Pyroraptor::ColorsUsername );
-               m_pyro->Log( channel->username, false );
+               m_pyro->Log( channel->userName, false );
                m_pyro->SetConsoleColor( Pyroraptor::ColorsNormal );
                m_pyro->Log( " changed to channel: ", false ); 
                m_pyro->SetConsoleColor( Pyroraptor::ColorsResponseText );
@@ -1002,7 +1002,7 @@ void  FruitadensClientChat::HandlePacketIn( BasePacket* packetIn )
                m_pyro->SetConsoleColor( Pyroraptor::ColorsUsername );
                for( int i=0; i<num; i++ )
                {
-                  m_pyro->Log( history->chat[i].username, false );
+                  m_pyro->Log( history->chat[i].userName, false );
                   m_pyro->Log( " said " , false );
                   m_pyro->Log( history->chat[i].message, false );
                   if( i < num-1 )
@@ -1104,10 +1104,10 @@ void  FruitadensClientChat::HandlePacketIn( BasePacket* packetIn )
                m_pyro->SetConsoleColor( Pyroraptor::ColorsNormal );
                m_pyro->Log( " User ", false );
                m_pyro->SetConsoleColor( Pyroraptor::ColorsResponseText );
-               string username = FindFriendFromUuid( response->userUuid );
-               if( username.size() > 0 )
+               string userName = FindFriendFromUuid( response->userUuid );
+               if( userName.size() > 0 )
                {
-                  m_pyro->Log( CreatePrintablePair( username, response->userUuid ), false );
+                  m_pyro->Log( CreatePrintablePair( userName, response->userUuid ), false );
                }
                else
                {
@@ -1143,10 +1143,10 @@ void  FruitadensClientChat::HandlePacketIn( BasePacket* packetIn )
                m_pyro->SetConsoleColor( Pyroraptor::ColorsNormal );
                m_pyro->Log( " User ", false );
                m_pyro->SetConsoleColor( Pyroraptor::ColorsResponseText );
-               string username = FindFriendFromUuid( response->userUuid );
-               if( username.size() > 0 )
+               string userName = FindFriendFromUuid( response->userUuid );
+               if( userName.size() > 0 )
                {
-                  m_pyro->Log( CreatePrintablePair( username, response->userUuid ), false );
+                  m_pyro->Log( CreatePrintablePair( userName, response->userUuid ), false );
                }
                else
                {
@@ -1222,7 +1222,7 @@ void  FruitadensClientChat::HandlePacketIn( BasePacket* packetIn )
                m_pyro->SetConsoleColor( Pyroraptor::ColorsNormal );
                m_pyro->Log( " Another User has changed his/her status ", false );
                m_pyro->SetConsoleColor( Pyroraptor::ColorsResponseText );
-               m_pyro->Log( CreatePrintablePair( status->username, status->uuid ), false );
+               m_pyro->Log( CreatePrintablePair( status->userName, status->uuid ), false );
                m_pyro->SetConsoleColor( Pyroraptor::ColorsNormal );
                m_pyro->Log( " has changed status to ", false );
                m_pyro->SetConsoleColor( Pyroraptor::ColorsText );

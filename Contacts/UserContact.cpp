@@ -179,7 +179,7 @@ bool  UserContact::HandleDbQueryResult( const PacketDbQueryResult* dbResult )
             UserInfo ui;
 
             ui.id =               boost::lexical_cast< U32 >( row[ TableUser::Column_id ] );
-            ui.username =         row[ TableUser::Column_name ];
+            ui.userName =         row[ TableUser::Column_name ];
             ui.uuid =             row[ TableUser::Column_uuid ];
             ui.email =            row[ TableUser::Column_email ];
             ui.passwordHash =     row[ TableUser::Column_password_hash ];
@@ -381,8 +381,8 @@ bool     UserContact::InformFriendsOfOnlineStatus( bool isOnline )
       UserContact* contact = m_infoServer->GetUser( ui.id );
       if( contact )
       {
-         contact->YourFriendsOnlineStatusChange( m_connectionId, m_userInfo.username, m_userInfo.uuid, isOnline );
-         YourFriendsOnlineStatusChange( ui.connectionId, ui.username, ui.uuid, isOnline );
+         contact->YourFriendsOnlineStatusChange( m_connectionId, m_userInfo.userName, m_userInfo.uuid, isOnline );
+         YourFriendsOnlineStatusChange( ui.connectionId, ui.userName, ui.uuid, isOnline );
       }
    }
 
@@ -433,7 +433,7 @@ bool     UserContact::GetListOfContacts()
 
       const UserContact* testUser = m_infoServer->GetUser( ui.id );
       bool isLoggedIn = testUser != NULL;
-      packet->friends.insert( ui.uuid, FriendInfo( ui.username, ui.avatarId, isLoggedIn ) );
+      packet->friends.insert( ui.uuid, FriendInfo( ui.userName, ui.avatarId, isLoggedIn ) );
    }
    
    m_infoServer->SendPacketToGateway( packet, m_connectionId );
@@ -454,7 +454,7 @@ bool  UserContact::GetListOfInvitationsReceived()
       InvitationInfo ii;
       ii.message = invite.message;
       ii.inviterName = invite.userName;// note who is who here
-      ii.inviteeName = m_userInfo.username;
+      ii.inviteeName = m_userInfo.userName;
       ii.uuid = invite.uuid;
       ii.date = invite.date;
 
@@ -478,7 +478,7 @@ bool  UserContact::GetListOfInvitationsSent()
       const Invitation& invite = *it++; 
       InvitationInfo ii;
       ii.message = invite.message;
-      ii.inviterName = m_userInfo.username;// note who is who here
+      ii.inviterName = m_userInfo.userName;// note who is who here
       ii.inviteeName = invite.userName;
       ii.uuid = invite.uuid;
       ii.date = invite.date;
@@ -543,7 +543,7 @@ bool     UserContact::DoesPendingInvitationExist( const string& inviteeUuid, con
 bool     UserContact::InviteUser( const PacketContact_InviteContact* packet )
 {
    const string& inviteeUuid = packet->uuid;
-   const string& inviteeName = packet->username;
+   const string& inviteeName = packet->userName;
    const string& message = packet->message;
    
 
@@ -552,7 +552,7 @@ bool     UserContact::InviteUser( const PacketContact_InviteContact* packet )
    while( it != m_friends.end() )
    {
       const UserInfo& fr = *it++;
-      if( fr.username == inviteeName || fr.uuid == inviteeUuid )
+      if( fr.userName == inviteeName || fr.uuid == inviteeUuid )
       {
          m_infoServer->SendErrorToClient( m_connectionId, PacketErrorReport::ErrorType_Contact_Invitation_InviteeAlreadyFriend );
          return false;
@@ -746,9 +746,9 @@ void  UserContact::FinishAcceptingInvitation( const PacketDbQueryResult* dbResul
    UserContact* contact = m_infoServer->GetUserByUuid( inviterUuid );// this user needs to know that he's been invited.
    if( contact )
    {
-      contact->InvitationAccepted( inviterUsername, m_userInfo.username, "", true );// this seems backwards, but its not
+      contact->InvitationAccepted( inviterUsername, m_userInfo.userName, "", true );// this seems backwards, but its not
    }
-   InvitationAccepted( inviterUsername, m_userInfo.username, "", true );
+   InvitationAccepted( inviterUsername, m_userInfo.userName, "", true );
 }
 
 //------------------------------------------------------------------------------------------------
@@ -790,7 +790,7 @@ void  UserContact::FinishDecliningingInvitation(  const PacketDbQueryResult* dbR
    m_infoServer->AddQueryToOutput( dbQuery );
 
    // do not notify sender for now
-   InvitationAccepted( inviterUsername, m_userInfo.username, userMessage, false );
+   InvitationAccepted( inviterUsername, m_userInfo.userName, userMessage, false );
 }
 
 //------------------------------------------------------------------------------------------------
@@ -825,7 +825,7 @@ void  UserContact::FinishInvitation( U32 inviteeId, const string& message, UserC
 
    if( contact )
    {
-      contact->YouHaveBeenInvitedToBeAFriend( m_userInfo.username, invitationUuid, message, currentTimeInUTC );
+      contact->YouHaveBeenInvitedToBeAFriend( m_userInfo.userName, invitationUuid, message, currentTimeInUTC );
    }
 }
 

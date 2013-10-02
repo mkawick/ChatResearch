@@ -31,14 +31,14 @@ void  NetworkLayer::Exit()
 
 //-----------------------------------------------------------------------------
 
-bool  NetworkLayer::RequestLogin( const string& username, const string& password )
+bool  NetworkLayer::RequestLogin( const string& userName, const string& password )
 {
    PacketLogin login;
    login.loginKey = "deadbeef";// currently unused
-   login.uuid = username;
-   login.username = username;
+   login.uuid = userName;
+   login.userName = userName;
    login.loginKey = password;
-   m_attemptedUsername = username;
+   m_attemptedUsername = userName;
 
    SerializePacketOut( &login );
 
@@ -126,7 +126,7 @@ string   NetworkLayer::FindFriend( const string& name ) const
          return kvpFriend.key;
       }
    }
-   if( name == m_username )// this method is commonly used as a lookup.. let's make it simple to use
+   if( name == m_userName )// this method is commonly used as a lookup.. let's make it simple to use
       return m_uuid;
 
    return string();
@@ -146,7 +146,7 @@ string   NetworkLayer::FindFriendFromUuid( const string& uuid ) const
       }
    }
    if( uuid == m_uuid )// this method is commonly used as a lookup.. let's make it simple to use
-      return m_username;
+      return m_userName;
 
    return string();
 }
@@ -259,7 +259,7 @@ void  NetworkLayer::HandlePacketIn( BasePacket* packetIn )
                   PacketLoginToClient* login = static_cast<PacketLoginToClient*>( packetIn );
                   if( login->wasLoginSuccessful == true )
                   {
-                     m_username = login->username;
+                     m_userName = login->userName;
                      m_uuid = login->uuid;
                      if( callbacks )
                         callbacks->UserLogin( true );

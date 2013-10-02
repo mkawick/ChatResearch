@@ -53,7 +53,7 @@ bool  PacketChangeChatChannel::SerializeOut( U8* data, int& bufferOffset ) const
 bool  PacketChatToClient::SerializeIn( const U8* data, int& bufferOffset )
 {
    PacketChatToServer::SerializeIn( data, bufferOffset );
-   Serialize::In( data, bufferOffset, username );
+   Serialize::In( data, bufferOffset, userName );
    Serialize::In( data, bufferOffset, timeStamp );
 
    return true;
@@ -62,7 +62,7 @@ bool  PacketChatToClient::SerializeIn( const U8* data, int& bufferOffset )
 bool  PacketChatToClient::SerializeOut( U8* data, int& bufferOffset ) const
 {
    PacketChatToServer::SerializeOut( data, bufferOffset );
-   Serialize::Out( data, bufferOffset, username );
+   Serialize::Out( data, bufferOffset, userName );
    Serialize::Out( data, bufferOffset, timeStamp );
 
    return true;
@@ -75,7 +75,7 @@ bool  PacketChatUserStatusChangeBase::SerializeIn( const U8* data, int& bufferOf
    BasePacket::SerializeIn( data, bufferOffset );
    Serialize::In( data, bufferOffset, statusChange );
    Serialize::In( data, bufferOffset, uuid );
-   Serialize::In( data, bufferOffset, username );
+   Serialize::In( data, bufferOffset, userName );
    Serialize::In( data, bufferOffset, chatChannelUuid );
 
    return true;
@@ -86,7 +86,7 @@ bool  PacketChatUserStatusChangeBase::SerializeOut( U8* data, int& bufferOffset 
    BasePacket::SerializeOut( data, bufferOffset );
    Serialize::Out( data, bufferOffset, statusChange );
    Serialize::Out( data, bufferOffset, uuid );
-   Serialize::Out( data, bufferOffset, username );
+   Serialize::Out( data, bufferOffset, userName );
    Serialize::Out( data, bufferOffset, chatChannelUuid );
 
    return true;
@@ -97,7 +97,7 @@ bool  PacketChatUserStatusChangeBase::SerializeOut( U8* data, int& bufferOffset 
 bool  PacketChangeChatChannelToClient::SerializeIn( const U8* data, int& bufferOffset )
 {
    BasePacket::SerializeIn( data, bufferOffset );
-   Serialize::In( data, bufferOffset, username );
+   Serialize::In( data, bufferOffset, userName );
    Serialize::In( data, bufferOffset, chatChannel );
 
    return true;
@@ -106,7 +106,7 @@ bool  PacketChangeChatChannelToClient::SerializeIn( const U8* data, int& bufferO
 bool  PacketChangeChatChannelToClient::SerializeOut( U8* data, int& bufferOffset ) const
 {
    BasePacket::SerializeOut( data, bufferOffset );
-   Serialize::Out( data, bufferOffset, username );
+   Serialize::Out( data, bufferOffset, userName );
    Serialize::Out( data, bufferOffset, chatChannel );
 
    return true;
@@ -200,7 +200,7 @@ bool  PacketChatHistoryRequest::SerializeOut( U8* data, int& bufferOffset ) cons
 
 bool  ChatEntry::SerializeIn( const U8* data, int& bufferOffset )
 {
-   Serialize::In( data, bufferOffset, username );
+   Serialize::In( data, bufferOffset, userName );
    Serialize::In( data, bufferOffset, useruuid );
    Serialize::In( data, bufferOffset, message );
    Serialize::In( data, bufferOffset, timestamp );
@@ -211,7 +211,7 @@ bool  ChatEntry::SerializeIn( const U8* data, int& bufferOffset )
 
 bool  ChatEntry::SerializeOut( U8* data, int& bufferOffset ) const
 {
-   Serialize::Out( data, bufferOffset, username );
+   Serialize::Out( data, bufferOffset, userName );
    Serialize::Out( data, bufferOffset, useruuid );
    Serialize::Out( data, bufferOffset, message );
    Serialize::Out( data, bufferOffset, timestamp );

@@ -48,7 +48,7 @@ public:
 
    void     RegisterCallbackInterface( UserNetworkEventNotifier* _callbacks ) { callbacks = _callbacks; }
 
-   string   GetUsername() const { return m_username; }
+   string   GetUsername() const { return m_userName; }
 
    bool     RequestLogin( const string& username, const string& password );
    bool     RequestLogout() const;
@@ -80,7 +80,7 @@ private:
    typedef SerializedKeyValueVector< string >      UserNameKeyValue;
    typedef vector< PacketGameIdentification >      GameList;
 
-   string            m_username, m_attemptedUsername;
+   string            m_userName, m_attemptedUsername;
    string            m_uuid;
    U32               m_selectedGame;
 

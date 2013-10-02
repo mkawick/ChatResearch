@@ -234,7 +234,7 @@ bool     DiplodocusAsset::ConnectUser( PacketPrepareForUserLogin* loginPacket )
    {
 
       UserTicket ut;
-      ut.username =        loginPacket->username;
+      ut.userName =        loginPacket->userName;
       ut.uuid =            loginPacket->uuid;
       ut.userTicket =      loginPacket->loginKey;
       ut.connectionId =    0;

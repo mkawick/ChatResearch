@@ -22,12 +22,14 @@ public:
       LoginType_CreateAccountResponse,
       LoginType_RequestListOfPurchases,
       LoginType_AddPurchaseEntry,
-      LoginType_ListOfPurchases,
+      LoginType_ListOfAggregatePurchases,
       LoginType_ListOfProductsS2S,
       LoginType_RequestUserProfile,
       LoginType_RequestUserProfileResponse,
       LoginType_UpdateUserProfile,
       LoginType_UpdateUserProfileResponse,
+      LoginType_RequestListOfProducts,
+      LoginType_RequestListOfProductsResponse,
    };
 public:
    PacketLogin( int packet_type = PacketType_Login, int packet_sub_type = LoginType_Login ): BasePacket( packet_type, packet_sub_type ) {}
@@ -36,7 +38,7 @@ public:
    bool  SerializeOut( U8* data, int& bufferOffset ) const;
 
    string   uuid;
-   string   username;
+   string   userName;
    
    string   loginKey;
    string   password;
@@ -109,7 +111,7 @@ public:
    bool  SerializeIn( const U8* data, int& bufferOffset );
    bool  SerializeOut( U8* data, int& bufferOffset ) const;
    
-   string username;
+   string userName;
    string useremail;
    string password;
    string deviceId;
@@ -127,7 +129,7 @@ public:
    bool  SerializeIn( const U8* data, int& bufferOffset );
    bool  SerializeOut( U8* data, int& bufferOffset ) const;
    
-   string   username;
+   string   userName;
    string   useremail;
    bool     wasSuccessful;
 };
@@ -136,6 +138,8 @@ public:
 
 struct PurchaseEntry
 {
+   PurchaseEntry() : number_price( 0 ), quantity( 0 ) {}
+
    bool  SerializeIn( const U8* data, int& bufferOffset );
    bool  SerializeOut( U8* data, int& bufferOffset ) const;
 
@@ -147,26 +151,39 @@ struct PurchaseEntry
    string   date; // not currently available
 };
 
+struct ProductBriefPacketed
+{
+   ProductBriefPacketed(): quantity( 0 )  {}
+
+   bool  SerializeIn( const U8* data, int& bufferOffset );
+   bool  SerializeOut( U8* data, int& bufferOffset ) const;
+
+   string   uuid;
+   string   filterName;
+   float    quantity;
+};
+
 //--------------------------------
 
-class PacketRequestListOfUserPurchases : public BasePacket
+class PacketListOfUserPurchasesRequest : public BasePacket
 {
 public:
-   PacketRequestListOfUserPurchases(): BasePacket( PacketType_Login, PacketLogin::LoginType_RequestListOfPurchases ) {}
+   PacketListOfUserPurchasesRequest(): BasePacket( PacketType_Login, PacketLogin::LoginType_RequestListOfPurchases ) {}
    
    bool  SerializeIn( const U8* data, int& bufferOffset );
    bool  SerializeOut( U8* data, int& bufferOffset ) const;
 
-   int   platformId;
-   bool  requestUserOnly;
+   string   userUuid;
+   int      platformId;
 };
+
 
 //--------------------------------
 
 class PacketAddPurchaseEntry : public BasePacket
 {
 public:
-   PacketAddPurchaseEntry(): BasePacket( PacketType_Login, PacketLogin::LoginType_AddPurchaseEntry ) {}
+   PacketAddPurchaseEntry(): BasePacket( PacketType_Login, PacketLogin::LoginType_AddPurchaseEntry ), quantity( 1 ) {}
    
    bool  SerializeIn( const U8* data, int& bufferOffset );
    bool  SerializeOut( U8* data, int& bufferOffset ) const;
@@ -176,23 +193,24 @@ public:
    string         userEmail;
    string         userName;
 
-   PurchaseEntry  item;
+   
+   string         productUuid;
    string         adminNotes;
    int            platformId; // for which platforms is this item. 0=all. -1=none
+   int            quantity;
 };
 
 //--------------------------------
 
-class PacketListOfUserPurchases : public BasePacket
+class PacketListOfUserAggregatePurchases : public BasePacket
 {
 public:
-   PacketListOfUserPurchases(): BasePacket( PacketType_Login, PacketLogin::LoginType_ListOfPurchases ), isAllProducts( false ) {}
+   PacketListOfUserAggregatePurchases(): BasePacket( PacketType_Login, PacketLogin::LoginType_ListOfAggregatePurchases ), platformId( 0 ) {}
 
    bool  SerializeIn( const U8* data, int& bufferOffset );
    bool  SerializeOut( U8* data, int& bufferOffset ) const;
    
    int   platformId;
-   bool  isAllProducts;
    SerializedVector< PurchaseEntry > purchases;
 };
 
@@ -275,7 +293,7 @@ public:
    bool  SerializeIn( const U8* data, int& bufferOffset );
    bool  SerializeOut( U8* data, int& bufferOffset ) const;
 
-   string   username;
+   string   userName;
    string   passwordHash;
    string   email;
    string   userUuid;
@@ -304,7 +322,7 @@ public:
    bool  SerializeIn( const U8* data, int& bufferOffset );
    bool  SerializeOut( U8* data, int& bufferOffset ) const;
 
-   string   username;
+   string   userName;
    string   passwordHash;
    string   email;
    string   userUuid;
@@ -332,3 +350,31 @@ public:
 };
 
 ///////////////////////////////////////////////////////////////
+
+class PacketRequestListOfProducts : public BasePacket
+{
+public:
+   PacketRequestListOfProducts(): BasePacket( PacketType_Login, PacketLogin::LoginType_RequestListOfProducts ), platformId( 0 ) {}
+   
+   bool  SerializeIn( const U8* data, int& bufferOffset );
+   bool  SerializeOut( U8* data, int& bufferOffset ) const;
+
+   int   platformId;
+};
+
+///////////////////////////////////////////////////////////////
+
+class PacketRequestListOfProductsResponse : public BasePacket
+{
+public:
+   PacketRequestListOfProductsResponse(): BasePacket( PacketType_Login, PacketLogin::LoginType_RequestListOfProductsResponse ), platformId( 0 ) {}
+   
+   bool  SerializeIn( const U8* data, int& bufferOffset );
+   bool  SerializeOut( U8* data, int& bufferOffset ) const;
+
+   int   platformId;
+   SerializedVector< ProductBriefPacketed > products;
+};
+
+///////////////////////////////////////////////////////////////
+

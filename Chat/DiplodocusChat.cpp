@@ -194,7 +194,7 @@ void  DiplodocusChat::SetupForNewUserConnection( PacketPrepareForUserLogin* logi
          m_connectionMap.insert( ConnectionPair ( connectionId, connection ) );
       m_mutex.unlock();
 
-      connection->SetupFromLogin( loginPacket->userId, loginPacket->username, loginPacket->uuid, loginPacket->lastLoginTime );
+      connection->SetupFromLogin( loginPacket->userId, loginPacket->userName, loginPacket->uuid, loginPacket->lastLoginTime );
    }
 }
 

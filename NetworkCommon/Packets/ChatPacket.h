@@ -95,7 +95,7 @@ public:
    bool  SerializeIn( const U8* data, int& bufferOffset );
    bool  SerializeOut( U8* data, int& bufferOffset ) const;
 
-   string   username;
+   string   userName;
    string   chatChannel;
 };
 
@@ -109,7 +109,7 @@ public:
    bool  SerializeIn( const U8* data, int& bufferOffset );
    bool  SerializeOut( U8* data, int& bufferOffset ) const;
 
-   string   username;
+   string   userName;
    string   timeStamp;
 };
 
@@ -126,7 +126,7 @@ public:
 
    U32      statusChange;
    string   uuid;
-   string   username;
+   string   userName;
    string   chatChannelUuid;
 };
 
@@ -185,7 +185,7 @@ struct ChatEntry
    bool  SerializeIn( const U8* data, int& bufferOffset );
    bool  SerializeOut( U8* data, int& bufferOffset ) const;
 
-   string   username;
+   string   userName;
    string   useruuid;
    string   message;
    string   timestamp;
@@ -657,7 +657,7 @@ public:
    bool  SerializeIn( const U8* data, int& bufferOffset );
    bool  SerializeOut( U8* data, int& bufferOffset ) const;
 
-   string   username;
+   string   userName;
    string   uuid;
 };
 

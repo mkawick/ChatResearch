@@ -214,7 +214,7 @@ bool  PacketFactory::ParseLogin( const U8* bufferIn, int& bufferOffset, const Ba
 
       case PacketLogin::LoginType_RequestListOfPurchases:
          {
-            *packetOut = SerializeIn< PacketRequestListOfUserPurchases >( bufferIn, bufferOffset );
+            *packetOut = SerializeIn< PacketListOfUserPurchasesRequest >( bufferIn, bufferOffset );
          }
          return true;
       case PacketLogin::LoginType_AddPurchaseEntry:
@@ -222,9 +222,9 @@ bool  PacketFactory::ParseLogin( const U8* bufferIn, int& bufferOffset, const Ba
             *packetOut = SerializeIn< PacketAddPurchaseEntry >( bufferIn, bufferOffset );
          }
          return true;
-      case PacketLogin::LoginType_ListOfPurchases:
+      case PacketLogin::LoginType_ListOfAggregatePurchases:
          {
-            *packetOut = SerializeIn< PacketListOfUserPurchases >( bufferIn, bufferOffset );
+            *packetOut = SerializeIn< PacketListOfUserAggregatePurchases >( bufferIn, bufferOffset );
          }
          return true;
       case PacketLogin::LoginType_ListOfProductsS2S:
@@ -250,6 +250,16 @@ bool  PacketFactory::ParseLogin( const U8* bufferIn, int& bufferOffset, const Ba
       case PacketLogin::LoginType_UpdateUserProfileResponse:
          {
             *packetOut = SerializeIn< PacketUpdateUserProfileResponse >( bufferIn, bufferOffset );
+         }
+         return true;
+      case PacketLogin::LoginType_RequestListOfProducts:
+         {
+            *packetOut = SerializeIn< PacketRequestListOfProducts >( bufferIn, bufferOffset );
+         }
+         return true;
+      case PacketLogin::LoginType_RequestListOfProductsResponse:
+         {
+            *packetOut = SerializeIn< PacketRequestListOfProductsResponse >( bufferIn, bufferOffset );
          }
          return true;
    }

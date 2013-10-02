@@ -53,6 +53,9 @@ StatusUpdate::StatusUpdate( const string& serverName, U32 serverId ) : Queryer()
    m_newAccountHandler->SetQueryTypeForOlderEmailsResent( QueryType_ResendEmailToOlderAccounts );
    m_newAccountHandler->SetBlankUUIDHandler( m_blankUuidHandler );
 
+   m_addProductEntryHandler = new ProductEntryCreateBasedOnPlayHistory( QueryType_ProductEntryCreateBasedOnPlayHistory, this );
+   m_addProductEntryHandler->SetPeriodicty( 28 );
+
    string queryForPasswordReset = "SELECT reset_password_keys.id, users.user_email, users.language_id, reset_password_keys.reset_key FROM users JOIN reset_password_keys ON reset_password_keys.user_account_uuid = users.uuid WHERE reset_password_keys.was_email_sent=0";
 
    m_resetPasswordHandler = new ResetPasswordQueryHandler( QueryType_ResetPasswords, this, queryForPasswordReset );
@@ -458,6 +461,7 @@ int      StatusUpdate::CallbackFunction()
       m_blankUuidHandler->Update( currentTime );
       m_newAccountHandler->Update( currentTime );
       m_blankUserProfileHandler->Update( currentTime );
+      m_addProductEntryHandler->Update( currentTime );
       //PreloadLanguageStrings();
       //PreloadWeblinks();
    }
@@ -505,6 +509,10 @@ bool     StatusUpdate::AddOutputChainData( BasePacket* packet, U32 connectionId 
             wasHandled = true;
          }
          else if( m_newAccountHandler->HandleResult( dbResult ) == true )
+         {
+            wasHandled = true;
+         }
+         else if( m_addProductEntryHandler->HandleResult( dbResult ) == true )
          {
             wasHandled = true;
          }

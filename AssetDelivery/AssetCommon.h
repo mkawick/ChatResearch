@@ -14,7 +14,7 @@ class UserTicket // *consider making this a packet*
 public:
    U32      userId;
    string   uuid;
-   string   username;// just for debugging purposes
+   string   userName;// just for debugging purposes
    U32      connectionId;/// only after this person has logged in
    string   userTicket;
    Manifest manifest;

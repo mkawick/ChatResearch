@@ -1,0 +1,250 @@
+delimiter $$
+
+CREATE TABLE `product` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `product_id` int(11) DEFAULT NULL,
+  `uuid` varchar(16) DEFAULT NULL,
+  `name` varchar(45) DEFAULT NULL,
+  `filter_name` varchar(45) DEFAULT NULL,
+  `first_available` timestamp NULL DEFAULT NULL,
+  `product_type` int(11) DEFAULT NULL,
+  `notes` varchar(255) DEFAULT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=MyISAM AUTO_INCREMENT=2016 DEFAULT CHARSET=utf8$$
+
+delimiter $$
+
+CREATE TABLE `product_type` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `description` varchar(45) DEFAULT NULL,
+  `notes` varchar(255) DEFAULT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=MyISAM AUTO_INCREMENT=5 DEFAULT CHARSET=utf8 COMMENT='Just a lookup table	'$$
+
+delimiter $$
+
+CREATE TABLE `reset_password_keys` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `user_account_uuid` varchar(16) DEFAULT NULL,
+  `reset_key` varchar(32) DEFAULT NULL,
+  `possible_password` varchar(45) DEFAULT NULL,
+  `was_email_sent` int(1) DEFAULT '0',
+  `time_email_last_sent` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`)
+) ENGINE=MyISAM AUTO_INCREMENT=67 DEFAULT CHARSET=latin1$$
+
+delimiter $$
+
+CREATE TABLE `string` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `string` varchar(255) DEFAULT NULL,
+  `category` varchar(45) DEFAULT NULL,
+  `description` varchar(255) DEFAULT NULL,
+  `english` varchar(512) DEFAULT NULL,
+  `spanish` varchar(512) DEFAULT NULL,
+  `french` varchar(512) DEFAULT NULL,
+  `german` varchar(512) DEFAULT NULL,
+  `italian` varchar(512) DEFAULT NULL,
+  `brazilian_portuguese` varchar(512) DEFAULT NULL,
+  `russian` varchar(512) DEFAULT NULL,
+  `japanese` varchar(512) DEFAULT NULL,
+  `chinese` varchar(512) DEFAULT NULL,
+  `replaces` varchar(45) DEFAULT NULL COMMENT '%body% or other string replacements.',
+  PRIMARY KEY (`id`)
+) ENGINE=MyISAM AUTO_INCREMENT=90 DEFAULT CHARSET=utf8$$
+
+delimiter $$
+
+CREATE TABLE `users` (
+  `user_id` int(11) unsigned NOT NULL AUTO_INCREMENT,
+  `user_name` varchar(32) DEFAULT NULL,
+  `user_name_match` varchar(32) DEFAULT NULL,
+  `user_pw_hash` bigint(20) unsigned DEFAULT NULL,
+  `user_email` varchar(64) DEFAULT NULL,
+  `user_gamekit_id` varchar(32) DEFAULT NULL,
+  `user_gamekit_hash` bigint(20) unsigned NOT NULL,
+  `user_creation_date` datetime NOT NULL,
+  `uuid` varchar(16) DEFAULT NULL,
+  `last_login_timestamp` timestamp NULL DEFAULT NULL,
+  `last_logout_timestamp` timestamp NULL DEFAULT NULL,
+  `active` int(11) NOT NULL DEFAULT '0',
+  `language_id` int(11) DEFAULT NULL,
+  `user_confirmation_date` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`user_id`),
+  UNIQUE KEY `uuid_UNIQUE` (`uuid`),
+  KEY `user_gamekid_id` (`user_gamekit_id`),
+  KEY `user_gamekit_hash` (`user_gamekit_hash`),
+  KEY `user_name` (`user_name`),
+  KEY `user_name_match` (`user_name_match`)
+) ENGINE=InnoDB AUTO_INCREMENT=16597 DEFAULT CHARSET=utf8$$
+
+delimiter $$
+
+CREATE TABLE `user_profile` (
+  `user_id` int(11) NOT NULL,
+  `address1` varchar(127) DEFAULT NULL,
+  `address2` varchar(127) DEFAULT NULL,
+  `city` varchar(45) DEFAULT NULL,
+  `provence` varchar(45) DEFAULT NULL,
+  `mail_code` varchar(12) DEFAULT NULL,
+  `country` varchar(30) DEFAULT NULL,
+  `marketing_opt_out` tinyint(1) DEFAULT '0',
+  `screen_name` varchar(45) DEFAULT NULL,
+  `gender` varchar(1) DEFAULT NULL,
+  `mber_avatar` int(11) DEFAULT NULL,
+  `home_phone` varchar(22) DEFAULT NULL,
+  `alt_phone` varchar(22) DEFAULT NULL,
+  `show_profile_gender` tinyint(1) DEFAULT '0',
+  `admin_level` tinyint(1) DEFAULT '0',
+  `show_win_loss_record` tinyint(1) DEFAULT '1',
+  `time_zone` tinyint(1) DEFAULT '0',
+  PRIMARY KEY (`user_id`)
+) ENGINE=MyISAM DEFAULT CHARSET=utf8$$
+
+delimiter $$
+
+CREATE TABLE `user_temp_new_user` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `user_name` varchar(45) DEFAULT NULL,
+  `user_id` int(11) DEFAULT NULL,
+  `user_email` varchar(45) DEFAULT NULL,
+  `lookup_key` varchar(32) DEFAULT NULL,
+  `game_id` int(11) DEFAULT NULL,
+  `time_created` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `was_email_sent` int(11) DEFAULT '0',
+  `language_id` int(11) DEFAULT '1',
+  `uuid` varchar(16) DEFAULT NULL,
+  `user_gamekit_hash` bigint(20) unsigned DEFAULT NULL,
+  `user_pw_hash` bigint(20) unsigned NOT NULL DEFAULT '0',
+  `user_name_match` varchar(45) DEFAULT NULL,
+  `flagged_as_invalid` tinyint(1) DEFAULT '0',
+  `flagged_auto_create` tinyint(1) DEFAULT '0',
+  `time_last_confirmation_email_sent` datetime DEFAULT NULL,
+  `email_returned_as_undeliverable` tinyint(1) DEFAULT '0',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `id_UNIQUE` (`id`),
+  UNIQUE KEY `uuid_UNIQUE` (`uuid`)
+) ENGINE=MyISAM AUTO_INCREMENT=171 DEFAULT CHARSET=utf8$$
+
+delimiter $$
+
+CREATE TABLE `user_join_product` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `user_uuid` varchar(16) DEFAULT NULL,
+  `product_id` varchar(16) DEFAULT NULL,
+  `purchase_date` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `price_paid` decimal(10,0) DEFAULT '0',
+  `currency_type` int(11) DEFAULT NULL,
+  `num_purchased` int(11) DEFAULT '1',
+  `admin_provided` varchar(16) DEFAULT '0',
+  `admin_notes` varchar(45) DEFAULT NULL,
+  `retail_campaign` int(11) DEFAULT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=MyISAM AUTO_INCREMENT=484 DEFAULT CHARSET=latin1$$
+
+delimiter $$
+
+CREATE TABLE `user_pending_expired` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `user_name` varchar(45) DEFAULT NULL,
+  `user_id` int(11) DEFAULT NULL,
+  `user_email` varchar(45) DEFAULT NULL,
+  `lookup_key` varchar(32) DEFAULT NULL,
+  `game_id` int(11) DEFAULT NULL,
+  `time_created` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `was_email_sent` int(11) DEFAULT '0',
+  `language_id` int(11) DEFAULT '1',
+  `uuid` varchar(16) DEFAULT NULL,
+  `user_gamekit_hash` bigint(20) unsigned DEFAULT NULL,
+  `user_pw_hash` bigint(20) unsigned NOT NULL DEFAULT '0',
+  `user_name_match` varchar(45) DEFAULT NULL,
+  `flagged_as_invalid` tinyint(1) DEFAULT '0',
+  `flagged_auto_create` tinyint(1) DEFAULT '0',
+  `time_last_confirmation_email_sent` datetime DEFAULT NULL,
+  `email_returned_as_undeliverable` tinyint(1) DEFAULT '0',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `id_UNIQUE` (`id`),
+  UNIQUE KEY `uuid_UNIQUE` (`uuid`)
+) ENGINE=MyISAM AUTO_INCREMENT=164 DEFAULT CHARSET=utf8$$
+
+delimiter $$
+
+CREATE TABLE `user_join_chat_channel` (
+  `user_uuid` varchar(16) NOT NULL,
+  `channel_uuid` varchar(16) NOT NULL,
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `added_date` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `date_last_viewed` datetime DEFAULT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=162 DEFAULT CHARSET=utf8$$
+
+delimiter $$
+
+CREATE TABLE `chat_channel` (
+  `id` int(8) unsigned NOT NULL AUTO_INCREMENT,
+  `name` varchar(45) DEFAULT NULL,
+  `uuid` varchar(16) DEFAULT NULL,
+  `is_active` tinyint(4) DEFAULT '1',
+  `max_num_users` int(11) DEFAULT '32',
+  `game_type` tinyint(2) DEFAULT '0',
+  `game_instance_id` int(1) DEFAULT '0',
+  `date_created` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=116 DEFAULT CHARSET=utf8$$
+
+delimiter $$
+
+CREATE TABLE `chat_channel` (
+  `id` int(8) unsigned NOT NULL AUTO_INCREMENT,
+  `name` varchar(45) DEFAULT NULL,
+  `uuid` varchar(16) DEFAULT NULL,
+  `is_active` tinyint(4) DEFAULT '1',
+  `max_num_users` int(11) DEFAULT '32',
+  `game_type` tinyint(2) DEFAULT '0',
+  `game_instance_id` int(1) DEFAULT '0',
+  `date_created` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=116 DEFAULT CHARSET=utf8$$
+
+delimiter $$
+
+CREATE TABLE `config` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `key` varchar(64) DEFAULT NULL,
+  `value` varchar(45) DEFAULT NULL,
+  `category` varchar(45) DEFAULT NULL COMMENT 'An optional field by which we can sort per game, project, etc',
+  `notes` varchar(255) DEFAULT NULL COMMENT 'any notes',
+  PRIMARY KEY (`id`)
+) ENGINE=MyISAM AUTO_INCREMENT=7 DEFAULT CHARSET=utf8$$
+
+delimiter $$
+
+CREATE TABLE `friend_pending` (
+  `id` int(4) unsigned zerofill NOT NULL AUTO_INCREMENT,
+  `inviter_id` int(11) DEFAULT NULL,
+  `invitee_id` int(11) DEFAULT NULL,
+  `was_notified` int(11) DEFAULT '0',
+  `sent_date` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `message` varchar(64) DEFAULT NULL,
+  `uuid` varchar(16) DEFAULT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=MyISAM AUTO_INCREMENT=184 DEFAULT CHARSET=utf8$$
+
+delimiter $$
+
+CREATE TABLE `friends` (
+  `userid1` int(11) DEFAULT '0',
+  `userid2` int(11) DEFAULT '0',
+  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=265 DEFAULT CHARSET=utf8$$
+
+delimiter $$
+
+CREATE TABLE `language` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `language_name` varchar(45) DEFAULT NULL,
+  `two_letter_code` varchar(2) DEFAULT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=MyISAM AUTO_INCREMENT=10 DEFAULT CHARSET=utf8$$
+

@@ -151,7 +151,8 @@ public:
    virtual void  RequestListOfUserPurchases();
    virtual void  UserProfileResponse( string username, string email, string userUuid, string lastLoginTime, string loggedOutTime, int adminLevel, bool isActive, bool showWinLossRecord, bool marketingOptOut, bool showGenderProfile ) {}
 
-   virtual void  ListOfUserPurchases( const SerializedVector< PurchaseEntry >& purchases, int platformId, bool isCompleteList ) {}
+   virtual void  ListOfAvailableProducts( const SerializedVector< ProductBriefPacketed >& products, int platformId ) {}
+   virtual void  ListOfAggregateUserPurchases( const SerializedVector< PurchaseEntry >& purchases, int platformId ) {}
 
    virtual void  UserDemographics( const string& username, const Demographics& userDemographics ) {}
    virtual void  UserWinLoss( const string& username, const WinLoss& userWinLoss ) {}
@@ -239,7 +240,7 @@ public:
 
    bool     IsLoggingIn() const { return m_isLoggingIn; }
    bool     IsLoggedIn() const { return m_isLoggedIn; }   
-   string   GetUsername() const { return m_username; }
+   string   GetUsername() const { return m_userName; }
 
    bool     RequestProfile( const string userName ); //if empty, profile for currently logged in user is used.
 
@@ -279,13 +280,14 @@ public:
 
    //--------------------------------------------------------------
    // ********************   Purchases/Products   *******************
-   bool     RequestListOfPurchases( bool userOnly = true ) const;
+   bool     RequestListOfProducts() const;
+   bool     RequestListOfPurchases( const string& userUuid ) const;
    bool     RequestListOfStaticAssets( int platformId = Platform_ios );
    bool     RequestListOfDynamicAssets( int platformId = Platform_ios );
    bool     RequestAsset( const string& assetName );
 
    bool     SendPurchases( const vector< RegisteredProduct >& purchases, int platformId = Platform_ios );
-   bool     GiveProduct( const string& userName, const RegisteredProduct& purchase, const string& notes, int platformId = Platform_ios );
+   bool     GiveProduct( const string& userName, const string& productUuid, int quantity, const string& notes, int platformId = Platform_ios );
    bool     SendCheat( const string& cheat );
 
    //--------------------------------------------------------------
@@ -334,7 +336,7 @@ private:
    typedef vector< PacketGameIdentification >      GameList;
 
 
-   string            m_username, m_attemptedUsername;
+   string            m_userName, m_attemptedUsername;
    string            m_uuid;
    string            m_serverDns;
    string            m_loginKey;

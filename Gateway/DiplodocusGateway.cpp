@@ -223,7 +223,7 @@ void  DiplodocusGateway::HandlePacketToKhaan( KhaanConnector* khaan, BasePacket*
       PacketLoginToClient* clientNotify = new PacketLoginToClient;
       clientNotify->wasLoginSuccessful = finishedLogin->wasLoginSuccessful;
       clientNotify->uuid = finishedLogin->uuid;
-      clientNotify->username = finishedLogin->username;
+      clientNotify->userName = finishedLogin->userName;
       clientNotify->lastLogoutTime = finishedLogin->lastLogoutTime;
       clientNotify->connectionId = connectionId;
       clientNotify->loginKey = finishedLogin->loginKey;

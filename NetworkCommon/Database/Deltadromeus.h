@@ -39,6 +39,7 @@ namespace Database
       U32         GetSenderLookup() const { return m_senderLookup; }
       U32         GetServerId() const { return m_serverId; }
       string      GetSenderMeta() const { return m_senderMeta; }
+      void*       GetCustomData() const { return m_customData; }
       bool        GetErrorCondition() const { return m_errorCondition; }
       bool        GetIsConnectionBad() const { return m_errorConnectionNeedsToBeReset; }
 
@@ -48,6 +49,7 @@ namespace Database
       void        SetSenderMeta( const string* meta ) { m_senderMeta = *meta; }
       void        SetSenderLookup( U32 lookup ) { m_senderLookup = lookup; }
       void        SetServerLookup( U32 serverId ) { m_serverId = serverId; }
+      void        SetCustomData( void* customData ) { m_customData = customData; }
       void        AddEscapedString( DbHandle* connection, const string& escapeMe );
 
       void        SetFireAndForget( bool fireAndForget = true ) { m_fireAndForget = fireAndForget; }
@@ -76,6 +78,7 @@ namespace Database
       U32                     m_senderKey;
       U32                     m_senderLookup;
       U32                     m_serverId;
+      void*                   m_customData;
       string                  m_senderMeta;
 
       U32                     m_timeSubmitted;
@@ -104,7 +107,17 @@ namespace Database
       virtual bool     IsConnected() const { return m_isConnected; }
 
       //-----------------------------------------------
-      virtual JobId    SendQuery( const string& query, int myId = 0, int senderReference = 0, const list<string>* stringsToEscape = NULL, bool isFireAndForget = false, bool isChainData = false, int extraLookupInfo = 0, string* meta = NULL, U32 serverId =0 );
+      virtual JobId    SendQuery( const string& query, 
+                                    int myId = 0, 
+                                    int senderReference = 0, 
+                                    const list<string>* stringsToEscape = NULL, 
+                                    bool isFireAndForget = false, 
+                                    bool isChainData = false, 
+                                    int extraLookupInfo = 0, 
+                                    string* meta = NULL, 
+                                    U32 serverId = 0, 
+                                    void* customData = NULL );
+
       virtual bool     AddInputChainData( BasePacket* packet, U32 chainId );// only use this interface for chained processing
 
       bool     HasResults( JobId id ) const;

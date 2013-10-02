@@ -33,7 +33,7 @@ public:
 
    U32               GetConnectionId() const { return m_connectionId; }
    void              SetConnectionId( U32 newConnectionId ) { m_connectionId = newConnectionId; } // be super careful here, this should only be invoked when relogging in
-   const string&     GetName() const { return m_username; }
+   const string&     GetName() const { return m_userName; }
    const string&     GetUuid() const { return m_uuid; }
    //const string&     GetLoginKey() const { return m_loginKey; }
 
@@ -113,7 +113,7 @@ protected:
    bool                       m_badConnection;
 
 
-   string                     m_username;
+   string                     m_userName;
    string                     m_uuid;
    //string                     m_loginKey;
 

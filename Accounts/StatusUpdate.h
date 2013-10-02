@@ -8,6 +8,7 @@
 #include "BlankUUIDQueryHandler.h"
 #include "BlankUserProfileHandler.h"
 #include "NewAccountQueryHandler.h"
+#include "ProductEntryCreateBasedOnPlayHistory.h"
 #include "ResetPasswordQueryHandler.h"
 #include <map>
 
@@ -43,6 +44,9 @@ public:
       QueryType_DeleteOlderAccountsRequest,
       QueryType_ResetPasswords,
       QueryType_DuplicateUUIDSearch,
+      QueryType_LoadProductIds,
+      QueryType_FindEarliestPlayDateForProduct,
+      QueryType_ProductEntryCreateBasedOnPlayHistory,
       QueryType_Hack
    };
 
@@ -125,10 +129,12 @@ private:
    BlankUUIDQueryHandler* m_blankUuidHandler;
    BlankUserProfileHandler* m_blankUserProfileHandler;
    NewAccountQueryHandler* m_newAccountHandler;
+   ProductEntryCreateBasedOnPlayHistory* m_addProductEntryHandler;
    ResetPasswordQueryHandler* m_resetPasswordHandler;
 
    static const U32 timeoutBlankUserProfileTimer = 60;
    static const U32 timeoutBlankUUIDTimer = 60;
    static const U32 timeoutNewAccount = 48;
+   static const U32 timeoutAddProductEntry = 45;
    static const U32 timeoutResetPassword = 30;
 };

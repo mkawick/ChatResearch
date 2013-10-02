@@ -8,8 +8,10 @@ Accounts.cpp \
 BlankUUIDQueryHandler.cpp \
 BlankUserProfileHandler.cpp \
 NewAccountQueryHandler.cpp \
+ProductEntryCreateBasedOnPlayHistory.cpp \
 ResetPasswordQueryHandler.cpp \
 ../NetworkCommon/NetworkUtils.cpp \
+../NetworkCommon/ServerConstants.cpp \
 ../NetworkCommon/ChainedArchitecture/Thread.cpp \
 ../NetworkCommon/Daemon/Daemonizer.cpp \
 ../NetworkCommon/Database/Deltadromeus.cpp \
