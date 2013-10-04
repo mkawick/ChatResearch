@@ -148,7 +148,7 @@ class UserNetworkEventNotifier
 public:
    virtual void  UserLogin( bool success ) {}
    virtual void  UserLogout() {}
-   virtual void  RequestListOfUserPurchases();
+   virtual void  RequestListOfUserPurchases() {}
    virtual void  UserProfileResponse( string username, string email, string userUuid, string lastLoginTime, string loggedOutTime, int adminLevel, bool isActive, bool showWinLossRecord, bool marketingOptOut, bool showGenderProfile ) {}
 
    virtual void  ListOfAvailableProducts( const SerializedVector< ProductBriefPacketed >& products, int platformId ) {}
@@ -224,7 +224,7 @@ public:
 class NetworkLayer :  public Fruitadens
 {
 public:
-   NetworkLayer( U8 gameProductId, bool processOnlyOneIncommingPacketPerLoop );
+   NetworkLayer( U8 gameProductId, bool processOnlyOneIncommingPacketPerLoop = false );
    ~NetworkLayer();
 
    void     Init( const char* serverDNS = "gateway.internal.playdekgames.com" );
@@ -281,7 +281,7 @@ public:
    //--------------------------------------------------------------
    // ********************   Purchases/Products   *******************
    bool     RequestListOfProducts() const;
-   bool     RequestListOfPurchases( const string& userUuid ) const;
+   bool     RequestListOfPurchases( const string userUuid = "" ) const;
    bool     RequestListOfStaticAssets( int platformId = Platform_ios );
    bool     RequestListOfDynamicAssets( int platformId = Platform_ios );
    bool     RequestAsset( const string& assetName );

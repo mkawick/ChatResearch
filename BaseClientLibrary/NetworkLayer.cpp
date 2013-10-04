@@ -17,14 +17,6 @@ using namespace Mber;
 
 ///////////////////////////////////////////////////////////////////////////////////
 
-void UserNetworkEventNotifier::RequestListOfUserPurchases() 
-{
-   if( network )
-   {
-      vector< RegisteredProduct > purchases;
-      network->SendPurchases( purchases, Platform_ios );// default is an empty list
-   }
-}
 
 ///////////////////////////////////////////////////////////////////////////////////
 
@@ -301,14 +293,21 @@ bool  NetworkLayer::RequestListOfProducts() const
 
 //-----------------------------------------------------------------------------
 
-bool  NetworkLayer::RequestListOfPurchases( const string& userUuid ) const
+bool  NetworkLayer::RequestListOfPurchases( const string userUuid ) const
 {
    if( m_isConnected == false )
    {
       return false;
    }
    PacketListOfUserPurchasesRequest purchases;
-   purchases.userUuid = userUuid;
+   if( userUuid.size() > 0 )
+   {
+      purchases.userUuid = userUuid;
+   }
+   else 
+   {
+      purchases.userUuid = m_uuid;
+   }
    SerializePacketOut( &purchases );
 
    return true;

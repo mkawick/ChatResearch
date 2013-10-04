@@ -997,9 +997,9 @@ void     ChatChannelManager::AssembleListOfUsersToNotifyForAllChannelsForUser( s
 
 //---------------------------------------------------------------------
 
-void     ChatChannelManager::RemoveUserFromChannelInternal( stringhash userUuidHash, stringhash channelUuid, const string& userUuid, UserUuidSet& otherUsersToNotify )
+void     ChatChannelManager::RemoveUserFromChannelInternal( stringhash userUuidHash, stringhash channelHashUuid, const string& userUuid, UserUuidSet& otherUsersToNotify )
 {
-   ChannelMapIterator channelIter = m_channelMap.find( channelUuid );
+   ChannelMapIterator channelIter = m_channelMap.find( channelHashUuid );
    if( channelIter == m_channelMap.end() )
    {
       string text = " Cleaning up channel ";
@@ -1009,6 +1009,7 @@ void     ChatChannelManager::RemoveUserFromChannelInternal( stringhash userUuidH
       m_chatServer->Log( text, 1 );
       return;
    }
+   string channelUuid = channelIter->second.uuid;
 
    bool erasedFlag = false;
    list< stringhash >& listReference = channelIter->second.userUuidList;
@@ -1051,6 +1052,11 @@ void     ChatChannelManager::RemoveUserFromChannelInternal( stringhash userUuidH
          {
             otherUsersToNotify.insert( *usersToInform ++ );
          }
+      }
+
+      if( otherUsersToNotify.size() == 0 )/// we've removed all users from this chat channel.
+      {
+         DeleteChannel( channelUuid, 0 );
       }
    }
    //m_chatServer->ChatChannelManagerNeedsUpdate();
@@ -1300,6 +1306,26 @@ bool   ChatChannelManager::CreateNewChannel( const PacketChatCreateChatChannelFr
 
 //---------------------------------------------------------------------
 
+bool   ChatChannelManager::DeleteChannel( const PacketChatDeleteChatChannelFromGameServer* pPacket )
+{
+   //***********************************************
+   // UPDATE chat_channel SET is_active=0 WHERE game_type=1 AND game_instance_id=13245
+   string queryString = "UPDATE chat_channel SET is_active=0 WHERE game_type='";
+   queryString += boost::lexical_cast< string >( (int)( pPacket->gameProductId ) );
+   queryString += "' AND game_instance_id='";
+   queryString += boost::lexical_cast< string >( (int)( pPacket->gameId ) );
+   queryString += "'";
+   U32 serverId = 0;
+
+   int jobId = DbQueryAndPacket( "", "", pPacket->gameInstanceId, "", pPacket->gameId, queryString, ChatChannelDbJob::JobType_MakeInactiveFromGameServer, false );
+
+ /*  DbJobIterator iter;
+   bool success = FindDbJob( jobId, m_pendingDbJobs, iter );*/
+   return true;
+}
+
+//---------------------------------------------------------------------
+
 int  ChatChannelManager::DbQueryAndPacket( const string& channelName, const string& channelUuid, U32 serverId, const string& authUuid, stringhash chatUserLookup, const string& queryString, ChatChannelDbJob::JobType jobType, bool isFandF, list< string >* sanitizedStrings )
 {
    PacketDbQuery* dbQuery = new PacketDbQuery;
@@ -1369,23 +1395,7 @@ bool     ChatChannelManager::DeleteChannel( const string& channelUuid, const str
    // check for user permissions
    //***********************************************
 
-   // UPDATE chat_channel 
-   // SET chat_channel.is_active=0 
-   // WHERE chat_channel.uuid='abcdefghijklmnop'
-
-   string queryString = "UPDATE chat_channel SET chat_channel.is_active=0 WHERE chat_channel.uuid='%s'";
-
-   list< string > listOfStrings;
-   listOfStrings.push_back( channelUuid );
-   U32 serverId = 0;
-   DbQueryAndPacket( channelUuid, channelUuid, serverId, authUuid, authHash, queryString, ChatChannelDbJob::JobType_Delete, false, &listOfStrings );
-
-   /*
-   select count(*) from user_join_chat_channel 
-   where user_groupid='bcdefghijklmnopa'
-   */
-
-   return true;
+   return DeleteChannel( channelUuid, 0 );
 }
 
 //---------------------------------------------------------------------
@@ -1875,7 +1885,7 @@ void     ChatChannelManager::RequestChatChannelList( const string& authUuid, boo
       }
 
       // SELECT * FROM chat_channel
-      string queryString = "SELECT * FROM chat_channel";
+      string queryString = "SELECT * FROM chat_channel"; //"WHERE is_active=1";
       U32 serverId = 0;
       DbQueryAndPacket( authUuid, authUuid, serverId, authUuid, authHash, queryString, ChatChannelDbJob::JobType_SelectAllChannelsToSendToAuth, false );
    }

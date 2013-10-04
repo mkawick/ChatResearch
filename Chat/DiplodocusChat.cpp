@@ -350,6 +350,17 @@ bool  DiplodocusChat::HandlePacketFromOtherServer( BasePacket* packet, U32 conne
             assert( 0 );
          }
          break;
+      case PacketChatToServer::ChatType_DeleteChatChannelFromGameServer:
+         {
+            PacketChatDeleteChatChannelFromGameServer* pPacket = static_cast< PacketChatDeleteChatChannelFromGameServer* > ( actualPacket );
+            m_chatChannelManager->DeleteChannel( pPacket );
+         }
+         break;
+      case PacketChatToServer::ChatType_DeleteChatChannelFromGameServerResponse:
+         {
+            assert( 0 );
+         }
+         break;
   /* ChatType_InviteUserToChatChannel,
    ChatType_InviteUserToChatChannelResponse,*/
       }

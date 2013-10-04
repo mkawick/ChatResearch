@@ -27,6 +27,8 @@ public:
 
       ChatType_DeleteChatChannel,
       ChatType_DeleteChatChannelResponse,
+      ChatType_DeleteChatChannelFromGameServer,
+      ChatType_DeleteChatChannelFromGameServerResponse,
       ChatType_InviteUserToChatChannel,
       ChatType_InviteUserToChatChannelResponse,
       
@@ -330,6 +332,37 @@ public:
    string   uuid;
    bool     successfullyDeleted;
    int      numUsersRemoved;
+};
+
+///////////////////////////////////////////////////////////////
+
+class PacketChatDeleteChatChannelFromGameServer : public BasePacket
+{
+public:
+   PacketChatDeleteChatChannelFromGameServer( int packet_type = PacketType_Chat, int packet_sub_type = PacketChatToServer::ChatType_DeleteChatChannelFromGameServer ) : BasePacket( packet_type, packet_sub_type ){  }
+
+   bool  SerializeIn( const U8* data, int& bufferOffset );
+   bool  SerializeOut( U8* data, int& bufferOffset ) const;
+
+   //string   uuid;
+   U32            gameId;
+   string         gameName;
+};
+
+///////////////////////////////////////////////////////////////
+
+class PacketChatDeleteChatChannelFromGameServerResponse : public BasePacket
+{
+public:
+   PacketChatDeleteChatChannelFromGameServerResponse( int packet_type = PacketType_Chat, int packet_sub_type = PacketChatToServer::ChatType_DeleteChatChannelFromGameServerResponse ) : BasePacket( packet_type, packet_sub_type ){  }
+
+   bool  SerializeIn( const U8* data, int& bufferOffset );
+   bool  SerializeOut( U8* data, int& bufferOffset ) const;
+
+   U32            gameId;
+   string         gameName;
+   bool           successfullyDeleted;
+   int            numUsersRemoved;
 };
 
 ///////////////////////////////////////////////////////////////

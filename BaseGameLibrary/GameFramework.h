@@ -27,6 +27,7 @@ public:
    const string&  GetServerShortName() const { return m_shortName; }
    U32            GetServerId() const { return m_serverId; }
    U8             GetGameProductId() const { return m_gameProductId; }
+   static GameFramework* Instance() { return m_instance; }
 
    //----------- configuration -----------------------
 
@@ -68,6 +69,8 @@ private:
    string         m_gameUuid;
 
    DiplodocusGame*m_connectionManager;
+
+   static GameFramework* m_instance;
 
 
    // default connection values

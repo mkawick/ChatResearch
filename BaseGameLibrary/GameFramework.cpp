@@ -21,6 +21,7 @@
 
 using namespace std;
 
+GameFramework* GameFramework::m_instance = NULL;
 //-----------------------------------------------------
 //-----------------------------------------------------
 
@@ -50,6 +51,9 @@ GameFramework::GameFramework( const char* name, const char* shortName, U8 gamePr
    m_dbUsername = "root";
    m_dbPassword = "password";
    m_dbSchema = "playdek";
+
+   assert( m_instance == NULL );
+   m_instance = this;
 }
 
 //-----------------------------------------------------

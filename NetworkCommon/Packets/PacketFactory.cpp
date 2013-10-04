@@ -364,6 +364,17 @@ bool  PacketFactory::ParseChat( const U8* bufferIn, int& bufferOffset, const Bas
       }
       return true;
 
+   case PacketChatToServer::ChatType_DeleteChatChannelFromGameServer:
+      {
+         *packetOut = SerializeIn< PacketChatDeleteChatChannelFromGameServer >( bufferIn, bufferOffset );
+      }
+      return true;
+   case PacketChatToServer::ChatType_DeleteChatChannelFromGameServerResponse:
+      {
+         *packetOut = SerializeIn< PacketChatDeleteChatChannelFromGameServerResponse >( bufferIn, bufferOffset );
+      }
+      return true;
+
    case PacketChatToServer::ChatType_InviteUserToChatChannel:
       {
          *packetOut = SerializeIn< PacketChatInviteUserToChatChannel >( bufferIn, bufferOffset );

@@ -130,6 +130,70 @@ void HtmlEntitySafeSplit( char* buffer, const char* source, int splitSize, const
    *buffer = 0;
 }
 
+//////////////////////////////////////////////////////////////////////////////
+/*
+bool IsValidEmailLine( const char* source, int linePosition )
+{
+   int countOfCRLF = 0;
+   const char* counter = source;
+   while( counter-source <  linePosition )
+   {
+      if( *counter == '\r' && *(counter+1) == '\n' )
+         countOfCRLF ++;
+      counter++;
+   }
+   if( linePosition < 3 )
+   {
+      if( *source == '\r' && *(source+1) == '\n' )
+         return false;
+   }
+
+   return true;
+}*/
+
+void  SendEmailTextLine( int socketId, const char* source, int linePosition )
+{
+   const char* counter = source;
+   const char* offset = source;
+   
+   const char* test = "https://itunes.apple.com/us/app/agricola/id561521557?mt=8";
+   const char* pos = strstr( source, test );
+   int position = pos-source;
+   if (position > 0 && position < 100 )
+   {
+      position = position;
+   }
+   while( counter-source <  linePosition )
+   {
+      if( *counter == '\r' && *(counter+1) == '\n' )
+      {
+         int num = (counter-offset)+2;// include the crlf
+         send( socketId, offset, num, 0 );// do not send ending cr lfs
+         LogTextToFile( offset, num );
+
+         if( *(counter+2) == '\r' && *(counter+3) == '\n' )// too many cr/lf
+         {
+            counter += 4;// move past the cr/lfs
+         }
+         else
+         {
+            counter += 2;// move past the cr/lfs
+            
+         }
+         offset = counter;
+      }
+      else
+      {
+         counter++;
+      }
+   }
+   int len = linePosition-(offset-source);
+   if( len > 0 )// do not write a terminating 0
+   {
+      send( socketId, offset, len, 0);
+      LogTextToFile( offset, len );
+   }
+}
 
 //////////////////////////////////////////////////////////////////////////////
 
@@ -158,13 +222,22 @@ int   SendEveryFewCharcters( const char* source, int len, int minCharacters, int
          }
       } while( ( position + linePosition < len ) && *(text+1) != '\n' );
 
-
+      if( *text == '\r' && *(text+1) == '\n' )
+      {
+         linePosition += 2;
+      }
       if( position + linePosition > len )
       {
          linePosition = len - position;
       }
-      send( socketId, source, linePosition, 0);
-      LogTextToFile( source, linePosition );
+
+      /// quick test for validity... no bare cr/lf
+      /*if( IsValidEmailLine( source, linePosition ) )
+      {
+         send( socketId, source, linePosition, 0);
+         LogTextToFile( source, linePosition );
+      }*/
+      SendEmailTextLine( socketId, source, linePosition );
       if( linePosition > longest )
           longest = linePosition;
 
@@ -287,23 +360,6 @@ int  SendConfirmationEmail( const char* toAddr, const char* fromAddr, const char
   LogTextToFile( messageLine.get() );*/
 
   SendEveryFewCharcters( bodyText, bodyLen, 34, 76, socketId );
- /* HtmlEntitySafeSplit( messageLine.get(), bodyText, 76, CRLF );
-  //
-
-  ofstream dumpFile;
-  dumpFile.open( "BodyTextWithCRLF.txt", ios::app );
-  dumpFile << messageLine.get();
-  dumpFile.close();*/
-  
-  
- /* if( linkText && strlen( linkText ) > 0 && 
-     linkAddr && strlen( linkAddr ) > 0 )
-  {
-     const char* linkString = "<html><body><a href=\"%s\">%s</a>%s</body></html>";
-     sprintf(messageLine, linkString, linkAddr, linkText, CRLF);
-     Check(send(socketId, messageLine, strlen( messageLine.get() ), 0), "send() link text");
-     LogTextToFile( messageLine );
-  }*/
 
   // Send blank line and a period
   sprintf( messageLine.get(), "%s.%s", CRLF, CRLF);

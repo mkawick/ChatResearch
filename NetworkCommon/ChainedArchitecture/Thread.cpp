@@ -120,7 +120,7 @@ void  CAbstractThread::Cleanup()
    DestroyThread();
    
 #ifndef WIN32
-   if( m_thread != InvalidThread )
+   if( m_thread != (int)InvalidThread )
    {
       void* result;
       pthread_join( m_thread, &result );

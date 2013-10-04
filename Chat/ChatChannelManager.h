@@ -65,6 +65,7 @@ struct ChatChannelDbJob
       JobType_AllUsersInChannel,
 
       JobType_CreateFromGameServer,
+      JobType_MakeInactiveFromGameServer,
       JobType_AddUserFromGameServer,
       JobType_RemoveUserFromGameServer
    };
@@ -85,6 +86,7 @@ class UserConnection;
 class BasePacket;
 class DiplodocusChat;
 class PacketChatCreateChatChannelFromGameServer;
+class PacketChatDeleteChatChannelFromGameServer;
 class PacketChatAddUserToChatChannelGameServer;
 class PacketChatRemoveUserFromChatChannelGameServer;
 
@@ -136,6 +138,8 @@ public:
 
    // other servers requests
    bool     CreateNewChannel( const PacketChatCreateChatChannelFromGameServer* pPacket );
+   bool     DeleteChannel( const PacketChatDeleteChatChannelFromGameServer* pPacket );
+   
    bool     DeleteChannel( const string& channelName, const U32 serverId );
    
    bool     AddUserToChannel( const PacketChatAddUserToChatChannelGameServer* pPacket );

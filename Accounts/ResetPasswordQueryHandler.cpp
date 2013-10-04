@@ -52,7 +52,7 @@ bool     ResetPasswordQueryHandler::HandleResult( const PacketDbQueryResult* dbR
       string Column_reset_key =     row[ EmailAddressesOfPasswordsToResetTable::Column_reset_key ];
       
       int languageId = 1;// english
-      if( languageString != "NULL" )
+      if( languageString.size() > 0 && languageString != "NULL" )
       {
          languageId = boost::lexical_cast<int>( languageString );
       }
