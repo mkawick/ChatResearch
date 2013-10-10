@@ -378,6 +378,7 @@ bool  PacketRequestUserProfileResponse::SerializeIn( const U8* data, int& buffer
    Serialize::In( data, bufferOffset, showWinLossRecord );
    Serialize::In( data, bufferOffset, marketingOptOut );
    Serialize::In( data, bufferOffset, showGenderProfile );
+   Serialize::In( data, bufferOffset, profileKeyValues );
 
    return true;
 }
@@ -397,6 +398,7 @@ bool  PacketRequestUserProfileResponse::SerializeOut( U8* data, int& bufferOffse
    Serialize::Out( data, bufferOffset, showWinLossRecord );
    Serialize::Out( data, bufferOffset, marketingOptOut );
    Serialize::Out( data, bufferOffset, showGenderProfile );
+   Serialize::Out( data, bufferOffset, profileKeyValues );
 
    return true;
 }

@@ -8,6 +8,9 @@
 #include "../NetworkCommon/Packets/ChatPacket.h"
 #include "../NetworkCommon/Packets/LoginPacket.h"
 
+#include <map>
+using namespace std;
+
 namespace Mber
 {
 
@@ -150,6 +153,7 @@ public:
    virtual void  UserLogout() {}
    virtual void  RequestListOfUserPurchases() {}
    virtual void  UserProfileResponse( string username, string email, string userUuid, string lastLoginTime, string loggedOutTime, int adminLevel, bool isActive, bool showWinLossRecord, bool marketingOptOut, bool showGenderProfile ) {}
+   virtual void  UserProfileResponse( const map< string, string >& keyValues ) {}
 
    virtual void  ListOfAvailableProducts( const SerializedVector< ProductBriefPacketed >& products, int platformId ) {}
    virtual void  ListOfAggregateUserPurchases( const SerializedVector< PurchaseEntry >& purchases, int platformId ) {}

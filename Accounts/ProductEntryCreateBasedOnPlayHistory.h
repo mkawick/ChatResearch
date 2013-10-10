@@ -8,8 +8,23 @@ struct QueryPerProduct
 {
    int      productId;
    string   userTableName;
+   string   gameTableName;
+   string   playerTableName;
    string   queryToRun;
    string   productUuid;
+};
+
+
+struct  UserWhoMayNeedUpdate
+{
+   U32      id;
+   string   uuid;
+   string   firstKnownPlayDate;
+   string   productUuid;
+   int      productId;
+   bool     awaitingQueryResult;
+
+   UserWhoMayNeedUpdate() : id( -1 ), productId( -1 ), awaitingQueryResult( false ) {}
 };
 
 class ProductEntryCreateBasedOnPlayHistory : public QueryHandler
@@ -30,6 +45,9 @@ private:
    void     RequestProducts();
 
    void     SetupQueryForUserBoughtProductBasedOnFirstDatePlayed( U32 user_id, const string& userUuid, const string& date, const string& productUuid );
+   bool     StoreUsersWhoMayNeedAnUpdate( const PacketDbQueryResult* dbResult );
+   void     RunUserQueries();
+   void     ErasePendingUserLookup( const string& userUuid );
 
    void     AddQueryPerProduct( int productId, const string& productUuid );
    void     AddGenericProductEntry( const string& gameUuid, const string& userUuid, const string& date );
@@ -41,7 +59,11 @@ private:
    bool     m_hasRequestedAllProducts;
    bool     m_hasPendingDbResult;
    bool     m_hasCompletedTryingEveryProduct;
-   int      m_lastQueryIndexRun;
+  // int      m_lastQueryIndexRun;
+   int      m_currentProductIndex;
+   int      m_currentUserIndex;
 
    vector <QueryPerProduct> m_listOfQueries;
+   list <UserWhoMayNeedUpdate> m_listOfUsersQueryingUpdate;
+   list <UserWhoMayNeedUpdate> m_listOfUsersAwaitingQueryResult;
 };

@@ -1218,6 +1218,15 @@ bool  NetworkLayer::HandlePacketReceived( BasePacket* packetIn )
             case PacketLogin::LoginType_RequestUserProfileResponse:
                {
                   PacketRequestUserProfileResponse* profile = static_cast<PacketRequestUserProfileResponse*>( packetIn );
+                  map< string, string > profileKeyValues;
+
+                  const SerializedKeyValueVector< string >& kvVector = profile->profileKeyValues;
+                  SerializedKeyValueVector< string >::const_KVIterator profileIt = kvVector.begin();
+                  while( profileIt != kvVector.end() )
+                  {
+                     profileKeyValues.insert( pair< string, string >( profileIt->key, profileIt->value ) );
+                  }
+
                   for( list< UserNetworkEventNotifier* >::iterator it = m_callbacks.begin(); it != m_callbacks.end(); ++it )
                   {  
                      (*it)->UserProfileResponse( profile->userName, 
@@ -1230,6 +1239,7 @@ bool  NetworkLayer::HandlePacketReceived( BasePacket* packetIn )
                                           profile->showWinLossRecord, 
                                           profile->marketingOptOut, 
                                           profile->showGenderProfile );
+                     (*it)->UserProfileResponse( profileKeyValues );
                   }
                }
                break;

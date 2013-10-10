@@ -264,6 +264,7 @@ int   DiplodocusGateway::ProcessOutputFunction()
          int connectionId = wrapper->connectionId;
          BasePacket* dataPacket = wrapper->pPacket;
          delete wrapper;
+         bool  handled = false;
 
          SocketToConnectionMapIterator it = m_connectionToSocketMap.find( connectionId );
          if( it != m_connectionToSocketMap.end() )
@@ -274,11 +275,12 @@ int   DiplodocusGateway::ProcessOutputFunction()
             {
                KhaanConnector* khaan = connIt->second;
                HandlePacketToKhaan( khaan, dataPacket );// all deletion and such is handled lower
+               handled = true;
             }
-            else
-            {
-               factory.CleanupPacket( dataPacket );
-            }
+         }
+         if( handled == false )
+         {
+            factory.CleanupPacket( dataPacket );
          }
       }
 

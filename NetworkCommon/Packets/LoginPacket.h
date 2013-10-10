@@ -306,6 +306,8 @@ public:
    bool     showWinLossRecord;
    bool     marketingOptOut;
    bool     showGenderProfile;
+
+   SerializedKeyValueVector< string > profileKeyValues;
 };
 
 ///////////////////////////////////////////////////////////////

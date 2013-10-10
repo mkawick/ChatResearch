@@ -62,26 +62,7 @@ void     NewAccountQueryHandler::Update( time_t currentTime )
 
 void     NewAccountQueryHandler::CheckForNewAccounts()
 {
-   
 
-   time_t currentTime;
-   time( &currentTime );
-
-   
-/*
-   if( difftime( testTimer, m_lastTimeStamp ) >= m_periodicitySeconds ) 
-   {
-      //cout << "CheckForNewAccounts..." << endl;
-      m_lastTimeStamp = testTimer;
-
-      PacketDbQuery* dbQuery = new PacketDbQuery;
-      dbQuery->id = 0;
-      dbQuery->lookup = m_queryType;
-      dbQuery->query = m_queryString;
-
-      m_parent->AddQueryToOutput( dbQuery );
-      m_isServicingNewAccounts = true;
-   }*/
 }
 
 //---------------------------------------------------------------
@@ -151,7 +132,8 @@ bool     NewAccountQueryHandler::HandleResult( const PacketDbQueryResult* dbResu
    if( queryType != m_queryType && 
       queryType != m_loadStringsQueryType && 
       queryType != m_loadWebLinksQueryType && 
-      queryType != m_olderEmailsQueryType )
+      queryType != m_olderEmailsQueryType &&
+      queryType != StatusUpdate::QueryType_UserUpdateNewAccountKeyBeforeSendingEmail )
       return false;
 
    SetValueOnExit< bool >     setter( m_isServicingNewAccounts, false );// due to multiple exit points...
@@ -166,8 +148,41 @@ bool     NewAccountQueryHandler::HandleResult( const PacketDbQueryResult* dbResu
       HandleWeblinks( dbResult );
       return true;
    }
+   else if( queryType == m_olderEmailsQueryType || queryType == m_queryType )
+   {
+      PrepToSendUserEmail( dbResult );
+      //time( &m_lastTimeStamp );// restart timer
+   }
+   else if( queryType == StatusUpdate::QueryType_UserUpdateNewAccountKeyBeforeSendingEmail )
+   {
+      EmailLookupIterator it = m_emailLookup.find( dbResult->meta );
+      if( it != m_emailLookup.end() )
+      {
+         EmailToSend& emailDetails = it->second;
+         // update playdek.user_temp_new_user set was_email_sent=was_email_sent+1, lookup_key='lkjasdfhlkjhadfs' where id='4' ;
+         if( SendConfirmationEmail( emailDetails.email.c_str(), emailDetails.accountEmailAddress.c_str(), m_mailServer, emailDetails.bodyText.c_str(), emailDetails.subjectText.c_str(), "Playdek.com", emailDetails.linkPath.c_str() ) != 0 )
+         {
+            string   message = "ERROR: For new accounts, SendConfirmationEmail seems to be down. Socket connections are being rejected.";
+            LogMessage( LOG_PRIO_ERR, message.c_str() );
+            cout << endl << message << endl;
+         }
+         m_emailLookup.erase( it );
+      }
+      //time( &m_lastTimeStamp );// restart timer
+   }
 
-   NewUsersTable              enigma( dbResult->bucket );
+   // fix up any weird UUID problems
+   // I realize that this breaks the essence of encapsulation, but it is far easier than many alternatives
+   static_cast<StatusUpdate*>( m_parent )->DuplicateUUIDSearch();
+
+   return true;
+}
+
+//---------------------------------------------------------------
+
+void     NewAccountQueryHandler::PrepToSendUserEmail( const PacketDbQueryResult* dbResult )
+{
+    NewUsersTable              enigma( dbResult->bucket );
    NewUsersTable::iterator    it = enigma.begin();
    
    while( it != enigma.end() )
@@ -224,15 +239,7 @@ bool     NewAccountQueryHandler::HandleResult( const PacketDbQueryResult* dbResu
             bodyText += "'>Playdek.com</a>";
          }
 
-         // update playdek.user_temp_new_user set was_email_sent=was_email_sent+1, lookup_key='lkjasdfhlkjhadfs' where id='4' ;
-         if( SendConfirmationEmail( email.c_str(), newAccountEmailAddress, m_mailServer, bodyText.c_str(), subjectText.c_str(), "Playdek.com", linkPath.c_str() ) != 0 )
-         {
-            string   message = "ERROR: For new accounts, SendConfirmationEmail seems to be down. Socket connections are being rejected.";
-            LogMessage( LOG_PRIO_ERR, message.c_str() );
-            cout << endl << message << endl;
-            time( &m_lastTimeStamp );// restart timer
-            return false;
-         }
+         
 
          // it is likely that the new user does not have a UUID yet so we will add it to both tables
          //UpdateUuidForUser( userId, true, columnId );
@@ -240,11 +247,22 @@ bool     NewAccountQueryHandler::HandleResult( const PacketDbQueryResult* dbResu
          {
             m_blankUuidHandler->UpdateUuidForUser( userId, true, columnId );
          }
+         EmailToSend emailDetails;
+         emailDetails.accountEmailAddress = newAccountEmailAddress;
+         emailDetails.bodyText = bodyText;
+         emailDetails.email = email;
+         emailDetails.linkPath = linkPath;
+         emailDetails.subjectText = subjectText;
+         emailDetails.userLookupKey = userLookupKey;
+         m_emailLookup.insert( EmailLookupPair( userLookupKey, emailDetails ) );
+
 
          PacketDbQuery* dbQuery = new PacketDbQuery;
          dbQuery->id = 0;
-         dbQuery->lookup = m_queryType;
-         dbQuery->isFireAndForget = true;
+         dbQuery->lookup = StatusUpdate::QueryType_UserUpdateNewAccountKeyBeforeSendingEmail;
+         //dbQuery->customData = emailDetails;
+         dbQuery->meta = userLookupKey;
+         //dbQuery->isFireAndForget = true;
 
          string queryString = "UPDATE user_temp_new_user SET was_email_sent=was_email_sent+1, lookup_key='";
          queryString += userLookupKey;
@@ -292,14 +310,6 @@ bool     NewAccountQueryHandler::HandleResult( const PacketDbQueryResult* dbResu
          m_parent->AddQueryToOutput( dbQuery );
       }
    }
-
-   time( &m_lastTimeStamp );// restart timer
-
-   // fix up any weird UUID problems
-   // I realize that this breaks the essence of encapsulation, but it is far easier than many alternatives
-   static_cast<StatusUpdate*>( m_parent )->DuplicateUUIDSearch();
-
-   return true;
 }
 
 //---------------------------------------------------------------

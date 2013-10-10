@@ -26,7 +26,8 @@ StatusUpdate::StatusUpdate( const string& serverName, U32 serverId ) : Queryer()
                   m_newAccountTimeoutSeconds( 48 ),
                   m_checkOnautoCreateTimeoutSeconds( 60 ),
                   m_checkOnOldEmailsTimeoutSeconds( OneDay ),/// once per day
-                  m_expireOldAccountRequestsTimeoutSeconds( OneDay )
+                  m_expireOldAccountRequestsTimeoutSeconds( OneDay ),
+                  m_enableAddingUserProducts( false )
 {
    SetSleepTime( 500 );
    time( &m_newAccountCreationTimer );
@@ -282,160 +283,6 @@ void     StatusUpdate::DuplicateUUIDSearchResult( PacketDbQueryResult* dbResult 
    }
 }
 
-/*
-emailDomainReplacements [] = 
-{
-   { "gamil", "gmail.com" },
-   { "gmaill", "gmail" },
-   { "gmai", "gmail" },
-
-   { "hahoo", "yahoo" },
-   { "ahoo", "yahoo" },
-
-   { "otmail", "hotmail" },
-   { "hoymail", "hotmail" },
-}
-
-tailReplacements [] =
-{
-   { "co", "com" },
-   { "con", "com" },
-   { "cob", "com" },
-   { "ccom", "com" },
-   { "om", "com" },
-};*/
-//---------------------------------------------------------------
-/*
-void     StatusUpdate::HandleNewAccounts( const PacketDbQueryResult* dbResult )
-{
-   //cout << "HandleNewAccounts..." << endl;
-   //LogMessage( LOG_PRIO_INFO, "HandleNewAccounts...\n" );
-   NewUsersTable              enigma( dbResult->bucket );
-   NewUsersTable::iterator    it = enigma.begin();
-   
-   while( it != enigma.end() )
-   {
-      NewUsersTable::row         row = *it++;
-      string columnId =          row[ TableUserTempNewUser::Column_id ];
-      string name =              row[ TableUserTempNewUser::Column_name ];
-      string email =             row[ TableUserTempNewUser::Column_email ];
-      string userId =            row[ TableUserTempNewUser::Column_user_id ];
-      string uuid =              row[ TableUserTempNewUser::Column_uuid ];
-      int languageId =           boost::lexical_cast< int >( row[ TableUserTempNewUser::Column_language_id ] );
-
-      string message = "Sending new account confirmation to user: ";
-      message += name;
-      message += " at email: ";
-      message += email;
-
-      LogMessage( LOG_PRIO_INFO, message.c_str() );
-      cout << message << endl;
-
-      if( email.size() == 0 )// we can't send an email...
-      {
-         string message = "User does not have a valid email: ";
-         message += name;
-         LogMessage( LOG_PRIO_WARN, message.c_str() );
-         cout << message << endl;
-         continue;
-      }
-
-      if( IsValidEmailAddress( email ) )
-      {
-         string subjectText = GetString( "email.new_account.welcome.subject", languageId ); //"Confirmation email";
-         string bodyText = GetString( "email.new_account.welcome.body_text", languageId );//"Thank you for signing up with Playdek. Click this link to confirm your new account.";
-
-         string userLookupKey = GenerateUUID( GetCurrentMilliseconds() + static_cast<U32>( GenerateUniqueHash( name + email ) ) );
-         userLookupKey += GenerateUUID( GetCurrentMilliseconds() ); // double long text
-
-         string linkPath = m_linkToAccountCreated;
-         linkPath += "?key=";
-         linkPath += userLookupKey;
-
-
-         if( m_confirmationEmailTemplate.size() )
-         {
-            bodyText = m_confirmationEmailTemplate;
-            map< string, string > specialStrings;
-            specialStrings.insert( pair<string, string> ( "link-to-confirmation", linkPath ) );
-            ReplaceAllLookupStrings( bodyText, languageId, specialStrings );
-         }
-         else
-         {
-            bodyText += "<a href='";
-            bodyText += linkPath;
-            bodyText += "'>Playdek.com</a>";
-         }
-
-         // update playdek.user_temp_new_user set was_email_sent=was_email_sent+1, lookup_key='lkjasdfhlkjhadfs' where id='4' ;
-         SendConfirmationEmail( email.c_str(), newAccountEmailAddress, mailServer, bodyText.c_str(), subjectText.c_str(), "Playdek.com", linkPath.c_str() );
-
-         // it is likely that the new user does not have a UUID yet so we will add it to both tables
-         //UpdateUuidForUser( userId, true, columnId );
-         m_blankUuidHandler->UpdateUuidForUser( userId, true, columnId );
-
-         PacketDbQuery* dbQuery = new PacketDbQuery;
-         dbQuery->id = 0;
-         dbQuery->lookup = QueryType_UserCheckForNewAccount;
-         dbQuery->isFireAndForget = true;
-
-         string queryString = "UPDATE user_temp_new_user SET was_email_sent=was_email_sent+1, lookup_key='";
-         queryString += userLookupKey;
-         queryString += "', time_last_confirmation_email_sent='";
-         queryString += GetDateInUTC();
-         queryString += "' WHERE id='";
-         queryString += columnId;
-         queryString += "';";
-         dbQuery->query = queryString;
-
-         AddQueryToOutput( dbQuery );
-
-         message = "new account confirmation to user: ";
-         message += name;
-         message += " at email: ";
-         message += email;
-         message += " ... lookup_key = ";
-         message += userLookupKey;
-
-         LogMessage( LOG_PRIO_INFO, message.c_str() );
-         //cout << message << endl;
-
-         //cout << "Time sent: ";
-         //PrintCurrentTime();
-      }
-      else
-      {
-         message = "new account confirmation failed due to invalid email address: ";
-         message += name;
-         message += " at email: '";
-         message += email;
-         LogMessage( LOG_PRIO_INFO, message.c_str() );
-         cout << message << endl;
-
-         PacketDbQuery* dbQuery = new PacketDbQuery;
-         dbQuery->id = 0;
-         dbQuery->lookup = QueryType_UserCheckForNewAccount;
-         dbQuery->isFireAndForget = true;
-
-         string queryString = "UPDATE user_temp_new_user SET flagged_as_invalid='1' WHERE id='";
-         queryString += columnId;
-         queryString += "';";
-         dbQuery->query = queryString;
-
-         AddQueryToOutput( dbQuery );
-      }
-   }
-
-   // we update the timer to prevent this firing too often. Email can be slow and when it is, we can end up sending two emails 
-   // to the same user which invalidates the first. By resetting the timer here, we put a gap in between the reads and allow the db to 
-   // service the writes and prevent multiple emails.
-   time( &m_newAccountCreationTimer );
-
-   // fix up any weird UUID problems
-   DuplicateUUIDSearch();
-}
-*/
-
 //---------------------------------------------------------------
 
 int      StatusUpdate::CallbackFunction()
@@ -445,25 +292,24 @@ int      StatusUpdate::CallbackFunction()
       time_t currentTime;
       time( &currentTime );
 
-      if( m_newAccountHandler->IsReady() )
+     /* if( m_newAccountHandler->IsReady() )
       {
          ResendEmailToOlderAccounts();
-         //CheckForNewAccounts();
          
          LookForFlaggedAutoCreateAccounts();
          ExpireOldUserAccountRequests();
          Hack();
-         //CheckForResetPassword();
          m_resetPasswordHandler->Update( currentTime );
       }
       
-     
+    
       m_blankUuidHandler->Update( currentTime );
       m_newAccountHandler->Update( currentTime );
-      m_blankUserProfileHandler->Update( currentTime );
-      m_addProductEntryHandler->Update( currentTime );
-      //PreloadLanguageStrings();
-      //PreloadWeblinks();
+      m_blankUserProfileHandler->Update( currentTime );*/
+      if( m_enableAddingUserProducts )
+      {
+         m_addProductEntryHandler->Update( currentTime );
+      }
    }
    return 1;
 }
@@ -632,210 +478,13 @@ bool     StatusUpdate::AddOutputChainData( BasePacket* packet, U32 connectionId 
          {
             delete dbResult;
          }
+         return wasHandled;
       }
-       
    }
-   return true;
+   return false;
 }
 
 //---------------------------------------------------------------
-/*
-void     StatusUpdate::PreloadLanguageStrings()
-{
-   if( m_hasLoadedStringTable == false )
-   {
-      time_t testTimer;
-      time( &testTimer );
-      int timeToTest = 10;
-      if( difftime( testTimer, m_newAccountCreationTimer ) >= timeToTest )// wait until after we launch 10 seconds
-      {
-         m_newAccountCreationTimer = testTimer;// so that we don't check too often
-
-         PacketDbQuery* dbQuery = new PacketDbQuery;
-         dbQuery->id = 0;
-         dbQuery->lookup = QueryType_LoadStrings;
-
-         dbQuery->query = "SELECT * FROM string where category='account' or category='reset_password'";
-         AddQueryToOutput( dbQuery );
-
-         LogMessage( LOG_PRIO_INFO, "Accounts::PreloadLanguageStrings\n" );
-      }
-   }
-}
-
-//---------------------------------------------------------------
-
-void     StatusUpdate::PreloadWeblinks()
-{
-   if( m_hasLoadedWeblinks == false )
-   {
-      time_t testTimer;
-      time( &testTimer );
-      int timeToTest = 10;
-      if( difftime( testTimer, m_newAccountCreationTimer ) >= timeToTest )// wait until after we launch 10 seconds
-      {
-         m_hasLoadedWeblinks = true; // only ever load once.
-         // because this table may not exist, we will set the default here
-
-         m_linkToAccountCreated = "http://accounts.playdekgames.com/account_created.php";
-         m_linkToResetPasswordConfirm = "http://accounts.playdekgames.com/reset_password_confirm.php";
-
-         PacketDbQuery* dbQuery = new PacketDbQuery;
-         dbQuery->id = 0;
-         dbQuery->lookup = QueryType_LoadWeblinks;
-
-         dbQuery->query = "SELECT * FROM config where category='Mber'";
-         AddQueryToOutput( dbQuery );
-
-         LogMessage( LOG_PRIO_INFO, "Accounts::PreloadWeblinks\n" );
-      }
-   }
-}*/
-
-//---------------------------------------------------------------
-/*
-void     StatusUpdate::SaveStrings( const PacketDbQueryResult* dbResult )
-{
-   cout << "strings saved :" << dbResult->bucket.bucket.size() << endl;
-
-   StringTableParser              enigma( dbResult->bucket );
-   StringTableParser::iterator    it = enigma.begin();
-   int count = 0;
-   
-   while( it != enigma.end() )
-   {
-      m_hasLoadedStringTable = true;
-      StringTableParser::row     row = *it++;
-
-      string id =                row[ StringsTable::Column_id ];
-      string stringName =        row[ StringsTable::Column_string ];
-      string replacementstring = row[ StringsTable::Column_replaces ];
-
-      stringhash lookupHash = GenerateUniqueHash( stringName );
-      m_stringsTable.insert( StringTableLookupPair( lookupHash, row ) );
-      count ++;
-      if( count == 53 )
-      {
-         id = id;
-      }
-
-      if( replacementstring.size() )
-      {
-         stringhash replacementHash = GenerateUniqueHash( replacementstring );
-         m_replacemetStringsLookup.insert( ReplacementPair( replacementHash, lookupHash ) );
-      }
-   }
-}
-
-//---------------------------------------------------------------
-
-void     StatusUpdate::HandleWeblinks( const PacketDbQueryResult* dbResult )
-{
-   cout << "config saved :" << dbResult->bucket.bucket.size() << endl;
-
-   ConfigParser              enigma( dbResult->bucket );
-   ConfigParser::iterator    it = enigma.begin();
-
-   string begin = "http://accounts.playdekgames.com";
-   string middle = "";
-   string accountCreated = "account_created.php";
-   string resetPassword = "reset_password_confirm.php";
-
-   string pathToConfirmationEmailFile;
-   string pathToResetPasswordEmailFile;
-   
-   while( it != enigma.end() )
-   {
-      StringTableParser::row     row = *it++;
-
-      string key =          row[ ConfigTable::Column_key ];
-      string value =        row[ ConfigTable::Column_value ];
-
-      if( key == "user_account.web_root" )
-      {
-         begin = value;
-      }
-      else if( key == "user_account.web_subdir" )
-      {
-         middle = value;
-      }
-      else if( key == "user_account.web_account_created" )
-      {
-         accountCreated = value;
-      }
-      else if( key == "user_account.web_reset_password_confirmed" )
-      {
-         resetPassword = value;
-      }
-      else if( key == "user_account.account_created.confirmation_email_path" )
-      {
-         pathToConfirmationEmailFile = value;
-      }
-      else if( key == "user_account.password_reset.reset_email_path" )
-      {
-         pathToResetPasswordEmailFile = value;
-      }
-   }
-
-   //--------------------------------------------------
-   
-   // assemble the path
-   m_linkToAccountCreated = begin;
-   m_linkToResetPasswordConfirm = begin;
-
-   char character = *m_linkToAccountCreated.rbegin();
-
-   if( character != '/' )
-   {
-      m_linkToAccountCreated += "/";
-   }
-   if( middle.size() > 0 )
-   {
-      character = *middle.rbegin();
-      m_linkToAccountCreated += middle;
-      if( character != '/' )
-      {
-         m_linkToAccountCreated += "/";
-      }
-   }
-   if( accountCreated.size() < 3 )
-   {
-      string str = "Config table does not contain a useful value for 'user_account.web_account_created'; db query failed";
-      Log( str );
-   }
-   assert( accountCreated.size() > 2 );// minimal string size
-   m_linkToResetPasswordConfirm = m_linkToAccountCreated;
-   m_linkToAccountCreated += accountCreated;
-   m_linkToResetPasswordConfirm += resetPassword;
-
-   if( pathToConfirmationEmailFile.size() )
-   {
-      m_confirmationEmailTemplate = OpenAndLoadFile( pathToConfirmationEmailFile );
-   }
-   else
-   {
-      cout << "Error email: pathToConfirmationEmailFile not specified" << endl;
-   }
-   if( m_confirmationEmailTemplate.size() == 0 )
-   {
-      cout << "Error email: confirmation email file not found" << endl;
-   }
-
-   if( pathToResetPasswordEmailFile.size() )
-   {
-      m_passwordResetEmailTemplate = OpenAndLoadFile( pathToResetPasswordEmailFile );
-   }
-   else
-   {
-      cout << "Error email: pathToResetPasswordEmailFile not specified" << endl;
-   }
-   if( m_passwordResetEmailTemplate.size() == 0 )
-   {
-      cout << "Error email: reset password email file not found" << endl;
-   }
-}
-
-//---------------------------------------------------------------*/
 
 void     StatusUpdate::HandleAutoCreateAccounts( const PacketDbQueryResult* dbResult )
 {
@@ -936,123 +585,7 @@ void     StatusUpdate::HandleAutoCreateAccounts( const PacketDbQueryResult* dbRe
 }
 
 //---------------------------------------------------------------
-/*
-void     StatusUpdate::CheckForNewAccounts()
-{
-   if( isMailServiceEnabled == false )
-      return;
 
-   time_t testTimer;
-   time( &testTimer );
-
-   if( difftime( testTimer, m_newAccountCreationTimer ) >= m_newAccountTimeoutSeconds ) /// only check once every 55 seconds
-   {
-      //cout << "CheckForNewAccounts..." << endl;
-      m_newAccountCreationTimer = testTimer;
-
-      PacketDbQuery* dbQuery = new PacketDbQuery;
-      dbQuery->id = 0;
-      dbQuery->lookup = QueryType_UserCheckForNewAccount;
-      //dbQuery->isFireAndForget = false;
-
-      dbQuery->query = "SELECT * FROM user_temp_new_user WHERE was_email_sent='0' AND flagged_as_invalid='0'";
-
-      AddQueryToOutput( dbQuery );
-
-      //LogMessage( LOG_PRIO_INFO, "Accounts::CheckForNewAccounts\n" );
-   }
-}
-*/
-
-//---------------------------------------------------------------
-/*
-void     StatusUpdate::CheckForResetPassword()
-{
-   if( isMailServiceEnabled == false )
-      return;
-
-   time_t testTimer;
-   time( &testTimer );
-
-   if( difftime( testTimer, m_resetPasswordEmailTimer ) >= m_resetPasswordEmailTimeoutSeconds ) 
-   {
-      PacketDbQuery* dbQuery = new PacketDbQuery;
-      dbQuery->id = 0;
-      dbQuery->lookup = QueryType_ResetPasswords;
-
-      dbQuery->query = "SELECT reset_password_keys.id, users.user_email, users.language_id, reset_password_keys.reset_key FROM users JOIN reset_password_keys ON reset_password_keys.user_account_uuid = users.uuid WHERE reset_password_keys.was_email_sent=0";
-
-      AddQueryToOutput( dbQuery );
-
-      //LogMessage( LOG_PRIO_INFO, "Accounts::CheckForNewAccounts\n" );
-   }
-}*/
-
-
-//---------------------------------------------------------------
-/*
-void     StatusUpdate::HandleResetPassword( const PacketDbQueryResult* dbResult )
-{
-   //cout << "HandleNewAccounts..." << endl;
-   //LogMessage( LOG_PRIO_INFO, "HandleNewAccounts...\n" );
-   PasswordResetParser              enigma( dbResult->bucket );
-   PasswordResetParser::iterator    it = enigma.begin();
-   
-   while( it != enigma.end() )
-   {
-      PasswordResetParser::row      row = *it++;
-      string columnId =             row[ EmailAddressesOfPasswordsToResetTable::Column_id ];
-      string email =                row[ EmailAddressesOfPasswordsToResetTable::Column_email ];
-      string languageString =       row[ EmailAddressesOfPasswordsToResetTable::Column_language_id ];
-      string Column_reset_key =     row[ EmailAddressesOfPasswordsToResetTable::Column_reset_key ];
-      
-      int languageId = 1;// english
-      if( languageString != "NULL" )
-      {
-         languageId = boost::lexical_cast<int>( languageString );
-      }
-
-      if( IsValidEmailAddress( email ) )
-      {
-         string subjectText = GetString( "email.reset_password.subject", languageId ); //"Confirmation email";
-         string bodyText = GetString( "email.reset_password.body_text", languageId );//"Thank you for signing up with Playdek. Click this link to confirm your new account.";
-
-         string linkPath = m_linkToResetPasswordConfirm;
-         linkPath += "?key=";
-         linkPath += Column_reset_key;
-
-         if( m_passwordResetEmailTemplate.size() )
-         {
-            string bodyText = m_passwordResetEmailTemplate;
-            map< string, string > specialStrings;
-            specialStrings.insert( pair<string, string> ( "link-to-confirmation", linkPath ) );
-            ReplaceAllLookupStrings( bodyText, languageId, specialStrings );
-         }
-         else
-         {
-            bodyText += "<a href='";
-            bodyText += linkPath;
-            bodyText += "'>Playdek.com</a>";
-         }
-
-         // update playdek.user_temp_new_user set was_email_sent=was_email_sent+1, lookup_key='lkjasdfhlkjhadfs' where id='4' ;
-         SendConfirmationEmail( email.c_str(), resetPasswordEmailAddress, mailServer, bodyText.c_str(), subjectText.c_str(), "Playdek.com", linkPath.c_str() );
-
-         PacketDbQuery* dbQuery = new PacketDbQuery;
-         dbQuery->id = 0;
-         dbQuery->lookup = QueryType_ResetPasswords;
-
-         dbQuery->query = "UPDATE reset_password_keys SET was_email_sent=1 WHERE reset_key='";
-         dbQuery->query += Column_reset_key;
-         dbQuery->query += "'";
-
-         AddQueryToOutput( dbQuery );
-      }
-   }
-
-   time( &m_resetPasswordEmailTimer );
-}
-*/
 //---------------------------------------------------------------
 
 void     StatusUpdate::LookForFlaggedAutoCreateAccounts()

@@ -34,6 +34,7 @@ public:
       QueryType_UserCheckForNewAccount,
       QueryType_UserFindBlankUUID,
       QueryType_UserFindBlankUserProfile,
+      QueryType_UserUpdateNewAccountKeyBeforeSendingEmail,
       QueryType_LoadStrings,
       QueryType_LoadWeblinks,
       QueryType_AutoCreateUsers,
@@ -45,7 +46,8 @@ public:
       QueryType_ResetPasswords,
       QueryType_DuplicateUUIDSearch,
       QueryType_LoadProductIds,
-      QueryType_FindEarliestPlayDateForProduct,
+      //QueryType_FindEarliestPlayDateForProduct,
+      QueryType_DoesUserHaveProductPurchase,
       QueryType_ProductEntryCreateBasedOnPlayHistory,
       QueryType_Hack
    };
@@ -57,6 +59,8 @@ public:
    bool     AddInputChainData( BasePacket* packet, U32 connectionId );
    bool     AddOutputChainData( BasePacket* packet, U32 connectionId );
    void     DuplicateUUIDSearch();
+
+   void     EnableAddingUserProducts( bool enable ) { m_enableAddingUserProducts = enable; }
    
 
 private:
@@ -108,6 +112,8 @@ private:
 
    time_t   m_expireOldAccountRequestsTimer;
    int      m_expireOldAccountRequestsTimeoutSeconds;
+
+   bool     m_enableAddingUserProducts;
 
    //time_t   m_resetPasswordEmailTimer;
    //int      m_resetPasswordEmailTimeoutSeconds;

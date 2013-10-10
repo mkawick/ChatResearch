@@ -25,6 +25,15 @@ enum LanguageList // corresponds to the db-language table
    LanguageList_chinese
 };
 
+struct EmailToSend
+{
+   string userLookupKey;
+   string email;
+   string accountEmailAddress;
+   string bodyText;
+   string subjectText;
+   string linkPath;
+};
 
 ///////////////////////////////////////////////////////////////////////////////////////////
 
@@ -52,6 +61,8 @@ protected:
    void     PreloadLanguageStrings();
    void     SaveStrings( const PacketDbQueryResult* dbResult );
    void     CheckForNewAccounts();
+
+   void     PrepToSendUserEmail( const PacketDbQueryResult* dbResult );
    
 
    BlankUUIDQueryHandler* m_blankUuidHandler;
@@ -68,6 +79,12 @@ protected:
    typedef map< stringhash, vector< string > >    StringTableLookup;
    typedef pair< stringhash, vector< string > >   StringTableLookupPair;
    typedef pair< stringhash, stringhash >          ReplacementPair;
+
+   typedef map< string, EmailToSend >              EmailLookupType;
+   typedef pair< string, EmailToSend >             EmailLookupPair;
+   typedef map< string, EmailToSend >::iterator    EmailLookupIterator;
+
+   EmailLookupType      m_emailLookup;
    
    void     ReplaceAllLookupStrings( string& bodyText, int languageId,  map< string, string >& specialStrings );
 

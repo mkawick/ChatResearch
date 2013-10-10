@@ -870,13 +870,25 @@ void     ConnectionToUser:: PackUserProfileRequestAndSendToClient( U32 connectio
    response->userUuid =          userUuid;
    response->email =             email;
    response->lastLoginTime =     lastLoginTime;
-   response->loggedOutTime =     GetDateInUTC( loggedOutTime );
+   string lastLoggetOut = GetDateInUTC( loggedOutTime );
+   response->loggedOutTime =     lastLoggetOut;
 
    response->adminLevel =        adminLevel;
    response->isActive =          isActive;
    response->showWinLossRecord = showWinLossRecord;
    response->marketingOptOut =   marketingOptOut;
    response->showGenderProfile = showGenderProfile;
+
+   response->profileKeyValues.insert( "name", userName );
+   response->profileKeyValues.insert( "uuid", userUuid );
+   response->profileKeyValues.insert( "email", email );
+   response->profileKeyValues.insert( "last_login_time", lastLoginTime );
+   response->profileKeyValues.insert( "last_logget_out", lastLoggetOut );
+   response->profileKeyValues.insert( "admin_level", boost::lexical_cast< string >( adminLevel ) );
+   response->profileKeyValues.insert( "is_active", boost::lexical_cast< string >( isActive ? 1:0 ) );
+   response->profileKeyValues.insert( "show_win_loss_record", boost::lexical_cast< string >( showWinLossRecord  ? 1:0 ) );
+   response->profileKeyValues.insert( "marketing_opt_out", boost::lexical_cast< string >( marketingOptOut ? 1:0 ) );
+   response->profileKeyValues.insert( "showGender_profile", boost::lexical_cast< string >( showGenderProfile ? 1:0 ) );
 
    userManager->SendPacketToGateway( response, connectionId );
 }

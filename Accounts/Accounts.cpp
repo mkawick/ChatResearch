@@ -63,6 +63,8 @@ int main( int argc, const char* argv[] )
    string agricolaPortString = "23996";
    string agricolaIpAddressString = "localhost";
 
+   string enableUserProducts = "false";
+
    //---------------------------------------
 
    parser.FindValue( "chat.port", chatPortString );
@@ -70,6 +72,8 @@ int main( int argc, const char* argv[] )
 
    parser.FindValue( "agricola.address", agricolaPortString );
    parser.FindValue( "agricola.port", agricolaIpAddressString );
+
+   parser.FindValue( "user.products_update", enableUserProducts );
 
 
    string dbPortString = "16384";
@@ -85,6 +89,7 @@ int main( int argc, const char* argv[] )
    parser.FindValue( "db.schema", dbSchema );
 
 
+   bool enableAddingUseProducts = false;
    int chatPort = 9602, dbPortAddress = 3306, agricolaPort = 23996;
    try 
    {
@@ -92,6 +97,11 @@ int main( int argc, const char* argv[] )
        chatPort = boost::lexical_cast<int>( chatPortString );
        agricolaPort = boost::lexical_cast<int>( agricolaPortString );
        dbPortAddress = boost::lexical_cast<int>( dbPortString );
+
+       if( enableUserProducts.size() )
+       {
+          enableAddingUseProducts = ( enableUserProducts == "true" || enableUserProducts == "1" );
+       }
    } 
    catch( boost::bad_lexical_cast const& ) 
    {
@@ -130,6 +140,8 @@ int main( int argc, const char* argv[] )
 
    StatusUpdate* server = new StatusUpdate( serverName, serverId );
    server->AddOutputChain( delta );
+
+   server->EnableAddingUserProducts( enableAddingUseProducts );
    
    //server->Init();
    server->Resume();
