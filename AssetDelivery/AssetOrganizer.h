@@ -20,6 +20,7 @@ struct AssetDefinition
    string         hash;
 
    vector< string > filters;
+   vector< string > gates;
 
    U8*            fileData;
    int            fileSize;

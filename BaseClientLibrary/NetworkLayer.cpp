@@ -1225,6 +1225,7 @@ bool  NetworkLayer::HandlePacketReceived( BasePacket* packetIn )
                   while( profileIt != kvVector.end() )
                   {
                      profileKeyValues.insert( pair< string, string >( profileIt->key, profileIt->value ) );
+                     profileIt++;
                   }
 
                   for( list< UserNetworkEventNotifier* >::iterator it = m_callbacks.begin(); it != m_callbacks.end(); ++it )

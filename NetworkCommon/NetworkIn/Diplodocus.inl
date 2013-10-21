@@ -177,40 +177,6 @@ bool  Diplodocus< InputChain, OutputChain >::PushInputEvent( ThreadEvent* te )
 //------------------------------------------------------------------------------
 
 template< typename InputChain, typename OutputChain >
-void  Diplodocus< InputChain, OutputChain >::NotifyFinishedRemoving( InputChainType* connection )
-{
-   //InputChainType* connection = static_cast<InputChainType*>( obj );
-   if( connection == NULL )
-      return;
-
-   LockMutex();
-   U32 id = connection->GetSocketId();
-   ClientMapIterator it = m_connectedClients.find( id );
-   if( it == m_connectedClients.end() )
-   {
-      it = m_connectedClients.find( connection->GetChainedId() );
-   }
-      
-   if( it != m_connectedClients.end() )
-   {
-      m_connectedClients.erase( it );
-   }
-
-   int num = m_clientsNeedingUpdate.size();
-   for( int i=0; i<num; i++ )
-   {
-      if( m_clientsNeedingUpdate[i] == id )
-      {
-         m_clientsNeedingUpdate.erase( m_clientsNeedingUpdate.begin() + i );
-         break;
-      }
-   }
-   UnlockMutex();
-}
-
-//------------------------------------------------------------------------------
-
-template< typename InputChain, typename OutputChain >
 bool  Diplodocus< InputChain, OutputChain >::AddInputChainData( BasePacket* t, U32 filingData )// this should be performed by the derived class
 {
    /*ClientMapIterator foundItem = m_connectedClients.find( filingData );
@@ -296,8 +262,11 @@ Diplodocus< InputChain, OutputChain >::Diplodocus( string serverName, U32 server
                                     m_serverType( type ),
                                     
                                     m_connectionIdGateway( 0 ),
-                                    m_serverName( serverName )
+                                    m_serverName( serverName ),
+                                    m_numTotalConnections( 0 )
 {
+   time( &m_timeOfLastTitleUpdate );
+   m_uptime = m_timeOfLastTitleUpdate;
 }
 
 //------------------------------------------------------------------------------
@@ -358,6 +327,7 @@ void	Diplodocus< InputChain, OutputChain >::AddClientConnection( InputChainType*
    client->RegisterToReceiveNetworkTraffic();
 
    InputConnected( client );
+   m_numTotalConnections ++;
 }
 
 //---------------------------------------------------------------
@@ -568,6 +538,8 @@ void	Diplodocus< InputChain, OutputChain >::UpdateAllConnections()
 template< typename InputChain, typename OutputChain >
 void     Diplodocus< InputChain, OutputChain >::SendServerIdentification()
 {
+   UpdateConsoleWindow( m_timeOfLastTitleUpdate, m_uptime, m_numTotalConnections, m_connectedClients.size(), m_listeningPort, m_serverName );
+
    if( m_listOfOutputsNeedingToSendServerId.size() )
    {
       LockMutex();
@@ -597,9 +569,47 @@ void     Diplodocus< InputChain, OutputChain >::SendServerIdentification()
 template< typename InputChain, typename OutputChain >
 void  Diplodocus< InputChain, OutputChain >::OutputConnected( IChainedInterface * chainedOutput )
 {
+   if( chainedOutput == NULL )
+      return;
+
    LockMutex();
    ChainType* ptr = static_cast< ChainType* >( chainedOutput );
    m_listOfOutputsNeedingToSendServerId.push_back( ptr );
+   UnlockMutex();
+}
+
+//------------------------------------------------------------------------------
+
+template< typename InputChain, typename OutputChain >
+void  Diplodocus< InputChain, OutputChain >::NotifyFinishedRemoving( IChainedInterface* chainedOutput )
+{
+   if( chainedOutput == NULL )
+      return;
+
+   InputChainType* connection = static_cast<InputChainType*>( chainedOutput );
+
+   LockMutex();
+   U32 id = connection->GetSocketId();
+   ClientMapIterator it = m_connectedClients.find( id );
+   if( it == m_connectedClients.end() )
+   {
+      it = m_connectedClients.find( connection->GetChainedId() );
+   }
+      
+   if( it != m_connectedClients.end() )
+   {
+      m_connectedClients.erase( it );
+   }
+
+   int num = m_clientsNeedingUpdate.size();
+   for( int i=0; i<num; i++ )
+   {
+      if( m_clientsNeedingUpdate[i] == id )
+      {
+         m_clientsNeedingUpdate.erase( m_clientsNeedingUpdate.begin() + i );
+         break;
+      }
+   }
    UnlockMutex();
 }
 

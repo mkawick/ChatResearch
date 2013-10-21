@@ -36,6 +36,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Tournament", "Tournament\To
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "PacketLibrary", "PacketLibrary\PacketLibrary.vcproj", "{78928F69-C7AC-44BB-B4E1-BC050C188EDE}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Purchase", "Purchase\Purchase.vcproj", "{E57DF4AD-3F29-423F-9D2A-BC8F3CE52B19}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Win32 = Debug|Win32
@@ -121,6 +123,12 @@ Global
 		{78928F69-C7AC-44BB-B4E1-BC050C188EDE}.DebugForCLR|Win32.Build.0 = DebugForCLR|Win32
 		{78928F69-C7AC-44BB-B4E1-BC050C188EDE}.Release|Win32.ActiveCfg = Release|Win32
 		{78928F69-C7AC-44BB-B4E1-BC050C188EDE}.Release|Win32.Build.0 = Release|Win32
+		{E57DF4AD-3F29-423F-9D2A-BC8F3CE52B19}.Debug|Win32.ActiveCfg = Debug|Win32
+		{E57DF4AD-3F29-423F-9D2A-BC8F3CE52B19}.Debug|Win32.Build.0 = Debug|Win32
+		{E57DF4AD-3F29-423F-9D2A-BC8F3CE52B19}.DebugForCLR|Win32.ActiveCfg = Debug|Win32
+		{E57DF4AD-3F29-423F-9D2A-BC8F3CE52B19}.DebugForCLR|Win32.Build.0 = Debug|Win32
+		{E57DF4AD-3F29-423F-9D2A-BC8F3CE52B19}.Release|Win32.ActiveCfg = Release|Win32
+		{E57DF4AD-3F29-423F-9D2A-BC8F3CE52B19}.Release|Win32.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

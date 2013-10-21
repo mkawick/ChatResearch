@@ -98,6 +98,7 @@ CREATE TABLE `user_profile` (
   `admin_level` tinyint(1) DEFAULT '0',
   `show_win_loss_record` tinyint(1) DEFAULT '1',
   `time_zone` tinyint(1) DEFAULT '0',
+  `account_create_product_id` int(11) DEFAULT '0',
   PRIMARY KEY (`user_id`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8$$
 
@@ -129,7 +130,7 @@ CREATE TABLE `user_temp_new_user` (
 delimiter $$
 
 CREATE TABLE `user_join_product` (
-  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `id` int(4) NOT NULL AUTO_INCREMENT,
   `user_uuid` varchar(16) DEFAULT NULL,
   `product_id` varchar(16) DEFAULT NULL,
   `purchase_date` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -138,9 +139,26 @@ CREATE TABLE `user_join_product` (
   `num_purchased` int(11) DEFAULT '1',
   `admin_provided` varchar(16) DEFAULT '0',
   `admin_notes` varchar(45) DEFAULT NULL,
-  `retail_campaign` int(11) DEFAULT NULL,
+  `retail_campaign` int(4) DEFAULT NULL,
+  `exchange_rate_id` int(4) DEFAULT '0',
   PRIMARY KEY (`id`)
-) ENGINE=MyISAM AUTO_INCREMENT=484 DEFAULT CHARSET=latin1$$
+) ENGINE=MyISAM AUTO_INCREMENT=848 DEFAULT CHARSET=latin1$$
+
+delimiter $$
+
+CREATE TABLE `product_exchange_rate` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `product_source_id` int(11) DEFAULT NULL,
+  `product_dest_id` int(11) DEFAULT NULL,
+  `source_count` int(11) DEFAULT '1',
+  `dest_count` int(11) DEFAULT '1',
+  `begin_date` datetime DEFAULT NULL,
+  `end_time` datetime DEFAULT NULL,
+  `notes` varchar(255) DEFAULT NULL,
+  `created_by` varchar(45) DEFAULT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=MyISAM DEFAULT CHARSET=utf8$$
+
 
 delimiter $$
 

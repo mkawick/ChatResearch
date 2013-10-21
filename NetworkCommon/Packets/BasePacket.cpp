@@ -44,6 +44,14 @@ bool  StringBucket::SerializeOut( U8* data, int& bufferOffset ) const
 
 ///////////////////////////////////////////////////////////////
 
+
+#ifdef _MEMLEAK_TESTING_
+DynamicDataBucket::~DynamicDataBucket()
+{
+   bucket.clear();
+}
+#endif
+
 bool  DynamicDataBucket::SerializeIn( const U8* data, int& bufferOffset )
 { 
    int numRows = 0, numColumns = 0;
@@ -250,6 +258,10 @@ bool  PacketGroupsList::SerializeOut( U8* data, int& bufferOffset ) const
 
 ///////////////////////////////////////////////////////////////
 
+PacketChatChannelList::~PacketChatChannelList()
+{
+   channelList.clear();
+}
 
 bool  PacketChatChannelList::SerializeIn( const U8* data, int& bufferOffset )
 {

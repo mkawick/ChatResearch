@@ -369,6 +369,14 @@
 					>
 				</File>
 				<File
+					RelativePath="..\NetworkCommon\Utils\OsLevelUtils.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\NetworkCommon\Utils\OsLevelUtils.h"
+					>
+				</File>
+				<File
 					RelativePath="..\NetworkCommon\Utils\TableWrapper.cpp"
 					>
 				</File>

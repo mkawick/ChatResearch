@@ -52,6 +52,10 @@ private:
    ConnectionIdQueue          m_connectionsNeedingUpdate;
 
    PacketQueue                m_packetsToBeSentInternally;
+
+  /* time_t                     m_timeOfLastTitleUpdate;
+   time_t                     m_uptime;
+   int                        m_totalConnections;*/
 };
 
 //-----------------------------------------------------------------------------

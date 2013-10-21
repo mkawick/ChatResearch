@@ -182,7 +182,7 @@ bool     NewAccountQueryHandler::HandleResult( const PacketDbQueryResult* dbResu
 
 void     NewAccountQueryHandler::PrepToSendUserEmail( const PacketDbQueryResult* dbResult )
 {
-    NewUsersTable              enigma( dbResult->bucket );
+   NewUsersTable              enigma( dbResult->bucket );
    NewUsersTable::iterator    it = enigma.begin();
    
    while( it != enigma.end() )
@@ -202,15 +202,6 @@ void     NewAccountQueryHandler::PrepToSendUserEmail( const PacketDbQueryResult*
 
       LogMessage( LOG_PRIO_INFO, message.c_str() );
       cout << message << endl;
-
-      if( email.size() == 0 )// we can't send an email...
-      {
-         string message = "User does not have a valid email: ";
-         message += name;
-         LogMessage( LOG_PRIO_WARN, message.c_str() );
-         cout << endl << message << endl;
-         continue;
-      }
 
       if( IsValidEmailAddress( email ) )
       {
@@ -334,10 +325,10 @@ void     NewAccountQueryHandler::SaveStrings( const PacketDbQueryResult* dbResul
       stringhash lookupHash = GenerateUniqueHash( stringName );
       m_stringsTable.insert( StringTableLookupPair( lookupHash, row ) );
       count ++;
-      if( count == 53 )
+     /* if( count == 53 )
       {
          id = id;
-      }
+      }*/
 
       if( replacementstring.size() )
       {

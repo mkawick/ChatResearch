@@ -166,7 +166,9 @@ U64   GetDateFromString( const char* UTCFormatted )
    sscanf( UTCFormatted, "%d-%d-%d %d:%d:%d", &nowtm->tm_year, &nowtm->tm_mon, &nowtm->tm_wday,  
       &nowtm->tm_hour, &nowtm->tm_min, &nowtm->tm_sec );
 
-   nowtm->tm_year -= 1898;
+   // based on this http://www.cplusplus.com/reference/ctime/mktime/
+   nowtm->tm_year -= 1900;
+   nowtm->tm_mon -= 1;
 
    return mktime( nowtm );
 }
@@ -373,4 +375,12 @@ string  ConvertStringToLower( const string& str )
    string retString = str;
    std::transform( retString.begin(), retString.end(), retString.begin(), ::tolower );
    return retString;
+}
+
+string itos(int n)
+{
+   const int max_size = std::numeric_limits<int>::digits10 + 1 /*sign*/ + 1 /*0-terminator*/;
+   char buffer[max_size] = {0};
+   sprintf(buffer, "%d", n);
+   return string(buffer);
 }

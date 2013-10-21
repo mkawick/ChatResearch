@@ -77,12 +77,14 @@ struct ConnectionToUser
    string                  userUuid;
    string                  loginKey;
    string                  lastLoginTime;
+   string                  lastLogoutTime;
 
    LoginStatus             status;
    U8                      gameProductId;
    U32                     connectionId;
    
    time_t                  loggedOutTime;
+   bool                    isLoggingOut;
 
    int                     languageId;
    int                     adminLevel;

@@ -34,6 +34,7 @@ std::string    Reduce(const std::string& str,
 unsigned int split( const std::string& txt, std::vector< std::string >& strs, char ch = ' ');
 
 std::string    OpenAndLoadFile( const std::string& path );
+std::string    itos(int n);
 
 #if PLATFORM != PLATFORM_WINDOWS
 int kbhit();

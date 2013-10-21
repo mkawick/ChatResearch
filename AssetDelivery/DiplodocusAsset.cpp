@@ -386,6 +386,7 @@ int      DiplodocusAsset::CallbackFunction()
       m_dynamicAssets->Update();
    }
 
+   UpdateConsoleWindow( m_timeOfLastTitleUpdate, m_uptime, m_numTotalConnections, m_connectedClients.size(), m_listeningPort, m_serverName );
    /*ContinueInitialization();*/
    // check for new friend requests and send a small list of notifications
 

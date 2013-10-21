@@ -39,6 +39,7 @@ public:
       QueryType_LoadWeblinks,
       QueryType_AutoCreateUsers,
       QueryType_AutoCreateUsersInsertOrUpdate,
+      QueryType_GetNewUserRecordAndCreateProfileFromIt,
       QueryType_DeleteTempNewUserRecord,
       QueryType_ResendEmailToOlderAccounts,
       QueryType_MoveOlderAccountsRequest,
@@ -49,7 +50,8 @@ public:
       //QueryType_FindEarliestPlayDateForProduct,
       QueryType_DoesUserHaveProductPurchase,
       QueryType_ProductEntryCreateBasedOnPlayHistory,
-      QueryType_Hack
+      QueryType_Hack,
+      QueryType_AccountAdminSettings
    };
 
 public:
@@ -71,33 +73,9 @@ private:
     //---------------------------------------------------------------
 
    
-
-
-   /// the following is all related to email services
- /*  void     PreloadLanguageStrings();
-   void     SaveStrings( const PacketDbQueryResult* dbResult );
-   string   GetString( const string& stringName, int languageId );
-
-
-   bool                 m_hasLoadedStringTable;
-   StringTableLookup    m_stringsTable;
-   map< stringhash, stringhash > m_replacemetStringsLookup;
-   typedef pair< stringhash, stringhash > ReplacementPair;
-   string   m_pathToConfirmationEmailFile;
-   string   m_confirmationEmailTemplate;
-   string   m_passwordResetEmailTemplate;
-   void     ReplaceAllLookupStrings( string& bodyText, int languageId,  map< string, string >& specialStrings );
-
-   void     PreloadWeblinks();
-   void     HandleWeblinks( const PacketDbQueryResult* dbResult );
-   string   m_linkToAccountCreated;
-   string   m_linkToResetPasswordConfirm;
-   bool     m_hasLoadedWeblinks;*/
-
-   // TO BE REMOVED (once the login server does not rely on other services updating the new account creation)
-
-   //void     CheckForNewAccounts();
-   //void     HandleNewAccounts( const PacketDbQueryResult* dbResult );
+   void     RequestAdminSettings();
+   void     InsertNewUserProfile( const PacketDbQueryResult* dbResult );
+   void     HandleAdminSettings( const PacketDbQueryResult* dbResult );
 
    void     LookForFlaggedAutoCreateAccounts();
    void     HandleAutoCreateAccounts( const PacketDbQueryResult* dbResult );
@@ -114,6 +92,9 @@ private:
    int      m_expireOldAccountRequestsTimeoutSeconds;
 
    bool     m_enableAddingUserProducts;
+   bool     m_hasRequestedAdminSettings;
+   bool     m_isWaitingForAdminSettings;
+   bool     m_autoCreateUsersInProcess;
 
    //time_t   m_resetPasswordEmailTimer;
    //int      m_resetPasswordEmailTimeoutSeconds;
@@ -132,11 +113,11 @@ private:
  /*  void     CheckForResetPassword();
    void     HandleResetPassword( const PacketDbQueryResult* dbResult );*/
 
-   BlankUUIDQueryHandler* m_blankUuidHandler;
-   BlankUserProfileHandler* m_blankUserProfileHandler;
-   NewAccountQueryHandler* m_newAccountHandler;
-   ProductEntryCreateBasedOnPlayHistory* m_addProductEntryHandler;
-   ResetPasswordQueryHandler* m_resetPasswordHandler;
+   BlankUUIDQueryHandler*                 m_blankUuidHandler;
+   BlankUserProfileHandler*               m_blankUserProfileHandler;
+   NewAccountQueryHandler*                m_newAccountHandler;
+   ProductEntryCreateBasedOnPlayHistory*  m_addProductEntryHandler;
+   ResetPasswordQueryHandler*             m_resetPasswordHandler;
 
    static const U32 timeoutBlankUserProfileTimer = 60;
    static const U32 timeoutBlankUUIDTimer = 60;

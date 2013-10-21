@@ -31,6 +31,7 @@ ProductEntryCreateBasedOnPlayHistory::ProductEntryCreateBasedOnPlayHistory( U32 
                                        m_hasPendingDbResult( false ), 
                                        m_hasCompletedTryingEveryProduct( false ),
                                        m_currentProductIndex( -1 ),
+                                       m_startingProductId( -1 ),
                                        m_currentUserIndex( -1 )
 {
    /*
@@ -60,8 +61,13 @@ order by player_id
 limit 100
 
    */
-   
-   
+}
+
+//---------------------------------------------------------------
+
+void     ProductEntryCreateBasedOnPlayHistory::SetProductIdStart( int productId )
+{
+   m_startingProductId = productId;
 }
 
 //---------------------------------------------------------------
@@ -73,21 +79,8 @@ void     ProductEntryCreateBasedOnPlayHistory::Update( time_t currentTime )
 
 //---------------------------------------------------------------
 
-void     ProductEntryCreateBasedOnPlayHistory::SubmitQuery()
+void     ProductEntryCreateBasedOnPlayHistory::UpdateProductIndex()
 {
-   if( m_hasLoadedAllProducts == false )
-   {
-      if( m_hasRequestedAllProducts == false )
-      {
-         RequestProducts();
-         m_hasRequestedAllProducts = true;
-      }
-      return;
-   }
-
-   if( m_listOfQueries.size() < 1 )// no queries
-      return;
-
    if( m_currentProductIndex < 0 || m_currentProductIndex >= (int)m_listOfQueries.size() )
    {
       if( m_currentProductIndex >= (int)m_listOfQueries.size() )
@@ -98,7 +91,8 @@ void     ProductEntryCreateBasedOnPlayHistory::SubmitQuery()
       m_currentProductIndex = 0;
    }
 
-   do{// find a valid one
+   do
+   {// find a valid one
       if( m_listOfQueries[ m_currentProductIndex ].productUuid == "" )
       {
          m_currentProductIndex++;
@@ -115,6 +109,26 @@ void     ProductEntryCreateBasedOnPlayHistory::SubmitQuery()
       cout << "ProductEntryCreateBasedOnPlayHistory:: m_currentProductIndex too large for the array it's indexing" << endl;
       assert( m_currentProductIndex < (int)m_listOfQueries.size() );
    }
+}
+
+//---------------------------------------------------------------
+
+void     ProductEntryCreateBasedOnPlayHistory::SubmitQuery()
+{
+  if( m_hasLoadedAllProducts == false )
+   {
+      if( m_hasRequestedAllProducts == false )
+      {
+         RequestProducts();
+         m_hasRequestedAllProducts = true;
+      }
+      return;
+   }
+
+   if( m_listOfQueries.size() < 1 )// no queries
+      return;
+
+   UpdateProductIndex();
 
    if( m_listOfUsersQueryingUpdate.size() > 0 || 
       m_listOfUsersAwaitingQueryResult.size() > 0 )
@@ -123,22 +137,61 @@ void     ProductEntryCreateBasedOnPlayHistory::SubmitQuery()
    }
    else
    {
-      char numBuffer[20];
-
-      itoa( m_currentUserIndex, numBuffer, 10 );
-
-      PacketDbQuery* dbQuery = new PacketDbQuery;
-      dbQuery->id = 0;
-      dbQuery->lookup = m_queryType;
-      dbQuery->meta = boost::lexical_cast< string >( m_currentProductIndex );
-      dbQuery->query = m_listOfQueries[m_currentProductIndex].queryToRun;
-
-      boost::replace_first( dbQuery->query, "%s", numBuffer );
-
-      m_parent->AddQueryToOutput( dbQuery );
+      SubmitRequestForNextUser();
    }
+}
+
+//---------------------------------------------------------------
+
+void     ProductEntryCreateBasedOnPlayHistory::SubmitRequestForNextUser()
+{
+   string numBuffer = itos( m_currentUserIndex );
+
+   PacketDbQuery* dbQuery = new PacketDbQuery;
+   dbQuery->id =        0;
+   dbQuery->lookup =    m_queryType;
+   dbQuery->meta =      boost::lexical_cast< string >( m_currentProductIndex );
+   dbQuery->query =     m_listOfQueries[m_currentProductIndex].queryToRun;
+   boost::replace_first( dbQuery->query, "%s", numBuffer );
+
+   m_parent->AddQueryToOutput( dbQuery );
 
    cout << "ProductEntryCreateBasedOnPlayHistory: looking for users who have played but have no purchase record" << endl;
+}
+
+//---------------------------------------------------------------
+
+void     ProductEntryCreateBasedOnPlayHistory::WriteAdminValuesToDb()
+{
+   int productId = m_listOfQueries[ m_currentProductIndex ].productId;
+   string numBuffer = itos( productId );
+
+   string query = "UPDATE playdek.admin_account SET admin_account.value='%s' WHERE admin_account.key='play_history_product_id'";
+   boost::replace_first( query, "%s", numBuffer );
+
+   PacketDbQuery* dbQuery = new PacketDbQuery;
+   dbQuery->id =     0;
+   dbQuery->lookup = StatusUpdate::QueryType_AccountAdminSettings;
+   
+   dbQuery->query =  query;
+   dbQuery->isFireAndForget = true;
+
+   m_parent->AddQueryToOutput( dbQuery );
+
+   // user
+   numBuffer = itos( m_currentUserIndex );
+   query = "UPDATE playdek.admin_account SET admin_account.value='%s' WHERE admin_account.key='play_history_user_id'";
+   boost::replace_first( query, "%s", numBuffer );
+
+   dbQuery = new PacketDbQuery;
+   dbQuery->id =     0;
+   dbQuery->lookup = StatusUpdate::QueryType_AccountAdminSettings;
+   
+   dbQuery->query =  query;
+   dbQuery->isFireAndForget = true;  
+   m_parent->AddQueryToOutput( dbQuery );
+
+   cout << "Records updated (game index : " << productId << "), (user index: " << m_currentUserIndex << ")" << endl;
 }
 
 //---------------------------------------------------------------
@@ -153,51 +206,6 @@ void     ProductEntryCreateBasedOnPlayHistory::RequestProducts()
    m_parent->AddQueryToOutput( dbQuery );
    m_hasPendingDbResult = true;
 }
-
-//---------------------------------------------------------------
-
-void     ProductEntryCreateBasedOnPlayHistory:: SetupQueryForUserBoughtProductBasedOnFirstDatePlayed( U32 user_id, const string& userUuid, const string& userCreationDate, const string& productUuid )
-{
-  /* QueryPerProduct qpg;
-   bool result = FindQueryPerProduct( productUuid, qpg );
-   if( result == false )
-   {
-      cout << "ProductEntryCreateBasedOnPlayHistory:: could not find product... FindQueryPerProduct " << endl;
-      assert( 0 );
-   }
-
-   string productName = FindProductName( qpg.productId );
-   string playersTable = "players_";
-   playersTable += productName;
-   string gamesTable = "games_";
-   gamesTable += productName;
-
-   string query = "SELECT users.uuid, min(creation_time) FROM ";
-   query += playersTable;
-   query += " JOIN ";
-   query += gamesTable;
-   query += " ON ";
-   query += playersTable;
-   query += ".game_id=";
-   query += gamesTable;
-   query += ".game_id JOIN users ON users.user_id=";
-   query += playersTable;
-   query += ".user_id WHERE users.user_id=";
-   query += boost::lexical_cast< string >( user_id );
-   query += " GROUP BY users.user_id";
-
-
-   PacketDbQuery* dbQuery = new PacketDbQuery;
-   dbQuery->id = 0;
-   dbQuery->lookup = StatusUpdate::QueryType_FindEarliestPlayDateForProduct;
-   dbQuery->meta = productUuid;
-   dbQuery->query = query;
-   dbQuery->customData = new UserJoinProduct( user_id, userUuid, userCreationDate, productUuid );
-
-   m_parent->AddQueryToOutput( dbQuery );
-   m_hasPendingDbResult = true;*/
-}
-
 
 //---------------------------------------------------------------
 
@@ -284,7 +292,24 @@ bool     ProductEntryCreateBasedOnPlayHistory::HandleResult( const PacketDbQuery
          AddQueryPerProduct( product_id, uuid );
       }
 
+      if( m_startingProductId != -1 )// lookup this product
+      {
+         int index = 0;
+         vector <QueryPerProduct>::iterator lookupIt = m_listOfQueries.begin();
+         while( lookupIt != m_listOfQueries.end() )
+         {
+            if( lookupIt->productId == m_startingProductId )
+            {
+               m_currentProductIndex = index;
+               break;
+            }
+            lookupIt++;
+            index++;
+         }
+      }
+
       m_hasLoadedAllProducts = true;
+      
       time( &m_lastTimeStamp );// restart timer
       return true;
    }
@@ -296,34 +321,14 @@ bool     ProductEntryCreateBasedOnPlayHistory::HandleResult( const PacketDbQuery
 
       SimpleUserTable             enigma( dbResult->bucket );
       SimpleUserTable::iterator      it = enigma.begin();
-      if( enigma.m_bucket.size() > 0 ) // we already have this product recorded
-      {
-         // do nothing
-      }
-      else
+      if( enigma.m_bucket.size() == 0 ) 
       {
          AddGenericProductEntry( productInfo->productUuid, productInfo->userUuid, productInfo->userCreationDate );
       }
 
       ErasePendingUserLookup( userUuid );
       delete productInfo;
-      // a decision here allows us to look for the first instance of that product being played as our purchase date. If not, we use the user creation date.
-   /*   KeyValueParser                enigma( dbResult->bucket );
-      KeyValueParser::iterator      it = enigma.begin();
-      if( enigma.m_bucket.size() > 0 )
-      {
-         KeyValueParser::row        row = *it;
-         string userUuid =                   row[ TableKeyValue::Column_key ];
-         string earliestDate =               row[ TableKeyValue::Column_value ];
-         string productUuid =                dbResult->meta;
 
-         AddGenericProductEntry( productUuid, userUuid, earliestDate );
-         delete static_cast<UserJoinProduct*> ( dbResult->customData );
-      }
-      else
-      {
-         
-      }*/
       return true;
    }
 
@@ -347,8 +352,6 @@ bool     ProductEntryCreateBasedOnPlayHistory::StoreUsersWhoMayNeedAnUpdate( con
    User_IdUUidDateParser::iterator    it = enigma.begin();
    if( enigma.m_bucket.size() > 0 )
    {
-      cout << " Successful query: found users who have played " << qpg.productUuid << " and do not have purchase records" << endl;
-
       int highestId = 0;
       while (it != enigma.end() )
       {
@@ -367,16 +370,21 @@ bool     ProductEntryCreateBasedOnPlayHistory::StoreUsersWhoMayNeedAnUpdate( con
          m_listOfUsersQueryingUpdate.push_back( user );
 
          highestId = userId;
-         //SetupQueryForUserBoughtProductBasedOnFirstDatePlayed( userId, userUuid, date, productUuid );
       }
 
+      int numUsersFound = enigma.m_bucket.size();
+      cout << " Successful query: found users " << numUsersFound << " who have played " << FindProductName( qpg.productId ) << " and do not have purchase records" << endl;
+      
+
       m_currentUserIndex = highestId;
+      WriteAdminValuesToDb();
    }
    else
    {
       cout << " Failed query: no users who have played " << qpg.productUuid << " and do not have purchase records" << endl;
       m_currentProductIndex ++;// rotate to the next game title.
       m_currentUserIndex = -1;
+      WriteAdminValuesToDb();
    }
 
    return true;
@@ -395,31 +403,28 @@ void     ProductEntryCreateBasedOnPlayHistory::RunUserQueries()
    // I would often get a result before I had removed a previous item from m_listOfUsersQueryingUpdate
    deque< PacketDbQuery* > queriesToSubmit;
 
-   int count = 6;// never send more than 10 at a time.
+   int count = 9;// never send more than 10 at a time.
    list <UserWhoMayNeedUpdate>:: iterator it = m_listOfUsersQueryingUpdate.begin();
    while( it != m_listOfUsersQueryingUpdate.end() )
    {
-      UserWhoMayNeedUpdate& user = *it;
-      list <UserWhoMayNeedUpdate>::iterator toBeDeleted = it++;
+      list <UserWhoMayNeedUpdate>::iterator workingIt = it++;
+      UserWhoMayNeedUpdate& user = *workingIt;
 
       m_listOfUsersAwaitingQueryResult.push_back( user );
 
-      //const QueryPerProduct& qpg = m_listOfQueries[ user.productId ];
+         PacketDbQuery* dbQuery = new PacketDbQuery;
+         dbQuery->id = 0;
+         dbQuery->lookup = StatusUpdate::QueryType_DoesUserHaveProductPurchase;
+         dbQuery->meta = user.uuid;
+         dbQuery->query = "SELECT id FROM user_join_product WHERE user_uuid = '";
+         dbQuery->query += user.uuid;
+         dbQuery->query += "' AND product_id='";
+         dbQuery->query += user.productUuid;
+         dbQuery->query += "'";
+         dbQuery->customData = new UserJoinProduct( user.id, user.uuid, user.firstKnownPlayDate, user.productUuid );
+         queriesToSubmit.push_back( dbQuery );
 
-      PacketDbQuery* dbQuery = new PacketDbQuery;
-      dbQuery->id = 0;
-      dbQuery->lookup = StatusUpdate::QueryType_DoesUserHaveProductPurchase;
-      dbQuery->meta = user.uuid;
-      dbQuery->query = "SELECT id FROM user_join_product WHERE user_uuid = '";
-      dbQuery->query += user.uuid;
-      dbQuery->query += "' AND product_id='";
-      dbQuery->query += user.productUuid;
-      dbQuery->query += "'";
-      dbQuery->customData = new UserJoinProduct( user.id, user.uuid, user.firstKnownPlayDate, user.productUuid );
-
-      queriesToSubmit.push_back( dbQuery );
-
-      m_listOfUsersQueryingUpdate.erase( toBeDeleted );
+      m_listOfUsersQueryingUpdate.erase( workingIt );
       count --;
       if( count <= 0 )
          break;
@@ -454,6 +459,23 @@ void     ProductEntryCreateBasedOnPlayHistory::ErasePendingUserLookup( const str
 
 //---------------------------------------------------------------
 
+const UserWhoMayNeedUpdate*     ProductEntryCreateBasedOnPlayHistory::FindPendingUser( const string& userUuid )
+{
+   list <UserWhoMayNeedUpdate>:: iterator it = m_listOfUsersAwaitingQueryResult.begin();
+   while( it != m_listOfUsersAwaitingQueryResult.end() )
+   {
+      UserWhoMayNeedUpdate& user = *it;
+      if( user.uuid == userUuid )
+      {
+         return &user;
+      }
+      it ++;
+   }
+   return NULL;
+}
+
+//---------------------------------------------------------------
+
 void     ProductEntryCreateBasedOnPlayHistory::AddGenericProductEntry( const string& productUuid, const string& userUuid, const string& date )
 {
    if( productUuid.size()==0 || userUuid.size()==0 || date.size()==0 )
@@ -470,7 +492,7 @@ void     ProductEntryCreateBasedOnPlayHistory::AddGenericProductEntry( const str
    query += productUuid;         
    query += "','";
    query += date;
-   query += "',0,1,1,0, 'auto create from login history', null)";
+   query += "',0,1,1,0, 'auto create from login history', null, 0)";
 
    PacketDbQuery* dbQuery = new PacketDbQuery;
    dbQuery->id = 0;
@@ -480,7 +502,18 @@ void     ProductEntryCreateBasedOnPlayHistory::AddGenericProductEntry( const str
 
    m_parent->AddQueryToOutput( dbQuery );
 
-   cout << "Adding product entry for user:" << query << endl;
+   //-----------------
+
+   const UserWhoMayNeedUpdate* user = FindPendingUser( userUuid );
+   cout << "Adding product entry for user: ";
+   if( user )
+   {
+      cout << user->id << " product:" << productUuid << " date:" << date << endl;
+   }
+   else
+   {
+      cout << query << endl;
+   }
 }
 
 //---------------------------------------------------------------

@@ -329,6 +329,18 @@
 					>
 				</File>
 				<File
+					RelativePath="..\NetworkCommon\Utils\MemoryLeakTracker.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\NetworkCommon\Utils\OsLevelUtils.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\NetworkCommon\Utils\OsLevelUtils.h"
+					>
+				</File>
+				<File
 					RelativePath="..\NetworkCommon\Utils\Utils.cpp"
 					>
 				</File>

@@ -11,6 +11,8 @@
 #include <list>
 //using namespace std;
 
+//#define _MEMLEAK_TESTING_
+
 ///////////////////////////////////////////////////////////////
 
 // todo, make login, logout, etc into authentication packets
@@ -76,6 +78,9 @@ public:
 class DynamicDataBucket
 {
 public:
+#ifdef _MEMLEAK_TESTING_
+   ~DynamicDataBucket();
+#endif
    typedef list< DataRow >  DataSet;
 
    bool  SerializeIn( const U8* data, int& bufferOffset );
@@ -191,7 +196,7 @@ m_counter++;
 cout << "BasePacket +count: " << m_counter << endl;
 #endif
       }
-   ~BasePacket()
+   virtual ~BasePacket()
    {
 #ifdef _MEMORY_TEST_
 m_counter--;
@@ -341,6 +346,7 @@ class PacketChatChannelList : public PacketUserInfo
 {
 public:
    PacketChatChannelList( int packet_type = PacketType_UserInfo, int packet_sub_type = InfoType_ChatChannelList ) : PacketUserInfo( packet_type, packet_sub_type ){  }
+   ~PacketChatChannelList();
 
    bool  SerializeIn( const U8* data, int& bufferOffset );
    bool  SerializeOut( U8* data, int& bufferOffset ) const;

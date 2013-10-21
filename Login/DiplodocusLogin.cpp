@@ -247,15 +247,9 @@ bool     DiplodocusLogin:: LogUserIn( const string& userName, const string& pass
       dbQuery->meta =         userName;
       dbQuery->serverLookup = gameProductId;
 
-      dbQuery->query = "select * from users JOIN user_profile ON users.user_id=user_profile.user_id WHERE users.user_email='%s' AND users.user_pw_hash='%s'";
+      dbQuery->query = "SELECT * FROM users JOIN user_profile ON users.user_id=user_profile.user_id WHERE users.user_email='%s' AND users.user_pw_hash='%s'";
       dbQuery->escapedStrings.insert( userName );
-      dbQuery->escapedStrings.insert( boost::lexical_cast< string >( password ) );
-
-      /*string queryString = "SELECT * FROM users as user WHERE user_email='%s' and user_pw_hash='" ;
-      queryString += boost::lexical_cast< string >( password );
-      queryString += "'";
-      dbQuery->query = queryString;
-      dbQuery->escapedStrings.insert( userName );*/
+      dbQuery->escapedStrings.insert( password );
       
       return AddQueryToOutput( dbQuery );
    }
@@ -413,7 +407,7 @@ void     DiplodocusLogin:: RemoveOldConnections()
    while( it != m_userConnectionMap.end() )
    {
       UserConnectionMapIterator temp = it++;
-      if( temp->second.loggedOutTime )
+      if( temp->second.isLoggingOut && temp->second.loggedOutTime )
       {
          const int normalExpireTime = 15; // seconds
          if( difftime( testTimer, temp->second.loggedOutTime ) >= normalExpireTime )
@@ -1535,7 +1529,7 @@ void     DiplodocusLogin:: AddNewProductToDb( const PurchaseEntry& product )
    dbQuery->serverLookup = 0;
    dbQuery->isFireAndForget = true;
 
-   U32 hash = static_cast<U32>( GenerateUniqueHash( boost::lexical_cast< string >( product.name ) ) );
+   U32 hash = static_cast<U32>( GenerateUniqueHash( product.name ) );
    string newUuid = GenerateUUID( hash );
 
    std::string lowercase_username = product.name; 

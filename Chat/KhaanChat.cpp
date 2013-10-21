@@ -43,6 +43,10 @@ bool	KhaanChat::OnDataReceived( unsigned char* data, int length )
                delete wrapper->pPacket;
                wrapper->pPacket = NULL;
             }
+            else
+            {
+               return true;
+            }
          }
       }
       else if( type == PacketType_ServerToServerWrapper )

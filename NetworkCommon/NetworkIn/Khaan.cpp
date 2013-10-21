@@ -165,15 +165,18 @@ void	Khaan :: UpdateOutwardPacketList()
 
    int length = 0;
    int bufferOffset = 0;
+   int numPacketsPackaged = 0;
 
    U8 buffer[ MaxBufferSize + 1024 ];
    PacketFactory factory;
 
    int num = m_packetsOut.size();
+   deque< BasePacket* >::iterator it = m_packetsOut.begin();
+
    // todo, plan for the degenerate case where a single packet is over 2k
    for( int i=0; i< num; i++ )
    {
-      BasePacket* packet = m_packetsOut.front();
+      BasePacket* packet = *it++;
 
       int temp = bufferOffset;
       U16 sizeOfLastWrite = 0;
@@ -186,8 +189,9 @@ void	Khaan :: UpdateOutwardPacketList()
      // packet->SerializeOut( buffer, bufferOffset ); 
       if( bufferOffset < (int)( MaxBufferSize - sizeof( BasePacket ) ) )// do not write past the end
       {
-         factory.CleanupPacket( packet );
-         m_packetsOut.pop_front();
+         numPacketsPackaged ++;
+        /* factory.CleanupPacket( packet );
+         m_packetsOut.pop_front();*/
          length = bufferOffset;
       }
       else
@@ -205,7 +209,17 @@ void	Khaan :: UpdateOutwardPacketList()
 
       int result = SendData( buffer, length );
       cout << "Send result: " << result << endl;
+      if( result != -1 && numPacketsPackaged>0 )
+      {
+         for( int i=0; i< numPacketsPackaged; i++ )
+         {
+            BasePacket* packet = m_packetsOut.front();
+            factory.CleanupPacket( packet );
+            m_packetsOut.pop_front();
+         }
+      }
    }
+   
 }
 
 //---------------------------------------------------------------

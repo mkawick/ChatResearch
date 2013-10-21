@@ -27,7 +27,10 @@ StatusUpdate::StatusUpdate( const string& serverName, U32 serverId ) : Queryer()
                   m_checkOnautoCreateTimeoutSeconds( 60 ),
                   m_checkOnOldEmailsTimeoutSeconds( OneDay ),/// once per day
                   m_expireOldAccountRequestsTimeoutSeconds( OneDay ),
-                  m_enableAddingUserProducts( false )
+                  m_enableAddingUserProducts( false ),
+                  m_hasRequestedAdminSettings( false ),
+                  m_isWaitingForAdminSettings( false ),
+                  m_autoCreateUsersInProcess( false )
 {
    SetSleepTime( 500 );
    time( &m_newAccountCreationTimer );
@@ -238,7 +241,7 @@ void  StatusUpdate::DuplicateUUIDSearch()
    dbQuery->lookup = QueryType_DuplicateUUIDSearch;
 
    string preparedDate = GetDateInUTC( -3, 0, 0 );// get three days ago
-   dbQuery->query = "select id, uuid from user_temp_new_user where uuid in ( select uuid from user_temp_new_user group by uuid having count(uuid) > 1)";
+   dbQuery->query = "SELECT id, uuid FROM user_temp_new_user WHERE uuid IN ( SELECT uuid FROM user_temp_new_user GROUP BY uuid HAVING COUNT(uuid) > 1)";
    AddQueryToOutput( dbQuery );
 }
 
@@ -292,7 +295,20 @@ int      StatusUpdate::CallbackFunction()
       time_t currentTime;
       time( &currentTime );
 
-     /* if( m_newAccountHandler->IsReady() )
+      if( m_hasRequestedAdminSettings == false )
+      {
+         RequestAdminSettings();
+         m_hasRequestedAdminSettings = true;
+         return 0;
+      }
+      else if( m_isWaitingForAdminSettings == true )
+      {
+         return 0;
+      }
+
+//      LookForFlaggedAutoCreateAccounts();
+
+      if( m_newAccountHandler->IsReady() )
       {
          ResendEmailToOlderAccounts();
          
@@ -305,7 +321,7 @@ int      StatusUpdate::CallbackFunction()
     
       m_blankUuidHandler->Update( currentTime );
       m_newAccountHandler->Update( currentTime );
-      m_blankUserProfileHandler->Update( currentTime );*/
+      m_blankUserProfileHandler->Update( currentTime );
       if( m_enableAddingUserProducts )
       {
          m_addProductEntryHandler->Update( currentTime );
@@ -417,6 +433,21 @@ bool     StatusUpdate::AddOutputChainData( BasePacket* packet, U32 connectionId 
                      wasHandled = true;
                   }
                   break;*/
+               case QueryType_GetNewUserRecordAndCreateProfileFromIt:
+                  {
+                     if( dbResult->successfulQuery == true && dbResult->bucket.bucket.size() > 0 )
+                     {
+                        InsertNewUserProfile( dbResult );
+                     }
+                     wasHandled = true;
+                  }
+                  break;
+               case QueryType_AccountAdminSettings:
+                  {
+                     HandleAdminSettings( dbResult );
+                     wasHandled = true;
+                  }
+                  break;
                case QueryType_AutoCreateUsers:
                   {
                      if( dbResult->successfulQuery == true && dbResult->bucket.bucket.size() > 0 )
@@ -428,7 +459,7 @@ bool     StatusUpdate::AddOutputChainData( BasePacket* packet, U32 connectionId 
                         //string str = "Config table failed to load";
                         //Log( str );
                      }
-                     
+                     m_autoCreateUsersInProcess = false;
                      wasHandled = true;
                   }
                   break;
@@ -514,6 +545,7 @@ void     StatusUpdate::HandleAutoCreateAccounts( const PacketDbQueryResult* dbRe
       string email =             row[ TableUserTempNewUser::Column_email ];
       string userId =            row[ TableUserTempNewUser::Column_user_id ];
       string timeCreated =       row[ TableUserTempNewUser::Column_time_created ];
+      string productId =         row[ TableUserTempNewUser::Column_game_id ];
 
       //string uuid =              row[ TableUserTempNewUser::Column_uuid ]; //<< must be created
       string gamekitHash =       row[ TableUserTempNewUser::Column_gamekit_hash ];
@@ -564,7 +596,6 @@ void     StatusUpdate::HandleAutoCreateAccounts( const PacketDbQueryResult* dbRe
       dbQuery->query = query;
       AddQueryToOutput( dbQuery );
 
-
      // remove the temp record.
       query = "DELETE FROM user_temp_new_user WHERE uuid='";
       query += uuid;
@@ -580,16 +611,86 @@ void     StatusUpdate::HandleAutoCreateAccounts( const PacketDbQueryResult* dbRe
 
       LogMessage( LOG_PRIO_INFO, "Accounts::HandleAutoCreateAccounts\n" );
 
-      m_blankUserProfileHandler->CreateBlankProfile( userId );
+      // create a profile
+      dbQuery = new PacketDbQuery;
+      dbQuery->id = 0;
+      dbQuery->lookup = QueryType_GetNewUserRecordAndCreateProfileFromIt;
+      dbQuery->meta = productId;
+
+      dbQuery->query = "SELECT user_id FROM users WHERE uuid='";
+      dbQuery->query += uuid;
+      dbQuery->query += "'";
+      AddQueryToOutput( dbQuery );
+      
    }
 }
 
 //---------------------------------------------------------------
 
+void     StatusUpdate::InsertNewUserProfile( const PacketDbQueryResult* dbResult )
+{
+   KeyValueParser              enigma( dbResult->bucket );
+   KeyValueParser::iterator    it = enigma.begin();
+   if( it != enigma.end() )
+   {
+      KeyValueParser::row      row = *it++;
+      string user_id =         row[ TableKeyValue::Column_key ];
+
+      int productId = boost::lexical_cast< int >( dbResult->meta );
+      m_blankUserProfileHandler->CreateBlankProfile( user_id, productId );
+   }
+}
+
+//---------------------------------------------------------------
+
+void     StatusUpdate::HandleAdminSettings( const PacketDbQueryResult* dbResult )
+{
+    KeyValueParser              enigma( dbResult->bucket );
+   KeyValueParser::iterator    it = enigma.begin();
+
+   //U32 counter = 1;
+   
+   while( it != enigma.end() )
+   {
+      KeyValueParser::row      row = *it++;
+      string setting =         row[ TableKeyValue::Column_key ];
+      string value =           row[ TableKeyValue::Column_value ];
+
+      if( setting == "play_history_product_id" )
+      {
+         m_addProductEntryHandler->SetProductIdStart( boost::lexical_cast< int >( value ) );
+      }
+      else if( setting == "play_history_user_id" )
+      {
+         m_addProductEntryHandler->SetUserIdStart( boost::lexical_cast< int >( value ) ); 
+      }
+
+   }
+
+   m_isWaitingForAdminSettings = false;
+}
+
+//---------------------------------------------------------------
+
+void     StatusUpdate::RequestAdminSettings()
+{
+   PacketDbQuery* dbQuery = new PacketDbQuery;
+   dbQuery->id = 0;
+   dbQuery->lookup = StatusUpdate::QueryType_AccountAdminSettings;
+   dbQuery->query = "SELECT * FROM admin_account";
+
+   m_isWaitingForAdminSettings = true;
+
+   AddQueryToOutput( dbQuery );
+}
+
 //---------------------------------------------------------------
 
 void     StatusUpdate::LookForFlaggedAutoCreateAccounts()
 {
+   if( m_autoCreateUsersInProcess == true )
+      return;
+
    time_t testTimer;
    time( &testTimer );
 
@@ -605,6 +706,8 @@ void     StatusUpdate::LookForFlaggedAutoCreateAccounts()
       dbQuery->query = "SELECT * FROM user_temp_new_user WHERE flagged_auto_create='1'";
 
       AddQueryToOutput( dbQuery );
+
+      m_autoCreateUsersInProcess = true;
 
       //LogMessage( LOG_PRIO_INFO, "Accounts::LookForFlaggedAutoCreateAccounts\n" );
    }

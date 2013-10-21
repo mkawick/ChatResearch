@@ -12,7 +12,7 @@ class BlankUserProfileHandler : public QueryHandler
 public:
    BlankUserProfileHandler( U32 id, Queryer* parent, string& query );
    bool     HandleResult( const PacketDbQueryResult* dbResult );
-   void     CreateBlankProfile( const string& user_id );
+   void     CreateBlankProfile( const string& user_id, int productId = 0 );
 
    void     Update( time_t currentTime );
 

@@ -314,6 +314,10 @@ int  SendConfirmationEmail( const char* toAddr, const char* fromAddr, const char
   // Receive initial response from SMTP server
   Check(recv(socketId, buffer, sizeof(buffer), 0), "recv() Reply");
 
+  string intro = "Starting email: ";
+  intro += GetDateInUTC();
+  LogTextToFile( intro.c_str() );
+
   // Send HELO server.com
   sprintf( messageLine.get(), "HELO %s%s", emailServerName, CRLF);
   Check(send(socketId, messageLine.get(), strlen( messageLine.get() ), 0), "send() HELO");
@@ -426,6 +430,9 @@ static inline bool filter_disallowed_characters( char c )
 
 bool  IsValidEmailAddress( const string& test )
 {
+   if( test.size() < 3 )
+      return false;
+
    std::vector<std::string> splits = split( test, '@' );
 
    if( splits.size() != 2 )

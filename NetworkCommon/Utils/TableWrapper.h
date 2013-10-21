@@ -313,6 +313,7 @@ public:
       Column_admin_level,
       Column_show_win_loss_record,
       Column_time_zone,
+      Column_account_create_product_id,
       Column_end
    };
    static const char* const column_names[];

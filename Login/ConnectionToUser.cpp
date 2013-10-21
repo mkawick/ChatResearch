@@ -37,7 +37,8 @@ ConnectionToUser:: ConnectionToUser( const string& name, const string& pword, co
                      languageId( 1 ),
                      showWinLossRecord( true ),
                      marketingOptOut( false ),
-                     showGenderProfile( false )
+                     showGenderProfile( false ),
+                     isLoggingOut( false )
                      {}
 
 //-----------------------------------------------------------------
@@ -171,8 +172,10 @@ void  ConnectionToUser::SaveUserSettings( UserPlusProfileTable& enigma, U8 produ
    email =                          row[ TableUserPlusProfile::Column_email ];
    passwordHash =                   row[ TableUserPlusProfile::Column_password_hash ];
    
-   lastLoginTime =                  row[ TableUserPlusProfile::Column_last_logout_time ]; // note that we are using logout for our last login time.
-   loggedOutTime =                  0;
+   lastLoginTime =                  GetDateInUTC(); 
+   loggedOutTime = 0;
+   //loggedOutTime = GetDateFromString( lastLoginTime.c_str() );
+   lastLogoutTime =                 row[ TableUserPlusProfile::Column_last_logout_time ];
 
    isActive =                       boost::lexical_cast<bool>( row[ TableUserPlusProfile::Column_active] );
 
@@ -277,8 +280,10 @@ void  ConnectionToUser::SaveUpdatedProfile( const PacketUpdateUserProfile* profi
 
 bool  ConnectionToUser::BeginLogout( bool wasDisconnectedByError )
 {
-   if( loggedOutTime ) /// we are already logging out. The gateway may send us multiple logouts so we simply have to ignore further attemps
+   if( loggedOutTime != 0 ) /// we are already logging out. The gateway may send us multiple logouts so we simply have to ignore further attemps
       return false;
+
+   isLoggingOut = true;
 
    status = LoginStatus_Invalid;
 
@@ -310,10 +315,11 @@ bool  ConnectionToUser::FinalizeLogout()
    dbQuery->lookup =          DiplodocusLogin::QueryType_UserLoginInfo;
    dbQuery->isFireAndForget = true;// no result is needed
    
-   string queryString = "UPDATE users AS user SET user.last_logout_timestamp=CURRENT_TIMESTAMP WHERE uuid = '";
+   string queryString = "UPDATE users AS user SET user.last_logout_timestamp=now() WHERE uuid = '";
    queryString +=             userUuid;
    queryString += "'";
    dbQuery->query =           queryString;
+   isLoggingOut = false;
 
    //userManager->SendPacketToGateway( logout, connectionId );
    return userManager->AddQueryToOutput( dbQuery );
@@ -365,7 +371,7 @@ bool  ConnectionToUser::UpdateLastLoggedInTime()
    dbQuery->lookup =          DiplodocusLogin::QueryType_UpdateLastLoggedInTime;
    dbQuery->isFireAndForget = true;// no result is needed
 
-   string queryString = "UPDATE users AS user SET user.last_login_timestamp=CURRENT_TIMESTAMP WHERE uuid = '";
+   string queryString = "UPDATE users AS user SET user.last_login_timestamp=now() WHERE uuid = '";
    queryString +=             userUuid;
    queryString += "'";
    dbQuery->query =           queryString;
@@ -382,7 +388,7 @@ bool  ConnectionToUser::UpdateLastLoggedOutTime()
    dbQuery->lookup =          DiplodocusLogin::QueryType_UpdateLastLoggedOutTime;
    dbQuery->isFireAndForget = true;// no result is needed
 
-   string queryString = "UPDATE users AS user SET user.last_logout_timestamp=CURRENT_TIMESTAMP WHERE uuid = '";
+   string queryString = "UPDATE users AS user SET user.last_logout_timestamp=now() WHERE uuid = '";
    queryString += userUuid;
    queryString += "'";
    dbQuery->query =           queryString;
@@ -394,7 +400,7 @@ bool  ConnectionToUser::UpdateLastLoggedOutTime()
 
 bool    ConnectionToUser:: SuccessfulLogin( U32 connectId, bool isReloggedIn )
 {
-   loggedOutTime = 0;// for relogin, we need this to be cleared.
+   isLoggingOut = false;// for relogin, we need this to be cleared.
    connectionId =          connectId;
 
    productFilterNames.clear();
@@ -405,7 +411,7 @@ bool    ConnectionToUser:: SuccessfulLogin( U32 connectId, bool isReloggedIn )
    {
       loginStatus->userName = userName;
       loginStatus->uuid = userUuid;
-      loginStatus->lastLogoutTime = lastLoginTime;
+      loginStatus->lastLogoutTime = lastLogoutTime;
       loginStatus->loginKey = loginKey;
    }
    loginStatus->wasLoginSuccessful = true;
@@ -697,7 +703,7 @@ void     ConnectionToUser:: WriteProductToUserRecord( const string& userUuid, co
    dbQuery->query += boost::lexical_cast< string >( pricePaid );
    dbQuery->query += ",1,";
    dbQuery->query += boost::lexical_cast< string >( numPurchased );
-   dbQuery->query += ",'%s','%s',NULL)";
+   dbQuery->query += ",'%s','%s',NULL, 0)";
 
    dbQuery->escapedStrings.insert( userUuid );
    dbQuery->escapedStrings.insert( productUuid );
@@ -870,8 +876,7 @@ void     ConnectionToUser:: PackUserProfileRequestAndSendToClient( U32 connectio
    response->userUuid =          userUuid;
    response->email =             email;
    response->lastLoginTime =     lastLoginTime;
-   string lastLoggetOut = GetDateInUTC( loggedOutTime );
-   response->loggedOutTime =     lastLoggetOut;
+   response->loggedOutTime =     lastLogoutTime;
 
    response->adminLevel =        adminLevel;
    response->isActive =          isActive;
@@ -883,7 +888,7 @@ void     ConnectionToUser:: PackUserProfileRequestAndSendToClient( U32 connectio
    response->profileKeyValues.insert( "uuid", userUuid );
    response->profileKeyValues.insert( "email", email );
    response->profileKeyValues.insert( "last_login_time", lastLoginTime );
-   response->profileKeyValues.insert( "last_logget_out", lastLoggetOut );
+   response->profileKeyValues.insert( "last_logget_out", lastLogoutTime );
    response->profileKeyValues.insert( "admin_level", boost::lexical_cast< string >( adminLevel ) );
    response->profileKeyValues.insert( "is_active", boost::lexical_cast< string >( isActive ? 1:0 ) );
    response->profileKeyValues.insert( "show_win_loss_record", boost::lexical_cast< string >( showWinLossRecord  ? 1:0 ) );

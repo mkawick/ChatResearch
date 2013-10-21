@@ -354,8 +354,11 @@ bool  FillInAsset( string& line, AssetDefinition& asset )
          }
          else if( potentionalKey == "filters" )
          {
-            vector< string > tempList;
             return ParseListOfItems( asset.filters, value, ",", "[]{}" );
+         }
+         else if( potentionalKey == "gates" )
+         {
+            return ParseListOfItems( asset.gates, value, ",", "[]{}" );
          }
          else if( potentionalKey == "notes" )
          {
@@ -725,22 +728,39 @@ bool  AssetOrganizer::GetListOfAssets( int platformId, const set< string >& list
       {
          if( listOfFilters.size() != 0 )
          {
-            bool filterFound = false;
-            // this solution found here: 
-            // http://stackoverflow.com/questions/14284444/how-to-find-matching-string-in-a-list-of-strings
-            vector< string >::const_iterator filterIt = it->filters.begin();
-            while( filterIt != it->filters.end() )
+            // 1) first match by gate and add automagically
+            bool wasAdded = false;
+            vector< string >::const_iterator gateIt = it->gates.begin();
+            while( gateIt != it->gates.end() )
             {
-               if( listOfFilters.find( *filterIt ) != listOfFilters.end() )
+               if( listOfFilters.find( *gateIt ) != listOfFilters.end() )
                {
-                  filterFound = true;
+                  listOfAssetsByHash.push_back( it->hash );
+                  wasAdded = true;
                   break;
                }
-               filterIt++;
+               gateIt++;
             }
-            if( filterFound == false )
+            if( wasAdded == false )
             {
-               listOfAssetsByHash.push_back( it->hash );
+               // 2)  now try to remove
+               bool filterFound = false;
+               // this solution found here: 
+               // http://stackoverflow.com/questions/14284444/how-to-find-matching-string-in-a-list-of-strings
+               vector< string >::const_iterator filterIt = it->filters.begin();
+               while( filterIt != it->filters.end() )
+               {
+                  if( listOfFilters.find( *filterIt ) != listOfFilters.end() )
+                  {
+                     filterFound = true;
+                     break;
+                  }
+                  filterIt++;
+               }
+               if( filterFound == false )// it's not there
+               {
+                  listOfAssetsByHash.push_back( it->hash );
+               }
             }
          }
          else

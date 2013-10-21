@@ -34,6 +34,8 @@ public:
    virtual void   OutputConnected( IChainedInterface * ) {}
    virtual void   InputRemovalInProgress( IChainedInterface * ) {}
    virtual void   OutputRemovalInProgress( IChainedInterface * ) {}
+   virtual void   NotifyFinishedAdding( IChainedInterface* obj ) {} 
+   virtual void   NotifyFinishedRemoving( IChainedInterface* obj ) {} // when NULL, this means all nodes have been removed
 };
 
 /////////////////////////////////////////////////////////////////////////////
@@ -84,8 +86,6 @@ protected:
 		std::deque<Type>	         m_data;
 	};
 
-   virtual void   NotifyFinishedAdding( IChainedInterface* obj = NULL ) {} 
-   virtual void   NotifyFinishedRemoving( IChainedInterface* obj = NULL ) {} // when NULL, this means all nodes have been removed
 
 protected:
 
@@ -326,7 +326,7 @@ void  ChainedInterface<Type>::CleanupAllChainDependencies()
       // the indentation here is to show that we are in the 'scope' of the locks
    }
    m_outputChainListMutex.unlock();
-   NotifyFinishedRemoving();
+   //NotifyFinishedRemoving();
 }
 
 //----------------------------------------------------------------

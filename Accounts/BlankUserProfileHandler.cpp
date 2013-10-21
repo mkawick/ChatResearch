@@ -5,6 +5,7 @@
 #include "../NetworkCommon/Utils/Utils.h"
 #include "../NetworkCommon/Utils/TableWrapper.h"
 #include "BlankUserProfileHandler.h"
+#include <boost/lexical_cast.hpp>
 
 using namespace std;
 
@@ -44,7 +45,7 @@ bool     BlankUserProfileHandler::HandleResult( const PacketDbQueryResult* dbRes
 
          cout << "User id adding blank profile = " << userId << endl;
 
-         CreateBlankProfile( userId );
+         CreateBlankProfile( userId, 0 );
       }
 
       time( &m_lastTimeStamp );// restart timer
@@ -55,7 +56,7 @@ bool     BlankUserProfileHandler::HandleResult( const PacketDbQueryResult* dbRes
 
 //---------------------------------------------------------------
 
-void     BlankUserProfileHandler::CreateBlankProfile( const string& user_id )
+void     BlankUserProfileHandler::CreateBlankProfile( const string& user_id, int productId )
 {
    if( user_id.size() == 0 || user_id == "0" )
    {
@@ -71,7 +72,17 @@ void     BlankUserProfileHandler::CreateBlankProfile( const string& user_id )
 
    dbQuery->query = "INSERT INTO user_profile VALUES( '";
    dbQuery->query += user_id;
-   dbQuery->query += "', DEFAULT, DEFAULT, DEFAULT, DEFAULT, DEFAULT, DEFAULT, DEFAULT, DEFAULT, DEFAULT, DEFAULT, DEFAULT, DEFAULT, DEFAULT, DEFAULT, DEFAULT, DEFAULT )";
+   dbQuery->query += "', DEFAULT, DEFAULT, DEFAULT, DEFAULT, DEFAULT, DEFAULT, DEFAULT, DEFAULT, DEFAULT, DEFAULT, DEFAULT, DEFAULT, DEFAULT, DEFAULT, DEFAULT, DEFAULT, ";
+   if( productId == 0 )
+   {
+      dbQuery->query += "DEFAULT";
+   }
+   else
+   {
+      dbQuery->query += boost::lexical_cast< string >( productId );
+   }
+
+   dbQuery->query += ")";
 
    m_parent->AddQueryToOutput( dbQuery );
 }

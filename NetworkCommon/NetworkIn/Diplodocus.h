@@ -18,6 +18,7 @@
 #include "../ChainedArchitecture/ChainedThread.h"
 #include "../ChainedArchitecture/ChainedInterface.h"
 #include <map>
+#include <time.h>
 
 ////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -38,7 +39,7 @@ protected:
    static   struct event_base*   m_LibEventInstance;
 };
 
-
+void  UpdateConsoleWindow( time_t& timeOfLastTitleUpdate, time_t uptime, int totalConnections, int numCurrentConnections, int listeningPort, const string& serverName );
 
 ////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -73,8 +74,7 @@ public:
    static bool    Run(); // None of the networking starts until this is invoked. This is a blocking call. Be sure to keep a thread running to call the exit.
    static bool    ExitApp();
 
-   bool           PushInputEvent( ThreadEvent* );
-   void           NotifyFinishedRemoving( InputChainType* obj );
+   bool           PushInputEvent( ThreadEvent* );   
 
    bool           AddInputChainData( BasePacket* t, U32 filingData );
    bool           AddOutputChainData( BasePacket* t, U32 filingData );
@@ -82,6 +82,7 @@ public:
    bool           SendErrorToClient( U32 connectionId, PacketErrorReport::ErrorType error, int subType = 0 );
 
    void           OutputConnected( IChainedInterface * );
+   void           NotifyFinishedRemoving( IChainedInterface* obj );
 
    //---------------------------------------------
 
@@ -125,6 +126,10 @@ protected:
    ServerType        m_serverType;// just used for logging and topology purposes.
    U32               m_connectionIdGateway;
    string            m_serverName; // just used for id
+
+   time_t            m_timeOfLastTitleUpdate;
+   time_t            m_uptime;
+   int               m_numTotalConnections;
 
 
    bool           SetupListeningSocket();

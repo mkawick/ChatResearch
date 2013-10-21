@@ -556,6 +556,7 @@ bool     Deltadromeus::PutQueryResultInProperChain( DbJobBase* testJob )
    {
       Threading::MutexLock    locker( m_inputChainListMutex );
       ChainLinkIteratorType it = m_listOfInputs.begin();
+      U32 chainedId = GetChainedId();
       while( it != m_listOfInputs.end() )
       {
          //ChainLink& link = (*it);
@@ -564,12 +565,12 @@ bool     Deltadromeus::PutQueryResultInProperChain( DbJobBase* testJob )
          if( chainObj->GetChainedId() == matchingId )
          {
             PacketDbQueryResult* resultPacket = new PacketDbQueryResult;
-            resultPacket->id = testJob->GetSenderKey();
-            resultPacket->lookup = testJob->GetSenderLookup();
-            resultPacket->serverLookup = testJob->GetServerId();
-            resultPacket->meta = testJob->GetSenderMeta();
-            resultPacket->successfulQuery = testJob->GetErrorCondition() == false;
-            resultPacket->customData = testJob->GetCustomData();
+            resultPacket->id =                  testJob->GetSenderKey();
+            resultPacket->lookup =              testJob->GetSenderLookup();
+            resultPacket->serverLookup =        testJob->GetServerId();
+            resultPacket->meta =                testJob->GetSenderMeta();
+            resultPacket->successfulQuery =     ( testJob->GetErrorCondition() == false );
+            resultPacket->customData =          testJob->GetCustomData();
 
             if( resultPacket->successfulQuery == true )
             {
@@ -577,21 +578,17 @@ bool     Deltadromeus::PutQueryResultInProperChain( DbJobBase* testJob )
                resultPacket->bucket = testJob->GetResults();// <<<<< is very slow for large result sets.
                //**************************************************************************************
             }
-            
-            bool result = chainObj->AddOutputChainData( resultPacket, GetChainedId() );
 
-            if( result == true )
+            if( chainObj->AddOutputChainData( resultPacket, chainedId ) == true )
             {
                delete testJob;
                return true;
             }
-            if( result == false )
+            else
             {
+               resultPacket->bucket.bucket.clear();
                delete resultPacket;
             }
-           /* resultPacket->bucket.bucket.clear();
-
-            delete resultPacket;*/
          }
          it++;
       }

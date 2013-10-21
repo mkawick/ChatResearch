@@ -76,8 +76,8 @@ protected:
    U32                  m_loadWebLinksQueryType;
    U32                  m_olderEmailsQueryType;
 
-   typedef map< stringhash, vector< string > >    StringTableLookup;
-   typedef pair< stringhash, vector< string > >   StringTableLookupPair;
+   typedef map< stringhash, vector< string > >     StringTableLookup;
+   typedef pair< stringhash, vector< string > >    StringTableLookupPair;
    typedef pair< stringhash, stringhash >          ReplacementPair;
 
    typedef map< string, EmailToSend >              EmailLookupType;

@@ -7,6 +7,7 @@
 #include "../NetworkCommon/Packets/LoginPacket.h"
 #include "../NetworkCommon/Packets/PacketFactory.h"
 
+
 //#define VERBOSE
 void  PrintText( const char* text, int extraCr = 0 )
 {
@@ -28,6 +29,7 @@ DiplodocusGateway::DiplodocusGateway( const string& serverName, U32 serverId ) :
 {
    SetSleepTime( 16 );// 30 fps
    SetSendHelloPacketOnLogin( true );
+   
 }
 
 DiplodocusGateway::~DiplodocusGateway()
@@ -182,7 +184,8 @@ int  DiplodocusGateway::ProcessInputFunction()
 
 bool  DiplodocusGateway::AddOutputChainData( BasePacket* packet, U32 serverType )
 {
-   PrintText( "AddOutputChainData" );
+   PrintText( "AddOutputChainData" ); 
+
    // pass through only
    if( packet->packetType == PacketType_GatewayWrapper )
    {
@@ -250,6 +253,8 @@ void  DiplodocusGateway::HandlePacketToKhaan( KhaanConnector* khaan, BasePacket*
 int   DiplodocusGateway::ProcessOutputFunction()
 {
    // mutex is locked already
+
+   
 
    // lookup packet info and pass it back to the proper socket if we can find it.
    if( m_connectionsNeedingUpdate.size() || m_outputTempStorage.size() )

@@ -323,6 +323,8 @@ int   DiplodocusGame::CallbackFunction()
    UpdateAllConnections();
    UpdateAllTimers();
 
+   UpdateConsoleWindow( m_timeOfLastTitleUpdate, m_uptime, m_numTotalConnections, m_connectedClients.size(), m_listeningPort, m_serverName );
+
    return 1;
 }
 
