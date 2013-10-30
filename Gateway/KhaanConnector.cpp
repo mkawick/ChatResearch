@@ -146,6 +146,8 @@ bool  KhaanConnector::IsWhiteListedIn( const BasePacket* packet ) const
       return false;
    case PacketType_ErrorReport:
       return false;
+   case PacketType_Purchase:
+      return true;
    }
 
    return false;

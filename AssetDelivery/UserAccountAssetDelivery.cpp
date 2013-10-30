@@ -9,6 +9,16 @@
 ///////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////
 
+void  Copy( const AssetDefinition* asset, AssetInfo& assetInfo )
+{
+   //assetInfo.productId  = gameProductId;
+   assetInfo.assetHash  = asset->hash;
+   assetInfo.version    = asset->version;
+   assetInfo.beginDate  = asset->beginTime;
+   assetInfo.endDate    = asset->endTime;
+   assetInfo.isOptional = asset->isOptional;
+}
+
 UserAccountAssetDelivery::UserAccountAssetDelivery( const UserTicket& ticket ) : m_userTicket( ticket ), m_status( Status_initial_login ), m_readyForCleanup( false ), m_assetManager( NULL )
 {
 }
@@ -94,6 +104,7 @@ bool     UserAccountAssetDelivery::HandleRequestFromClient( const PacketAsset* p
    return false;
 }
 
+
 //------------------------------------------------------------------------------------------------
 
 bool     UserAccountAssetDelivery::GetListOfStaticAssets( const PacketAsset_GetListOfStaticAssets* packet )
@@ -120,11 +131,9 @@ bool     UserAccountAssetDelivery::GetListOfStaticAssets( const PacketAsset_GetL
       if( found )
       {
          AssetInfo assetInfo;
+         Copy( asset, assetInfo ); // operator = is not an option in this version of VS
+
          assetInfo.productId  = gameProductId;
-         assetInfo.assetHash  = asset->hash;
-         assetInfo.version    = asset->version;
-         assetInfo.beginDate  = asset->beginTime;
-         assetInfo.endDate    = asset->endTime;
 
          response->updatedAssets.insert( assetInfo.assetHash, assetInfo );
       }
@@ -160,11 +169,9 @@ bool     UserAccountAssetDelivery::GetListOfDynamicAssets( const PacketAsset_Get
       if( found )
       {
          AssetInfo assetInfo;
+         Copy( asset, assetInfo ); // operator = is not an option in this version of VS
+
          assetInfo.productId  = gameProductId;
-         assetInfo.assetHash  = asset->hash;
-         assetInfo.version    = asset->version;
-         assetInfo.beginDate  = asset->beginTime;
-         assetInfo.endDate    = asset->endTime;
 
          response->updatedAssets.insert( assetInfo.assetHash, assetInfo );
       }

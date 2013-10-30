@@ -30,6 +30,8 @@ public:
       LoginType_UpdateUserProfileResponse,
       LoginType_RequestListOfProducts,
       LoginType_RequestListOfProductsResponse,
+      LoginType_RequestOtherUserProfile,
+      LoginType_RequestOtherUserProfileResponse,
    };
 public:
    PacketLogin( int packet_type = PacketType_Login, int packet_sub_type = LoginType_Login ): BasePacket( packet_type, packet_sub_type ) {}
@@ -376,6 +378,44 @@ public:
 
    int   platformId;
    SerializedVector< ProductBriefPacketed > products;
+};
+
+///////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////
+
+class PacketRequestOtherUserProfile : public BasePacket
+{
+public:
+   PacketRequestOtherUserProfile() : BasePacket( PacketType_Login, PacketLogin::LoginType_RequestOtherUserProfile ) {}
+
+   bool  SerializeIn( const U8* data, int& bufferOffset );
+   bool  SerializeOut( U8* data, int& bufferOffset ) const;
+
+   string   userName;
+};
+
+///////////////////////////////////////////////////////////////
+
+class PacketRequestOtherUserProfileResponse : public BasePacket // error packet for no admin priv
+{
+public:
+   PacketRequestOtherUserProfileResponse() : BasePacket( PacketType_Login, PacketLogin::LoginType_RequestOtherUserProfileResponse ){}
+
+   bool  SerializeIn( const U8* data, int& bufferOffset );
+   bool  SerializeOut( U8* data, int& bufferOffset ) const;
+
+  /* string   userName;
+   string   userUuid;
+
+   string   profileImage;
+   string   profileIcon;
+
+   int      gmtTimeSoneDifferential;
+   bool     showWinLossRecord;*/
+
+   SerializedKeyValueVector< string > basicProfile;
+   SerializedKeyValueVector< int > productsOwned; // only games and expansions
+   SerializedKeyValueVector< string > awards;
 };
 
 ///////////////////////////////////////////////////////////////

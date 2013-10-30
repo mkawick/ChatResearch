@@ -22,11 +22,13 @@ ResetPasswordQueryHandler.cpp \
 ../NetworkCommon/Packets/ChatPacket.cpp \
 ../NetworkCommon/Packets/CheatPacket.cpp \
 ../NetworkCommon/Packets/ContactPacket.cpp \
+../NetworkCommon/Packets/DataBucket.cpp \
 ../NetworkCommon/Packets/DbPacket.cpp \
 ../NetworkCommon/Packets/GamePacket.cpp \
 ../NetworkCommon/Packets/LoginPacket.cpp \
 ../NetworkCommon/Packets/ServerToServerPacket.cpp \
 ../NetworkCommon/Packets/PacketFactory.cpp \
+../NetworkCommon/Packets/PurchasePacket.cpp \
 ../NetworkCommon/Utils/CommandLineParser.cpp \
 ../NetworkCommon/Utils/TableWrapper.cpp \
 ../NetworkCommon/Utils/OsLevelUtils.cpp \

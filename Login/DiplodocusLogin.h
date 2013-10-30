@@ -74,6 +74,15 @@ public:
       QueryType_AdminLoadUserProducts
    };
 
+   enum ProductType  // this is also maintained in the purchase server
+   {
+      ProductType_game,
+      ProductType_deck_expansion,
+      ProductType_consumable,
+      ProductType_ticket,
+      ProductType_money
+   };
+
 public:
    DiplodocusLogin( const string& serverName, U32 serverId );
    void     ServerWasIdentified( ChainedInterface* khaan );
@@ -147,6 +156,7 @@ private:
    bool     RequestProfile( U32 connectionId, const PacketRequestUserProfile* profileRequest );
    bool     UpdateProfile( U32 connectionId, const PacketUpdateUserProfile* profileRequest );
    bool     HandleRequestListOfProducts( U32 connectionId, PacketRequestListOfProducts* purchaseRequest );
+   bool     RequestOthersProfile( U32 connectionId, const PacketRequestOtherUserProfile* profileRequest );
 
    bool     HandleCheats( U32 connectionId, const PacketCheat* cheat );
    

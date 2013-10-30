@@ -1,0 +1,34 @@
+//-----------------------------------------------------
+
+USE playdek; 
+UPDATE 
+   user_temp_new_user 
+SET 
+   email_returned_as_undeliverable=1
+WHERE 
+   user_name="..."
+
+//-----------------------------------------------------
+
+SELECT
+    user_email, COUNT(*)
+FROM
+    users
+GROUP BY
+    user_email
+HAVING 
+    COUNT(*) > 1
+    
+//-----------------------------------------------------
+
+SELECT pe.id, pe.begin_date, pe.end_date, pe.enchange_uuid, pe.title_id, pe.description_id,
+p1.product_id AS source_id, p1.uuid source_uuid, p1.name source_name, pe.source_count, p1.icon_lookup source_icon,
+p2.product_id AS dest_id, p2.uuid dest_uuid, p2.name dest_name, pe.dest_count, p2.icon_lookup dest_icon  
+
+FROM playdek.product_exchange_rate AS pe
+INNER JOIN product p1 on pe.product_source_id=p1.product_id
+INNER JOIN product p2 on pe.product_dest_id=p2.product_id
+    
+//-----------------------------------------------------
+
+SELECT * FROM user_temp_new_user AS u INNER JOIN users ON users.uuid=u.uuid

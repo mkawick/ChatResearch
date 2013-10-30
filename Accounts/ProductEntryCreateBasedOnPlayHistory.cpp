@@ -25,7 +25,7 @@ struct UserJoinProduct
 };
 
 ProductEntryCreateBasedOnPlayHistory::ProductEntryCreateBasedOnPlayHistory( U32 id, Queryer* parent ): 
-                                       QueryHandler( id, 45, parent ), 
+                                       QueryHandler< Queryer* >( id, 45, parent ), 
                                        m_hasLoadedAllProducts( false ), 
                                        m_hasRequestedAllProducts( false ), 
                                        m_hasPendingDbResult( false ), 
@@ -74,7 +74,7 @@ void     ProductEntryCreateBasedOnPlayHistory::SetProductIdStart( int productId 
 
 void     ProductEntryCreateBasedOnPlayHistory::Update( time_t currentTime )
 {
-   QueryHandler::Update( currentTime, m_hasPendingDbResult );
+   QueryHandler< Queryer* >::Update( currentTime, m_hasPendingDbResult );
 }
 
 //---------------------------------------------------------------
@@ -373,7 +373,7 @@ bool     ProductEntryCreateBasedOnPlayHistory::StoreUsersWhoMayNeedAnUpdate( con
       }
 
       int numUsersFound = enigma.m_bucket.size();
-      cout << " Successful query: found users " << numUsersFound << " who have played " << FindProductName( qpg.productId ) << " and do not have purchase records" << endl;
+      cout << " Successful query: found users " << numUsersFound << " who have played " << FindProductName( qpg.productId ) << endl;
       
 
       m_currentUserIndex = highestId;
@@ -381,8 +381,17 @@ bool     ProductEntryCreateBasedOnPlayHistory::StoreUsersWhoMayNeedAnUpdate( con
    }
    else
    {
-      cout << " Failed query: no users who have played " << qpg.productUuid << " and do not have purchase records" << endl;
+      cout << " Failed query: no users who have played " << qpg.productUuid << endl;
       m_currentProductIndex ++;// rotate to the next game title.
+      if( m_currentProductIndex < 0 || m_currentProductIndex >= (int)m_listOfQueries.size() )
+      {
+         if( m_currentProductIndex >= (int)m_listOfQueries.size() )
+         {
+            m_hasCompletedTryingEveryProduct = true;
+            SetRunSlower( true );
+         }
+         m_currentProductIndex = 0;
+      }
       m_currentUserIndex = -1;
       WriteAdminValuesToDb();
    }

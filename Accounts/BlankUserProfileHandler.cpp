@@ -11,14 +11,14 @@ using namespace std;
 
 ///////////////////////////////////////////////////////////////////////////////////////////
 
-BlankUserProfileHandler::BlankUserProfileHandler( U32 id, Queryer* parent, string& query ) : QueryHandler( id, 20, parent ), m_isServicingBlankUUID( false )
+BlankUserProfileHandler::BlankUserProfileHandler( U32 id, Queryer* parent, string& query ) : QueryHandler< Queryer* >( id, 20, parent ), m_isServicingBlankUUID( false )
 {
    m_queryString = query;
 }
 
 void     BlankUserProfileHandler::Update( time_t currentTime )
 {
-   QueryHandler::Update( currentTime, m_isServicingBlankUUID );
+   QueryHandler< Queryer* >::Update( currentTime, m_isServicingBlankUUID );
 }
 
 //---------------------------------------------------------------

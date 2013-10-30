@@ -64,6 +64,9 @@ int main( int argc, const char* argv[] )
    string assetPortString = "10002";
    string assetIpAddressString = "localhost";
 
+   string purchasePortString = "9902";
+   string purchaseIpAddressString = "localhost";
+
    string gamePortString = "23996";
    string gameIpAddressString = "localhost";
 
@@ -82,6 +85,9 @@ int main( int argc, const char* argv[] )
 
    parser.FindValue( "asset.port", assetPortString );
    parser.FindValue( "asset.address", assetIpAddressString );
+
+   parser.FindValue( "purchase.port", assetPortString );
+   parser.FindValue( "purchase.address", assetIpAddressString );
    
    parser.FindValue( "game.port", gamePortString );
    parser.FindValue( "game.address", gameIpAddressString );
@@ -101,7 +107,7 @@ int main( int argc, const char* argv[] )
    parser.FindValue( "db.schema", dbSchema );
 
 
-   int listenPort = 3072, dbPortAddress = 3306, chatPort = 9602, contactPort=9802, assetPort=10002;
+   int listenPort = 3072, dbPortAddress = 3306, chatPort = 9602, contactPort=9802, assetPort=10002, purchasePort=9902;
    int gamePort = 23996;
    bool autoAddLoginProduct = true;
 
@@ -184,6 +190,14 @@ int main( int argc, const char* argv[] )
    assetOut.Connect( assetIpAddressString.c_str(), assetPort );
    assetOut.Resume();
    SendServerNotification( serverName, serverId, &assetOut );
+
+   FruitadensLogin purchaseOut( "login to purchase" );
+   purchaseOut.SetConnectedServerType( ServerType_Purchase );
+   purchaseOut.SetServerUniqueId( serverId );
+   loginServer->AddOutputChain( &purchaseOut );
+   purchaseOut.Connect( purchaseIpAddressString.c_str(), purchasePort );
+   purchaseOut.Resume();
+   SendServerNotification( serverName, serverId, &purchaseOut );
    
 
    // various games. We will need to deal with allowing a dynamic number of games in future

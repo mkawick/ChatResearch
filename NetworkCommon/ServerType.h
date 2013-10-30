@@ -15,6 +15,7 @@ enum  ServerType
    ServerType_Controller,
    ServerType_Asset,
    ServerType_Contact,
+   ServerType_Purchase,
    ServerType_Test
 };
 

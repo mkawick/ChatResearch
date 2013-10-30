@@ -27,7 +27,7 @@ struct  UserWhoMayNeedUpdate
    UserWhoMayNeedUpdate() : id( -1 ), productId( -1 ), awaitingQueryResult( false ) {}
 };
 
-class ProductEntryCreateBasedOnPlayHistory : public QueryHandler
+class ProductEntryCreateBasedOnPlayHistory : public QueryHandler< Queryer* >
 {
 
 public:

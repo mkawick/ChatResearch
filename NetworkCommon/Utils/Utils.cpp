@@ -163,7 +163,7 @@ U64   GetDateFromString( const char* UTCFormatted )
    time_t now = time(0);
    struct tm *nowtm;
    nowtm = localtime(&now);
-   sscanf( UTCFormatted, "%d-%d-%d %d:%d:%d", &nowtm->tm_year, &nowtm->tm_mon, &nowtm->tm_wday,  
+   sscanf( UTCFormatted, "%d-%d-%d %d:%d:%d", &nowtm->tm_year, &nowtm->tm_mon, &nowtm->tm_mday,  
       &nowtm->tm_hour, &nowtm->tm_min, &nowtm->tm_sec );
 
    // based on this http://www.cplusplus.com/reference/ctime/mktime/
@@ -171,6 +171,18 @@ U64   GetDateFromString( const char* UTCFormatted )
    nowtm->tm_mon -= 1;
 
    return mktime( nowtm );
+}
+
+int   GetDiffTimeFromRightNow( const char* UTCFormatted )
+{
+   time_t now = time(0);
+   double seconds;
+
+   time_t compareTime = GetDateFromString( UTCFormatted );
+
+   seconds = difftime( now, compareTime );
+
+   return static_cast< int >( seconds );
 }
 
 //-------------------------------------------------------------------------
@@ -196,13 +208,7 @@ U32            GetCurrentMilliseconds()
    int rv = gettimeofday( &now, 0 );
    if( rv ) return rv;/// some kind of error
    
-   return static_cast< U32 >( now.tv_sec * 1000 + now.tv_usec / 1000000 );
-   
-   /*timespec ts;
-   
-   clock_gettime( CLOCK_PROCESS_CPUTIME_ID, &ts );
-   
-   return static_cast<U32>( ts.tv_sec * 1000 + ts.tv_nsec / 1000000 );*/
+   return static_cast< U32 >( now.tv_sec * 1000ul + now.tv_usec / 1000ul );
 #endif
 }
 //-------------------------------------------------------------------------

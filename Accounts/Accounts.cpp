@@ -64,6 +64,7 @@ int main( int argc, const char* argv[] )
    string agricolaIpAddressString = "localhost";
 
    string enableUserProducts = "false";
+   string userUuidFixOnly = "false";
 
    //---------------------------------------
 
@@ -74,6 +75,7 @@ int main( int argc, const char* argv[] )
    parser.FindValue( "agricola.port", agricolaIpAddressString );
 
    parser.FindValue( "user.products_update", enableUserProducts );
+   parser.FindValue( "user.uuid_fix_only", userUuidFixOnly );
 
 
    string dbPortString = "16384";
@@ -90,6 +92,7 @@ int main( int argc, const char* argv[] )
 
 
    bool enableAddingUseProducts = false;
+   bool onlyUpdatesUuid = false;
    int chatPort = 9602, dbPortAddress = 3306, agricolaPort = 23996;
    try 
    {
@@ -101,6 +104,10 @@ int main( int argc, const char* argv[] )
        if( enableUserProducts.size() )
        {
           enableAddingUseProducts = ( enableUserProducts == "true" || enableUserProducts == "1" );
+       }
+       if( userUuidFixOnly.size() )
+       {
+          onlyUpdatesUuid = ( userUuidFixOnly == "true" || userUuidFixOnly == "1" );
        }
    } 
    catch( boost::bad_lexical_cast const& ) 
@@ -128,7 +135,7 @@ int main( int argc, const char* argv[] )
    U64 serverUniqueHashValue = GenerateUniqueHash( serverName );
    U32 serverId = (U32)serverUniqueHashValue;
 
-   string version = "0.09";
+   string version = "0.11";
    cout << serverName << endl;
    cout << "Version " << version << endl;
    cout << "ServerId " << serverId << endl;
@@ -142,6 +149,7 @@ int main( int argc, const char* argv[] )
    server->AddOutputChain( delta );
 
    server->EnableAddingUserProducts( enableAddingUseProducts );
+   server->SetAsServicingUuidOnly( onlyUpdatesUuid );
    
    //server->Init();
    server->Resume();

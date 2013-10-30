@@ -503,3 +503,57 @@ bool  PacketRequestListOfProductsResponse::SerializeOut( U8* data, int& bufferOf
 }
 ///////////////////////////////////////////////////////////////
 
+
+bool  PacketRequestOtherUserProfile::SerializeIn( const U8* data, int& bufferOffset )
+{ 
+   BasePacket::SerializeIn( data, bufferOffset );
+   Serialize::In( data, bufferOffset, userName );
+
+   return true; 
+}
+
+bool  PacketRequestOtherUserProfile::SerializeOut( U8* data, int& bufferOffset ) const 
+{ 
+   BasePacket::SerializeOut( data, bufferOffset );
+   Serialize::Out( data, bufferOffset, userName );
+
+   return true; 
+}
+
+///////////////////////////////////////////////////////////////
+
+bool  PacketRequestOtherUserProfileResponse::SerializeIn( const U8* data, int& bufferOffset )
+{ 
+   BasePacket::SerializeIn( data, bufferOffset );
+  /* Serialize::In( data, bufferOffset, userName );
+   Serialize::In( data, bufferOffset, userUuid );
+   Serialize::In( data, bufferOffset, profileImage );
+   Serialize::In( data, bufferOffset, profileIcon );
+   Serialize::In( data, bufferOffset, gmtTimeSoneDifferential );
+   Serialize::In( data, bufferOffset, showWinLossRecord );*/
+
+   Serialize::In( data, bufferOffset, basicProfile );
+   Serialize::In( data, bufferOffset, productsOwned );
+   Serialize::In( data, bufferOffset, awards );
+
+   return true; 
+}
+
+bool  PacketRequestOtherUserProfileResponse::SerializeOut( U8* data, int& bufferOffset ) const 
+{ 
+   BasePacket::SerializeOut( data, bufferOffset );
+  /* Serialize::Out( data, bufferOffset, userName );
+   Serialize::Out( data, bufferOffset, userUuid );
+   Serialize::Out( data, bufferOffset, profileImage );
+   Serialize::Out( data, bufferOffset, profileIcon );
+   Serialize::Out( data, bufferOffset, gmtTimeSoneDifferential );
+   Serialize::Out( data, bufferOffset, showWinLossRecord );*/
+
+   Serialize::Out( data, bufferOffset, basicProfile );
+   Serialize::Out( data, bufferOffset, productsOwned );
+   Serialize::Out( data, bufferOffset, awards );
+
+   return true; 
+}
+
+///////////////////////////////////////////////////////////////

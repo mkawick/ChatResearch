@@ -10,6 +10,7 @@
 #include <boost/lexical_cast.hpp>
 
 #include "DiplodocusLogin.h"
+#include "ProductInfo.h"
 
 //////////////////////////////////////////////////////////////////////////
 
@@ -34,11 +35,13 @@ ConnectionToUser:: ConnectionToUser( const string& name, const string& pword, co
                      isActive( true ), 
                      loggedOutTime( 0 ),
                      adminLevel( 0 ),
+                     timeZone( 0 ),
                      languageId( 1 ),
                      showWinLossRecord( true ),
                      marketingOptOut( false ),
                      showGenderProfile( false ),
-                     isLoggingOut( false )
+                     isLoggingOut( false ),
+                     m_isSavingUserProfile( false )
                      {}
 
 //-----------------------------------------------------------------
@@ -64,7 +67,14 @@ bool  ConnectionToUser::HandleAdminRequestUserProfile( PacketDbQueryResult* dbRe
          UserPlusProfileTable             enigma( dbResult->bucket );
          ConnectionToUser& conn = it->second;
          conn.SaveUserSettings( enigma, 0 );
-         conn.PackUserProfileRequestAndSendToClient( connectionId );
+         if( dbResult->serverLookup != 0 )
+         {
+            conn.PackUserProfileRequestAndSendToClient( connectionId );
+         }
+         /*else
+         {
+            
+         }*/
          RequestListOfPurchases( conn.userUuid );
       }
       else
@@ -184,10 +194,19 @@ void  ConnectionToUser::SaveUserSettings( UserPlusProfileTable& enigma, U8 produ
       languageId =                     boost::lexical_cast<int>( row[ TableUserPlusProfile::Column_language_id] );
    }
 
+   string avatar = row[ TableUserPlusProfile::Column_mber_avatar];
+   if( avatar.size() != 0 )
+   avatarIcon =                     boost::lexical_cast< int > ( avatar );
    adminLevel =                     boost::lexical_cast< int > ( row[ TableUserPlusProfile::Column_admin_level] );
    marketingOptOut =                boost::lexical_cast< bool >( row[ TableUserPlusProfile::Column_marketing_opt_out] );
    showWinLossRecord =              boost::lexical_cast< bool >( row[ TableUserPlusProfile::Column_show_win_loss_record] );
    showGenderProfile =              boost::lexical_cast< bool >( row[ TableUserPlusProfile::Column_show_gender_profile] );
+
+   string tz = row[ TableUserPlusProfile::Column_time_zone];
+   if( tz.size() != 0 )
+   {
+      timeZone =                       boost::lexical_cast< int >( tz );
+   }
 
    gameProductId =                  productId;
 }
@@ -196,6 +215,14 @@ void  ConnectionToUser::SaveUserSettings( UserPlusProfileTable& enigma, U8 produ
 
 void  ConnectionToUser::SaveUpdatedProfile( const PacketUpdateUserProfile* profileUpdate, int adminLevelOfCaller, bool writeToDB )
 {
+   if( m_isSavingUserProfile )
+   {
+      userManager->SendErrorToClient( connectionId, PacketErrorReport::ErrorType_Login, PacketErrorReport::ErrorType_Login_ProfileIsAlreadyBeingUpdated );
+      return;
+   }
+
+   m_isSavingUserProfile = true;
+
    if( adminLevelOfCaller > 0 ) // only admins can change a user's name etc.
    {
       // some fields may be blank
@@ -208,6 +235,7 @@ void  ConnectionToUser::SaveUpdatedProfile( const PacketUpdateUserProfile* profi
       {
          email =                          profileUpdate->email;
       }
+
       if( profileUpdate->passwordHash.size() > 0 )
       {
          passwordHash =                   profileUpdate->passwordHash;
@@ -219,14 +247,19 @@ void  ConnectionToUser::SaveUpdatedProfile( const PacketUpdateUserProfile* profi
 
    isActive =                       profileUpdate->isActive;
    languageId =                     profileUpdate->languageId;
+   if( languageId < 1 || languageId > 12 )// limits on languages
+      languageId = 1;
 
    adminLevel =                     profileUpdate->adminLevel;
-   marketingOptOut =                profileUpdate->marketingOptOut;
-   showWinLossRecord =              profileUpdate->showWinLossRecord;
-   showGenderProfile =              profileUpdate->showGenderProfile;
+   if( adminLevel > 2 )
+      adminLevel = 2;
+
+   marketingOptOut =                profileUpdate->marketingOptOut ? true:false;// accounting for non-boolean values
+   showWinLossRecord =              profileUpdate->showWinLossRecord ? true:false;// accounting for non-boolean values
+   showGenderProfile =              profileUpdate->showGenderProfile ? true:false;// accounting for non-boolean values
 
    ConnectionToUser* loadedConnection = userManager->GetLoadedUserConnectionByUuid( userUuid );
-   if( loadedConnection != NULL )
+   if( loadedConnection != NULL && loadedConnection != this )
    {
       loadedConnection->SaveUpdatedProfile( profileUpdate, adminLevelOfCaller, false );// we will write if needed... no pass thru required
    }
@@ -274,6 +307,8 @@ void  ConnectionToUser::SaveUpdatedProfile( const PacketUpdateUserProfile* profi
       userManager->AddQueryToOutput( dbQuery );
    }
    PackUserProfileRequestAndSendToClient( connectionId );
+
+   m_isSavingUserProfile = false;
 }
 
 //-----------------------------------------------------------------
@@ -768,6 +803,11 @@ void     ConnectionToUser:: StoreListOfUsersProductsFromDB( PacketDbQueryResult*
    }
 
    userWhoGetsProducts->SendListOfProductsToClient( connectionId );
+
+   if( loadedForSelf == false )
+   {
+      userWhoGetsProducts->PackOtherUserProfileRequestAndSendToClient( connectionId );
+   }
 }
 
 //---------------------------------------------------------------
@@ -900,6 +940,45 @@ void     ConnectionToUser:: PackUserProfileRequestAndSendToClient( U32 connectio
 
 //-----------------------------------------------------------------
 
+void     ConnectionToUser:: PackOtherUserProfileRequestAndSendToClient( U32 connectionId )
+{
+   PacketRequestOtherUserProfileResponse* response = new PacketRequestOtherUserProfileResponse;
+
+   response->basicProfile.insert( "name", userName );
+   response->basicProfile.insert( "uuid", userUuid );
+   response->basicProfile.insert( "show_win_loss_record", boost::lexical_cast< string >( showWinLossRecord  ? 1:0 ) );
+   response->basicProfile.insert( "time_zone", boost::lexical_cast< string >( timeZone ) );
+
+   response->basicProfile.insert( "avatar_icon", avatarIcon );
+   //this->productsOwned
+
+   map< U32, ProductBrief >::iterator it = productsOwned.begin();
+   while( it != productsOwned.end() )
+   {
+      const string& uuid = it->second.uuid;
+      //int type = userManager->GetSalesOrganizer()->GetProductType( uuid );
+
+      ProductInfo returnPi;
+      if( userManager->FindProductByUuid( uuid, returnPi ) )
+      {
+         int type = returnPi.productType;
+         if( type == DiplodocusLogin::ProductType_game || type == DiplodocusLogin::ProductType_deck_expansion )
+         {
+            if( it->second.quantity > 0 )
+            {
+               response->productsOwned.insert( it->second.uuid, (int)(it->second.quantity ) );
+            }
+         }
+      }
+      it++;
+   }
+
+   userManager->SendPacketToGateway( response, connectionId );
+}
+
+//-----------------------------------------------------------------
+//-----------------------------------------------------------------
+
 void     ConnectionToUser:: ClearAllProductsOwned()
 {
    productsOwned.clear();
@@ -950,40 +1029,57 @@ bool     ConnectionToUser:: RequestProfile( const PacketRequestUserProfile* prof
       return true;
    }
 
-   string requestId = CreateLookupKey( profileRequest->userEmail, profileRequest->uuid, profileRequest->userName );
-  // submit request for user profile with this connection id
-   PacketDbQuery* dbQuery = new PacketDbQuery;
-   dbQuery->id =           connectionId;
-   dbQuery->lookup =       DiplodocusLogin::QueryType_AdminRequestUserProfile;
-   dbQuery->meta =         boost::lexical_cast<string>( GenerateUniqueHash( requestId ) );
-   dbQuery->serverLookup = gameProductId;
-
-   string temp = "SELECT * FROM users JOIN user_profile ON users.user_id=user_profile.user_id WHERE users.user_email='%s' OR users.uuid='%s' OR users.user_name='%s' LIMIT 1";
-   dbQuery->escapedStrings.insert( profileRequest->userEmail );
-   dbQuery->escapedStrings.insert( profileRequest->uuid );
-   dbQuery->escapedStrings.insert( profileRequest->userName );
-   dbQuery->query = temp;
-
-   adminUserData.insert( UserConnectionPair( dbQuery->meta, ConnectionToUser() ) );
-   userManager->AddQueryToOutput( dbQuery );
+   RequestProfile( profileRequest->userEmail, profileRequest->uuid, profileRequest->userName, true );
 
    return false;
 }
 
 //-----------------------------------------------------------------
 
+bool     ConnectionToUser:: RequestOthersProfile( const PacketRequestOtherUserProfile* profileRequest )
+{
+   RequestProfile( profileRequest->userName, profileRequest->userName, profileRequest->userName, false );
+
+   return true;
+}
+
+//-----------------------------------------------------------------
+
+void     ConnectionToUser:: RequestProfile( const string& email, const string& uuid, const string& name, bool asAdmin )
+{
+   string requestId = CreateLookupKey( email, uuid, name  );
+  // submit request for user profile with this connection id
+   PacketDbQuery* dbQuery = new PacketDbQuery;
+   dbQuery->id =           connectionId;
+   dbQuery->lookup =       DiplodocusLogin::QueryType_AdminRequestUserProfile;
+   dbQuery->meta =         boost::lexical_cast<string>( GenerateUniqueHash( requestId ) );
+   dbQuery->serverLookup = asAdmin;
+
+   // possible bug here... change this to only user username
+   string temp = "SELECT * FROM users JOIN user_profile ON users.user_id=user_profile.user_id WHERE users.user_email='%s' OR users.uuid='%s' OR users.user_name='%s' LIMIT 1";
+   dbQuery->escapedStrings.insert( email );
+   dbQuery->escapedStrings.insert( uuid );
+   dbQuery->escapedStrings.insert( name );
+   dbQuery->query = temp;
+
+   adminUserData.insert( UserConnectionPair( dbQuery->meta, ConnectionToUser() ) );
+   userManager->AddQueryToOutput( dbQuery );
+}
+
+//-----------------------------------------------------------------
+
 bool     ConnectionToUser:: UpdateProfile( const PacketUpdateUserProfile* updateProfileRequest )
 {
-   if( updateProfileRequest->adminLevel >= adminLevel )
-   {
-      userManager->SendErrorToClient( connectionId, PacketErrorReport::ErrorType_Cheat_BadPermissions );
-      return false;
-   }
-
    if( updateProfileRequest->userUuid == userUuid )
    {
       SaveUpdatedProfile( updateProfileRequest, adminLevel, true );
       return true;
+   }
+
+   if( updateProfileRequest->adminLevel >= adminLevel )// you must have admin privilidges to change other user's profiles.
+   {
+      userManager->SendErrorToClient( connectionId, PacketErrorReport::ErrorType_Cheat_BadPermissions );
+      return false;
    }
     
   /* string requestId = CreateLookupKey( updateProfileRequest->email, updateProfileRequest->userUuid, updateProfileRequest->userName );
@@ -1017,10 +1113,11 @@ bool     ConnectionToUser:: UpdateProfile( const PacketUpdateUserProfile* update
       }
       it++;
    }*/
+
    UserConnectionMapIterator  it = FindUser( updateProfileRequest->email, updateProfileRequest->userUuid, updateProfileRequest->userName );
    if( it != adminUserData.end() )
    {
-      it->second.SaveUpdatedProfile( updateProfileRequest, adminLevel,true );
+      it->second.SaveUpdatedProfile( updateProfileRequest, adminLevel, true );
       return true;
    }
 

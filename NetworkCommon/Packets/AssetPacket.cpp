@@ -26,6 +26,7 @@ bool  PacketAsset::SerializeOut( U8* data, int& bufferOffset ) const
 bool  AssetInfo::SerializeIn( const U8* data, int& bufferOffset )
 {
    Serialize::In( data, bufferOffset, productId );
+   Serialize::In( data, bufferOffset, isOptional );
    Serialize::In( data, bufferOffset, assetHash );
    Serialize::In( data, bufferOffset, version );
    Serialize::In( data, bufferOffset, beginDate );
@@ -37,6 +38,7 @@ bool  AssetInfo::SerializeIn( const U8* data, int& bufferOffset )
 bool  AssetInfo::SerializeOut( U8* data, int& bufferOffset ) const
 {
    Serialize::Out( data, bufferOffset, productId );
+   Serialize::Out( data, bufferOffset, isOptional );
    Serialize::Out( data, bufferOffset, assetHash );
    Serialize::Out( data, bufferOffset, version );
    Serialize::Out( data, bufferOffset, beginDate );

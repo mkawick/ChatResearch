@@ -33,6 +33,7 @@ namespace bt = boost::posix_time;
 //http://stackoverflow.com/questions/3786201/parsing-of-date-time-from-string-boost
 
 
+
 AssetOrganizer::AssetOrganizer() : m_isInitializedProperly( false ), m_lastFileLoadedTime( 0 ), m_allFilesAreNowLoaded( false )
 {
 }
@@ -118,7 +119,7 @@ const char* assetPriotityType[] = {
 
 //////////////////////////////////////////////////////////////////////////
 
-AssetDefinition:: AssetDefinition(): isLoaded( false ), isLayout( false ), productId( 0 ), platform( 0 ), fileData( NULL ), fileSize( 0 ), compressionType( 0 ), version( "0.5" ), priority( 0 )
+AssetDefinition:: AssetDefinition(): isLoaded( false ), isLayout( false ), isOptional( false ), productId( 0 ), platform( 0 ), fileData( NULL ), fileSize( 0 ), compressionType( 0 ), version( "0.5" ), priority( 0 )
 {
 }
 
@@ -335,6 +336,18 @@ bool  FillInAsset( string& line, AssetDefinition& asset )
          else if( potentionalKey == "begintime" ) 
          {
             asset.beginTime = ConvertStringToStandardTimeFormat( value );
+            return true;
+         }
+         else if( potentionalKey == "optional" ) 
+         {
+            if( value == "true" )
+               asset.isOptional = true;
+            else if( value == "true" )
+               asset.isOptional = false;
+            else
+            {
+               asset.isOptional = boost::lexical_cast< int >( value ) ? true:false;
+            }
             return true;
          }
          else if( potentionalKey == "endtime" ) 

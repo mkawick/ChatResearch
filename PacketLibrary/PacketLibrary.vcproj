@@ -230,6 +230,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\NetworkCommon\Packets\DataBucket.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\NetworkCommon\Packets\DbPacket.cpp"
 				>
 			</File>
@@ -243,6 +247,10 @@
 			</File>
 			<File
 				RelativePath="..\NetworkCommon\Packets\PacketFactory.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\NetworkCommon\Packets\PurchasePacket.cpp"
 				>
 			</File>
 			<File
@@ -280,6 +288,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\NetworkCommon\Packets\DataBucket.h"
+				>
+			</File>
+			<File
 				RelativePath="..\NetworkCommon\Packets\DbPacket.h"
 				>
 			</File>
@@ -293,6 +305,10 @@
 			</File>
 			<File
 				RelativePath="..\NetworkCommon\Packets\PacketFactory.h"
+				>
+			</File>
+			<File
+				RelativePath="..\NetworkCommon\Packets\PurchasePacket.h"
 				>
 			</File>
 			<File

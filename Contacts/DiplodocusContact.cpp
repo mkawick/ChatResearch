@@ -71,7 +71,10 @@ bool     DiplodocusContact::AddInputChainData( BasePacket* packet, U32 connectio
       {
          UserContactMapIterator found = m_users.find( connectionId );
          if( found == m_users.end() )
+         {
+            SendErrorToClient( connectionId, PacketErrorReport::ErrorType_Contact_BadLoginKey );
             return false;
+         }
 
          PacketContact* packetContact = static_cast< PacketContact* >( unwrappedPacket );
          bool result = found->second.HandleRequestFromClient( packetContact );

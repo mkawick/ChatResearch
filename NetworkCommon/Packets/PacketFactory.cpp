@@ -16,6 +16,7 @@
 #include "DbPacket.h"
 #include "GamePacket.h"
 #include "LoginPacket.h"
+#include "PurchasePacket.h"
 #include "ServerToServerPacket.h"
 
 using namespace std;
@@ -97,6 +98,10 @@ bool	PacketFactory::Parse( const U8* bufferIn, int& bufferOffset, BasePacket** p
    case PacketType_Cheat:
       {
          return ParseCheat( bufferIn, bufferOffset, &firstPassParse, packetOut );
+      }
+   case PacketType_Purchase:
+      {
+         return ParsePurchase( bufferIn, bufferOffset, &firstPassParse, packetOut );
       }
    }
 
@@ -260,6 +265,16 @@ bool  PacketFactory::ParseLogin( const U8* bufferIn, int& bufferOffset, const Ba
       case PacketLogin::LoginType_RequestListOfProductsResponse:
          {
             *packetOut = SerializeIn< PacketRequestListOfProductsResponse >( bufferIn, bufferOffset );
+         }
+         return true;
+      case PacketLogin::LoginType_RequestOtherUserProfile:
+         {
+            *packetOut = SerializeIn< PacketRequestOtherUserProfile >( bufferIn, bufferOffset );
+         }
+         return true;
+      case PacketLogin::LoginType_RequestOtherUserProfileResponse:
+         {
+            *packetOut = SerializeIn< PacketRequestOtherUserProfileResponse >( bufferIn, bufferOffset );
          }
          return true;
    }
@@ -859,6 +874,46 @@ bool     PacketFactory::ParseCheat( const U8* bufferIn, int& bufferOffset, const
    case PacketCheat::Cheat_Basic:
       {
          *packetOut = SerializeIn< PacketCheat >( bufferIn, bufferOffset );
+      }
+      return true;
+   }
+   return false;
+}
+
+//-----------------------------------------------------------------------------------------
+
+bool     PacketFactory::ParsePurchase( const U8* bufferIn, int& bufferOffset, const BasePacket* firstPassParse, BasePacket** packetOut ) const
+{
+   switch( firstPassParse->packetSubType ) //PacketType_Cheat
+   {
+   case PacketPurchase::PurchaseType_Base:
+      {
+         *packetOut = SerializeIn< PacketPurchase >( bufferIn, bufferOffset );
+      }
+      return true;
+   case PacketPurchase::PurchaseType_TestNotification:
+      {
+         *packetOut = SerializeIn< PacketPurchase_TestNotification >( bufferIn, bufferOffset );
+      }
+      return true;
+   case PacketPurchase::PurchaseType_Buy:
+      {
+         *packetOut = SerializeIn< PacketPurchase_Buy >( bufferIn, bufferOffset );
+      }
+      return true;
+   case PacketPurchase::PurchaseType_BuyResponse:
+      {
+         *packetOut = SerializeIn< PacketPurchase_BuyResponse >( bufferIn, bufferOffset );
+      }
+      return true;
+   case PacketPurchase::PurchaseType_RequestListOfSales:
+      {
+         *packetOut = SerializeIn< PacketPurchase_RequestListOfSales >( bufferIn, bufferOffset );
+      }
+      return true;
+   case PacketPurchase::PurchaseType_RequestListOfSalesResponse:
+      {
+         *packetOut = SerializeIn< PacketPurchase_RequestListOfSalesResponse >( bufferIn, bufferOffset );
       }
       return true;
    }

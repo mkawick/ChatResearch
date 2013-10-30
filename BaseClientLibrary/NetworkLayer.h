@@ -7,6 +7,7 @@
 #include "../NetworkCommon/Packets/AssetPacket.h"
 #include "../NetworkCommon/Packets/ChatPacket.h"
 #include "../NetworkCommon/Packets/LoginPacket.h"
+#include "../NetworkCommon/Packets/PurchasePacket.h"
 
 #include <map>
 using namespace std;
@@ -151,9 +152,10 @@ class UserNetworkEventNotifier
 public:
    virtual void  UserLogin( bool success ) {}
    virtual void  UserLogout() {}
-   virtual void  RequestListOfUserPurchases() {}
+   virtual void  ServerRequestsListOfUserPurchases() {}
    virtual void  UserProfileResponse( string username, string email, string userUuid, string lastLoginTime, string loggedOutTime, int adminLevel, bool isActive, bool showWinLossRecord, bool marketingOptOut, bool showGenderProfile ) {}
    virtual void  UserProfileResponse( const map< string, string >& keyValues ) {}
+   virtual void  OtherUsersProfile( const string& userName, const string& userUuid, const string& avatarIcon, bool showWinLoss, int timeZoneGMT, const SerializedKeyValueVector< int >& listOfItemsAndCounts ){}
 
    virtual void  ListOfAvailableProducts( const SerializedVector< ProductBriefPacketed >& products, int platformId ) {}
    virtual void  ListOfAggregateUserPurchases( const SerializedVector< PurchaseEntry >& purchases, int platformId ) {}
@@ -189,6 +191,9 @@ public:
    virtual bool  AssetLoaded( const string& name, const U8* buffer, int size ) { return true; }
 
    virtual void  OnError( int code, int subCode ){}
+
+   virtual void  PurchaseSuccess( const string& purchaseUuid, bool success ){}
+   virtual void  ProductsForSale( const SerializedKeyValueVector< PurchaseInfo >& thingsToBuy ) {}
 
    UserNetworkEventNotifier(){}
 
@@ -246,7 +251,8 @@ public:
    bool     IsLoggedIn() const { return m_isLoggedIn; }   
    string   GetUsername() const { return m_userName; }
 
-   bool     RequestProfile( const string userName ); //if empty, profile for currently logged in user is used.
+   bool     RequestProfile( const string userName ); //if empty, profile for currently logged in user is used. For other users, you must have admin
+   bool     RequestOtherUserInGameProfile( const string& userName ); // friends, games list, etc
 
    // note that changing a username, email, or uuid is not possible. This is for lookup only.
    bool     UpdateUserProfile( const string userName, const string& email, const string& userUuid, int adminLevel, int languageId, bool isActive, bool showWinLossRecord, bool marketingOptOut, bool showGenderProfile );
@@ -284,8 +290,11 @@ public:
 
    //--------------------------------------------------------------
    // ********************   Purchases/Products   *******************
-   bool     RequestListOfProducts() const;
+   bool     RequestListOfProducts() const; // everything
+   bool     RequestListOfProductsInStore() const; // just things that you can buy in our store
    bool     RequestListOfPurchases( const string userUuid = "" ) const;
+   bool     MakePurchase( const string& exchangeUuid ) const;
+
    bool     RequestListOfStaticAssets( int platformId = Platform_ios );
    bool     RequestListOfDynamicAssets( int platformId = Platform_ios );
    bool     RequestAsset( const string& assetName );

@@ -7,6 +7,7 @@
 struct AssetInfo
 {
    U8       productId;
+   bool     isOptional;
    string   assetHash;
    string   version;
    string   beginDate, endDate;

@@ -11,6 +11,7 @@ U64            GenerateUniqueHash( const std::string& str, int maxHexLen = 16 );
 std::string    GetDateInUTC( int diffDays = 0, int diffHours = 0, int diffMinutes = 0 );
 std::string    GetDateInUTC( time_t t );
 U64            GetDateFromString( const char* UTCFormatted );
+int            GetDiffTimeFromRightNow( const char* UTCFormatted );// negative times are in the past
 std::string    CreatePrintablePair( const std::string& key, const std::string& value );
 U32            GetCurrentMilliseconds();
 

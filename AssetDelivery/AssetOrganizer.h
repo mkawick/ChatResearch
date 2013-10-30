@@ -8,6 +8,7 @@ struct AssetDefinition
 {
    bool           isLoaded;
    bool           isLayout;
+   bool           isOptional;
    unsigned char  productId;
    int            platform;
    int            priority;

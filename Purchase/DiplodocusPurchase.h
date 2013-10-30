@@ -2,37 +2,54 @@
 
 
 #include "../NetworkCommon/NetworkIn/Diplodocus.h"
-
 #include "../NetworkCommon/Database/QueryHandler.h"
-//#include "AssetCommon.h"
+
+#include "SalesManager.h"
 #include "UserAccountPurchase.h"
 #include "KhaanPurchase.h"
-//#include "UserContact.h"
+
 
 #include <map>
 #include <deque>
 using namespace std;
-class AssetOrganizer;
+class PurchasePacket;
+class PurchasePacket_Buy;
+class PurchasePacket_GetListOfSaleItems;
 class PacketPrepareForUserLogin;
 class PacketPrepareForUserLogout;
 class PacketListOfUserProductsS2S;
+class SalesManager;
+class StringLookup;
 
 ///////////////////////////////////////////////////////////////////
 
-class DiplodocusPurchase : public Diplodocus< KhaanPurchase >
+class DiplodocusPurchase : public Diplodocus< KhaanPurchase > 
 {
+public:
+   enum QueryType
+   {
+      QueryType_ExchangeRateLookup,
+      QueryType_LoadAllProducts,
+      QueryType_VerifyThatUserHasEnoughMoney,
+      QueryType_PerformPurchase,
+      QueryType_ProductLookup,
+      QueryType_SalesLookup,
+      QueryType_Count
+   };
+
 public:
    DiplodocusPurchase( const string& serverName, U32 serverId );
    ~DiplodocusPurchase();
 
    void                    ServerWasIdentified( ChainedInterface* khaan );// callback really
-   bool                    SetIniFilePath( const string& assetPath, const string& assetDictionary, const string& dynamicAssetDictionary );
 
    bool                    AddInputChainData( BasePacket* packet, U32 connectionId );
    bool                    AddOutputChainData( BasePacket* packet, U32 connectionId );
 
-   const AssetOrganizer*   GetStaticAssetOrganizer() const { return m_staticAssets; }
-   const AssetOrganizer*   GetDynamicAssetOrganizer() const { return m_dynamicAssets; }
+   bool                    AddQueryToOutput( PacketDbQuery* packet );
+
+   const SalesManager*     GetSalesOrganizer() const { return m_salesManager; }
+   const StringLookup*     GetStringLookup() const { return m_stringLookup; }
 
 private:
    bool                    HandlePacketFromOtherServer( BasePacket* packet, U32 connectionId );
@@ -46,12 +63,12 @@ private:
 
    typedef map< U64, UserAccountPurchase >      UAADMap;
    typedef pair< U64, UserAccountPurchase >     UAADPair;
-   typedef UAADMap::iterator                       UAADMapIterator;
+   typedef UAADMap::iterator                    UAADMapIterator;
 
    deque< U32 >                     m_serversNeedingUpdate;
    UAADMap                          m_userTickets;
-   AssetOrganizer*                  m_dynamicAssets;
-   AssetOrganizer*                  m_staticAssets;
+   SalesManager*                    m_salesManager;
+   StringLookup*                    m_stringLookup;
 };
 
 ///////////////////////////////////////////////////////////////////

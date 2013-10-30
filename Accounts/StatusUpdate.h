@@ -33,6 +33,7 @@ public:
       QueryType_UserCreateTempAccount = 1,
       QueryType_UserCheckForNewAccount,
       QueryType_UserFindBlankUUID,
+      QueryType_UserFindBlankUUIDInUsers,
       QueryType_UserFindBlankUserProfile,
       QueryType_UserUpdateNewAccountKeyBeforeSendingEmail,
       QueryType_LoadStrings,
@@ -63,6 +64,7 @@ public:
    void     DuplicateUUIDSearch();
 
    void     EnableAddingUserProducts( bool enable ) { m_enableAddingUserProducts = enable; }
+   void     SetAsServicingUuidOnly( bool limited ) { m_uuidOnlySevice = limited; }
    
 
 private:
@@ -91,10 +93,13 @@ private:
    time_t   m_expireOldAccountRequestsTimer;
    int      m_expireOldAccountRequestsTimeoutSeconds;
 
+   time_t   m_timestampCheckDuplicateUUids;
+
    bool     m_enableAddingUserProducts;
    bool     m_hasRequestedAdminSettings;
    bool     m_isWaitingForAdminSettings;
    bool     m_autoCreateUsersInProcess;
+   bool     m_uuidOnlySevice;
 
    //time_t   m_resetPasswordEmailTimer;
    //int      m_resetPasswordEmailTimeoutSeconds;
@@ -124,4 +129,7 @@ private:
    static const U32 timeoutNewAccount = 48;
    static const U32 timeoutAddProductEntry = 45;
    static const U32 timeoutResetPassword = 30;
+   static const U32 timeoutCheckDuplicateUUids = 60;
+
+   
 };

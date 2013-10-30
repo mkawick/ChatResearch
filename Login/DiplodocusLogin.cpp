@@ -132,6 +132,13 @@ bool     DiplodocusLogin:: AddInputChainData( BasePacket* packet, U32 connection
                HandleRequestListOfProducts( userConnectionId, purchaseRequest );
             }
             break;
+
+         case PacketLogin::LoginType_RequestOtherUserProfile:
+            {
+               PacketRequestOtherUserProfile* profileRequest = static_cast<PacketRequestOtherUserProfile*>( actualPacket );
+               RequestOthersProfile( userConnectionId, profileRequest );
+            }
+            break;
          
          factory.CleanupPacket( packet );
          /*delete wrapper;
@@ -210,19 +217,20 @@ bool     DiplodocusLogin:: LogUserIn( const string& userName, const string& pass
 
       if( connection )
       {
-         if( connection->SuccessfulLogin( connectionId, true ) == true )
-         {
-            UpdateLastLoggedInTime( connectionId ); // update the user logged in time
-            SendLoginStatusToOtherServers( connection->userName, 
+         SendLoginStatusToOtherServers( connection->userName, 
                                           connection->userUuid, 
-                                          connection->connectionId, 
-                                          connection->gameProductId, 
+                                          connectionId, 
+                                          gameProductId, 
                                           connection->lastLoginTime, 
                                           connection->isActive, 
                                           connection->email, 
                                           connection->passwordHash, 
                                           connection->id, 
                                           connection->loginKey, true, false );
+
+         if( connection->SuccessfulLogin( connectionId, true ) == true )
+         {
+            UpdateLastLoggedInTime( connectionId ); // update the user logged in time
          }
       }
       else
@@ -266,12 +274,9 @@ bool     DiplodocusLogin:: HandleLoginResultFromDb( U32 connectionId, PacketDbQu
    {
       connection->LoginResult( dbResult );
 
-      if( connection->SuccessfulLogin( connectionId, false ) == true )
-      {
-         UpdateLastLoggedInTime( dbResult->id ); // update the user logged in time
-         return SendLoginStatusToOtherServers( connection->userName, 
+      SendLoginStatusToOtherServers( connection->userName, 
                                                 connection->userUuid, 
-                                                connection->connectionId, 
+                                                connectionId, 
                                                 connection->gameProductId, 
                                                 connection->lastLoginTime, 
                                                 connection->isActive, 
@@ -280,6 +285,10 @@ bool     DiplodocusLogin:: HandleLoginResultFromDb( U32 connectionId, PacketDbQu
                                                 connection->id,
                                                 connection->loginKey, 
                                                 true, false );
+      if( connection->SuccessfulLogin( connectionId, false ) == true )
+      {
+         UpdateLastLoggedInTime( dbResult->id ); // update the user logged in time
+         return true;
       }
    }
 
@@ -323,7 +332,6 @@ void     DiplodocusLogin:: FinalizeLogout( U32 connectionId, bool wasDisconnecte
    ConnectionToUser* connection = GetUserConnection( connectionId );
    if( connection )
    {
-     
       bool result = connection->FinalizeLogout();
       SendLoginStatusToOtherServers( connection->userName, 
                                     connection->userUuid, 
@@ -918,6 +926,20 @@ bool     DiplodocusLogin:: HandleRequestListOfProducts( U32 connectionId, Packet
 
 //---------------------------------------------------------------
 
+bool  DiplodocusLogin:: RequestOthersProfile( U32 connectionId, const PacketRequestOtherUserProfile* profileRequest )
+{
+   ConnectionToUser* connection = GetUserConnection( connectionId );
+   if( connection == NULL || connection->status != ConnectionToUser::LoginStatus_LoggedIn )
+   {
+      Log( "Login server.RequestProfile: major problem logged in user", 4 );
+      return false;
+   }
+
+   return connection->RequestOthersProfile( profileRequest );
+}
+
+//---------------------------------------------------------------
+
 ConnectionToUser*     DiplodocusLogin:: GetLoadedUserConnectionByUuid(const string & uuid )
 {
    Threading::MutexLock locker( m_inputChainListMutex );
@@ -1007,7 +1029,7 @@ bool  DiplodocusLogin:: ForceUserLogoutAndBlock( U32 connectionId )
 
    loginStatus->wasLoginSuccessful = false;
    loginStatus->adminLevel = 0;
-
+   
    SendPacketToGateway( loginStatus, connectionId );
    SendLoginStatusToOtherServers( userName, uuid, connectionId, gameProductId, lastLoginTime, active, email, passwordHash, userId, loginKey, false, false );
 

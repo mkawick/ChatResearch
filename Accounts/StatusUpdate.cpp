@@ -30,18 +30,20 @@ StatusUpdate::StatusUpdate( const string& serverName, U32 serverId ) : Queryer()
                   m_enableAddingUserProducts( false ),
                   m_hasRequestedAdminSettings( false ),
                   m_isWaitingForAdminSettings( false ),
-                  m_autoCreateUsersInProcess( false )
+                  m_autoCreateUsersInProcess( false ),
+                  m_uuidOnlySevice( false )
 {
    SetSleepTime( 500 );
    time( &m_newAccountCreationTimer );
    time( &m_checkOnautoCreateTimer );
    time( &m_checkOnOldEmailsTimer );
    time( &m_expireOldAccountRequestsTimer );
+   time( &m_timestampCheckDuplicateUUids );
 
    m_checkOnOldEmailsTimer -= OneDay; // always check on launch.. no waiting 24 hours.
    m_expireOldAccountRequestsTimer -= OneDay;
 
-   string queryForBlankUUIDs = "SELECT user_id FROM users WHERE uuid IS NULL OR uuid='0' LIMIT 30";
+   string queryForBlankUUIDs = "SELECT id, user_email FROM user_temp_new_user WHERE uuid IS NULL OR uuid='0' LIMIT 30";
    m_blankUuidHandler = new BlankUUIDQueryHandler( QueryType_UserFindBlankUUID, this, queryForBlankUUIDs );
    m_blankUuidHandler->SetPeriodicty( timeoutBlankUUIDTimer );
 
@@ -68,14 +70,16 @@ StatusUpdate::StatusUpdate( const string& serverName, U32 serverId ) : Queryer()
    LogOpen();
    LogMessage( LOG_PRIO_INFO, "Accounts::Accounts server created\n" );
    cout << "Accounts::Accounts server created" << endl;
+
+   srand( GetCurrentMilliseconds() );
 }
 
 StatusUpdate::~StatusUpdate()
 {
    delete m_blankUuidHandler;
    delete m_blankUserProfileHandler;
-   //delete m_newAccountHandler;
-   //delete m_resetPasswordHandler;
+   delete m_newAccountHandler;
+   delete m_resetPasswordHandler;
 }
 
 //---------------------------------------------------------------
@@ -179,7 +183,7 @@ void     StatusUpdate::ExpireOldUserAccountRequests()
 //---------------------------------------------------------------
 
 // this hack was added once I discovered that multiple users had the same UUID
-bool runOnce = true;
+/*bool runOnce = true;
 void  StatusUpdate::Hack()
 {
    if( isMailServiceEnabled == false )
@@ -197,8 +201,8 @@ void  StatusUpdate::Hack()
       dbQuery->query = "select id from user_temp_new_user where uuid in ( select uuid from user_temp_new_user group by uuid having count(uuid) > 1)";
       AddQueryToOutput( dbQuery );
    }
-}
-
+}*/
+/*
 void     StatusUpdate::HackResult( PacketDbQueryResult* dbResult )
 {
    //HandleNewAccounts( dbResult );
@@ -226,7 +230,7 @@ void     StatusUpdate::HackResult( PacketDbQueryResult* dbResult )
       dbQuery->query += "'";
       AddQueryToOutput( dbQuery );
    }
-}
+}*/
 
 //---------------------------------------------------------------
 
@@ -236,24 +240,35 @@ void  StatusUpdate::DuplicateUUIDSearch()
    if( isMailServiceEnabled == false )
       return;
 
-   PacketDbQuery* dbQuery = new PacketDbQuery;
-   dbQuery->id = 0;
-   dbQuery->lookup = QueryType_DuplicateUUIDSearch;
+   time_t currentTime;
+   time( &currentTime );
 
-   string preparedDate = GetDateInUTC( -3, 0, 0 );// get three days ago
-   dbQuery->query = "SELECT id, uuid FROM user_temp_new_user WHERE uuid IN ( SELECT uuid FROM user_temp_new_user GROUP BY uuid HAVING COUNT(uuid) > 1)";
-   AddQueryToOutput( dbQuery );
+   if( difftime( currentTime, m_timestampCheckDuplicateUUids ) >= timeoutCheckDuplicateUUids ) 
+   {
+      m_timestampCheckDuplicateUUids = currentTime;
+
+      PacketDbQuery* dbQuery = new PacketDbQuery;
+      dbQuery->id = 0;
+      dbQuery->lookup = QueryType_DuplicateUUIDSearch;
+      dbQuery->query = "SELECT id, uuid FROM user_temp_new_user WHERE uuid IN ( SELECT uuid FROM user_temp_new_user GROUP BY uuid HAVING COUNT(uuid) > 1)";
+      AddQueryToOutput( dbQuery );
+
+      dbQuery = new PacketDbQuery;
+      dbQuery->id = 0;
+      dbQuery->lookup = QueryType_DuplicateUUIDSearch;
+      dbQuery->query = "SELECT user_temp_new_user.id, user_temp_new_user.uuid FROM user_temp_new_user INNER JOIN users ON user_temp_new_user.uuid=users.uuid";
+      AddQueryToOutput( dbQuery );
+   }
 }
 
 //---------------------------------------------------------------
 
 void     StatusUpdate::DuplicateUUIDSearchResult( PacketDbQueryResult* dbResult )
 {
-   //HandleNewAccounts( dbResult );
    KeyValueParser              enigma( dbResult->bucket );
    KeyValueParser::iterator    it = enigma.begin();
 
-   U32 counter = 1;
+   static U32 counter = 1;
    
    while( it != enigma.end() )
    {
@@ -269,7 +284,7 @@ void     StatusUpdate::DuplicateUUIDSearchResult( PacketDbQueryResult* dbResult 
       string newUuid = GenerateUUID( GetCurrentMilliseconds() + static_cast<U32>( GenerateUniqueHash( columnId + uuid ) ) + counter );
       counter ++;// guaranteeing incremental values in case the app is too fast for the millisecond timer
 
-      dbQuery->query = "Update user_temp_new_user SET uuid='";
+      dbQuery->query = "UPDATE user_temp_new_user SET uuid='";
       dbQuery->query += newUuid;
       dbQuery->query += "' WHERE id='";
       dbQuery->query += columnId;
@@ -307,21 +322,31 @@ int      StatusUpdate::CallbackFunction()
       }
 
 //      LookForFlaggedAutoCreateAccounts();
+      //if( m_
 
-      if( m_newAccountHandler->IsReady() )
+      if( m_uuidOnlySevice == false )
       {
-         ResendEmailToOlderAccounts();
+         if( m_newAccountHandler->IsReady() )
+         {
+            ResendEmailToOlderAccounts();
+            
+            LookForFlaggedAutoCreateAccounts();
+            ExpireOldUserAccountRequests();
+            //Hack();// no longer needed
+            m_resetPasswordHandler->Update( currentTime );
+         }
          
-         LookForFlaggedAutoCreateAccounts();
-         ExpireOldUserAccountRequests();
-         Hack();
-         m_resetPasswordHandler->Update( currentTime );
+         m_newAccountHandler->Update( currentTime );
       }
+    /*  else
+      {
+         m_newAccountHandler->Update( currentTime );
+      }*/
       
-    
       m_blankUuidHandler->Update( currentTime );
-      m_newAccountHandler->Update( currentTime );
-      m_blankUserProfileHandler->Update( currentTime );
+      DuplicateUUIDSearch();
+
+      //m_blankUserProfileHandler->Update( currentTime ); // no longer needed
       if( m_enableAddingUserProducts )
       {
          m_addProductEntryHandler->Update( currentTime );
@@ -463,7 +488,7 @@ bool     StatusUpdate::AddOutputChainData( BasePacket* packet, U32 connectionId 
                      wasHandled = true;
                   }
                   break;
-               case QueryType_Hack:
+               /*case QueryType_Hack:
                   {
                      if( dbResult->successfulQuery == true && dbResult->bucket.bucket.size() > 0 )
                      {
@@ -472,7 +497,7 @@ bool     StatusUpdate::AddOutputChainData( BasePacket* packet, U32 connectionId 
                      
                      wasHandled = true;
                   }
-                  break;
+                  break;*/
                case QueryType_ResendEmailToOlderAccounts:
                   {
                      if( dbResult->successfulQuery == true && dbResult->bucket.bucket.size() > 0 )
@@ -527,20 +552,7 @@ void     StatusUpdate::HandleAutoCreateAccounts( const PacketDbQueryResult* dbRe
    {
       NewUsersTable::row         row = *it++;
       string uuid =              row[ TableUserTempNewUser::Column_uuid ]; //<< must be created
-      string id =                row[ TableUserTempNewUser::Column_id ];
-
-      if( uuid.size() == 0 || uuid == "NULL" )
-      {
-         //continue; // wait until next round until it has the uuid in place
-         //uuid = GenerateUUID( GetCurrentMilliseconds() );
-         //UpdateUuidForUser( "0", true, id );
-         m_blankUuidHandler->UpdateUuidForUser( "0", true, id );
-         continue;
-      }
-
-      //http://dev.mysql.com/doc/refman/5.0/en/insert-on-duplicate.html
-
-      
+      string id =                row[ TableUserTempNewUser::Column_id ];      
       string name =              row[ TableUserTempNewUser::Column_name ];
       string email =             row[ TableUserTempNewUser::Column_email ];
       string userId =            row[ TableUserTempNewUser::Column_user_id ];
@@ -548,6 +560,9 @@ void     StatusUpdate::HandleAutoCreateAccounts( const PacketDbQueryResult* dbRe
       string productId =         row[ TableUserTempNewUser::Column_game_id ];
 
       //string uuid =              row[ TableUserTempNewUser::Column_uuid ]; //<< must be created
+      if( uuid == "" || uuid.size() == 0 )
+         uuid = m_blankUuidHandler->GenerateUuid( id, email );
+
       string gamekitHash =       row[ TableUserTempNewUser::Column_gamekit_hash ];
       string passwordHash =      row[ TableUserTempNewUser::Column_user_pw_hash ];
       string lowerCaseUserName = row[ TableUserTempNewUser::Column_user_name_match ];

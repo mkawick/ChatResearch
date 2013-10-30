@@ -90,6 +90,13 @@ bool FruitadensGateway::FilterOutwardPacket( BasePacket* packet ) const
             return true;
          }
       }
+      else if( m_serverType == ServerType_Purchase )
+      {
+         if( type == PacketType_Purchase )
+         {
+            return true;
+         }
+      }
    }
    else if( packet->packetType == PacketType_ServerToServerWrapper )
    {

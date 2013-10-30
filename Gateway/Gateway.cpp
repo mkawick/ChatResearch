@@ -58,6 +58,9 @@ int main( int argc, const char* argv[] )
    string contactPortString = "9800";
    string contactIpAddressString = "localhost";
 
+   string purchasePortString = "9900";
+   string purchaseIpAddressString = "localhost";
+
    //--------------------------------------------------------------
 
    parser.FindValue( "listen.port", listenPortString );
@@ -78,7 +81,10 @@ int main( int argc, const char* argv[] )
    parser.FindValue( "contact.port", contactPortString );
    parser.FindValue( "contact.address", contactIpAddressString );
 
-   int listenPort = 9600, chatPort = 9601, game1Port = 23550, loginPort = 3072, assetPort = 9700, contactPort = 9800;
+   parser.FindValue( "purchase.port", purchasePortString );
+   parser.FindValue( "purchase.address", purchaseIpAddressString );
+
+   int listenPort = 9600, chatPort = 9601, game1Port = 23550, loginPort = 3072, assetPort = 9700, contactPort = 9800, purchasePort = 9900;
    try 
    {
        listenPort = boost::lexical_cast<int>( listenPortString );
@@ -87,6 +93,7 @@ int main( int argc, const char* argv[] )
        game1Port = boost::lexical_cast<int>( game1PortString );
        assetPort = boost::lexical_cast<int>( assetDeliveryPortString );
        contactPort = boost::lexical_cast<int>( contactPortString );
+       purchasePort = boost::lexical_cast<int>( purchasePortString );
    } 
    catch( boost::bad_lexical_cast const& ) 
    {
@@ -122,11 +129,15 @@ int main( int argc, const char* argv[] )
    FruitadensGateway contactServer( "fruity to contact" );
    contactServer.SetConnectedServerType( ServerType_Contact );
 
+   FruitadensGateway purchaseServer( "fruity to purchase" );
+   purchaseServer.SetConnectedServerType( ServerType_Purchase );
+
    gateway->AddOutputChain( &chatOut );
    gateway->AddOutputChain( &gameServerOut );
    gateway->AddOutputChain( &loginServerOut );
    gateway->AddOutputChain( &assetServer );
    gateway->AddOutputChain( &contactServer );
+   gateway->AddOutputChain( &purchaseServer );
 
    gateway->SetupListening( listenPort );
    
@@ -160,6 +171,10 @@ int main( int argc, const char* argv[] )
    cout << "Contact server: " << contactIpAddressString << ":" << contactPort << endl;
    contactServer.Connect( contactIpAddressString.c_str(), contactPort );
    contactServer.Resume();
+
+   cout << "Purchase server: " << purchaseIpAddressString << ":" << purchasePort << endl;
+   purchaseServer.Connect( purchaseIpAddressString.c_str(), purchasePort );
+   purchaseServer.Resume();
    
    cout << "---------------------------- finished connecting ----------------------------" << endl;
 

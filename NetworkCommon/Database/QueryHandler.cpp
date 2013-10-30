@@ -5,8 +5,9 @@
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-QueryHandler :: QueryHandler( U32 type, int periodicity, Queryer* parent ) : 
+/*
+template< typename QueryParentPtr >
+QueryHandler <QueryParentPtr>:: QueryHandler( U32 type, int periodicity, ParentQueryerPtr parent ) : 
                               m_queryType( type ), 
                               m_periodicitySeconds( periodicity ), 
                               m_runSlower( false ),
@@ -15,11 +16,13 @@ QueryHandler :: QueryHandler( U32 type, int periodicity, Queryer* parent ) :
    time( &m_lastTimeStamp );
 }
 
-QueryHandler :: ~QueryHandler()
+template< typename QueryParentPtr >
+QueryHandler <QueryParentPtr> :: ~QueryHandler()
 {
 }
 
-void     QueryHandler::Update( time_t currentTime, bool& flagToSet )
+template< typename QueryParentPtr >
+void     QueryHandler <QueryParentPtr>::Update( time_t currentTime, bool& flagToSet )
 {
    if( m_parent == NULL || flagToSet == true )
       return;
@@ -39,7 +42,8 @@ void     QueryHandler::Update( time_t currentTime, bool& flagToSet )
    }
 }
 
-void     QueryHandler::SubmitQuery()
+template< typename QueryParentPtr >
+void     QueryHandler <QueryParentPtr>::SubmitQuery()
 {
    PacketDbQuery* dbQuery = new PacketDbQuery;
    dbQuery->id = 0;
@@ -50,7 +54,8 @@ void     QueryHandler::SubmitQuery()
    m_parent->AddQueryToOutput( dbQuery );
 }
 
-void     QueryHandler::Fire()// not based on a timer.
+template< typename QueryParentPtr >
+void     QueryHandler <QueryParentPtr> :: Fire()// not based on a timer.
 {
    if( m_parent == NULL )
       return;
@@ -63,5 +68,5 @@ void     QueryHandler::Fire()// not based on a timer.
 
    m_parent->AddQueryToOutput( dbQuery );
 }
-
+*/
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////

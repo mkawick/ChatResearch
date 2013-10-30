@@ -7,7 +7,7 @@
 
 ///////////////////////////////////////////////////////////////////////////////////////////
 
-class BlankUserProfileHandler : public QueryHandler
+class BlankUserProfileHandler : public QueryHandler< Queryer* >
 {
 public:
    BlankUserProfileHandler( U32 id, Queryer* parent, string& query );

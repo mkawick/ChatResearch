@@ -6,6 +6,8 @@
 #include "../ServerStack/NetworkCommon/Packets/ChatPacket.h"
 #include "../ServerStack/NetworkCommon/Packets/AssetPacket.h"
 #include "../ServerStack/NetworkCommon/Packets/CheatPacket.h"
+#include "../ServerStack/NetworkCommon/Packets/PurchasePacket.h"
+#include "../ServerStack/NetworkCommon/Packets/LoginPacket.h"
 
 #include <assert.h>
 #include <iostream>
@@ -240,6 +242,22 @@ bool  NetworkLayer::RequestProfile( const string userName )//if empty, profile f
 
 //-----------------------------------------------------------------------------
 
+bool  NetworkLayer::RequestOtherUserInGameProfile( const string& userName ) // friends, games list, etc
+{
+   if( m_isConnected == false || userName.size() == 0 )
+   {
+      return false;
+   }
+   PacketRequestOtherUserProfile request;
+   request.userName = userName;
+
+   SerializePacketOut( &request );
+
+   return true;
+}
+
+//-----------------------------------------------------------------------------
+
 bool  NetworkLayer::UpdateUserProfile( const string userName, const string& email, const string& userUuid, int adminLevel, int languageId, bool isActive, bool showWinLossRecord, bool marketingOptOut, bool showGenderProfile )
 {
    if( m_isConnected == false )
@@ -293,6 +311,20 @@ bool  NetworkLayer::RequestListOfProducts() const
 
 //-----------------------------------------------------------------------------
 
+bool  NetworkLayer::RequestListOfProductsInStore() const
+{
+   if( m_isConnected == false )
+   {
+      return false;
+   }
+   PacketPurchase_RequestListOfSales products;
+   SerializePacketOut( &products );
+
+   return true;
+}
+
+//-----------------------------------------------------------------------------
+
 bool  NetworkLayer::RequestListOfPurchases( const string userUuid ) const
 {
    if( m_isConnected == false )
@@ -313,6 +345,20 @@ bool  NetworkLayer::RequestListOfPurchases( const string userUuid ) const
    return true;
 }
 
+//-----------------------------------------------------------------------------
+
+bool  NetworkLayer::MakePurchase( const string& exchangeUuid ) const
+{
+   if( m_isConnected == false )
+   {
+      return false;
+   }
+   PacketPurchase_Buy purchase;
+   purchase.purchaseUuid = exchangeUuid;
+   SerializePacketOut( &purchase );
+
+   return true;
+}
 
 //-----------------------------------------------------------------------------
   
@@ -1202,7 +1248,7 @@ bool  NetworkLayer::HandlePacketReceived( BasePacket* packetIn )
                {
                   for( list< UserNetworkEventNotifier* >::iterator it = m_callbacks.begin(); it != m_callbacks.end(); ++it )
                   {
-                     (*it)->RequestListOfUserPurchases();
+                     (*it)->ServerRequestsListOfUserPurchases();
                   }
                }
                break;
@@ -1252,6 +1298,20 @@ bool  NetworkLayer::HandlePacketReceived( BasePacket* packetIn )
                      (*it)->ListOfAvailableProducts( products->products, products->platformId );
                   }
                }
+            case PacketLogin::LoginType_RequestOtherUserProfileResponse:
+               {
+                  PacketRequestOtherUserProfileResponse* profile = static_cast<PacketRequestOtherUserProfileResponse*>( packetIn );
+                  string userName =       profile->basicProfile.find( "name" );
+                  string userUuid =       profile->basicProfile.find( "uuid" );
+                  bool showWinLoss =      boost::lexical_cast< bool >( profile->basicProfile.find( "show_win_loss_record" ) );
+                  int timeZoneGMT =       boost::lexical_cast< int >( profile->basicProfile.find( "time_zone" ) );
+                  string avatarIcon =     profile->basicProfile.find( "avatar_icon" );
+
+                  for( list< UserNetworkEventNotifier* >::iterator it = m_callbacks.begin(); it != m_callbacks.end(); ++it )
+                  { 
+                     (*it)->OtherUsersProfile( userName, userUuid, avatarIcon, showWinLoss, timeZoneGMT, profile->productsOwned );
+                  }
+               }
          }
          
       }
@@ -1291,6 +1351,32 @@ bool  NetworkLayer::HandlePacketReceived( BasePacket* packetIn )
          }
       }
       break;
+      case PacketType_Purchase:
+         {
+            switch( packetIn->packetSubType )
+            {
+            case PacketPurchase::PurchaseType_BuyResponse:
+               {
+                  PacketPurchase_BuyResponse* purchase = static_cast<PacketPurchase_BuyResponse*>( packetIn );
+                  for( list< UserNetworkEventNotifier* >::iterator it = m_callbacks.begin(); it != m_callbacks.end(); ++it )
+                  {
+                     (*it)->PurchaseSuccess( purchase->purchaseUuid, purchase->success );
+                  }
+               }
+               break;
+            case PacketPurchase::PurchaseType_RequestListOfSalesResponse:
+               {
+                  PacketPurchase_RequestListOfSalesResponse* purchase = static_cast<PacketPurchase_RequestListOfSalesResponse*>( packetIn );
+                  for( list< UserNetworkEventNotifier* >::iterator it = m_callbacks.begin(); it != m_callbacks.end(); ++it )
+                  {
+                     (*it)->ProductsForSale( purchase->thingsForSale );
+                  }
+               }
+               break;
+            }
+
+         }
+         break;
       case PacketType_Chat:
       {
          switch( packetIn->packetSubType )

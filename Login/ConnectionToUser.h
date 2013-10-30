@@ -61,6 +61,8 @@ struct ConnectionToUser
    void     StoreListOfUsersProductsFromDB( PacketDbQueryResult* dbResult, bool shouldAddLoggedInProduct );
 
    bool     RequestProfile( const PacketRequestUserProfile* profileRequest );
+   bool     RequestOthersProfile( const PacketRequestOtherUserProfile* profileRequest );
+   void     RequestProfile( const string& email, const string& uuid, const string& name, bool asAdmin );
    bool     UpdateProfile( const PacketUpdateUserProfile* updateProfileRequest );
    bool     HandleAdminRequestUserProfile( PacketDbQueryResult* dbResult );
 
@@ -78,6 +80,7 @@ struct ConnectionToUser
    string                  loginKey;
    string                  lastLoginTime;
    string                  lastLogoutTime;
+   string                  avatarIcon;
 
    LoginStatus             status;
    U8                      gameProductId;
@@ -86,6 +89,7 @@ struct ConnectionToUser
    time_t                  loggedOutTime;
    bool                    isLoggingOut;
 
+   int                     timeZone;
    int                     languageId;
    int                     adminLevel;
    bool                    isActive;
@@ -116,6 +120,7 @@ protected:
    ConnectionToUser() {};
    
 
+   bool m_isSavingUserProfile;
    static DiplodocusLogin* userManager;
 
    typedef map< string, ConnectionToUser>    UserConnectionMap;
@@ -132,6 +137,7 @@ protected:
    void     SaveUserSettings( UserPlusProfileTable& enigma, U8 gameProductId );
    void     SaveUpdatedProfile( const PacketUpdateUserProfile* profileUpdate, int adminLevelOfCaller, bool writeToDB );
    void     PackUserProfileRequestAndSendToClient( U32 connectionId );
+   void     PackOtherUserProfileRequestAndSendToClient( U32 connectionId );
 
    void     ClearAllProductsOwned();
    void     AddToProductsOwned( int productDbId, const string& productName, const string& productUuid, float quantity );

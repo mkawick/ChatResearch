@@ -4,9 +4,13 @@ taskkill /f /im AssetDeliveryServer.exe
 
 taskkill /f /im ContactsServer.exe
 
+taskkill /f /im PurchaseServer.exe
+
 taskkill /f /im LoginServer.exe
 
 taskkill /f /im ChatServer.exe
+
+taskkill /f /im ProductServer.exe
 
 taskkill /f /im GameServer.exe
 

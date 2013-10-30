@@ -28,7 +28,7 @@ void     ResetPasswordQueryHandler::Update( time_t currentTime )
    if( m_hasLoadedStringTable == false || m_hasLoadedWeblinks == false )
       return;
 
-   QueryHandler::Update( currentTime, m_isServicingResetPassword );
+   QueryHandler< Queryer* >::Update( currentTime, m_isServicingResetPassword );
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////

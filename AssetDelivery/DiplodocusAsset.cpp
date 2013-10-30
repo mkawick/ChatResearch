@@ -152,7 +152,7 @@ bool     DiplodocusAsset::AddInputChainData( BasePacket* packet, U32 connectionI
                return true;
             if( found->second.LoginKeyMatches( loginKey ) == false )
             {
-               SendErrorToClient( connectionId, PacketErrorReport::ErrorType_Contact_Asset_BadLoginKey );
+               SendErrorToClient( connectionId, PacketErrorReport::ErrorType_Asset_BadLoginKey );
             }
             else
             {

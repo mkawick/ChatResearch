@@ -84,6 +84,22 @@ bool  SerializedKeyValueVector< type > ::SerializeOut( U8* data, int& bufferOffs
 }
 
 template < typename type >
+type  SerializedKeyValueVector< type > ::find( const string& key ) const
+{
+   typename KeyValueVector::const_iterator it = dataList.begin();
+   while( it != dataList.end() )
+   {
+      const KeyValueSerializer<type>& kvs = *it;
+      if( kvs.key == key )
+      {
+         return kvs.value;
+      }
+      it++;
+   }
+   return type();
+}
+
+template < typename type >
 bool SerializedKeyValueVector< type > ::operator = (const KeyValueSerializer< type >& src )
 {
    dataList.clear();

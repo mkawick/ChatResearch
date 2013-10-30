@@ -37,7 +37,7 @@ struct EmailToSend
 
 ///////////////////////////////////////////////////////////////////////////////////////////
 
-class NewAccountQueryHandler : public QueryHandler
+class NewAccountQueryHandler : public QueryHandler< Queryer* >
 {
 
 public:

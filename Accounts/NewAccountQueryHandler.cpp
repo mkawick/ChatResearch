@@ -30,7 +30,7 @@ map< stringhash, stringhash >   NewAccountQueryHandler::m_replacemetStringsLooku
 
 ///////////////////////////////////////////////////////////////////////////////////////////
 
-NewAccountQueryHandler::NewAccountQueryHandler( U32 id, Queryer* parent, string& query ) : QueryHandler( id, 20, parent ), 
+NewAccountQueryHandler::NewAccountQueryHandler( U32 id, Queryer* parent, string& query ) : QueryHandler< Queryer* >( id, 20, parent ), 
                      m_isServicingNewAccounts( false ),
                      m_isServicingStringLoading( false ),
                      m_isServicingWebLinks( false )
@@ -54,7 +54,7 @@ void     NewAccountQueryHandler::Update( time_t currentTime )
    }
    if( isMailServiceEnabled == true )
    {
-      QueryHandler::Update( currentTime, m_isServicingNewAccounts );
+      QueryHandler< Queryer* >::Update( currentTime, m_isServicingNewAccounts );
    }
 }
 
@@ -180,6 +180,15 @@ bool     NewAccountQueryHandler::HandleResult( const PacketDbQueryResult* dbResu
 
 //---------------------------------------------------------------
 
+bool     IsSpecialCaseEmailSoSendDefaultText( string& email )
+{
+   if( email.find ( "free.fr" ) != std::string::npos )
+      return true;
+   return false;
+}
+
+//---------------------------------------------------------------
+
 void     NewAccountQueryHandler::PrepToSendUserEmail( const PacketDbQueryResult* dbResult )
 {
    NewUsersTable              enigma( dbResult->bucket );
@@ -215,8 +224,8 @@ void     NewAccountQueryHandler::PrepToSendUserEmail( const PacketDbQueryResult*
          linkPath += "?key=";
          linkPath += userLookupKey;
 
-
-         if( m_confirmationEmailTemplate.size() )
+         
+         if( IsSpecialCaseEmailSoSendDefaultText( email ) == false && m_confirmationEmailTemplate.size() )
          {
             bodyText = m_confirmationEmailTemplate;
             map< string, string > specialStrings;
@@ -230,13 +239,9 @@ void     NewAccountQueryHandler::PrepToSendUserEmail( const PacketDbQueryResult*
             bodyText += "'>Playdek.com</a>";
          }
 
-         
-
-         // it is likely that the new user does not have a UUID yet so we will add it to both tables
-         //UpdateUuidForUser( userId, true, columnId );
          if( m_blankUuidHandler )
          {
-            m_blankUuidHandler->UpdateUuidForUser( userId, true, columnId );
+            m_blankUuidHandler->UpdateUuidForTempUser( columnId, email );
          }
          EmailToSend emailDetails;
          emailDetails.accountEmailAddress = newAccountEmailAddress;

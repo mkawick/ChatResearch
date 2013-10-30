@@ -1,0 +1,32 @@
+#include "StringLookup.h"
+
+//---------------------------------------------------------------
+
+void     StringLookup::SaveStrings( const PacketDbQueryResult* dbResult )
+{
+   cout << "strings saved :" << dbResult->bucket.bucket.size() << endl;
+
+   StringTableParser              enigma( dbResult->bucket );
+   StringTableParser::iterator    it = enigma.begin();
+   int count = 0;
+   m_hasLoadedStringTable = true;
+   
+   while( it != enigma.end() )
+   {
+      StringTableParser::row     row = *it++;
+
+      string id =                row[ StringsTable::Column_id ];
+      string stringName =        row[ StringsTable::Column_string ];
+      string replacementstring = row[ StringsTable::Column_replaces ];
+
+      stringhash lookupHash = GenerateUniqueHash( stringName );
+      m_stringsTable.insert( StringTableLookupPair( lookupHash, row ) );
+      count ++;
+
+      if( replacementstring.size() )
+      {
+         stringhash replacementHash = GenerateUniqueHash( replacementstring );
+         m_replacemetStringsLookup.insert( ReplacementPair( replacementHash, lookupHash ) );
+      }
+   }
+}
