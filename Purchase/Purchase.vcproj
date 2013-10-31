@@ -190,7 +190,7 @@
 				>
 			</File>
 			<File
-				RelativePath=".\StringLookup.cpp"
+				RelativePath="..\NetworkCommon\Database\StringLookup.cpp"
 				>
 			</File>
 			<File
@@ -216,7 +216,7 @@
 				>
 			</File>
 			<File
-				RelativePath=".\StringLookup.h"
+				RelativePath="..\NetworkCommon\Database\StringLookup.h"
 				>
 			</File>
 			<File

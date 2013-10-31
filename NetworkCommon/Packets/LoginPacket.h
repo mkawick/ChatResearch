@@ -247,6 +247,7 @@ public:
    string   email;
    bool     active;
    U32      userId;
+   U32      languageId;
 };
 
 ///////////////////////////////////////////////////////////////

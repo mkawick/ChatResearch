@@ -25,7 +25,7 @@ class PacketDbQueryResult;
 
 ///////////////////////////////////////////////////////////////////////////////////////////
 
-class StatusUpdate : public Queryer
+class StatusUpdate : public Queryer, public Threading::CChainedThread < BasePacket* >
 {
 public:
    enum QueryType 

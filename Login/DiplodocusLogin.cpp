@@ -4,6 +4,8 @@
 #include "../NetworkCommon/Utils/TableWrapper.h"
 #include "../NetworkCommon/Utils/Utils.h"
 
+#include "../NetworkCommon/Database/StringLookup.h"
+
 #include "../NetworkCommon/Packets/ServerToServerPacket.h"
 #include "../NetworkCommon/Packets/GamePacket.h"
 #include "../NetworkCommon/Packets/DbPacket.h"
@@ -25,6 +27,7 @@
 //////////////////////////////////////////////////////////
 
 DiplodocusLogin:: DiplodocusLogin( const string& serverName, U32 serverId )  : 
+                  Queryer(),
                   Diplodocus< KhaanLogin >( serverName, serverId, 0, ServerType_Login ), 
                   m_isInitialized( false ), 
                   m_isInitializing( false ),
@@ -34,6 +37,11 @@ DiplodocusLogin:: DiplodocusLogin( const string& serverName, U32 serverId )  :
    LogOpen();
    LogMessage( LOG_PRIO_INFO, "Login::Login server created" );
    cout << "Login::Login server created" << endl;
+
+   vector< string > stringCategories;
+   stringCategories.push_back( string( "product" ) );
+   stringCategories.push_back( string( "sale" ) );
+   m_stringLookup = new StringLookup( QueryType_ProductStringLookup, this, stringCategories );
 }
 
 
@@ -226,7 +234,8 @@ bool     DiplodocusLogin:: LogUserIn( const string& userName, const string& pass
                                           connection->email, 
                                           connection->passwordHash, 
                                           connection->id, 
-                                          connection->loginKey, true, false );
+                                          connection->loginKey, 
+                                          connection->languageId, true, false );
 
          if( connection->SuccessfulLogin( connectionId, true ) == true )
          {
@@ -284,6 +293,7 @@ bool     DiplodocusLogin:: HandleLoginResultFromDb( U32 connectionId, PacketDbQu
                                                 connection->passwordHash, 
                                                 connection->id,
                                                 connection->loginKey, 
+                                                connection->languageId, 
                                                 true, false );
       if( connection->SuccessfulLogin( connectionId, false ) == true )
       {
@@ -343,6 +353,7 @@ void     DiplodocusLogin:: FinalizeLogout( U32 connectionId, bool wasDisconnecte
                                     connection->passwordHash, 
                                     connection->id, 
                                     connection->loginKey,
+                                    connection->languageId, 
                                     false, 
                                     wasDisconnectedByError );
    }
@@ -1003,6 +1014,7 @@ bool  DiplodocusLogin:: ForceUserLogoutAndBlock( U32 connectionId )
    string                     passwordHash = "0";
    string                     userId = "0";
    string                     loginKey = "";
+   int                        languageId = 1;
    U8 gameProductId = 0;
 
    ConnectionToUser* connection = GetUserConnection( connectionId );
@@ -1018,6 +1030,7 @@ bool  DiplodocusLogin:: ForceUserLogoutAndBlock( U32 connectionId )
       email =                 connection->email;
       gameProductId =         connection->gameProductId;
       loginKey =              connection->loginKey;
+      languageId =            connection->languageId;
    }
 
    // now disconnect him/her
@@ -1031,7 +1044,7 @@ bool  DiplodocusLogin:: ForceUserLogoutAndBlock( U32 connectionId )
    loginStatus->adminLevel = 0;
    
    SendPacketToGateway( loginStatus, connectionId );
-   SendLoginStatusToOtherServers( userName, uuid, connectionId, gameProductId, lastLoginTime, active, email, passwordHash, userId, loginKey, false, false );
+   SendLoginStatusToOtherServers( userName, uuid, connectionId, gameProductId, lastLoginTime, active, email, passwordHash, userId, loginKey, languageId, false, false );
 
    return true;
 }
@@ -1133,6 +1146,7 @@ bool  DiplodocusLogin:: SendLoginStatusToOtherServers( const string& userName,
                                                      const string& passwordHash, 
                                                      const string& userId, 
                                                      const string& loginKey,
+                                                     int languageId, 
                                                      bool isLoggedIn, 
                                                      bool wasDisconnectedByError )
 {
@@ -1157,6 +1171,7 @@ bool  DiplodocusLogin:: SendLoginStatusToOtherServers( const string& userName,
          prepareForUser->userId = boost::lexical_cast<U32>( userId );
          prepareForUser->password = passwordHash;
          prepareForUser->loginKey = loginKey;
+         prepareForUser->languageId = languageId;
 
          packetToSend = prepareForUser;
          
@@ -1289,129 +1304,168 @@ bool     DiplodocusLogin:: AddOutputChainData( BasePacket* packet, U32 chainId )
                return false;
             }
          }
-         switch( dbResult->lookup )
+         bool  wasHandled = false;
+         if( m_stringLookup->HandleResult( dbResult ) == true )
          {
-            cout << "Db query type:"<< dbResult->lookup << ", success=" << dbResult->successfulQuery << endl;
-
-            case QueryType_UserLoginInfo:
-               {
-                  if( HandleLoginResultFromDb( connectionId, dbResult ) == false )
-                  {
-                     SendErrorToClient( connectionId, PacketErrorReport::ErrorType_UserBadLogin );  
-                     string str = "User not valid and db query failed, userName: ";
-                     str += connection->userName;
-                     str += ", uuid: ";
-                     str += connection->userUuid;
-                     Log( str, 4 );
-                     ForceUserLogoutAndBlock( connectionId );
-                     return false;
-                  }
-               }
-               break;
-            case QueryType_AdminRequestUserProfile:
-               {
-                  // in some weird circustance, we could end up in an infinite loop here.
-                 /* if( dbResult->successfulQuery == false || dbResult->bucket.bucket.size() == 0 )// no records found
-                  {
-                     connection->AddBlankUserProfile();
-                  }
-                  else
-                  {
-                     HandleUserProfileFromDb( connectionId, dbResult );
-                  }*/
-                  HandleAdminRequestUserProfile( connectionId, dbResult );
-               }
-               break;
-            case QueryType_UserListOfGame:
-               {
-                  if( dbResult->successfulQuery == false || dbResult->bucket.bucket.size() == 0 )// no records found
-                  {
-                     string str = "List of games not valid db query failed, userName: ";
-                     str += connection->userName;
-                     str += ", uuid: ";
-                     str += connection->userUuid;
-                     Log( str, 4 );
-                     ForceUserLogoutAndBlock( connectionId );
-                     return false;
-                  }
-
-                  KeyValueVector             key_value_array;
-
-                  SimpleGameTable            enigma( dbResult->bucket );
-                  SimpleGameTable::iterator it = enigma.begin();
-                  
-                  while( it != enigma.end() )
-                  {
-                     SimpleGameTable::row       row = *it++;
-                     string name =              row[ SimpleGame::Column_name ];
-                     string uuid =              row[ SimpleGame::Column_uuid ];
-
-                     key_value_array.push_back( KeyValueString ( uuid, name ) );
-                  }
-
-                  SendListOfGamesToGameServers( connectionId, key_value_array );
-               }
-               break;
-            case QueryType_UserListOfUserProducts:
-               {
-                  if( dbResult->successfulQuery == false )
-                  {
-                     string str = "Query failed looking up a user products ";
-                     str += connection->userName;
-                     str += ", uuid: ";
-                     str += connection->userUuid;
-                     Log( str, 4 );
-                     ForceUserLogoutAndBlock( connectionId );
-                     return false;
-                  }
-
-                  StoreListOfUsersProductsFromDB( connectionId, dbResult );
-               }
-               break;
-            case QueryType_LookupUserByUsernameOrEmail:// these should never happen since these are handled elsewhere
-            case QueryType_LookupTempUserByUsernameOrEmail:
-            case QueryType_LookupUserNameForInvalidName:
-               {
-                  if( dbResult->successfulQuery == false )
-                  {
-                     string str = "Query failed looking up a user ";
-                     str += connection->userName;
-                     str += ", uuid: ";
-                     str += connection->userUuid;
-                     Log( str, 4 );
-                     ForceUserLogoutAndBlock( connectionId );
-                     return false;
-                  }
-               }
-               break;
-            case QueryType_LoadProductInfo:
-               {
-                  if( dbResult->successfulQuery == false )
-                  {
-                     string str = "Initialization failed: table does not exist ";
-                     return false;
-                  }
-                  StoreAllProducts( dbResult );
-               }
-               break;
-            case QueryType_GetSingleProductInfo:
-               {
-                  if( dbResult->successfulQuery == false )
-                  {
-                     string str = "Product not found ";
-                     str += dbResult->meta;
-                     Log( str, 4 );
-                     return false;
-                  }
-                  StoreSingleProduct( dbResult );
-               }
-               break;
-            case QueryType_GetProductListForUser:
-               {
-                  SendListOfPurchasesToUser( connectionId, dbResult );
-               }
-               break;
+            wasHandled = true;
          }
+         else
+         {
+            switch( dbResult->lookup )
+            {
+               cout << "Db query type:"<< dbResult->lookup << ", success=" << dbResult->successfulQuery << endl;
+
+               case QueryType_UserLoginInfo:
+                  {
+                     if( HandleLoginResultFromDb( connectionId, dbResult ) == false )
+                     {
+                        SendErrorToClient( connectionId, PacketErrorReport::ErrorType_UserBadLogin );  
+                        string str = "User not valid and db query failed, userName: ";
+                        str += connection->userName;
+                        str += ", uuid: ";
+                        str += connection->userUuid;
+                        Log( str, 4 );
+                        ForceUserLogoutAndBlock( connectionId );
+                        wasHandled = false;
+                     }
+                     else
+                     {
+                        wasHandled = true;
+                     }
+                  }
+                  break;
+               case QueryType_AdminRequestUserProfile:
+                  {
+                     // in some weird circustance, we could end up in an infinite loop here.
+                    /* if( dbResult->successfulQuery == false || dbResult->bucket.bucket.size() == 0 )// no records found
+                     {
+                        connection->AddBlankUserProfile();
+                     }
+                     else
+                     {
+                        HandleUserProfileFromDb( connectionId, dbResult );
+                     }*/
+                     HandleAdminRequestUserProfile( connectionId, dbResult );
+                     wasHandled = true;
+                  }
+                  break;
+               case QueryType_UserListOfGame:
+                  {
+                     if( dbResult->successfulQuery == false || dbResult->bucket.bucket.size() == 0 )// no records found
+                     {
+                        string str = "List of games not valid db query failed, userName: ";
+                        str += connection->userName;
+                        str += ", uuid: ";
+                        str += connection->userUuid;
+                        Log( str, 4 );
+                        ForceUserLogoutAndBlock( connectionId );
+                        wasHandled = false;
+                     }
+                     else
+                     {
+                        wasHandled = true;
+                     
+                        KeyValueVector             key_value_array;
+
+                        SimpleGameTable            enigma( dbResult->bucket );
+                        SimpleGameTable::iterator it = enigma.begin();
+                        
+                        while( it != enigma.end() )
+                        {
+                           SimpleGameTable::row       row = *it++;
+                           string name =              row[ SimpleGame::Column_name ];
+                           string uuid =              row[ SimpleGame::Column_uuid ];
+
+                           key_value_array.push_back( KeyValueString ( uuid, name ) );
+                        }
+
+                        SendListOfGamesToGameServers( connectionId, key_value_array );
+                     }
+                  }
+                  break;
+               case QueryType_UserListOfUserProducts:
+                  {
+                     if( dbResult->successfulQuery == false )
+                     {
+                        string str = "Query failed looking up a user products ";
+                        str += connection->userName;
+                        str += ", uuid: ";
+                        str += connection->userUuid;
+                        Log( str, 4 );
+                        ForceUserLogoutAndBlock( connectionId );
+                        wasHandled = false;
+                     }
+                     else
+                     {
+                        StoreListOfUsersProductsFromDB( connectionId, dbResult );
+                        wasHandled = true;
+                     }
+                  }
+                  break;
+               case QueryType_LookupUserByUsernameOrEmail:// these should never happen since these are handled elsewhere
+               case QueryType_LookupTempUserByUsernameOrEmail:
+               case QueryType_LookupUserNameForInvalidName:
+                  {
+                     if( dbResult->successfulQuery == false )
+                     {
+                        string str = "Query failed looking up a user ";
+                        str += connection->userName;
+                        str += ", uuid: ";
+                        str += connection->userUuid;
+                        Log( str, 4 );
+                        ForceUserLogoutAndBlock( connectionId );
+                        wasHandled = false;
+                     }
+                     else
+                     {
+                        wasHandled = true;
+                     }
+                  }
+                  break;
+               case QueryType_LoadProductInfo:
+                  {
+                     if( dbResult->successfulQuery == false )
+                     {
+                        string str = "Initialization failed: table does not exist ";
+                        wasHandled = false;
+                     }
+                     else
+                     {
+                        StoreAllProducts( dbResult );
+                        wasHandled = true;
+                     }
+                  }
+                  break;
+               case QueryType_GetSingleProductInfo:
+                  {
+                     if( dbResult->successfulQuery == false )
+                     {
+                        string str = "Product not found ";
+                        str += dbResult->meta;
+                        Log( str, 4 );
+                        wasHandled = false;
+                     }
+                     else
+                     {
+                        StoreSingleProduct( dbResult );
+                        wasHandled = true;
+                     }
+                  }
+                  break;
+               case QueryType_GetProductListForUser:
+                  {
+                     SendListOfPurchasesToUser( connectionId, dbResult );
+                     wasHandled = true;
+                  }
+                  break;
+               }
+            }
+            if( wasHandled == true )
+            {
+               PacketFactory factory;
+               factory.CleanupPacket( packet );
+            }
+            return wasHandled;
       }
    }
    return true;
@@ -1642,6 +1696,10 @@ int      DiplodocusLogin:: CallbackFunction()
          m_isInitializing = true;
       }
    }
+
+   time_t currentTime;
+   time( &currentTime );
+   m_stringLookup->Update( currentTime );
 
  /*  m_mutex.lock();
   /* ChainLinkIteratorType itInputs = m_listOfInputs.begin();

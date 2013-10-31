@@ -156,7 +156,7 @@ void     ProductEntryCreateBasedOnPlayHistory::SubmitRequestForNextUser()
 
    m_parent->AddQueryToOutput( dbQuery );
 
-   cout << "ProductEntryCreateBasedOnPlayHistory: looking for users who have played but have no purchase record" << endl;
+   //cout << "ProductEntryCreateBasedOnPlayHistory: looking for users who have played but have no purchase record" << endl;
 }
 
 //---------------------------------------------------------------
@@ -373,7 +373,7 @@ bool     ProductEntryCreateBasedOnPlayHistory::StoreUsersWhoMayNeedAnUpdate( con
       }
 
       int numUsersFound = enigma.m_bucket.size();
-      cout << " Successful query: found users " << numUsersFound << " who have played " << FindProductName( qpg.productId ) << endl;
+      //cout << " Successful query: found users " << numUsersFound << " who have played " << FindProductName( qpg.productId ) << endl;
       
 
       m_currentUserIndex = highestId;

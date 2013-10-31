@@ -99,7 +99,7 @@ bool     UserAccountPurchase::GetListOfItemsForSale( const PacketPurchase_Reques
    assert( m_purchaseManager != NULL && m_userTicket.connectionId != 0 );
 
    PacketPurchase_RequestListOfSalesResponse* response = new PacketPurchase_RequestListOfSalesResponse();
-   m_salesManager->GetListOfItemsForSale( response, 1 );
+   m_salesManager->GetListOfItemsForSale( response, m_userTicket.languageId );
 
    PacketGatewayWrapper* wrapper = new PacketGatewayWrapper;
    wrapper->SetupPacket( response, m_userTicket.connectionId );

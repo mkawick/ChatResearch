@@ -48,11 +48,11 @@ bool     BlankUUIDQueryHandler::HandleResult( const PacketDbQueryResult* dbResul
       bool addedUuids = false;
       KeyValueParser              enigma( dbResult->bucket );
       KeyValueParser::iterator    it = enigma.begin();
-      if( enigma.m_bucket.size() > 0 )
+    /*  if( enigma.m_bucket.size() > 0 )
       {
          cout << "Found user record with UUID blank matching" << endl;
          cout << " Successful query = " << m_queryString << endl;
-      }
+      }*/
       while( it != enigma.end() )
       {
          addedUuids = true;

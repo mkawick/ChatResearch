@@ -23,7 +23,7 @@ class StringLookup;
 
 ///////////////////////////////////////////////////////////////////
 
-class DiplodocusPurchase : public Diplodocus< KhaanPurchase > 
+class DiplodocusPurchase : public Queryer, public Diplodocus< KhaanPurchase > 
 {
 public:
    enum QueryType

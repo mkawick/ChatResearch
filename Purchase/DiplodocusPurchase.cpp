@@ -5,7 +5,7 @@
 #include "../NetworkCommon/Packets/LoginPacket.h"
 #include "../NetworkCommon/Packets/Packetfactory.h"
 
-#include "StringLookup.h"
+#include "../NetworkCommon/Database/StringLookup.h"
 
 #include <iostream>
 #include <time.h>
@@ -201,6 +201,7 @@ bool     DiplodocusPurchase::ConnectUser( PacketPrepareForUserLogin* loginPacket
       ut.connectionId =    loginPacket->connectionId;
       ut.gameProductId =   loginPacket->gameProductId;
       ut.userId =          loginPacket->userId;
+      ut.languageId =      loginPacket->languageId;
 
       UserAccountPurchase user( ut );
       user.SetServer( this );

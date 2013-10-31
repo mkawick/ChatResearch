@@ -32,10 +32,10 @@ bool     BlankUserProfileHandler::HandleResult( const PacketDbQueryResult* dbRes
       bool addedProfiles = false;
       IndexTableParser              enigma( dbResult->bucket );
       IndexTableParser::iterator    it = enigma.begin();
-      if( enigma.m_bucket.size() > 0 )
+    /*  if( enigma.m_bucket.size() > 0 )
       {
          cout << " Successful query = " << m_queryString << endl;
-      }
+      }*/
       while( it != enigma.end() )
       {
          addedProfiles = true;

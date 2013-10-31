@@ -1,9 +1,10 @@
 #include "SalesManager.h"
-#include "StringLookup.h"
+
 
 #include <time.h>
 #include <iostream>
 
+#include "../NetworkCommon/Database/StringLookup.h"
 #include "../NetworkCommon/Packets/PurchasePacket.h"
 //#include "../NetworkCommon/Utils/TableWrapper.h"
 #include <boost/lexical_cast.hpp>
@@ -82,7 +83,7 @@ bool     SalesManager::HandleResult( const PacketDbQueryResult* dbResult )
       ExchangeRateParser::iterator  it = enigma.begin();
       if( enigma.m_bucket.size() > 0 )
       {
-         cout << " Successful query = " << m_queryString << endl;
+         //cout << " Successful query = " << m_queryString << endl;
          exchangeRates.clear();
       }  
       while( it != enigma.end() )
@@ -124,7 +125,9 @@ bool     SalesManager::HandleResult( const PacketDbQueryResult* dbResult )
             string count = row[ TableIndexOnly::Column_index ];
             int num = 0;
             if( count != "null" )
+            {
                num = boost::lexical_cast< int >( count );
+            }
 
             if( num >= ee.sourceCount )
             {

@@ -7,6 +7,8 @@ namespace Threading
 template <typename Type> 
 class CChainedThread : public CAbstractThread, public ChainedInterface <Type>
 {
+public: 
+   enum { DefaultSleepTime = 30 };
 public:
    // consider leaving the need protection false. This should be managed in the 
 	CChainedThread( bool needsThreadProtection = false, int sleepTime = 0, bool paused = false );

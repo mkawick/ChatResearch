@@ -300,6 +300,7 @@ bool  PacketPrepareForUserLogin::SerializeIn( const U8* data, int& bufferOffset 
    Serialize::In( data, bufferOffset, email );
    Serialize::In( data, bufferOffset, active );
    Serialize::In( data, bufferOffset, userId );
+   Serialize::In( data, bufferOffset, languageId );
 
    return true;
 }
@@ -312,6 +313,7 @@ bool  PacketPrepareForUserLogin::SerializeOut( U8* data, int& bufferOffset ) con
    Serialize::Out( data, bufferOffset, email );
    Serialize::Out( data, bufferOffset, active );
    Serialize::Out( data, bufferOffset, userId );
+   Serialize::Out( data, bufferOffset, languageId );
 
    return true;
 }

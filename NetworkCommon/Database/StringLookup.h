@@ -2,14 +2,14 @@
 
 #pragma once
 
-#include "../NetworkCommon/Packets/BasePacket.h"
-#include "../NetworkCommon/Database/QueryHandler.h"
+#include "../Packets/BasePacket.h"
+#include "QueryHandler.h"
 #include <string>
 #include <vector>
 #include <map>
 using namespace std;
 
-class DiplodocusPurchase;;
+class DiplodocusPurchase;
 
 ///////////////////////////////////////////////////////////////////////////////////////////
 
@@ -31,7 +31,7 @@ enum
    StringLookupQuery = 5000
 };
 
-class StringLookup : public QueryHandler< class DiplodocusPurchase* >
+class StringLookup : public QueryHandler< Queryer* >
 {
 public:
    StringLookup( U32 id, ParentQueryerPtr parent, vector< string >& stringCategories );

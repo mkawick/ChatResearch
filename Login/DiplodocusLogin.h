@@ -17,6 +17,7 @@ class PacketCheat;
 struct PurchaseEntry;
 
 class PacketListOfUserPurchasesRequest;
+class StringLookup;
 //class PacketRequestUserProfile;
 
 //-----------------------------------------------------------------------------------------
@@ -38,7 +39,7 @@ enum LanguageList // corresponds to the db-language table
 
 //-----------------------------------------------------------------------------------------
 
-class DiplodocusLogin : public Diplodocus< KhaanLogin >
+class DiplodocusLogin : public Queryer, public Diplodocus< KhaanLogin >
 {
 public:
    enum QueryType 
@@ -71,7 +72,9 @@ public:
       QueryType_RemoveAllProductInfoForUser,
 
       QueryType_AdminLoadUserProfile, // profile, etc
-      QueryType_AdminLoadUserProducts
+      QueryType_AdminLoadUserProducts,
+
+      QueryType_ProductStringLookup
    };
 
    enum ProductType  // this is also maintained in the purchase server
@@ -146,8 +149,19 @@ private:
 
    //--------------------------------------------
 
-   bool     SendLoginStatusToOtherServers( const string& username, const string& userUuid, U32 connectionId, U8 gameProductId, const string& lastLoginTime, bool isActive, const string& email, const string& passwordHash, const string& userId,  
-                                                    const string& loginKey, bool isLoggedIn, bool wasDisconnectedByError );
+   bool     SendLoginStatusToOtherServers( const string& username, 
+                                             const string& userUuid, 
+                                             U32 connectionId, 
+                                             U8 gameProductId, 
+                                             const string& lastLoginTime, 
+                                             bool isActive, 
+                                             const string& email, 
+                                             const string& passwordHash, 
+                                             const string& userId,  
+                                             const string& loginKey, 
+                                             int langaugeId, 
+                                             bool isLoggedIn, 
+                                             bool wasDisconnectedByError );
    bool     SendListOfUserProductsToOtherServers( const string& userUuid, U32 connectionId, const vector< string >& productNames );
 
    bool     StoreUserPurchases( U32 connectionId, const PacketListOfUserAggregatePurchases* purchase );
@@ -195,6 +209,7 @@ private:
    bool                       RemoveUserConnection( U32 id );
 
    ProductList                m_productList;
+   StringLookup*              m_stringLookup;
 
    void                       FinalizeLogout( U32 connectionId, bool wasDisconnectedByError );
 

@@ -6,13 +6,13 @@
 #include <boost/algorithm/string/replace.hpp>
 
 #include "StringLookup.h"
-#include "../NetworkCommon/Utils/Utils.h"
-#include "../NetworkCommon/Utils/TableWrapper.h"
-#include "DiplodocusPurchase.h"
+#include "../Utils/Utils.h"
+
+#include "../Utils/TableWrapper.h"
 
 //---------------------------------------------------------------
 
-StringLookup::StringLookup( U32 id, ParentQueryerPtr parent, vector< string >& stringCategories ): QueryHandler< DiplodocusPurchase* >( id, 20, parent ), m_isLoadingAllStrings( false ), m_numQueriesReceived( 0 )
+StringLookup::StringLookup( U32 id, ParentQueryerPtr parent, vector< string >& stringCategories ): QueryHandler< Queryer* >( id, 20, parent ), m_isLoadingAllStrings( false ), m_numQueriesReceived( 0 )
 {
    assert( stringCategories.size() > 0 );
    m_stringCategories = stringCategories;// straight copy

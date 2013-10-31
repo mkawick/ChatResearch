@@ -22,7 +22,8 @@ const int OneDay = 3600 * 24;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-StatusUpdate::StatusUpdate( const string& serverName, U32 serverId ) : Queryer(),
+StatusUpdate::StatusUpdate( const string& serverName, U32 serverId ) : Threading::CChainedThread < BasePacket* >( false, DefaultSleepTime, false ),
+                  Queryer(),
                   m_newAccountTimeoutSeconds( 48 ),
                   m_checkOnautoCreateTimeoutSeconds( 60 ),
                   m_checkOnOldEmailsTimeoutSeconds( OneDay ),/// once per day

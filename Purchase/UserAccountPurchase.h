@@ -17,6 +17,7 @@ public:
    string   userTicket;
    string   dateOfLastRequest;// once the client tells us what this is
    U8       gameProductId;
+   U32      languageId;
 };
 
 

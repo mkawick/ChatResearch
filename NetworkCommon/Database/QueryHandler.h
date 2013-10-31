@@ -7,14 +7,11 @@
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-class Queryer : public Threading::CChainedThread < BasePacket* >
+class Queryer// : public Threading::CChainedThread < BasePacket* >
 {
 public:
-   enum { DefaultSleepTime = 30 };
 
-public:
-
-   Queryer() : Threading::CChainedThread < BasePacket* >( false, DefaultSleepTime, false ) {}
+   //Queryer() : Threading::CChainedThread < BasePacket* >( false, DefaultSleepTime, false ) {}
 
    virtual bool AddQueryToOutput( PacketDbQuery* packet ) = 0;
    virtual bool AddOutputChainData( BasePacket* packet, U32 connectionId ) = 0;

@@ -320,6 +320,14 @@
 					RelativePath="..\NetworkCommon\Database\Scleromochlus.h"
 					>
 				</File>
+				<File
+					RelativePath="..\NetworkCommon\Database\StringLookup.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\NetworkCommon\Database\StringLookup.h"
+					>
+				</File>
 			</Filter>
 			<Filter
 				Name="NetworkIn"
