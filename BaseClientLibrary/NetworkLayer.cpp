@@ -1298,6 +1298,7 @@ bool  NetworkLayer::HandlePacketReceived( BasePacket* packetIn )
                      (*it)->ListOfAvailableProducts( products->products, products->platformId );
                   }
                }
+               break;
             case PacketLogin::LoginType_RequestOtherUserProfileResponse:
                {
                   PacketRequestOtherUserProfileResponse* profile = static_cast<PacketRequestOtherUserProfileResponse*>( packetIn );
@@ -1312,6 +1313,7 @@ bool  NetworkLayer::HandlePacketReceived( BasePacket* packetIn )
                      (*it)->OtherUsersProfile( userName, userUuid, avatarIcon, showWinLoss, timeZoneGMT, profile->productsOwned );
                   }
                }
+               break;
          }
          
       }
@@ -1511,6 +1513,7 @@ bool  NetworkLayer::HandlePacketReceived( BasePacket* packetIn )
                   }
                }
              }
+            break;
          }
       }
       break;
