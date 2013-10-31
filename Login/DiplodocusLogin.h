@@ -110,6 +110,7 @@ public:
    bool     GetProductByIndex( int index, ProductInfo& returnPi );
    bool     GetProductByProductId( int productId, ProductInfo& returnPi );
 
+   StringLookup*  GetStringLookup() { return m_stringLookup; }
 private:
 
    int      CallbackFunction();

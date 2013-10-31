@@ -1490,6 +1490,7 @@ void     DiplodocusLogin:: StoreAllProducts( PacketDbQueryResult* dbResult )
       productDefn.name =                 row[ TableProduct::Column_name ];
       productDefn.filterName =           row[ TableProduct::Column_filter_name ];
       productDefn.Begindate =            row[ TableProduct::Column_begin_date ];
+      productDefn.lookupName =           row[ TableProduct::Column_name_string ];
       string temp = row[ TableProduct::Column_product_type ];
       if( temp == "" )
          temp = "0";
@@ -1520,6 +1521,7 @@ void     DiplodocusLogin:: StoreSingleProduct( PacketDbQueryResult* dbResult )
       productDefn.name =                 row[ TableProduct::Column_name ];
       productDefn.filterName =           row[ TableProduct::Column_filter_name ];
       productDefn.Begindate =            row[ TableProduct::Column_begin_date ];
+      productDefn.lookupName =           row[ TableProduct::Column_name_string ];
 
       string temp = row[ TableProduct::Column_product_type ];
       if( temp == "" )

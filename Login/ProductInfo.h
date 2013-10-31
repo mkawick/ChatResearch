@@ -15,6 +15,7 @@ struct ProductInfo
    string   name;
    string   filterName;
    string   Begindate;
+   string   lookupName;
    int      productType;
 
    double   price;

@@ -510,7 +510,7 @@ public:
    enum Columns
    {
       Column_product_id,  // product_id, filter_name, product.uuid, num_purchased
-      Column_product_name,
+      Column_product_name_string,
       Column_product_uuid,
       Column_quantity,
       Column_end

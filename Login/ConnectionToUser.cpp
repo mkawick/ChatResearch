@@ -6,6 +6,7 @@
 #include "../NetworkCommon/Packets/LoginPacket.h"
 #include "../NetworkCommon/Packets/CheatPacket.h"
 #include "../NetworkCommon/Packets/PacketFactory.h"
+#include "../NetworkCommon/Database/StringLookup.h"
 #include "../NetworkCommon/Utils/Utils.h"
 #include <boost/lexical_cast.hpp>
 
@@ -498,7 +499,7 @@ bool     ConnectionToUser:: RequestListOfPurchases( const string& user_uuid )
       dbQuery->lookup = DiplodocusLogin::QueryType_UserListOfUserProducts;
       dbQuery->meta = user_uuid;
 
-      string queryString = "SELECT product.product_id, filter_name, product.uuid, num_purchased FROM product INNER JOIN user_join_product AS user_join_product ON product.uuid=user_join_product.product_id WHERE user_join_product.user_uuid='%s'";
+      string queryString = "SELECT product.product_id, name_string, product.uuid, num_purchased FROM product INNER JOIN user_join_product AS user_join_product ON product.uuid=user_join_product.product_id WHERE user_join_product.user_uuid='%s'";
       dbQuery->query =  queryString;
       dbQuery->escapedStrings.insert( user_uuid );
 
@@ -569,6 +570,8 @@ bool     ConnectionToUser:: AddPurchase( const PacketAddPurchaseEntry* purchase 
          return false;
       }
 
+      
+
       if( purchase->userUuid == this->userUuid ||
           purchase->userEmail == this->email ||
           purchase->userName == this->userName
@@ -577,7 +580,7 @@ bool     ConnectionToUser:: AddPurchase( const PacketAddPurchaseEntry* purchase 
          double price = 0.0;
          float numToGive = static_cast<float>( purchase->quantity );
          WriteProductToUserRecord( userUuid, productUuid, price, numToGive, userUuid, "add purchase entry to self by admin" );
-         AddToProductsOwned( productInfo.productId, productInfo.filterName, productUuid, numToGive );
+         AddToProductsOwned( productInfo.productId, productInfo.lookupName, productUuid, numToGive );
          SendListOfProductsToClient( connectionId );
          return true;
       }
@@ -598,13 +601,13 @@ bool     ConnectionToUser:: AddPurchase( const PacketAddPurchaseEntry* purchase 
          float numToGive = static_cast<float>( purchase->quantity );
          WriteProductToUserRecord( it->second.userUuid, productUuid, price, numToGive, userUuid, "add purchase entry by admin" );
 
-         it->second.AddToProductsOwned( productInfo.productId, productInfo.filterName, productUuid, numToGive );
+         it->second.AddToProductsOwned( productInfo.productId, productInfo.lookupName, productUuid, numToGive );
          it->second.SendListOfProductsToClient( connectionId );
 
          ConnectionToUser* loadedConnection = userManager->GetLoadedUserConnectionByUuid( userUuid );
          if( loadedConnection )
          {
-            loadedConnection->AddToProductsOwned( productInfo.productId, productInfo.filterName, productInfo.uuid, 1 );
+            loadedConnection->AddToProductsOwned( productInfo.productId, productInfo.lookupName, productInfo.uuid, 1 );
             loadedConnection->SendListOfProductsToClient( connectionId );
          }
          return true;
@@ -647,7 +650,7 @@ bool     ConnectionToUser:: StoreUserPurchases( const PacketListOfUserAggregateP
             {
                const string& productUuid = productInfo.uuid;
                WriteProductToUserRecord( userUuid, productUuid, purchaseEntry.number_price, purchaseEntry.quantity, "", "" );
-               AddToProductsOwned( productInfo.productId, productInfo.filterName, productUuid, purchaseEntry.quantity );
+               AddToProductsOwned( productInfo.productId, productInfo.lookupName, productUuid, purchaseEntry.quantity );
             }
          }
 
@@ -695,7 +698,7 @@ void     ConnectionToUser:: AddCurrentlyLoggedInProductToUserPurchases()// only 
 
    WriteProductToUserRecord( userUuid, productInfo.uuid, 0.0, 1, "user", "default by login" );
    float numToGive = 1;
-   AddToProductsOwned( productInfo.productId, productInfo.filterName, productInfo.uuid, numToGive );
+   AddToProductsOwned( productInfo.productId, productInfo.lookupName, productInfo.uuid, numToGive );
 }
 
 //---------------------------------------------------------------
@@ -715,7 +718,7 @@ void     ConnectionToUser:: WriteProductToUserRecord( const string& productFilte
    if( result == true )
    {
       WriteProductToUserRecord( userUuid, productInfo.uuid, pricePaid, 1, this->userUuid, "new product reported by user login" );
-      AddToProductsOwned( productInfo.productId, productInfo.filterName, productInfo.uuid, 1 );
+      AddToProductsOwned( productInfo.productId, productInfo.lookupName, productInfo.uuid, 1 );
    }
    else
    {
@@ -781,7 +784,7 @@ void     ConnectionToUser:: StoreListOfUsersProductsFromDB( PacketDbQueryResult*
       UserOwnedProductSimpleTable::row       row = *it++;
 
       int productId =   boost::lexical_cast< int>  (  row[ TableUserOwnedProductSimple::Column_product_id ] );
-      string filterName =                             row[ TableUserOwnedProductSimple::Column_product_name ];
+      string lookupName =                             row[ TableUserOwnedProductSimple::Column_product_name_string ];
       string productUuid =                            row[ TableUserOwnedProductSimple::Column_product_uuid ];
       float  quantity = boost::lexical_cast< float> ( row[ TableUserOwnedProductSimple::Column_quantity ] );
 
@@ -789,11 +792,11 @@ void     ConnectionToUser:: StoreListOfUsersProductsFromDB( PacketDbQueryResult*
       {
          didFindGameProduct = true;
       }
-      userWhoGetsProducts->AddToProductsOwned( productId, filterName, productUuid, quantity );
+      userWhoGetsProducts->AddToProductsOwned( productId, lookupName, productUuid, quantity );
          
       if( loadedConnection != NULL )
       {
-         loadedConnection->AddToProductsOwned( productId, filterName, productUuid, quantity );
+         loadedConnection->AddToProductsOwned( productId, lookupName, productUuid, quantity );
       }
    }
 
@@ -894,11 +897,11 @@ bool     ConnectionToUser:: HandleCheat_AddProduct( const string& productName )
    {
       //WriteProductToUserRecord( userUuid, product.uuid, product.price );
       WriteProductToUserRecord( userUuid, productInfo.uuid, 0.0, 1, userUuid, "added by cheat" );
-      AddToProductsOwned( productInfo.productId, productInfo.filterName, productInfo.uuid, 1 );
+      AddToProductsOwned( productInfo.productId, productInfo.lookupName, productInfo.uuid, 1 );
       ConnectionToUser* loadedConnection = userManager->GetLoadedUserConnectionByUuid( userUuid );
       if( loadedConnection )
       {
-         loadedConnection->AddToProductsOwned( productInfo.productId, productInfo.filterName, productInfo.uuid, 1 );
+         loadedConnection->AddToProductsOwned( productInfo.productId, productInfo.lookupName, productInfo.uuid, 1 );
          loadedConnection->SendListOfProductsToClient( connectionId );
       }
    }
@@ -987,8 +990,9 @@ void     ConnectionToUser:: ClearAllProductsOwned()
 
 //-----------------------------------------------------------------
 
-void     ConnectionToUser:: AddToProductsOwned( int productDbId, const string& filterName, const string& productUuid, float quantity )
+void     ConnectionToUser:: AddToProductsOwned( int productDbId, const string& lookupName, const string& productUuid, float quantity )
 {
+
    map< U32, ProductBrief >::iterator it = productsOwned.find( productDbId );
    if( it != productsOwned.end() )
    {
@@ -998,12 +1002,14 @@ void     ConnectionToUser:: AddToProductsOwned( int productDbId, const string& f
    {
       ProductBrief brief;
       brief.productDbId = productDbId;
-      brief.filterName = filterName;
+      brief.filterName = userManager->GetStringLookup()->GetString( lookupName, languageId );
+
+
       brief.uuid = productUuid;
       brief.quantity = quantity;
       productsOwned.insert( pair< U32, ProductBrief > ( productDbId, brief ) );
 
-      AddProductFilterName( filterName );
+      AddProductFilterName( lookupName );
    }
 }
 
