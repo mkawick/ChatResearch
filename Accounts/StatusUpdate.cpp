@@ -48,7 +48,7 @@ StatusUpdate::StatusUpdate( const string& serverName, U32 serverId ) : Threading
    m_blankUuidHandler = new BlankUUIDQueryHandler( QueryType_UserFindBlankUUID, this, queryForBlankUUIDs );
    m_blankUuidHandler->SetPeriodicty( timeoutBlankUUIDTimer );
 
-   string queryForBlankProfiles = "SELECT user_id FROM users WHERE user_confirmation_date IS NOT NULL AND user_id NOT IN (SELECT user_id FROM user_profile) LIMIT 20";
+   string queryForBlankProfiles = "SELECT user_id FROM users WHERE (user_email IS NOT NULL OR user_confirmation_date IS NOT NULL) AND user_id NOT IN (SELECT user_id FROM user_profile) LIMIT 200";
    m_blankUserProfileHandler = new BlankUserProfileHandler( QueryType_UserFindBlankUserProfile, this, queryForBlankProfiles );
    m_blankUserProfileHandler->SetPeriodicty( timeoutBlankUserProfileTimer );
 
@@ -347,7 +347,7 @@ int      StatusUpdate::CallbackFunction()
       m_blankUuidHandler->Update( currentTime );
       DuplicateUUIDSearch();
 
-      //m_blankUserProfileHandler->Update( currentTime ); // no longer needed
+      m_blankUserProfileHandler->Update( currentTime ); // no longer needed
       if( m_enableAddingUserProducts )
       {
          m_addProductEntryHandler->Update( currentTime );

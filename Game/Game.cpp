@@ -85,11 +85,11 @@ int main(int argc, const char* argv[])
 
    //---------------------------------------------------------------------
    
-   string serverName = "Agricola Game Server";
+   string serverName = "MFM Game Server";
    U64 serverUniqueHashValue = GenerateUniqueHash( serverName );
    U32 serverId = (U32)serverUniqueHashValue;
 
-   string version = "0.04";
+   string version = "0.06";
    cout << serverName << ":" << endl;
    cout << "Version " << version << endl;
    cout << "ServerId " << serverId << endl;

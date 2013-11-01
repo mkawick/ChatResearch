@@ -96,6 +96,10 @@ bool FruitadensGateway::FilterOutwardPacket( BasePacket* packet ) const
          {
             return true;
          }
+         if( type == PacketType_Tournament )
+         {
+            return true;
+         }
       }
    }
    else if( packet->packetType == PacketType_ServerToServerWrapper )

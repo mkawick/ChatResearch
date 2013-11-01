@@ -32,3 +32,30 @@ INNER JOIN product p2 on pe.product_dest_id=p2.product_id
 //-----------------------------------------------------
 
 SELECT * FROM user_temp_new_user AS u INNER JOIN users ON users.uuid=u.uuid
+
+//-----------------------------------------------------
+
+use playdek;
+SELECT * FROM playdek.junk_temp_table  as junk join users on users.user_email=junk.Email join user_profile as prof on prof.user_id=users.user_id;
+    
+//-----------------------------------------------------
+// opt out queries
+
+use playdek;
+UPDATE user_profile as prof 
+SET prof.marketing_opt_out=1 
+where prof.marketing_opt_out=0 AND prof.user_id in
+(select users.user_id from users inner join playdek.junk_temp_table as 
+junk on users.user_email=junk.Email)
+
+SELECT count(*) FROM playdek.junk_temp_table as junk 
+inner join users on 
+users.user_email=junk.Email 
+inner join user_profile as prof 
+on users.user_id=prof.user_id where prof.marketing_opt_out=0
+
+select count(*) from user_profile as prof where 
+prof.user_id in (select users.user_id from users inner join  
+junk_temp_table as junk on junk.Email=users.user_email)
+
+//-----------------------------------------------------

@@ -145,14 +145,15 @@ int main( int argc, const char* argv[] )
 
 #ifndef _TRACK_MEMORY_LEAK_
    FruitadensGateway* game1 = PrepFruitadens( game1Address, game1Port, serverId, gateway );
-   //FruitadensGateway* game2 = PrepFruitadens( "localhost", 23401, serverId, gateway );
+   FruitadensGateway* mfm = PrepFruitadens( "localhost", 23995, serverId, gateway );
    //FruitadensGateway* game3 = PrepFruitadens( "localhost", 23402, serverId, gateway );
    //FruitadensGateway* game4 = PrepFruitadens( "localhost", 23550, serverId, gateway );// summoner wars
 
    U8 gameProductId = 0;
    game1->NotifyEndpointOfIdentification( serverName, serverId, gameProductId, false, false, true, true  );
+   mfm->NotifyEndpointOfIdentification( serverName, serverId, gameProductId, false, false, true, true  );
 #endif // _TRACK_MEMORY_LEAK_
-   //game2->NotifyEndpointOfIdentification( serverName, serverId, gameProductId, false, false, true, true  );
+   
    //game3->NotifyEndpointOfIdentification( serverName, serverId, gameProductId, false, false, true, true  );
    //game4->NotifyEndpointOfIdentification( serverName, serverId, gameProductId, false, false, true, true  );
 

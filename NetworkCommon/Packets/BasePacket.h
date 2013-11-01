@@ -31,7 +31,8 @@ enum PacketType
    PacketType_GatewayInformation, // user logged out, prepare to shutdown, etc.
    PacketType_ErrorReport,
    PacketType_Cheat,
-   PacketType_Purchase
+   PacketType_Purchase,
+   PacketType_Tournament
 };
 
 
