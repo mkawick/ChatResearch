@@ -2,6 +2,35 @@
 
 #include "TournamentPacket.h"
 
+
+///////////////////////////////////////////////////////////////
+
+
+bool  TournamentInfo::SerializeIn( const U8* data, int& bufferOffset )
+{
+   Serialize::In( data, bufferOffset, tournamentName );
+   Serialize::In( data, bufferOffset, tournamentUuid );
+   Serialize::In( data, bufferOffset, beginDate );
+   Serialize::In( data, bufferOffset, endDate );
+   Serialize::In( data, bufferOffset, timePerRound );
+   Serialize::In( data, bufferOffset, timeUnitsPerRound );
+
+   return true;
+}
+
+bool  TournamentInfo::SerializeOut( U8* data, int& bufferOffset ) const
+{
+   Serialize::Out( data, bufferOffset, tournamentName );
+   Serialize::Out( data, bufferOffset, tournamentUuid );
+   Serialize::Out( data, bufferOffset, beginDate );
+   Serialize::Out( data, bufferOffset, endDate );
+   Serialize::Out( data, bufferOffset, timePerRound );
+   Serialize::Out( data, bufferOffset, timeUnitsPerRound );
+
+   return true;
+}
+
+
 ///////////////////////////////////////////////////////////////
 
 bool  PacketTournament::SerializeIn( const U8* data, int& bufferOffset )

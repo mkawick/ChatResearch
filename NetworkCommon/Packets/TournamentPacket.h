@@ -14,7 +14,9 @@ public:
                   tournamentName( name ),
                   tournamentUuid( uuid ),
                   beginDate( dateBegin ),
-                  endDate( dateEnd )
+                  endDate( dateEnd ),
+                  timePerRound( 3 ),
+                  timeUnitsPerRound( 1 )
                   {}// no initialization
 
    bool  SerializeIn( const U8* data, int& bufferOffset );
@@ -24,9 +26,9 @@ public:
    string   tournamentUuid;
    string   beginDate;
    string   endDate;
- /*  int      timePerRound;
+   int      timePerRound;
    int      timeUnitsPerRound;
-   string   description;
+  /* string   description;
    int      price;   /// lookup from products table
    bool     userCanEnter; // basically a first pass at approving a user's entry into the tournament. More of a first-pass denial.
    int      numberOfEntrantSlots;
@@ -138,6 +140,10 @@ public:
       TournamentPurchase_Result_Success,
       TournamentPurchase_Result_NotEnoughMoney,
       TournamentPurchase_Result_TransactionFailed,
+      TournamentPurchase_Result_TooManyPlayers,
+      TournamentPurchase_Result_DateIsWrong,
+      TournamentPurchase_Result_RequirementsNotMet,
+      TournamentPurchase_Result_TournamentClosed
    };
 public:
    PacketTournament_UserRequestsEntryInTournamentResponse() : PacketTournament( PacketType_Tournament, TournamentType_UserRequestsEntryInTournamentResponse ),

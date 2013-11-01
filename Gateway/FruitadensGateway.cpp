@@ -55,6 +55,10 @@ bool FruitadensGateway::FilterOutwardPacket( BasePacket* packet ) const
                return true;
             }
          }
+         if( type == PacketType_Tournament )
+         {
+            return true;
+         }
       }
       else if( m_serverType == ServerType_Chat )
       {
@@ -96,10 +100,7 @@ bool FruitadensGateway::FilterOutwardPacket( BasePacket* packet ) const
          {
             return true;
          }
-         if( type == PacketType_Tournament )
-         {
-            return true;
-         }
+         
       }
    }
    else if( packet->packetType == PacketType_ServerToServerWrapper )

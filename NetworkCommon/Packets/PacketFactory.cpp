@@ -931,6 +931,50 @@ bool     PacketFactory::ParseTournament( const U8* bufferIn, int& bufferOffset, 
 {
    switch( firstPassParse->packetSubType ) //PacketType_Tournament
    {
+    case PacketTournament::TournamentType_Base:
+      {
+         *packetOut = SerializeIn< PacketTournament >( bufferIn, bufferOffset );
+      }
+      return true;
+   case PacketTournament::TournamentType_TestNotification:
+      {
+         *packetOut = SerializeIn< PacketTournament_TestNotification >( bufferIn, bufferOffset );
+      }
+      return true;
+   case PacketTournament::TournamentType_RequestListOfTournaments:
+      {
+         *packetOut = SerializeIn< PacketTournament_RequestListOfTournaments >( bufferIn, bufferOffset );
+      }
+      return true;
+   case PacketTournament::TournamentType_RequestListOfTournamentsResponse:
+      {
+         *packetOut = SerializeIn< PacketTournament_RequestListOfTournamentsResponse >( bufferIn, bufferOffset );
+      }
+      return true;
+   case PacketTournament::TournamentType_UserRequestsEntryInTournament:
+      {
+         *packetOut = SerializeIn< PacketTournament_UserRequestsEntryInTournament >( bufferIn, bufferOffset );
+      }
+      return true;
+   case PacketTournament::TournamentType_UserRequestsEntryInTournamentResponse:
+      {
+         *packetOut = SerializeIn< PacketTournament_UserRequestsEntryInTournamentResponse >( bufferIn, bufferOffset );
+      }
+      return true;
+  /* case PacketTournament::TournamentType_EnterUserInTournament:
+      {
+         *packetOut = SerializeIn< PacketTournament_EnterUserInTournament >( bufferIn, bufferOffset );
+      }
+      return true;
+   case PacketTournament::TournamentType_EnterUserInTournamentResponse:
+      {
+         *packetOut = SerializeIn< PacketTournament_EnterUserInTournamentResponse >( bufferIn, bufferOffset );
+      }
+      return true;*/
+
+
+
+
    case PacketTournament::TournamentType_EnterUserInTournament:
       {
          *packetOut = SerializeIn< PacketTournament_EnterUserInTournament >( bufferIn, bufferOffset );
