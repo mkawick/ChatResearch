@@ -57,8 +57,8 @@ public:
       TournamentType_RequestListOfTournaments,
       TournamentType_RequestListOfTournamentsResponse,
 
-      TournamentType_RequestTournamentDetails,
-      TournamentType_RequestTournamentDetailsResponse,
+      //TournamentType_RequestTournamentDetails,
+      //TournamentType_RequestTournamentDetailsResponse,
 
       TournamentType_RequestListOfTournamentEntrants,
       TournamentType_RequestListOfTournamentEntrantsResponse,
@@ -66,8 +66,8 @@ public:
       TournamentType_UserRequestsEntryInTournament, 
       TournamentType_UserRequestsEntryInTournamentResponse,
 
-      TournamentType_EnterUserInTournament, // server to server request
-      TournamentType_EnterUserInTournamentResponse,
+      TournamentType_PurchaseTournamentEntry, // server to server request
+      TournamentType_PurchaseTournamentEntryResponse,
    };
 public:
    PacketTournament( int packet_type = PacketType_Tournament, int packet_sub_type = TournamentType_Base ) : BasePacket( packet_type, packet_sub_type ) {}
@@ -135,19 +135,8 @@ public:
 class PacketTournament_UserRequestsEntryInTournamentResponse : public PacketTournament
 {
 public:
-   enum  TournamentPurchase_Result
-   {
-      TournamentPurchase_Result_Success,
-      TournamentPurchase_Result_NotEnoughMoney,
-      TournamentPurchase_Result_TransactionFailed,
-      TournamentPurchase_Result_TooManyPlayers,
-      TournamentPurchase_Result_DateIsWrong,
-      TournamentPurchase_Result_RequirementsNotMet,
-      TournamentPurchase_Result_TournamentClosed
-   };
-public:
    PacketTournament_UserRequestsEntryInTournamentResponse() : PacketTournament( PacketType_Tournament, TournamentType_UserRequestsEntryInTournamentResponse ),
-               result( TournamentPurchase_Result_Success ){  }
+      result( PacketErrorReport::ErrorType_Purchase_Success ){  }
 
    bool  SerializeIn( const U8* data, int& bufferOffset );
    bool  SerializeOut( U8* data, int& bufferOffset ) const;
@@ -159,35 +148,28 @@ public:
 
 ///////////////////////////////////////////////////////////////
 
-class PacketTournament_EnterUserInTournament : public PacketTournament
+class PacketTournament_PurchaseTournamentEntry : public PacketTournament
 {
 public:
-   PacketTournament_EnterUserInTournament() : PacketTournament( PacketType_Tournament, TournamentType_EnterUserInTournament ){  }
+   PacketTournament_PurchaseTournamentEntry() : PacketTournament( PacketType_Tournament, TournamentType_PurchaseTournamentEntry ){  }
 
    bool  SerializeIn( const U8* data, int& bufferOffset );
    bool  SerializeOut( U8* data, int& bufferOffset ) const;
 
    string      userUuid;
    string      tournamentUuid;
+   string      exchangeUuid;
    string      uniqueTransactionId; // fill this in with some unique value that you need
-   int         gameId;
    int         numTicketsRequired;
 };
 
 ///////////////////////////////////////////////////////////////////
 
-class PacketTournament_EnterUserInTournamentResponse : public PacketTournament
+class PacketTournament_PurchaseTournamentEntryResponse : public PacketTournament
 {
 public:
-   enum  TournamentPurchase_Result
-   {
-      TournamentPurchase_Result_Success,
-      TournamentPurchase_Result_NotEnoughMoney,
-      TournamentPurchase_Result_TransactionFailed,
-   };
-public:
-   PacketTournament_EnterUserInTournamentResponse() : PacketTournament( PacketType_Tournament, TournamentType_EnterUserInTournament ),
-               result( TournamentPurchase_Result_Success ){  }
+   PacketTournament_PurchaseTournamentEntryResponse() : PacketTournament( PacketType_Tournament, TournamentType_PurchaseTournamentEntryResponse ),
+               result( PacketErrorReport::ErrorType_Purchase_Success ){  }
 
    bool  SerializeIn( const U8* data, int& bufferOffset );
    bool  SerializeOut( U8* data, int& bufferOffset ) const;

@@ -20,6 +20,7 @@ class PacketPrepareForUserLogout;
 class PacketListOfUserProductsS2S;
 class SalesManager;
 class StringLookup;
+class PacketTournament_PurchaseTournamentEntry;
 
 ///////////////////////////////////////////////////////////////////
 
@@ -56,6 +57,7 @@ private:
    bool                    ConnectUser( PacketPrepareForUserLogin* loginPacket );
    bool                    DisconnectUser( PacketPrepareForUserLogout* loginPacket );
    bool                    StoreUserProductsOwned( PacketListOfUserProductsS2S* productNamesPacket );
+   bool                    HandlePurchaseRequest( const PacketTournament_PurchaseTournamentEntry* packet, U32 connectionId );
 
    int                     CallbackFunction();
 

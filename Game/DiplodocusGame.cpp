@@ -171,29 +171,6 @@ bool  DiplodocusGame::HandlePacketFromOtherServer( BasePacket* packet, U32 conne
 
 //---------------------------------------------------------------
 
-bool  DiplodocusGame::HandlePacketToOtherServer( BasePacket* packet, U32 connectionId )// not thread safe
-{
-   ChainLinkIteratorType itInputs = m_listOfInputs.begin();
-   while( itInputs != m_listOfInputs.end() )// only one output currently supported.
-   {
-      ChainType* inputPtr = static_cast< ChainType* >( itInputs->m_interface );
-      if( inputPtr->GetConnectionId() == ServerToServerConnectionId )
-      {
-         if( inputPtr->AddOutputChainData( packet, connectionId ) == true )
-         {
-            return true;
-         }
-      }
-
-      itInputs++;
-   }
-   assert( 0 );// should not happen
-   //delete packet;
-   return false;
-}
-
-//---------------------------------------------------------------
-
 void  DiplodocusGame::ConnectUser( const PacketPrepareForUserLogin* loginPacket )
 {
    U32 connectionId = loginPacket->connectionId;

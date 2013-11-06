@@ -44,6 +44,7 @@ bool  FruitadensServerToServer::FilterOutwardPacket( BasePacket* packet ) const
    // packets going out should not be PacketType_ServerToServerWrapper, they will be wrapped when outbound
    if( packet->packetType == PacketType_ServerInformation ||
       packet->packetType == PacketType_Gameplay || 
+      packet->packetType == PacketType_Tournament ||// mostly for purchasing
       packet->packetType == PacketType_Chat )
    {
       return true;

@@ -32,7 +32,8 @@ ProductEntryCreateBasedOnPlayHistory::ProductEntryCreateBasedOnPlayHistory( U32 
                                        m_hasCompletedTryingEveryProduct( false ),
                                        m_currentProductIndex( -1 ),
                                        m_startingProductId( -1 ),
-                                       m_currentUserIndex( -1 )
+                                       m_currentUserIndex( -1 ),
+                                       m_numRecordsToPullAtATime( 400 )
 {
    /*
    SELECT users.user_id, users.uuid from users_ascension inner join users 
@@ -87,6 +88,7 @@ void     ProductEntryCreateBasedOnPlayHistory::UpdateProductIndex()
       {
          m_hasCompletedTryingEveryProduct = true;
          SetRunSlower( true );
+         m_numRecordsToPullAtATime = 100;
       }
       m_currentProductIndex = 0;
    }
@@ -235,13 +237,16 @@ void     ProductEntryCreateBasedOnPlayHistory::AddQueryPerProduct( int productId
       string playersTable = "players_";
       playersTable += FindProductName( productId );
 
-      string query = "select player_id, users.uuid, creation_time FROM ";
+      string query = "SELECT player_id, users.uuid, creation_time FROM ";
       query += playersTable;
       query += " INNER JOIN (SELECT game_id, creation_time FROM ";
       query += gamesTable;
       query += " GROUP BY creation_time) games ON ";
       query += playersTable;
-      query += ".game_id=games.game_id INNER JOIN users ON player_id=users.user_id WHERE player_id>%s ORDER BY player_id LIMIT 100"; //<< note the %s userd to help with user indexing
+      query += ".game_id=games.game_id INNER JOIN users ON ";
+      query += playersTable;
+      query += ".user_id=users.user_id WHERE player_id>%s ORDER BY player_id LIMIT ";//400"; //<< note the %s userd to help with user indexing
+      query += boost::lexical_cast< string >( m_numRecordsToPullAtATime );
       
 
       // for test only
@@ -412,7 +417,11 @@ void     ProductEntryCreateBasedOnPlayHistory::RunUserQueries()
    // I would often get a result before I had removed a previous item from m_listOfUsersQueryingUpdate
    deque< PacketDbQuery* > queriesToSubmit;
 
-   int count = 9;// never send more than 10 at a time.
+   int count = m_numRecordsToPullAtATime / 10;// never send more than 25 at a time.
+   if( count > 25 )
+      count = 25;
+   if( count < 5 )
+      count = 5;
    list <UserWhoMayNeedUpdate>:: iterator it = m_listOfUsersQueryingUpdate.begin();
    while( it != m_listOfUsersQueryingUpdate.end() )
    {

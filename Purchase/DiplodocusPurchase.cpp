@@ -3,7 +3,8 @@
 #include "../NetworkCommon/Packets/ServerToServerPacket.h"
 #include "../NetworkCommon/Packets/AssetPacket.h"
 #include "../NetworkCommon/Packets/LoginPacket.h"
-#include "../NetworkCommon/Packets/Packetfactory.h"
+#include "../NetworkCommon/Packets/PacketFactory.h"
+#include "../NetworkCommon/Packets/TournamentPacket.h"
 
 #include "../NetworkCommon/Database/StringLookup.h"
 
@@ -22,13 +23,13 @@ DiplodocusPurchase::DiplodocusPurchase( const string& serverName, U32 serverId )
    SetSleepTime( 100 );
 
    
-   string exchangeQuery = "SELECT pe.id, pe.begin_date, pe.end_date, pe.enchange_uuid, pe.title_string, pe.description_string,";
-   exchangeQuery += " p1.product_id AS source_id, p1.uuid source_uuid, p1.name_string source_name, pe.source_count, p1.icon_lookup source_icon,";
-   exchangeQuery += " p2.product_id AS dest_id, p2.uuid dest_uuid, p2.name_string dest_name, pe.dest_count, p2.icon_lookup dest_icon ";       
+   string exchangeQuery = "SELECT pe.id, pe.begin_date, pe.end_date, pe.enchange_uuid, pe.title_string, pe.description_string, pe.custom_uuid, ";
+   exchangeQuery += " p1.product_id AS source_id, p1.uuid source_uuid, p1.name_string source_name, pe.source_count, p1.icon_lookup source_icon, p1.product_type source_type,";
+   exchangeQuery += " p2.product_id AS dest_id, p2.uuid dest_uuid, p2.name_string dest_name, pe.dest_count, p2.icon_lookup dest_icon, p1.product_type dest_type ";       
 
    exchangeQuery += " FROM playdek.product_exchange_rate AS pe";
    exchangeQuery += " INNER JOIN product p1 on pe.product_source_id=p1.product_id";
-   exchangeQuery += " INNER JOIN product p2 on pe.product_dest_id=p2.product_id";
+   exchangeQuery += " INNER JOIN product p2 on pe.product_dest_id=p2.product_id ";
    
    const int FiveMinutes = 60 * 5;
    m_salesManager = new SalesManager( QueryType_ExchangeRateLookup, this, exchangeQuery, true );
@@ -168,10 +169,18 @@ bool  DiplodocusPurchase::HandlePacketFromOtherServer( BasePacket* packet, U32 c
          return true;
       }
    }
- /*  else if( unwrappedPacket->packetType == PacketType_Contact)
+   else if( unwrappedPacket->packetType == PacketType_Tournament )
    {
-      return HandlePacketRequests( static_cast< PacketContact* >( packet ), connectionId );
-   }*/
+      switch( unwrappedPacket->packetSubType )
+      {
+      case PacketTournament::TournamentType_PurchaseTournamentEntry:
+         {
+            return HandlePurchaseRequest( static_cast< PacketTournament_PurchaseTournamentEntry* >( packet ), serverIdLookup );
+         }
+         break;
+      }
+      return false;
+   }
 
    return false;
 }
@@ -253,6 +262,24 @@ bool     DiplodocusPurchase::StoreUserProductsOwned( PacketListOfUserProductsS2S
 }
 
 //---------------------------------------------------------------
+
+bool     DiplodocusPurchase::HandlePurchaseRequest( const PacketTournament_PurchaseTournamentEntry* packet, U32 connectionId )
+{
+   U64 hashForUser = GenerateUniqueHash( packet->userUuid );
+
+   Threading::MutexLock locker( m_mutex );
+   UAADMapIterator it = m_userTickets.find( hashForUser );
+   if( it != m_userTickets.end() )// user may be reloggin and such.. no biggie.. just ignore
+   {
+      //it->second.SetConnectionId( loginPacket->connectionId );
+      it->second.MakePurchase( packet, connectionId );
+      return true;
+   }
+   //packet->
+   return false;
+}
+
+//---------------------------------------------------------------
 //---------------------------------------------------------------
 
 bool     DiplodocusPurchase::AddQueryToOutput( PacketDbQuery* packet )
@@ -302,6 +329,10 @@ bool     DiplodocusPurchase::AddOutputChainData( BasePacket* packet, U32 connect
       }
       return false;
    }
+   if( packet->packetType == PacketType_ServerJobWrapper )
+   {
+      return HandlePacketToOtherServer( packet, connectionId );
+   }
    if( packet->packetType == PacketType_DbQuery )
    {
       if( packet->packetSubType == BasePacketDbQuery::QueryType_Result )
@@ -342,6 +373,8 @@ bool     DiplodocusPurchase::AddOutputChainData( BasePacket* packet, U32 connect
 
    return false;
 }
+
+//---------------------------------------------------------------
 
 void     DiplodocusPurchase::AddServerNeedingUpdate( U32 serverId )
 {

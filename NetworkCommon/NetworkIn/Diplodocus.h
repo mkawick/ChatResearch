@@ -79,6 +79,8 @@ public:
    bool           AddInputChainData( BasePacket* t, U32 filingData );
    bool           AddOutputChainData( BasePacket* t, U32 filingData );
    bool           SendPacketToGateway( BasePacket* packet, U32 connectionId );
+   bool           HandlePacketToOtherServer( BasePacket* packet, U32 connectionId );// not thread safe
+
    bool           SendErrorToClient( U32 connectionId, PacketErrorReport::ErrorType error, int subType = 0 );
 
    void           OutputConnected( IChainedInterface * );

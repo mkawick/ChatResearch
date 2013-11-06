@@ -6,6 +6,8 @@
 
 #include "../NetworkCommon/Database/StringLookup.h"
 #include "../NetworkCommon/Packets/PurchasePacket.h"
+#include "../NetworkCommon/Packets/ServerToServerPacket.h"
+#include "../NetworkCommon/Packets/TournamentPacket.h"
 //#include "../NetworkCommon/Utils/TableWrapper.h"
 #include <boost/lexical_cast.hpp>
 
@@ -158,6 +160,7 @@ bool     SalesManager::HandleResult( const PacketDbQueryResult* dbResult )
       else
       {
          m_parent->SendErrorToClient( purchaseTracking->connectionId, PacketErrorReport::ErrorType_Purchase_UserDoesNotHaveEnoughToTrade );
+         SendTournamentPurchaseResultBackToServer( purchaseTracking->fromOtherServerId, purchaseTracking->fromOtherServerTransactionId, PacketErrorReport::ErrorType_Purchase_UserDoesNotHaveEnoughToTrade );
          m_usersBeingServiced.erase( purchaseTracking->userUuid );
          delete purchaseTracking;
       }
@@ -173,7 +176,7 @@ bool     SalesManager::HandleResult( const PacketDbQueryResult* dbResult )
       if( dbResult->successfulQuery == true )
       {
          m_parent->SendErrorToClient( purchaseTracking->connectionId, PacketErrorReport::ErrorType_Purchase_Success );
-         
+         SendTournamentPurchaseResultBackToServer( purchaseTracking->fromOtherServerId, purchaseTracking->fromOtherServerTransactionId, PacketErrorReport::ErrorType_Purchase_Success );
          packet->success = true;
       }
       else
@@ -250,6 +253,8 @@ bool     SalesManager::GetListOfItemsForSale( PacketPurchase_RequestListOfSalesR
    return false;
 }
 
+//---------------------------------------------------------------
+
 bool     SalesManager::FindItem( const string& exchangeUuid, ExchangeEntry& ee )
 {
    bool found = false;
@@ -267,18 +272,50 @@ bool     SalesManager::FindItem( const string& exchangeUuid, ExchangeEntry& ee )
    return false;
 }
 
-bool     SalesManager::PerformSale( const string& purchaseUuid, const UserTicket& userPurchasing )
+//---------------------------------------------------------------
+
+bool     SalesManager::SendTournamentPurchaseResultBackToServer( U32 serverIdentifier, string serverTransactionUuid, int result )
+{
+   if( serverIdentifier == 0 )
+      return false;
+   assert( serverTransactionUuid.size() > 0 );
+
+   PacketTournament_PurchaseTournamentEntryResponse* response = new PacketTournament_PurchaseTournamentEntryResponse;
+   response->uniqueTransactionId = serverTransactionUuid;
+   response->result = result;
+
+   // PacketType_ServerJobWrapper
+   PacketServerJobWrapper* wrapper = new PacketServerJobWrapper;
+   wrapper->serverId = serverIdentifier;
+   wrapper->pPacket = response;
+
+
+   if( m_parent->AddOutputChainData( wrapper, serverIdentifier ) == false )
+   {
+      PacketFactory factory;
+      BasePacket* tempPack = static_cast< BasePacket* >( wrapper );
+      factory.CleanupPacket( tempPack );
+   }
+
+   return true;
+}
+
+//---------------------------------------------------------------
+
+bool     SalesManager::PerformSale( const string& purchaseUuid, const UserTicket& userPurchasing, U32 serverIdentifier, string serverTransactionUuid )
 {
    ExchangeEntry ee;
    if( FindItem( purchaseUuid, ee ) == false )
    {
       m_parent->SendErrorToClient( userPurchasing.connectionId, PacketErrorReport::ErrorType_Purchase_BadPurchaseId );
+      SendTournamentPurchaseResultBackToServer( serverIdentifier, serverTransactionUuid, PacketErrorReport::ErrorType_Purchase_BadPurchaseId );
       return false;
    }
 
    if( m_usersBeingServiced.find( userPurchasing.uuid ) != m_usersBeingServiced.end() )
    {
       m_parent->SendErrorToClient( userPurchasing.connectionId, PacketErrorReport::ErrorType_Purchase_StoreBusy );
+      SendTournamentPurchaseResultBackToServer( serverIdentifier, serverTransactionUuid, PacketErrorReport::ErrorType_Purchase_StoreBusy );
       return false;
    }
 
@@ -288,6 +325,7 @@ bool     SalesManager::PerformSale( const string& purchaseUuid, const UserTicket
       if( secondsUntil < 0 )
       {
          m_parent->SendErrorToClient( userPurchasing.connectionId, PacketErrorReport::ErrorType_Purchase_TimePeriodHasNotBegunYet );
+         SendTournamentPurchaseResultBackToServer( serverIdentifier, serverTransactionUuid, PacketErrorReport::ErrorType_Purchase_TimePeriodHasNotBegunYet );
          return false;
       }
    }
@@ -297,6 +335,7 @@ bool     SalesManager::PerformSale( const string& purchaseUuid, const UserTicket
       if( secondsUntil > 0 )
       {
          m_parent->SendErrorToClient( userPurchasing.connectionId, PacketErrorReport::ErrorType_Purchase_TimePeriodHasExpired );
+         SendTournamentPurchaseResultBackToServer( serverIdentifier, serverTransactionUuid, PacketErrorReport::ErrorType_Purchase_TimePeriodHasExpired );
          return false;
       }
    }
@@ -307,7 +346,9 @@ bool     SalesManager::PerformSale( const string& purchaseUuid, const UserTicket
    purchaseLookup->userUuid = userPurchasing.uuid;
    purchaseLookup->exchangeUuid = purchaseUuid;
    purchaseLookup->connectionId = userPurchasing.connectionId;
-   //purchaseLookup->e = 0;
+   purchaseLookup->fromOtherServerId = serverIdentifier;
+   purchaseLookup->fromOtherServerTransactionId = serverTransactionUuid;
+   
 
    PacketDbQuery* dbQuery = new PacketDbQuery;
    dbQuery->id = 0;
@@ -323,6 +364,8 @@ bool     SalesManager::PerformSale( const string& purchaseUuid, const UserTicket
 
    return true;
 }
+
+//---------------------------------------------------------------
 
 int      SalesManager::GetProductType( const string& uuid )
 {
@@ -383,18 +426,23 @@ ExchangeEntry& ExchangeEntry :: operator = ( ExchangeRateParser::row  row )
    exchangeUuid =       row[ TableExchangeRateAggregate::Column_exchange_uuid ];
    titleStringId =      row[ TableExchangeRateAggregate::Column_title_id ];
    descriptionStringId =row[ TableExchangeRateAggregate::Column_description_id ];
+   customUuid =         row[ TableExchangeRateAggregate::Column_custom_uuid ];
 
    sourceId =           row[ TableExchangeRateAggregate::Column_source_id ];
    sourceUuid =         row[ TableExchangeRateAggregate::Column_source_uuid ];
    sourceNameStringId = row[ TableExchangeRateAggregate::Column_source_name ];
    sourceCount =        boost::lexical_cast< int > ( row[ TableExchangeRateAggregate::Column_source_count ] );
    sourceIcon =         row[ TableExchangeRateAggregate::Column_source_icon ];
+   sourceType =         boost::lexical_cast< int > ( row[ TableExchangeRateAggregate::Column_source_type ] );
 
    destId =             row[ TableExchangeRateAggregate::Column_dest_id ];
    destUuid =           row[ TableExchangeRateAggregate::Column_dest_uuid ];
    destNameStringId =   row[ TableExchangeRateAggregate::Column_dest_name ];
    destCount =          boost::lexical_cast< int > ( row[ TableExchangeRateAggregate::Column_dest_count ] );
    destIcon =           row[ TableExchangeRateAggregate::Column_dest_icon ];
+   destType =           boost::lexical_cast< int > ( row[ TableExchangeRateAggregate::Column_dest_type ] );
+
+   
 
    return *this;
 }

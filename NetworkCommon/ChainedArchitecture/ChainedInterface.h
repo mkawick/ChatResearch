@@ -115,6 +115,8 @@ protected:
    virtual void   ProcessEvents();
 
    void           CleanupAllChainDependencies();   
+   ChainLinkIteratorType   FindInputConnection( U32 connectionId );
+   ChainLinkIteratorType   FindOutputConnection( U32 connectionId );
 };
 
 /////////////////////////////////////////////////////////////////////////////
@@ -328,6 +330,46 @@ void  ChainedInterface<Type>::CleanupAllChainDependencies()
    m_outputChainListMutex.unlock();
    //NotifyFinishedRemoving();
 }
+
+//---------------------------------------------------------------
+
+template <typename Type> 
+typename ChainedInterface< Type >::ChainLinkIteratorType   // note the typename hack to make the template work.
+ChainedInterface< Type >::FindInputConnection( U32 connectionId )
+{
+   ChainLinkIteratorType itInputs = m_listOfInputs.begin();
+   while( itInputs != m_listOfInputs.end() )
+   {
+      ChainType* inputPtr = static_cast< ChainType*> ( itInputs->m_interface );
+      if( inputPtr->GetConnectionId() == connectionId )
+      {
+         return itInputs;
+      }
+      itInputs++;
+   }
+   return itInputs;
+}
+
+
+//---------------------------------------------------------------
+
+template <typename Type> 
+typename ChainedInterface< Type >::ChainLinkIteratorType   // note the typename hack to make the template work.
+ChainedInterface< Type >::FindOutputConnection( U32 connectionId )
+{
+   ChainLinkIteratorType itInputs = m_listOfInputs.begin();
+   while( itInputs != m_listOfInputs.end() )
+   {
+      ChainType* inputPtr = static_cast< ChainType*> ( itInputs->m_interface );
+      if( inputPtr->GetConnectionId() == connectionId )
+      {
+         return itInputs;
+      }
+      itInputs++;
+   }
+   return itInputs;
+}
+
 
 //----------------------------------------------------------------
 

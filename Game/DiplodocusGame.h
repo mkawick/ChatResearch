@@ -57,7 +57,7 @@ private:
    void     CleanupOldConnections();
 
    bool     HandlePacketFromOtherServer( BasePacket* packet, U32 connectionId );
-   bool     HandlePacketToOtherServer( BasePacket* packet, U32 connectionId );
+   //bool     HandlePacketToOtherServer( BasePacket* packet, U32 connectionId );
    void     ConnectUser( const PacketPrepareForUserLogin* loginPacket );
    void     DisconnectUser( const PacketPrepareForUserLogout* logoutPacket );
    void     IsUserAllowedToUseThisProduct( const PacketListOfGames* packet );

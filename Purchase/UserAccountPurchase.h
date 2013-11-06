@@ -27,6 +27,7 @@ class PacketPurchase_Buy;
 class PacketPurchase_RequestListOfSales;
 class StringBucket;
 class SalesManager;
+class PacketTournament_PurchaseTournamentEntry;
 
 ///////////////////////////////////////////////////////////////////
 
@@ -57,7 +58,8 @@ public:
 
    void              SetServer( DiplodocusPurchase* assetManager ) { m_purchaseManager = assetManager; }
    void              SetSalesManager( SalesManager* manager ) { m_salesManager = manager; }
-   bool              HandleRequestFromClient( const PacketPurchase* packet );
+   bool              HandleRequestFromClient( const PacketPurchase* packet ); 
+   bool              MakePurchase( const PacketTournament_PurchaseTournamentEntry* packet, U32 connectionId );
 
    void              UserLoggedOut();
    bool              LogoutExpired();
@@ -69,8 +71,10 @@ public:
 
 private:
 
-   bool              MakePurchase( const PacketPurchase_Buy* packet );
+   bool              MakePurchase( const PacketPurchase_Buy* packet );   
    bool              GetListOfItemsForSale( const PacketPurchase_RequestListOfSales* packet );
+
+   bool              PerformTournamentPurchase();
 
    UserTicket        m_userTicket;
    Status            m_status;

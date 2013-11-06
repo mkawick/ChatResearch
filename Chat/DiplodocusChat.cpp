@@ -238,6 +238,8 @@ bool  DiplodocusChat::HandlePacketFromOtherServer( BasePacket* packet, U32 conne
    PacketServerJobWrapper* wrapper = static_cast< PacketServerJobWrapper* >( packet );
    BasePacket* actualPacket = wrapper->pPacket;
    U32  serverIdLookup = wrapper->serverId;
+   // this packet has a job id thanks to the underlying layer (DiplodocusServerToServer) that we do not need so we ignore it.
+   // if we need to reply, we should store the job id.
 
    delete wrapper;
    bool success = false;
@@ -371,9 +373,10 @@ bool  DiplodocusChat::HandlePacketFromOtherServer( BasePacket* packet, U32 conne
 }
 
 //---------------------------------------------------------------
-
+/*
 bool  DiplodocusChat::HandlePacketToOtherServer( BasePacket* packet, U32 connectionId )// not thread safe
 {
+   AddOutputChainData( BasePacket* packet, U32 connectionId ) 
    ChainLinkIteratorType itInputs = m_listOfInputs.begin();
    while( itInputs != m_listOfInputs.end() )// only one output currently supported.
    {
@@ -391,7 +394,7 @@ bool  DiplodocusChat::HandlePacketToOtherServer( BasePacket* packet, U32 connect
    assert( 0 );// should not happen
    //delete packet;
    return false;
-}
+}*/
 
 //---------------------------------------------------------------
 

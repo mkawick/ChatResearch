@@ -67,7 +67,7 @@ private:
    void     CleanupOldConnections();
    bool     HandleCommandFromGateway( BasePacket* packet, U32 connectionId );
    bool     HandlePacketFromOtherServer( BasePacket* packet, U32 connectionId );
-   bool     HandlePacketToOtherServer( BasePacket* packet, U32 connectionId );
+   //bool     HandlePacketToOtherServer( BasePacket* packet, U32 connectionId );
    
    bool                                   m_inputsNeedUpdate;
 

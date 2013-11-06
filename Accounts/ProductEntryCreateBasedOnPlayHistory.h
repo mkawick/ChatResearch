@@ -72,4 +72,5 @@ private:
    vector <QueryPerProduct> m_listOfQueries;
    list <UserWhoMayNeedUpdate> m_listOfUsersQueryingUpdate;
    list <UserWhoMayNeedUpdate> m_listOfUsersAwaitingQueryResult;
+   int      m_numRecordsToPullAtATime;
 };

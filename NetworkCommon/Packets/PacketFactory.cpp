@@ -961,28 +961,14 @@ bool     PacketFactory::ParseTournament( const U8* bufferIn, int& bufferOffset, 
          *packetOut = SerializeIn< PacketTournament_UserRequestsEntryInTournamentResponse >( bufferIn, bufferOffset );
       }
       return true;
-  /* case PacketTournament::TournamentType_EnterUserInTournament:
+   case PacketTournament::TournamentType_PurchaseTournamentEntry:
       {
-         *packetOut = SerializeIn< PacketTournament_EnterUserInTournament >( bufferIn, bufferOffset );
+         *packetOut = SerializeIn< PacketTournament_PurchaseTournamentEntry >( bufferIn, bufferOffset );
       }
       return true;
-   case PacketTournament::TournamentType_EnterUserInTournamentResponse:
+   case PacketTournament::TournamentType_PurchaseTournamentEntryResponse:
       {
-         *packetOut = SerializeIn< PacketTournament_EnterUserInTournamentResponse >( bufferIn, bufferOffset );
-      }
-      return true;*/
-
-
-
-
-   case PacketTournament::TournamentType_EnterUserInTournament:
-      {
-         *packetOut = SerializeIn< PacketTournament_EnterUserInTournament >( bufferIn, bufferOffset );
-      }
-      return true;
-   case PacketTournament::TournamentType_EnterUserInTournamentResponse:
-      {
-         *packetOut = SerializeIn< PacketTournament_EnterUserInTournamentResponse >( bufferIn, bufferOffset );
+         *packetOut = SerializeIn< PacketTournament_PurchaseTournamentEntryResponse >( bufferIn, bufferOffset );
       }
       return true;
    default:

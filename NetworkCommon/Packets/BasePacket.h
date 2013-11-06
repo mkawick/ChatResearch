@@ -369,7 +369,12 @@ public:
       ErrorType_Purchase_TimePeriodHasExpired,
       ErrorType_Purchase_UserCannotPurchaseAnyMoreOfThese,
       ErrorType_Purchase_AllPurchasingIsClosedRightNow,
-      ErrorType_Purchase_Success
+      ErrorType_Purchase_Success,
+
+      ErrorType_TournamentPurchase_Result_PurchasePending,// you are already waiting for a purchase to complete.
+      ErrorType_TournamentPurchase_Result_TooManyPlayers,
+      ErrorType_TournamentPurchase_Result_RequirementsNotMet,
+      ErrorType_TournamentPurchase_Result_TournamentClosed
 
    };
 

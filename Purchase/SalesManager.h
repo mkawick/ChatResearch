@@ -12,6 +12,8 @@ class DiplodocusPurchase;
 class PacketPurchase_RequestListOfSalesResponse;
 
 
+//------------------------------------------------------------
+
 class TableExchangeRateAggregate
 {
 public:
@@ -23,16 +25,19 @@ public:
       Column_exchange_uuid,
       Column_title_id,
       Column_description_id,
+      Column_custom_uuid,
       Column_source_id,
       Column_source_uuid,
       Column_source_name,
       Column_source_count,
       Column_source_icon,
+      Column_source_type,
       Column_dest_id,
       Column_dest_uuid,
       Column_dest_name,
       Column_dest_count,
       Column_dest_icon,
+      Column_dest_type,
 
       Column_end
    };
@@ -40,6 +45,8 @@ public:
 };
 
 typedef Enigmosaurus <TableExchangeRateAggregate> ExchangeRateParser;
+
+//------------------------------------------------------------
 
 class ExchangeEntry
 {
@@ -59,21 +66,33 @@ public:
    string   sourceNameStringId;
    int      sourceCount;
    string   sourceIcon;
+   int      sourceType;
 
    string   destId;
    string   destUuid;
    string   destNameStringId;
    int      destCount;
    string   destIcon;
+   int      destType;
+
+   string   customUuid;
 };
+
+//------------------------------------------------------------
 
 class PurchaseTracking
 {
 public:
-   string userUuid;
-   string exchangeUuid;
-   U32 connectionId;
+   string   userUuid;
+   string   exchangeUuid;
+   
+   U32      connectionId;
+
+   U32      fromOtherServerId;
+   string   fromOtherServerTransactionId;
 };
+
+//------------------------------------------------------------
 
 class Product
 {
@@ -93,30 +112,24 @@ public:
 
 ///////////////////////////////////////////////////////////////////////////////////////////
 
-/*
-1	game	games sold like agricola
-2	deck expansion	
-3	consumable	
-4	ticket	
-5	money	playdough
-*/
 class SalesManager : public QueryHandler< DiplodocusPurchase* >
 {
 public:
    enum ProductType // this is also maintained in the login sever
    {
-      ProductType_game,
+      ProductType_game = 1,
       ProductType_deck_expansion,
       ProductType_consumable,
       ProductType_ticket,
-      ProductType_money
+      ProductType_money,
+      ProductType_tournament_entry
    };
 public:
    SalesManager( U32 id, ParentQueryerPtr parent, string& query, bool runQueryImmediately );
    bool     HandleResult( const PacketDbQueryResult* dbResult );
 
    bool     GetListOfItemsForSale( PacketPurchase_RequestListOfSalesResponse* packet, int userLanguageIndex = 1 );// english
-   bool     PerformSale( const string& purchaseUuid, const UserTicket& userPurchasing );
+   bool     PerformSale( const string& purchaseUuid, const UserTicket& userPurchasing, U32 serverIdentifier = 0, string serverTransactionUuid = "" );
 
    int      GetProductType( const string& uuid );
 
@@ -128,6 +141,7 @@ private:
    string   LookupString( const string& name, int languageId );
 
    bool     RequestAllProducts();
+   bool     SendTournamentPurchaseResultBackToServer( U32 serverIdentifier, string serverTransactionUuid, int result );
 
    bool     m_isServicingExchangeRates;
    bool     m_isInitializing, m_hasSendProductRequest;

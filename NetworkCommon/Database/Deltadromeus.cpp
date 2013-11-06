@@ -490,7 +490,10 @@ int     Deltadromeus::CallbackFunction()
 
    if( m_jobsInProgress.size() )
    {
+      m_mutex.lock();// this lock is absolutely necessary. crashes ensue otherwise.
       DbJobBase* currentJob = m_jobsInProgress.front();
+      m_mutex.unlock(); 
+
       if( currentJob->HasStarted() == false )
       {
          LogEverything( "DB submit query " );

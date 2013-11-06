@@ -237,6 +237,25 @@ bool     Diplodocus< InputChain, OutputChain >::SendPacketToGateway( BasePacket*
 //---------------------------------------------------------------
 
 template< typename InputChain, typename OutputChain >
+bool  Diplodocus< InputChain, OutputChain >::HandlePacketToOtherServer( BasePacket* packet, U32 connectionId )// not thread safe
+{
+   ChainLinkIteratorType itInputs = FindInputConnection( ServerToServerConnectionId );
+   if( itInputs != m_listOfInputs.end() )
+   {
+      ChainType* inputPtr = static_cast< ChainType*> ( itInputs->m_interface );
+      if( inputPtr->AddOutputChainData( packet, connectionId ) == true )
+      {
+         return true;
+      }
+   }
+  // assert( 0 );// should not happen
+   //delete packet;
+   return false;
+}
+
+//---------------------------------------------------------------
+
+template< typename InputChain, typename OutputChain >
 bool  Diplodocus< InputChain, OutputChain >::SendErrorToClient( U32 connectionId, PacketErrorReport::ErrorType error, int subType )
 {
    SendPacketToGateway( new PacketErrorReport( error, subType ), connectionId );

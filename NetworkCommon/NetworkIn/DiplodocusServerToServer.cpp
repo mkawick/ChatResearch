@@ -103,7 +103,7 @@ void  DiplodocusServerToServer::CreateJob( const KhaanServerToServer* khaan, Bas
    int jobId = m_jobIdTracker++;
 
    PacketServerJobWrapper* wrapper = new PacketServerJobWrapper;
-   wrapper->jobId = jobId;
+   wrapper->jobId = jobId;// only used currently for debugging. Could be used for a variety of things.
    wrapper->pPacket = packet;
    wrapper->serverId = khaan->GetServerId();
 
@@ -127,9 +127,10 @@ bool  DiplodocusServerToServer::AddOutputChainData( BasePacket* packet, U32 conn
    {
       PacketServerJobWrapper* tempPacket = static_cast< PacketServerJobWrapper* >( packet );
 
-      PacketServerToServerWrapper* wrapper = new PacketServerToServerWrapper;
-      wrapper->serverId = connectionId;
-      wrapper->pPacket = tempPacket->pPacket;// transfer packet locally
+      PacketServerToServerWrapper* s2swrapper = new PacketServerToServerWrapper;
+      s2swrapper->serverId = connectionId;
+      s2swrapper->pPacket = tempPacket->pPacket;// transfer packet locally
+      //tempPacket->jobId
       delete packet;// cleanup the packet that contains the original info.
 
       ChainLinkIteratorType itInputs = m_listOfInputs.begin();
@@ -141,14 +142,14 @@ bool  DiplodocusServerToServer::AddOutputChainData( BasePacket* packet, U32 conn
          if( khaan->GetServerId() == connectionId )// 
          {
             // we will swallow this in either case and so we delete the packets if the khaan does not use it.
-            if( khaan->AddOutputChainData( wrapper, 0 ) == true )
+            if( khaan->AddOutputChainData( s2swrapper, 0 ) == true )
             {
                m_serversNeedingUpdate.push_back( connectionId );
             }
             else
             {
-               delete wrapper->pPacket;
-               delete wrapper;
+               delete s2swrapper->pPacket;
+               delete s2swrapper;
             }
             
             return true;

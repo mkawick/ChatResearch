@@ -1,9 +1,10 @@
 #include "UserAccountPurchase.h"
 #include "DiplodocusPurchase.h"
 
-#include "../NetworkCommon/Packets/PurchasePacket.h"
 #include "../NetworkCommon/Packets/GamePacket.h"
+#include "../NetworkCommon/Packets/PurchasePacket.h"
 #include "../NetworkCommon/Packets/PacketFactory.h"
+#include "../NetworkCommon/Packets/TournamentPacket.h"
 
 ///////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////
@@ -113,14 +114,29 @@ bool     UserAccountPurchase::GetListOfItemsForSale( const PacketPurchase_Reques
 
 bool     UserAccountPurchase::MakePurchase( const PacketPurchase_Buy* packet )
 {
-   // return a ton of errors
-
-   if( m_salesManager == NULL && m_userTicket.connectionId != 0 )
-      assert( 0 );
+   assert( m_salesManager != NULL || m_userTicket.connectionId == 0 );
 
    bool success = m_salesManager->PerformSale( packet->purchaseUuid, m_userTicket );
 
    return true;
 }
+//------------------------------------------------------------------------------------------------
+
+bool     UserAccountPurchase::MakePurchase( const PacketTournament_PurchaseTournamentEntry* packet, U32 connectionId )
+{
+   assert( m_salesManager != NULL || m_userTicket.connectionId == 0 );
+
+   // we need to find the most appropriate sale. The tournament uuid will have a list 
+  /* packet->tournamentUuid;
+   packet->userUuid;
+   packet->exchangeUuid;
+
+   bool success = m_salesManager->PerformSale( packet->purchaseUuid, m_userTicket );*/
+
+   bool success = m_salesManager->PerformSale( packet->exchangeUuid, m_userTicket, connectionId, packet->uniqueTransactionId );
+
+   return true;
+}
+
 
 //------------------------------------------------------------------------------------------------

@@ -47,6 +47,32 @@ bool  PacketTournament::SerializeOut( U8* data, int& bufferOffset ) const
    return true;
 }
 
+
+///////////////////////////////////////////////////////////////
+
+bool  PacketTournament_TestNotification::SerializeIn( const U8* data, int& bufferOffset )
+{
+   BasePacket::SerializeIn( data, bufferOffset );
+   Serialize::In( data, bufferOffset, message );
+   Serialize::In( data, bufferOffset, senderName );
+   Serialize::In( data, bufferOffset, senderUuid );
+   Serialize::In( data, bufferOffset, type );
+
+   return true;
+}
+
+bool  PacketTournament_TestNotification::SerializeOut( U8* data, int& bufferOffset ) const
+{
+   BasePacket::SerializeOut( data, bufferOffset );
+   Serialize::Out( data, bufferOffset, message );
+   Serialize::Out( data, bufferOffset, senderName );
+   Serialize::Out( data, bufferOffset, senderUuid );
+   Serialize::Out( data, bufferOffset, type );
+
+   return true;
+}
+
+
 ///////////////////////////////////////////////////////////////
 
 bool  PacketTournament_RequestListOfTournaments::SerializeIn( const U8* data, int& bufferOffset )
@@ -124,25 +150,27 @@ bool  PacketTournament_UserRequestsEntryInTournamentResponse::SerializeOut( U8* 
 
 ///////////////////////////////////////////////////////////////
 
-bool  PacketTournament_EnterUserInTournament::SerializeIn( const U8* data, int& bufferOffset )
+bool  PacketTournament_PurchaseTournamentEntry::SerializeIn( const U8* data, int& bufferOffset )
 {
    PacketTournament::SerializeIn( data, bufferOffset );
    Serialize::In( data, bufferOffset, userUuid );
    Serialize::In( data, bufferOffset, tournamentUuid );
+   Serialize::In( data, bufferOffset, exchangeUuid );
    Serialize::In( data, bufferOffset, uniqueTransactionId );
-   Serialize::In( data, bufferOffset, gameId );
+   //Serialize::In( data, bufferOffset, gameId );
    Serialize::In( data, bufferOffset, numTicketsRequired );
 
    return true;
 }
 
-bool  PacketTournament_EnterUserInTournament::SerializeOut( U8* data, int& bufferOffset ) const
+bool  PacketTournament_PurchaseTournamentEntry::SerializeOut( U8* data, int& bufferOffset ) const
 {
    PacketTournament::SerializeOut( data, bufferOffset );
    Serialize::Out( data, bufferOffset, userUuid );
    Serialize::Out( data, bufferOffset, tournamentUuid );
+   Serialize::Out( data, bufferOffset, exchangeUuid );
    Serialize::Out( data, bufferOffset, uniqueTransactionId );
-   Serialize::Out( data, bufferOffset, gameId );
+   //Serialize::Out( data, bufferOffset, gameId );
    Serialize::Out( data, bufferOffset, numTicketsRequired );
 
    return true;
@@ -151,7 +179,7 @@ bool  PacketTournament_EnterUserInTournament::SerializeOut( U8* data, int& buffe
 ///////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////
 
-bool  PacketTournament_EnterUserInTournamentResponse::SerializeIn( const U8* data, int& bufferOffset )
+bool  PacketTournament_PurchaseTournamentEntryResponse::SerializeIn( const U8* data, int& bufferOffset )
 {
    PacketTournament::SerializeIn( data, bufferOffset );
    Serialize::In( data, bufferOffset, uniqueTransactionId );
@@ -160,7 +188,7 @@ bool  PacketTournament_EnterUserInTournamentResponse::SerializeIn( const U8* dat
    return true;
 }
 
-bool  PacketTournament_EnterUserInTournamentResponse::SerializeOut( U8* data, int& bufferOffset ) const
+bool  PacketTournament_PurchaseTournamentEntryResponse::SerializeOut( U8* data, int& bufferOffset ) const
 {
    PacketTournament::SerializeOut( data, bufferOffset );
    Serialize::Out( data, bufferOffset, uniqueTransactionId );
