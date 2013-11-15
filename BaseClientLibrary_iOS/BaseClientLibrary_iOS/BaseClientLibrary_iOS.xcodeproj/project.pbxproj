@@ -36,8 +36,14 @@
 		34EA68A917611DD400F07E19 /* Utils.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 34EA689317611DD400F07E19 /* Utils.cpp */; };
 		34EA68AF17612DF500F07E19 /* NetworkUtils.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 34EA68AE17612DF500F07E19 /* NetworkUtils.cpp */; };
 		7031249817A8404C00A83FA5 /* ContactPacket.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 7031249617A8404C00A83FA5 /* ContactPacket.cpp */; };
+		705B338A17FE29AA00CCDDE3 /* AssetPacket.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 705B338417FE29AA00CCDDE3 /* AssetPacket.cpp */; };
+		705B338B17FE29AA00CCDDE3 /* CheatPacket.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 705B338617FE29AA00CCDDE3 /* CheatPacket.cpp */; };
+		705B338C17FE29AA00CCDDE3 /* LoginPacket.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 705B338817FE29AA00CCDDE3 /* LoginPacket.cpp */; };
 		707B53F41794C1A6001D9BA1 /* DbPacket.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 707B53F21794C1A6001D9BA1 /* DbPacket.cpp */; };
 		707B53F71794C1BC001D9BA1 /* NetworkLayer.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 707B53F51794C1BC001D9BA1 /* NetworkLayer.cpp */; };
+		FAA2B309182B16E200A563B9 /* TournamentPacket.cpp in Sources */ = {isa = PBXBuildFile; fileRef = FAA2B307182B16E200A563B9 /* TournamentPacket.cpp */; };
+		FAA6764F181F192A00D9FF01 /* DataBucket.cpp in Sources */ = {isa = PBXBuildFile; fileRef = FAA6764B181F192A00D9FF01 /* DataBucket.cpp */; };
+		FAA67650181F192A00D9FF01 /* PurchasePacket.cpp in Sources */ = {isa = PBXBuildFile; fileRef = FAA6764D181F192A00D9FF01 /* PurchasePacket.cpp */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -90,10 +96,22 @@
 		34EA68AE17612DF500F07E19 /* NetworkUtils.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = NetworkUtils.cpp; path = ../NetworkUtils.cpp; sourceTree = "<group>"; };
 		7031249617A8404C00A83FA5 /* ContactPacket.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = ContactPacket.cpp; sourceTree = "<group>"; };
 		7031249717A8404C00A83FA5 /* ContactPacket.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ContactPacket.h; sourceTree = "<group>"; };
+		705B338417FE29AA00CCDDE3 /* AssetPacket.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = AssetPacket.cpp; sourceTree = "<group>"; };
+		705B338517FE29AA00CCDDE3 /* AssetPacket.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = AssetPacket.h; sourceTree = "<group>"; };
+		705B338617FE29AA00CCDDE3 /* CheatPacket.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = CheatPacket.cpp; sourceTree = "<group>"; };
+		705B338717FE29AA00CCDDE3 /* CheatPacket.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = CheatPacket.h; sourceTree = "<group>"; };
+		705B338817FE29AA00CCDDE3 /* LoginPacket.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = LoginPacket.cpp; sourceTree = "<group>"; };
+		705B338917FE29AA00CCDDE3 /* LoginPacket.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = LoginPacket.h; sourceTree = "<group>"; };
 		707B53F21794C1A6001D9BA1 /* DbPacket.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = DbPacket.cpp; sourceTree = "<group>"; };
 		707B53F31794C1A6001D9BA1 /* DbPacket.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = DbPacket.h; sourceTree = "<group>"; };
 		707B53F51794C1BC001D9BA1 /* NetworkLayer.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = NetworkLayer.cpp; path = ../BaseClientLibrary/NetworkLayer.cpp; sourceTree = "<group>"; };
 		707B53F61794C1BC001D9BA1 /* NetworkLayer.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = NetworkLayer.h; path = ../BaseClientLibrary/NetworkLayer.h; sourceTree = "<group>"; };
+		FAA2B307182B16E200A563B9 /* TournamentPacket.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = TournamentPacket.cpp; sourceTree = "<group>"; };
+		FAA2B308182B16E200A563B9 /* TournamentPacket.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = TournamentPacket.h; sourceTree = "<group>"; };
+		FAA6764B181F192A00D9FF01 /* DataBucket.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = DataBucket.cpp; sourceTree = "<group>"; };
+		FAA6764C181F192A00D9FF01 /* DataBucket.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = DataBucket.h; sourceTree = "<group>"; };
+		FAA6764D181F192A00D9FF01 /* PurchasePacket.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = PurchasePacket.cpp; sourceTree = "<group>"; };
+		FAA6764E181F192A00D9FF01 /* PurchasePacket.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = PurchasePacket.h; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -197,6 +215,18 @@
 		34EA687817611DD400F07E19 /* Packets */ = {
 			isa = PBXGroup;
 			children = (
+				FAA2B307182B16E200A563B9 /* TournamentPacket.cpp */,
+				FAA2B308182B16E200A563B9 /* TournamentPacket.h */,
+				FAA6764B181F192A00D9FF01 /* DataBucket.cpp */,
+				FAA6764C181F192A00D9FF01 /* DataBucket.h */,
+				FAA6764D181F192A00D9FF01 /* PurchasePacket.cpp */,
+				FAA6764E181F192A00D9FF01 /* PurchasePacket.h */,
+				705B338417FE29AA00CCDDE3 /* AssetPacket.cpp */,
+				705B338517FE29AA00CCDDE3 /* AssetPacket.h */,
+				705B338617FE29AA00CCDDE3 /* CheatPacket.cpp */,
+				705B338717FE29AA00CCDDE3 /* CheatPacket.h */,
+				705B338817FE29AA00CCDDE3 /* LoginPacket.cpp */,
+				705B338917FE29AA00CCDDE3 /* LoginPacket.h */,
 				7031249617A8404C00A83FA5 /* ContactPacket.cpp */,
 				7031249717A8404C00A83FA5 /* ContactPacket.h */,
 				707B53F21794C1A6001D9BA1 /* DbPacket.cpp */,
@@ -310,6 +340,12 @@
 				707B53F41794C1A6001D9BA1 /* DbPacket.cpp in Sources */,
 				707B53F71794C1BC001D9BA1 /* NetworkLayer.cpp in Sources */,
 				7031249817A8404C00A83FA5 /* ContactPacket.cpp in Sources */,
+				705B338A17FE29AA00CCDDE3 /* AssetPacket.cpp in Sources */,
+				705B338B17FE29AA00CCDDE3 /* CheatPacket.cpp in Sources */,
+				705B338C17FE29AA00CCDDE3 /* LoginPacket.cpp in Sources */,
+				FAA6764F181F192A00D9FF01 /* DataBucket.cpp in Sources */,
+				FAA67650181F192A00D9FF01 /* PurchasePacket.cpp in Sources */,
+				FAA2B309182B16E200A563B9 /* TournamentPacket.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -342,6 +378,7 @@
 				CLANG_WARN_INT_CONVERSION = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
+				DSTROOT = /users/alex/depot/alex.shank_macbook/MberSW/main/;
 				GCC_C_LANGUAGE_STANDARD = gnu99;
 				GCC_DYNAMIC_NO_PIC = NO;
 				GCC_OPTIMIZATION_LEVEL = 0;
@@ -360,6 +397,7 @@
 				IPHONEOS_DEPLOYMENT_TARGET = 6.1;
 				ONLY_ACTIVE_ARCH = NO;
 				SDKROOT = iphoneos;
+				STRIP_INSTALLED_PRODUCT = NO;
 			};
 			name = Debug;
 		};
@@ -375,6 +413,7 @@
 				CLANG_WARN_INT_CONVERSION = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = YES;
+				DSTROOT = /users/alex/depot/alex.shank_macbook/MberSW/main/;
 				GCC_C_LANGUAGE_STANDARD = gnu99;
 				GCC_GENERATE_DEBUGGING_SYMBOLS = NO;
 				GCC_WARN_ABOUT_RETURN_TYPE = YES;
@@ -386,6 +425,7 @@
 				);
 				IPHONEOS_DEPLOYMENT_TARGET = 6.1;
 				SDKROOT = iphoneos;
+				STRIP_INSTALLED_PRODUCT = NO;
 				VALIDATE_PRODUCT = YES;
 			};
 			name = Release;

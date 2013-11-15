@@ -222,12 +222,6 @@
 			</File>
 		</Filter>
 		<Filter
-			Name="Resource Files"
-			Filter="rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav"
-			UniqueIdentifier="{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}"
-			>
-		</Filter>
-		<Filter
 			Name="NetworkCommon"
 			>
 			<File
@@ -309,10 +303,6 @@
 					RelativePath="..\NetworkCommon\Logging\server_log.h"
 					>
 				</File>
-			</Filter>
-			<Filter
-				Name="Packets"
-				>
 			</Filter>
 			<Filter
 				Name="Utils"

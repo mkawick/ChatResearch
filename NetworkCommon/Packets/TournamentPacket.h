@@ -22,6 +22,8 @@ public:
    bool  SerializeIn( const U8* data, int& bufferOffset );
    bool  SerializeOut( U8* data, int& bufferOffset ) const;
 
+   void  Clear();
+
    string   tournamentName;
    string   tournamentUuid;
    string   beginDate;
@@ -57,8 +59,8 @@ public:
       TournamentType_RequestListOfTournaments,
       TournamentType_RequestListOfTournamentsResponse,
 
-      //TournamentType_RequestTournamentDetails,
-      //TournamentType_RequestTournamentDetailsResponse,
+      TournamentType_RequestTournamentDetails,
+      TournamentType_RequestTournamentDetailsResponse,
 
       TournamentType_RequestListOfTournamentEntrants,
       TournamentType_RequestListOfTournamentEntrantsResponse,
@@ -117,6 +119,57 @@ public:
    SerializedKeyValueVector< TournamentInfo >   tournaments;
 };
 
+///////////////////////////////////////////////////////////////
+
+class PacketTournament_RequestTournamentDetails : public PacketTournament
+{
+public:
+   PacketTournament_RequestTournamentDetails() : PacketTournament( PacketType_Tournament, TournamentType_RequestTournamentDetails ){  }
+
+   bool  SerializeIn( const U8* data, int& bufferOffset );
+   bool  SerializeOut( U8* data, int& bufferOffset ) const;
+
+   string   tournamentUuid;
+};
+
+///////////////////////////////////////////////////////////////////
+
+class PacketTournament_RequestTournamentDetailsResponse : public PacketTournament
+{
+public:
+   PacketTournament_RequestTournamentDetailsResponse() : PacketTournament( PacketType_Tournament, TournamentType_RequestTournamentDetailsResponse ){  }
+
+   bool  SerializeIn( const U8* data, int& bufferOffset );
+   bool  SerializeOut( U8* data, int& bufferOffset ) const;
+
+   TournamentInfo tournament;
+};
+
+///////////////////////////////////////////////////////////////
+
+class PacketTournament_RequestListOfEntrants : public PacketTournament
+{
+public:
+   PacketTournament_RequestListOfEntrants() : PacketTournament( PacketType_Tournament, TournamentType_RequestListOfTournamentEntrants ){  }
+
+   bool  SerializeIn( const U8* data, int& bufferOffset );
+   bool  SerializeOut( U8* data, int& bufferOffset ) const;
+
+   string   tournamentUuid;
+};
+
+///////////////////////////////////////////////////////////////////
+
+class PacketTournament_RequestListOfEntrantsResponse : public PacketTournament
+{
+public:
+   PacketTournament_RequestListOfEntrantsResponse() : PacketTournament( PacketType_Tournament, TournamentType_RequestListOfTournamentEntrantsResponse ){  }
+
+   bool  SerializeIn( const U8* data, int& bufferOffset );
+   bool  SerializeOut( U8* data, int& bufferOffset ) const;
+
+   SerializedKeyValueVector< string > entrants;
+};
 ///////////////////////////////////////////////////////////////////
 
 class PacketTournament_UserRequestsEntryInTournament : public PacketTournament

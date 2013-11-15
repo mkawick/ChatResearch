@@ -57,7 +57,11 @@ bool FruitadensGateway::FilterOutwardPacket( BasePacket* packet ) const
          }
          if( type == PacketType_Tournament )
          {
-            return true;
+            if( m_connectedServerId == wrapper->pPacket->gameInstanceId && 
+                  wrapper->pPacket->gameProductId == m_connectedGameProductId )
+            {
+               return true;
+            }
          }
       }
       else if( m_serverType == ServerType_Chat )

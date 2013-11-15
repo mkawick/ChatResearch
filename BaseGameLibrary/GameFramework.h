@@ -15,6 +15,19 @@ class FruitadensServerToServer;
 
 //////////////////////////////////////////////////////////
 
+struct S2SConnectionSetupData
+{
+   FruitadensServerToServer*  s2sCommunication;
+   string                     address;
+   string                     serverName;
+   U16                        port;
+   ServerType                 serverType;
+   vector< PacketType >       packetType;// used for filtering
+   //vector< U16 > subpacketList;
+};
+
+//////////////////////////////////////////////////////////
+
 class GameFramework
 {
 public:
@@ -31,13 +44,15 @@ public:
 
    //----------- configuration -----------------------
 
-      //------------ dafaults --------------------
+      //------------ defaults --------------------
       // DO NOT INVOKE THESE AFTER INVOKING THE RUN FUNCTION... they will have no effect
    void  SetupDefaultDatabaseConnection( const string& serverAddress, U16 port, const string& username,const string& password, const string& dbSchemaName );
    void  SetupDefaultGateway( U16 port );
    void  SetupDefaultChatConnection( const string& address, U16 port );
    void  SetupDefaultS2S( const string& address, U16 port );
-
+   void  SetupConnectionToAnotherServer( const string& address, const string& serverName, U16 port, ServerType serverType, PacketType packetType );
+   void  AddPacketTypeToServer( const string& serverName, PacketType packetType );
+      //------------ defaults --------------------
 
    void  UseCommandlineOverrides( int argc, const char* argv[] );
 
@@ -50,15 +65,21 @@ public:
 
    //----------------------------------------------
 
+   bool     SendErrorToClient( U32 connectionId, int errorCode, int errorSubCode );
    bool     SendGameData( U32 connectionId, const MarshalledData* );
    bool     SendChatData( BasePacket* ); // we will own this data after
+   bool     SendToAnotherServer( BasePacket* );// based on packet type... see SetupConnectionToAnotherServer
    bool     InformClientWhoThisServerIs( U32 connectionId );
+   bool     SendPacketToGateway( BasePacket* packet, U32 connectionId );
+   DiplodocusGame*   GetGame() { return m_connectionManager; }
 
    //----------------------------------------------
 
    bool     Run();
 
 private:
+   void     SetupS2SConnections();
+   
    GameCallbacks* m_callbacksObject;
 
    string         m_serverName;
@@ -79,6 +100,9 @@ private:
    U16            m_chatServerPort;
    string         m_chatServerAddress;
    FruitadensServerToServer*  m_chatServer;
+
+   vector< S2SConnectionSetupData > m_serverConnections;
+
 
    U16            m_listenForS2SPort;
    string         m_listenForS2SAddress;

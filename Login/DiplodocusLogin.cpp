@@ -283,22 +283,25 @@ bool     DiplodocusLogin:: HandleLoginResultFromDb( U32 connectionId, PacketDbQu
    {
       connection->LoginResult( dbResult );
 
-      SendLoginStatusToOtherServers( connection->userName, 
-                                                connection->userUuid, 
-                                                connectionId, 
-                                                connection->gameProductId, 
-                                                connection->lastLoginTime, 
-                                                connection->isActive, 
-                                                connection->email, 
-                                                connection->passwordHash, 
-                                                connection->id,
-                                                connection->loginKey, 
-                                                connection->languageId, 
-                                                true, false );
-      if( connection->SuccessfulLogin( connectionId, false ) == true )
+      if( dbResult->successfulQuery == true && dbResult->bucket.bucket.size() > 0 )
       {
-         UpdateLastLoggedInTime( dbResult->id ); // update the user logged in time
-         return true;
+         SendLoginStatusToOtherServers( connection->userName, 
+                                                   connection->userUuid, 
+                                                   connectionId, 
+                                                   connection->gameProductId, 
+                                                   connection->lastLoginTime, 
+                                                   connection->isActive, 
+                                                   connection->email, 
+                                                   connection->passwordHash, 
+                                                   connection->id,
+                                                   connection->loginKey, 
+                                                   connection->languageId, 
+                                                   true, false );
+         if( connection->SuccessfulLogin( connectionId, false ) == true )
+         {
+            UpdateLastLoggedInTime( dbResult->id ); // update the user logged in time
+            return true;
+         }
       }
    }
 
@@ -1719,6 +1722,8 @@ int      DiplodocusLogin:: CallbackFunction()
    UpdateAllConnections();
 
    RemoveOldConnections();
+
+   UpdatePendingGatewayPackets();
 
    return 1;
 }

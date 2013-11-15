@@ -6,8 +6,14 @@
 #include <string>
 #include <vector>
 
+enum 
+{
+   TypicalMaxHexLenForNetworking = 15,
+   TypicalMaxHexLen = 16
+};
+
 std::string    GenerateUUID( U32 xorValue = 0 );
-U64            GenerateUniqueHash( const std::string& str, int maxHexLen = 16 );
+U64            GenerateUniqueHash( const std::string& str, int maxHexLen = TypicalMaxHexLen );
 std::string    GetDateInUTC( int diffDays = 0, int diffHours = 0, int diffMinutes = 0 );
 std::string    GetDateInUTC( time_t t );
 U64            GetDateFromString( const char* UTCFormatted );
@@ -96,8 +102,13 @@ bool ConvertFromString( const std::string& InputString, T& Value )
 }
 
 template < class T >
-bool ConvertToString( T value, std::string& InputString )
+bool ConvertToString( T value, std::string& InputString, int radix = 10 )
 {
+#ifdef _DEBUG
+   T debugvalue=value;
+#endif
+   
+
    InputString.clear();
    if( value == 0 )
    {
@@ -109,16 +120,42 @@ bool ConvertToString( T value, std::string& InputString )
    {
       positive = false;
    }
-   while( value != 0 )
+   if( radix == 10 )
    {
-      char ins = ( value % 10 );
-      if( ins < 0 )
+      while( value != 0 )
       {
-         ins *= -1;
+         char ins = (char)( value % radix );
+         if( ins < 0 )
+         {
+            ins *= -1;
+         }
+         ins += '0';
+         InputString.insert( 0, 1, ins );
+         value /= radix;
       }
-      ins += '0';
-      InputString.insert( 0, 1, ins );
-      value /= 10;
+   }
+   else if( radix == 16 )
+   {
+      char lookup [] = "ABCDEF";
+      while( value != 0 )
+      {
+         char ins = (char)( value % radix );
+         if( ins < 0 )
+         {
+            ins *= -1;
+         }
+         if( ins < 10 )
+         {
+            ins += '0';
+         }
+         else
+         {
+            ins -= 10;
+            ins = lookup[ ins ];
+         }
+         InputString.insert( 0, 1, ins );
+         value /= radix;
+      }
    }
 
    if( positive == false )

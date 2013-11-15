@@ -357,17 +357,17 @@ template <typename Type>
 typename ChainedInterface< Type >::ChainLinkIteratorType   // note the typename hack to make the template work.
 ChainedInterface< Type >::FindOutputConnection( U32 connectionId )
 {
-   ChainLinkIteratorType itInputs = m_listOfInputs.begin();
-   while( itInputs != m_listOfInputs.end() )
+   ChainLinkIteratorType itOutputs = m_listOfOutputs.begin();
+   while( itOutputs != m_listOfOutputs.end() )
    {
-      ChainType* inputPtr = static_cast< ChainType*> ( itInputs->m_interface );
-      if( inputPtr->GetConnectionId() == connectionId )
+      ChainType* outputPtr = static_cast< ChainType*> ( itOutputs->m_interface );
+      if( outputPtr->GetConnectionId() == connectionId )
       {
-         return itInputs;
+         return itOutputs;
       }
-      itInputs++;
+      itOutputs++;
    }
-   return itInputs;
+   return itOutputs;
 }
 
 

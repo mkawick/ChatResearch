@@ -25,7 +25,8 @@ void  PrintText( const char* text, int extraCr = 0 )
 //-----------------------------------------------------------------------------------------
 
 DiplodocusGateway::DiplodocusGateway( const string& serverName, U32 serverId ) : Diplodocus< KhaanConnector > ( serverName, serverId, 0, ServerType_Gateway ),
-                                          m_connectionIdTracker( 12 )
+                                          m_connectionIdTracker( 12 ),
+                                          m_printPacketTypes( false )
 {
    SetSleepTime( 16 );// 30 fps
    SetSendHelloPacketOnLogin( true );
@@ -65,6 +66,11 @@ bool  DiplodocusGateway::AddInputChainData( BasePacket* packet, U32 connectionId
       wrapper->pPacket = packet;*/
       wrapper->SetupPacket( packet, connectionId );
 
+      if( m_printPacketTypes )
+      {
+         cout << "Packet to servers: " << (int)packet->packetType << ":" << (int)packet->packetSubType << endl;
+      }
+
       //wrapper->serverType = ServerType_Chat;// we are cheating. we should look at the type of packet and route it appropriately.
       
       m_inputChainListMutex.lock();
@@ -103,7 +109,7 @@ void     DiplodocusGateway::InputConnected( IChainedInterface * chainedInput )
 
 //-----------------------------------------------------------------------------------------
 
-void  DiplodocusGateway::InputRemovalInProgress( IChainedInterface * chainedInput )
+void     DiplodocusGateway::InputRemovalInProgress( IChainedInterface * chainedInput )
 {
    KhaanConnector* khaan = static_cast< KhaanConnector* >( chainedInput );
    string currentTime = GetDateInUTC();
@@ -126,7 +132,23 @@ void  DiplodocusGateway::InputRemovalInProgress( IChainedInterface * chainedInpu
 
 //-----------------------------------------------------------------------------------------
 
-bool DiplodocusGateway::PushPacketToProperOutput( BasePacket* packet )
+void     DiplodocusGateway::PrintPacketTypes( bool printingOn ) 
+{
+   m_printPacketTypes = printingOn; 
+   cout << "Client side packet printing is ";
+   if( m_printPacketTypes == true )
+   {
+      cout << "enabled" << endl;
+   }
+   else
+   {
+      cout << "disabled" << endl;
+   }
+}
+
+//-----------------------------------------------------------------------------------------
+
+bool     DiplodocusGateway::PushPacketToProperOutput( BasePacket* packet )
 {
    PrintText( "PushPacketToProperOutput", 1 );
 
@@ -235,6 +257,10 @@ void  DiplodocusGateway::HandlePacketToKhaan( KhaanConnector* khaan, BasePacket*
       packet = clientNotify;
    }
 
+   if( m_printPacketTypes )
+   {
+      cout << "Packet to client: " << (int)packet->packetType << ":" << (int)packet->packetSubType << endl;
+   }
    khaan->AddOutputChainData( packet );
 
    // this is a performance improvement to prevent duplicate entries in this deque.

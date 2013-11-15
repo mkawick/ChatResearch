@@ -312,70 +312,75 @@ class PacketErrorReport : public BasePacket
 public:
    enum ErrorType
    {
-      ErrorType_Generic,
-      ErrorType_Status, // most of the time, all we have is status
-      ErrorType_Login,
+      ErrorType_Generic =                                      100,
+      ErrorType_Status =                                       101, // most of the time, all we have is status
 
-      ErrorType_UserBadLogin,
-      ErrorType_UserDoesNotExist,
-      ErrorType_UserBlocked,
-      ErrorType_UserLoggedOut, //6
+      ErrorType_Login =                                        202,
+      ErrorType_UserBadLogin =                                 203,
+      ErrorType_UserDoesNotExist =                             204,
+      ErrorType_UserBlocked =                                  205,
+      ErrorType_UserLoggedOut =                                206,
+      ErrorType_UserNotFinishedWithLogin =                     207, 
 
-      ErrorType_ChatNotCurrentlyAvailable,// reported at the gateway
-      ErrorType_BadChatChannel,
-      ErrorType_NoChatChannel,
-      ErrorType_UserNotOnline,
-      ErrorType_NotAMemberOfThatChatChannel,
-      ErrorType_YouAreTheOnlyPersonInThatChatChannel,
-      ErrorType_CannotAddUserToChannel_AlreadyExists,
-      ErrorType_NoChatHistoryExistsOnSelectedChannel,
-      ErrorType_NoChatHistoryExistsForThisUser, // 16
+      ErrorType_ChatNotCurrentlyAvailable =                    301,// reported at the gateway
+      ErrorType_BadChatChannel =                               302,
+      ErrorType_NoChatChannel =                                303,
+      ErrorType_UserNotOnline =                                304,
+      ErrorType_NotAMemberOfThatChatChannel  =                 305,
+      ErrorType_YouAreTheOnlyPersonInThatChatChannel =         306,
+      ErrorType_CannotAddUserToChannel_AlreadyExists =         307,
+      ErrorType_NoChatHistoryExistsOnSelectedChannel =         308,
+      ErrorType_NoChatHistoryExistsForThisUser =               309,
 
-      ErrorType_CreateFailed_BadPassword,
-      ErrorType_CreateFailed_DisallowedUsername,
-      ErrorType_CreateFailed_DuplicateUsername,
-      ErrorType_CreateFailed_DuplicateEmail,
-      ErrorType_CreateFailed_UserCreateAccountPending,
-      ErrorType_CreateAccount_Success,
-      ErrorType_CreateAccount_AccountUpdated, // 23
+      ErrorType_CreateFailed_BadPassword =                     410,
+      ErrorType_CreateFailed_DisallowedUsername =              411,
+      ErrorType_CreateFailed_DuplicateUsername =               412,
+      ErrorType_CreateFailed_DuplicateEmail =                  413,
+      ErrorType_CreateFailed_UserCreateAccountPending =        414,
+      ErrorType_CreateAccount_Success =                        415,
+      ErrorType_CreateAccount_AccountUpdated =                 416,
 
-      ErrorType_Contact_Invitation_success, // 24
-      ErrorType_Contact_Invitation_ProblemFindingUser,
-      ErrorType_Contact_Invitation_InviteeAlreadyInvited,
-      ErrorType_Contact_Invitation_InviteeAlreadyFriend,
-      ErrorType_Contact_Invitation_InvalidUser,
-      ErrorType_Contact_Invitation_CannotInviteSelf,
-      ErrorType_Contact_Invitation_Accepted,
-      ErrorType_Contact_Invitation_BadInvitation,
-      ErrorType_Contact_BadLoginKey,
+      ErrorType_Contact_Invitation_success =                   500,
+      ErrorType_Contact_Invitation_ProblemFindingUser =        501,
+      ErrorType_Contact_Invitation_InviteeAlreadyInvited =     502,
+      ErrorType_Contact_Invitation_InviteeAlreadyFriend =      503,
+      ErrorType_Contact_Invitation_InvalidUser =               504,
+      ErrorType_Contact_Invitation_CannotInviteSelf =          505,
+      ErrorType_Contact_Invitation_Accepted =                  506,
+      ErrorType_Contact_Invitation_BadInvitation =             507,
+      ErrorType_Contact_BadLoginKey =                          508,
 
-      ErrorType_Asset_BadLoginKey,
+      ErrorType_Asset_BadLoginKey =                            600,
+      ErrorType_Asset_UnknownAsset =                           601,
+      ErrorType_Asset_UserDisconnected =                       602,
       
-      ErrorType_Cheat_BadPermissions,
-      ErrorType_Cheat_BadUserLookup,
-      ErrorType_Cheat_BadUserLookup_TryLoadingUserFirst,
-      ErrorType_Cheat_UnrecognizedCommand,
-      ErrorType_Cheat_UnknownError,
-      ErrorType_Cheat_ProductUnknown,
-      ErrorType_Login_CannotAddCurrentProductToUser,
-      ErrorType_Login_ProfileIsAlreadyBeingUpdated,
+      ErrorType_Cheat_BadPermissions =                         700,
+      ErrorType_Cheat_BadUserLookup =                          701,
+      ErrorType_Cheat_BadUserLookup_TryLoadingUserFirst =      702,
+      ErrorType_Cheat_UnrecognizedCommand =                    703,
+      ErrorType_Cheat_UnknownError =                           704,
+      ErrorType_Cheat_ProductUnknown =                         705,
+      ErrorType_Login_CannotAddCurrentProductToUser =          706,
+      ErrorType_Login_ProfileIsAlreadyBeingUpdated =           707,
 
-      ErrorType_Purchase_BadPurchaseId,
-      ErrorType_Purchase_StoreBusy,
-      ErrorType_Purchase_UserDoesNotHaveEnoughToTrade,
-      ErrorType_Purchase_UserInventoryIsFull,
-      ErrorType_Purchase_ItemNotAvailable,
-      ErrorType_Purchase_TimePeriodHasNotBegunYet,
-      ErrorType_Purchase_TimePeriodHasExpired,
-      ErrorType_Purchase_UserCannotPurchaseAnyMoreOfThese,
-      ErrorType_Purchase_AllPurchasingIsClosedRightNow,
-      ErrorType_Purchase_Success,
+      ErrorType_Purchase_BadPurchaseId =                       800,
+      ErrorType_Purchase_StoreBusy =                           801,
+      ErrorType_Purchase_UserDoesNotHaveEnoughToTrade =        802,
+      ErrorType_Purchase_UserInventoryIsFull =                 803,
+      ErrorType_Purchase_ItemNotAvailable =                    804,
+      ErrorType_Purchase_TimePeriodHasNotBegunYet =            805,
+      ErrorType_Purchase_TimePeriodHasExpired =                806,
+      ErrorType_Purchase_UserCannotPurchaseAnyMoreOfThese =    807,
+      ErrorType_Purchase_AllPurchasingIsClosedRightNow =       808,
+      ErrorType_Purchase_Success =                             809,
 
-      ErrorType_TournamentPurchase_Result_PurchasePending,// you are already waiting for a purchase to complete.
-      ErrorType_TournamentPurchase_Result_TooManyPlayers,
-      ErrorType_TournamentPurchase_Result_RequirementsNotMet,
-      ErrorType_TournamentPurchase_Result_TournamentClosed
+      ErrorType_TournamentPurchase_Result_PurchasePending =    900,// you are already waiting for a purchase to complete.
+      ErrorType_TournamentPurchase_Result_TooManyPlayers =     901,
+      ErrorType_TournamentPurchase_Result_RequirementsNotMet = 902,
+      ErrorType_TournamentPurchase_Result_TournamentClosed =   903,
+      ErrorType_TournamentPurchase_Result_UnknownUuid =        904,
 
+      ErrorType_Limit =                                      10000
    };
 
    enum StatusSubtype
@@ -387,13 +392,14 @@ public:
       StatusSubtype_ExtendedPermissionsGiven
    };
 public:
-   PacketErrorReport( int packet_sub_type = ErrorType_Generic ): BasePacket( PacketType_ErrorReport, packet_sub_type ), statusInfo( 0 ) {}
-   PacketErrorReport( int packet_sub_type, int subType = 0 ): BasePacket( PacketType_ErrorReport, packet_sub_type ), statusInfo( subType ) {}
+   //PacketErrorReport( int packet_sub_type = ErrorType_Generic ): BasePacket( PacketType_ErrorReport ), errorCode( packet_sub_type ), statusInfo( 0 ) {}
+   PacketErrorReport( int packet_sub_type = ErrorType_Generic, int subType = 0 ): BasePacket( PacketType_ErrorReport ), errorCode( packet_sub_type ), statusInfo( subType ) {}
 
    bool  SerializeIn( const U8* data, int& bufferOffset );
    bool  SerializeOut( U8* data, int& bufferOffset ) const;
 
-   int   statusInfo;
+   U16   errorCode;
+   U16   statusInfo;
 };
 
 ///////////////////////////////////////////////////////////////

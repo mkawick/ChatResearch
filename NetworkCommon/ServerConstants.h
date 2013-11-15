@@ -40,6 +40,8 @@ enum GameProductId
    GameProductId_AGRICOLA,
    GameProductId_FLUXX,   
    GameProductId_SMASHUP,
+   GameProductId_TANTO_CUORE,
+   GameProductId_LORDS_OF_WATERDEEP,
    GameProductId_MONKEYS_FROM_MARS,
    GameProductId_NUM_GAMES 
 };

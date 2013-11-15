@@ -8,6 +8,11 @@
 #include "../NetworkCommon/Packets/ChatPacket.h"
 #include "../NetworkCommon/Packets/LoginPacket.h"
 #include "../NetworkCommon/Packets/PurchasePacket.h"
+#include "../NetworkCommon/Packets/TournamentPacket.h"
+
+#if defined(ANDROID)
+#define __stdcall 
+#endif
 
 #include <map>
 using namespace std;
@@ -33,6 +38,8 @@ struct Demographics
 
 };
 
+//-------------------------------------------
+
 struct RegisteredProduct
 {
    string   id; 
@@ -45,6 +52,7 @@ struct RegisteredProduct
 };
 
 //-------------------------------------------
+//-------------------------------------------
 
 class BasicUser
 {
@@ -55,6 +63,7 @@ public:
    bool      isOnline;
 };
 
+//-------------------------------------------
 //-------------------------------------------
 
 class ChatChannel
@@ -84,6 +93,9 @@ public:
 
 typedef vector< ChatChannel >    ChatChannelVector;
 
+//-------------------------------------------
+//-------------------------------------------
+
 class Group
 {
    string groupName;
@@ -92,6 +104,8 @@ class Group
    string chatChannel; // the venn diagrap for groups and channels may not be 1-1
    vector< BasicUser > usersInGroup;
 };
+
+//-------------------------------------------
 
 struct AssetInfoExtended : public AssetInfo
 {
@@ -189,6 +203,8 @@ public:
    virtual void  StaticAssetManifestAvalable() const {}
    virtual void  DynamicicAssetManifestAvalable() const {}
    virtual bool  AssetLoaded( const string& name, const U8* buffer, int size ) { return true; }
+   virtual void  TournamentListAvalable() const {}
+   virtual void  TournamentPurchaseResult( const string& tournamentUuid, int result ) const {}
 
    virtual void  OnError( int code, int subCode ){}
 
@@ -295,6 +311,9 @@ public:
    bool     RequestListOfPurchases( const string userUuid = "" ) const;
    bool     MakePurchase( const string& exchangeUuid ) const;
 
+   bool     RequestListOfTournaments();
+   bool     PurchaseEntryIntoTournament( const string& tournamentUuid );
+
    bool     RequestListOfStaticAssets( int platformId = Platform_ios );
    bool     RequestListOfDynamicAssets( int platformId = Platform_ios );
    bool     RequestAsset( const string& assetName );
@@ -330,65 +349,66 @@ public:
    bool     GetAssetInfo( const string& hash, AssetInfoExtended& asset ) { return GetAsset( hash, asset ); }
    bool     ClearAssetInfo( const string& hash );
 
+   int      GetNumAvailableTournaments() const { return m_availableTournaments.size(); }
+   bool     GetTournamentInfo( int index, TournamentInfo& tournamentInfo );
+
    string   GetLocalUUID() { return m_uuid; }
 
    string   GenerateHash( const string& stringThatIWantHashed );
    
 private:
 
-   void   InputConnected( IChainedInterface * ) {}
-   void   OutputConnected( IChainedInterface * ) {}
-   void   InputRemovalInProgress( IChainedInterface * ) {}
-   void   OutputRemovalInProgress( IChainedInterface * ) {}
+   void     InputConnected( IChainedInterface * ) {}
+   void     OutputConnected( IChainedInterface * ) {}
+   void     InputRemovalInProgress( IChainedInterface * ) {}
+   void     OutputRemovalInProgress( IChainedInterface * ) {}
 
    // datatypes
-   bool  Log( const std::string& text, int priority = 1 ) const { return true; }
-   bool  Log( const char* text, int priority = 1 ) const { return true; }
+   bool     Log( const std::string& text, int priority = 1 ) const { return true; }
+   bool     Log( const char* text, int priority = 1 ) const { return true; }
    
    typedef SerializedKeyValueVector< BasicUser >   UserNameKeyValue;
    typedef vector< PacketGameIdentification >      GameList;
 
 
-   string            m_userName, m_attemptedUsername;
-   string            m_uuid;
-   string            m_serverDns;
-   string            m_loginKey;
-   U32               m_selectedGame;
+   string               m_userName, m_attemptedUsername;
+   string               m_uuid;
+   string               m_serverDns;
+   string               m_loginKey;
+   U32                  m_selectedGame;
 
    SerializedKeyValueVector< InvitationInfo > m_invitationsReceived;
    SerializedKeyValueVector< InvitationInfo > m_invitationsSent;
-   UserNameKeyValue  m_friends;
-   ChatChannelVector m_channels;
-   //vector< Group >         Groups;
-   //KeyValueVector    m_availableGames;
-   GameList          m_gameList;
+   UserNameKeyValue     m_friends;
+   ChatChannelVector    m_channels;
+   GameList             m_gameList;
 
-   U8                m_gameProductId;
-   bool              m_isLoggingIn;
-   bool              m_isLoggedIn;
-   bool              m_isCreatingAccount;
-   U32               m_connectionId;
-   string            m_lastLoggedOutTime;
-   int               m_lastRawDataIndex;
+   U8                   m_gameProductId;
+   bool                 m_isLoggingIn;
+   bool                 m_isLoggedIn;
+   bool                 m_isCreatingAccount;
+   U32                  m_connectionId;
+   string               m_lastLoggedOutTime;
+   int                  m_lastRawDataIndex;
 
-   mutable U32       m_beginTime, m_endTime;
+   mutable U32          m_beginTime, m_endTime;
 
-   int               m_normalSleepTime, m_boostedSleepTime;
-   bool              m_isThreadPerformanceBoosted;
-   time_t            m_timeWhenThreadPerformanceBoosted;
+   int                  m_normalSleepTime, m_boostedSleepTime;
+   bool                 m_isThreadPerformanceBoosted;
+   time_t               m_timeWhenThreadPerformanceBoosted;
 
-   MBerNotifierList  m_callbacks;
-   RawDataAccumulator m_rawDataBuffer[ PacketGameplayRawData::NumDataTypes ];
+   MBerNotifierList     m_callbacks;
+   RawDataAccumulator   m_rawDataBuffer[ PacketGameplayRawData::NumDataTypes ];
 
    vector< AssetInfoExtended >  m_staticAssets;
    vector< AssetInfoExtended >  m_dynamicAssets;
+   vector< TournamentInfo >     m_availableTournaments;
 
 private:
    bool     SerializePacketOut( BasePacket* packet ) const;// helper
 
    bool     HandlePacketReceived( BasePacket* packetIn );
    int      ProcessInputFunction();
-   //bool     HandlePacketIn( BasePacket* packetIn );
 
    bool     AddChatChannel( const ChatChannel& channel );
 
@@ -398,6 +418,9 @@ private:
 
    bool     GetAsset( const string& hash, AssetInfoExtended& asset );
    bool     UpdateAssetData( const string& hash, AssetInfoExtended& asset );
+
+   void     NotifyClientLoginStatus( bool isLoggedIn );
+   void     NotifyClientToBeginSendingRequests();
 };
 ///////////////////////////////////////////////////////
 

@@ -34,14 +34,16 @@ public:
 
    virtual bool   DataFromChat( U32 connectionId, const MarshalledData* packet ) { return false; }
 
+   virtual bool   HandlePacketFromOtherServer( BasePacket* packet ){ return false; }
+
+   // tournament stuff
    // the following may only remain as a testing interfaces
    virtual bool   UserWantsToJoinTournament( U32 connectionId, const string& tournamentUuid ) { return false; }
    virtual bool   UserWantsAListOfTournaments( U32 connectionId ) { return false; }
    
    // see PacketTournament_PurchaseTournamentEntryResponse
-   virtual bool   PurchaseTournamentResult( U32 connectionId, const string& userUuid, const string& tournamentUuid, int result ) { return false; } 
-   //virtual bool   UserWantsTournamentDetails( U32 connectionId, const string& tournamentUuid ) { return false; }
-   //virtual bool   UserWantsAListOfTournamentEntrants( U32 connectionId, const string& tournamentUuid ) { return false; }
+   virtual bool   UserWantsTournamentDetails( U32 connectionId, const string& tournamentUuid ) { return false; }
+   virtual bool   UserWantsAListOfTournamentEntrants( U32 connectionId, const string& tournamentUuid ) { return false; }
 
    
 protected:

@@ -29,6 +29,7 @@ ResetPasswordQueryHandler.cpp \
 ../NetworkCommon/Packets/ServerToServerPacket.cpp \
 ../NetworkCommon/Packets/PacketFactory.cpp \
 ../NetworkCommon/Packets/PurchasePacket.cpp \
+../NetworkCommon/Packets/TournamentPacket.cpp \
 ../NetworkCommon/Utils/CommandLineParser.cpp \
 ../NetworkCommon/Utils/TableWrapper.cpp \
 ../NetworkCommon/Utils/OsLevelUtils.cpp \

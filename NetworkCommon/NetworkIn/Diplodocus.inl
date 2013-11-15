@@ -208,12 +208,27 @@ bool  Diplodocus< InputChain, OutputChain >::AddOutputChainData( BasePacket* t, 
    return true;
 }
 
+template< typename InputChain, typename OutputChain >
+bool     Diplodocus< InputChain, OutputChain >::DelayPacketToGateway( BasePacket* packet, U32 connectionId, float delayInSecs )
+{
+   DelayedPacket dp;
+   dp.packet = packet;
+   dp.connectionId = connectionId;
+   dp.delay = delayInSecs;
+   time( &dp.beginTime );
+   m_delayedGatewayPackets.push_back( dp );
+   return true;
+}
 
 //---------------------------------------------------------------
 
 template< typename InputChain, typename OutputChain >
-bool     Diplodocus< InputChain, OutputChain >::SendPacketToGateway( BasePacket* packet, U32 connectionId )
+bool     Diplodocus< InputChain, OutputChain >::SendPacketToGateway( BasePacket* packet, U32 connectionId, float delayInSecs )
 {
+   if( delayInSecs > 0 )
+   {
+      return DelayPacketToGateway( packet, connectionId, delayInSecs );
+   }
    PacketGatewayWrapper* wrapper = new PacketGatewayWrapper();
    wrapper->SetupPacket( packet, connectionId );
 
@@ -239,7 +254,13 @@ bool     Diplodocus< InputChain, OutputChain >::SendPacketToGateway( BasePacket*
 template< typename InputChain, typename OutputChain >
 bool  Diplodocus< InputChain, OutputChain >::HandlePacketToOtherServer( BasePacket* packet, U32 connectionId )// not thread safe
 {
-   ChainLinkIteratorType itInputs = FindInputConnection( ServerToServerConnectionId );
+   ChainLinkIteratorType itInputs;
+   if( connectionId != 0 )
+      itInputs = FindInputConnection( connectionId );
+
+   if( itInputs == m_listOfInputs.end() )
+      itInputs = FindInputConnection( ServerToServerConnectionId );
+
    if( itInputs != m_listOfInputs.end() )
    {
       ChainType* inputPtr = static_cast< ChainType*> ( itInputs->m_interface );
@@ -248,8 +269,24 @@ bool  Diplodocus< InputChain, OutputChain >::HandlePacketToOtherServer( BasePack
          return true;
       }
    }
-  // assert( 0 );// should not happen
-   //delete packet;
+
+
+   // going to the outputs should be rare, if ever.... s2s communications are handled entirely through inputs right now. 15Nov2013
+   ChainLinkIteratorType itOutputs;
+   if( connectionId != 0 )
+      itOutputs = FindOutputConnection( connectionId );
+
+   if( itOutputs == m_listOfOutputs.end() )
+      itOutputs = FindOutputConnection( ServerToServerConnectionId );
+
+   if( itOutputs != m_listOfOutputs.end() )
+   {
+      ChainType* outputPtr = static_cast< ChainType*> ( itOutputs->m_interface );
+      if( outputPtr->AddOutputChainData( packet, connectionId ) == true )
+      {
+         return true;
+      }
+   }
    return false;
 }
 
@@ -552,6 +589,29 @@ void	Diplodocus< InputChain, OutputChain >::UpdateAllConnections()
 
 //------------------------------------------------------------------------------------------
 
+template< typename InputChain, typename OutputChain >
+void     Diplodocus< InputChain, OutputChain >::UpdatePendingGatewayPackets()
+{
+   time_t currentTime;
+   time( &currentTime );
+   PacketFactory factory;
+   list< DelayedPacket >::iterator it = m_delayedGatewayPackets.begin();
+   while( it != m_delayedGatewayPackets.end() )
+   {
+      list< DelayedPacket >::iterator tempPtr = it++;
+      DelayedPacket& dp = *tempPtr;
+      
+      if( difftime( currentTime, dp.beginTime ) >= dp.delay )
+      {
+         if( SendPacketToGateway( dp.packet, dp.connectionId, 0 ) == false )
+         {
+            factory.CleanupPacket( dp.packet );
+         }
+         m_delayedGatewayPackets.erase( tempPtr );
+      }
+   }
+}
+
 //------------------------------------------------------------------------------------------
 
 template< typename InputChain, typename OutputChain >
@@ -656,6 +716,8 @@ int      Diplodocus< InputChain, OutputChain >::ProcessOutputFunction()
       return 1;
 
    UpdateAllConnections();
+
+   UpdatePendingGatewayPackets();
 
    return 0; 
 }

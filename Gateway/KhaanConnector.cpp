@@ -148,6 +148,8 @@ bool  KhaanConnector::IsWhiteListedIn( const BasePacket* packet ) const
       return false;
    case PacketType_Purchase:
       return true;
+   case PacketType_Tournament:
+      return true;
    }
 
    return false;

@@ -221,11 +221,13 @@ bool     UserAccountAssetDelivery::GetAsset( const PacketAsset_RequestAsset* pac
       else
       {
          cout << " Attempt to load unknown file: " << packet->assetHash << endl;
+         m_assetManager->SendErrorToClient( m_userTicket.connectionId, PacketErrorReport::ErrorType_Asset_UnknownAsset );
       }
    }
    else
    {
       cout << " Attempt to load file but user is not connected: " << packet->assetHash << endl;
+      //m_assetManager->SendErrorToClient( m_userTicket.connectionId, ErrorType_Asset_UserDisconnected );
    }
 
    return false;

@@ -18,6 +18,7 @@ struct AssetInfo
    }
    void  Clear()
    {
+      isOptional = false;
       productId = 0;
       assetHash.clear();
       version.clear();

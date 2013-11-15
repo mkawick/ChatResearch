@@ -30,14 +30,7 @@ struct TournamentOverview
    string uuid;
 };
 
-struct TournamentPurchaseRequest
-{
-   int      connectionId;
-   string   userUuid;
-   string   timeSent;// mostly for debugging
-   string   transactionId;
-   string   tournamentUuid;
-};
+
 
 ////////////////////////////////////////////////////////////////////////////////////////
 
@@ -67,6 +60,7 @@ public:
 
    //-----------------------------------------------------------------------------
 
+   // move up one layer
    bool     SendListOfTournamentsToClient( U32 connectionId, const list< TournamentOverview >& tournamentList );
    bool     RequestPurchaseServerMakeTransaction( U32 connectionId, const string& userUuid, const string& tournamentUuid, int numTicketsRequired = 1 );
    bool     SendPurchaseResultToClient( U32 connectionId, const string& tournamentUuid, int purchaseResult ); // see PacketTournament_UserRequestsEntryInTournamentResponse
@@ -83,13 +77,12 @@ private:
    void     UpdateAllTimers();
 
    bool     HandlePacketFromOtherServer( BasePacket* packet, U32 connectionId );
-   //bool     HandlePacketToOtherServer( BasePacket* packet, U32 connectionId );
+   bool     HandlePacketToOtherServer( BasePacket* packet, U32 connectionId );
    void     ConnectUser( const PacketPrepareForUserLogin* loginPacket );
    void     DisconnectUser( const PacketPrepareForUserLogout* logoutPacket );
    void     IsUserAllowedToUseThisProduct( const PacketListOfGames* packet );
 
    void     HandleUserRequestedTournamentInfo( BasePacket* packet, U32 connectionId );
-   bool     TournamentPurchaseResult( const PacketTournament_PurchaseTournamentEntryResponse* tournamentPurchase );
 
    //U32                                    m_connectionIdGateway;
    deque< U32 >                           m_serversNeedingUpdate;
@@ -98,7 +91,6 @@ private:
    
 
    list< TimerInfo >                      m_timers;
-   list< TournamentPurchaseRequest >      m_purchaseRequests;
 };
 
 ////////////////////////////////////////////////////////////////////////////////////////

@@ -80,6 +80,7 @@ bool  DiplodocusGame::HandleCommandFromGateway( BasePacket* packet, U32 connecti
 // this will always be data coming from the gateway or at least from the outside in.
 bool   DiplodocusGame::AddInputChainData( BasePacket* packet, U32 connectionId ) 
 {
+   PacketFactory factory;
    if( packet->packetType == PacketType_GatewayInformation )
    {
       return HandleCommandFromGateway( packet, connectionId );
@@ -87,7 +88,15 @@ bool   DiplodocusGame::AddInputChainData( BasePacket* packet, U32 connectionId )
 
    if( packet->packetType == PacketType_ServerJobWrapper )
    {
-      HandlePacketFromOtherServer( packet, connectionId );
+      PacketServerJobWrapper* wrapper = static_cast< PacketServerJobWrapper* >( packet );
+      BasePacket* unwrappedPacket = wrapper->pPacket;
+      U32  serverIdLookup = wrapper->serverId;
+      if( HandlePacketFromOtherServer( unwrappedPacket, serverIdLookup ) == true )
+      {
+         wrapper->pPacket = NULL;
+      }
+      factory.CleanupPacket( packet );
+
       return true;
    }
 
@@ -132,19 +141,6 @@ bool   DiplodocusGame::AddInputChainData( BasePacket* packet, U32 connectionId )
             }
             return true;
          }
-        /* // for simplicity, we are simply going to send packets onto the chat server
-         ChainLinkIteratorType itOutputs = m_listOfOutputs.begin();
-         while( itOutputs != m_listOfOutputs.end() )// only one output currently supported.
-         {
-            ChainedInterface* outputPtr = itOutputs->m_interface;
-            if( outputPtr->AddOutputChainData( pPacket, -1 ) == true )
-            {
-               return true;
-            }
-            itOutputs++;
-         }
-         assert( 0 );
-         return false;*/
       }
       else if( unwrappedPacket->packetType == PacketType_Tournament )
       {
@@ -171,24 +167,24 @@ void   DiplodocusGame::HandleUserRequestedTournamentInfo( BasePacket* packet, U3
          }
       }
       break;
-  /* case PacketTournament::TournamentType_RequestTournamentDetails:
+   case PacketTournament::TournamentType_RequestTournamentDetails:
+      {
+         if( m_callbacks )
+         {
+            const PacketTournament_RequestTournamentDetails* tournamentRequest = static_cast< PacketTournament_RequestTournamentDetails* > ( packet );
+            m_callbacks->UserWantsTournamentDetails( connectionId, tournamentRequest->tournamentUuid );
+         }
+      }
+      break;
+   case PacketTournament::TournamentType_RequestListOfTournamentEntrants:
       {
          if( m_callbacks )
          {
             const PacketTournament_UserRequestsEntryInTournament* tournamentRequest = static_cast< PacketTournament_UserRequestsEntryInTournament* > ( packet );
-            m_callbacks->UserWantsTournamentDetails( connectionId, tournamentUuid );
+            m_callbacks->UserWantsAListOfTournamentEntrants( connectionId, tournamentRequest->tournamentUuid );
          }
       }
-      break;*/
-   /*case PacketTournament::TournamentType_RequestListOfTournamentEntrants:
-      {
-         if( m_callbacks )
-         {
-            const PacketTournament_UserRequestsEntryInTournament* tournamentRequest = static_cast< PacketTournament_UserRequestsEntryInTournament* > ( packet );
-            m_callbacks->UserWantsAListOfTournamentEntrants( connectionId, tournamentUuid );
-         }
-      }
-      break;*/
+      break;
    case PacketTournament::TournamentType_UserRequestsEntryInTournament:
       {
          if( m_callbacks )
@@ -205,42 +201,6 @@ void   DiplodocusGame::HandleUserRequestedTournamentInfo( BasePacket* packet, U3
 bool   DiplodocusGame::AddOutputChainData( BasePacket* packet, U32 connectionId ) 
 {
    Threading::MutexLock locker( m_mutex );
-
-  /* if( packet->packetType == PacketType_DbQuery )
-   {
-      if( packet->packetSubType == BasePacketDbQuery::QueryType_Result )
-      {
-         PacketDbQueryResult* result = static_cast<PacketDbQueryResult*>( packet );
-         U32 connectionId = result->id;
-         if( connectionId == m_chatChannelManager->GetConnectionId() )
-         {
-            m_chatChannelManager->AddInputChainData( packet );
-            m_chatChannelManagerNeedsUpdate = true;
-         }
-         else
-         {
-            m_mutex.lock();
-            ConnectionMapIterator it = m_connectionMap.find( connectionId );
-            if( it == m_connectionMap.end() )
-            {
-               Log( "Missing connection" );
-               assert( 0 );
-            }
-            else
-            {
-               (*it).second->AddInputChainData( packet, connectionId );
-               m_connectionsNeedingUpdate.push_back( connectionId );
-            }
-            m_mutex.unlock();
-         }
-      }
-      return true;
-   }
-   if( packet->packetType == PacketType_ServerJobWrapper )
-   {
-      return HandlePacketToOtherServer( packet, connectionId );
-   }*/
-
    if( packet->packetType == PacketType_GatewayWrapper )
    {
       if( m_connectionIdGateway == 0 )
@@ -265,7 +225,8 @@ bool   DiplodocusGame::AddOutputChainData( BasePacket* packet, U32 connectionId 
       }
       return false;
    }
-   return false;
+
+   return HandlePacketFromOtherServer( packet, connectionId );
 }
 
 //---------------------------------------------------------------
@@ -380,48 +341,55 @@ int   DiplodocusGame::CallbackFunction()
 
 bool  DiplodocusGame::HandlePacketFromOtherServer( BasePacket* packet, U32 connectionId )// not thread safe
 {
-   if( packet->packetType != PacketType_ServerJobWrapper )
+  /* if( packet->packetType != PacketType_ServerJobWrapper )
    {
       return false;
-   }
+   }*/
 
    PacketCleaner cleaner( packet );
-   PacketServerJobWrapper* wrapper = static_cast< PacketServerJobWrapper* >( packet );
+ /*  PacketServerJobWrapper* wrapper = static_cast< PacketServerJobWrapper* >( packet );
    BasePacket* unwrappedPacket = wrapper->pPacket;
-   U32  serverIdLookup = wrapper->serverId;
+   U32  serverIdLookup = wrapper->serverId;*/
 
    bool success = false;
 
-   if( unwrappedPacket->packetType == PacketType_Login )
+   if( packet->packetType == PacketType_Login )
    {
-      switch( unwrappedPacket->packetSubType )
+      switch( packet->packetSubType )
       {
       case PacketLogin::LoginType_PrepareForUserLogin:
-         ConnectUser( static_cast< PacketPrepareForUserLogin* >( unwrappedPacket ) );
+         ConnectUser( static_cast< PacketPrepareForUserLogin* >( packet ) );
          return true;
 
       case PacketLogin::LoginType_PrepareForUserLogout:
-         DisconnectUser( static_cast< PacketPrepareForUserLogout* >( unwrappedPacket ) );
+         DisconnectUser( static_cast< PacketPrepareForUserLogout* >( packet ) );
          return true;
       }
    }
-   else if( unwrappedPacket->packetType == PacketType_Gameplay )
+   else if( packet->packetType == PacketType_Gameplay )
    {
-      switch( unwrappedPacket->packetSubType )
+      switch( packet->packetSubType )
       {
       case PacketGameToServer::GamePacketType_ListOfGames:
-         IsUserAllowedToUseThisProduct( static_cast< PacketListOfGames* >( unwrappedPacket ) );
+         IsUserAllowedToUseThisProduct( static_cast< PacketListOfGames* >( packet ) );
          return true;
       }
    }
-   else if( unwrappedPacket->packetType == PacketType_Tournament ) // s2s tournament packets are limited here.
+  /* else if( packet->packetType == PacketType_Tournament ) // s2s tournament packets are limited here.
    {
-      switch( unwrappedPacket->packetSubType )
+      switch( packet->packetSubType )
       {
       case PacketTournament::TournamentType_PurchaseTournamentEntryResponse:
-         TournamentPurchaseResult( static_cast< PacketTournament_PurchaseTournamentEntryResponse* >( unwrappedPacket ) );
+         TournamentPurchaseResult( static_cast< PacketTournament_PurchaseTournamentEntryResponse* >( packet ) );
          return true;
       }
+   }*/
+
+   if( m_callbacks ) // allows game specific functionality
+   {
+      
+      Threading::MutexLock locker( m_mutex );
+      return m_callbacks->HandlePacketFromOtherServer( packet );
    }
 
    return true;// cleaner will cleanup this memory
@@ -451,7 +419,7 @@ void  DiplodocusGame::IsUserAllowedToUseThisProduct( const PacketListOfGames* pa
 
 //---------------------------------------------------------------
 //---------------------------------------------------------------
-
+/*
 bool  DiplodocusGame::TournamentPurchaseResult( const PacketTournament_PurchaseTournamentEntryResponse* tournamentPurchase )
 {
    if( m_callbacks == NULL )
@@ -485,10 +453,10 @@ bool  DiplodocusGame::TournamentPurchaseResult( const PacketTournament_PurchaseT
    return true;
    
 }
-
+*/
 //---------------------------------------------------------------
 //---------------------------------------------------------------
-
+/*
 bool     DiplodocusGame::SendListOfTournamentsToClient( U32 connectionId, const list< TournamentOverview >& tournamentList )
 {
    ChainLinkIteratorType itInputs = FindInputConnection( connectionId );
@@ -516,9 +484,9 @@ bool     DiplodocusGame::SendListOfTournamentsToClient( U32 connectionId, const 
    }
    return false;
 }
-
+*/
 //---------------------------------------------------------------
-
+/*
 bool     DiplodocusGame::RequestPurchaseServerMakeTransaction( U32 connectionId, const string& userUuid, const string& tournamentUuid, int numTicketsRequired )
 {
    PacketTournament_PurchaseTournamentEntry* entry = new PacketTournament_PurchaseTournamentEntry;
@@ -537,7 +505,7 @@ bool     DiplodocusGame::RequestPurchaseServerMakeTransaction( U32 connectionId,
 
    // todo, verify that no transactions are in progress
 
-   TournamentPurchaseRequest pr;
+   TournamentPurchaseRequest* pr = new TournamentPurchaseRequest;
    pr.connectionId   = connectionId;
    pr.userUuid = userUuid;
    pr.timeSent = GetDateInUTC();
@@ -545,12 +513,13 @@ bool     DiplodocusGame::RequestPurchaseServerMakeTransaction( U32 connectionId,
    pr.tournamentUuid = tournamentUuid;
    m_purchaseRequests.push_back( pr );
 
-   return HandlePacketToOtherServer( entry, connectionId );
-}
+   //this->m
+   return HandlePacketToOtherServer( wrapper, 0 );// based on the type, this should go to purchasing
+}*/
 
 
 //---------------------------------------------------------------
-
+/*
 bool     DiplodocusGame::SendPurchaseResultToClient( U32 connectionId, const string& tournamentUuid, int purchaseResult ) // see PacketTournament_UserRequestsEntryInTournamentResponse
 {
    ChainLinkIteratorType   cl = FindInputConnection( connectionId );
@@ -564,7 +533,7 @@ bool     DiplodocusGame::SendPurchaseResultToClient( U32 connectionId, const str
       }
    }
    return false;
-}
+}*/
 
 //---------------------------------------------------------------
 

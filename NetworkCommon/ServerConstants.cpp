@@ -29,7 +29,9 @@ const char* productNames [] = {
    "infinitecity",
    "agricola",
    "fluxx",
-   "smashup"
+   "smashup", 
+   "tantocuore",
+   "lordsofwaterdeep"
 };
 
 const char* platformStrings[] = {

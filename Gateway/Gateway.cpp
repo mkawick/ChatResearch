@@ -32,7 +32,7 @@ using namespace std;
 
 ////////////////////////////////////////////////////////////////////////
 
-FruitadensGateway* PrepFruitadens( const string& ipaddress, U16 port, U32 serverId, DiplodocusGateway* loginServer );
+FruitadensGateway* PrepFruitadens( const string& ipaddress, U16 port, U32 serverId, DiplodocusGateway* loginServer, const string& name );
 
 ////////////////////////////////////////////////////////////////////////
 
@@ -48,6 +48,8 @@ int main( int argc, const char* argv[] )
 
    string game1PortString = "23550";
    string game1Address = "localhost";
+   string game2PortString = "23402";
+   string game2Address = "localhost";
 
    string loginPortString = "3072";
    string loginIpAddressString = "localhost";
@@ -61,6 +63,10 @@ int main( int argc, const char* argv[] )
    string purchasePortString = "9900";
    string purchaseIpAddressString = "localhost";
 
+   string printPacketTypes = "false";
+
+   
+
    //--------------------------------------------------------------
 
    parser.FindValue( "listen.port", listenPortString );
@@ -71,6 +77,8 @@ int main( int argc, const char* argv[] )
 
    parser.FindValue( "game.port", game1PortString );
    parser.FindValue( "game.address", game1Address );
+   parser.FindValue( "game2.port", game2PortString );
+   parser.FindValue( "game2.address", game2Address );
 
    parser.FindValue( "login.port", loginPortString );
    parser.FindValue( "login.address", loginIpAddressString );
@@ -84,13 +92,17 @@ int main( int argc, const char* argv[] )
    parser.FindValue( "purchase.port", purchasePortString );
    parser.FindValue( "purchase.address", purchaseIpAddressString );
 
-   int listenPort = 9600, chatPort = 9601, game1Port = 23550, loginPort = 3072, assetPort = 9700, contactPort = 9800, purchasePort = 9900;
+   parser.FindValue( "print.packets", printPacketTypes );
+
+   int listenPort = 9600, chatPort = 9601, game1Port = 23550, game2Port = 23402, loginPort = 3072, assetPort = 9700, contactPort = 9800, purchasePort = 9900;
+   bool printPackets = false;
    try 
    {
        listenPort = boost::lexical_cast<int>( listenPortString );
        chatPort = boost::lexical_cast<int>( chatPortString );
        loginPort = boost::lexical_cast<int>( loginPortString );
        game1Port = boost::lexical_cast<int>( game1PortString );
+       game2Port = boost::lexical_cast<int>( game2PortString );
        assetPort = boost::lexical_cast<int>( assetDeliveryPortString );
        contactPort = boost::lexical_cast<int>( contactPortString );
        purchasePort = boost::lexical_cast<int>( purchasePortString );
@@ -100,6 +112,11 @@ int main( int argc, const char* argv[] )
        std::cout << "Error: input string was not valid" << std::endl;
    }
 
+   
+   if( printPacketTypes == "1" || printPacketTypes == "true" || printPacketTypes == "TRUE" )
+   {
+      printPackets = true;
+   }
    //--------------------------------------------------------------
 
    string serverName = "Gateway server";
@@ -113,6 +130,7 @@ int main( int argc, const char* argv[] )
 
    DiplodocusGateway* gateway = new DiplodocusGateway( serverName, serverId );
    gateway->SetAsGateway( true );
+   gateway->PrintPacketTypes( printPackets );
 
    FruitadensGateway chatOut( "fruity to chat" );
    chatOut.SetConnectedServerType( ServerType_Chat );
@@ -144,8 +162,8 @@ int main( int argc, const char* argv[] )
    //--------------------------------------------------------------
 
 #ifndef _TRACK_MEMORY_LEAK_
-   FruitadensGateway* game1 = PrepFruitadens( game1Address, game1Port, serverId, gateway );
-   FruitadensGateway* mfm = PrepFruitadens( "localhost", 23995, serverId, gateway );
+   FruitadensGateway* game1 = PrepFruitadens( game1Address, game1Port, serverId, gateway, "game1" );
+   FruitadensGateway* mfm = PrepFruitadens( "localhost", game2Port, serverId, gateway, "MFM" );
    //FruitadensGateway* game3 = PrepFruitadens( "localhost", 23402, serverId, gateway );
    //FruitadensGateway* game4 = PrepFruitadens( "localhost", 23550, serverId, gateway );// summoner wars
 
@@ -153,6 +171,8 @@ int main( int argc, const char* argv[] )
    game1->NotifyEndpointOfIdentification( serverName, serverId, gameProductId, false, false, true, true  );
    mfm->NotifyEndpointOfIdentification( serverName, serverId, gameProductId, false, false, true, true  );
 #endif // _TRACK_MEMORY_LEAK_
+
+   
    
    //game3->NotifyEndpointOfIdentification( serverName, serverId, gameProductId, false, false, true, true  );
    //game4->NotifyEndpointOfIdentification( serverName, serverId, gameProductId, false, false, true, true  );
@@ -190,9 +210,18 @@ int main( int argc, const char* argv[] )
 }
 ////////////////////////////////////////////////////////////////////////
 
-FruitadensGateway* PrepFruitadens( const string& ipaddress, U16 port, U32 serverId, DiplodocusGateway* loginServer )
+FruitadensGateway* PrepFruitadens( const string& ipaddress, U16 port, U32 serverId, DiplodocusGateway* loginServer, const string& name )
 {
-   FruitadensGateway* gameServerOut = new FruitadensGateway( "fruity to gameserver" );
+   string servername = "fruity to ";
+   if( name.size() )
+   {
+      servername += name;
+   }
+   else
+   {
+      servername += "gameserver";
+   }
+   FruitadensGateway* gameServerOut = new FruitadensGateway( servername.c_str() );
    gameServerOut->SetConnectedServerType( ServerType_GameInstance );
    gameServerOut->SetServerUniqueId( serverId );
 

@@ -29,6 +29,14 @@ static const int DefaultSleepTimeForPacketHandlers = 33;
 class BasePacket;
 typedef Khaan                                      BaseInputChainHandler;
 
+struct DelayedPacket
+{
+   BasePacket* packet;
+   U32         connectionId;
+   float       delay;
+   time_t      beginTime;
+};
+
 
 //-----------------------------------------------------------------------------
 // this intermediate class exiists solely to share a common lib and simplify inheritance.
@@ -41,7 +49,9 @@ protected:
 
 void  UpdateConsoleWindow( time_t& timeOfLastTitleUpdate, time_t uptime, int totalConnections, int numCurrentConnections, int listeningPort, const string& serverName );
 
+
 ////////////////////////////////////////////////////////////////////////////////////////////
+
 
 template< typename InputChain = BaseInputChainHandler, typename OutputChain = BasePacketChainHandler >
 class Diplodocus: public BasePacketChainHandler
@@ -51,6 +61,7 @@ public:
    typedef typename std::list< InputChainType* >::iterator  InputChainIteratorType;
    typedef OutputChain                                      OutputChainType;
    typedef typename std::list< OutputChainType* >::iterator OutputChainIteratorType;
+
 
 public:
 	Diplodocus( string serverName, U32 serverId, U8 gameProductId, ServerType type );
@@ -78,7 +89,7 @@ public:
 
    bool           AddInputChainData( BasePacket* t, U32 filingData );
    bool           AddOutputChainData( BasePacket* t, U32 filingData );
-   bool           SendPacketToGateway( BasePacket* packet, U32 connectionId );
+   bool           SendPacketToGateway( BasePacket* packet, U32 connectionId, float delayInSecs = 0 );
    bool           HandlePacketToOtherServer( BasePacket* packet, U32 connectionId );// not thread safe
 
    bool           SendErrorToClient( U32 connectionId, PacketErrorReport::ErrorType error, int subType = 0 );
@@ -105,6 +116,7 @@ protected:
 
    void           MarkAllConnectionsAsNeedingUpdate( BaseOutputContainer& listOfClients );
    void           MarkConnectionAsNeedingUpdate( int connectionId );
+   bool           DelayPacketToGateway( BasePacket* packet, U32 connectionId, float delayInSecs );
 
    typedef typename std::map< U32, InputChainType* >        ClientMap;// posssibly change this to a hash lookup once the client is logged in
    typedef typename ClientMap::iterator                     ClientMapIterator;
@@ -113,25 +125,27 @@ protected:
    ClientMap                                                m_connectedClients; // this is a duplicate of the chained list, but with mapping
    deque< U32 >                                             m_clientsNeedingUpdate;
 
-   BaseOutputContainer m_listOfOutputsNeedingToSendServerId;
-   bool              m_isListeningWorking;
-   bool              m_hasSentServerIdentification;
-   bool              m_isControllerApp;
-   bool              m_isGateway;
-   bool              m_isGame;
-   //bool              m_updateGatewayConnections;
-   bool              m_sendHelloPacket;
-   int               m_listeningPort;
-   evconnlistener*   m_listener;// libevent object
-   U32               m_serverId; // just used for id
-   U8                m_gameProductId;
-   ServerType        m_serverType;// just used for logging and topology purposes.
-   U32               m_connectionIdGateway;
-   string            m_serverName; // just used for id
+   list< DelayedPacket >   m_delayedGatewayPackets;
 
-   time_t            m_timeOfLastTitleUpdate;
-   time_t            m_uptime;
-   int               m_numTotalConnections;
+   BaseOutputContainer     m_listOfOutputsNeedingToSendServerId;
+   bool                    m_isListeningWorking;
+   bool                    m_hasSentServerIdentification;
+   bool                    m_isControllerApp;
+   bool                    m_isGateway;
+   bool                    m_isGame;
+   //bool                    m_updateGatewayConnections;
+   bool                    m_sendHelloPacket;
+   int                     m_listeningPort;
+   evconnlistener*         m_listener;// libevent object
+   U32                     m_serverId; // just used for id
+   U8                      m_gameProductId;
+   ServerType              m_serverType;// just used for logging and topology purposes.
+   U32                     m_connectionIdGateway;
+   string                  m_serverName; // just used for id
+
+   time_t                  m_timeOfLastTitleUpdate;
+   time_t                  m_uptime;
+   int                     m_numTotalConnections;
 
 
    bool           SetupListeningSocket();
@@ -147,6 +161,8 @@ protected:
    void           UpdateAllConnections();
    void           RemoveOldConnections();
    void           AddNewConnections();	
+
+   void           UpdatePendingGatewayPackets();
 };
 
 

@@ -94,7 +94,7 @@ bool     DiplodocusPurchase::AddInputChainData( BasePacket* packet, U32 connecti
    {
       PacketCleaner cleaner( packet );
       return HandlePacketFromOtherServer( packet, connectionId );
-      //return true;
+
    }
 
    if( packet->packetType == PacketType_GatewayWrapper )
@@ -175,7 +175,7 @@ bool  DiplodocusPurchase::HandlePacketFromOtherServer( BasePacket* packet, U32 c
       {
       case PacketTournament::TournamentType_PurchaseTournamentEntry:
          {
-            return HandlePurchaseRequest( static_cast< PacketTournament_PurchaseTournamentEntry* >( packet ), serverIdLookup );
+            return HandlePurchaseRequest( static_cast< PacketTournament_PurchaseTournamentEntry* >( unwrappedPacket ), serverIdLookup );
          }
          break;
       }
@@ -422,17 +422,8 @@ int      DiplodocusPurchase::CallbackFunction()
    m_salesManager->Update( currentTime );
    m_stringLookup->Update( currentTime );
 
-  /* if( m_staticAssets->IsFullyLoaded() == false )
-   {
-      m_staticAssets->Update();
-   }
-   if( m_dynamicAssets->IsFullyLoaded() == false )
-   {
-      m_dynamicAssets->Update();
-   }*/
 
    UpdateConsoleWindow( m_timeOfLastTitleUpdate, m_uptime, m_numTotalConnections, m_connectedClients.size(), m_listeningPort, m_serverName );
-   /*ContinueInitialization();*/
    // check for new friend requests and send a small list of notifications
 
    return 1;

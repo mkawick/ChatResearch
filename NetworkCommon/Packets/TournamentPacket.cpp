@@ -30,6 +30,15 @@ bool  TournamentInfo::SerializeOut( U8* data, int& bufferOffset ) const
    return true;
 }
 
+void  TournamentInfo::Clear()
+{
+   tournamentName.clear();
+   tournamentUuid.clear();
+   beginDate.clear();
+   endDate.clear();
+   timePerRound = 0;
+   timeUnitsPerRound = 0;
+}
 
 ///////////////////////////////////////////////////////////////
 

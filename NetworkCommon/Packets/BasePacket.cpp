@@ -243,6 +243,7 @@ bool  PacketGatewayWrapper::SerializeOut( U8* data, int& bufferOffset ) const
 bool  PacketErrorReport::SerializeIn( const U8* data, int& bufferOffset )
 {
    BasePacket::SerializeIn( data, bufferOffset );
+   Serialize::In( data, bufferOffset, errorCode );
    Serialize::In( data, bufferOffset, statusInfo );
 
    return true;
@@ -251,6 +252,7 @@ bool  PacketErrorReport::SerializeIn( const U8* data, int& bufferOffset )
 bool  PacketErrorReport::SerializeOut( U8* data, int& bufferOffset ) const
 {
    BasePacket::SerializeOut( data, bufferOffset );
+   Serialize::Out( data, bufferOffset, errorCode );
    Serialize::Out( data, bufferOffset, statusInfo );
 
    return true;

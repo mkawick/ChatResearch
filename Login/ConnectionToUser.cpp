@@ -190,7 +190,8 @@ void  ConnectionToUser::SaveUserSettings( UserPlusProfileTable& enigma, U8 produ
 
    isActive =                       boost::lexical_cast<bool>( row[ TableUserPlusProfile::Column_active] );
 
-   if( row[ TableUserPlusProfile::Column_language_id] != "NULL" )
+   string language = row[ TableUserPlusProfile::Column_language_id];
+   if( language.size() > 0 && language != "NULL" )
    {
       languageId =                     boost::lexical_cast<int>( row[ TableUserPlusProfile::Column_language_id] );
    }
@@ -460,7 +461,7 @@ bool    ConnectionToUser:: SuccessfulLogin( U32 connectId, bool isReloggedIn )
 
    status = LoginStatus_LoggedIn;
 
-   userManager->SendPacketToGateway( loginStatus, connectionId );
+   userManager->SendPacketToGateway( loginStatus, connectionId, 1.8f );// two second delay
 
    if( loginStatus->adminLevel > 0 )
    {

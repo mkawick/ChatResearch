@@ -39,15 +39,36 @@ void  FruitadensServerToServer::SetServerId( U32 serverId ) // when routing mess
 
 //-----------------------------------------------------------------------------------------
 
+void  FruitadensServerToServer::AddToOutwardFilters( U16 packetType )
+{
+   vector< U16 >::const_iterator it = outwardPacketFilters.begin();
+   while( it != outwardPacketFilters.end() )
+   {
+      if( *it++ == packetType ) 
+         return;
+   }
+
+   outwardPacketFilters.push_back( packetType );
+}
+
+//-----------------------------------------------------------------------------------------
+
 bool  FruitadensServerToServer::FilterOutwardPacket( BasePacket* packet ) const
 {
    // packets going out should not be PacketType_ServerToServerWrapper, they will be wrapped when outbound
    if( packet->packetType == PacketType_ServerInformation ||
-      packet->packetType == PacketType_Gameplay || 
+      packet->packetType == PacketType_Gameplay /*|| 
       packet->packetType == PacketType_Tournament ||// mostly for purchasing
-      packet->packetType == PacketType_Chat )
+      packet->packetType == PacketType_Chat */)
    {
       return true;
+   }
+
+   vector< U16 >::const_iterator it = outwardPacketFilters.begin();
+   while( it != outwardPacketFilters.end() )
+   {
+      if( *it++ == packet->packetType ) 
+         return true;
    }
    return false;
 }
@@ -69,7 +90,7 @@ int  FruitadensServerToServer::ProcessOutputFunction()
       {
          BasePacket* packet = m_packetsReadyToSend.front();
 
-          if( packet->packetType == PacketType_ServerToServerWrapper )         
+         if( packet->packetType == PacketType_ServerToServerWrapper )         
          {
             SerializePacketOut( packet );
          }

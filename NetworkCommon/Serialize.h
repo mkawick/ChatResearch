@@ -21,7 +21,11 @@ U64 ntohll(U64 value);
 #include <netdb.h>
 #include <netinet/in.h>
 #include <netinet/tcp.h>
+#if defined ANDROID
+#include <fcntl.h>
+#else
 #include <sys/fcntl.h>
+#endif
 #endif
 
 #include <string>

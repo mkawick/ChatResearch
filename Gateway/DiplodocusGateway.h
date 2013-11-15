@@ -22,6 +22,8 @@ public:
 
    void           InputRemovalInProgress( IChainedInterface * chainedInput );
 
+   void           PrintPacketTypes( bool printingOn = true );
+
    //-----------------------------------------
 
 private:
@@ -52,6 +54,8 @@ private:
    ConnectionIdQueue          m_connectionsNeedingUpdate;
 
    PacketQueue                m_packetsToBeSentInternally;
+
+   bool                       m_printPacketTypes;
 
   /* time_t                     m_timeOfLastTitleUpdate;
    time_t                     m_uptime;

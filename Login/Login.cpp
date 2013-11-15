@@ -38,7 +38,7 @@ using namespace std;
 // db.address=10.16.4.44 db.port=3306 db.username=admin db.password=Pz5328!@ db.schema=pleiades
 ////////////////////////////////////////////////////////////////////////
 
-FruitadensLogin* PrepFruitadensLogin( const string& ipaddress, U16 port, U32 serverId, DiplodocusLogin* loginServer );
+FruitadensLogin* PrepFruitadensLogin( const string& ipaddress, U16 port, U32 serverId, DiplodocusLogin* loginServer, const string& name );
 void  SendServerNotification( const string& serverName, U32 serverId, FruitadensLogin* fruity )
 {
    fruity->NotifyEndpointOfIdentification( serverName, serverId, 0, false, false, true, false  );
@@ -201,12 +201,13 @@ int main( int argc, const char* argv[] )
    
 
    // various games. We will need to deal with allowing a dynamic number of games in future
-   FruitadensLogin* game1 = PrepFruitadensLogin( gameIpAddressString, gamePort, serverId, loginServer );
-  /* FruitadensLogin* game2 = PrepFruitadensLogin( "localhost", 24600, serverId, loginServer );
-   FruitadensLogin* game3 = PrepFruitadensLogin( "localhost", 24602, serverId, loginServer );
+   FruitadensLogin* game1 = PrepFruitadensLogin( gameIpAddressString, gamePort, serverId, loginServer, "Game1" );
+   FruitadensLogin* game2 = PrepFruitadensLogin( "localhost", 23996, serverId, loginServer, "MFM" );
+  /* FruitadensLogin* game3 = PrepFruitadensLogin( "localhost", 24602, serverId, loginServer );
    FruitadensLogin* game4 = PrepFruitadensLogin( "localhost", 24604, serverId, loginServer );*/
 
    SendServerNotification( serverName, serverId, game1 );
+   SendServerNotification( serverName, serverId, game2 );
    /*SendServerNotification( serverName, serverId, game2 );
    SendServerNotification( serverName, serverId, game3 );
    SendServerNotification( serverName, serverId, game4 );*/
@@ -222,9 +223,18 @@ int main( int argc, const char* argv[] )
 
 ////////////////////////////////////////////////////////////////////////
 
-FruitadensLogin* PrepFruitadensLogin( const string& ipaddress, U16 port, U32 serverId, DiplodocusLogin* loginServer )
+FruitadensLogin* PrepFruitadensLogin( const string& ipaddress, U16 port, U32 serverId, DiplodocusLogin* loginServer, const string& name )
 {
-   FruitadensLogin* gameServerOut = new FruitadensLogin( "fruity to gameserver" );
+   string servername = "fruity to ";
+   if( name.size() )
+   {
+      servername += name;
+   }
+   else
+   {
+      servername += "gameserver";
+   }
+   FruitadensLogin* gameServerOut = new FruitadensLogin( servername.c_str() );
    gameServerOut->SetConnectedServerType( ServerType_GameInstance );
    gameServerOut->SetServerUniqueId( serverId );
 
@@ -236,4 +246,5 @@ FruitadensLogin* PrepFruitadensLogin( const string& ipaddress, U16 port, U32 ser
    return gameServerOut;
 }
 
+////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////

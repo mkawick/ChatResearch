@@ -1,13 +1,8 @@
 #include "NetworkLayer.h"
 
 #include "../ServerStack/NetworkCommon/Utils/Utils.h"
-#include "../ServerStack/NetworkCommon/Packets/PacketFactory.h"
-#include "../ServerStack/NetworkCommon/Packets/ContactPacket.h"
-#include "../ServerStack/NetworkCommon/Packets/ChatPacket.h"
-#include "../ServerStack/NetworkCommon/Packets/AssetPacket.h"
 #include "../ServerStack/NetworkCommon/Packets/CheatPacket.h"
-#include "../ServerStack/NetworkCommon/Packets/PurchasePacket.h"
-#include "../ServerStack/NetworkCommon/Packets/LoginPacket.h"
+#include "../ServerStack/NetworkCommon/Packets/PacketFactory.h"
 
 #include <assert.h>
 #include <iostream>
@@ -62,6 +57,7 @@ void  AssetInfoExtended:: operator = ( const AssetInfo& asset )
    version = asset.version;
    beginDate = asset.beginDate;
    endDate = asset.endDate;
+   isOptional = asset.isOptional;
 
 }
 
@@ -72,6 +68,7 @@ void  AssetInfoExtended:: operator = ( const AssetInfoExtended& asset )
    version = asset.version;
    beginDate = asset.beginDate;
    endDate = asset.endDate;
+   isOptional = asset.isOptional;
 
    SetData( asset.data, asset.size );
 }
@@ -130,6 +127,12 @@ void  NetworkLayer::Exit()
    Disconnect();
    m_isLoggingIn = false;
    m_isLoggedIn = false;
+
+   m_invitationsReceived.clear();
+   m_invitationsSent.clear();
+   m_staticAssets.clear();
+   m_dynamicAssets.clear();
+   m_availableTournaments.clear();
 }
 
 string   NetworkLayer::GenerateHash( const string& stringThatIWantHashed )
@@ -137,6 +140,10 @@ string   NetworkLayer::GenerateHash( const string& stringThatIWantHashed )
    string value;
    string lowerCaseString = ConvertStringToLower( stringThatIWantHashed );
    ::ConvertToString( ::GenerateUniqueHash( lowerCaseString ), value );
+   if( value.size() > TypicalMaxHexLenForNetworking )// limit
+   {
+      value = value.substr( value.size()-TypicalMaxHexLenForNetworking, TypicalMaxHexLenForNetworking); 
+   }
    return value;
 }
 
@@ -361,6 +368,37 @@ bool  NetworkLayer::MakePurchase( const string& exchangeUuid ) const
 }
 
 //-----------------------------------------------------------------------------
+
+bool  NetworkLayer::RequestListOfTournaments()
+{
+   if( m_isConnected == false )
+   {
+      return false;
+   }
+   PacketTournament_RequestListOfTournaments tournaments;
+   SerializePacketOut( &tournaments );// only requests tournaments for the current game
+
+   return true;
+}
+
+//-----------------------------------------------------------------------------
+
+bool  NetworkLayer::PurchaseEntryIntoTournament( const string& tournamentUuid )
+{
+   if( m_isConnected == false )
+   {
+      return false;
+   }
+
+   PacketTournament_UserRequestsEntryInTournament entry;
+   entry.tournamentUuid = tournamentUuid;
+
+   SerializePacketOut( &entry );
+
+   return true;
+}
+
+//-----------------------------------------------------------------------------
   
 bool  NetworkLayer::RequestChatChannelHistory( const string& channelUuid, int numRecords, int startingIndex ) const
 {
@@ -560,7 +598,6 @@ bool    NetworkLayer::GetStaticAssetInfo( int index, AssetInfoExtended& asset )
    return false;
 }
 
-
 //-----------------------------------------------------------------------------
 
 bool    NetworkLayer::GetDynamicAssetInfo( int index, AssetInfoExtended& asset )
@@ -617,6 +654,33 @@ bool     NetworkLayer:: ClearAssetInfo( const string& hash )
 
    return false;
 }
+
+//-----------------------------------------------------------------------------
+
+bool    NetworkLayer::GetTournamentInfo( int index, TournamentInfo& tournamentInfo )
+{
+   if( index < 0 || index >= (int) m_availableTournaments.size() )
+   {
+      tournamentInfo.Clear();
+      return false;
+   }
+
+   int i = 0;
+   vector< TournamentInfo >::const_iterator itTournament = m_availableTournaments.begin();
+   while( itTournament != m_availableTournaments.end() )
+   {
+      if( i == index )
+      {
+         tournamentInfo = *itTournament;
+         return true;
+      }
+      i ++;
+      itTournament++;
+   }
+
+   return false;
+}
+
 
 //-----------------------------------------------------------------------------
 
@@ -1143,7 +1207,8 @@ bool  NetworkLayer::HandlePacketReceived( BasePacket* packetIn )
       break;
       case PacketType_ErrorReport:
       {
-         switch( packetIn->packetSubType )
+         PacketErrorReport* errorReport = static_cast<PacketErrorReport*>( packetIn );
+         switch( errorReport->errorCode )
          {
          case PacketErrorReport::ErrorType_CreateFailed_BadPassword:
             cout << "Bad password" << endl;
@@ -1179,7 +1244,7 @@ bool  NetworkLayer::HandlePacketReceived( BasePacket* packetIn )
          case PacketErrorReport::ErrorType_Contact_Invitation_CannotInviteSelf:
          case PacketErrorReport::ErrorType_Contact_Invitation_Accepted:
          case PacketErrorReport::ErrorType_Contact_Invitation_BadInvitation:
-            cout << "Contacts code: " << (int)packetIn->packetSubType  << endl;
+            cout << "Contacts code: " << (int)errorReport->packetSubType  << endl;
             break;
 
          case PacketErrorReport::ErrorType_ChatNotCurrentlyAvailable:// reported at the gateway
@@ -1191,14 +1256,13 @@ bool  NetworkLayer::HandlePacketReceived( BasePacket* packetIn )
          case PacketErrorReport::ErrorType_CannotAddUserToChannel_AlreadyExists:
          case PacketErrorReport::ErrorType_NoChatHistoryExistsOnSelectedChannel:
          case PacketErrorReport::ErrorType_NoChatHistoryExistsForThisUser:
-            cout << "Chat code: " << (int)packetIn->packetSubType  << endl;
+            cout << "Chat code: " << (int)errorReport->packetSubType  << endl;
             break;
          }
          m_isCreatingAccount = false;
-         PacketErrorReport* errorPacket = static_cast<PacketErrorReport*>( packetIn );
          for( list< UserNetworkEventNotifier* >::iterator it = m_callbacks.begin(); it != m_callbacks.end(); ++it )
          {
-            (*it)->OnError( errorPacket->packetSubType, errorPacket->statusInfo );
+            (*it)->OnError( errorReport->errorCode, errorReport->statusInfo );
          }
       }
       break;
@@ -1217,18 +1281,13 @@ bool  NetworkLayer::HandlePacketReceived( BasePacket* packetIn )
                      m_lastLoggedOutTime = login->lastLogoutTime;
                      m_loginKey = login->loginKey;
                      m_isLoggedIn = true;
-                     //PacketChatChannelListRequest request;
-                     //SerializePacketOut( &request );
                   }
                   else
                   {
-                     //RequestLogout();
                      Disconnect();// server forces a logout.
                   }
-                  for( list< UserNetworkEventNotifier* >::iterator it = m_callbacks.begin(); it != m_callbacks.end(); ++it )
-                  {
-                     (*it)->UserLogin( login->wasLoginSuccessful );
-                  }
+                  NotifyClientLoginStatus( m_isLoggedIn );
+                  
                   m_isLoggingIn = false;
                }
                break;
@@ -1532,13 +1591,7 @@ bool  NetworkLayer::HandlePacketReceived( BasePacket* packetIn )
                   m_selectedGame = gameId->gameId;
                }
 
-               if( m_selectedGame )
-               {
-                  for( list< UserNetworkEventNotifier* >::iterator it = m_callbacks.begin(); it != m_callbacks.end(); ++it )
-                  {
-                     (*it)->ReadyToStartSendingRequestsToGame();
-                  }
-               }
+               NotifyClientToBeginSendingRequests();
             }
             break;
          case PacketGameToServer::GamePacketType_RawGameData:
@@ -1619,7 +1672,7 @@ bool  NetworkLayer::HandlePacketReceived( BasePacket* packetIn )
       break;
       case PacketType_Asset:
       {
-          switch( packetIn->packetSubType )
+         switch( packetIn->packetSubType )
          {
          case PacketAsset::AssetType_GetListOfStaticAssetsResponse:
             {
@@ -1681,9 +1734,82 @@ bool  NetworkLayer::HandlePacketReceived( BasePacket* packetIn )
           }
       }
       break;
+      case PacketType_Tournament:
+      {
+         switch( packetIn->packetSubType )
+         {
+            case PacketTournament::TournamentType_RequestListOfTournamentsResponse:
+            {
+               PacketTournament_RequestListOfTournamentsResponse* response = 
+                  static_cast<PacketTournament_RequestListOfTournamentsResponse*>( packetIn );
+               m_availableTournaments.clear();
+
+               SerializedKeyValueVector< TournamentInfo >::KeyValueVectorIterator it = response->tournaments.begin();
+               while ( it != response->tournaments.end() )
+               {
+                  TournamentInfo ti = it->value;
+                  m_availableTournaments.push_back( ti );
+                  it++;
+               }
+               if( m_availableTournaments.size() )
+               {
+                  for( list< UserNetworkEventNotifier* >::iterator it = m_callbacks.begin(); it != m_callbacks.end(); ++it )
+                  {
+                     (*it)->TournamentListAvalable();
+                  }
+               }
+               else
+               {
+                  cout << "No tournaments available" << endl;
+               }
+            }
+            break;
+            case PacketTournament::TournamentType_UserRequestsEntryInTournamentResponse:
+            {
+               PacketTournament_UserRequestsEntryInTournamentResponse* response = 
+                  static_cast<PacketTournament_UserRequestsEntryInTournamentResponse*>( packetIn );
+              
+               for( list< UserNetworkEventNotifier* >::iterator it = m_callbacks.begin(); it != m_callbacks.end(); ++it )
+               {
+                  (*it)->TournamentPurchaseResult( response->tournamentUuid, response->result );
+               }
+            }
+            break;
+         }
+      }
+      break;
    }
 
    return true;
+}
+
+//------------------------------------------------------------------------
+//------------------------------------------------------------------------
+
+void     NetworkLayer::NotifyClientLoginStatus( bool isLoggedIn )
+{
+   for( list< UserNetworkEventNotifier* >::iterator it = m_callbacks.begin(); it != m_callbacks.end(); ++it )
+   {
+      (*it)->UserLogin( isLoggedIn );
+   }
+
+   NotifyClientToBeginSendingRequests();   
+}
+
+//------------------------------------------------------------------------
+
+void     NetworkLayer::NotifyClientToBeginSendingRequests()
+{
+   if( m_isLoggedIn == false )
+      return;
+
+   if( m_selectedGame )
+   {
+      for( list< UserNetworkEventNotifier* >::iterator it = m_callbacks.begin(); it != m_callbacks.end(); ++it )
+      {
+         (*it)->ReadyToStartSendingRequestsToGame();
+      }
+   }
 }
 
 //------------------------------------------------------------------------

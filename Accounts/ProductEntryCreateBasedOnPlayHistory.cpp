@@ -230,6 +230,8 @@ void     ProductEntryCreateBasedOnPlayHistory::AddQueryPerProduct( int productId
           productId == GameProductId_MONKEYS_FROM_MARS )
              return;
 
+      assert( productId < GameProductId_NUM_GAMES );
+
       string usersTable = "users_";
       usersTable += FindProductName( productId );
       string gamesTable = "games_";

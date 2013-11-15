@@ -132,11 +132,16 @@ void  AssetDefinition:: SetupHash()
 {
    if( name.size() > 0 )
    {
-      ConvertToString( GenerateUniqueHash( name, 15 ), hash );
+      ConvertToString( GenerateUniqueHash( name ), hash );
    }
    else
    {
-      ConvertToString( GenerateUniqueHash( path, 15 ), hash );
+      ConvertToString( GenerateUniqueHash( path ), hash );
+   }
+
+   if( hash.size() > TypicalMaxHexLenForNetworking )// limit
+   {
+      hash = hash.substr( hash.size()-TypicalMaxHexLenForNetworking, TypicalMaxHexLenForNetworking); 
    }
 }
 
@@ -165,7 +170,7 @@ bool  AssetDefinition:: IsDefinitionComplete()
 {
    if( isLayout == false )
    {
-      if( productId == 0 || path.size() == 0 )
+      if( path.size() == 0 )
          return false;
    }
    else //if( isLayout == true )
@@ -342,7 +347,7 @@ bool  FillInAsset( string& line, AssetDefinition& asset )
          {
             if( value == "true" )
                asset.isOptional = true;
-            else if( value == "true" )
+            else if( value == "false" )
                asset.isOptional = false;
             else
             {

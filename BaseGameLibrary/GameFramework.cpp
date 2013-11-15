@@ -22,6 +22,7 @@
 using namespace std;
 
 GameFramework* GameFramework::m_instance = NULL;
+
 //-----------------------------------------------------
 //-----------------------------------------------------
 
@@ -101,6 +102,36 @@ void  GameFramework::SetupDefaultS2S( const string& address, U16 port )
 
 //-----------------------------------------------------
 
+void  GameFramework::SetupConnectionToAnotherServer( const string& address, const string& serverName, U16 port, ServerType serverType, PacketType packetType  )
+{
+   S2SConnectionSetupData s2sConnection;
+   s2sConnection.s2sCommunication =    NULL;
+   s2sConnection.address =             address;
+   s2sConnection.serverName =          serverName;
+   s2sConnection.port =                port;
+   s2sConnection.serverType =          serverType;
+   s2sConnection.packetType.push_back( packetType );
+
+   m_serverConnections.push_back( s2sConnection );
+}
+
+//-----------------------------------------------------
+
+void  GameFramework::AddPacketTypeToServer( const string& serverName, PacketType packetType  )
+{
+   vector< S2SConnectionSetupData >::iterator it = m_serverConnections.begin();
+   while( it != m_serverConnections.end() )
+   {
+      if( it->serverName == serverName )
+      {
+         it->packetType.push_back( packetType );
+         return;
+      }
+      it++;
+   }
+}
+//-----------------------------------------------------
+
 void  GameFramework::UseCommandlineOverrides( int argc, const char* argv[] )
 {
    string gatewayListenPort;
@@ -132,7 +163,7 @@ void  GameFramework::UseCommandlineOverrides( int argc, const char* argv[] )
    parser.FindValue( "chat.address", m_chatServerAddress );
 
    parser.FindValue( "s2s.port", listenForS2SPort );
-   parser.FindValue( "s2s.address", m_chatServerAddress );
+   parser.FindValue( "s2s.address", m_listenForS2SAddress );
 
    parser.FindValue( "db.port", dbPort );
    parser.FindValue( "db.address", m_dbIpAddress );
@@ -160,45 +191,6 @@ void  GameFramework::UseCommandlineOverrides( int argc, const char* argv[] )
 
 bool  GameFramework::SendGameData( U32 connectionId, const MarshalledData* data )
 {
-   //if( m_connectionManager->IsConnectionValid( connectionId ) == true )
-  /* int size = data->m_sizeOfData;
-   bool didSend = true;
-   const U8* ptr = data->m_data;
-   int packetIndex = size / PacketGameplayRawData::MaxBufferSize + 1; // always start at 1.
-   assert( packetIndex <= 254 );// must fit into 1 byte
-   while( size > 0 )
-   {
-      int workingSize = size;
-      if( workingSize > PacketGameplayRawData::MaxBufferSize )
-      {
-         workingSize = PacketGameplayRawData::MaxBufferSize;
-      }
-      
-      PacketGameplayRawData* packet = new PacketGameplayRawData;
-      packet->Prep( workingSize, ptr, packetIndex-- );
-      packet->gameInstanceId = GetServerId();
-      packet->gameProductId = GetGameProductId();
-
-      size -= workingSize;
-      ptr += workingSize;
-
-      PacketGatewayWrapper* wrapper = new PacketGatewayWrapper;
-      wrapper->pPacket = packet;
-      wrapper->connectionId = connectionId;
-      wrapper->gameInstanceId = GetServerId();
-      if( m_connectionManager->AddOutputChainData( wrapper, connectionId ) == false )
-      {
-         delete wrapper;
-         delete packet;
-         return false;
-         didSend =  false;
-      }
-   }
-   if( didSend )
-      return true;
-
-   return false;*/
-
    const int MaxSize = PacketGameplayRawData::MaxBufferSize  - sizeof( PacketGatewayWrapper );
 
    return SendRawData< PacketGameplayRawData, DiplodocusGame > 
@@ -207,19 +199,42 @@ bool  GameFramework::SendGameData( U32 connectionId, const MarshalledData* data 
 
 //-----------------------------------------------------
 
-bool  GameFramework::SendChatData( BasePacket* packet )
+bool     GameFramework::SendErrorToClient( U32 connectionId, int errorCode, int errorSubCode )
+{
+   return SendPacketToGateway( new PacketErrorReport( errorCode, errorSubCode ), connectionId );
+}
+
+//-----------------------------------------------------
+
+bool     GameFramework::SendChatData( BasePacket* packet )
 {
    // this will be packed at a lower level
-   /*PacketServerToServerWrapper* wrapper = new PacketServerToServerWrapper;
-   wrapper->serverId = GetServerId();
-   wrapper->gameProductId = GetGameProductId();
-   wrapper->pPacket = packet;*/
+   //PacketServerToServerWrapper* wrapper = new PacketServerToServerWrapper;
 
    packet->gameProductId = GetGameProductId();
    packet->gameInstanceId = GetServerId();
 
    m_chatServer->AddOutputChainData( packet, 0 );
 
+   return false;
+}
+
+//-----------------------------------------------------
+
+bool     GameFramework::SendToAnotherServer( BasePacket* packet )  // this could notmally go through the Diplodocus Game. We are bypassing that and simplifying as a result.
+{
+   //int packetType = packet->packetType;
+
+   vector< S2SConnectionSetupData >::iterator it = m_serverConnections.begin();
+   while( it != m_serverConnections.end() )
+   {
+      if( it->s2sCommunication && 
+         it->s2sCommunication->AddOutputChainData( packet, 0 ) == true )
+      {
+         return true;
+      }
+      it++;
+   }
    return false;
 }
 
@@ -233,19 +248,27 @@ bool  GameFramework::InformClientWhoThisServerIs( U32 connectionId )
    id->shortName = GetServerShortName();
    id->gameProductId = GetGameProductId();
 
-   PacketGatewayWrapper* wrapper = new PacketGatewayWrapper;
-   wrapper->SetupPacket( id, connectionId );
+   return SendPacketToGateway( id, connectionId );
+}
 
-   // it is likely that we don not have any information about this client.. that is, we do not have the connection id
-   // stored in the connectionManager here.
+//-----------------------------------------------------
+
+bool  GameFramework::SendPacketToGateway( BasePacket* packet, U32 connectionId )
+{
+   PacketFactory factory;
+   PacketGatewayWrapper* wrapper = new PacketGatewayWrapper();
+   wrapper->SetupPacket( packet, connectionId );
+
    if( m_connectionManager->AddOutputChainData( wrapper, connectionId ) == false )
    {
+      //factory.CleanupPacket( static_cast< BasePacket >( wrapper ) );
       delete wrapper;
-      delete id;
+      delete packet;
+
       return false;
    }
 
-   return true;
+   return false;
 }
 
 //-----------------------------------------------------
@@ -286,10 +309,10 @@ bool  GameFramework::Run()
    }
 
    cout << GetServerName() << ":" << endl;
-   cout << "Version " << m_version << endl;
-   cout << "ServerId " << GetServerId() << endl;
-   cout << "Product Id " << GetGameProductId() << endl;
-   cout << "Db " << m_dbIpAddress << ":" << m_dbPort << endl;
+   cout << "Version: " << m_version << endl;
+   cout << "ServerId: " << GetServerId() << endl;
+   cout << "Product Id: " << (int) GetGameProductId() << endl;
+   cout << "Db: " << m_dbIpAddress << ":" << m_dbPort << endl;
    cout << "------------------------------------------------------------------" << endl << endl << endl;
 
    //----------------------------------------------------------------
@@ -322,6 +345,7 @@ bool  GameFramework::Run()
    m_chatServer->Connect( m_chatServerAddress.c_str(), m_chatServerPort );
    m_chatServer->Resume();
    m_chatServer->NotifyEndpointOfIdentification( GetServerName(), GetServerId(), GetGameProductId(), true, false, false, false );
+   m_chatServer->AddToOutwardFilters( PacketType_Chat );
 
    DiplodocusServerToServer* s2s = new DiplodocusServerToServer( GetServerName(), GetServerId(), GetGameProductId() );
    s2s->SetAsGame();
@@ -331,11 +355,49 @@ bool  GameFramework::Run()
    s2s->AddOutputChain( m_connectionManager );
    m_connectionManager->AddOutputChain( m_chatServer );
 
+   SetupS2SConnections();
+
    m_connectionManager->Init();
    m_connectionManager->Run();
 
 
    return false;
 }
+
+//-----------------------------------------------------
+
+void     GameFramework::SetupS2SConnections()
+{
+   vector< S2SConnectionSetupData >::iterator it = m_serverConnections.begin();
+   while( it != m_serverConnections.end() )
+   {
+      S2SConnectionSetupData& setup = *it++;
+      string nameOfServerConnection = GetServerName();
+      nameOfServerConnection += " to ";
+      nameOfServerConnection += setup.serverName;
+
+      setup.s2sCommunication;
+      FruitadensServerToServer* serverComm = new FruitadensServerToServer( nameOfServerConnection.c_str() );
+      serverComm->SetConnectedServerType( setup.serverType );
+      serverComm->SetServerId( GetServerId() );
+      serverComm->SetGameProductId( GetGameProductId() );
+
+      serverComm->Connect( setup.address.c_str(), setup.port );
+      serverComm->Resume();
+      serverComm->NotifyEndpointOfIdentification( GetServerName(), GetServerId(), GetGameProductId(), true, false, false, false );
+
+      vector< PacketType >::iterator packetTypeIt = setup.packetType.begin();
+      while( packetTypeIt != setup.packetType.end() )
+      {
+         serverComm->AddToOutwardFilters( *packetTypeIt++);
+      }
+
+      m_connectionManager->AddOutputChain( serverComm );
+
+      setup.s2sCommunication = serverComm;
+   }
+}
+
+
 //-----------------------------------------------------
 //-----------------------------------------------------
