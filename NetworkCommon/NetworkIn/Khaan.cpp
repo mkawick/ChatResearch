@@ -1,6 +1,8 @@
 // Khaan.cpp
 
 #include <event2/event.h>
+#include <event2/buffer.h>
+
 #include <iostream>
 
 #include "Khaan.h"
@@ -14,11 +16,11 @@
 
 //-----------------------------------------------------------------------
 
-Khaan :: Khaan() : ChainedInterface< BasePacket* >(), m_socketId (0), m_bufferEvent(NULL), m_useLibeventToSend( false )
+Khaan :: Khaan() : ChainedInterface< BasePacket* >(), m_socketId (0), m_bufferEvent(NULL), m_useLibeventToSend( true )
 {
 }
 
-Khaan ::Khaan( int socketId, bufferevent* be, int connectionId ) : ChainedInterface< BasePacket* >(), m_socketId( socketId ), m_bufferEvent( be ), m_useLibeventToSend( false )
+Khaan ::Khaan( int socketId, bufferevent* be, int connectionId ) : ChainedInterface< BasePacket* >(), m_socketId( socketId ), m_bufferEvent( be ), m_useLibeventToSend( true )
 {
    SetConnectionId( connectionId );
 }
@@ -145,7 +147,7 @@ int	Khaan :: SendData( const U8* buffer, int length )
 {
    if( m_useLibeventToSend )
    {
-      // I cannot get the socket to write the first time... it alsways writes the second time and after.. 20 hours of research later...
+      // I cannot get the socket to write the first time... it alsways writes the second time and after.. 40 hours of research later...
       bufferevent*	bev = GetBufferEvent();
       struct evbuffer* outputBuffer = bufferevent_get_output( bev );
       return evbuffer_add( outputBuffer, buffer, length );
@@ -284,11 +286,11 @@ void     Khaan :: OnDataAvailable( struct bufferevent* bufferEventObj, void* arg
    U8          data[ MaxBufferSize ];
    size_t      numBytesReceived;
 
-   /* Read 8k at a time and send it to all connected clients. */
+   /* Read 12k at a time and send it to all connected clients. */
    while( 1 )
    {
       numBytesReceived = bufferevent_read( bufferEventObj, data, sizeof( data ) );
-      if( numBytesReceived <= 0 ) // nothing to send
+      if( numBytesReceived <= 0 ) // nothing received
       {
          break;
       }

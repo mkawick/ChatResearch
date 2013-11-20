@@ -167,6 +167,16 @@ bool  PacketFactory::ParseBasePacket( const U8* bufferIn, int& bufferOffset, con
             *packetOut = SerializeIn< PacketCommsHandshake >( bufferIn, bufferOffset );
          }
          return true;
+      case BasePacket::BasePacket_RerouteRequest:
+         {
+            *packetOut = SerializeIn< PacketRerouteRequest >( bufferIn, bufferOffset );
+         }
+         return true;
+      case BasePacket::BasePacket_RerouteRequestResponse:
+         {
+            *packetOut = SerializeIn< PacketRerouteRequestResponse >( bufferIn, bufferOffset );
+         }
+         return true;
    }
    return false;
 }

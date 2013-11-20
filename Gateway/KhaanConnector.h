@@ -28,6 +28,7 @@ private:
    
    bool  IsWhiteListedIn( const BasePacket* packet ) const;
    bool  HasPermission( const BasePacket* packet ) const;
+   bool  HandleGatewayPackets( const BasePacket* packet ) const ;
 
    U32                  m_connectionId;
    U32                  m_numPacketsReceivedBeforeAuth;

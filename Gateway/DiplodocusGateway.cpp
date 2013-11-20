@@ -3,6 +3,7 @@
 #include "DiplodocusGateway.h"
 #include "FruitadensGateway.h"
 #include "../NetworkCommon/ServerConstants.h"
+#include "../NetworkCommon/Packets/BasePacket.h"
 #include "../NetworkCommon/Packets/ServerToServerPacket.h"
 #include "../NetworkCommon/Packets/LoginPacket.h"
 #include "../NetworkCommon/Packets/PacketFactory.h"
@@ -26,7 +27,8 @@ void  PrintText( const char* text, int extraCr = 0 )
 
 DiplodocusGateway::DiplodocusGateway( const string& serverName, U32 serverId ) : Diplodocus< KhaanConnector > ( serverName, serverId, 0, ServerType_Gateway ),
                                           m_connectionIdTracker( 12 ),
-                                          m_printPacketTypes( false )
+                                          m_printPacketTypes( false ),
+                                          m_reroutePort( 0 )
 {
    SetSleepTime( 16 );// 30 fps
    SetSendHelloPacketOnLogin( true );
@@ -61,9 +63,16 @@ bool  DiplodocusGateway::AddInputChainData( BasePacket* packet, U32 connectionId
    ConnectionMapIterator connIt = m_connectionMap.find( connectionId );
    if( connIt != m_connectionMap.end() )
    {
+      if( packet->packetType == PacketType_Base )
+      {
+         if( packet->packetSubType == BasePacket::BasePacket_RerouteRequest )
+         {
+            HandleReroutRequest( connectionId );
+            return false;// delete the original data
+         }
+      }
+
       PacketGatewayWrapper* wrapper = new PacketGatewayWrapper;
-     /* wrapper->connectionId = connectionId;
-      wrapper->pPacket = packet;*/
       wrapper->SetupPacket( packet, connectionId );
 
       if( m_printPacketTypes )
@@ -82,6 +91,29 @@ bool  DiplodocusGateway::AddInputChainData( BasePacket* packet, U32 connectionId
    {
       delete packet;// it dies here. we should log this and try to disconnect the user
       return false;
+   }
+}
+
+//-----------------------------------------------------------------------------------------
+
+void     DiplodocusGateway::HandleReroutRequest( U32 connectionId )
+{
+   ConnectionMapIterator connIt = m_connectionMap.find( connectionId );
+   if( connIt != m_connectionMap.end() )
+   {
+      PacketRerouteRequestResponse* response = new PacketRerouteRequestResponse;
+      if( IsRerouoting() == true )
+      {
+         PacketRerouteRequestResponse::Address address;
+         address.address = m_rerouteAddress;
+         address.port = m_reroutePort;
+         address.name = "gateway";
+         address.whichLocationId = PacketRerouteRequestResponse::LocationId_Gateway;
+
+         response->locations.push_back( address );
+      }
+      KhaanConnector* khaan = connIt->second;
+      HandlePacketToKhaan( khaan, response );// all deletion and such is handled lower
    }
 }
 
@@ -144,6 +176,18 @@ void     DiplodocusGateway::PrintPacketTypes( bool printingOn )
    {
       cout << "disabled" << endl;
    }
+}
+
+//-----------------------------------------------------------------------------------------
+
+void     DiplodocusGateway::SetupReroute( const string& address, U16 port )
+{
+   m_rerouteAddress = address;
+   m_reroutePort = port;
+
+   // todo, add support for rerouting to other servers like login
+
+   // todo, add dynamic rerouting allowing an admin to login and 
 }
 
 //-----------------------------------------------------------------------------------------

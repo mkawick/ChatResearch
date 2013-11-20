@@ -16,6 +16,7 @@
 #endif
 
 class BasePacket;
+class PacketRerouteRequestResponse;
 
 struct TempPacket
 {
@@ -51,6 +52,9 @@ protected:
    int            ProcessInputFunction();
    int            ProcessOutputFunction();
 
+   void           RequestRerouteInstructions();
+   void           HandleRerouteRequestResult( PacketRerouteRequestResponse* response );
+
    virtual void   PostProcessInputPackets( int bytesRead );
 
    virtual bool   HandlePacketReceived( BasePacket* packetIn );
@@ -70,10 +74,17 @@ protected:
    bool                 m_isConnected;
    bool                 m_hasFailedCritically;
    bool                 m_processOnlyOneIncommingPacketPerLoop;
+   bool                 m_checkForReroute;
    U32                  m_connectedServerId;
    U8                   m_connectedGameProductId;
+
    sockaddr_in          m_ipAddress;
    U16                  m_port;
+
+   bool                 m_awaitingReroute;
+   string               m_rerouteAddress;
+   U16                  m_reroutePort;
+
    ServerType           m_serverType;
    std::string          m_name;
    PacketQueue          m_packetsReadyToSend;

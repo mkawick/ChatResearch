@@ -2,25 +2,11 @@
 #include "Khaan.h"
 
 #include <assert.h>
-
-#include <event2/event.h>
-#include <event2/event_struct.h>
-#include <event2/bufferevent.h>
-#include <event2/buffer.h>
-#include <event2/thread.h>
-
 #include "../Packets/BasePacket.h"
 #include "../Packets/PacketFactory.h"
 
-
 #if PLATFORM != PLATFORM_WINDOWS
-//#include <sys/socket.h>
-//#include <netinet/in.h>
-//#include <fcntl.h>
 #include <arpa/inet.h>
-
-#include <event2/util.h>
-#include <event2/event-config.h>
 #include <stdarg.h>
 #include <errno.h>
 #endif
@@ -57,6 +43,7 @@ bool        Diplodocus< InputChain, OutputChain >::InitializeNetworking()
 
    if( m_LibEventInstance == NULL )
    {
+      EnableThreadingInLibEvent();
       // Initialize libevent.
       m_LibEventInstance = event_base_new();
 
@@ -65,14 +52,6 @@ bool        Diplodocus< InputChain, OutputChain >::InitializeNetworking()
          return false;
       }
    }
-
-#if PLATFORM == PLATFORM_WINDOWS
-      // signal to the libevent system that we may be sending threaded signals to it.
-	   // see http://stackoverflow.com/questions/7645217/user-triggered-event-in-libevent
-	   evthread_use_windows_threads();
-#elif PLATFORM == PLATFORM_MAC || PLATFORM == PLATFORM_UNIX
-      evthread_use_pthreads();
-#endif
 
    m_isNetworkingEnabled = true;
 

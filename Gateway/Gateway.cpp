@@ -65,6 +65,8 @@ int main( int argc, const char* argv[] )
 
    string printPacketTypes = "false";
 
+   string rerouteAddressString = "";
+   string reroutePortString = "";
    
 
    //--------------------------------------------------------------
@@ -94,7 +96,11 @@ int main( int argc, const char* argv[] )
 
    parser.FindValue( "print.packets", printPacketTypes );
 
+   parser.FindValue( "reroute.port", reroutePortString );
+   parser.FindValue( "reroute.address", rerouteAddressString );
+
    int listenPort = 9600, chatPort = 9601, game1Port = 23550, game2Port = 23402, loginPort = 3072, assetPort = 9700, contactPort = 9800, purchasePort = 9900;
+   U16 reroutePort = 0;
    bool printPackets = false;
    try 
    {
@@ -106,6 +112,7 @@ int main( int argc, const char* argv[] )
        assetPort = boost::lexical_cast<int>( assetDeliveryPortString );
        contactPort = boost::lexical_cast<int>( contactPortString );
        purchasePort = boost::lexical_cast<int>( purchasePortString );
+       reroutePort = boost::lexical_cast<U16>( reroutePortString );
    } 
    catch( boost::bad_lexical_cast const& ) 
    {
@@ -158,6 +165,7 @@ int main( int argc, const char* argv[] )
    gateway->AddOutputChain( &purchaseServer );
 
    gateway->SetupListening( listenPort );
+   gateway->SetupReroute( rerouteAddressString, reroutePort );
    
    //--------------------------------------------------------------
 

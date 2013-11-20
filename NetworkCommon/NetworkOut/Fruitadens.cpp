@@ -43,9 +43,12 @@ Fruitadens :: Fruitadens( const char* name, bool processOnlyOneIncommingPacketPe
                m_isConnected( false ),
                m_hasFailedCritically( false ),
                m_processOnlyOneIncommingPacketPerLoop( processOnlyOneIncommingPacketPerLoop ),
+               m_checkForReroute( false ),
                m_connectedServerId( 0 ),
                m_connectedGameProductId( 0 ),
                m_port( 0 ),
+               m_reroutePort( 0 ),
+               m_awaitingReroute( false ),
                m_serverType( ServerType_General ),
                m_serverId( 0 ),
                m_numPacketsReceived( 0 ),
@@ -229,7 +232,14 @@ void  Fruitadens :: AttemptConnection()
 
    m_isConnected = true;
 
-   InitalConnectionCallback();
+   if( m_checkForReroute )
+   {
+      RequestRerouteInstructions();
+   }
+   else
+   {
+      InitalConnectionCallback();
+   }
 }
 
 //-----------------------------------------------------------------------------
@@ -238,6 +248,11 @@ int   Fruitadens :: ProcessInputFunction()
 {
    if( m_isConnected == false )
    {
+      if( m_awaitingReroute )
+      {
+         SetupConnection( m_rerouteAddress.c_str(), m_reroutePort );
+         m_awaitingReroute = false;
+      }
       AttemptConnection();
       if( m_isConnected  == false )
       {
@@ -373,16 +388,60 @@ int  Fruitadens::ProcessOutputFunction()
 
 //-----------------------------------------------------------------------------------------
 
+void  Fruitadens::RequestRerouteInstructions()
+{
+   PacketRerouteRequest* request = new PacketRerouteRequest;
+   SerializePacketOut( request );
+}
+
+//-----------------------------------------------------------------------------------------
+
+void  Fruitadens::HandleRerouteRequestResult( PacketRerouteRequestResponse* response )
+{
+   m_checkForReroute = false;// clear this flag
+
+   int num = response->locations.size();
+   for( int i=0; i< num; i++ )
+   {
+      const PacketRerouteRequestResponse::Address& address = response->locations[i];
+      if( address.whichLocationId == PacketRerouteRequestResponse::LocationId_Gateway )
+      {
+         Disconnect();
+         m_awaitingReroute = true;
+         m_reroutePort = address.port;
+         m_rerouteAddress = address.address;
+         //Connect( it->address, it->port ); // << slight danger here... disconnecting when we are servicing a previous request
+         break;// finish loop
+      }
+   }
+   if( m_awaitingReroute == false )
+   {
+      InitalConnectionCallback();
+   }
+}
+//-----------------------------------------------------------------------------------------
+
 bool  Fruitadens::HandlePacketReceived( BasePacket* packetIn )
 {
    PacketFactory factory;
 
-   if( packetIn->packetType == PacketType_Base && // our basic bahavior is to ignore these initialization packets
-      packetIn->packetSubType == BasePacket::BasePacket_Hello )
-   {
-      factory.CleanupPacket( packetIn );
-      return false;
+   if( packetIn->packetType == PacketType_Base )
+   { 
+      // our basic bahavior is to ignore these initialization packets
+      if(  packetIn->packetSubType == BasePacket::BasePacket_Hello )
+      {
+         factory.CleanupPacket( packetIn );
+         return false;
+      }
+      if( packetIn->packetSubType == BasePacket::BasePacket_RerouteRequestResponse )
+      {
+         PacketRerouteRequestResponse* unwrappedPacket = static_cast< PacketRerouteRequestResponse * > ( packetIn );
+
+         HandleRerouteRequestResult( unwrappedPacket );
+         factory.CleanupPacket( packetIn );
+      }
    }
+
    // special case... we handle server id directly, but we simply pass through for other s2s comms.
    if( packetIn->packetType == PacketType_ServerToServerWrapper )
    {

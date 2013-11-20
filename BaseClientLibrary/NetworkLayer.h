@@ -252,6 +252,8 @@ public:
    NetworkLayer( U8 gameProductId, bool processOnlyOneIncommingPacketPerLoop = false );
    ~NetworkLayer();
 
+   void     CheckForReroutes( bool checkForRerouts );
+   void     OverrideSocketPort( int port ) { m_connectionPort = port; }
    void     Init( const char* serverDNS = "gateway.internal.playdekgames.com" );
    bool     RegisterCallbackInterface( UserNetworkEventNotifier* _callbacks );
 
@@ -263,6 +265,7 @@ public:
    bool     RequestAccountCreate( const string& username, const string& useremail, const string& password, int languageId, const string& deviceId, const string& gkHash ); // deviceId could be NULL except in andriod world
    bool     RequestLogout() const;
 
+   bool     IsReadyToLogin() const { return !m_isLoggingIn & !m_isLoggedIn & !m_checkForReroute & !m_awaitingReroute; }
    bool     IsLoggingIn() const { return m_isLoggingIn; }
    bool     IsLoggedIn() const { return m_isLoggedIn; }   
    string   GetUsername() const { return m_userName; }
@@ -390,6 +393,7 @@ private:
    U32                  m_connectionId;
    string               m_lastLoggedOutTime;
    int                  m_lastRawDataIndex;
+   int                  m_connectionPort;
 
    mutable U32          m_beginTime, m_endTime;
 

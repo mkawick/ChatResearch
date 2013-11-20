@@ -91,7 +91,8 @@ NetworkLayer::NetworkLayer( U8 gameProductId, bool processOnlyOneIncommingPacket
       m_normalSleepTime( 50 ),
       m_boostedSleepTime( 8 ),
       m_isThreadPerformanceBoosted( 0 ),
-      m_lastRawDataIndex( 0 )
+      m_lastRawDataIndex( 0 ),
+      m_connectionPort( 9600 )
 {
    SetSleepTime( m_normalSleepTime );
    //m_serverDns = "chat.mickey.playdekgames.com";
@@ -108,6 +109,11 @@ NetworkLayer::~NetworkLayer()
 //------------------------------------------------------------
 //------------------------------------------------------------
 
+void  NetworkLayer::CheckForReroutes( bool checkForRerouts )
+{
+   m_checkForReroute = checkForRerouts;
+}
+
 void  NetworkLayer::Init( const char* serverDNS )
 {
    if( m_clientSocket != SOCKET_ERROR || m_isConnected == true )
@@ -115,11 +121,13 @@ void  NetworkLayer::Init( const char* serverDNS )
       Disconnect();
    }
 
+   
+
    if( serverDNS && strlen( serverDNS ) > 5 )
    {
       m_serverDns = serverDNS;
    }
-   Connect( m_serverDns.c_str(), 9600 );
+   Connect( m_serverDns.c_str(), m_connectionPort );
 }
 
 void  NetworkLayer::Exit()
@@ -1054,6 +1062,16 @@ bool  NetworkLayer::HandlePacketReceived( BasePacket* packetIn )
 
    switch( packetIn->packetType )
    {
+      case PacketType_Base:
+      {
+         if( packetIn->packetSubType == BasePacket::BasePacket_RerouteRequestResponse )
+         {
+            PacketRerouteRequestResponse* unwrappedPacket = static_cast< PacketRerouteRequestResponse * > ( packetIn );
+
+            HandleRerouteRequestResult( unwrappedPacket );
+         }
+      }
+      break;
       case PacketType_Contact:
       {
          switch( packetIn->packetSubType )

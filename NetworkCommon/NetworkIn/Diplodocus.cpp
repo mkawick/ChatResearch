@@ -9,6 +9,17 @@
 #include <boost/format.hpp>
 using boost::format;
 
+#include <event2/event.h>
+#include <event2/event_struct.h>
+#include <event2/bufferevent.h>
+#include <event2/buffer.h>
+#include <event2/thread.h>
+
+#if PLATFORM != PLATFORM_WINDOWS
+#include <event2/util.h>
+#include <event2/event-config.h>
+#endif
+
 #include "../Platform.h"
 #include "../DataTypes.h"
 #include "../Serialize.h"
@@ -54,4 +65,15 @@ void  UpdateConsoleWindow( time_t& timeOfLastTitleUpdate, time_t uptime, int num
       SetConsoleWindowTitle( title.c_str() );
 #endif //_DISABLE_TITLE_OVERLOAD_
    }
+}
+
+void  EnableThreadingInLibEvent()
+{
+#if PLATFORM == PLATFORM_WINDOWS
+      // signal to the libevent system that we may be sending threaded signals to it.
+	   // see http://stackoverflow.com/questions/7645217/user-triggered-event-in-libevent
+	   evthread_use_windows_threads();
+#elif PLATFORM == PLATFORM_MAC || PLATFORM == PLATFORM_UNIX
+      evthread_use_pthreads();
+#endif
 }

@@ -51,7 +51,9 @@ public:
    {
       BasePacket_Type,
       BasePacket_Hello,
-      BasePacket_CommsHandshake
+      BasePacket_CommsHandshake,
+      BasePacket_RerouteRequest,
+      BasePacket_RerouteRequestResponse,
    };
 public:
    BasePacket( int packet_type = PacketType_Base, int packet_sub_type = BasePacket_Type ) :
@@ -110,6 +112,47 @@ public:
 };
 
 ///////////////////////////////////////////////////////////////
+
+class PacketRerouteRequest : public BasePacket
+{
+public:
+   PacketRerouteRequest(): BasePacket( PacketType_Base, BasePacket::BasePacket_RerouteRequest ) {}
+
+   bool  SerializeIn( const U8* data, int& bufferOffset );
+   bool  SerializeOut( U8* data, int& bufferOffset ) const;
+};
+
+///////////////////////////////////////////////////////////////
+
+class PacketRerouteRequestResponse : public BasePacket
+{
+public:
+   enum LocationIds // these will all be gateway instances.. 
+   {
+      LocationId_Gateway,
+      LocationId_Asset,
+      LocationId_Login
+   };
+
+   PacketRerouteRequestResponse(): BasePacket( PacketType_Base, BasePacket::BasePacket_RerouteRequestResponse ) {}
+
+   bool  SerializeIn( const U8* data, int& bufferOffset );
+   bool  SerializeOut( U8* data, int& bufferOffset ) const;
+
+   struct Address
+   {
+      string   address;
+      string   name;
+      U16      port;
+      U16      whichLocationId;
+
+      bool  SerializeIn( const U8* data, int& bufferOffset );
+      bool  SerializeOut( U8* data, int& bufferOffset ) const;
+   };
+
+   SerializedVector< Address > locations;
+};
+
 
 ///////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////

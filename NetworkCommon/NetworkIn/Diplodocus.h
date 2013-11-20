@@ -24,6 +24,8 @@
 
 typedef string HashLookup;
 HashLookup CreateHash( const string& );
+void  EnableThreadingInLibEvent();
+
 static const int DefaultSleepTimeForPacketHandlers = 33;
 
 class BasePacket;

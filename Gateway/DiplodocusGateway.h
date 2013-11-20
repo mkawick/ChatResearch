@@ -24,6 +24,9 @@ public:
 
    void           PrintPacketTypes( bool printingOn = true );
 
+   void           SetupReroute( const string& address, U16 port );
+   bool           IsRerouoting() { return ( m_reroutePort != 0 ) && ( m_rerouteAddress.size() > 0 ); }
+
    //-----------------------------------------
 
 private:
@@ -32,6 +35,8 @@ private:
    bool           PushPacketToProperOutput( BasePacket* packet );
 
    void           HandlePacketToKhaan( KhaanConnector* khaan, BasePacket* packet );
+
+   void           HandleReroutRequest( U32 connectionId );
 
    int            ProcessInputFunction();
    int            ProcessOutputFunction();
@@ -57,9 +62,8 @@ private:
 
    bool                       m_printPacketTypes;
 
-  /* time_t                     m_timeOfLastTitleUpdate;
-   time_t                     m_uptime;
-   int                        m_totalConnections;*/
+   string                     m_rerouteAddress;
+   U16                        m_reroutePort;
 };
 
 //-----------------------------------------------------------------------------

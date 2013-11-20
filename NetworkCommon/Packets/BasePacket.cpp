@@ -58,6 +58,59 @@ bool  PacketCommsHandshake::SerializeOut( U8* data, int& bufferOffset ) const
 
 ///////////////////////////////////////////////////////////////
 
+bool  PacketRerouteRequest::SerializeIn( const U8* data, int& bufferOffset )
+{
+   BasePacket::SerializeIn( data, bufferOffset );
+
+   return true;
+}
+
+bool  PacketRerouteRequest::SerializeOut( U8* data, int& bufferOffset ) const
+{
+   BasePacket::SerializeOut( data, bufferOffset );
+
+   return true;
+}
+
+///////////////////////////////////////////////////////////////
+
+bool  PacketRerouteRequestResponse::SerializeIn( const U8* data, int& bufferOffset )
+{
+   BasePacket::SerializeIn( data, bufferOffset );
+   Serialize::In( data, bufferOffset, locations );
+
+   return true;
+}
+
+bool  PacketRerouteRequestResponse::SerializeOut( U8* data, int& bufferOffset ) const
+{
+   BasePacket::SerializeOut( data, bufferOffset );
+   Serialize::Out( data, bufferOffset, locations );
+
+   return true;
+}
+
+///////////////////////////////////////////////////////////////
+
+bool PacketRerouteRequestResponse::Address::SerializeIn( const U8* data, int& bufferOffset )
+{
+   Serialize::In( data, bufferOffset, address );
+   Serialize::In( data, bufferOffset, name );
+   Serialize::In( data, bufferOffset, port );
+   Serialize::In( data, bufferOffset, whichLocationId );
+
+   return true;
+}
+
+bool  PacketRerouteRequestResponse::Address::SerializeOut( U8* data, int& bufferOffset ) const
+{
+   Serialize::Out( data, bufferOffset, address );
+   Serialize::Out( data, bufferOffset, name );
+   Serialize::Out( data, bufferOffset, port );
+   Serialize::Out( data, bufferOffset, whichLocationId );
+
+   return true;
+}
 
 
 ///////////////////////////////////////////////////////////////
