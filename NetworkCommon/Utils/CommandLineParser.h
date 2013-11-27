@@ -35,6 +35,7 @@ public:
    bool  FindValue( const string& key ) const;
    bool  FindValue( const string& key, vector< std::string >& strings ) const;
    bool  SeparateStringIntoKeyValue( const string& inString, string& key, string& value ) const;
+   bool  SeparateStringIntoValues( const string& inString, vector< std::string >& listOfStuff, int expectedNum ) const;
 
    bool  IsKeywordFirst( const string& key ) const;
 

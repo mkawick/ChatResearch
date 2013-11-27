@@ -72,6 +72,7 @@ bool  CommandLineParser::FindValue( const string& key, string& valueOut ) const
 {
    string searchKey = ConvertStringToLower( key );
 
+   valueOut.clear();
    ValuesListConstIterator it = m_values.begin();
    while( it != m_values.end() )
    {
@@ -85,8 +86,11 @@ bool  CommandLineParser::FindValue( const string& key, string& valueOut ) const
    return false;
 }
 
+//-------------------------------------------------------------------------------------------
+
 bool  CommandLineParser::FindValue( const string& key, vector< std::string >& strings ) const
 {
+   strings.clear();
    string valueOut;
    if( FindValue( key, valueOut ) == false )
    {
@@ -100,6 +104,8 @@ bool  CommandLineParser::FindValue( const string& key, vector< std::string >& st
    return false;
 }
 
+//-------------------------------------------------------------------------------------------
+
 bool  CommandLineParser::SeparateStringIntoKeyValue( const string& inString, string& key, string& value ) const
 {
    typedef boost::tokenizer< boost::char_separator< char > > tokenizer;
@@ -107,7 +113,6 @@ bool  CommandLineParser::SeparateStringIntoKeyValue( const string& inString, str
 
    vector< string > listOfStuff;
    tokenizer tokens( inString, separator );
-   //transform( tok.begin(), tok.end(), back_inserter( listOfStuff ), AcceptanceTest() );
    for (tokenizer::iterator tok_iter = tokens.begin(); tok_iter != tokens.end(); ++tok_iter)
    {
       string str = *tok_iter;
@@ -121,14 +126,43 @@ bool  CommandLineParser::SeparateStringIntoKeyValue( const string& inString, str
       return true;
    }
 
-
+   key.clear();
+   value.clear();
    
    return false;
 }
 
+//-------------------------------------------------------------------------------------------
+
+bool  CommandLineParser::SeparateStringIntoValues( const string& inString, vector< std::string >& listOfStuff, int expectedNum ) const
+{
+   typedef boost::tokenizer< boost::char_separator< char > > tokenizer;
+   boost::char_separator< char > separator( ":,=|" );
+
+   tokenizer tokens( inString, separator );
+   for (tokenizer::iterator tok_iter = tokens.begin(); tok_iter != tokens.end(); ++tok_iter)
+   {
+      string str = *tok_iter;
+      listOfStuff.push_back( str );
+   }
+
+   if( listOfStuff.size() == expectedNum )
+   {
+      return true;
+   }
+
+   listOfStuff.clear();
+   
+   return false;
+}
+
+//-------------------------------------------------------------------------------------------
+
 bool  CommandLineParser::FindValue( const string& key, int& valueOut ) const
 {
    string searchKey = ConvertStringToLower( key );
+
+   valueOut = 0;
 
    ValuesListConstIterator it = m_values.begin();
    while( it != m_values.end() )
@@ -147,6 +181,7 @@ bool  CommandLineParser::FindValue( const string& key, int& valueOut ) const
       }
       it++;
    }
+
    return false;
 }
 

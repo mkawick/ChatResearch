@@ -60,6 +60,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
+				AdditionalDependencies="../Debug/PacketLibrary.lib"
 				LinkIncremental="2"
 				GenerateDebugInformation="true"
 				SubSystem="1"
@@ -171,6 +172,14 @@
 			UniqueIdentifier="{4FC737F1-C7A5-4376-A066-2A32D752A2FF}"
 			>
 			<File
+				RelativePath=".\DiplodocusLoadBalancer.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\KhaanConnector.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\LoadBalancer.cpp"
 				>
 			</File>
@@ -180,12 +189,24 @@
 			Filter="h;hpp;hxx;hm;inl;inc;xsd"
 			UniqueIdentifier="{93995380-89BD-4b04-88EB-625FBE52EBFB}"
 			>
+			<File
+				RelativePath=".\DiplodocusLoadBalancer.h"
+				>
+			</File>
+			<File
+				RelativePath=".\KhaanConnector.h"
+				>
+			</File>
 		</Filter>
 		<Filter
 			Name="NetworkCommon"
 			>
 			<File
 				RelativePath="..\NetworkCommon\DataTypes.h"
+				>
+			</File>
+			<File
+				RelativePath="..\NetworkCommon\NetworkUtils.cpp"
 				>
 			</File>
 			<File
@@ -252,11 +273,27 @@
 					>
 				</File>
 				<File
+					RelativePath="..\NetworkCommon\NetworkIn\DiplodocusServerToServer.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\NetworkCommon\NetworkIn\DiplodocusServerToServer.h"
+					>
+				</File>
+				<File
 					RelativePath="..\NetworkCommon\NetworkIn\Khaan.cpp"
 					>
 				</File>
 				<File
 					RelativePath="..\NetworkCommon\NetworkIn\Khaan.h"
+					>
+				</File>
+				<File
+					RelativePath="..\NetworkCommon\NetworkIn\KhaanServerToServer.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\NetworkCommon\NetworkIn\KhaanServerToServer.h"
 					>
 				</File>
 			</Filter>

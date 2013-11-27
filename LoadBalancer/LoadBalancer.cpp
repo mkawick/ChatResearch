@@ -16,6 +16,7 @@
 #include <assert.h>
 
 #include <boost/lexical_cast.hpp>
+#include <boost/format.hpp>
 
 #include <cstdio>
 #include "../NetworkCommon/Version.h"
@@ -24,8 +25,9 @@
 #include "../NetworkCommon/Packets/ServerToServerPacket.h"
 
 #include "KhaanConnector.h"
-#include "DiplodocusGateway.h"
-#include "FruitadensGateway.h"
+#include "DiplodocusLoadBalancer.h"
+#include "../NetworkCommon/NetworkIn/DiplodocusServerToServer.h"
+//#include "FruitadensGateway.h"
 
 using namespace std;
 
@@ -36,7 +38,7 @@ using namespace std;
 
 ////////////////////////////////////////////////////////////////////////
 
-FruitadensGateway* PrepFruitadens( const string& ipaddress, U16 port, U32 serverId, DiplodocusGateway* loginServer, const string& name );
+//FruitadensGateway* PrepFruitadens( const string& ipaddress, U16 port, U32 serverId, DiplodocusGateway* loginServer, const string& name );
 
 ////////////////////////////////////////////////////////////////////////
 
@@ -47,13 +49,31 @@ int main( int argc, const char* argv[] )
    string listenPortString = "9500";
    string listenAddressString = "localhost";
 
+   string listenForS2SPort = "9902";
+   string listenForS2SAddress = "localHost";
 
-   string assetDeliveryPortString = "9700";
-   string assetDeliveryIpAddressString = "localhost";
+   parser.FindValue( "s2s.port", listenForS2SPort );
+   parser.FindValue( "s2s.address", listenForS2SAddress );
 
 
-   string rerouteAddressString = "";
-   string reroutePortString = "";
+   vector< string > params;
+   if( parser.FindValue( "gateways", params ) )
+   {
+      cout << "connections found = " << endl << "[ " << endl; 
+      vector< string >::iterator it = params.begin();
+      while( it != params.end() )
+      {
+         string str = *it++;
+         string key, value;
+         parser.SeparateStringIntoKeyValue( str, key, value );
+         cout << boost::format("%15s ={ %15s - %-10s }")  % str % key % value << endl;
+      }
+      cout << "]" << endl;
+   }
+   else
+   {
+      assert(0);
+   }
    
 
    //--------------------------------------------------------------
@@ -61,41 +81,22 @@ int main( int argc, const char* argv[] )
    parser.FindValue( "listen.port", listenPortString );
    parser.FindValue( "listen.address", listenAddressString );
 
-   parser.FindValue( "chat.port", chatPortString );
-   parser.FindValue( "chat.address", chatIpAddressString );
 
-
-   parser.FindValue( "reroute.port", reroutePortString );
-   parser.FindValue( "reroute.address", rerouteAddressString );
-
-   int listenPort = 9600, chatPort = 9601, game1Port = 23550, game2Port = 23402, loginPort = 3072, assetPort = 9700, contactPort = 9800, purchasePort = 9900;
-   U16 reroutePort = 0;
-   bool printPackets = false;
+   int listenPort = 9500, listenS2SPort = 9902;
    try 
    {
        listenPort = boost::lexical_cast<int>( listenPortString );
-       chatPort = boost::lexical_cast<int>( chatPortString );
-       loginPort = boost::lexical_cast<int>( loginPortString );
-       game1Port = boost::lexical_cast<int>( game1PortString );
-       game2Port = boost::lexical_cast<int>( game2PortString );
-       assetPort = boost::lexical_cast<int>( assetDeliveryPortString );
-       contactPort = boost::lexical_cast<int>( contactPortString );
-       purchasePort = boost::lexical_cast<int>( purchasePortString );
-       reroutePort = boost::lexical_cast<U16>( reroutePortString );
+       listenS2SPort = boost::lexical_cast<int>( listenForS2SPort );
    } 
    catch( boost::bad_lexical_cast const& ) 
    {
        std::cout << "Error: input string was not valid" << std::endl;
    }
 
-   
-   if( printPacketTypes == "1" || printPacketTypes == "true" || printPacketTypes == "TRUE" )
-   {
-      printPackets = true;
-   }
+
    //--------------------------------------------------------------
 
-   string serverName = "Gateway server";
+   string serverName = "LoadBalancer server";
    U64 serverUniqueHashValue = GenerateUniqueHash( serverName );
    U32 serverId = (U32)serverUniqueHashValue;
 
@@ -104,82 +105,31 @@ int main( int argc, const char* argv[] )
    cout << "ServerId " << serverId << endl;
    cout << "------------------------------------------------------------------" << endl << endl << endl;
 
-   DiplodocusGateway* gateway = new DiplodocusGateway( serverName, serverId );
-   gateway->SetAsGateway( true );
-   gateway->PrintPacketTypes( printPackets );
+   DiplodocusLoadBalancer* loadBalancer = new DiplodocusLoadBalancer( serverName, serverId );
+   loadBalancer->SetAsGateway( true );
 
-   FruitadensGateway chatOut( "fruity to chat" );
-   chatOut.SetConnectedServerType( ServerType_Chat );
 
-   FruitadensGateway gameServerOut( "fruity to gameserver" );
-   gameServerOut.SetConnectedServerType( ServerType_GameInstance );
-
-   FruitadensGateway loginServerOut( "fruity to login" );
-   loginServerOut.SetConnectedServerType( ServerType_Login );
-
-   FruitadensGateway assetServer( "fruity to asset" );
-   assetServer.SetConnectedServerType( ServerType_Asset );
-
-   FruitadensGateway contactServer( "fruity to contact" );
-   contactServer.SetConnectedServerType( ServerType_Contact );
-
-   FruitadensGateway purchaseServer( "fruity to purchase" );
-   purchaseServer.SetConnectedServerType( ServerType_Purchase );
-
-   gateway->AddOutputChain( &chatOut );
-   gateway->AddOutputChain( &gameServerOut );
-   gateway->AddOutputChain( &loginServerOut );
-   gateway->AddOutputChain( &assetServer );
-   gateway->AddOutputChain( &contactServer );
-   gateway->AddOutputChain( &purchaseServer );
-
-   gateway->SetupListening( listenPort );
-   gateway->SetupReroute( rerouteAddressString, reroutePort );
+   vector< string >::iterator it = params.begin();
+   while( it != params.end() )
+   {
+      string str = *it++;
+      string address, value;
+      parser.SeparateStringIntoKeyValue( str, address, value );
+      U16 port = boost::lexical_cast< U16 >( value );
+      loadBalancer->AddGatewayAddress( address, port );
+   }
    
-   //--------------------------------------------------------------
-
-#ifndef _TRACK_MEMORY_LEAK_
-   FruitadensGateway* game1 = PrepFruitadens( game1Address, game1Port, serverId, gateway, "game1" );
-   FruitadensGateway* mfm = PrepFruitadens( "localhost", game2Port, serverId, gateway, "MFM" );
-   //FruitadensGateway* game3 = PrepFruitadens( "localhost", 23402, serverId, gateway );
-   //FruitadensGateway* game4 = PrepFruitadens( "localhost", 23550, serverId, gateway );// summoner wars
-
-   U8 gameProductId = 0;
-   game1->NotifyEndpointOfIdentification( serverName, serverId, gameProductId, false, false, true, true  );
-   mfm->NotifyEndpointOfIdentification( serverName, serverId, gameProductId, false, false, true, true  );
-#endif // _TRACK_MEMORY_LEAK_
-
-   
-   
-   //game3->NotifyEndpointOfIdentification( serverName, serverId, gameProductId, false, false, true, true  );
-   //game4->NotifyEndpointOfIdentification( serverName, serverId, gameProductId, false, false, true, true  );
-
-   cout << "Chat server: " << chatIpAddressString << ":" << chatPort << endl;
-   chatOut.Connect( chatIpAddressString.c_str(), chatPort );
-   chatOut.Resume();
-
-   cout << "Login server: " << loginIpAddressString << ":" << loginPort << endl;
-   loginServerOut.Connect( loginIpAddressString.c_str(), loginPort );
-   loginServerOut.Resume();
-
-   cout << "Asset server: " << assetDeliveryIpAddressString << ":" << assetPort << endl;
-   assetServer.Connect( assetDeliveryIpAddressString.c_str(), assetPort );
-   assetServer.Resume();
-
-   cout << "Contact server: " << contactIpAddressString << ":" << contactPort << endl;
-   contactServer.Connect( contactIpAddressString.c_str(), contactPort );
-   contactServer.Resume();
-
-   cout << "Purchase server: " << purchaseIpAddressString << ":" << purchasePort << endl;
-   purchaseServer.Connect( purchaseIpAddressString.c_str(), purchasePort );
-   purchaseServer.Resume();
    
    cout << "---------------------------- finished connecting ----------------------------" << endl;
 
-   gateway->Init();
+   DiplodocusServerToServer* s2s = new DiplodocusServerToServer( serverName, serverId );
+   s2s->SetupListening( listenS2SPort );
+   s2s->AddOutputChain( loadBalancer );
 
-   gateway->Resume();   
-   gateway->Run();
+   loadBalancer->Init();
+
+   loadBalancer->Resume();   
+   loadBalancer->Run();
 
    getch();
    
@@ -187,28 +137,3 @@ int main( int argc, const char* argv[] )
 }
 ////////////////////////////////////////////////////////////////////////
 
-FruitadensGateway* PrepFruitadens( const string& ipaddress, U16 port, U32 serverId, DiplodocusGateway* loginServer, const string& name )
-{
-   string servername = "fruity to ";
-   if( name.size() )
-   {
-      servername += name;
-   }
-   else
-   {
-      servername += "gameserver";
-   }
-   FruitadensGateway* gameServerOut = new FruitadensGateway( servername.c_str() );
-   gameServerOut->SetConnectedServerType( ServerType_GameInstance );
-   gameServerOut->SetServerUniqueId( serverId );
-
-   loginServer->AddOutputChain( gameServerOut );
-
-   cout << "Game server: " << ipaddress << ":" << port << endl;
-   gameServerOut->Connect( ipaddress.c_str(), port );
-   gameServerOut->Resume();
-
-   return gameServerOut;
-}
-
-////////////////////////////////////////////////////////////////////////
