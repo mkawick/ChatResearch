@@ -7,6 +7,8 @@
 //#include <conio.h>
 #include <assert.h>
 #include <boost/lexical_cast.hpp>
+#include <boost/algorithm/string.hpp>
+#include <boost/algorithm/string/trim.hpp>
 #include "Utils.h"
 
 struct AcceptanceTest
@@ -64,6 +66,8 @@ CommandLineParser::CommandLineParser( const string& textToSeparateAndSort, const
    assert( 0 );// todo
 }
 
+//-------------------------------------------------------------------------------------------
+
 bool  CommandLineParser::FindValue( const string& key, string& valueOut ) const
 {
    string searchKey = ConvertStringToLower( key );
@@ -78,6 +82,47 @@ bool  CommandLineParser::FindValue( const string& key, string& valueOut ) const
       }
       it++;
    }
+   return false;
+}
+
+bool  CommandLineParser::FindValue( const string& key, vector< std::string >& strings ) const
+{
+   string valueOut;
+   if( FindValue( key, valueOut ) == false )
+   {
+      return false;
+   }
+   boost::trim_if( valueOut, boost::is_any_of( "\"\'[]{}()" ) );// remove any extra unsupported characters
+
+   ConvertArrayIntoElements( valueOut, strings );
+   if( strings.size() > 0 )
+      return true;
+   return false;
+}
+
+bool  CommandLineParser::SeparateStringIntoKeyValue( const string& inString, string& key, string& value ) const
+{
+   typedef boost::tokenizer< boost::char_separator< char > > tokenizer;
+   boost::char_separator< char > separator( ":,=|" );
+
+   vector< string > listOfStuff;
+   tokenizer tokens( inString, separator );
+   //transform( tok.begin(), tok.end(), back_inserter( listOfStuff ), AcceptanceTest() );
+   for (tokenizer::iterator tok_iter = tokens.begin(); tok_iter != tokens.end(); ++tok_iter)
+   {
+      string str = *tok_iter;
+      listOfStuff.push_back( str );
+   }
+
+   if( listOfStuff.size() == 2 )
+   {
+      key = listOfStuff[0];
+      value = listOfStuff[1];
+      return true;
+   }
+
+
+   
    return false;
 }
 
@@ -179,7 +224,7 @@ void  CommandLineParser::ProcessCommandLine( int num, const char* arguments[], V
 
    string separator1("");//dont let quoted arguments escape themselves
    string separator2("=:");//split on = and :
-   string separator3("\"\'");//let it have quoted arguments
+   string separator3("\"\'[]");//let it have quoted arguments
 
 
    boost::escaped_list_separator<char> els( separator1, separator2, separator3 );
@@ -194,9 +239,6 @@ void  CommandLineParser::ProcessCommandLine( int num, const char* arguments[], V
       {
          listOfStuff.push_back(*i);
       }
-     /* tokenizer tok( temp, separator );
-
-      transform( tok.begin(), tok.end(), back_inserter( listOfStuff ), AcceptanceTest() );*/
 
       if( listOfStuff.size() != 0 )
       {
@@ -234,6 +276,66 @@ void  CommandLineParser::ProcessCommandLine( int num, const char* arguments[], V
       }
       listOfStuff.clear();
    }
+}
+
+//--------------------------------------------------------------------------
+
+//--------------------------------------------------------------------------
+
+void  CommandLineParser::ConvertArrayIntoElements( const string& array, vector< std::string >& strings ) const
+{
+   string separator1("");//dont let quoted arguments escape themselves
+   string separator2(",");//split on ,
+   string separator3("\"\'");//let it have quoted arguments
+
+
+   boost::escaped_list_separator<char> els( separator1, separator2, separator3 );
+
+   string line = array;
+   //vector< string > listOfStuff;
+
+   boost::tokenizer<boost::escaped_list_separator<char> > tokens( line, els );
+   for( boost::tokenizer<boost::escaped_list_separator<char> >::iterator i(tokens.begin()); i!=tokens.end(); ++i) 
+   {
+      string str = *i;
+      strings.push_back(str);
+   }
+
+   //if( listOfStuff.size() != 0 )
+   {
+      /*int firstItem = 0;// in order to help deal with empty items
+
+      KeyValuePair   keyValuePair;
+      const string& potentionalKey = listOfStuff[ firstItem ];
+      if( listOfStuff.size() == 2 )// simplest case
+      {
+         keyValuePair.key = ConvertStringToLower( potentionalKey );
+         keyValuePair.value = listOfStuff[1];
+         values.push_back( keyValuePair );
+      }
+      else if( listOfStuff.size() == 1 )
+      {
+         // there are two cases... the last item could have had a space after it as in "ip 192..."
+         // or this could be a new key. in either case we need to look at the last item in the values.
+         if( values.size() > 0 && 
+            ( *(values.rbegin() )).IsComplete() == false )
+         {
+            ( *(values.rbegin() ) ).value = potentionalKey;
+         }
+         else
+         {
+            keyValuePair.key = ConvertStringToLower( potentionalKey );
+            values.push_back( keyValuePair );
+         }
+      }
+      else // no support for 0, 3 or more
+      {
+         cout << "Command line parser detected too many params" << endl;
+         assert( 0 );
+      }*/
+      
+   }
+   //listOfStuff.clear();
 }
 
 //--------------------------------------------------------------------------

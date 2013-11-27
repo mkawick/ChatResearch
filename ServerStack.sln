@@ -39,6 +39,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "PacketLibrary", "PacketLibr
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Purchase", "Purchase\Purchase.vcproj", "{E57DF4AD-3F29-423F-9D2A-BC8F3CE52B19}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "LoadBalancer", "LoadBalancer\LoadBalancer.vcproj", "{F83B2B33-CDAD-40B0-801F-5CCC93027B18}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Win32 = Debug|Win32
@@ -130,6 +132,12 @@ Global
 		{E57DF4AD-3F29-423F-9D2A-BC8F3CE52B19}.DebugForCLR|Win32.Build.0 = Debug|Win32
 		{E57DF4AD-3F29-423F-9D2A-BC8F3CE52B19}.Release|Win32.ActiveCfg = Release|Win32
 		{E57DF4AD-3F29-423F-9D2A-BC8F3CE52B19}.Release|Win32.Build.0 = Release|Win32
+		{F83B2B33-CDAD-40B0-801F-5CCC93027B18}.Debug|Win32.ActiveCfg = Debug|Win32
+		{F83B2B33-CDAD-40B0-801F-5CCC93027B18}.Debug|Win32.Build.0 = Debug|Win32
+		{F83B2B33-CDAD-40B0-801F-5CCC93027B18}.DebugForCLR|Win32.ActiveCfg = Debug|Win32
+		{F83B2B33-CDAD-40B0-801F-5CCC93027B18}.DebugForCLR|Win32.Build.0 = Debug|Win32
+		{F83B2B33-CDAD-40B0-801F-5CCC93027B18}.Release|Win32.ActiveCfg = Release|Win32
+		{F83B2B33-CDAD-40B0-801F-5CCC93027B18}.Release|Win32.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

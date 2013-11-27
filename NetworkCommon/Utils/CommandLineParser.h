@@ -12,7 +12,7 @@
 
 using namespace std;
 
-//-----------------------------------------------------------
+//////////////////////////////////////////////////////////////////
 
 // accepts formats of 
 // -ip=192.168.0.1
@@ -21,15 +21,21 @@ using namespace std;
 // ip 192.168.0.1
 
 
+//////////////////////////////////////////////////////////////////
+
 class CommandLineParser
 {
 public:
    CommandLineParser( int num, const char* arguments[] );
    CommandLineParser( const vector< std::string >& strings );// simple pairing
    CommandLineParser( const string& textToSeparateAndSort, const vector< std::string >& stringDictionary );
+
    bool  FindValue( const string& key, string& valueOut ) const;
    bool  FindValue( const string& key, int& valueOut ) const;
    bool  FindValue( const string& key ) const;
+   bool  FindValue( const string& key, vector< std::string >& strings ) const;
+   bool  SeparateStringIntoKeyValue( const string& inString, string& key, string& value ) const;
+
    bool  IsKeywordFirst( const string& key ) const;
 
    int   GetNumKeyValuePairs() const { return static_cast<int> ( m_values.size() ); }
@@ -50,4 +56,7 @@ protected:
    ValuesList                             m_values;
 
    void  ProcessCommandLine( int num, const char* arguments[], ValuesList& values ) const;
+   void  ConvertArrayIntoElements( const string& array, vector< std::string >& strings ) const;
 };
+
+//////////////////////////////////////////////////////////////////

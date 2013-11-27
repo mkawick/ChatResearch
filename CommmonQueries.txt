@@ -6,7 +6,7 @@ UPDATE
 SET 
    email_returned_as_undeliverable=1
 WHERE 
-   user_name="..."
+   user_email="..."
 
 //-----------------------------------------------------
 
@@ -57,5 +57,11 @@ on users.user_id=prof.user_id where prof.marketing_opt_out=0
 select count(*) from user_profile as prof where 
 prof.user_id in (select users.user_id from users inner join  
 junk_temp_table as junk on junk.Email=users.user_email)
+
+// export
+SELECT users.user_name AS name, users.user_email AS Email FROM users 
+INNER JOIN user_profile AS profile WHERE profile.user_id = users.user_id
+and users.user_email IS NOT NULL AND profile.marketing_opt_out=0
+AND users.user_confirmation_date>'2013-11-21 00:00:00' LIMIT 20000
 
 //-----------------------------------------------------
