@@ -28,10 +28,11 @@ int main( int argc, const char* argv[] )
 {
 	CommandLineParser    parser( argc, argv );
 
-   string listenPort = "9700";
+   string serverName = "Asset Server";
+   string listenPort = "7300";
    string listenAddress = "localhost";
 
-   string listenForS2SPort = "9702";
+   string listenForS2SPort = "7302";
    string listenForS2SAddress = "localHost";
 
    string assetDictionary = "assets.ini";
@@ -39,6 +40,9 @@ int main( int argc, const char* argv[] )
    string assetPath = "C:/projects/Mber/ServerStack/X_testFiles_X";
 
    //---------------------------------------
+
+   parser.FindValue( "server.name", serverName );
+
    parser.FindValue( "listen.port", listenPort );
    parser.FindValue( "listen.address", listenAddress );
 
@@ -49,7 +53,7 @@ int main( int argc, const char* argv[] )
    parser.FindValue( "asset_dynamic.dictionary", assetDynamicDictionary );
    parser.FindValue( "asset.path", assetPath );
 
-   int listenPortAddress = 9800, listenS2SPort = 9802;
+   int listenPortAddress = 7300, listenS2SPort = 7302;
    try 
    {
       listenS2SPort = boost::lexical_cast<int>( listenForS2SPort );
@@ -62,8 +66,7 @@ int main( int argc, const char* argv[] )
 
 
    //----------------------------------------------------------------
-   
-   string serverName = "Asset Server";
+ 
    U64 serverUniqueHashValue = GenerateUniqueHash( serverName );
    U32 serverId = (U32)serverUniqueHashValue;
 

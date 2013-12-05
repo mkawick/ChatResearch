@@ -22,3 +22,5 @@ bool     InitializeSockets();
 void     ShutdownSockets();
 int		SetSocketToNonblock( int ListenSocket );
 void     DisableNagle( int socketId );
+void     GetLocalIpAddress( char* buffer, size_t buflen );
+

@@ -27,13 +27,17 @@ int main( int argc, const char* argv[] )
 {
    CommandLineParser    parser( argc, argv );
 
-   string listenPort = "9601";
+   string serverName = "Chat Server";
+   string listenPort = "7400";
    string listenAddress = "localhost";
 
-   string listenForS2SPort = "9602";
+   string listenForS2SPort = "7402";
    string listenForS2SAddress = "localHost";
 
    //---------------------------------------
+
+   parser.FindValue( "server.name", serverName );
+
    parser.FindValue( "listen.port", listenPort );
    parser.FindValue( "listen.address", listenAddress );
 
@@ -52,7 +56,7 @@ int main( int argc, const char* argv[] )
    parser.FindValue( "db.password", dbPassword );
    parser.FindValue( "db.schema", dbSchema );
 
-   int listenPortAddress = 9601, dbPortAddress = 3306, listenS2SPort = 9602;
+   int listenPortAddress = 7400, dbPortAddress = 3306, listenS2SPort = 7402;
    try 
    {
       listenS2SPort = boost::lexical_cast<int>( listenForS2SPort );
@@ -75,7 +79,6 @@ int main( int argc, const char* argv[] )
 
    //----------------------------------------------------------------
    
-   string serverName = "Chat Server";
    U64 serverUniqueHashValue = GenerateUniqueHash( serverName );
    U32 serverId = (U32)serverUniqueHashValue;
 

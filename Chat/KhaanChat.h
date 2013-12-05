@@ -23,7 +23,9 @@ public:
    void  SaveOffServerIdentification( const PacketServerIdentifier* packet );
 
    string      m_serverName;
+   string      m_serverAddress;
    U32         m_serverId;
+   U16         m_serverPort;
    bool        m_isGameServer;
    bool        m_isController;
    bool        m_isGateway;

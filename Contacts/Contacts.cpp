@@ -33,13 +33,18 @@ int main( int argc, const char* argv[] )
    // s2s.port=9802
 
    // listen.address=127.0.0.1 listen.port=9800 db.address=10.16.4.44 db.port=3306 db.username=admin db.password=Pz5328!@ db.schema=playdek s2s.port=9802
-   string listenPort = "9800";
+   string serverName = "Contact Server";
+   
+   string listenPort = "7500";
    string listenAddress = "localhost";
 
-   string listenForS2SPort = "9802";
+   string listenForS2SPort = "7502";
    string listenForS2SAddress = "localHost";
 
    //---------------------------------------
+   
+   parser.FindValue( "server.name", serverName );
+
    parser.FindValue( "listen.port", listenPort );
    parser.FindValue( "listen.address", listenAddress );
 
@@ -58,7 +63,7 @@ int main( int argc, const char* argv[] )
    parser.FindValue( "db.password", dbPassword );
    parser.FindValue( "db.schema", dbSchema );
 
-   int listenPortAddress = 9800, dbPortAddress = 3306, listenS2SPort = 9802;
+   int listenPortAddress = 7500, dbPortAddress = 3306, listenS2SPort = 7502;
    try 
    {
       listenS2SPort = boost::lexical_cast<int>( listenForS2SPort );
@@ -81,7 +86,6 @@ int main( int argc, const char* argv[] )
 
    //----------------------------------------------------------------
    
-   string serverName = "Contact Server";
    U64 serverUniqueHashValue = GenerateUniqueHash( serverName );
    U32 serverId = (U32)serverUniqueHashValue;
 

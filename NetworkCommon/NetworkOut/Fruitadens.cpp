@@ -71,10 +71,11 @@ Fruitadens::~Fruitadens()
 
 //-----------------------------------------------------------------------------
 
-void  Fruitadens :: NotifyEndpointOfIdentification( const string& serverName, U32 serverId, U8 gameProductId, bool isGameServer, bool isController, bool requiresWrapper, bool isGateway )
+//const string& serverName, const string& serverAddress, U32 serverId, U16 serverPort, bool isGameServer, bool isController, bool requiresWrapper )
+void  Fruitadens :: NotifyEndpointOfIdentification( const string& serverName, const string& serverAddress, U32 serverId, U16 serverPort, U8 gameProductId, bool isGameServer, bool isController, bool requiresWrapper, bool isGateway )
 {
    BasePacket* packet = NULL;
-   PackageForServerIdentification( serverName, serverId, gameProductId, isGameServer, isController, requiresWrapper, isGateway, &packet );
+   PackageForServerIdentification( serverName, serverAddress, serverId, serverPort, gameProductId, isGameServer, isController, requiresWrapper, isGateway, &packet );
    AddOutputChainData( packet, 0 );
 }
 
@@ -462,10 +463,10 @@ bool  Fruitadens::HandlePacketReceived( BasePacket* packetIn )
                m_connectedServerId = wrapper->serverId;
                m_connectedGameProductId = unwrappedPacket->gameProductId;
 
-               std::string ip_txt( inet_ntoa( m_ipAddress.sin_addr ) );
+               //std::string ip_txt( inet_ntoa( m_ipAddress.sin_addr ) );
                cout << endl;
                cout << "*********  Connected as client to " << unwrappedPacket->serverName << "  **************" << endl;
-               cout << "    " << ip_txt << " : " << static_cast<U32>( m_port ) << endl;
+               cout << "    " << unwrappedPacket->serverAddress << " : " << static_cast<U32>( unwrappedPacket->serverPort ) << endl;
                cout << "    type " << static_cast<U32>( m_connectedGameProductId ) << " -- server ID = " << m_connectedServerId << endl;
                cout << "    isGame = " << boolalpha << unwrappedPacket->isGameServer << ", isController : " << unwrappedPacket->isController << noboolalpha << endl;
                cout << "**************************************************" << endl;

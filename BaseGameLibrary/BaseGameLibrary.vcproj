@@ -155,7 +155,7 @@
 				>
 			</File>
 			<File
-				RelativePath=".\FruitadensServerToServer.cpp"
+				RelativePath="..\NetworkCommon\NetworkOut\FruitadensServerToServer.cpp"
 				>
 			</File>
 			<File
@@ -177,7 +177,7 @@
 				>
 			</File>
 			<File
-				RelativePath=".\FruitadensServerToServer.h"
+				RelativePath="..\NetworkCommon\NetworkOut\FruitadensServerToServer.h"
 				>
 			</File>
 			<File

@@ -78,12 +78,14 @@ public:
    bool     Run();
 
 private:
-   void     SetupS2SConnections();
+   void     SetupS2SConnections( const string& address, U16 port );
    
    GameCallbacks* m_callbacksObject;
 
    string         m_serverName;
    string         m_shortName;
+   string         m_serverAddress;
+   U16            m_serverPort;
    U32            m_serverId;
    U8             m_gameProductId;
    string         m_version;
@@ -95,7 +97,7 @@ private:
 
 
    // default connection values
-   U16            m_gatewayListenPort;
+   U16            m_listenForGatewayPort;
 
    U16            m_chatServerPort;
    string         m_chatServerAddress;

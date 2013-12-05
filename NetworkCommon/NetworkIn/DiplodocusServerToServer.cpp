@@ -13,7 +13,8 @@
 #include "../Packets/ServerToServerPacket.h"
 #include "DiplodocusServerToServer.h"
 
-DiplodocusServerToServer::DiplodocusServerToServer( const string& serverName, U32 serverId, U8 gameProductId ) : Diplodocus< KhaanServerToServer >( serverName, serverId, gameProductId, ServerType_Chat ), m_jobIdTracker( 32 ) // 32 is a non-zero value useful for test only
+DiplodocusServerToServer::DiplodocusServerToServer( const string& serverName, U32 serverId, U8 gameProductId ) : Diplodocus< KhaanServerToServer >( serverName, serverId, gameProductId, ServerType_Chat ), 
+                                    m_jobIdTracker( 32 ) // 32 is a non-zero value useful for test only
 {
    SetConnectionId( ServerToServerConnectionId );
 }
@@ -26,6 +27,12 @@ DiplodocusServerToServer::~DiplodocusServerToServer()
 
 void  DiplodocusServerToServer::InputConnected( IChainedInterface* khaan ) 
 {
+  /* if( packet->packetType == PacketType_ServerJobWrapper )
+   {
+      HandlePacketFromOtherServer( packet, connectionId );
+      return true;
+   }*/
+   // we can basically ignore this until we have more into like connection info
 }
 
 //---------------------------------------------------------------
@@ -47,9 +54,9 @@ bool   DiplodocusServerToServer::AddInputChainData( BasePacket* packet, U32 conn
       BasePacket* unwrappedPacket = wrapper->pPacket;
       U32         serverId = wrapper->serverId;
 
-      cout << "AddInputChainData start lock" << endl;
+      //cout << "AddInputChainData start lock" << endl;
       Threading::MutexLock locker( m_mutex );
-      cout << "AddInputChainData finish lock" << endl;
+      //cout << "AddInputChainData finish lock" << endl;
 
       bool  found = false;
       KhaanServerToServer* khaan = NULL;
@@ -91,9 +98,24 @@ bool   DiplodocusServerToServer::AddInputChainData( BasePacket* packet, U32 conn
 void  DiplodocusServerToServer::ServerWasIdentified( ChainedInterface* khaan )
 {
    BasePacket* packet = NULL;
-   PackageForServerIdentification( m_serverName, m_serverId, m_gameProductId, m_isGame, m_isControllerApp, true, m_isGateway, &packet );
+   PackageForServerIdentification( m_serverName, m_localIpAddress, m_serverId, m_listeningPort, m_gameProductId, m_isGame, m_isControllerApp, true, m_isGateway, &packet );
    khaan->AddOutputChainData( packet, 0 );
    m_serversNeedingUpdate.push_back( static_cast<InputChainType*>( khaan )->GetServerId() );
+
+   // bubble this identifying info up to the next layer.
+
+   KhaanServerToServer* ks2s = static_cast< KhaanServerToServer*> ( khaan );
+   PacketServerIdentifier* idPacket = new PacketServerIdentifier;
+
+   idPacket->serverName =     ks2s->GetServerName();
+   idPacket->serverAddress =  ks2s->GetServerAddress();
+   idPacket->serverId =       ks2s->GetServerId();
+   idPacket->serverPort =     ks2s->GetServerPort();
+   idPacket->gameInstanceId =  0;
+   idPacket->isGameServer =   ks2s->IsGameServer();
+   idPacket->isController =   ks2s->IsController();
+   idPacket->isGateway   =    ks2s->IsGateway();
+   CreateJob( ks2s, idPacket );
 }
 
 //---------------------------------------------------------------

@@ -33,7 +33,7 @@ public:
    ~Fruitadens();
 
    bool        AddOutputChainData( BasePacket* packet, U32 filingData );// standard code, no need to modify
-   void        NotifyEndpointOfIdentification( const std::string& serverName, U32 serverId, U8 gameProductId, bool isGameServer, bool isController, bool requiresWrapper, bool isGateway );
+   void        NotifyEndpointOfIdentification( const string& serverName, const string& serverAddress, U32 serverId, U16 serverPort, U8 gameProductId, bool isGameServer, bool isController, bool requiresWrapper, bool isGateway );
 
    void        SetConnectedServerType( ServerType type ) { m_serverType = type; }
    ServerType  GetConnectedServerType() const { return m_serverType; }

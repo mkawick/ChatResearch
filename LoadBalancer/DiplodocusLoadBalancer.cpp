@@ -6,6 +6,8 @@
 
 DiplodocusLoadBalancer::DiplodocusLoadBalancer( const string& serverName, U32 serverId ): Diplodocus< KhaanConnector >( serverName, serverId, 0,  ServerType_LoadBalancer ), m_connectionIdTracker( 100 )
 {
+   time( &m_timestampStatsPrint );
+   m_timestampSelectPreferredGateway = m_timestampStatsPrint;
 }
 
 DiplodocusLoadBalancer::~DiplodocusLoadBalancer()
@@ -51,6 +53,117 @@ U32      DiplodocusLoadBalancer::GetNextConnectionId()
 
 //-----------------------------------------------------------------------------------------
 
+int   DiplodocusLoadBalancer::ProcessInputFunction()
+{
+   // m_inputChainListMutex.lock   // see CChainedThread<Type>::CallbackFunction()
+   CommonUpdate();
+
+   OutputCurrentStats();
+
+   SelectPreferredGateways();
+
+   return 1;
+}
+
+//-----------------------------------------------------------------------------------------
+
+void     DiplodocusLoadBalancer::OutputCurrentStats()
+{
+   time_t currentTime;
+   time( &currentTime );
+
+   if( difftime( currentTime, m_timestampStatsPrint ) >= timeoutStatsPrint ) 
+   {
+      m_timestampStatsPrint = currentTime;
+
+      cout << "********** current stats ************" << endl;
+      list< GatewayInfo >::iterator it = m_gatewayRoutes.begin();
+      int numConnected = 0;
+      while( it != m_gatewayRoutes.end() )
+      {
+         if( it->isConnected )
+         {
+            numConnected++;
+         }
+         it++;
+      }
+
+      cout << "Num connected servers = " << numConnected << endl;
+      cout << "----------------------------" << endl;
+      it = m_gatewayRoutes.begin();
+      while( it != m_gatewayRoutes.end() )
+      {
+         GatewayInfo& gi = *it++;
+         if( gi.isConnected )
+         {
+            cout << " addr:       " << gi.address << endl;
+            cout << " port:       " << gi.port << endl;
+            cout << " server id:  " << gi.serverId << endl;
+            cout << " load:       " << gi.currentLoad << endl;
+            cout << " max load:   " << gi.maxLoad << endl;
+            cout << " tolerance:  " << gi.loadTolerance << endl;
+            if( it != m_gatewayRoutes.end() )// separator
+               cout << "........................" << endl;
+         }
+      }
+      cout << "----------------------------" << endl;
+   }
+}
+
+//-----------------------------------------------------------------------------------------
+
+bool gatewayCompare( GatewayInfo* i, GatewayInfo* j ) 
+{ 
+   return ( i->currentLoad < j->currentLoad ); 
+}
+
+//-----------------------------------------------------------------------------------------
+
+void     DiplodocusLoadBalancer::SelectPreferredGateways()
+{
+   time_t currentTime;
+   time( &currentTime );
+
+   if( difftime( currentTime, m_timestampSelectPreferredGateway ) >= timeoutSelectPreferredGateway ) 
+   {
+      m_timestampSelectPreferredGateway = currentTime;
+
+      if( m_gatewayRoutes.size() < 1 )
+      {
+         return;
+      }
+
+      // gateways do not come and go, so threaded protections are not needed, plus this is invoked from ProcessInputFunction  which has its own
+      vector< GatewayInfo* > sortedRoutes;
+      list< GatewayInfo >::iterator it = m_gatewayRoutes.begin();
+      while( it != m_gatewayRoutes.end() )
+      {
+         GatewayInfo& gi = *it++;
+         if( gi.isConnected == true && gi.type == GatewayInfo::Type_Normal ) // clear all of these flags
+         {
+            gi.isPreferred = false;
+            sortedRoutes.push_back( &gi );
+         }
+      }
+
+      std::sort( sortedRoutes.begin(), sortedRoutes.end(), gatewayCompare );
+
+      vector< GatewayInfo* >::iterator itSorted = sortedRoutes.begin();
+      while( itSorted != sortedRoutes.end() )
+      {
+         GatewayInfo* gi = *itSorted++;
+         if( gi->currentLoad < gi->maxLoad + gi->loadTolerance )// this could be improved a lot, but this will suffice for our purposes.
+         {
+            gi->isPreferred = true;
+            break;
+         }
+      }
+   }
+}
+
+
+//-----------------------------------------------------------------------------------------
+
 void     DiplodocusLoadBalancer::InputConnected( IChainedInterface * chainedInput )
 {
    KhaanConnector* khaan = static_cast< KhaanConnector* >( chainedInput );
@@ -65,57 +178,9 @@ void     DiplodocusLoadBalancer::InputConnected( IChainedInterface * chainedInpu
    khaan->SetConnectionId( newId );
 
    khaan->SetGateway( this );
-   //khaan->SendThroughLibEvent( true );
 
    Threading::MutexLock locker( m_outputChainListMutex );
    m_connectionsNeedingUpdate.push_back( newId );
-}
-//---------------------------------------------------------------
-
-bool  DiplodocusLoadBalancer::HandlePacketFromOtherServer( BasePacket* packet, U32 connectionId )// not thread safe
-{
-   if( packet->packetType != PacketType_ServerJobWrapper )
-   {
-      return false;
-   }
-
-   PacketServerJobWrapper* wrapper = static_cast< PacketServerJobWrapper* >( packet );
-   BasePacket* unwrappedPacket = wrapper->pPacket;
-   U32  serverIdLookup = wrapper->serverId;
-
-   bool success = false;
-
- /*  if( unwrappedPacket->packetType == PacketType_Login )
-   {
-      switch( unwrappedPacket->packetSubType )
-      {
-      case PacketLogin::LoginType_PrepareForUserLogin:
-         ConnectUser( static_cast< PacketPrepareForUserLogin* >( unwrappedPacket ) );
-         return true;
-
-      case PacketLogin::LoginType_PrepareForUserLogout:
-         DisconnectUser( static_cast< PacketPrepareForUserLogout* >( unwrappedPacket ) );
-         return true;
-
-      case PacketLogin::LoginType_ListOfProductsS2S:
-         StoreUserProductsOwned( static_cast< PacketListOfUserProductsS2S* >( unwrappedPacket ) );
-         return true;
-      }
-   }
-   else if( unwrappedPacket->packetType == PacketType_Tournament )
-   {
-      switch( unwrappedPacket->packetSubType )
-      {
-      case PacketTournament::TournamentType_PurchaseTournamentEntry:
-         {
-            return HandlePurchaseRequest( static_cast< PacketTournament_PurchaseTournamentEntry* >( unwrappedPacket ), serverIdLookup );
-         }
-         break;
-      }
-      return false;
-   }*/
-
-   return false;
 }
 
 //-----------------------------------------------------------------------------------------
@@ -130,15 +195,52 @@ void     DiplodocusLoadBalancer::InputRemovalInProgress( IChainedInterface * cha
    int connectionId = khaan->GetConnectionId();
    int socketId = khaan->GetSocketId();
 
- /*  PacketLogout* logout = new PacketLogout();// must be done before we clear the lists of ids
-   logout->wasDisconnectedByError = true;
-   //logout->serverType = ServerType_Chat;
-
-   AddInputChainData( logout, connectionId );*/
-
    m_socketToConnectionMap.erase( socketId );
    m_connectionToSocketMap.erase( connectionId );
    m_connectionMap.erase( connectionId );
+}
+
+//---------------------------------------------------------------
+
+bool  DiplodocusLoadBalancer::HandlePacketFromOtherServer( BasePacket* packet, U32 connectionId )// not thread safe
+{
+   if( packet->packetType != PacketType_ServerJobWrapper )
+   {
+      return false;
+   }
+
+   PacketFactory factory;
+   PacketServerJobWrapper* wrapper = static_cast< PacketServerJobWrapper* >( packet );
+   BasePacket* unwrappedPacket = wrapper->pPacket;
+   U32  serverIdLookup = wrapper->serverId;
+
+   bool success = false;
+
+   if(  unwrappedPacket->packetType == PacketType_ServerInformation )
+   {
+      switch( unwrappedPacket->packetSubType )
+      {
+      case  PacketServerConnectionInfo::PacketServerIdentifier_TypicalInfo:
+         NewServerConnection( static_cast< const PacketServerIdentifier* >( unwrappedPacket ) );
+         success = true;
+         break;
+      case  PacketServerConnectionInfo::PacketServerIdentifier_Disconnect:
+         ServerDisconnected( static_cast< const PacketServerDisconnect* >( unwrappedPacket ) );
+         success = true;
+         break;
+      case  PacketServerConnectionInfo::PacketServerIdentifier_ConnectionInfo:
+         ServerInfoUpdate( static_cast< const PacketServerConnectionInfo* >( unwrappedPacket ) );
+         success = true;
+         break;
+      }
+   }
+
+   if( success == true )
+   {
+      factory.CleanupPacket( packet );
+   }
+
+   return success;
 }
 
 
@@ -159,6 +261,11 @@ bool     DiplodocusLoadBalancer::AddInputChainData( BasePacket* packet, U32 conn
          }
       }
    }
+   if( packet->packetType == PacketType_ServerJobWrapper )
+   {
+      HandlePacketFromOtherServer( packet, connectionId );
+      return true;
+   }
    return false;
 }
 
@@ -171,17 +278,32 @@ void     DiplodocusLoadBalancer::HandleRerouteRequest( U32 connectionId )
    {
       PacketRerouteRequestResponse* response = new PacketRerouteRequestResponse;
       list< GatewayInfo >::iterator it = m_gatewayRoutes.begin();
+      bool  hasFoundViableGateway = false;
+
       while( it != m_gatewayRoutes.end() )
       {
-         PacketRerouteRequestResponse::Address address;
-         address.address = it->address;
-         address.port = it->port;
-         address.name = "gateway";
-         address.whichLocationId = PacketRerouteRequestResponse::LocationId_Gateway; // these will need to vary
+         if( it->isConnected == true )
+         {
+            PacketRerouteRequestResponse::Address address;
+            address.address = it->address;
+            address.port = it->port;
+            
+            if( it->type == GatewayInfo::Type_Normal )
+            {
+               address.name = "normal gateway";
+               address.whichLocationId = PacketRerouteRequestResponse::LocationId_Gateway;
+            }
+            else
+            {
+               address.name = "asset gateway";
+               address.whichLocationId = PacketRerouteRequestResponse::LocationId_Asset; 
+            }
 
-         response->locations.push_back( address );
-         
+            response->locations.push_back( address );
+         }
+         it++;
       }
+
       KhaanConnector* khaan = connIt->second;
       HandlePacketToKhaan( khaan, response );// all deletion and such is handled lower
    }
@@ -205,5 +327,112 @@ void     DiplodocusLoadBalancer::HandlePacketToKhaan( KhaanConnector* khaan, Bas
    }
    m_connectionsNeedingUpdate.push_back( connectionId );
 }
+
+
+//-----------------------------------------------------------------------------------------
+
+int   DiplodocusLoadBalancer::ProcessOutputFunction()
+{
+   // mutex is locked already
+
+   // lookup packet info and pass it back to the proper socket if we can find it.
+   if( m_connectionsNeedingUpdate.size() )
+   {
+      //PrintText( "ProcessOutputFunction" );
+
+      while( m_connectionsNeedingUpdate.size() > 0 )// this has the m_outputChainListMutex protection
+      {
+         int connectionId = m_connectionsNeedingUpdate.front();
+         m_connectionsNeedingUpdate.pop_front();
+         ConnectionMapIterator connIt = m_connectionMap.find( connectionId );
+         if( connIt != m_connectionMap.end() )
+         {
+            KhaanConnector* khaan = connIt->second;
+            bool didFinish = khaan->Update();
+            if( didFinish == false )
+            {
+               //moreTimeNeededQueue.push_back( connectionId );
+            }
+         }
+      }
+   }
+   return 1;
+}
+
+///////////////////////////////////////////////////////////////////
+
+list< GatewayInfo >::iterator 
+DiplodocusLoadBalancer::FindGateway( const string& ipAddress, U16 port, U32 serverId )
+{
+   list< GatewayInfo >::iterator it = m_gatewayRoutes.begin();
+   while( it != m_gatewayRoutes.end() )
+   {
+      if( it->address == ipAddress )
+      {
+         if( serverId == 0 && port == 0 )
+         {
+            assert( 0 );
+         }
+         else if( port && it->port == port )
+         {
+            return it;
+         }
+         else if( serverId && it->serverId == serverId )
+         {
+            return it;
+         }
+      }
+      it++;
+   }
+
+   return m_gatewayRoutes.end();
+}
+
+///////////////////////////////////////////////////////////////////
+
+void     DiplodocusLoadBalancer::NewServerConnection( const PacketServerIdentifier* gatewayInfo )
+{
+   list< GatewayInfo >::iterator it = FindGateway( gatewayInfo->serverAddress, gatewayInfo->serverPort, gatewayInfo->serverId );// we may not have the serverId already stored
+   if( it != m_gatewayRoutes.end() )
+   {
+      it->serverId = gatewayInfo->serverId;
+      it->port = gatewayInfo->serverPort;
+      it->isVerified = true;
+      it->isConnected = true;
+      return;
+   }
+
+   // clearly we don't have this gateway in our list. let's add it. We really don't need to remove these tho.
+   AddGatewayAddress( gatewayInfo->serverAddress, gatewayInfo->serverPort );
+   it = FindGateway( gatewayInfo->serverAddress, gatewayInfo->serverPort );
+   it->serverId = gatewayInfo->serverId;
+   it->port = gatewayInfo->serverPort;
+   it->isVerified = true;
+   it->isConnected = true;
+}
+
+///////////////////////////////////////////////////////////////////
+
+void     DiplodocusLoadBalancer::ServerDisconnected( const PacketServerDisconnect* gatewayInfo )
+{
+   list< GatewayInfo >::iterator it = FindGateway( gatewayInfo->serverAddress, 0, gatewayInfo->serverId );
+   if( it != m_gatewayRoutes.end() )
+   {
+      it->isConnected = false;
+   }
+}
+
+///////////////////////////////////////////////////////////////////
+
+void     DiplodocusLoadBalancer::ServerInfoUpdate( const PacketServerConnectionInfo* gatewayInfo )
+{
+   list< GatewayInfo >::iterator it = FindGateway( gatewayInfo->serverAddress, 0, gatewayInfo->serverId );
+   if( it != m_gatewayRoutes.end() )
+   {
+      it->currentLoad = gatewayInfo->currentLoad;
+   }
+}
+
+///////////////////////////////////////////////////////////////////
 
 ///////////////////////////////////////////////////////////////////

@@ -22,6 +22,7 @@
 #include "KhaanConnector.h"
 #include "DiplodocusGateway.h"
 #include "FruitadensGateway.h"
+#include "../NetworkCommon/NetworkOut/FruitadensServerToServer.h"
 
 using namespace std;
 
@@ -33,6 +34,7 @@ using namespace std;
 ////////////////////////////////////////////////////////////////////////
 
 FruitadensGateway* PrepFruitadens( const string& ipaddress, U16 port, U32 serverId, DiplodocusGateway* loginServer, const string& name );
+void  SetupLoadBalancerConnection( DiplodocusGateway* gateway, string address, U16 port );
 
 ////////////////////////////////////////////////////////////////////////
 
@@ -40,27 +42,32 @@ int main( int argc, const char* argv[] )
 {
    CommandLineParser    parser( argc, argv );
 
-   string listenPortString = "9600";
+   string serverName = "Gateway server";
+
+   string loadBalancerPortString = "9502";
+   string loadBalancerAddressString = "localhost";
+
+   string listenPortString = "9500";
    string listenAddressString = "localhost";
 
-   string chatPortString = "9601";
+   string chatPortString = "7400";
    string chatIpAddressString = "localhost";
 
-   string game1PortString = "23550";
+   string game1PortString = "21000";
    string game1Address = "localhost";
-   string game2PortString = "23402";
+   string game2PortString = "21100";
    string game2Address = "localhost";
 
-   string loginPortString = "3072";
+   string loginPortString = "7600";
    string loginIpAddressString = "localhost";
 
-   string assetDeliveryPortString = "9700";
+   string assetDeliveryPortString = "7300";
    string assetDeliveryIpAddressString = "localhost";
 
-   string contactPortString = "9800";
+   string contactPortString = "7500";
    string contactIpAddressString = "localhost";
 
-   string purchasePortString = "9900";
+   string purchasePortString = "7700";
    string purchaseIpAddressString = "localhost";
 
    string printPacketTypes = "false";
@@ -70,6 +77,11 @@ int main( int argc, const char* argv[] )
    
 
    //--------------------------------------------------------------
+
+   parser.FindValue( "server.name", serverName );
+
+   parser.FindValue( "balancer.port", loadBalancerPortString );
+   parser.FindValue( "balancer.address", loadBalancerAddressString );
 
    parser.FindValue( "listen.port", listenPortString );
    parser.FindValue( "listen.address", listenAddressString );
@@ -99,7 +111,16 @@ int main( int argc, const char* argv[] )
    parser.FindValue( "reroute.port", reroutePortString );
    parser.FindValue( "reroute.address", rerouteAddressString );
 
-   int listenPort = 9600, chatPort = 9601, game1Port = 23550, game2Port = 23402, loginPort = 3072, assetPort = 9700, contactPort = 9800, purchasePort = 9900;
+   int   listenPort = 9600, 
+         chatPort = 7400, 
+         game1Port = 21000, 
+         game2Port = 21100, 
+         loginPort = 7600, 
+         assetPort = 7300, 
+         contactPort = 7500, 
+         purchasePort = 7700,
+         balancerPort = 9502;
+
    U16 reroutePort = 0;
    bool printPackets = false;
    try 
@@ -113,6 +134,7 @@ int main( int argc, const char* argv[] )
        contactPort = boost::lexical_cast<int>( contactPortString );
        purchasePort = boost::lexical_cast<int>( purchasePortString );
        reroutePort = boost::lexical_cast<U16>( reroutePortString );
+       balancerPort = boost::lexical_cast<U16>( loadBalancerPortString );
    } 
    catch( boost::bad_lexical_cast const& ) 
    {
@@ -126,7 +148,6 @@ int main( int argc, const char* argv[] )
    }
    //--------------------------------------------------------------
 
-   string serverName = "Gateway server";
    U64 serverUniqueHashValue = GenerateUniqueHash( serverName );
    U32 serverId = (U32)serverUniqueHashValue;
 
@@ -137,6 +158,7 @@ int main( int argc, const char* argv[] )
 
    DiplodocusGateway* gateway = new DiplodocusGateway( serverName, serverId );
    gateway->SetAsGateway( true );
+   gateway->SetAsGame( false );
    gateway->PrintPacketTypes( printPackets );
 
    FruitadensGateway chatOut( "fruity to chat" );
@@ -176,8 +198,8 @@ int main( int argc, const char* argv[] )
    //FruitadensGateway* game4 = PrepFruitadens( "localhost", 23550, serverId, gateway );// summoner wars
 
    U8 gameProductId = 0;
-   game1->NotifyEndpointOfIdentification( serverName, serverId, gameProductId, false, false, true, true  );
-   mfm->NotifyEndpointOfIdentification( serverName, serverId, gameProductId, false, false, true, true  );
+   game1->NotifyEndpointOfIdentification( serverName, gateway->GetIpAddress(), serverId, gateway->GetPort(), gameProductId, false, false, true, true  );
+   mfm->NotifyEndpointOfIdentification( serverName, gateway->GetIpAddress(), serverId, gateway->GetPort(), gameProductId, false, false, true, true  );
 #endif // _TRACK_MEMORY_LEAK_
 
    
@@ -206,6 +228,8 @@ int main( int argc, const char* argv[] )
    purchaseServer.Resume();
    
    cout << "---------------------------- finished connecting ----------------------------" << endl;
+
+   SetupLoadBalancerConnection( gateway, loadBalancerAddressString, balancerPort );
 
    gateway->Init();
 
@@ -240,6 +264,40 @@ FruitadensGateway* PrepFruitadens( const string& ipaddress, U16 port, U32 server
    gameServerOut->Resume();
 
    return gameServerOut;
+}
+
+////////////////////////////////////////////////////////////////////////
+
+void  SetupLoadBalancerConnection( DiplodocusGateway* gateway, string address, U16 port )
+{
+   string nameOfServerConnection = gateway->GetServerName();
+   nameOfServerConnection += " to LoadBalancer";
+
+   FruitadensServerToServer* serverComm = new FruitadensServerToServer( nameOfServerConnection.c_str() );
+   serverComm->SetConnectedServerType( ServerType_LoadBalancer );
+   serverComm->SetServerId( gateway->GetServerId() );
+   //serverComm->SetGameProductId( GetGameProductId() );
+
+   serverComm->Connect( address.c_str(), port );
+   serverComm->Resume();
+   serverComm->NotifyEndpointOfIdentification( 
+                                       gateway->GetServerName(), 
+                                       gateway->GetIpAddress(), 
+                                       gateway->GetServerId(), 
+                                       gateway->GetPort(), 
+                                       0, 
+                                       gateway->IsGameServer(), 
+                                       false, 
+                                       false, 
+                                       gateway->IsGateway() );
+
+  /* vector< PacketType >::iterator packetTypeIt = setup.packetType.begin();
+   while( packetTypeIt != setup.packetType.end() )
+   {
+      serverComm->AddToOutwardFilters( *packetTypeIt++);
+   }*/
+
+   gateway->AddOutputChain( serverComm );
 }
 
 ////////////////////////////////////////////////////////////////////////

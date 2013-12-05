@@ -18,4 +18,6 @@ taskkill /f /im TournamentServer.exe
 
 taskkill /f /im GatewayServer.exe
 
+taskkill /f /im LoadBalancer.exe
+
 REM exit

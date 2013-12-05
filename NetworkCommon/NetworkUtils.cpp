@@ -3,13 +3,15 @@
 #include <iostream>
 
 #include <memory.h>
+#include <assert.h>
 #include <stdio.h>
 
 #include "Platform.h"
 
 #if PLATFORM == PLATFORM_WINDOWS
 #pragma comment( lib, "ws2_32.lib" )
-#pragma comment(lib, "libevent.lib")
+#pragma comment( lib, "libevent.lib")
+#pragma warning( disable : 4996 )
 #endif
 
 
@@ -60,7 +62,7 @@ int		SetSocketToNonblock( int ListenSocket )
 
 void	   SetupListenAddress( struct sockaddr_in& ListenAddress, U16 ServerPort )
 {
-   memset(&ListenAddress, 0, sizeof(ListenAddress));
+   memset( &ListenAddress, 0, sizeof(ListenAddress) );
    ListenAddress.sin_family = AF_INET;
    ListenAddress.sin_addr.s_addr = INADDR_ANY;
    ListenAddress.sin_port = htons( ServerPort );
@@ -97,4 +99,20 @@ void  DisableNagle( int socketId )
     error = setsockopt(socket, SOL_SOCKET, SO_NOSIGPIPE, &nagleOff, sizeof(nagleOff));
     ASSERT(error == 0);
 #endif*/
+}
+
+void GetLocalIpAddress( char* buffer, size_t buflen ) 
+{
+   assert( buflen >= 16 );
+   struct hostent *hostLocal;
+
+   const int MAXHOSTNAMELEN = 256;
+   char localHostname[ MAXHOSTNAMELEN ];
+   gethostname( localHostname, MAXHOSTNAMELEN );
+   if ( ( hostLocal = gethostbyname( localHostname ) ) == NULL ) 
+   {  // get the host info
+      cout << "gethostbyname error" << endl;
+   }
+   struct in_addr **localAddrList = (struct in_addr **)hostLocal->h_addr_list;   
+   strncpy( buffer, (char *)inet_ntoa(*localAddrList[0]), buflen );
 }

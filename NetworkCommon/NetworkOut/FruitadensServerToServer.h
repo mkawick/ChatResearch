@@ -1,7 +1,7 @@
 #pragma once
 
-#include "../NetworkCommon/DataTypes.h"
-#include "../NetworkCommon/NetworkOut/Fruitadens.h"
+#include "../DataTypes.h"
+#include "../NetworkOut/Fruitadens.h"
 
 class BasePacket;
 

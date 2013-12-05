@@ -74,13 +74,17 @@ public:
    //------------------------------------------------------------
    void           SetAsControllerApp( bool isController = true ) { m_isControllerApp = isController ; }
    void           SetAsGame( bool isGame = true ) { m_isGame = isGame; }
+   bool           IsGameServer() const { return m_isGame; }
    void           SetAsGateway( bool isGateway = true ) { m_isGateway = isGateway; }
+   bool           IsGateway() const { return m_isGateway; }
 
-   string&        GetServerName() const { return m_serverName; }
+   const string&  GetServerName() const { return m_serverName; }
    U32            GetServerId() const { return m_serverId; }
    U8             GetGameProductId() const { return m_gameProductId; }
+   const string&  GetIpAddress() const { return m_localIpAddress; }
 
    void           SetupListening( int port );
+   U16            GetPort() const { return m_listeningPort; }
    bool           RequestUpdate( const string& connectionUuid ); // todo, update this
    void           SetSendHelloPacketOnLogin( bool value ) { m_sendHelloPacket = value; }
 
@@ -102,6 +106,7 @@ public:
    //---------------------------------------------
 
    virtual void   ServerWasIdentified( ChainType* khaan ){}
+
    void           AddGatewayConnection( U32 id ) { m_connectionIdGateway = id; }
    virtual bool   HandleCommandFromGateway( BasePacket* packet, U32 connectionId ) { return false; }
 
@@ -137,6 +142,7 @@ protected:
    bool                    m_isGame;
    //bool                    m_updateGatewayConnections;
    bool                    m_sendHelloPacket;
+   string                  m_localIpAddress;
    int                     m_listeningPort;
    evconnlistener*         m_listener;// libevent object
    U32                     m_serverId; // just used for id
@@ -156,6 +162,7 @@ protected:
 
    int            ProcessInputFunction();
    int            ProcessOutputFunction();
+   int            CommonUpdate();
 
    void           SendServerIdentification();
 

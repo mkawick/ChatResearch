@@ -30,8 +30,9 @@ int main(int argc, const char* argv[])
 {
    CommandLineParser    parser( argc, argv );
 
-   string listenPort = "23995";
-   string listenAddress = "localhost";
+   string serverName = "MFM Game Server";
+   string listenPortString = "23995";
+   string listenAddressString = "localhost";
 
    string chatServerPortForGames = "9602";
    string chatServerAddressForGames = "localhost";
@@ -40,8 +41,11 @@ int main(int argc, const char* argv[])
    string listenForS2SAddress = "localHost";
 
    //---------------------------------------
-   parser.FindValue( "listen.port", listenPort );
-   parser.FindValue( "listen.address", listenAddress );
+
+   parser.FindValue( "server.name", serverName );
+
+   parser.FindValue( "listen.port", listenPortString );
+   parser.FindValue( "listen.address", listenAddressString );
 
    parser.FindValue( "s2s.port", listenForS2SPort );
    parser.FindValue( "s2s.address", listenForS2SAddress );
@@ -58,14 +62,14 @@ int main(int argc, const char* argv[])
    parser.FindValue( "db.password", dbPassword );
    parser.FindValue( "db.schema", dbSchema );
 
-   int listenPortAddress = 23995, 
+   int listenPort = 23995, 
       dbPortAddress = 16384, 
       chatServerPort = 9602, 
       listenS2SPort = 23996;
    try 
    {
       listenS2SPort = boost::lexical_cast<int>( listenForS2SPort );
-      listenPortAddress = boost::lexical_cast<int>( listenPort );
+      listenPort = boost::lexical_cast<int>( listenPortString );
       dbPortAddress = boost::lexical_cast<int>( dbPort );
       chatServerPort = boost::lexical_cast<int>( chatServerPortForGames );
    } 
@@ -84,8 +88,7 @@ int main(int argc, const char* argv[])
    }
 
    //---------------------------------------------------------------------
-   
-   string serverName = "MFM Game Server";
+
    U64 serverUniqueHashValue = GenerateUniqueHash( serverName );
    U32 serverId = (U32)serverUniqueHashValue;
 
@@ -99,7 +102,7 @@ int main(int argc, const char* argv[])
    DiplodocusGame*    middleware = new DiplodocusGame( serverName, serverId, GameProductId_MONKEYS_FROM_MARS );
    middleware->AddOutputChain( delta );
 
-   middleware->SetupListening( listenPortAddress );
+   middleware->SetupListening( listenPort );
    middleware->SetAsGame();
 
    FruitadensServerToServer chatControl( "fruity to chat" );
@@ -108,7 +111,7 @@ int main(int argc, const char* argv[])
    
    chatControl.Connect( chatServerAddressForGames.c_str(), chatServerPort );
    chatControl.Resume();
-   chatControl.NotifyEndpointOfIdentification( serverName, static_cast< U32 >( serverUniqueHashValue ), GameProductId_SUMMONWAR, true, false, true, false );
+   chatControl.NotifyEndpointOfIdentification( serverName, listenAddressString, static_cast< U32 >( serverUniqueHashValue ), listenPort, GameProductId_SUMMONWAR, true, false, true, false );
 
    DiplodocusServerToServer* s2s = new DiplodocusServerToServer( serverName, serverId );
    s2s->SetAsGame();

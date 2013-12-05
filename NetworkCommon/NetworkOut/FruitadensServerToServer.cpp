@@ -1,4 +1,4 @@
-#include "../NetworkCommon/Platform.h"
+#include "../Platform.h"
 
 #if PLATFORM == PLATFORM_WINDOWS
 #include <winsock2.h>
@@ -12,11 +12,11 @@
 #endif
 
 #include "FruitadensServerToServer.h"
-#include "../NetworkCommon/Packets/BasePacket.h"
-#include "../NetworkCommon/Packets/ChatPacket.h"
-#include "../NetworkCommon/Packets/GamePacket.h"
-#include "../NetworkCommon/Packets/ServerToServerPacket.h"
-#include "../NetworkCommon/Packets/PacketFactory.h"
+#include "../Packets/BasePacket.h"
+#include "../Packets/ChatPacket.h"
+#include "../Packets/GamePacket.h"
+#include "../Packets/ServerToServerPacket.h"
+#include "../Packets/PacketFactory.h"
 
 //-----------------------------------------------------------------------------------------
 

@@ -68,8 +68,8 @@ bool	KhaanConnector::OnDataReceived( unsigned char* data, int length )
          ( testPacket.packetSubType == PacketLogin::LoginType_Login || testPacket.packetSubType == PacketLogin::LoginType_CreateAccount ) )
          allow = true;
 
-      if( testPacket.packetType == PacketType_Base && testPacket.packetSubType == BasePacket::BasePacket_RerouteRequest )
-         allow = true;
+     /* if( testPacket.packetType == PacketType_Base && testPacket.packetSubType == BasePacket::BasePacket_RerouteRequest )
+         allow = true;*/
 
       if( allow == false )
       {
@@ -132,10 +132,10 @@ bool  KhaanConnector::IsWhiteListedIn( const BasePacket* packet ) const
    {
    case  PacketType_Base:
       {
-         if( packet->packetSubType == BasePacket::BasePacket_RerouteRequest )
+        /* if( packet->packetSubType == BasePacket::BasePacket_RerouteRequest )
          {
             return true;
-         }
+         }*/
          return false;
       }
    case PacketType_Login:

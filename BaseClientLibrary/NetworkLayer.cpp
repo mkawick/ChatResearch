@@ -109,9 +109,9 @@ NetworkLayer::~NetworkLayer()
 //------------------------------------------------------------
 //------------------------------------------------------------
 
-void  NetworkLayer::CheckForReroutes( bool checkForRerouts )
+void  NetworkLayer::CheckForReroutes( bool checkForReroutes )
 {
-   m_checkForReroute = checkForRerouts;
+   m_checkForReroute = checkForReroutes;
 }
 
 void  NetworkLayer::Init( const char* serverDNS )

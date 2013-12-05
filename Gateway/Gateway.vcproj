@@ -310,6 +310,14 @@
 					RelativePath="..\NetworkCommon\NetworkOut\Fruitadens.h"
 					>
 				</File>
+				<File
+					RelativePath="..\NetworkCommon\NetworkOut\FruitadensServerToServer.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\NetworkCommon\NetworkOut\FruitadensServerToServer.h"
+					>
+				</File>
 			</Filter>
 			<Filter
 				Name="Utils"

@@ -50,7 +50,7 @@ DiplodocusLogin:: DiplodocusLogin( const string& serverName, U32 serverId )  :
 void     DiplodocusLogin:: ServerWasIdentified( ChainedInterface* khaan )
 {
    BasePacket* packet = NULL;
-   PackageForServerIdentification( m_serverName, m_serverId, m_gameProductId, m_isGame, m_isControllerApp, true, m_isGateway, &packet );
+   PackageForServerIdentification( m_serverName, m_localIpAddress, m_serverId, m_listeningPort, m_gameProductId, m_isGame, m_isControllerApp, true, m_isGateway, &packet );
    khaan->AddOutputChainData( packet, 0 );
    m_clientsNeedingUpdate.push_back( khaan->GetChainedId() );
 }
@@ -1691,7 +1691,7 @@ void     DiplodocusLogin:: LoadInitializationData()
 
 int      DiplodocusLogin:: CallbackFunction()
 {
-   SendServerIdentification();
+   CommonUpdate();
 
    if( m_isInitializing == false )
    {

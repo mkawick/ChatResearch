@@ -46,12 +46,17 @@ int main( int argc, const char* argv[] )
 {
    CommandLineParser    parser( argc, argv );
 
+   string serverName = "LoadBalancer";
    string listenPortString = "9500";
    string listenAddressString = "localhost";
-
-   string listenForS2SPort = "9902";
+   string listenForS2SPort = "9502";
    string listenForS2SAddress = "localHost";
 
+   //---------------------------------------
+   
+   parser.FindValue( "server.name", serverName );
+   parser.FindValue( "listen.port", listenPortString );
+   parser.FindValue( "listen.address", listenAddressString );
    parser.FindValue( "s2s.port", listenForS2SPort );
    parser.FindValue( "s2s.address", listenForS2SAddress );
 
@@ -64,25 +69,20 @@ int main( int argc, const char* argv[] )
       while( it != params.end() )
       {
          string str = *it++;
-         string key, value;
-         parser.SeparateStringIntoKeyValue( str, key, value );
-         cout << boost::format("%15s ={ %15s - %-10s }")  % str % key % value << endl;
+         vector< string > values;
+         parser.SeparateStringIntoValues( str, values, 3 );
+         cout << boost::format("%15s ={ %15s - %-10s }")  % str % values[0] % values[1] << endl; // values[2]
       }
       cout << "]" << endl;
    }
-   else
+  /* else
    {
       assert(0);
-   }
-   
+   }   */
 
    //--------------------------------------------------------------
 
-   parser.FindValue( "listen.port", listenPortString );
-   parser.FindValue( "listen.address", listenAddressString );
-
-
-   int listenPort = 9500, listenS2SPort = 9902;
+   int listenPort = 9500, listenS2SPort = 9502;
    try 
    {
        listenPort = boost::lexical_cast<int>( listenPortString );
@@ -96,7 +96,6 @@ int main( int argc, const char* argv[] )
 
    //--------------------------------------------------------------
 
-   string serverName = "LoadBalancer server";
    U64 serverUniqueHashValue = GenerateUniqueHash( serverName );
    U32 serverId = (U32)serverUniqueHashValue;
 
@@ -106,7 +105,8 @@ int main( int argc, const char* argv[] )
    cout << "------------------------------------------------------------------" << endl << endl << endl;
 
    DiplodocusLoadBalancer* loadBalancer = new DiplodocusLoadBalancer( serverName, serverId );
-   loadBalancer->SetAsGateway( true );
+   loadBalancer->SetAsGateway( false );
+   loadBalancer->SetAsGame( false );
 
 
    vector< string >::iterator it = params.begin();
@@ -114,13 +114,20 @@ int main( int argc, const char* argv[] )
    {
       string str = *it++;
       string address, value;
-      parser.SeparateStringIntoKeyValue( str, address, value );
-      U16 port = boost::lexical_cast< U16 >( value );
+      //parser.SeparateStringIntoKeyValue( str, address, value );
+      vector< string > values;
+      parser.SeparateStringIntoValues( str, values, 3 );
+
+      address = values[0];
+      string type = values[2];
+      U16 port = boost::lexical_cast< U16 >( values[1] );
       loadBalancer->AddGatewayAddress( address, port );
    }
    
    
    cout << "---------------------------- finished connecting ----------------------------" << endl;
+
+   loadBalancer->SetupListening( listenPort );
 
    DiplodocusServerToServer* s2s = new DiplodocusServerToServer( serverName, serverId );
    s2s->SetupListening( listenS2SPort );

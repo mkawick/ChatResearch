@@ -33,6 +33,7 @@ DiplodocusGateway::DiplodocusGateway( const string& serverName, U32 serverId ) :
    SetSleepTime( 16 );// 30 fps
    SetSendHelloPacketOnLogin( true );
    
+   time( &m_timestampSendConnectionStatisics );
 }
 
 DiplodocusGateway::~DiplodocusGateway()
@@ -63,14 +64,14 @@ bool  DiplodocusGateway::AddInputChainData( BasePacket* packet, U32 connectionId
    ConnectionMapIterator connIt = m_connectionMap.find( connectionId );
    if( connIt != m_connectionMap.end() )
    {
-      if( packet->packetType == PacketType_Base )
+     /* if( packet->packetType == PacketType_Base )
       {
          if( packet->packetSubType == BasePacket::BasePacket_RerouteRequest )
          {
             HandleReroutRequest( connectionId );
             return false;// delete the original data
          }
-      }
+      }*/
 
       PacketGatewayWrapper* wrapper = new PacketGatewayWrapper;
       wrapper->SetupPacket( packet, connectionId );
@@ -95,7 +96,7 @@ bool  DiplodocusGateway::AddInputChainData( BasePacket* packet, U32 connectionId
 }
 
 //-----------------------------------------------------------------------------------------
-
+/*
 void     DiplodocusGateway::HandleReroutRequest( U32 connectionId )
 {
    ConnectionMapIterator connIt = m_connectionMap.find( connectionId );
@@ -115,7 +116,7 @@ void     DiplodocusGateway::HandleReroutRequest( U32 connectionId )
       KhaanConnector* khaan = connIt->second;
       HandlePacketToKhaan( khaan, response );// all deletion and such is handled lower
    }
-}
+}*/
 
 //-----------------------------------------------------------------------------------------
 
@@ -221,12 +222,15 @@ bool     DiplodocusGateway::PushPacketToProperOutput( BasePacket* packet )
    
    return false;
 }
+
 //-----------------------------------------------------------------------------------------
 
 int  DiplodocusGateway::ProcessInputFunction()
 {
    // m_inputChainListMutex.lock   // see CChainedThread<Type>::CallbackFunction()
-   SendServerIdentification();
+   CommonUpdate();
+
+   SendStatsToLoadBalancer();
 
    if( m_packetsToBeSentInternally.size() == 0 )
       return 0;
@@ -245,6 +249,46 @@ int  DiplodocusGateway::ProcessInputFunction()
    }
    return 1;
 }
+
+//-----------------------------------------------------------------------------------------
+
+void  DiplodocusGateway::SendStatsToLoadBalancer()
+{
+   time_t currentTime;
+   time( &currentTime );
+
+   if( difftime( currentTime, m_timestampSendConnectionStatisics ) >= timeoutSendConnectionStatisics ) 
+   {
+      m_timestampSendConnectionStatisics = currentTime;
+      int num = m_connectedClients.size();
+
+      ChainLinkIteratorType itOutput = m_listOfOutputs.begin();
+      while( itOutput != m_listOfOutputs.end() )
+      {
+         IChainedInterface* outputPtr = (*itOutput).m_interface;
+         FruitadensGateway* fruity = static_cast< FruitadensGateway* >( outputPtr );
+         if( fruity->GetConnectedServerType() == ServerType_LoadBalancer )
+         {
+            PacketServerConnectionInfo* packet = new PacketServerConnectionInfo;
+            packet->currentLoad = num;
+            packet->serverAddress = GetIpAddress();
+            packet->serverId = GetServerId();
+
+            if( fruity->AddOutputChainData( packet, -1 ) == true )
+            {
+               return;
+            }
+            else
+            {
+               delete packet;
+            }
+         }
+         itOutput++;
+      }
+   }
+}
+
+
 
 //-----------------------------------------------------------------------------------------
 

@@ -39,9 +39,9 @@ using namespace std;
 ////////////////////////////////////////////////////////////////////////
 
 FruitadensLogin* PrepFruitadensLogin( const string& ipaddress, U16 port, U32 serverId, DiplodocusLogin* loginServer, const string& name );
-void  SendServerNotification( const string& serverName, U32 serverId, FruitadensLogin* fruity )
+void  SendServerNotification( const string& serverName, const string& serverAddress, U32 serverId, U16 serverPort, FruitadensLogin* fruity )
 {
-   fruity->NotifyEndpointOfIdentification( serverName, serverId, 0, false, false, true, false  );
+   fruity->NotifyEndpointOfIdentification( serverName, serverAddress, serverId, serverPort, 0, false, false, true, false  );
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -52,27 +52,30 @@ int main( int argc, const char* argv[] )
 
    CommandLineParser    parser( argc, argv );
 
-   string listenPortString = "3072";
+   string serverName = "Login server";
+   string listenPortString = "7600";
    string listenAddressString = "localhost";
 
-   string chatPortString = "9602";
+   string chatPortString = "7402";
    string chatIpAddressString = "localhost";
 
-   string contactPortString = "9802";
+   string contactPortString = "7502";
    string contactIpAddressString = "localhost";
 
-   string assetPortString = "10002";
+   string assetPortString = "7302";
    string assetIpAddressString = "localhost";
 
-   string purchasePortString = "9902";
+   string purchasePortString = "7702";
    string purchaseIpAddressString = "localhost";
 
-   string gamePortString = "23996";
+   string gamePortString = "21002";
    string gameIpAddressString = "localhost";
 
    string autoAddLoginProductString = "true";
 
    //---------------------------------------
+
+   parser.FindValue( "server.name", serverName );
 
    parser.FindValue( "listen.port", listenPortString );
    parser.FindValue( "listen.address", listenAddressString );
@@ -91,8 +94,8 @@ int main( int argc, const char* argv[] )
    
    parser.FindValue( "game.port", gamePortString );
    parser.FindValue( "game.address", gameIpAddressString );
-   parser.FindValue( "autoAddLoginProduct", autoAddLoginProductString );
 
+   parser.FindValue( "autoAddLoginProduct", autoAddLoginProductString );
 
    string dbPortString = "16384";
    string dbIpAddress = "localhost";
@@ -107,7 +110,7 @@ int main( int argc, const char* argv[] )
    parser.FindValue( "db.schema", dbSchema );
 
 
-   int listenPort = 3072, dbPortAddress = 3306, chatPort = 9602, contactPort=9802, assetPort=10002, purchasePort=9902;
+   int listenPort = 7600, dbPortAddress = 3306, chatPort = 7402, contactPort=7502, assetPort=7302, purchasePort=7702;
    int gamePort = 23996;
    bool autoAddLoginProduct = true;
 
@@ -148,8 +151,6 @@ int main( int argc, const char* argv[] )
 
    //----------------------------------------------------------------
 
-
-   string serverName = "Login server";
    U64 serverUniqueHashValue = GenerateUniqueHash( serverName );
    U32 serverId = (U32)serverUniqueHashValue;
 
@@ -173,7 +174,7 @@ int main( int argc, const char* argv[] )
    loginServer->AddOutputChain( &chatOut );
    chatOut.Connect( chatIpAddressString.c_str(), chatPort );
    chatOut.Resume();
-   SendServerNotification( serverName, serverId, &chatOut );
+   SendServerNotification( serverName, listenAddressString, serverId, listenPort, &chatOut );
 
    FruitadensLogin contactOut( "login to contact" );
    contactOut.SetConnectedServerType( ServerType_Contact );
@@ -181,7 +182,7 @@ int main( int argc, const char* argv[] )
    loginServer->AddOutputChain( &contactOut );
    contactOut.Connect( contactIpAddressString.c_str(), contactPort );
    contactOut.Resume();
-   SendServerNotification( serverName, serverId, &contactOut );
+   SendServerNotification( serverName, listenAddressString, serverId, listenPort, &contactOut );
 
    FruitadensLogin assetOut( "login to asset" );
    assetOut.SetConnectedServerType( ServerType_Asset );
@@ -189,7 +190,7 @@ int main( int argc, const char* argv[] )
    loginServer->AddOutputChain( &assetOut );
    assetOut.Connect( assetIpAddressString.c_str(), assetPort );
    assetOut.Resume();
-   SendServerNotification( serverName, serverId, &assetOut );
+   SendServerNotification( serverName, listenAddressString, serverId, listenPort, &assetOut );
 
    FruitadensLogin purchaseOut( "login to purchase" );
    purchaseOut.SetConnectedServerType( ServerType_Purchase );
@@ -197,7 +198,7 @@ int main( int argc, const char* argv[] )
    loginServer->AddOutputChain( &purchaseOut );
    purchaseOut.Connect( purchaseIpAddressString.c_str(), purchasePort );
    purchaseOut.Resume();
-   SendServerNotification( serverName, serverId, &purchaseOut );
+   SendServerNotification( serverName, listenAddressString, serverId, listenPort, &purchaseOut );
    
 
    // various games. We will need to deal with allowing a dynamic number of games in future
@@ -206,8 +207,8 @@ int main( int argc, const char* argv[] )
   /* FruitadensLogin* game3 = PrepFruitadensLogin( "localhost", 24602, serverId, loginServer );
    FruitadensLogin* game4 = PrepFruitadensLogin( "localhost", 24604, serverId, loginServer );*/
 
-   SendServerNotification( serverName, serverId, game1 );
-   SendServerNotification( serverName, serverId, game2 );
+   SendServerNotification( serverName, listenAddressString, serverId, listenPort, game1 );// serverName, , serverId, , &chatOut
+   SendServerNotification( serverName, listenAddressString, serverId, listenPort, game2 );
    /*SendServerNotification( serverName, serverId, game2 );
    SendServerNotification( serverName, serverId, game3 );
    SendServerNotification( serverName, serverId, game4 );*/

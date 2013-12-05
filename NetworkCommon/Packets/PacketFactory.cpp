@@ -1000,10 +1000,25 @@ bool     PacketFactory::ParseServerToServerWrapper( const U8* bufferIn, int& buf
 
 bool     PacketFactory::ParseServerInfo( const U8* bufferIn, int& bufferOffset, const BasePacket* firstPassParse, BasePacket** packetOut ) const
 {
-   PacketServerIdentifier* id = new PacketServerIdentifier();
-   id->SerializeIn( bufferIn, bufferOffset );
-   *packetOut = id;
-   return true;
+   switch( firstPassParse->packetSubType ) //PacketType_Tournament
+   {
+    case PacketServerConnectionInfo::PacketServerIdentifier_TypicalInfo:
+      {
+         *packetOut = SerializeIn< PacketServerIdentifier >( bufferIn, bufferOffset );
+      }
+      return true;
+   case PacketServerConnectionInfo::PacketServerIdentifier_ConnectionInfo:
+      {
+         *packetOut = SerializeIn< PacketServerConnectionInfo >( bufferIn, bufferOffset );
+      }
+      return true;
+   case PacketServerConnectionInfo::PacketServerIdentifier_Disconnect:
+      {
+         *packetOut = SerializeIn< PacketServerDisconnect >( bufferIn, bufferOffset );
+      }
+      return true;
+    }
+   return false;
 }
 
 //-----------------------------------------------------------------------------------------

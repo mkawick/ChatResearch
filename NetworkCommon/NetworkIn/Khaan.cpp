@@ -50,8 +50,8 @@ void   Khaan ::PreCleanup()
    IChainedInterface* chain = (*output).m_interface;
    if( chain )
    {
-      Diplodocus <Khaan> * chatServer = static_cast< Diplodocus <Khaan> * >( chain );
-      chatServer->InputRemovalInProgress( this );
+      Diplodocus <Khaan> * server = static_cast< Diplodocus <Khaan> * >( chain );
+      server->InputRemovalInProgress( this );
    }
 }
 

@@ -56,6 +56,7 @@ int main( int argc, const char* argv[] )
 
    CommandLineParser    parser( argc, argv );
 
+   string serverName = "Account server";
 
    string chatPortString = "9602";
    string chatIpAddressString = "localhost";
@@ -67,6 +68,8 @@ int main( int argc, const char* argv[] )
    string userUuidFixOnly = "false";
 
    //---------------------------------------
+
+   parser.FindValue( "server.name", serverName );
 
    parser.FindValue( "chat.port", chatPortString );
    parser.FindValue( "chat.address", chatIpAddressString );
@@ -130,8 +133,6 @@ int main( int argc, const char* argv[] )
 
    //----------------------------------------------------------------
 
-
-   string serverName = "Account server";
    U64 serverUniqueHashValue = GenerateUniqueHash( serverName );
    U32 serverId = (U32)serverUniqueHashValue;
 

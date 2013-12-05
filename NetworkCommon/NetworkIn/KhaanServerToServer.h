@@ -13,7 +13,22 @@ public:
 
    bool	   OnDataReceived( unsigned char* data, int length );
 
+   
+   void     SetServerName( const string& name ) { m_serverName = name; }
+   string   SetServerAddr( const string& addr ) { m_serverAddress = addr; }
+   U32      SetServerId( U32 id) { m_serverId = id; }
+   U16      SetServerName( U16 port) { m_serverPort = port; }
+   bool     SetIsGameServer( bool isServer) { m_isGameServer = isServer; }
+   bool     SetIsController( bool isController) { m_isController = isController; }
+   bool     SetIsGateway( bool isGateWay ) { m_isGateway = isGateWay; }
+
+   string   GetServerName() const { return m_serverName; }
+   string   GetServerAddress() const { return m_serverAddress; }
    U32      GetServerId() const { return m_serverId; }
+   U16      GetServerPort() const { return m_serverPort; }
+   bool     IsGameServer() const { return m_isGameServer; }
+   bool     IsController() const { return m_isController; }
+   bool     IsGateway() const { return m_isGateway; }
 
 protected:
    void  PreCleanup();
@@ -22,7 +37,9 @@ protected:
    void           SaveOffServerIdentification( const PacketServerIdentifier* serverId );
 
    string      m_serverName;
+   string      m_serverAddress;
    U32         m_serverId;
+   U16         m_serverPort;
    bool        m_isGameServer;
    bool        m_isController;
    bool        m_isGateway;

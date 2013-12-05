@@ -72,7 +72,7 @@ bool  CommandLineParser::FindValue( const string& key, string& valueOut ) const
 {
    string searchKey = ConvertStringToLower( key );
 
-   valueOut.clear();
+   //valueOut.clear();
    ValuesListConstIterator it = m_values.begin();
    while( it != m_values.end() )
    {
@@ -90,7 +90,7 @@ bool  CommandLineParser::FindValue( const string& key, string& valueOut ) const
 
 bool  CommandLineParser::FindValue( const string& key, vector< std::string >& strings ) const
 {
-   strings.clear();
+   //strings.clear();
    string valueOut;
    if( FindValue( key, valueOut ) == false )
    {

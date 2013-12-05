@@ -36,7 +36,8 @@ bool	KhaanServerToServer::OnDataReceived( unsigned char* data, int length )
          {
             PacketServerToServerWrapper* wrapper = static_cast< PacketServerToServerWrapper* >( packetIn );
 
-            if( wrapper->pPacket->packetType == PacketType_ServerInformation )
+            if( wrapper->pPacket->packetType == PacketType_ServerInformation &&
+               wrapper->pPacket->packetSubType == PacketServerConnectionInfo::PacketServerIdentifier_TypicalInfo )
             {
                PacketServerIdentifier* serverId = static_cast< PacketServerIdentifier * > ( wrapper->pPacket );
                SaveOffServerIdentification( serverId );
@@ -113,15 +114,16 @@ void  KhaanServerToServer :: SaveOffServerIdentification( const PacketServerIden
    //   return;
 
    m_serverName = packet->serverName;
+   m_serverAddress = packet->serverAddress;
    m_serverId = packet->serverId;
+   m_serverPort = packet->serverPort;
    m_isGameServer = packet->isGameServer;
    m_isController = packet->isController;
    m_isGateway = packet->isGateway;
    U8 gameProductId = packet->gameProductId;
 
-   std::string ip_txt( inet_ntoa( m_ipAddress.sin_addr ) );
    cout << "---------  Connected as server to " << m_serverName << "  ------------------" << endl;
-   cout << "    " << ip_txt << " : " << static_cast<U32>( GetPort() ) << endl;
+   cout << "    " << m_serverAddress << " : " << static_cast<U32>( m_serverPort ) << endl;
    cout << "    type " << static_cast<U32>( gameProductId ) << " -- server ID = " << m_serverId << endl;
    cout << "    isGame = " << boolalpha << m_isGameServer << ", isController : " << m_isController << noboolalpha << endl;
    cout << "------------------------------------------------------" << endl;
@@ -148,6 +150,5 @@ void   KhaanServerToServer ::PreCleanup()
 {
    Khaan::PreCleanup();
    cout << "Server has disconnected, name = '" << m_serverName << "' : " << m_serverId << endl;
-
 }
 ///////////////////////////////////////////////////////////////////

@@ -40,7 +40,11 @@ private:
 
    int            ProcessInputFunction();
    int            ProcessOutputFunction();
+   void           SendStatsToLoadBalancer();
    U32            GetNextConnectionId();
+
+   time_t         m_timestampSendConnectionStatisics;
+   static const U32 timeoutSendConnectionStatisics = 15;
 
    U32                        m_connectionIdTracker;
    typedef map< int, int >    SocketToConnectionMap;

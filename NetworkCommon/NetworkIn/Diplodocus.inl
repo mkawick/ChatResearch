@@ -2,7 +2,9 @@
 #include "Khaan.h"
 
 #include <assert.h>
+//#include "Platform.h"
 #include "../Packets/BasePacket.h"
+#include "../Packets/PacketFactory.h"
 #include "../Packets/PacketFactory.h"
 
 #if PLATFORM != PLATFORM_WINDOWS
@@ -66,10 +68,15 @@ bool        Diplodocus< InputChain, OutputChain >::SetupListeningSocket()
 {
    struct sockaddr_in	ListenAddress;
 
-   int socketSize = sizeof( ListenAddress);
+   int socketSize = sizeof( ListenAddress );
    memset( &ListenAddress, 0, socketSize );
 
 	SetupListenAddress( ListenAddress, m_listeningPort );
+
+   const int MaxAddressLen = 256;
+   char buffer[ MaxAddressLen ];
+   GetLocalIpAddress( buffer, MaxAddressLen );
+   m_localIpAddress = buffer;
   
    m_listener = evconnlistener_new_bind( m_LibEventInstance, 
          OnAccept, 
@@ -596,8 +603,6 @@ void     Diplodocus< InputChain, OutputChain >::UpdatePendingGatewayPackets()
 template< typename InputChain, typename OutputChain >
 void     Diplodocus< InputChain, OutputChain >::SendServerIdentification()
 {
-   UpdateConsoleWindow( m_timeOfLastTitleUpdate, m_uptime, m_numTotalConnections, m_connectedClients.size(), m_listeningPort, m_serverName );
-
    if( m_listOfOutputsNeedingToSendServerId.size() )
    {
       LockMutex();
@@ -608,7 +613,7 @@ void     Diplodocus< InputChain, OutputChain >::SendServerIdentification()
          OutputChain* interfacePtr = static_cast<OutputChain*>( chainedOutput.m_interface );
 
          BasePacket* packet = NULL;
-         PackageForServerIdentification( m_serverName, m_serverId, m_gameProductId, m_isGame, m_isControllerApp, true, m_isGateway, &packet );
+         PackageForServerIdentification( m_serverName, m_localIpAddress, m_serverId, m_listeningPort, m_gameProductId, m_isGame, m_isControllerApp, true, m_isGateway, &packet );
          bool  accepted = interfacePtr->AddOutputChainData( packet, m_chainId );
 
          if( accepted == false )
@@ -673,17 +678,25 @@ void  Diplodocus< InputChain, OutputChain >::NotifyFinishedRemoving( IChainedInt
 
 //------------------------------------------------------------------------------------------
 
-//------------------------------------------------------------------------------------------
-
 template< typename InputChain, typename OutputChain >
-int		Diplodocus< InputChain, OutputChain >::ProcessInputFunction()
+int      Diplodocus< InputChain, OutputChain >::CommonUpdate()
 {
    if( m_isNetworkingEnabled == false )
       return 1;
 
+   UpdateConsoleWindow( m_timeOfLastTitleUpdate, m_uptime, m_numTotalConnections, m_connectedClients.size(), m_listeningPort, m_serverName );
+
    SendServerIdentification();
 
-   return 0; 
+   return 0;
+}
+
+//------------------------------------------------------------------------------------------
+
+template< typename InputChain, typename OutputChain >
+int      Diplodocus< InputChain, OutputChain >::ProcessInputFunction()
+{
+   return CommonUpdate();
 }
 
 //------------------------------------------------------------------------------------------
@@ -691,6 +704,8 @@ int		Diplodocus< InputChain, OutputChain >::ProcessInputFunction()
 template< typename InputChain, typename OutputChain >
 int      Diplodocus< InputChain, OutputChain >::ProcessOutputFunction()
 {
+   CommonUpdate();
+
    if( m_isNetworkingEnabled == false )
       return 1;
 
