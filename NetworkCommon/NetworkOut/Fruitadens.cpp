@@ -47,12 +47,11 @@ Fruitadens :: Fruitadens( const char* name, bool processOnlyOneIncommingPacketPe
                m_connectedServerId( 0 ),
                m_connectedGameProductId( 0 ),
                m_port( 0 ),
-               m_reroutePort( 0 ),
-               m_awaitingReroute( false ),
                m_serverType( ServerType_General ),
                m_serverId( 0 ),
                m_numPacketsReceived( 0 ),
                m_receiveBufferOffset( 0 ), 
+               m_packetHandlerInterface( NULL ),
                m_bytesInOverflow( 0 )
 {
    m_name = name;
@@ -233,14 +232,7 @@ void  Fruitadens :: AttemptConnection()
 
    m_isConnected = true;
 
-   if( m_checkForReroute )
-   {
-      RequestRerouteInstructions();
-   }
-   else
-   {
-      InitalConnectionCallback();
-   }
+   InitalConnectionCallback();
 }
 
 //-----------------------------------------------------------------------------
@@ -249,11 +241,6 @@ int   Fruitadens :: ProcessInputFunction()
 {
    if( m_isConnected == false )
    {
-      if( m_awaitingReroute )
-      {
-         SetupConnection( m_rerouteAddress.c_str(), m_reroutePort );
-         m_awaitingReroute = false;
-      }
       AttemptConnection();
       if( m_isConnected  == false )
       {
@@ -389,41 +376,12 @@ int  Fruitadens::ProcessOutputFunction()
 
 //-----------------------------------------------------------------------------------------
 
-void  Fruitadens::RequestRerouteInstructions()
-{
-   PacketRerouteRequest* request = new PacketRerouteRequest;
-   SerializePacketOut( request );
-}
-
-//-----------------------------------------------------------------------------------------
-
-void  Fruitadens::HandleRerouteRequestResult( PacketRerouteRequestResponse* response )
-{
-   m_checkForReroute = false;// clear this flag
-
-   int num = response->locations.size();
-   for( int i=0; i< num; i++ )
-   {
-      const PacketRerouteRequestResponse::Address& address = response->locations[i];
-      if( address.whichLocationId == PacketRerouteRequestResponse::LocationId_Gateway )
-      {
-         Disconnect();
-         m_awaitingReroute = true;
-         m_reroutePort = address.port;
-         m_rerouteAddress = address.address;
-         //Connect( it->address, it->port ); // << slight danger here... disconnecting when we are servicing a previous request
-         break;// finish loop
-      }
-   }
-   if( m_awaitingReroute == false )
-   {
-      InitalConnectionCallback();
-   }
-}
-//-----------------------------------------------------------------------------------------
-
 bool  Fruitadens::HandlePacketReceived( BasePacket* packetIn )
 {
+   if( m_packetHandlerInterface && 
+      m_packetHandlerInterface->HandlePacketReceived( packetIn ) == true )
+      return true;
+
    PacketFactory factory;
 
    if( packetIn->packetType == PacketType_Base )
@@ -433,13 +391,6 @@ bool  Fruitadens::HandlePacketReceived( BasePacket* packetIn )
       {
          factory.CleanupPacket( packetIn );
          return false;
-      }
-      if( packetIn->packetSubType == BasePacket::BasePacket_RerouteRequestResponse )
-      {
-         PacketRerouteRequestResponse* unwrappedPacket = static_cast< PacketRerouteRequestResponse * > ( packetIn );
-
-         HandleRerouteRequestResult( unwrappedPacket );
-         factory.CleanupPacket( packetIn );
       }
    }
 

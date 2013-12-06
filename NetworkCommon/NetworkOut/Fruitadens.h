@@ -24,6 +24,11 @@ struct TempPacket
    int   size;
 };
 
+struct PacketHandlerInterface
+{
+   virtual bool  HandlePacketReceived( BasePacket* packetIn ){ return false; }
+};
+
 //-------------------------------------------------------------------------
 
 class Fruitadens : public Threading::CChainedThread <BasePacket*>
@@ -32,12 +37,15 @@ public:
    Fruitadens( const char* name, bool processOnlyOneIncommingPacketPerLoop = false );
    ~Fruitadens();
 
+   void        RegisterPacketHandlerInterface( PacketHandlerInterface* handler ) { m_packetHandlerInterface = handler; }
+
    bool        AddOutputChainData( BasePacket* packet, U32 filingData );// standard code, no need to modify
    void        NotifyEndpointOfIdentification( const string& serverName, const string& serverAddress, U32 serverId, U16 serverPort, U8 gameProductId, bool isGameServer, bool isController, bool requiresWrapper, bool isGateway );
 
    void        SetConnectedServerType( ServerType type ) { m_serverType = type; }
    ServerType  GetConnectedServerType() const { return m_serverType; }
 
+   bool        IsSocketValid() const { return m_clientSocket != SOCKET_ERROR; }
    bool        Connect( const char* serverName, int port );
    bool        Disconnect();
 
@@ -52,18 +60,15 @@ protected:
    int            ProcessInputFunction();
    int            ProcessOutputFunction();
 
-   void           RequestRerouteInstructions();
-   void           HandleRerouteRequestResult( PacketRerouteRequestResponse* response );
-
    virtual void   PostProcessInputPackets( int bytesRead );
 
    virtual bool   HandlePacketReceived( BasePacket* packetIn );
 
-   virtual bool   SerializePacketOut( const BasePacket* packet );
-   bool           SendPacket( const U8* buffer, int length ) const;
-
    virtual void   InitalConnectionCallback() {} // this will be invoked on every reconnect 
 
+public:
+   virtual bool   SerializePacketOut( const BasePacket* packet );
+   bool           SendPacket( const U8* buffer, int length ) const;
 protected:
 
    virtual bool   FilterOutwardPacket( BasePacket* packet ) const { return true; }// true means acceptable
@@ -81,10 +86,6 @@ protected:
    sockaddr_in          m_ipAddress;
    U16                  m_port;
 
-   bool                 m_awaitingReroute;
-   string               m_rerouteAddress;
-   U16                  m_reroutePort;
-
    ServerType           m_serverType;
    std::string          m_name;
    PacketQueue          m_packetsReadyToSend;
@@ -94,6 +95,7 @@ protected:
    U32                  m_receiveBufferSize;
    U32                  m_receiveBufferOffset;
    U8*                  m_receiveBuffer;
+   PacketHandlerInterface*    m_packetHandlerInterface;
 
    enum { OverflowBufferSize = 12*1024 };
 

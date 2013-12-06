@@ -161,6 +161,7 @@ const char* platformStrings[] = {
 ///////////////////////////////////////////////////////
 
 class NetworkLayer;
+class NetworkLayer2;
 class UserNetworkEventNotifier
 {
 public:
@@ -211,14 +212,22 @@ public:
    virtual void  PurchaseSuccess( const string& purchaseUuid, bool success ){}
    virtual void  ProductsForSale( const SerializedKeyValueVector< PurchaseInfo >& thingsToBuy ) {}
 
-   UserNetworkEventNotifier(){}
+   UserNetworkEventNotifier(): network( NULL ){}
 
    NetworkLayer* network;
+};
+
+class UserNetworkEventNotifier2 : public UserNetworkEventNotifier
+{
+public:
+   UserNetworkEventNotifier2() : UserNetworkEventNotifier(), network2( NULL ) {}
+   NetworkLayer2* network2;
 };
 
 ///////////////////////////////////////////////////////
 
 typedef list< UserNetworkEventNotifier* > MBerNotifierList;
+typedef list< UserNetworkEventNotifier2* > MBerNotifierList2;
 
 ///////////////////////////////////////////////////////
 
@@ -265,7 +274,7 @@ public:
    bool     RequestAccountCreate( const string& username, const string& useremail, const string& password, int languageId, const string& deviceId, const string& gkHash ); // deviceId could be NULL except in andriod world
    bool     RequestLogout() const;
 
-   bool     IsReadyToLogin() const { return !m_isLoggingIn & !m_isLoggedIn & !m_checkForReroute & !m_awaitingReroute; }
+   bool     IsReadyToLogin() const { return !m_isLoggingIn & !m_isLoggedIn; }
    bool     IsLoggingIn() const { return m_isLoggingIn; }
    bool     IsLoggedIn() const { return m_isLoggedIn; }   
    string   GetUsername() const { return m_userName; }
@@ -426,6 +435,197 @@ private:
    void     NotifyClientLoginStatus( bool isLoggedIn );
    void     NotifyClientToBeginSendingRequests();
 };
+///////////////////////////////////////////////////////
+
+class NetworkLayer2 : public PacketHandlerInterface
+{
+public:
+   NetworkLayer2( U8 gameProductId, bool isTestingOnly );
+   ~NetworkLayer2();
+
+   //void     CheckForReroutes( bool checkForRerouts );
+   bool     RegisterCallbackInterface( UserNetworkEventNotifier2* _callbacks );
+
+   void     Exit();
+
+   //--------------------------------------------------------------
+   // ********************   Login/Profile   *******************
+   bool     RequestLogin( const string& username, const string& password, const string& languageCode );
+   bool     RequestAccountCreate( const string& username, const string& useremail, const string& password, int languageId, const string& deviceId, const string& gkHash ); // deviceId could be NULL except in andriod world
+   bool     RequestLogout() const;
+
+   bool     IsReadyToLogin() const;
+   bool     IsLoggingIn() const { return m_isLoggingIn; }
+   bool     IsLoggedIn() const { return m_isLoggedIn; }   
+   string   GetUsername() const { return m_userName; }
+
+   bool     RequestProfile( const string userName ); //if empty, profile for currently logged in user is used. For other users, you must have admin
+   bool     RequestOtherUserInGameProfile( const string& userName ); // friends, games list, etc
+
+   // note that changing a username, email, or uuid is not possible. This is for lookup only.
+   bool     UpdateUserProfile( const string userName, const string& email, const string& userUuid, int adminLevel, int languageId, bool isActive, bool showWinLossRecord, bool marketingOptOut, bool showGenderProfile );
+
+   void     Update();
+   //--------------------------------------------------------------
+
+   //--------------------------------------------------------------
+   // ********************   Friends/Chat     *******************
+   bool     RequestListOfFriends() const;
+   bool     RequestListOfGames() const;
+   bool     RequestListOfUsersLoggedIntoGame( ) const;
+   bool     RequestFriendDemographics( const string& username ) const;
+   bool     RequestUserWinLossRecord( const string& username ) const;
+
+   bool     RequestListOfInvitationsSent() const;
+   bool     RequestListOfInvitationsReceived() const;
+
+   bool     RequestChatChannelHistory( const string& channelUuid, int numRecords = 20, int startingIndex = 0 ) const;
+   bool     RequestChatP2PHistory( const string& userUuid, int numRecords = 20, int startingIndex = 0 ) const;
+
+   //--------------------------------------------------------------
+
+   bool     AcceptInvitation( const string& uuid ) const;
+   bool     AcceptInvitationFromUsername( const string& userName ) const;
+   bool     DeclineInvitation( const string& uuid, string message ) const;
+   bool     GetListOfInvitationsReceived( list< InvitationInfo >& keyValues );
+   bool     GetListOfInvitationsSent( list< InvitationInfo >& keyValues );
+
+   bool     SendSearchForUsers( const string& searchString, int numRequested, int offset ) const; // min 2 char
+   bool     InviteUserToBeFriend( const string& uuid, const string& username, const string& message );
+
+   //bool     ChangeGame( const string& gameName );
+   bool	   SendP2PTextMessage( const string& message, const string& destinationUserUuid );
+   bool	   SendChannelTextMessage( const string& message, const string& chatChannelUuid, U32 gameTurn = 0 );
+
+   //--------------------------------------------------------------
+   // ********************   Purchases/Products   *******************
+   bool     RequestListOfProducts() const; // everything
+   bool     RequestListOfProductsInStore() const; // just things that you can buy in our store
+   bool     RequestListOfPurchases( const string userUuid = "" ) const;
+   bool     MakePurchase( const string& exchangeUuid ) const;
+
+   bool     RequestListOfTournaments();
+   bool     PurchaseEntryIntoTournament( const string& tournamentUuid );
+
+   bool     RequestListOfStaticAssets( int platformId = Platform_ios );
+   bool     RequestListOfDynamicAssets( int platformId = Platform_ios );
+   bool     RequestAsset( const string& assetName );
+
+   bool     SendPurchases( const vector< RegisteredProduct >& purchases, int platformId = Platform_ios );
+   bool     GiveProduct( const string& userName, const string& productUuid, int quantity, const string& notes, int platformId = Platform_ios );
+   bool     SendCheat( const string& cheat );
+
+   //--------------------------------------------------------------
+
+   bool     SendRawPacket( const char* buffer, int length ) const;
+
+   //--------------------------------------------------------------
+   // utility functions
+
+   U32      FindGame( const string& name ) const;
+   string   FindGameNameFromGameId( U32 id ) const;
+   string   FindFriend( const string& name ) const;
+   string   FindFriendFromUuid( const string& uuid ) const;
+
+   int      GetNumFriends() const { return m_friends.size(); }
+   bool     GetFriend( int index, const BasicUser*& user );
+
+   int      GetNumChannels() const { return m_channels.size(); }
+   bool     GetChannel( int index, ChatChannel& channel );
+
+   int      GetNumStaticAssets() const { return m_staticAssets.size(); }
+   bool     GetStaticAssetInfo( int index, AssetInfoExtended& assetInfo );
+
+   int      GetNumDynamicAssets() const { return m_dynamicAssets.size(); }
+   bool     GetDynamicAssetInfo( int index, AssetInfoExtended& assetInfo );
+
+   bool     GetAssetInfo( const string& hash, AssetInfoExtended& asset ) { return GetAsset( hash, asset ); }
+   bool     ClearAssetInfo( const string& hash );
+
+   int      GetNumAvailableTournaments() const { return m_availableTournaments.size(); }
+   bool     GetTournamentInfo( int index, TournamentInfo& tournamentInfo );
+
+   string   GetLocalUUID() { return m_uuid; }
+
+   string   GenerateHash( const string& stringThatIWantHashed );
+   
+private:
+
+   enum     ConnectionNames
+   {
+      ConnectionNames_Main,
+      //ConnectionNames_Asset,
+      ConnectionNames_Num
+   };
+   Fruitadens* m_fruitadens[ ConnectionNames_Num ];
+
+   void     ReconnectMain();
+   void     Disconnect();
+   bool     IsConnected() const;
+
+   // datatypes
+   bool     Log( const std::string& text, int priority = 1 ) const { return true; }
+   bool     Log( const char* text, int priority = 1 ) const { return true; }
+   
+   typedef SerializedKeyValueVector< BasicUser >   UserNameKeyValue;
+   typedef vector< PacketGameIdentification >      GameList;
+
+
+   string               m_userName, m_attemptedUsername;
+   string               m_uuid;
+   string               m_serverDns;
+   string               m_loginKey;
+   U32                  m_selectedGame;
+
+   SerializedKeyValueVector< InvitationInfo > m_invitationsReceived;
+   SerializedKeyValueVector< InvitationInfo > m_invitationsSent;
+   UserNameKeyValue     m_friends;
+   ChatChannelVector    m_channels;
+   GameList             m_gameList;
+
+   U8                   m_gameProductId;
+   bool                 m_requiresGatewayDiscovery;
+   bool                 m_isLoggingIn;
+   bool                 m_isLoggedIn;
+   bool                 m_isCreatingAccount;
+   U32                  m_connectionId;
+   string               m_lastLoggedOutTime;
+   int                  m_lastRawDataIndex;
+   int                  m_connectionPort;
+
+   mutable U32          m_beginTime, m_endTime;
+
+   int                  m_normalSleepTime, m_boostedSleepTime;
+   bool                 m_isThreadPerformanceBoosted;
+   time_t               m_timeWhenThreadPerformanceBoosted;
+
+   MBerNotifierList2    m_callbacks;
+   RawDataAccumulator   m_rawDataBuffer[ PacketGameplayRawData::NumDataTypes ];
+
+   vector< AssetInfoExtended >  m_staticAssets;
+   vector< AssetInfoExtended >  m_dynamicAssets;
+   vector< TournamentInfo >     m_availableTournaments;
+
+private:
+   bool     SerializePacketOut( BasePacket* packet ) const;// helper
+
+   bool     HandlePacketReceived( BasePacket* packetIn );
+
+   bool     AddChatChannel( const ChatChannel& channel );
+
+   void     BoostThreadPerformance();
+   void     RestoreNormalThreadPerformance();
+   void     ExpireThreadPerformanceBoost();
+
+   bool     GetAsset( const string& hash, AssetInfoExtended& asset );
+   bool     UpdateAssetData( const string& hash, AssetInfoExtended& asset );
+
+   void     NotifyClientLoginStatus( bool isLoggedIn );
+   void     NotifyClientToBeginSendingRequests();
+
+   void     LoadBalancedNewAddress( const PacketRerouteRequestResponse* packet );
+};
+
 ///////////////////////////////////////////////////////
 
 }

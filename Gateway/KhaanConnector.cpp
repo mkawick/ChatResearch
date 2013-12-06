@@ -65,10 +65,11 @@ bool	KhaanConnector::OnDataReceived( unsigned char* data, int length )
       // we only allow a few packet types
       bool allow = false;
       if( testPacket.packetType == PacketType_Login &&
-         ( testPacket.packetSubType == PacketLogin::LoginType_Login || testPacket.packetSubType == PacketLogin::LoginType_CreateAccount ) )
+         ( testPacket.packetSubType == PacketLogin::LoginType_Login || 
+            testPacket.packetSubType == PacketLogin::LoginType_CreateAccount ) )
          allow = true;
 
-     /* if( testPacket.packetType == PacketType_Base && testPacket.packetSubType == BasePacket::BasePacket_RerouteRequest )
+    /*  if( testPacket.packetType == PacketType_Base && testPacket.packetSubType == BasePacket::BasePacket_RerouteRequest )
          allow = true;*/
 
       if( allow == false )
