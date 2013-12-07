@@ -1911,12 +1911,19 @@ NetworkLayer2::NetworkLayer2( U8 gameProductId, bool isTestingOnly ) :
 {
    InitializeSockets();
 
-   for( int i=0; i< ConnectionNames_Num; i++ )
+  /* for( int i=0; i< ConnectionNames_Num; i++ )
    {
       m_fruitadens[i] = new Fruitadens( "Networking Layer", false );
       
       m_fruitadens[i]->SetSleepTime( m_normalSleepTime );
-   }
+   }*/
+
+   m_fruitadens[ ConnectionNames_Main ] = new Fruitadens( "Networking Layer", false );
+   m_fruitadens[ ConnectionNames_Main ]->SetSleepTime( m_normalSleepTime );
+
+   // this allows us to faks sends to two different locations.
+   m_fruitadens[ ConnectionNames_Asset ] = m_fruitadens[ ConnectionNames_Main ];
+
 
    
    if( isTestingOnly )
@@ -1933,10 +1940,13 @@ NetworkLayer2::NetworkLayer2( U8 gameProductId, bool isTestingOnly ) :
 
 NetworkLayer2::~NetworkLayer2()
 {
-   for( int i=0; i< ConnectionNames_Num; i++ )
+  /* for( int i=0; i< ConnectionNames_Num; i++ )
    {
       delete m_fruitadens[i];
-   }
+   }*/
+
+   delete m_fruitadens[ ConnectionNames_Main ];
+
    Exit();
    ShutdownSockets();
 }
@@ -2801,7 +2811,14 @@ bool     NetworkLayer2::SerializePacketOut( BasePacket* packet ) const
    packet->gameProductId = m_gameProductId;
    packet->SerializeOut( buffer, offset );
    m_beginTime = GetCurrentMilliseconds();
-   return m_fruitadens[ ConnectionNames_Main ]->SendPacket( buffer, offset );
+   if( packet->packetType == PacketType_Asset )
+   {
+      m_fruitadens[ ConnectionNames_Asset ]->SendPacket( buffer, offset );
+   }
+   else
+   {
+      return m_fruitadens[ ConnectionNames_Main ]->SendPacket( buffer, offset );
+   }
 }
 
 

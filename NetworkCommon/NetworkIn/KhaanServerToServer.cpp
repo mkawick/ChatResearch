@@ -14,7 +14,7 @@
 ///////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////
 
-bool	KhaanServerToServer::OnDataReceived( unsigned char* data, int length )
+bool	KhaanServerToServer :: OnDataReceived( unsigned char* data, int length )
 {
    BasePacket* packetIn = NULL;
    int offset = 0;
@@ -32,68 +32,109 @@ bool	KhaanServerToServer::OnDataReceived( unsigned char* data, int length )
             assert( 0 );
          }
          
-         if( packetType == PacketType_ServerToServerWrapper )
-         {
-            PacketServerToServerWrapper* wrapper = static_cast< PacketServerToServerWrapper* >( packetIn );
+         cout<<  " KhaanServerToServer :: OnDataReceived( p=" << packetType << ":" << packetIn->packetSubType << ")"<< endl;
+         Threading::MutexLock  locker( m_inputChainListMutex );
+         m_packetsIn.push_back( packetIn );
+         RequestUpdate();
+      }         
+   }
 
-            if( wrapper->pPacket->packetType == PacketType_ServerInformation &&
-               wrapper->pPacket->packetSubType == PacketServerConnectionInfo::PacketServerIdentifier_TypicalInfo )
-            {
-               PacketServerIdentifier* serverId = static_cast< PacketServerIdentifier * > ( wrapper->pPacket );
-               SaveOffServerIdentification( serverId );
-            }
-            else
-            {
-               m_connectionId = wrapper->serverId;
-               if( PassPacketOn( wrapper, m_connectionId ) == true )
-               {
-                  packetIn = NULL;// do not delete
-               }
-               else
-               {
-                  assert( 0 );
-               }
-            }
-         }
-         else if( packetType == PacketType_GatewayWrapper )// here we simply push the server packet up to the next layer
+   return true;
+}
+
+
+//------------------------------------------------------------------------------
+
+void	KhaanServerToServer :: UpdateInwardPacketList()
+{
+   if( m_packetsIn.size() == 0 )
+      return;
+
+   int numOutputs = m_listOfOutputs.size();
+   if( numOutputs > 1 )
+   {
+      assert( 0 );// need support for multiple outputs, each packet should be copied because of the memory ownership, or use shared pointers
+   }
+
+   PacketFactory factory;
+
+   while( m_packetsIn.size() > 0 )
+   {
+      BasePacket* packetIn = m_packetsIn.front();
+      int packetType = packetIn->packetType;
+      
+      if( packetType == PacketType_ServerToServerWrapper )
+      {
+         PacketServerToServerWrapper* wrapper = static_cast< PacketServerToServerWrapper* >( packetIn );
+
+         if( wrapper->pPacket->packetType == PacketType_ServerInformation &&
+            wrapper->pPacket->packetSubType == PacketServerConnectionInfo::PacketServerIdentifier_TypicalInfo )
          {
-            PacketGatewayWrapper* wrapper = static_cast< PacketGatewayWrapper* >( packetIn );
-            m_connectionId = wrapper->connectionId;
+            PacketServerIdentifier* serverId = static_cast< PacketServerIdentifier * > ( wrapper->pPacket );
+            SaveOffServerIdentification( serverId );
+         }
+         else
+         {
+            m_connectionId = wrapper->serverId;
             if( PassPacketOn( wrapper, m_connectionId ) == true )
             {
                packetIn = NULL;// do not delete
             }
-         }
-         else if ( packetType == PacketType_GatewayInformation )
-         {
-            assert( 0 );// undone work
-            ChainLinkIteratorType itOutputs = m_listOfOutputs.begin();
-            if( itOutputs != m_listOfOutputs.end() )// only one output currently supported.
+            else
             {
-               const ChainLink& chain = *itOutputs++;
-               DiplodocusServerToServer * middle = static_cast<DiplodocusServerToServer*>( chain.m_interface );// this should call the appropriate class based on the virtual table.
-
-               if( middle->HandleCommandFromGateway( packetIn, m_connectionId ) == false )// needs substance
-               {
-                  assert( 0 );// incomplete
-               }
+               assert( 0 );
             }
          }
-         else
-         {
-            assert( 0 );
-         }
-         factory.CleanupPacket( packetIn );
       }
-   }
+      else if( packetType == PacketType_GatewayWrapper )// here we simply push the server packet up to the next layer
+      {
+         PacketGatewayWrapper* wrapper = static_cast< PacketGatewayWrapper* >( packetIn );
+         m_connectionId = wrapper->connectionId;
+         if( PassPacketOn( wrapper, m_connectionId ) == true )
+         {
+            packetIn = NULL;// do not delete
+         }
+      }
+      else if ( packetType == PacketType_GatewayInformation )
+      {
+         if( HandleCommandFromGateway( packetIn, m_connectionId ) == false )// needs substance
+         {
+            assert( 0 );// incomplete
+         }
+      }
+      else
+      {
+         assert( 0 );
+      }
 
-   return true;
+      factory.CleanupPacket( packetIn );
+      m_packetsIn.pop_front();
+   }
+}
+
+//---------------------------------------------------------------
+
+void  KhaanServerToServer :: RequestUpdate()
+{
+   //cout << " KhaanServerToServer :: RequestUpdate(" << endl;
+   ChainLinkIteratorType itOutputs = m_listOfOutputs.begin();
+   if( itOutputs != m_listOfOutputs.end() )// only one output currently supported.
+   {
+      const ChainLink& chain = *itOutputs++;
+      IChainedInterface* interfacePtr = chain.m_interface;
+      ThreadEvent te;
+      te.type = ThreadEvent_NeedsService;
+      te.identifier = m_chainId;
+      static_cast< ChainType*> ( interfacePtr )->PushInputEvent( &te );
+   }
+   
 }
 
 //---------------------------------------------------------------
 
 bool  KhaanServerToServer :: PassPacketOn( BasePacket* packet, U32 connectionId )
 {
+   //cout << " KhaanServerToServer :: PassPacketOn(" << endl;
    ChainLinkIteratorType itOutputs = m_listOfOutputs.begin();
    if( itOutputs != m_listOfOutputs.end() )// only one output currently supported.
    {
@@ -108,8 +149,25 @@ bool  KhaanServerToServer :: PassPacketOn( BasePacket* packet, U32 connectionId 
 
 //---------------------------------------------------------------
 
+bool  KhaanServerToServer :: HandleCommandFromGateway( BasePacket* packet, U32 connectionId )
+{
+   //cout << " KhaanServerToServer :: HandleCommandFromGateway(" << endl;
+   ChainLinkIteratorType itOutputs = m_listOfOutputs.begin();
+   if( itOutputs != m_listOfOutputs.end() )// only one output currently supported.
+   {
+      const ChainLink& chain = *itOutputs++;
+      IChainedInterface* interfacePtr = chain.m_interface;
+      DiplodocusServerToServer * middle = static_cast<DiplodocusServerToServer*>( interfacePtr );
+
+      return middle->HandleCommandFromGateway( packet, connectionId );
+   }
+   return false;
+}
+//---------------------------------------------------------------
+
 void  KhaanServerToServer :: SaveOffServerIdentification( const PacketServerIdentifier* packet )
 {
+   //cout << " KhaanServerToServer :: SaveOffServerIdentification(" << endl;
    //if( m_serverName == packet->serverName && m_serverId == packet->serverId ) // prevent dups from reporting.
    //   return;
 

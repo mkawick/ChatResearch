@@ -267,7 +267,8 @@ void  DiplodocusGateway::SendStatsToLoadBalancer()
       {
          IChainedInterface* outputPtr = (*itOutput).m_interface;
          FruitadensGateway* fruity = static_cast< FruitadensGateway* >( outputPtr );
-         if( fruity->GetConnectedServerType() == ServerType_LoadBalancer )
+         if( fruity->GetConnectedServerType() == ServerType_LoadBalancer &&
+               fruity->IsConnected() )
          {
             PacketServerConnectionInfo* packet = new PacketServerConnectionInfo;
             packet->currentLoad = num;

@@ -198,8 +198,8 @@ int main( int argc, const char* argv[] )
    //FruitadensGateway* game4 = PrepFruitadens( "localhost", 23550, serverId, gateway );// summoner wars
 
    U8 gameProductId = 0;
-   game1->NotifyEndpointOfIdentification( serverName, gateway->GetIpAddress(), serverId, gateway->GetPort(), gameProductId, false, false, true, true  );
-   mfm->NotifyEndpointOfIdentification( serverName, gateway->GetIpAddress(), serverId, gateway->GetPort(), gameProductId, false, false, true, true  );
+   game1->SetupServerNotification( serverName, gateway->GetIpAddress(), serverId, gateway->GetPort(), gameProductId, false, false, true, true  );
+   mfm->SetupServerNotification( serverName, gateway->GetIpAddress(), serverId, gateway->GetPort(), gameProductId, false, false, true, true  );
 #endif // _TRACK_MEMORY_LEAK_
 
    
@@ -280,8 +280,7 @@ void  SetupLoadBalancerConnection( DiplodocusGateway* gateway, string address, U
 
    serverComm->Connect( address.c_str(), port );
    serverComm->Resume();
-   serverComm->NotifyEndpointOfIdentification( 
-                                       gateway->GetServerName(), 
+   serverComm->SetupServerNotification(gateway->GetServerName(), 
                                        gateway->GetIpAddress(), 
                                        gateway->GetServerId(), 
                                        gateway->GetPort(), 

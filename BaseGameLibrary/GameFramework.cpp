@@ -345,7 +345,7 @@ bool  GameFramework::Run()
 
    m_chatServer->Connect( m_chatServerAddress.c_str(), m_chatServerPort );
    m_chatServer->Resume();
-   m_chatServer->NotifyEndpointOfIdentification( GetServerName(), "localhost", GetServerId(), m_listenForGatewayPort, GetGameProductId(), true, false, false, false );
+   m_chatServer->SetupServerNotification( GetServerName(), "localhost", GetServerId(), m_listenForGatewayPort, GetGameProductId(), true, false, false, false );
    m_chatServer->AddToOutwardFilters( PacketType_Chat );
 
    DiplodocusServerToServer* s2s = new DiplodocusServerToServer( GetServerName(), GetServerId(), GetGameProductId() );
@@ -385,7 +385,7 @@ void     GameFramework::SetupS2SConnections( const string& address, U16 port )
 
       serverComm->Connect( setup.address.c_str(), setup.port );
       serverComm->Resume();
-      serverComm->NotifyEndpointOfIdentification( GetServerName(), address, GetServerId(), port, GetGameProductId(), true, false, false, false );
+      serverComm->SetupServerNotification( GetServerName(), address, GetServerId(), port, GetGameProductId(), true, false, false, false );
 
       vector< PacketType >::iterator packetTypeIt = setup.packetType.begin();
       while( packetTypeIt != setup.packetType.end() )

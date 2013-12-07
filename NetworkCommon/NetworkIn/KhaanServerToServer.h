@@ -33,7 +33,10 @@ public:
 protected:
    void  PreCleanup();
 
+   void	         UpdateInwardPacketList();
+   void           RequestUpdate();
    virtual bool   PassPacketOn( BasePacket* serverId, U32 connectionId );// this is good to override
+   bool           HandleCommandFromGateway( BasePacket* packet, U32 connectionId );
    void           SaveOffServerIdentification( const PacketServerIdentifier* serverId );
 
    string      m_serverName;

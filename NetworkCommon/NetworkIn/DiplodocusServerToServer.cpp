@@ -47,6 +47,7 @@ void  DiplodocusServerToServer::InputRemovalInProgress( IChainedInterface* khaan
 // this will always be data coming from other servers or at least from the outside in.
 bool   DiplodocusServerToServer::AddInputChainData( BasePacket* packet, U32 connectionId ) 
 {
+   //cout << "DiplodocusServerToServer::AddInputChainData( " << endl;
    if( packet->packetType == PacketType_ServerToServerWrapper )
    {
       //HandleCommandFromGateway( packet, connectionId );
@@ -100,7 +101,7 @@ void  DiplodocusServerToServer::ServerWasIdentified( ChainedInterface* khaan )
    BasePacket* packet = NULL;
    PackageForServerIdentification( m_serverName, m_localIpAddress, m_serverId, m_listeningPort, m_gameProductId, m_isGame, m_isControllerApp, true, m_isGateway, &packet );
    khaan->AddOutputChainData( packet, 0 );
-   m_serversNeedingUpdate.push_back( static_cast<InputChainType*>( khaan )->GetServerId() );
+   m_clientsNeedingUpdate.push_back( static_cast<InputChainType*>( khaan )->GetServerId() );
 
    // bubble this identifying info up to the next layer.
 
@@ -166,7 +167,7 @@ bool  DiplodocusServerToServer::AddOutputChainData( BasePacket* packet, U32 conn
             // we will swallow this in either case and so we delete the packets if the khaan does not use it.
             if( khaan->AddOutputChainData( s2swrapper, 0 ) == true )
             {
-               m_serversNeedingUpdate.push_back( connectionId );
+               m_clientsNeedingUpdate.push_back( connectionId );
             }
             else
             {
@@ -191,8 +192,9 @@ bool  DiplodocusServerToServer::AddOutputChainData( BasePacket* packet, U32 conn
 int   DiplodocusServerToServer::CallbackFunction()
 {
    // I would do this with a map, but we'll only ever have one or two of these.
-   while( m_serversNeedingUpdate.size() )
+  /* while( m_serversNeedingUpdate.size() )
    {
+      // useful for storing the 
       U32 serverId = m_serversNeedingUpdate.front();
       m_serversNeedingUpdate.pop_front();
 
@@ -212,7 +214,32 @@ int   DiplodocusServerToServer::CallbackFunction()
          }
       }
       UnlockMutex();
+   }*/
+
+   while( m_clientsNeedingUpdate.size() )
+   {
+      m_clientsNeedingUpdate.front();
+      U32 serverId = m_clientsNeedingUpdate.front();
+      m_clientsNeedingUpdate.pop_front();
+
+      LockMutex();
+      ChainLinkIteratorType itInputs = m_listOfInputs.begin();
+      while( itInputs != m_listOfInputs.end() )
+      {
+         ChainLink& chainedInput = *itInputs++;
+         IChainedInterface* interfacePtr = chainedInput.m_interface;
+         KhaanServerToServer* khaan = static_cast< KhaanServerToServer* >( interfacePtr );
+         if( khaan->GetChainedId() == serverId )
+         {
+            if( khaan->Update() == false )
+            {
+               m_clientsNeedingUpdate.push_back( serverId );// put this back in the queue
+            }
+         }
+      }
+      UnlockMutex();
    }
+
 
    return 1;
 }
