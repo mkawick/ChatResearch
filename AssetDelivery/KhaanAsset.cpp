@@ -13,7 +13,7 @@
 // all code has been moved into the S2S base class.
 
 ///////////////////////////////////////////////////////////////////
-
+/*
 //------------------------------------------------------------------------------
 
 void	KhaanAsset :: UpdateInwardPacketList()
@@ -95,5 +95,5 @@ void	KhaanAsset :: UpdateOutwardPacketList()
 
       int result = SendData( buffer, length );
    }
-}
+}*/
 //------------------------------------------------------------------------------

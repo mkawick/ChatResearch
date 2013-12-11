@@ -9,6 +9,6 @@ public:
    KhaanPurchase( int id, bufferevent* be ) : KhaanServerToServer( id, be ) {}
 
 private:
-   void	UpdateInwardPacketList();
-   void	UpdateOutwardPacketList();
+   //void	UpdateInwardPacketList();
+   //void	UpdateOutwardPacketList();
 };

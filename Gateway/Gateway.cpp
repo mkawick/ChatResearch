@@ -198,14 +198,14 @@ int main( int argc, const char* argv[] )
    //FruitadensGateway* game4 = PrepFruitadens( "localhost", 23550, serverId, gateway );// summoner wars
 
    U8 gameProductId = 0;
-   game1->SetupServerNotification( serverName, gateway->GetIpAddress(), serverId, gateway->GetPort(), gameProductId, false, false, true, true  );
-   mfm->SetupServerNotification( serverName, gateway->GetIpAddress(), serverId, gateway->GetPort(), gameProductId, false, false, true, true  );
+   game1->NotifyEndpointOfIdentification( serverName, gateway->GetIpAddress(), serverId, gateway->GetPort(), gameProductId, false, false, true, true  );
+   mfm->NotifyEndpointOfIdentification( serverName, gateway->GetIpAddress(), serverId, gateway->GetPort(), gameProductId, false, false, true, true  );
 #endif // _TRACK_MEMORY_LEAK_
 
    
    
-   //game3->NotifyEndpointOfIdentification( serverName, serverId, gameProductId, false, false, true, true  );
-   //game4->NotifyEndpointOfIdentification( serverName, serverId, gameProductId, false, false, true, true  );
+   //game3->SetupServerNotification( serverName, serverId, gameProductId, false, false, true, true  );
+   //game4->SetupServerNotification( serverName, serverId, gameProductId, false, false, true, true  );
 
    cout << "Chat server: " << chatIpAddressString << ":" << chatPort << endl;
    chatOut.Connect( chatIpAddressString.c_str(), chatPort );
@@ -280,7 +280,7 @@ void  SetupLoadBalancerConnection( DiplodocusGateway* gateway, string address, U
 
    serverComm->Connect( address.c_str(), port );
    serverComm->Resume();
-   serverComm->SetupServerNotification(gateway->GetServerName(), 
+   serverComm->NotifyEndpointOfIdentification(gateway->GetServerName(), 
                                        gateway->GetIpAddress(), 
                                        gateway->GetServerId(), 
                                        gateway->GetPort(), 

@@ -29,19 +29,6 @@ struct PacketHandlerInterface
    virtual bool  HandlePacketReceived( BasePacket* packetIn ){ return false; }
 };
 
-struct NotificationInfo
-{
-   string   serverName;
-   string   serverAddress;
-   U32      serverId;
-   U16      serverPort;
-   U8       gameProductId;
-   bool     isGameServer; 
-   bool     isController;
-   bool     requiresWrapper;
-   bool     isGateway;
-};
-
 //-------------------------------------------------------------------------
 
 class Fruitadens : public Threading::CChainedThread <BasePacket*>
@@ -53,7 +40,7 @@ public:
    void        RegisterPacketHandlerInterface( PacketHandlerInterface* handler ) { m_packetHandlerInterface = handler; }
 
    bool        AddOutputChainData( BasePacket* packet, U32 filingData );// standard code, no need to modify
-   void        SetupServerNotification( const string& serverName, const string& serverAddress, U32 serverId, U16 serverPort, U8 gameProductId, bool isGameServer, bool isController, bool requiresWrapper, bool isGateway );
+   void        NotifyEndpointOfIdentification( const string& serverName, const string& serverAddress, U32 serverId, U16 serverPort, U8 gameProductId, bool isGameServer, bool isController, bool requiresWrapper, bool isGateway );
 
    void        SetConnectedServerType( ServerType type ) { m_serverType = type; }
    ServerType  GetConnectedServerType() const { return m_serverType; }
@@ -66,8 +53,6 @@ public:
    void        SetServerUniqueId( U32 id ) { m_serverId = id; }
 
 protected:
-
-   void           NotifyEndpointOfIdentification();
 
    bool           SetupConnection( const char* serverName, int port );
    bool           CreateSocket();
@@ -107,7 +92,6 @@ protected:
    U32                  m_serverId;
    U32                  m_numPacketsReceived; // tracking only.. no other purpose
 
-   NotificationInfo     m_serverNotificationInfo;
    U32                  m_receiveBufferSize;
    U32                  m_receiveBufferOffset;
    U8*                  m_receiveBuffer;

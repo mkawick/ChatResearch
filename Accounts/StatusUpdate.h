@@ -34,6 +34,7 @@ public:
       QueryType_UserCheckForNewAccount,
       QueryType_UserFindBlankUUID,
       QueryType_UserFindBlankUUIDInUsers,
+      QueryType_DoesUuidExist,
       QueryType_UserFindBlankUserProfile,
       QueryType_UserUpdateNewAccountKeyBeforeSendingEmail,
       QueryType_LoadStrings,

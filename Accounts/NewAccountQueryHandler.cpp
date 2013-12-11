@@ -202,6 +202,10 @@ void     NewAccountQueryHandler::PrepToSendUserEmail( const PacketDbQueryResult*
       string email =             row[ TableUserTempNewUser::Column_email ];
       string userId =            row[ TableUserTempNewUser::Column_user_id ];
       string uuid =              row[ TableUserTempNewUser::Column_uuid ];
+
+      if( uuid == "NULL" || uuid == "null" || uuid == "0" ) 
+         uuid.clear();
+
       int languageId =           boost::lexical_cast< int >( row[ TableUserTempNewUser::Column_language_id ] );
 
       string message = "Sending new account confirmation to user: ";
@@ -239,7 +243,7 @@ void     NewAccountQueryHandler::PrepToSendUserEmail( const PacketDbQueryResult*
             bodyText += "'>Playdek.com</a>";
          }
 
-         if( m_blankUuidHandler )
+         if( m_blankUuidHandler && uuid.size() == 0 )
          {
             m_blankUuidHandler->UpdateUuidForTempUser( columnId, email );
          }

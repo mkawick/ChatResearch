@@ -14,6 +14,10 @@
 #include <boost/functional/hash.hpp>
 #include <boost/algorithm/string/trim.hpp>
 #include <boost/algorithm/string.hpp>
+
+#include <climits>
+#include "boost/random.hpp"
+#include "boost/generator_iterator.hpp"
 //#include <boost/chrono/.hpp>
 
 
@@ -34,15 +38,26 @@
 #endif
 
 using namespace std;
+
+static boost::random::mt19937 rng;
 //-------------------------------------------------------------------------
 
 string   GenerateUUID( U32 xorValue )
 {
    string returnString;
 
+   U32 max = INT_MAX;
+   //boost::random::mt19937 rng;         // produces randomness out of thin air
+                                    // see pseudo-random number generators
+   boost::random::uniform_int_distribution<> roll(0, max);
+                                       // distribution that maps to 1..6
+                                       // see random number distributions
+   //int x = six(rng);                   // simulate rolling a die
+
    for( int i=0; i< 2; i++ )
    {
-      U32 value = ( (rand() % 256) << 24 ) + ( (rand() % 256) << 16 ) + ( (rand() % 256) << 8 ) + (rand() % 256);
+      //U32 value = ( (rand() % 256) << 24 ) + ( (rand() % 256) << 16 ) + ( (rand() % 256) << 8 ) + (rand() % 256);
+      U32 value = roll( rng );
       value ^= xorValue;// xor with the elapsed time.
       stringstream stream;
       stream << hex << value;

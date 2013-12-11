@@ -41,7 +41,7 @@ using namespace std;
 FruitadensLogin* PrepFruitadensLogin( const string& ipaddress, U16 port, U32 serverId, DiplodocusLogin* loginServer, const string& name );
 void  SendServerNotification( const string& serverName, const string& serverAddress, U32 serverId, U16 serverPort, FruitadensLogin* fruity )
 {
-   fruity->SetupServerNotification( serverName, serverAddress, serverId, serverPort, 0, false, false, true, false  );
+   fruity->NotifyEndpointOfIdentification( serverName, serverAddress, serverId, serverPort, 0, false, false, true, false  );
 }
 
 ////////////////////////////////////////////////////////////////////////

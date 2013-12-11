@@ -17,20 +17,20 @@ struct TempStorage
 class KhaanGame : public KhaanServerToServer
 {
 public:
-   KhaanGame() : KhaanServerToServer(), m_mainInterfacePtr( NULL )  {}
-   KhaanGame( int id, bufferevent* be ) : KhaanServerToServer( id, be ), m_mainInterfacePtr( NULL ) {}
+   KhaanGame() : KhaanServerToServer(){}//, m_mainInterfacePtr( NULL )  {}
+   KhaanGame( int id, bufferevent* be ) : KhaanServerToServer( id, be ) {}//, m_mainInterfacePtr( NULL ) {}
 
-   bool  OnDataReceived( unsigned char* data, int length );
+   //bool  OnDataReceived( unsigned char* data, int length );
 private:
 
-   void  UpdateInwardPacketList();
-   bool  PassPacketOn( BasePacket* serverId, U32 connectionId );
+   //void  UpdateInwardPacketList();
+   //bool  PassPacketOn( BasePacket* serverId, U32 connectionId );
 
-   void  SetupMainInterfacePointer();
+   //void  SetupMainInterfacePointer();
 
-   ChainedInterface* m_mainInterfacePtr;
-   deque< TempStorage* > m_toBeProcessed;
-   Threading::Mutex m_mutex;
+   //ChainedInterface* m_mainInterfacePtr;
+   //deque< TempStorage* > m_toBeProcessed;
+   //Threading::Mutex m_mutex;
 };
 
 ///////////////////////////////////////////////////////////////

@@ -345,7 +345,7 @@ int      StatusUpdate::CallbackFunction()
       }*/
       
       m_blankUuidHandler->Update( currentTime );
-      DuplicateUUIDSearch();
+      //DuplicateUUIDSearch();// no longer needed after-the-fact.
 
       m_blankUserProfileHandler->Update( currentTime ); // no longer needed
       if( m_enableAddingUserProducts )
@@ -562,7 +562,7 @@ void     StatusUpdate::HandleAutoCreateAccounts( const PacketDbQueryResult* dbRe
 
       //string uuid =              row[ TableUserTempNewUser::Column_uuid ]; //<< must be created
       if( uuid == "" || uuid.size() == 0 )
-         uuid = m_blankUuidHandler->GenerateUuid( id, email );
+         uuid = m_blankUuidHandler->GenerateUuid();
 
       string gamekitHash =       row[ TableUserTempNewUser::Column_gamekit_hash ];
       string passwordHash =      row[ TableUserTempNewUser::Column_user_pw_hash ];

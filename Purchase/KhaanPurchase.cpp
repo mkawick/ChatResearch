@@ -15,7 +15,7 @@
 ///////////////////////////////////////////////////////////////////
 
 //------------------------------------------------------------------------------
-
+/*
 void	KhaanPurchase :: UpdateInwardPacketList()
 {
    if( m_packetsIn.size() == 0 )
@@ -43,10 +43,10 @@ void	KhaanPurchase :: UpdateInwardPacketList()
          m_packetsIn.pop_front();
       }
    }
-}
+}*/
 
 //------------------------------------------------------------------------------
-
+/*
 void	KhaanPurchase :: UpdateOutwardPacketList()
 {
    if( m_packetsOut.size() == 0 )
@@ -93,5 +93,5 @@ void	KhaanPurchase :: UpdateOutwardPacketList()
 
       int result = SendData( buffer, length );
    }
-}
+}*/
 //------------------------------------------------------------------------------

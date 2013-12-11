@@ -12,9 +12,11 @@
 #pragma comment( lib, "ws2_32.lib" )
 #pragma comment( lib, "libevent.lib")
 #pragma warning( disable : 4996 )
+#else
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
 #endif
-
-
 
 
 #include "DataTypes.h"

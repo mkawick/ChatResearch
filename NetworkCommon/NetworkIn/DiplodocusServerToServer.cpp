@@ -192,7 +192,7 @@ bool  DiplodocusServerToServer::AddOutputChainData( BasePacket* packet, U32 conn
 int   DiplodocusServerToServer::CallbackFunction()
 {
    // I would do this with a map, but we'll only ever have one or two of these.
-  /* while( m_serversNeedingUpdate.size() )
+   while( m_serversNeedingUpdate.size() )
    {
       // useful for storing the 
       U32 serverId = m_serversNeedingUpdate.front();
@@ -214,7 +214,7 @@ int   DiplodocusServerToServer::CallbackFunction()
          }
       }
       UnlockMutex();
-   }*/
+   }
 
    while( m_clientsNeedingUpdate.size() )
    {
@@ -240,6 +240,7 @@ int   DiplodocusServerToServer::CallbackFunction()
       UnlockMutex();
    }
 
+   UpdateAllConnections();
 
    return 1;
 }

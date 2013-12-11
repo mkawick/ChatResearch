@@ -554,7 +554,7 @@ private:
    enum     ConnectionNames
    {
       ConnectionNames_Main,
-      ConnectionNames_Asset,
+      //ConnectionNames_Asset,
       ConnectionNames_Num
    };
    Fruitadens* m_fruitadens[ ConnectionNames_Num ];

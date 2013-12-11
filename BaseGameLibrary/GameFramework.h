@@ -47,7 +47,7 @@ public:
       //------------ defaults --------------------
       // DO NOT INVOKE THESE AFTER INVOKING THE RUN FUNCTION... they will have no effect
    void  SetupDefaultDatabaseConnection( const string& serverAddress, U16 port, const string& username,const string& password, const string& dbSchemaName );
-   void  SetupDefaultGateway( U16 port );
+   void  SetupDefaultListeningPort( U16 port );
    void  SetupDefaultChatConnection( const string& address, U16 port );
    void  SetupDefaultS2S( const string& address, U16 port );
    void  SetupConnectionToAnotherServer( const string& address, const string& serverName, U16 port, ServerType serverType, PacketType packetType );
@@ -97,7 +97,7 @@ private:
 
 
    // default connection values
-   U16            m_listenForGatewayPort;
+   U16            m_listenPort;
 
    U16            m_chatServerPort;
    string         m_chatServerAddress;

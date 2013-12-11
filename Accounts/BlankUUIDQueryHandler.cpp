@@ -22,13 +22,17 @@ struct UserAccountLookup
 
 ///////////////////////////////////////////////////////////////////////////////////////////
 
-BlankUUIDQueryHandler::BlankUUIDQueryHandler( U32 id, Queryer* parent, string& query ) : QueryHandler< Queryer* >( id, 20, parent ), m_isServicingBlankUUID( false )
+BlankUUIDQueryHandler::BlankUUIDQueryHandler( U32 id, Queryer* parent, string& query ) : QueryHandler< Queryer* >( id, 20, parent ), m_isServicingBlankUUID( false ), m_numberPendingUuids( 0 )
 {
    m_queryString = query;
 }
 
 void     BlankUUIDQueryHandler::Update( time_t currentTime )
 {
+   if( m_numberPendingUuids == 0 ) // other checks are performed inside of this function
+   {
+      GenerateAListOfAvailableUUIDS();
+   }
    QueryHandler< Queryer* >::Update( currentTime, m_isServicingBlankUUID );
 }
 
@@ -38,7 +42,8 @@ bool     BlankUUIDQueryHandler::HandleResult( const PacketDbQueryResult* dbResul
 {
    int resultType = dbResult->lookup;
    if( resultType != m_queryType &&
-      resultType != StatusUpdate::QueryType_UserFindBlankUUIDInUsers  )
+      //resultType != StatusUpdate::QueryType_UserFindBlankUUIDInUsers &&
+      resultType != StatusUpdate::QueryType_DoesUuidExist )
       return false;
 
    if( resultType == m_queryType )
@@ -77,7 +82,7 @@ bool     BlankUUIDQueryHandler::HandleResult( const PacketDbQueryResult* dbResul
       return true;
    }
 
-   if( resultType == StatusUpdate::QueryType_UserFindBlankUUIDInUsers )
+  /* if( resultType == StatusUpdate::QueryType_UserFindBlankUUIDInUsers )
    {
       UserAccountLookup* lookup = static_cast< UserAccountLookup* >( dbResult->customData );
       IndexTableParser              enigma( dbResult->bucket );
@@ -89,50 +94,99 @@ bool     BlankUUIDQueryHandler::HandleResult( const PacketDbQueryResult* dbResul
          cout << "UUID in conflict was: " << lookup->lastUuidAttempted << endl;
          cout << "**************************************" << endl;
          //string stringRand = boost::lexical_cast< string >(  );
-        /* string stringToHash = lookup->userId + lookup->columnId + lookup->additionalHashText;
-         string newUuid = GenerateUUID( GetCurrentMilliseconds() + static_cast<U32>( GenerateUniqueHash( stringToHash ) ) + rand());*/
-         PrepQueryToLookupUuid( lookup->userId, lookup->additionalHashText );
+        // string stringToHash = lookup->userId + lookup->columnId + lookup->additionalHashText;
+         //string newUuid = GenerateUUID( GetCurrentMilliseconds() + static_cast<U32>( GenerateUniqueHash( stringToHash ) ) + rand());
+         PrepQueryToLookupUuid();
       }
       else
       {
-         /*if( lookup->createUsersEntry && lookup->userId != "0" && lookup->userId.size() > 0 ) 
+         if( lookup->createUsersEntry && lookup->userId != "0" && lookup->userId.size() > 0 ) 
          {
-            PacketDbQuery* dbQuery = new PacketDbQuery;
-            dbQuery->id = 0;
-            dbQuery->lookup = m_queryType;
-            dbQuery->isFireAndForget = true;
+       //     PacketDbQuery* dbQuery = new PacketDbQuery;
+       //     dbQuery->id = 0;
+       //     dbQuery->lookup = m_queryType;
+       //     dbQuery->isFireAndForget = true;
 
-            dbQuery->query = "UPDATE users SET uuid='";
-            dbQuery->query += lookup->lastUuidAttempted;
-            dbQuery->query += "' where user_id='";
-            dbQuery->query += lookup->userId;
-            dbQuery->query += "';";
+       //     dbQuery->query = "UPDATE users SET uuid='";
+       //     dbQuery->query += lookup->lastUuidAttempted;
+       //     dbQuery->query += "' where user_id='";
+      //      dbQuery->query += lookup->userId;
+       //     dbQuery->query += "';";
 
-            m_parent->AddQueryToOutput( dbQuery );
-         }*/
+       //     m_parent->AddQueryToOutput( dbQuery );
+         }
          
          //if( lookup->updateCreateAccountTableToo )
          {
-            PacketDbQuery* dbQuery = new PacketDbQuery;
-            dbQuery->id = 0;
-            dbQuery->lookup = m_queryType;
-            dbQuery->isFireAndForget = true;
-
-            string queryString = "UPDATE user_temp_new_user SET uuid='";
-            queryString += lookup->lastUuidAttempted;
-            queryString += "' WHERE id='";
-            queryString += lookup->userId;
-            queryString += "';";
-            dbQuery->query = queryString;
-
-            m_parent->AddQueryToOutput( dbQuery );
+            
          }
       }
 
       delete static_cast< UserAccountLookup* >( dbResult->customData );
+   }*/
+
+   if( resultType == StatusUpdate::QueryType_DoesUuidExist )
+   {
+      if( dbResult->bucket.bucket.size() == 0 )
+      {
+         m_unusedUuids.push_back( dbResult->meta );
+      }
+      else
+      {
+         int total = 0;
+         KeyValueParser              enigma( dbResult->bucket );
+         KeyValueParser::iterator    it = enigma.begin();
+         while( it != enigma.end() )
+         {
+            KeyValueParser::row      row = *it++;
+
+            string   value1 =        row[ TableKeyValue::Column_key ];
+            string   value2 =        row[ TableKeyValue::Column_value ];
+            total += boost::lexical_cast< int >( value1 ) + boost::lexical_cast< int >( value2 ) ;// should only ever be one
+         }
+         if( total == 0 )
+         {
+            m_unusedUuids.push_back( dbResult->meta );
+         }
+      }
+      m_numberPendingUuids--;
    }
 
    return false;
+}
+
+//---------------------------------------------------------------
+
+void     BlankUUIDQueryHandler::GenerateAListOfAvailableUUIDS()
+{
+   if( m_unusedUuids.size() < 10 && m_numberPendingUuids < 10 )
+   {
+      const int numToGenerate = 100;
+      for( int i=0; i<numToGenerate; i++ )
+      {
+         string uuid = GenerateUUID( 0 );
+         PacketDbQuery* dbQuery = new PacketDbQuery;
+         dbQuery->id = 0;
+         dbQuery->lookup = StatusUpdate::QueryType_DoesUuidExist;
+         dbQuery->meta = uuid;
+
+         /*
+         SELECT  
+(SELECT count(*) FROM playdek.users where uuid="tom.olsen@wizards.com") as count1,
+(SELECT count(*) FROM playdek.user_temp_new_user where uuid="tom.olsen@wizards.com") as count2
+         */
+         string queryString = "SELECT (SELECT count(*) FROM playdek.users where uuid='";
+         queryString += uuid;
+         queryString += "' ) as count1, (SELECT count(*) FROM playdek.user_temp_new_user where uuid='";
+         queryString += uuid;
+         queryString += "') as count2;";
+         dbQuery->query = queryString;
+
+         m_parent->AddQueryToOutput( dbQuery );
+      }
+
+      m_numberPendingUuids += numToGenerate;
+   }
 }
 
 //---------------------------------------------------------------
@@ -147,24 +201,45 @@ void     BlankUUIDQueryHandler::UpdateUuidForTempUser( const string& recordId, c
       return;
    }
 
-   PrepQueryToLookupUuid( recordId, additionalHashText );
+   string uuid = GenerateUuid();
+
+   //PrepQueryToLookupUuid();
+   PacketDbQuery* dbQuery = new PacketDbQuery;
+   dbQuery->id = 0;
+   dbQuery->lookup = m_queryType;
+   dbQuery->isFireAndForget = true;
+
+   string queryString = "UPDATE user_temp_new_user SET uuid='";
+   queryString += uuid;
+   queryString += "' WHERE id='";
+   queryString += recordId;
+   queryString += "';";
+   dbQuery->query = queryString;
+
+   m_parent->AddQueryToOutput( dbQuery );
 }
 
-string     BlankUUIDQueryHandler::GenerateUuid( const string& userId, const string& additionalHashText )
+string     BlankUUIDQueryHandler::GenerateUuid( )
 {
-   U32 ms = GetCurrentMilliseconds();
-   U32 randomValue = rand();
-   string newUuid = GenerateUUID( ms + static_cast<U32>( GenerateUniqueHash( userId + additionalHashText ) ) + randomValue );
-   cout << "Generate UUID:[" << newUuid << "] using: ms:["<< ms << "], rand:[" << randomValue << "], userId:[" << userId << "], email[" << additionalHashText << "]" << endl;
+   //U32 ms = GetCurrentMilliseconds();
+   //U32 randomValue = rand();
+   //string newUuid = GenerateUUID( ms + static_cast<U32>( GenerateUniqueHash( userId + additionalHashText ) ) + randomValue );
+   //cout << "Generate UUID:[" << newUuid << "] using: ms:["<< ms << "], rand:[" << randomValue << "], userId:[" << userId << "], email[" << additionalHashText << "]" << endl;
 
-   return newUuid;
+   if( m_unusedUuids.size() == 0 )
+      return GenerateUUID( 0 );
+
+   string uuid = m_unusedUuids.front();
+   m_unusedUuids.pop_front();
+   
+   return uuid;
 }
 
 //---------------------------------------------------------------
 
-void     BlankUUIDQueryHandler::PrepQueryToLookupUuid( const string& userId, const string& additionalHashText )
-{
-   string uuidToLookup = GenerateUuid( userId, additionalHashText );
+//void     BlankUUIDQueryHandler::PrepQueryToLookupUuid()
+//{
+   /*string uuidToLookup = GenerateUuid();
 
    string queryForBothTableLookups = "(SELECT uuid from users where uuid = '";
    queryForBothTableLookups += uuidToLookup;
@@ -189,7 +264,7 @@ void     BlankUUIDQueryHandler::PrepQueryToLookupUuid( const string& userId, con
 
    dbQuery->customData = userAccountLookup;
 
-   m_parent->AddQueryToOutput( dbQuery );
-}
+   m_parent->AddQueryToOutput( dbQuery );*/
+//}
 
 ///////////////////////////////////////////////////////////////////////////////////////////

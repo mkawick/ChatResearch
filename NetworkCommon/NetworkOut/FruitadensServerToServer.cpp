@@ -55,11 +55,6 @@ void  FruitadensServerToServer::AddToOutwardFilters( U16 packetType )
 
 bool  FruitadensServerToServer::FilterOutwardPacket( BasePacket* packet ) const
 {
-   if( m_isConnected == false )
-   {
-      return false;
-   }
-
    // packets going out should not be PacketType_ServerToServerWrapper, they will be wrapped when outbound
    if( packet->packetType == PacketType_ServerInformation ||
       packet->packetType == PacketType_Gameplay /*|| 

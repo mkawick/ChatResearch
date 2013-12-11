@@ -69,7 +69,7 @@ Fruitadens::~Fruitadens()
 }
 
 //-----------------------------------------------------------------------------
-
+/*
 void  Fruitadens :: SetupServerNotification( const string& serverName, const string& serverAddress, U32 serverId, U16 serverPort, U8 gameProductId, bool isGameServer, bool isController, bool requiresWrapper, bool isGateway )
 {
    m_serverNotificationInfo.serverName = serverName;
@@ -81,12 +81,12 @@ void  Fruitadens :: SetupServerNotification( const string& serverName, const str
    m_serverNotificationInfo.isGameServer = isGameServer;
    m_serverNotificationInfo.requiresWrapper = requiresWrapper;
    m_serverNotificationInfo.isGateway = isGateway;
-}
+}*/
 
 //-----------------------------------------------------------------------------
 
 //const string& serverName, const string& serverAddress, U32 serverId, U16 serverPort, bool isGameServer, bool isController, bool requiresWrapper )
-void  Fruitadens :: NotifyEndpointOfIdentification()
+/*void  Fruitadens :: NotifyEndpointOfIdentification()
 {
    if( m_serverNotificationInfo.serverName.size() && 
       m_serverNotificationInfo.serverAddress.size() )
@@ -103,8 +103,14 @@ void  Fruitadens :: NotifyEndpointOfIdentification()
                                       m_serverNotificationInfo.isGateway, &packet );
       AddOutputChainData( packet, 0 );
    }
-}
+}*/
 
+void  Fruitadens :: NotifyEndpointOfIdentification( const string& serverName, const string& serverAddress, U32 serverId, U16 serverPort, U8 gameProductId, bool isGameServer, bool isController, bool requiresWrapper, bool isGateway )
+{
+   BasePacket* packet = NULL;
+   PackageForServerIdentification( serverName, serverAddress, serverId, serverPort, gameProductId, isGameServer, isController, requiresWrapper, isGateway, &packet );
+   AddOutputChainData( packet, 0 );
+}
 //-----------------------------------------------------------------------------
 
 bool        Fruitadens :: AddOutputChainData( BasePacket* packet, U32 filingData )
@@ -259,7 +265,7 @@ void  Fruitadens :: AttemptConnection()
 
    m_isConnected = true;
 
-   NotifyEndpointOfIdentification();
+   //NotifyEndpointOfIdentification();
 
    InitalConnectionCallback();
 }

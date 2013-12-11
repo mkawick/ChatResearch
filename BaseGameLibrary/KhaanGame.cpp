@@ -12,8 +12,8 @@
 
 ///////////////////////////////////////////////////////////////////
 
-int counter = 0;
-
+//int counter = 0;
+/*
 bool	KhaanGame::OnDataReceived( unsigned char* data, int length )
 {
    counter ++;
@@ -40,10 +40,10 @@ bool	KhaanGame::OnDataReceived( unsigned char* data, int length )
    m_mainInterfacePtr->PushInputEvent( &te );
 
    return true;
-}
+}*/
 
 //---------------------------------------------------------------
-
+/*
 void  KhaanGame :: SetupMainInterfacePointer()
 {
    if( m_mainInterfacePtr )
@@ -57,9 +57,9 @@ void  KhaanGame :: SetupMainInterfacePointer()
    }
 }
 
-int tracker = 0;
+int tracker = 0;*/
 //---------------------------------------------------------------
-
+/*
 bool   KhaanGame :: PassPacketOn( BasePacket* packetIn, U32 connectionId )
 {
    // testing only, please remove
@@ -79,9 +79,9 @@ bool   KhaanGame :: PassPacketOn( BasePacket* packetIn, U32 connectionId )
    m_mainInterfacePtr->AddInputChainData( packetIn, connectionId );
    return true;
 }
-
+*/
 //---------------------------------------------------------------
-
+/*
 void  KhaanGame :: UpdateInwardPacketList()
 {
    assert( m_mainInterfacePtr != NULL );
@@ -99,5 +99,5 @@ void  KhaanGame :: UpdateInwardPacketList()
 
       //cout << "process" << endl;
    }
-}
+}*/
 //-----------------------------------------------------------------------------------------

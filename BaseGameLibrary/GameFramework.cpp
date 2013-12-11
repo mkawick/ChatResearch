@@ -38,7 +38,7 @@ GameFramework::GameFramework( const char* name, const char* shortName, U8 gamePr
    m_serverId = static_cast< U32 >( serverUniqueHashValue );
 
    // all of the standard connections
-   m_listenForGatewayPort = 9600;
+   m_listenPort = 9600;
 
    m_chatServerPort = 7402;
    m_chatServerAddress = "localhost";
@@ -79,9 +79,9 @@ void  GameFramework::SetupDefaultDatabaseConnection( const string& serverAddress
 
 //-----------------------------------------------------
 
-void  GameFramework::SetupDefaultGateway( U16 port )
+void  GameFramework::SetupDefaultListeningPort( U16 port )
 {
-   m_listenForGatewayPort = port;
+   m_listenPort = port;
 }
 
 //-----------------------------------------------------
@@ -142,7 +142,7 @@ void  GameFramework::UseCommandlineOverrides( int argc, const char* argv[] )
 
    try // these really can't throw, but to be consistent
    {
-      gatewayListenPort = boost::lexical_cast<string>( m_listenForGatewayPort );
+      gatewayListenPort = boost::lexical_cast<string>( m_listenPort );
       chatPort = boost::lexical_cast<string>( m_chatServerPort );
       listenForS2SPort = boost::lexical_cast<string>( m_listenForS2SPort );
       dbPort = boost::lexical_cast<string>( m_dbPort );
@@ -157,8 +157,8 @@ void  GameFramework::UseCommandlineOverrides( int argc, const char* argv[] )
 
    CommandLineParser    parser( argc, argv );
 
-   parser.FindValue( "listen.address", m_serverAddress );
    parser.FindValue( "listen.port", gatewayListenPort );
+   parser.FindValue( "listen.address", m_serverAddress );   
 
    parser.FindValue( "chat.port", chatPort );
    parser.FindValue( "chat.address", m_chatServerAddress );
@@ -174,7 +174,7 @@ void  GameFramework::UseCommandlineOverrides( int argc, const char* argv[] )
 
    try 
    {
-      m_listenForGatewayPort = boost::lexical_cast<int>( gatewayListenPort );
+      m_listenPort = boost::lexical_cast<int>( gatewayListenPort );
       m_chatServerPort = boost::lexical_cast<int>( chatPort );
       m_listenForS2SPort = boost::lexical_cast<int>( listenForS2SPort );
       
@@ -322,7 +322,7 @@ bool  GameFramework::Run()
 
    m_connectionManager->AddOutputChain( delta );
 
-   m_connectionManager->SetupListening( m_listenForGatewayPort );
+   m_connectionManager->SetupListening( m_listenPort );
    m_connectionManager->SetAsGame();
    m_connectionManager->RegisterCallbacks( m_callbacksObject );
 
@@ -345,7 +345,7 @@ bool  GameFramework::Run()
 
    m_chatServer->Connect( m_chatServerAddress.c_str(), m_chatServerPort );
    m_chatServer->Resume();
-   m_chatServer->SetupServerNotification( GetServerName(), "localhost", GetServerId(), m_listenForGatewayPort, GetGameProductId(), true, false, false, false );
+   m_chatServer->NotifyEndpointOfIdentification( GetServerName(), "localhost", GetServerId(), m_listenPort, GetGameProductId(), true, false, false, false );
    m_chatServer->AddToOutwardFilters( PacketType_Chat );
 
    DiplodocusServerToServer* s2s = new DiplodocusServerToServer( GetServerName(), GetServerId(), GetGameProductId() );
@@ -385,7 +385,7 @@ void     GameFramework::SetupS2SConnections( const string& address, U16 port )
 
       serverComm->Connect( setup.address.c_str(), setup.port );
       serverComm->Resume();
-      serverComm->SetupServerNotification( GetServerName(), address, GetServerId(), port, GetGameProductId(), true, false, false, false );
+      serverComm->NotifyEndpointOfIdentification( GetServerName(), address, GetServerId(), port, GetGameProductId(), true, false, false, false );
 
       vector< PacketType >::iterator packetTypeIt = setup.packetType.begin();
       while( packetTypeIt != setup.packetType.end() )

@@ -94,7 +94,7 @@ int main( int argc, const char* argv[] )
    parser.FindValue( "db.schema", dbSchema );
 
 
-   bool enableAddingUseProducts = false;
+   bool enableAddingUserProducts = false;
    bool onlyUpdatesUuid = false;
    int chatPort = 9602, dbPortAddress = 3306, agricolaPort = 23996;
    try 
@@ -106,7 +106,7 @@ int main( int argc, const char* argv[] )
 
        if( enableUserProducts.size() )
        {
-          enableAddingUseProducts = ( enableUserProducts == "true" || enableUserProducts == "1" );
+          enableAddingUserProducts = ( enableUserProducts == "true" || enableUserProducts == "1" );
        }
        if( userUuidFixOnly.size() )
        {
@@ -149,7 +149,7 @@ int main( int argc, const char* argv[] )
    StatusUpdate* server = new StatusUpdate( serverName, serverId );
    server->AddOutputChain( delta );
 
-   server->EnableAddingUserProducts( enableAddingUseProducts );
+   server->EnableAddingUserProducts( enableAddingUserProducts );
    server->SetAsServicingUuidOnly( onlyUpdatesUuid );
    
    //server->Init();
