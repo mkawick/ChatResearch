@@ -126,8 +126,8 @@ private:
    ResetPasswordQueryHandler*             m_resetPasswordHandler;
 
    static const U32 timeoutBlankUserProfileTimer = 60;
-   static const U32 timeoutBlankUUIDTimer = 60;
-   static const U32 timeoutNewAccount = 48;
+   static const U32 timeoutBlankUUIDTimer = 15;
+   static const U32 timeoutNewAccount = 28;
    static const U32 timeoutAddProductEntry = 45;
    static const U32 timeoutResetPassword = 30;
    static const U32 timeoutCheckDuplicateUUids = 60;

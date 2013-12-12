@@ -435,6 +435,7 @@ void     NewAccountQueryHandler::HandleWeblinks( const PacketDbQueryResult* dbRe
 
    if( pathToConfirmationEmailFile.size() )
    {
+      cout << "confirmation email file: " << pathToConfirmationEmailFile << endl;
       m_confirmationEmailTemplate = OpenAndLoadFile( pathToConfirmationEmailFile );
    }
    else
@@ -452,6 +453,7 @@ void     NewAccountQueryHandler::HandleWeblinks( const PacketDbQueryResult* dbRe
 
    if( pathToResetPasswordEmailFile.size() )
    {
+      cout << "reset password file: " << pathToResetPasswordEmailFile << endl;
       m_passwordResetEmailTemplate = OpenAndLoadFile( pathToResetPasswordEmailFile );
    }
    else

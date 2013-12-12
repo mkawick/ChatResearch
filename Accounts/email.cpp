@@ -354,7 +354,7 @@ int  SendConfirmationEmail( const char* toAddr, const char* fromAddr, const char
   Check(send(socketId, messageLine.get(), strlen( messageLine.get() ), 0), "send() Subject TO");
   LogTextToFile( messageLine.get() );
 
-  sprintf( messageLine.get(), "Content-Type: text/html%s", CRLF);
+  sprintf( messageLine.get(), "Content-Type: text/html; charset=\"utf-8\"%s", CRLF);
   Check(send(socketId, messageLine.get(), strlen( messageLine.get() ), 0), "send() content type");
   LogTextToFile( messageLine.get() );
 

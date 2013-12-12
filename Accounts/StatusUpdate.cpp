@@ -52,7 +52,7 @@ StatusUpdate::StatusUpdate( const string& serverName, U32 serverId ) : Threading
    m_blankUserProfileHandler = new BlankUserProfileHandler( QueryType_UserFindBlankUserProfile, this, queryForBlankProfiles );
    m_blankUserProfileHandler->SetPeriodicty( timeoutBlankUserProfileTimer );
 
-   string queryForNewAccounts = "SELECT * FROM user_temp_new_user WHERE was_email_sent='0' AND flagged_as_invalid='0'";
+   string queryForNewAccounts = "SELECT * FROM user_temp_new_user WHERE was_email_sent='0' AND flagged_as_invalid='0' AND uuid IS NOT NULL"; // the last part is to prevent conflicts with the blank UUID handler
    m_newAccountHandler = new NewAccountQueryHandler( QueryType_UserCheckForNewAccount, this, queryForNewAccounts );
    m_newAccountHandler->SetPeriodicty( timeoutNewAccount );
    m_newAccountHandler->SetQueryTypeForLoadingStrings( QueryType_LoadStrings );
