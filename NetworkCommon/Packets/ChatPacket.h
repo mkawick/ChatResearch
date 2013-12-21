@@ -8,6 +8,9 @@ public:
    {
       ChatType_ChatToServer,
       ChatType_ChatToClient,
+      ChatType_EchoToServer,
+      ChatType_EchoToClient,
+
       ChatType_ChangeChatChannel,
       ChatType_ChangeChatChannelToClient,
       ChatType_SendListOfChannelsToClient,
@@ -113,6 +116,22 @@ public:
 
    string   userName;
    string   timeStamp;
+};
+
+///////////////////////////////////////////////////////////////
+
+class PacketChat_EchoToServer : public BasePacket
+{
+public:
+   PacketChat_EchoToServer(): BasePacket( PacketType_Chat, PacketChatToServer::ChatType_EchoToServer ) {}
+};
+
+///////////////////////////////////////////////////////////////
+
+class PacketChat_EchoToClient : public BasePacket
+{
+public:
+   PacketChat_EchoToClient(): BasePacket( PacketType_Chat, PacketChatToServer::ChatType_EchoToClient ) {}
 };
 
 ///////////////////////////////////////////////////////////////

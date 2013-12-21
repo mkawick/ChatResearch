@@ -155,7 +155,8 @@ int main( int argc, const char* argv[] )
    U32 serverId = (U32)serverUniqueHashValue;
 
    cout << serverName << endl;
-   cout << "Version " << version << endl;
+   //cout << "Version " << ServerStackVersion << endl;
+   cout << "Server stack version " << ServerStackVersion << endl;
    cout << "ServerId " << serverId << endl;
    cout << "Db " << dbIpAddress << ":" << dbPortAddress << endl;
    cout << "   flag: autoAddLoginProduct = " << std::boolalpha << autoAddLoginProduct << endl;

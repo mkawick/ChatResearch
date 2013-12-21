@@ -4,6 +4,10 @@
 #include <iostream>
 #include <list>
 #include <vector>
+
+#include "../NetworkCommon/Platform.h"
+#include "../NetworkCommon/Version.h"
+
 #if PLATFORM == PLATFORM_WINDOWS
 #pragma warning (disable:4996)
 #endif
@@ -12,9 +16,11 @@
 
 #include <boost/lexical_cast.hpp>
 
-#include "DiplodocusChat.h"
+
+#include "../NetworkCommon/NetworkIn/Diplodocus.h"
 #include "../NetworkCommon/NetworkIn/DiplodocusServerToServer.h"
-#include "../Networkcommon/Version.h"
+
+#include "DiplodocusChat.h"
 
 #if PLATFORM == PLATFORM_WINDOWS
 #include <conio.h>
@@ -83,7 +89,8 @@ int main( int argc, const char* argv[] )
    U32 serverId = (U32)serverUniqueHashValue;
 
    cout << serverName << ":" << endl;
-   cout << "Version " << version << endl;
+   //cout << "Version " << ServerStackVersion << endl;
+   cout << "Server stack version " << ServerStackVersion << endl;
    cout << "ServerId " << serverId << endl;
    cout << "Db " << dbIpAddress << ":" << dbPortAddress << endl;
    cout << "------------------------------------------------------------------" << endl << endl << endl;

@@ -3,27 +3,34 @@ bin_PROGRAMS = gateway_serverd
 gateway_serverddir = $(datadir)/@PACKAGE@
 
 gateway_serverd_SOURCES = DiplodocusGateway.cpp \
-KhaanConnector.cpp \
 FruitadensGateway.cpp \
-KhaanGateway.cpp \
 Gateway.cpp \
+KhaanConnector.cpp \
 ../NetworkCommon/NetworkUtils.cpp \
+../NetworkCommon/Serialize.cpp \
+../NetworkCommon/ServerConstants.cpp \
 ../NetworkCommon/ChainedArchitecture/Thread.cpp \
 ../NetworkCommon/Daemon/Daemonizer.cpp \
 ../NetworkCommon/NetworkIn/Diplodocus.cpp \
 ../NetworkCommon/NetworkIn/Khaan.cpp \
-../NetworkCommon/NetworkIn/KhaanServerToServer.cpp \
 ../NetworkCommon/NetworkOut/Fruitadens.cpp \
+../NetworkCommon/NetworkOut/FruitadensServerToServer.cpp \
+../NetworkCommon/Packets/AssetPacket.cpp \
 ../NetworkCommon/Packets/BasePacket.cpp \
 ../NetworkCommon/Packets/ChatPacket.cpp \
-../NetworkCommon/Packets/DbPacket.cpp \
-../NetworkCommon/Packets/BasePacket.cpp \
-../NetworkCommon/Packets/ChatPacket.cpp \
+../NetworkCommon/Packets/CheatPacket.cpp \
+../NetworkCommon/Packets/ContactPacket.cpp \
+../NetworkCommon/Packets/DataBucket.cpp \
 ../NetworkCommon/Packets/DbPacket.cpp \
 ../NetworkCommon/Packets/GamePacket.cpp \
-../NetworkCommon/Packets/ServerToServerPacket.cpp \
+../NetworkCommon/Packets/LoginPacket.cpp \
 ../NetworkCommon/Packets/PacketFactory.cpp \
+../NetworkCommon/Packets/PurchasePacket.cpp \
+../NetworkCommon/Packets/ServerToServerPacket.cpp \
+../NetworkCommon/Packets/TournamentPacket.cpp \
 ../NetworkCommon/Utils/CommandLineParser.cpp \
+../NetworkCommon/Utils/MemoryLeakTracker.cpp \
+../NetworkCommon/Utils/OsLevelUtils.cpp \
 ../NetworkCommon/Utils/Utils.cpp \
 ../NetworkCommon/Logging/server_log.cpp
 

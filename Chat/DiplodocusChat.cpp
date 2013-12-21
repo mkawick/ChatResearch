@@ -31,19 +31,20 @@ void  DiplodocusChat :: Init()
 }
 //---------------------------------------------------------------
 
-void     DiplodocusChat:: ServerWasIdentified( ChainedInterface* khaan )
+void     DiplodocusChat:: ServerWasIdentified( IChainedInterface* khaan )
 {
    BasePacket* packet = NULL;
    PackageForServerIdentification( m_serverName, m_localIpAddress, m_serverId, m_listeningPort, m_gameProductId, m_isGame, m_isControllerApp, true, m_isGateway, &packet );
-   khaan->AddOutputChainData( packet, 0 );
-   m_clientsNeedingUpdate.push_back( khaan->GetChainedId() );
+   ChainedType* localKhaan = static_cast< ChainedType* >( khaan );
+   localKhaan->AddOutputChainData( packet, 0 );
+   m_clientsNeedingUpdate.push_back( localKhaan->GetChainedId() );
 }
 
 //---------------------------------------------------------------
 
 void  DiplodocusChat::InputConnected( IChainedInterface* chainedInput )
 {
-   KhaanChat* khaan = static_cast< KhaanChat* >( chainedInput );
+   //KhaanChat* khaan = static_cast< KhaanChat* >( chainedInput );
 }
 
 void  DiplodocusChat::InputRemovalInProgress( IChainedInterface* chainedInput )
@@ -238,6 +239,7 @@ bool  DiplodocusChat::HandlePacketFromOtherServer( BasePacket* packet, U32 conne
    PacketServerJobWrapper* wrapper = static_cast< PacketServerJobWrapper* >( packet );
    BasePacket* actualPacket = wrapper->pPacket;
    U32  serverIdLookup = wrapper->serverId;
+   serverIdLookup = serverIdLookup;
    // this packet has a job id thanks to the underlying layer (DiplodocusServerToServer) that we do not need so we ignore it.
    // if we need to reply, we should store the job id.
 
@@ -509,7 +511,7 @@ int   DiplodocusChat::CallbackFunction()
    if( m_inputsNeedUpdate )// should only be one, or however many gateways are connected.
    {
       LockMutex();
-      int num = m_connectedClients.size();
+      //int num = m_connectedClients.size();
       ClientMapIterator it = m_connectedClients.begin();
       while( it != m_connectedClients.end() )
       {

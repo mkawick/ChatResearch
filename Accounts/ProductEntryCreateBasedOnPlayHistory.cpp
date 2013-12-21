@@ -25,14 +25,14 @@ struct UserJoinProduct
 };
 
 ProductEntryCreateBasedOnPlayHistory::ProductEntryCreateBasedOnPlayHistory( U32 id, Queryer* parent ): 
-                                       QueryHandler< Queryer* >( id, 45, parent ), 
+                                       ParentType( id, 45, parent ), 
                                        m_hasLoadedAllProducts( false ), 
                                        m_hasRequestedAllProducts( false ), 
                                        m_hasPendingDbResult( false ), 
                                        m_hasCompletedTryingEveryProduct( false ),
                                        m_currentProductIndex( -1 ),
-                                       m_startingProductId( -1 ),
                                        m_currentUserIndex( -1 ),
+                                       m_startingProductId( -1 ),
                                        m_numRecordsToPullAtATime( 400 )
 {
    /*
@@ -75,7 +75,7 @@ void     ProductEntryCreateBasedOnPlayHistory::SetProductIdStart( int productId 
 
 void     ProductEntryCreateBasedOnPlayHistory::Update( time_t currentTime )
 {
-   QueryHandler< Queryer* >::Update( currentTime, m_hasPendingDbResult );
+   ParentType::Update( currentTime, m_hasPendingDbResult );
 }
 
 //---------------------------------------------------------------
@@ -380,6 +380,7 @@ bool     ProductEntryCreateBasedOnPlayHistory::StoreUsersWhoMayNeedAnUpdate( con
       }
 
       int numUsersFound = enigma.m_bucket.size();
+      numUsersFound = numUsersFound;// compiler warning.
       //cout << " Successful query: found users " << numUsersFound << " who have played " << FindProductName( qpg.productId ) << endl;
       
 

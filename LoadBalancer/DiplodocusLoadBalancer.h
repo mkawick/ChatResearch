@@ -35,13 +35,17 @@ struct GatewayInfo
    bool     isVerified;
    bool     isPreferred;
 
-   GatewayInfo( string addr, U16 p ) : address( addr ), port( p ), type( Type_Normal ), 
-                                       serverId( 0 ),
+   GatewayInfo( string addr, U16 p ) : serverId( 0 ),
+                                       address( addr ), 
+                                       port( p ), 
+                                       type( Type_Normal ), 
                                        currentLoad( 0 ), 
                                        maxLoad( 450 ), 
                                        loadTolerance( 100 ), 
                                        isConnected( false ), 
-                                       isVerified( false ) {}
+                                       isVerified( false ),
+                                       isPreferred( false )
+                                       {}
 };
 
 ///////////////////////////////////////////////////////////////////
@@ -86,7 +90,7 @@ private:
    typedef pair< int, KhaanConnector* >   ConnectionPair;
    typedef ConnectionMap::iterator        ConnectionMapIterator;
 
-   typedef std::deque< int >               ConnectionIdQueue;
+   typedef std::deque< U32 >              ConnectionIdQueue;
 
    ConnectionMap              m_connectionMap;
    ConnectionIdQueue          m_connectionsNeedingUpdate;

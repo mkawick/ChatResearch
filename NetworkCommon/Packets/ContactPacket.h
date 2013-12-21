@@ -59,6 +59,8 @@ public:
    {
       ContactType_Base,
       ContactType_TestNotification,
+      ContactType_EchoToServer,
+      ContactType_EchoToClient,
 
       ContactType_GetListOfContacts,
       ContactType_GetListOfContactsResponse,
@@ -110,6 +112,21 @@ public:
    int      type;
 };
 
+///////////////////////////////////////////////////////////////
+
+class PacketContact_EchoToServer : public BasePacket
+{
+public:
+   PacketContact_EchoToServer(): BasePacket( PacketType_Contact, PacketContact::ContactType_EchoToServer ) {}
+};
+
+///////////////////////////////////////////////////////////////
+
+class PacketContact_EchoToClient : public BasePacket
+{
+public:
+   PacketContact_EchoToClient(): BasePacket( PacketType_Contact, PacketContact::ContactType_EchoToClient ) {}
+};
 
 ///////////////////////////////////////////////////////////////
 

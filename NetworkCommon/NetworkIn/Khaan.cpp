@@ -249,7 +249,7 @@ void  Khaan :: OnDataWritten( struct bufferevent *bev, void *user_data )
    //output->open();
     /* if (evbuffer_get_length(output) == 0) {
          printf("flushed answer\n");
-         /*bufferevent_free(bev);
+         //bufferevent_free(bev);
      }*/
 }
 //---------------------------------------------------------------

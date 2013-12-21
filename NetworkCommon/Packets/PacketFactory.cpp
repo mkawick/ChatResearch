@@ -201,6 +201,16 @@ bool  PacketFactory::ParseLogin( const U8* bufferIn, int& bufferOffset, const Ba
             *packetOut = SerializeIn< PacketLogoutToClient >( bufferIn, bufferOffset );
          }
          return true;
+      case PacketLogin::LoginType_EchoToServer:
+         {
+            *packetOut = SerializeIn< PacketLogin_EchoToServer >( bufferIn, bufferOffset );
+         }
+         return true;
+      case PacketLogin::LoginType_EchoToClient:
+         {
+            *packetOut = SerializeIn< PacketLogin_EchoToClient >( bufferIn, bufferOffset );
+         }
+         return true;
       case PacketLogin::LoginType_InformClientOfLoginStatus:
          {
             *packetOut = SerializeIn< PacketLoginToClient >( bufferIn, bufferOffset );
@@ -311,6 +321,16 @@ bool  PacketFactory::ParseChat( const U8* bufferIn, int& bufferOffset, const Bas
    case PacketChatToServer::ChatType_ChatToClient:
       {
          *packetOut = SerializeIn< PacketChatToClient >( bufferIn, bufferOffset );
+      }
+      return true;
+   case PacketChatToServer::ChatType_EchoToServer:
+      {
+         *packetOut = SerializeIn< PacketChat_EchoToServer >( bufferIn, bufferOffset );
+      }
+      return true;
+   case PacketChatToServer::ChatType_EchoToClient:
+      {
+         *packetOut = SerializeIn< PacketChat_EchoToClient >( bufferIn, bufferOffset );
       }
       return true;
    case PacketChatToServer::ChatType_UserChatStatusChange:
@@ -590,6 +610,17 @@ bool     PacketFactory::ParseContact( const U8* bufferIn, int& bufferOffset, con
       }
       return true;
 
+   case PacketContact::ContactType_EchoToServer:
+      {
+         *packetOut = SerializeIn< PacketContact_EchoToServer >( bufferIn, bufferOffset );
+      }
+      return true;
+   case PacketContact::ContactType_EchoToClient:
+      {
+         *packetOut = SerializeIn< PacketContact_EchoToClient >( bufferIn, bufferOffset );
+      }
+      return true;
+
    case PacketContact::ContactType_GetListOfContacts:
       {
          *packetOut = SerializeIn< PacketContact_GetListOfContacts >( bufferIn, bufferOffset );
@@ -697,7 +728,16 @@ bool     PacketFactory::ParseAsset( const U8* bufferIn, int& bufferOffset, const
          *packetOut = SerializeIn< PacketAsset_TestNotification >( bufferIn, bufferOffset );
       }
       return true;
-
+   case PacketAsset::AssetType_EchoToServer:
+      {
+         *packetOut = SerializeIn< PacketAsset_EchoToServer >( bufferIn, bufferOffset );
+      }
+      return true;
+   case PacketAsset::AssetType_EchoToClient:
+      {
+         *packetOut = SerializeIn< PacketAsset_EchoToClient >( bufferIn, bufferOffset );
+      }
+      return true;
    case PacketAsset::AssetType_GetListOfStaticAssets:
       {
          *packetOut = SerializeIn< PacketAsset_GetListOfStaticAssets >( bufferIn, bufferOffset );
@@ -875,6 +915,16 @@ bool     PacketFactory::ParseGame( const U8* bufferIn, int& bufferOffset, const 
          *packetOut = SerializeIn< PacketGameplayRawData >( bufferIn, bufferOffset );
       }
       return true;
+   case PacketGameToServer::GamePacketType_EchoToServer:
+      {
+         *packetOut = SerializeIn< PacketGame_EchoToServer >( bufferIn, bufferOffset );
+      }
+      return true;
+   case PacketGameToServer::GamePacketType_EchoToClient:
+      {
+         *packetOut = SerializeIn< PacketGame_EchoToClient >( bufferIn, bufferOffset );
+      }
+      return true;
    }
 
    return false;
@@ -909,6 +959,16 @@ bool     PacketFactory::ParsePurchase( const U8* bufferIn, int& bufferOffset, co
    case PacketPurchase::PurchaseType_TestNotification:
       {
          *packetOut = SerializeIn< PacketPurchase_TestNotification >( bufferIn, bufferOffset );
+      }
+      return true;
+   case PacketPurchase::PurchaseType_EchoToServer:
+      {
+         *packetOut = SerializeIn< PacketPurchase_EchoToServer >( bufferIn, bufferOffset );
+      }
+      return true;
+   case PacketPurchase::PurchaseType_EchoToClient:
+      {
+         *packetOut = SerializeIn< PacketPurchase_EchoToClient >( bufferIn, bufferOffset );
       }
       return true;
    case PacketPurchase::PurchaseType_Buy:

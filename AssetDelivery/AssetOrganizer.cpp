@@ -2,39 +2,46 @@
 // AssetOrganizer.cpp 
 //
 
-#include <stdio.h>
-#include <direct.h>
-#include <windows.h>
-#include <conio.h>
+#include <iostream>       // std::cout, std::ios
+#include <sstream>        // std::istringstream
+#include <ctime>          // std::tm
+#include <locale>         // std::locale, std::time_get, std::use_facet
 
-#include <iostream>
 #include <fstream> 
 #include <string>
 using namespace std;
 
-#pragma warning (disable: 4996)
-#include <boost/format.hpp>
-#include <boost/tokenizer.hpp>
-#include <boost/date_time/posix_time/posix_time.hpp>
-#include <boost/range/algorithm/remove_if.hpp>
-#include <boost/algorithm/string.hpp>
-#include <boost/date_time.hpp>
-using namespace boost::posix_time;
-namespace bt = boost::posix_time;
+#include <time.h>
 
 
 #include "../NetworkCommon/ServerConstants.h"
 #include "../NetworkCommon/DataTypes.h"
-#include "AssetOrganizer.h"
 
 #include "../NetworkCommon/Utils/Utils.h"
+
+#if PLATFORM == PLATFORM_WINDOWS
+#pragma warning (disable: 4996)
+#endif
+
+#include <boost/format.hpp>
+//#include <boost/algorithm/string.hpp>
+#include <boost/lexical_cast.hpp>
+//#include <boost/date_time.hpp>
+
+//using namespace boost::posix_time;
+//namespace bt = boost::posix_time;
+
+
+#include "AssetOrganizer.h"
+
+
 
 // found here:
 //http://stackoverflow.com/questions/3786201/parsing-of-date-time-from-string-boost
 
 
 
-AssetOrganizer::AssetOrganizer() : m_isInitializedProperly( false ), m_lastFileLoadedTime( 0 ), m_allFilesAreNowLoaded( false )
+AssetOrganizer::AssetOrganizer() : m_isInitializedProperly( false ), m_allFilesAreNowLoaded( false ), m_lastFileLoadedTime( 0 )
 {
 }
 
@@ -42,10 +49,19 @@ AssetOrganizer::~AssetOrganizer()
 {
 }
 
+template <class T>
+T stoa(const std::string& s)
+{
+   T t;
+   std::istringstream iss(s);
+   if (!(iss >t))
+   throw "Can't convert";
+   return t;
+}
 
 string ConvertStringToStandardTimeFormat(const std::string& timeString )
 {
-   const char* timeFormats [] = 
+   /*const char* timeFormats [] = 
    {
       "%Y/%m/%d %H:%M:%S",
       "%Y/%m/%d %H:%M:%S",
@@ -58,10 +74,10 @@ string ConvertStringToStandardTimeFormat(const std::string& timeString )
 
    bt::ptime pt;
    bool success = false;
-   for(size_t i=0; i<timeFormatsCount; ++i)
+   for( size_t i=0; i<timeFormatsCount; ++i )
    {
       std::istringstream is( timeString );
-      is.imbue( std::locale(std::locale::classic(), new bt::time_input_facet( timeFormats[i] )) );
+      is.imbue( std::locale( std::locale::classic(), new bt::time_input_facet( timeFormats[i] ) ) );
       is >> pt;
       if(pt != bt::ptime()) 
       {
@@ -72,10 +88,148 @@ string ConvertStringToStandardTimeFormat(const std::string& timeString )
 
    if( success )
    {
-      return boost::posix_time::to_simple_string( pt );
+      return bt::to_simple_string( pt );
    }
 
-   return string();
+   return string();*/
+   // because of all of the boost problems, this was my only real solution
+ /*  int year, month, day, hour, minute, second = 0;
+   int r = 0;
+
+   string returnString;
+
+   tm brokenTime;
+   strftime( timeString.c_str(), "%Y-%m-%d %T", &brokenTime);
+   r = scanf ("%d-%d-%d %d:%d:%d", &year, &month, &day,
+              &hour, &minute, &second);
+   if (r == 6) 
+   {
+      char buffer[100];
+     sprintf ( buffer, "%d-%d-%d %d:%d:%d\n", year, month, day, hour, minute,
+             second);
+     returnString = buffer;
+   }
+   return returnString;*/
+
+   /*std::wstring input = L"2011-Februar-18 23:12:34";
+    std::tm t;
+    std::wistringstream ss(input);
+    ss.imbue(std::locale("de_DE"));
+    ss >> std::get_time(&t, L"%Y-%b-%d %H:%M:%S"); // uses std::time_get<wchar_t>
+    std::cout << std::asctime(&t);*/
+
+  /* ios_base::iostate;
+
+   std::locale loc;        // classic "C" locale
+
+   // get time_get facet:
+   const std::time_get<char>& tmget = std::use_facet <std::time_get<char> > (loc);
+
+   std::ios::iostate state;
+   std::istringstream iss ( timeString );
+   std::tm when;
+
+   tmget.get_date (iss, std::time_get<char>::iter_type(), iss, state, &when);
+
+   std::cout << "year: " << when.tm_year << '\n';
+   std::cout << "month: " << when.tm_mon << '\n';
+   std::cout << "day: " << when.tm_mday << '\n';*/
+
+/*
+  int year, mon, day, hour, minute, second;
+
+   year = stoa<int>(timeString.substr(0, 4));
+   mon = stoa<int>(timeString.substr(5, 2));
+   day = stoa<int>(timeString.substr(8, 2));
+   hour = stoa<int>(timeString.substr(11, 2));
+   minute = stoa<int>(timeString.substr(14, 2));
+   second = stoa<int>(timeString.substr(17, 2));
+
+   if (timeString.substr(20, 2) == "PM")
+   {
+      hour += 12;
+   }
+
+   std::locale loc;        // classic "C" locale
+
+   // get time_get facet:
+   const std::time_get<char>& tmget = std::use_facet <std::time_get<char> > (loc);
+
+   std::ios::iostate state;
+   std::istringstream iss ( timeString );
+   std::tm when;
+
+   tmget.get_date (iss, std::time_get<char>::iter_type(), iss, state, &when);
+
+   char buffer[100];
+   sprintf ( buffer, "%d-%d-%d %d:%d:%d", year, month, day, hour, minute,
+             second);
+   returnString = buffer;
+
+   return returnString;*/
+
+   typedef std::istreambuf_iterator<char, std::char_traits<char> > Iter;
+
+    // time struct to parse date into
+    std::tm datetime;  // zero initialized
+    memset( &datetime, 0, sizeof( datetime ) );
+
+    // Unused, required by time_get
+    std::ios_base::iostate state;
+
+    // Stream object to read from
+    std::istringstream ins ("");
+
+    // Iterators into the stream object
+    Iter begin (ins);
+    Iter end;
+
+    const std::locale loc ("C");
+
+    // Get a reference to the time_get facet in locale loc.
+    const std::time_get<char, Iter> &tg =
+        std::use_facet<std::time_get<char, Iter> >(loc);
+
+    // Display time_base::dateorder value.
+    std::cout << "time_base::dateorder == " << tg.date_order () << ".\n";
+  
+    // Insert date string into stream.
+    ins.str ( timeString );
+
+    // get_date from the stream and output tm contents.
+    /*tg.get_date (begin, end, ins, state, &timeb);
+    std::cout << "Date: " << timeb.tm_year << "-" << timeb.tm_mon << "-" << timeb.tm_mday << std::endl;*/
+
+  /*  // Insert weekday string into stream.
+    ins.str ("Monday");
+
+    // get_weekday from the stream and output tm contents.
+    tg.get_weekday (begin, end, ins, state, &timeb);
+    std::cout << "Weekday: Monday\n" << timeb << std::endl;
+  
+    // Insert time string into stream.
+    ins.str ("06:47:32");
+
+    // get_time from the stream and output tm contents.
+    tg.get_time (begin, end, ins, state, &timeb);
+    std::cout << "Time: 06:47:32\n" << timeb << std::endl;*/
+
+
+    int year, month, day, hour, minute, second;
+    sscanf( timeString.c_str(), "%d-%d-%d %d:%d:%d", &year, &month, &day, &hour, &minute, &second );
+    datetime.tm_sec = second;
+    datetime.tm_min = minute;
+    datetime.tm_hour = hour;
+    datetime.tm_mday = day;
+    datetime.tm_mon = month;
+    datetime.tm_year = year;
+    //return mktime(datetime);
+
+    char buffer[100];
+    sprintf (buffer, "%4d-%02d-%02d %02d:%02d:%02d", datetime.tm_year, datetime.tm_mon, datetime.tm_mday, datetime.tm_hour, datetime.tm_min, datetime.tm_sec );
+
+       
+    return string( buffer );
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -119,7 +273,16 @@ const char* assetPriotityType[] = {
 
 //////////////////////////////////////////////////////////////////////////
 
-AssetDefinition:: AssetDefinition(): isLoaded( false ), isLayout( false ), isOptional( false ), productId( 0 ), platform( 0 ), fileData( NULL ), fileSize( 0 ), compressionType( 0 ), version( "0.5" ), priority( 0 )
+AssetDefinition:: AssetDefinition() :  isLoaded( false ), 
+                                       isLayout( false ), 
+                                       isOptional( false ), 
+                                       productId( 0 ), 
+                                       platform( 0 ), 
+                                       priority( 0 ),
+                                       version( "0.7" ),
+                                       fileData( NULL ), 
+                                       fileSize( 0 ),
+                                       compressionType( 0 )
 {
 }
 
@@ -220,71 +383,6 @@ int   Findpriority( const string& value )
 
 //////////////////////////////////////////////////////////////////////////
 
-bool  splitOnFirstFound( vector< string >& listOfStuff, string text, const char* delimiter = "=:" )
-{
-   size_t position = text.find_first_of( delimiter );
-   if( position != string::npos )
-   {
-      std::string substr1 = text.substr( 0, position );
-      std::string substr2 = text.substr( position+1, std::string::npos );// assuming only one
-      listOfStuff.push_back( substr1 );
-      listOfStuff.push_back( substr2 );
-      return true;
-   }
-   else
-   {
-      listOfStuff.push_back( text );
-      return false;
-   }
-}
-
-bool  ParseListOfItems( vector< string >& listOfStuff, string text, const char* delimiter = "=:", const char* charsToRemove = NULL )
-{
-   //text.erase( boost::remove_if( text.begin(), text.end(), "[]{}"), text.end() );
-   if( charsToRemove )
-   {
-      text.erase(remove_if(text, boost::is_any_of( charsToRemove )), text.end());
-   }
-
-   string separator1( "" );//dont let quoted arguments escape themselves
-   string separator2( delimiter );//split on = and :
-   string separator3( "\"\'" );//let it have quoted arguments
-
-
-   boost::escaped_list_separator<char> els( separator1, separator2, separator3 );
-   boost::tokenizer<boost::escaped_list_separator<char> > tokens( text, els );
-
-   for (boost::tokenizer<boost::escaped_list_separator<char> >::iterator i(tokens.begin());
-      i!=tokens.end(); ++i) 
-   {
-      listOfStuff.push_back(*i);
-   }
-
-   if( listOfStuff.size() > 0 )
-      return true;
-
-   return false;
-}
-
-string RemoveEnds( std::string &s, const char* charsToStrip = "\"\'" )
-{
-   int len = strlen( charsToStrip );
-
-   for( int i=0; i<len; i++ )
-   {
-      while( *s.begin() == charsToStrip[i] )
-      {
-         s = s.substr(1, s.size());
-      }
-      while( *s.rbegin() == charsToStrip[i] )
-      {
-         s = s.substr(0, s.size()-1);
-      }
-      //s.erase(remove( s.begin(), s.end(), charsToStrip[i] ),s.end());
-   }
-
-   return s;
-}
 
 //////////////////////////////////////////////////////////////////////////
 
@@ -652,7 +750,8 @@ bool  AssetOrganizer::Init( const string& assetManifestFile )
    string line;
    if (!infile) 
    { 
-      std::cerr << "Error opening file!\n"; 
+      std::cerr << "Error opening file!" << endl; 
+      std::cout << "file not found: " << assetManifestFile << endl; 
       return 1; 
    }
 

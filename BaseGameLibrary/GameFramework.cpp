@@ -299,7 +299,7 @@ void     GameFramework::AddTimer( U32 timerId, U32 callbackTimeMs ) // timers mu
 
 bool  GameFramework::Run()
 {
-   cout << "Game framework version 0.8" << endl;
+   cout << "Game framework version 0.86" << endl;
 
    Database::Deltadromeus* delta = new Database::Deltadromeus;
    delta->SetConnectionInfo( m_dbIpAddress, m_dbPort, m_dbUsername, m_dbPassword, m_dbSchema );
@@ -310,6 +310,7 @@ bool  GameFramework::Run()
    }
 
    cout << GetServerName() << ":" << endl;
+   cout << "Server stack version: " << ServerStackVersion << endl;
    cout << "Version: " << m_version << endl;
    cout << "ServerId: " << GetServerId() << endl;
    cout << "Product Id: " << (int) GetGameProductId() << endl;

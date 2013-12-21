@@ -29,19 +29,21 @@ string CreateLookupKey( const string& email, const string& userUuid, const strin
 //////////////////////////////////////////////////////////////////////////
 
 ConnectionToUser:: ConnectionToUser( const string& name, const string& pword, const string& key ) : 
-                     userName( name ), 
+                     m_userName( name ), 
                      passwordHash( pword ), 
                      loginKey( key ), 
                      status( LoginStatus_Pending ), 
-                     isActive( true ), 
+                     gameProductId( 0 ),
+                     connectionId( 0 ),
                      loggedOutTime( 0 ),
-                     adminLevel( 0 ),
+                     isLoggingOut( false ),
                      timeZone( 0 ),
-                     languageId( 1 ),
+                     m_languageId( 1 ),
+                     adminLevel( 0 ),
+                     isActive( true ), 
                      showWinLossRecord( true ),
                      marketingOptOut( false ),
                      showGenderProfile( false ),
-                     isLoggingOut( false ),
                      m_isSavingUserProfile( false )
                      {}
 
@@ -76,7 +78,7 @@ bool  ConnectionToUser::HandleAdminRequestUserProfile( PacketDbQueryResult* dbRe
          {
             
          }*/
-         RequestListOfPurchases( conn.userUuid );
+         RequestListOfPurchases( conn.m_userUuid );
       }
       else
       {
@@ -112,7 +114,7 @@ bool  ConnectionToUser::StoreUserInfo( PacketDbQueryResult* dbResult )
    connectionId =                   dbResult->id;
    if( loginKey.size() == 0 )
    {
-      U32 hash = static_cast<U32>( GenerateUniqueHash( boost::lexical_cast< string >( dbResult->id ) + email ) );
+      U32 hash = static_cast<U32>( GenerateUniqueHash( boost::lexical_cast< string >( dbResult->id ) + m_email ) );
       loginKey = GenerateUUID( GetCurrentMilliseconds() + hash );
    }
 
@@ -178,9 +180,9 @@ void  ConnectionToUser::SaveUserSettings( UserPlusProfileTable& enigma, U8 produ
    UserPlusProfileTable::row row = *enigma.begin();
 
    id =                             row[ TableUserPlusProfile::Column_id ];
-   userName =                       row[ TableUserPlusProfile::Column_name ];
-   userUuid =                       row[ TableUserPlusProfile::Column_uuid ];
-   email =                          row[ TableUserPlusProfile::Column_email ];
+   m_userName =                     row[ TableUserPlusProfile::Column_name ];
+   m_userUuid =                     row[ TableUserPlusProfile::Column_uuid ];
+   m_email =                        row[ TableUserPlusProfile::Column_email ];
    passwordHash =                   row[ TableUserPlusProfile::Column_password_hash ];
    
    lastLoginTime =                  GetDateInUTC(); 
@@ -193,7 +195,7 @@ void  ConnectionToUser::SaveUserSettings( UserPlusProfileTable& enigma, U8 produ
    string language = row[ TableUserPlusProfile::Column_language_id];
    if( language.size() > 0 && language != "NULL" )
    {
-      languageId =                     boost::lexical_cast<int>( row[ TableUserPlusProfile::Column_language_id] );
+      m_languageId =                     boost::lexical_cast<int>( row[ TableUserPlusProfile::Column_language_id] );
    }
 
    string avatar = row[ TableUserPlusProfile::Column_mber_avatar];
@@ -230,12 +232,12 @@ void  ConnectionToUser::SaveUpdatedProfile( const PacketUpdateUserProfile* profi
       // some fields may be blank
       if( profileUpdate->userName.size() > 0 )
       {
-         userName =                       profileUpdate->userName;
+         m_userName =                     profileUpdate->userName;
       }
       //userUuid =                       profileUpdate->userUuid;
       if( profileUpdate->email.size() > 0 )
       {
-         email =                          profileUpdate->email;
+         m_email =                        profileUpdate->email;
       }
 
       if( profileUpdate->passwordHash.size() > 0 )
@@ -248,9 +250,9 @@ void  ConnectionToUser::SaveUpdatedProfile( const PacketUpdateUserProfile* profi
    //loggedOutTime =                  GetDateFromString( profileUpdate->loggedOutTime.c_str() );
 
    isActive =                       profileUpdate->isActive;
-   languageId =                     profileUpdate->languageId;
-   if( languageId < 1 || languageId > 12 )// limits on languages
-      languageId = 1;
+   m_languageId =                     profileUpdate->languageId;
+   if( m_languageId < 1 || m_languageId > 12 )// limits on languages
+      m_languageId = 1;
 
    adminLevel =                     profileUpdate->adminLevel;
    if( adminLevel > 2 )
@@ -260,7 +262,7 @@ void  ConnectionToUser::SaveUpdatedProfile( const PacketUpdateUserProfile* profi
    showWinLossRecord =              profileUpdate->showWinLossRecord ? true:false;// accounting for non-boolean values
    showGenderProfile =              profileUpdate->showGenderProfile ? true:false;// accounting for non-boolean values
 
-   ConnectionToUser* loadedConnection = userManager->GetLoadedUserConnectionByUuid( userUuid );
+   ConnectionToUser* loadedConnection = userManager->GetLoadedUserConnectionByUuid( m_userUuid );
    if( loadedConnection != NULL && loadedConnection != this )
    {
       loadedConnection->SaveUpdatedProfile( profileUpdate, adminLevelOfCaller, false );// we will write if needed... no pass thru required
@@ -278,12 +280,12 @@ void  ConnectionToUser::SaveUpdatedProfile( const PacketUpdateUserProfile* profi
       string query = "UPDATE playdek.users SET user_name='%s',user_email='%s',user_pw_hash='%s',active=";
       query += boost::lexical_cast<string>( isActive?1:0 );
       query += ",language_id=";
-      query += boost::lexical_cast<string>( languageId );
+      query += boost::lexical_cast<string>( m_languageId );
       query += "  WHERE user_id=";
       query += boost::lexical_cast<string>( id );
       dbQuery->query = query;
-      dbQuery->escapedStrings.insert( userName );
-      dbQuery->escapedStrings.insert( email );
+      dbQuery->escapedStrings.insert( m_userName );
+      dbQuery->escapedStrings.insert( m_email );
       dbQuery->escapedStrings.insert( passwordHash );
 
       userManager->AddQueryToOutput( dbQuery );
@@ -332,8 +334,8 @@ bool  ConnectionToUser::BeginLogout( bool wasDisconnectedByError )
    if( wasDisconnectedByError == false )
    {
       PacketLogoutToClient* logout = new PacketLogoutToClient();
-      logout->userName =            userName;// just for loggin purposes
-      logout->uuid =                userUuid;
+      logout->userName =            m_userName;// just for loggin purposes
+      logout->uuid =                m_userUuid;
       return userManager->SendPacketToGateway( logout, connectionId );
    }
 
@@ -344,7 +346,7 @@ bool  ConnectionToUser::BeginLogout( bool wasDisconnectedByError )
 
 bool  ConnectionToUser::FinalizeLogout()
 {
-   if( userUuid.size() == 0 )// this should never happen, but being careful never hurts.
+   if( m_userUuid.size() == 0 )// this should never happen, but being careful never hurts.
       return false;
 
    PacketDbQuery* dbQuery = new PacketDbQuery;
@@ -353,7 +355,7 @@ bool  ConnectionToUser::FinalizeLogout()
    dbQuery->isFireAndForget = true;// no result is needed
    
    string queryString = "UPDATE users AS user SET user.last_logout_timestamp=now() WHERE uuid = '";
-   queryString +=             userUuid;
+   queryString +=             m_userUuid;
    queryString += "'";
    dbQuery->query =           queryString;
    isLoggingOut = false;
@@ -409,7 +411,7 @@ bool  ConnectionToUser::UpdateLastLoggedInTime()
    dbQuery->isFireAndForget = true;// no result is needed
 
    string queryString = "UPDATE users AS user SET user.last_login_timestamp=now() WHERE uuid = '";
-   queryString +=             userUuid;
+   queryString +=             m_userUuid;
    queryString += "'";
    dbQuery->query =           queryString;
 
@@ -426,7 +428,7 @@ bool  ConnectionToUser::UpdateLastLoggedOutTime()
    dbQuery->isFireAndForget = true;// no result is needed
 
    string queryString = "UPDATE users AS user SET user.last_logout_timestamp=now() WHERE uuid = '";
-   queryString += userUuid;
+   queryString += m_userUuid;
    queryString += "'";
    dbQuery->query =           queryString;
 
@@ -444,10 +446,10 @@ bool    ConnectionToUser:: SuccessfulLogin( U32 connectId, bool isReloggedIn )
    productsWaitingForInsertionToDb.clear();
 
    PacketLoginToGateway* loginStatus = new PacketLoginToGateway();
-   if( userName.size() )
+   if( m_userName.size() )
    {
-      loginStatus->userName = userName;
-      loginStatus->uuid = userUuid;
+      loginStatus->userName = m_userName;
+      loginStatus->uuid = m_userUuid;
       loginStatus->lastLogoutTime = lastLogoutTime;
       loginStatus->loginKey = loginKey;
    }
@@ -470,7 +472,7 @@ bool    ConnectionToUser:: SuccessfulLogin( U32 connectId, bool isReloggedIn )
 
   // RequestListOfGames( userUuid );
 
-   RequestListOfPurchases( userUuid );
+   RequestListOfPurchases( m_userUuid );
 
    //This is where we inform all of the games that the user is logged in.
 
@@ -493,7 +495,7 @@ bool     ConnectionToUser:: RequestListOfPurchases( const string& user_uuid )
       return PackageListOfProducts();
    }*/
 
-   if( userUuid.size() && connectionId != 0 )
+   if( m_userUuid.size() && connectionId != 0 )
    {
       PacketDbQuery* dbQuery = new PacketDbQuery;
       dbQuery->id =     connectionId ;
@@ -522,9 +524,9 @@ bool     ConnectionToUser:: HandleRequestForListOfPurchases( const PacketListOfU
       return false;
    }
 
-   if( purchase->userUuid == userUuid )
+   if( purchase->userUuid == m_userUuid )
    {
-      SendListOfProductsToClient( connectionId );
+      SendListOfOwnedProductsToClient( connectionId );
    }
 
    return true;
@@ -532,7 +534,7 @@ bool     ConnectionToUser:: HandleRequestForListOfPurchases( const PacketListOfU
 
 //---------------------------------------------------------------
 
-void     ConnectionToUser:: SendListOfProductsToClient( U32 connectionId )
+void     ConnectionToUser:: SendListOfOwnedProductsToClient( U32 connectionId )
 {
    PacketListOfUserAggregatePurchases* purchases = new PacketListOfUserAggregatePurchases;
 
@@ -573,16 +575,16 @@ bool     ConnectionToUser:: AddPurchase( const PacketAddPurchaseEntry* purchase 
 
       
 
-      if( purchase->userUuid == this->userUuid ||
-          purchase->userEmail == this->email ||
-          purchase->userName == this->userName
+      if( purchase->userUuid == this->m_userUuid ||
+          purchase->userEmail == this->m_email ||
+          purchase->userName == this->m_userName
          )// giving to self for admins
       {
          double price = 0.0;
          float numToGive = static_cast<float>( purchase->quantity );
-         WriteProductToUserRecord( userUuid, productUuid, price, numToGive, userUuid, "add purchase entry to self by admin" );
+         WriteProductToUserRecord( m_userUuid, productUuid, price, numToGive, m_userUuid, "add purchase entry to self by admin" );
          AddToProductsOwned( productInfo.productId, productInfo.lookupName, productUuid, numToGive );
-         SendListOfProductsToClient( connectionId );
+         SendListOfOwnedProductsToClient( connectionId );
          return true;
       }
 
@@ -600,16 +602,16 @@ bool     ConnectionToUser:: AddPurchase( const PacketAddPurchaseEntry* purchase 
       {
          double price = 0.0;
          float numToGive = static_cast<float>( purchase->quantity );
-         WriteProductToUserRecord( it->second.userUuid, productUuid, price, numToGive, userUuid, "add purchase entry by admin" );
+         WriteProductToUserRecord( it->second.m_userUuid, productUuid, price, numToGive, m_userUuid, "add purchase entry by admin" );
 
          it->second.AddToProductsOwned( productInfo.productId, productInfo.lookupName, productUuid, numToGive );
-         it->second.SendListOfProductsToClient( connectionId );
+         it->second.SendListOfOwnedProductsToClient( connectionId );
 
-         ConnectionToUser* loadedConnection = userManager->GetLoadedUserConnectionByUuid( userUuid );
+         ConnectionToUser* loadedConnection = userManager->GetLoadedUserConnectionByUuid( m_userUuid );
          if( loadedConnection )
          {
             loadedConnection->AddToProductsOwned( productInfo.productId, productInfo.lookupName, productInfo.uuid, 1 );
-            loadedConnection->SendListOfProductsToClient( connectionId );
+            loadedConnection->SendListOfOwnedProductsToClient( connectionId );
          }
          return true;
       }
@@ -650,7 +652,7 @@ bool     ConnectionToUser:: StoreUserPurchases( const PacketListOfUserAggregateP
             if( result == true )
             {
                const string& productUuid = productInfo.uuid;
-               WriteProductToUserRecord( userUuid, productUuid, purchaseEntry.number_price, purchaseEntry.quantity, "", "" );
+               WriteProductToUserRecord( m_userUuid, productUuid, purchaseEntry.number_price, purchaseEntry.quantity, "", "" );
                AddToProductsOwned( productInfo.productId, productInfo.lookupName, productUuid, purchaseEntry.quantity );
             }
          }
@@ -697,7 +699,7 @@ void     ConnectionToUser:: AddCurrentlyLoggedInProductToUserPurchases()// only 
       return;
    }
 
-   WriteProductToUserRecord( userUuid, productInfo.uuid, 0.0, 1, "user", "default by login" );
+   WriteProductToUserRecord( m_userUuid, productInfo.uuid, 0.0, 1, "user", "default by login" );
    float numToGive = 1;
    AddToProductsOwned( productInfo.productId, productInfo.lookupName, productInfo.uuid, numToGive );
 }
@@ -718,7 +720,7 @@ void     ConnectionToUser:: WriteProductToUserRecord( const string& productFilte
    bool result = userManager->GetProductByIndex( userProductIndex, productInfo );
    if( result == true )
    {
-      WriteProductToUserRecord( userUuid, productInfo.uuid, pricePaid, 1, this->userUuid, "new product reported by user login" );
+      WriteProductToUserRecord( m_userUuid, productInfo.uuid, pricePaid, 1, m_userUuid, "new product reported by user login" );
       AddToProductsOwned( productInfo.productId, productInfo.lookupName, productInfo.uuid, 1 );
    }
    else
@@ -764,14 +766,14 @@ void     ConnectionToUser:: StoreListOfUsersProductsFromDB( PacketDbQueryResult*
    ConnectionToUser* userWhoGetsProducts = this;
    ConnectionToUser* loadedConnection = NULL;
    bool loadedForSelf = true;
-   if( dbResult->meta.size() && dbResult->meta != this->userUuid )
+   if( dbResult->meta.size() && dbResult->meta != m_userUuid )
    {
       UserConnectionMapIterator  it = FindUser( "", dbResult->meta, "" );
       if( it != adminUserData.end() )
       {
          userWhoGetsProducts = &it->second;
       }
-      loadedConnection = userManager->GetLoadedUserConnectionByUuid( userUuid );
+      loadedConnection = userManager->GetLoadedUserConnectionByUuid( m_userUuid );
       loadedForSelf = false;
    }
 
@@ -780,6 +782,8 @@ void     ConnectionToUser:: StoreListOfUsersProductsFromDB( PacketDbQueryResult*
    UserOwnedProductSimpleTable  enigma( dbResult->bucket );
    UserOwnedProductSimpleTable::iterator      it = enigma.begin();
    int   numProducts = dbResult->bucket.bucket.size();
+   numProducts = numProducts;
+
    while( it != enigma.end() )
    {
       UserOwnedProductSimpleTable::row       row = *it++;
@@ -806,7 +810,7 @@ void     ConnectionToUser:: StoreListOfUsersProductsFromDB( PacketDbQueryResult*
       AddCurrentlyLoggedInProductToUserPurchases();
    }
 
-   userWhoGetsProducts->SendListOfProductsToClient( connectionId );
+   userWhoGetsProducts->SendListOfOwnedProductsToClient( connectionId );
 
    if( loadedForSelf == false )
    {
@@ -827,12 +831,13 @@ bool     ConnectionToUser:: HandleCheats( const PacketCheat* cheat )
 
    //QueryType_GetProductListForUser
    const char* cheat_text = cheat->cheat.c_str();
+   cheat_text = cheat_text;
 
    std::vector<std::string> strings;
    split( cheat->cheat, strings );
 
    
-   int count = 0;
+   //int count = 0;
    std::vector<std::string>::iterator it =  strings.begin();
    while( it != strings.end() )
    {
@@ -873,7 +878,7 @@ bool     ConnectionToUser:: HandleCheat_RemoveAll( const string& command )
    dbQuery->isFireAndForget = true;
 
    dbQuery->query = "DELETE FROM user_join_product WHERE user_uuid='%s'";
-   dbQuery->escapedStrings.insert( userUuid );
+   dbQuery->escapedStrings.insert( m_userUuid );
 
    userManager->AddQueryToOutput( dbQuery );
 
@@ -897,13 +902,13 @@ bool     ConnectionToUser:: HandleCheat_AddProduct( const string& productName )
    if( result == true )
    {
       //WriteProductToUserRecord( userUuid, product.uuid, product.price );
-      WriteProductToUserRecord( userUuid, productInfo.uuid, 0.0, 1, userUuid, "added by cheat" );
+      WriteProductToUserRecord( m_userUuid, productInfo.uuid, 0.0, 1, m_userUuid, "added by cheat" );
       AddToProductsOwned( productInfo.productId, productInfo.lookupName, productInfo.uuid, 1 );
-      ConnectionToUser* loadedConnection = userManager->GetLoadedUserConnectionByUuid( userUuid );
+      ConnectionToUser* loadedConnection = userManager->GetLoadedUserConnectionByUuid( m_userUuid );
       if( loadedConnection )
       {
          loadedConnection->AddToProductsOwned( productInfo.productId, productInfo.lookupName, productInfo.uuid, 1 );
-         loadedConnection->SendListOfProductsToClient( connectionId );
+         loadedConnection->SendListOfOwnedProductsToClient( connectionId );
       }
    }
 
@@ -916,9 +921,9 @@ void     ConnectionToUser:: PackUserProfileRequestAndSendToClient( U32 connectio
 {
    PacketRequestUserProfileResponse* response = new PacketRequestUserProfileResponse;
    // string userName, string email, string userUuid, string lastLoginTime, string loggedOutTime, int adminLevel, bool isActive, bool showWinLossRecord, bool marketingOptOut, bool showGenderProfile
-   response->userName =          userName;
-   response->userUuid =          userUuid;
-   response->email =             email;
+   response->userName =          m_userName;
+   response->userUuid =          m_userUuid;
+   response->email =             m_email;
    response->lastLoginTime =     lastLoginTime;
    response->loggedOutTime =     lastLogoutTime;
 
@@ -928,9 +933,9 @@ void     ConnectionToUser:: PackUserProfileRequestAndSendToClient( U32 connectio
    response->marketingOptOut =   marketingOptOut;
    response->showGenderProfile = showGenderProfile;
 
-   response->profileKeyValues.insert( "name", userName );
-   response->profileKeyValues.insert( "uuid", userUuid );
-   response->profileKeyValues.insert( "email", email );
+   response->profileKeyValues.insert( "name", m_userName );
+   response->profileKeyValues.insert( "uuid", m_userUuid );
+   response->profileKeyValues.insert( "email", m_email );
    response->profileKeyValues.insert( "last_login_time", lastLoginTime );
    response->profileKeyValues.insert( "last_logget_out", lastLogoutTime );
    response->profileKeyValues.insert( "admin_level", boost::lexical_cast< string >( adminLevel ) );
@@ -948,8 +953,8 @@ void     ConnectionToUser:: PackOtherUserProfileRequestAndSendToClient( U32 conn
 {
    PacketRequestOtherUserProfileResponse* response = new PacketRequestOtherUserProfileResponse;
 
-   response->basicProfile.insert( "name", userName );
-   response->basicProfile.insert( "uuid", userUuid );
+   response->basicProfile.insert( "name", m_userName );
+   response->basicProfile.insert( "uuid", m_userUuid );
    response->basicProfile.insert( "show_win_loss_record", boost::lexical_cast< string >( showWinLossRecord  ? 1:0 ) );
    response->basicProfile.insert( "time_zone", boost::lexical_cast< string >( timeZone ) );
 
@@ -1003,7 +1008,7 @@ void     ConnectionToUser:: AddToProductsOwned( int productDbId, const string& l
    {
       ProductBrief brief;
       brief.productDbId = productDbId;
-      brief.filterName = userManager->GetStringLookup()->GetString( lookupName, languageId );
+      brief.filterName = userManager->GetStringLookup()->GetString( lookupName, m_languageId );
 
 
       brief.uuid = productUuid;
@@ -1018,7 +1023,7 @@ void     ConnectionToUser:: AddToProductsOwned( int productDbId, const string& l
 
 bool     ConnectionToUser:: RequestProfile( const PacketRequestUserProfile* profileRequest )
 {
-   if( profileRequest->uuid == userUuid || profileRequest->userName == userName || profileRequest->userEmail == email )
+   if( profileRequest->uuid == m_userUuid || profileRequest->userName == m_userName || profileRequest->userEmail == m_email )
    {
       PackUserProfileRequestAndSendToClient( connectionId );
       return true;
@@ -1077,7 +1082,7 @@ void     ConnectionToUser:: RequestProfile( const string& email, const string& u
 
 bool     ConnectionToUser:: UpdateProfile( const PacketUpdateUserProfile* updateProfileRequest )
 {
-   if( updateProfileRequest->userUuid == userUuid )
+   if( updateProfileRequest->userUuid == m_userUuid )
    {
       SaveUpdatedProfile( updateProfileRequest, adminLevel, true );
       return true;
@@ -1150,15 +1155,15 @@ ConnectionToUser:: FindUser( const string& email, const string& userUuid, const 
    map< string, ConnectionToUser> ::iterator it = adminUserData.begin();
    while( it != adminUserData.end() )
    {
-      if( userName.size() != 0 && it->second.userName == userName )
+      if( userName.size() != 0 && it->second.m_userName == userName )
       {
          return it;
       }
-      if( userUuid.size() != 0 && it->second.userUuid == userUuid )
+      if( userUuid.size() != 0 && it->second.m_userUuid == userUuid )
       {
          return it;
       }
-      if( email.size() != 0 && it->second.email == email )
+      if( email.size() != 0 && it->second.m_email == email )
       {
          return it;
       }

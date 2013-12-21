@@ -13,6 +13,14 @@ void  Copy( const AssetDefinition* asset, AssetInfo& assetInfo )
 {
    //assetInfo.productId  = gameProductId;
    assetInfo.assetHash  = asset->hash;
+   if( asset->name.size() > 0 )
+   {
+      assetInfo.assetName  = asset->name;
+   }
+   else
+   {
+      assetInfo.assetName  = asset->path;
+   }
    assetInfo.version    = asset->version;
    assetInfo.beginDate  = asset->beginTime;
    assetInfo.endDate    = asset->endTime;

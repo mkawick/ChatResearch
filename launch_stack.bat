@@ -30,7 +30,7 @@ start ./debug/PurchaseServer.exe listen.port=7700 s2s.port=7702 s2s.address=loca
 
 REM start ./debug/GameServer.exe db.port=16384 listen.port=21000
 
-start ./debug/GatewayServer.exe listen.port=9600 chat.address=localhost chat.port=7400 asset.port=7300 print.packets=true login.port=7600 
+start ./debug/GatewayServer.exe listen.port=9600 chat.address=localhost chat.port=7400 asset.port=7300 print.packets=true login.port=7600 games=[localhost:21000:summon_war,192.168.1.1:21100:MFM]
 
 exit
 

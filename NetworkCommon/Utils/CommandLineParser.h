@@ -30,6 +30,7 @@ public:
    CommandLineParser( const vector< std::string >& strings );// simple pairing
    CommandLineParser( const string& textToSeparateAndSort, const vector< std::string >& stringDictionary );
 
+   bool  IsRequestingInstructions() const;
    bool  FindValue( const string& key, string& valueOut ) const;
    bool  FindValue( const string& key, int& valueOut ) const;
    bool  FindValue( const string& key ) const;

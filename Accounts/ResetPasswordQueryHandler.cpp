@@ -13,7 +13,24 @@
 
 using namespace std;
 
-const char* resetPasswordEmailAddress = "account_reset@playdekgames.com";
+//////////////////////////////////////////////////////////////
+
+class EmailAddressesOfPasswordsToResetTable
+{
+public:
+   enum Columns
+   {
+      Column_id,
+      Column_email,
+      Column_language_id,
+      Column_reset_key,
+      Column_end
+   };
+};
+
+typedef Enigmosaurus <EmailAddressesOfPasswordsToResetTable> PasswordResetParser;
+
+//////////////////////////////////////////////////////////////
 
 ResetPasswordQueryHandler::ResetPasswordQueryHandler( U32 id, Queryer* parent, string& query ) : NewAccountQueryHandler( id, parent, query ), m_isServicingResetPassword( false )
 {
@@ -28,14 +45,15 @@ void     ResetPasswordQueryHandler::Update( time_t currentTime )
    if( m_hasLoadedStringTable == false || m_hasLoadedWeblinks == false )
       return;
 
-   QueryHandler< Queryer* >::Update( currentTime, m_isServicingResetPassword );
+   ParentType::Update( currentTime, m_isServicingResetPassword );
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////
 
 bool     ResetPasswordQueryHandler::HandleResult( const PacketDbQueryResult* dbResult )
 {
-   if( dbResult->lookup != m_queryType )
+   U32 queryType = static_cast< U32 >( dbResult->lookup );
+   if( queryType != m_queryType )
       return false;
 
    SetValueOnExit< bool >           setter( m_isServicingResetPassword, false );// due to multiple exit points...

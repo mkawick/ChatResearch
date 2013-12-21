@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../NetworkCommon/NetworkOut/fruitadens.h"
+#include "../NetworkCommon/NetworkOut/Fruitadens.h"
 
 #include "GatewayCommon.h"
 

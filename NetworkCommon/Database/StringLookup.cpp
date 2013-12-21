@@ -12,7 +12,7 @@
 
 //---------------------------------------------------------------
 
-StringLookup::StringLookup( U32 id, ParentQueryerPtr parent, vector< string >& stringCategories ): QueryHandler< Queryer* >( id, 20, parent ), m_isLoadingAllStrings( false ), m_numQueriesReceived( 0 )
+StringLookup::StringLookup( U32 id, ParentQueryerPtr parent, vector< string >& stringCategories ): ParentType( id, 20, parent ), m_isLoadingAllStrings( false ), m_numQueriesReceived( 0 )
 {
    assert( stringCategories.size() > 0 );
    m_stringCategories = stringCategories;// straight copy
@@ -25,7 +25,7 @@ void     StringLookup::Update( time_t currentTime )
 {
 
    // request strings first for all of the sales.
-   QueryHandler::Update( currentTime, m_isLoadingAllStrings );
+   ParentType::Update( currentTime, m_isLoadingAllStrings );
 }
 
 //---------------------------------------------------------------

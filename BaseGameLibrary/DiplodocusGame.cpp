@@ -53,12 +53,16 @@ void     DiplodocusGame::InputConnected( IChainedInterface* chainedInput )
 
 //---------------------------------------------------------------
 
-void     DiplodocusGame::ServerWasIdentified( ChainedInterface* khaan )
+void     DiplodocusGame::ServerWasIdentified( IChainedInterface* khaan )
 {
    BasePacket* packet = NULL;
    PackageForServerIdentification( m_serverName, m_localIpAddress, m_serverId, m_listeningPort, m_gameProductId, m_isGame, m_isControllerApp, true, m_isGateway, &packet );
-   khaan->AddOutputChainData( packet, 0 );
-   m_serversNeedingUpdate.push_back( static_cast<InputChainType*>( khaan )->GetServerId() );
+  /* khaan->AddOutputChainData( packet, 0 );
+   m_serversNeedingUpdate.push_back( static_cast<InputChainType*>( khaan )->GetServerId() );*/
+
+   ChainedType* localKhaan = static_cast< ChainedType* >( khaan );
+   localKhaan->AddOutputChainData( packet, 0 );
+   m_serversNeedingUpdate.push_back( localKhaan->GetServerId() );
 }
 
 //---------------------------------------------------------------

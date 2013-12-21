@@ -114,6 +114,8 @@ public:
 
 class SalesManager : public QueryHandler< DiplodocusPurchase* >
 {
+public: 
+   typedef QueryHandler< DiplodocusPurchase* > ParentType;
 public:
    enum ProductType // this is also maintained in the login sever
    {

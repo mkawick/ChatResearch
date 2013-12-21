@@ -25,11 +25,14 @@ const int ChatChannelManagerConnectionId = ConnectionIdExclusion.low;
 
 class DiplodocusChat : public Diplodocus< KhaanChat >
 {
+public: 
+   typedef Diplodocus< KhaanChat > ChainedType;
+
 public:
    DiplodocusChat( const string& serverName, U32 serverId );
    void     Init();
 
-   void     ServerWasIdentified( ChainedInterface* khaan );
+   void     ServerWasIdentified( IChainedInterface* khaan );
 
    bool     AddInputChainData( BasePacket* packet, U32 connectionId );
    // data going out can go only a few directions

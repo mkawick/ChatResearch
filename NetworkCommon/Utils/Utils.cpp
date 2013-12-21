@@ -11,15 +11,6 @@
 
 #include <ctime>
 #include <time.h>
-#include <boost/functional/hash.hpp>
-#include <boost/algorithm/string/trim.hpp>
-#include <boost/algorithm/string.hpp>
-
-#include <climits>
-#include "boost/random.hpp"
-#include "boost/generator_iterator.hpp"
-//#include <boost/chrono/.hpp>
-
 
 #if PLATFORM == PLATFORM_WINDOWS
    #include <windows.h>
@@ -30,11 +21,26 @@
    #include <termios.h>
    #include <unistd.h>
    #include <fcntl.h>
+#endif
 
+#define BOOST_NO_CXX11_EXPLICIT_CONVERSION_OPERATORS  // workaround for compile error on linux
+#include <boost/functional/hash.hpp>
+#include <boost/algorithm/string/trim.hpp>
+#include <boost/algorithm/string.hpp>
+#include <boost/format.hpp>
+#include <boost/tokenizer.hpp>
+//#include <boost/date_time/posix_time/posix_time.hpp>
+#include <boost/range/algorithm/remove_if.hpp>
+
+#include <climits>
+#include <boost/random.hpp>
+#include <boost/generator_iterator.hpp>
+//#include <boost/chrono/.hpp>
+
+#if PLATFORM != PLATFORM_WINDOWS
    #ifndef min
    #define min(a,b)            (((a) < (b)) ? (a) : (b))
    #endif
-
 #endif
 
 using namespace std;
@@ -355,7 +361,7 @@ void  PrintCurrentTime()
    cout << nowBuf << endl;
 }
 
-string OpenAndLoadFile( const string& path )
+const string OpenAndLoadFile( const string& path )
 {
    string returnString;
    ifstream file( path.c_str(), ios::in|ios::binary|ios::ate );
@@ -391,17 +397,84 @@ U64 StringToU64( const char * str )
 }
 
 
-string  ConvertStringToLower( const string& str )
+const string  ConvertStringToLower( const string& str )
 {
    string retString = str;
    std::transform( retString.begin(), retString.end(), retString.begin(), ::tolower );
    return retString;
 }
 
-string itos(int n)
+const string itos(int n)
 {
    const int max_size = std::numeric_limits<int>::digits10 + 1 /*sign*/ + 1 /*0-terminator*/;
    char buffer[max_size] = {0};
    sprintf(buffer, "%d", n);
    return string(buffer);
+}
+
+
+bool  splitOnFirstFound( vector< string >& listOfStuff, const string& text, const char* delimiter )
+{
+   size_t position = text.find_first_of( delimiter );
+   if( position != string::npos )
+   {
+      std::string substr1 = text.substr( 0, position );
+      std::string substr2 = text.substr( position+1, std::string::npos );// assuming only one
+      listOfStuff.push_back( substr1 );
+      listOfStuff.push_back( substr2 );
+      return true;
+   }
+   else
+   {
+      listOfStuff.push_back( text );
+      return false;
+   }
+}
+
+bool  ParseListOfItems( vector< string >& listOfStuff, string text, const char* delimiter, const char* charsToRemove )
+{
+   //text.erase( boost::remove_if( text.begin(), text.end(), "[]{}"), text.end() );
+   if( charsToRemove )
+   {
+      text.erase( boost::remove_if( text, boost::is_any_of( charsToRemove )), text.end() );
+   }
+
+   string separator1( "" );//dont let quoted arguments escape themselves
+   string separator2( delimiter );//split on = and :
+   string separator3( "\"\'" );//let it have quoted arguments
+
+
+   boost::escaped_list_separator<char> els( separator1, separator2, separator3 );
+   boost::tokenizer<boost::escaped_list_separator<char> > tokens( text, els );
+
+   for (boost::tokenizer<boost::escaped_list_separator<char> >::iterator i(tokens.begin());
+      i!=tokens.end(); ++i) 
+   {
+      listOfStuff.push_back(*i);
+   }
+
+   if( listOfStuff.size() > 0 )
+      return true;
+
+   return false;
+}
+
+string RemoveEnds( std::string s, const char* charsToStrip )
+{
+   int len = strlen( charsToStrip );
+
+   for( int i=0; i<len; i++ )
+   {
+      while( *s.begin() == charsToStrip[i] )
+      {
+         s = s.substr(1, s.size());
+      }
+      while( *s.rbegin() == charsToStrip[i] )
+      {
+         s = s.substr(0, s.size()-1);
+      }
+      //s.erase(remove( s.begin(), s.end(), charsToStrip[i] ),s.end());
+   }
+
+   return s;
 }

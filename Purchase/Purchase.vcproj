@@ -60,7 +60,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="ws2_32.lib winmm.lib ../Debug/PacketLibrary.lib"
+				AdditionalDependencies="../Debug/PacketLibrary.lib"
 				OutputFile="$(OutDir)\$(ProjectName)Server.exe"
 				LinkIncremental="2"
 				IgnoreDefaultLibraryNames="libcmt.lib"
@@ -190,10 +190,6 @@
 				>
 			</File>
 			<File
-				RelativePath="..\NetworkCommon\Database\StringLookup.cpp"
-				>
-			</File>
-			<File
 				RelativePath=".\UserAccountPurchase.cpp"
 				>
 			</File>
@@ -213,10 +209,6 @@
 			</File>
 			<File
 				RelativePath=".\SalesManager.h"
-				>
-			</File>
-			<File
-				RelativePath="..\NetworkCommon\Database\StringLookup.h"
 				>
 			</File>
 			<File
@@ -408,6 +400,14 @@
 				</File>
 				<File
 					RelativePath="..\NetworkCommon\Database\QueryHandler.h"
+					>
+				</File>
+				<File
+					RelativePath="..\NetworkCommon\Database\StringLookup.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\NetworkCommon\Database\StringLookup.h"
 					>
 				</File>
 			</Filter>

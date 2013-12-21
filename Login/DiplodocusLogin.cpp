@@ -47,12 +47,13 @@ DiplodocusLogin:: DiplodocusLogin( const string& serverName, U32 serverId )  :
 
 //---------------------------------------------------------------
 
-void     DiplodocusLogin:: ServerWasIdentified( ChainedInterface* khaan )
+void     DiplodocusLogin:: ServerWasIdentified( IChainedInterface* khaan )
 {
    BasePacket* packet = NULL;
    PackageForServerIdentification( m_serverName, m_localIpAddress, m_serverId, m_listeningPort, m_gameProductId, m_isGame, m_isControllerApp, true, m_isGateway, &packet );
-   khaan->AddOutputChainData( packet, 0 );
-   m_clientsNeedingUpdate.push_back( khaan->GetChainedId() );
+   ChainedType* localKhaan = static_cast< ChainedType* >( khaan );
+   localKhaan->AddOutputChainData( packet, 0 );
+   m_clientsNeedingUpdate.push_back( localKhaan->GetChainedId() );
 }
 
 //---------------------------------------------------------------
@@ -225,17 +226,17 @@ bool     DiplodocusLogin:: LogUserIn( const string& userName, const string& pass
 
       if( connection )
       {
-         SendLoginStatusToOtherServers( connection->userName, 
-                                          connection->userUuid, 
+         SendLoginStatusToOtherServers( connection->m_userName, 
+                                          connection->m_userUuid, 
                                           connectionId, 
                                           gameProductId, 
                                           connection->lastLoginTime, 
                                           connection->isActive, 
-                                          connection->email, 
+                                          connection->m_email, 
                                           connection->passwordHash, 
                                           connection->id, 
                                           connection->loginKey, 
-                                          connection->languageId, true, false );
+                                          connection->m_languageId, true, false );
 
          if( connection->SuccessfulLogin( connectionId, true ) == true )
          {
@@ -285,17 +286,17 @@ bool     DiplodocusLogin:: HandleLoginResultFromDb( U32 connectionId, PacketDbQu
 
       if( dbResult->successfulQuery == true && dbResult->bucket.bucket.size() > 0 )
       {
-         SendLoginStatusToOtherServers( connection->userName, 
-                                                   connection->userUuid, 
+         SendLoginStatusToOtherServers( connection->m_userName, 
+                                                   connection->m_userUuid, 
                                                    connectionId, 
                                                    connection->gameProductId, 
                                                    connection->lastLoginTime, 
                                                    connection->isActive, 
-                                                   connection->email, 
+                                                   connection->m_email, 
                                                    connection->passwordHash, 
                                                    connection->id,
                                                    connection->loginKey, 
-                                                   connection->languageId, 
+                                                   connection->m_languageId, 
                                                    true, false );
          if( connection->SuccessfulLogin( connectionId, false ) == true )
          {
@@ -346,17 +347,18 @@ void     DiplodocusLogin:: FinalizeLogout( U32 connectionId, bool wasDisconnecte
    if( connection )
    {
       bool result = connection->FinalizeLogout();
-      SendLoginStatusToOtherServers( connection->userName, 
-                                    connection->userUuid, 
+      result = result;
+      SendLoginStatusToOtherServers( connection->m_userName, 
+                                    connection->m_userUuid, 
                                     connectionId, 
                                     connection->gameProductId, 
                                     connection->lastLoginTime, 
                                     connection->isActive, 
-                                    connection->email, 
+                                    connection->m_email, 
                                     connection->passwordHash, 
                                     connection->id, 
                                     connection->loginKey,
-                                    connection->languageId, 
+                                    connection->m_languageId, 
                                     false, 
                                     wasDisconnectedByError );
    }
@@ -454,7 +456,7 @@ U32     DiplodocusLogin:: FindUserAlreadyInGame( const string& userName, U8 game
       ConnectionToUser& conn = pairObj.second;
       if( conn.gameProductId == gameProductId && // optimized for simplest test first
          
-         ( conn.email == userName || conn.userName == userName ) )// we use these interchangably ight now.
+         ( conn.m_email == userName || conn.m_userName == userName ) )// we use these interchangably right now.
       {
          return pairObj.first;
       }
@@ -960,7 +962,7 @@ ConnectionToUser*     DiplodocusLogin:: GetLoadedUserConnectionByUuid(const stri
    UserConnectionMapIterator it = m_userConnectionMap.begin();
    while( it != m_userConnectionMap.end() )
    {
-      if( it->second.userUuid == uuid )
+      if( it->second.m_userUuid == uuid )
          return &it->second;
       it++;
    }
@@ -1023,17 +1025,17 @@ bool  DiplodocusLogin:: ForceUserLogoutAndBlock( U32 connectionId )
    ConnectionToUser* connection = GetUserConnection( connectionId );
    if( connection )
    {
-      userName =              connection->userName;
-      uuid =                  connection->userUuid;
+      userName =              connection->m_userName;
+      uuid =                  connection->m_userUuid;
       lastLoginTime =         connection->lastLoginTime;
       connection->status =    ConnectionToUser::LoginStatus_Invalid;
       active =                connection->isActive;
       passwordHash =          connection->passwordHash;
       userId =                connection->id;
-      email =                 connection->email;
+      email =               connection->m_email;
       gameProductId =         connection->gameProductId;
       loginKey =              connection->loginKey;
-      languageId =            connection->languageId;
+      languageId =            connection->m_languageId;
    }
 
    // now disconnect him/her
@@ -1324,9 +1326,9 @@ bool     DiplodocusLogin:: AddOutputChainData( BasePacket* packet, U32 chainId )
                      {
                         SendErrorToClient( connectionId, PacketErrorReport::ErrorType_UserBadLogin );  
                         string str = "User not valid and db query failed, userName: ";
-                        str += connection->userName;
+                        str += connection->m_userName;
                         str += ", uuid: ";
-                        str += connection->userUuid;
+                        str += connection->m_userUuid;
                         Log( str, 4 );
                         ForceUserLogoutAndBlock( connectionId );
                         wasHandled = false;
@@ -1357,9 +1359,9 @@ bool     DiplodocusLogin:: AddOutputChainData( BasePacket* packet, U32 chainId )
                      if( dbResult->successfulQuery == false || dbResult->bucket.bucket.size() == 0 )// no records found
                      {
                         string str = "List of games not valid db query failed, userName: ";
-                        str += connection->userName;
+                        str += connection->m_userName;
                         str += ", uuid: ";
-                        str += connection->userUuid;
+                        str += connection->m_userUuid;
                         Log( str, 4 );
                         ForceUserLogoutAndBlock( connectionId );
                         wasHandled = false;
@@ -1391,9 +1393,9 @@ bool     DiplodocusLogin:: AddOutputChainData( BasePacket* packet, U32 chainId )
                      if( dbResult->successfulQuery == false )
                      {
                         string str = "Query failed looking up a user products ";
-                        str += connection->userName;
+                        str += connection->m_userName;
                         str += ", uuid: ";
-                        str += connection->userUuid;
+                        str += connection->m_userUuid;
                         Log( str, 4 );
                         ForceUserLogoutAndBlock( connectionId );
                         wasHandled = false;
@@ -1412,9 +1414,9 @@ bool     DiplodocusLogin:: AddOutputChainData( BasePacket* packet, U32 chainId )
                      if( dbResult->successfulQuery == false )
                      {
                         string str = "Query failed looking up a user ";
-                        str += connection->userName;
+                        str += connection->m_userName;
                         str += ", uuid: ";
-                        str += connection->userUuid;
+                        str += connection->m_userUuid;
                         Log( str, 4 );
                         ForceUserLogoutAndBlock( connectionId );
                         wasHandled = false;
@@ -1482,6 +1484,7 @@ void     DiplodocusLogin:: StoreAllProducts( PacketDbQueryResult* dbResult )
 
    ProductTable::iterator  it = enigma.begin();
    int numProducts = dbResult->bucket.bucket.size();
+   numProducts = numProducts;
             
    while( it != enigma.end() )
    {
@@ -1648,7 +1651,7 @@ void     DiplodocusLogin:: SendListOfUserProductsToAssetServer( U32 connectionId
    if( connection )
    {
       PacketListOfUserProductsS2S* packet = new PacketListOfUserProductsS2S;
-      packet->uuid = connection->userUuid;
+      packet->uuid = connection->m_userUuid;
       vector< string >::iterator it =  connection->productFilterNames.begin();
       while( it != connection->productFilterNames.end() )
       {
@@ -1707,7 +1710,7 @@ int      DiplodocusLogin:: CallbackFunction()
    m_stringLookup->Update( currentTime );
 
  /*  m_mutex.lock();
-  /* ChainLinkIteratorType itInputs = m_listOfInputs.begin();
+   ChainLinkIteratorType itInputs = m_listOfInputs.begin();
    while( itInputs != m_listOfInputs.end() )// only one output currently supported.
    {
       ChainedInterface<BasePacket*>*  inputPtr = itInputs->m_interface;

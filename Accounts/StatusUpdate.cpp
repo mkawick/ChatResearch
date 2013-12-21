@@ -22,8 +22,8 @@ const int OneDay = 3600 * 24;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-StatusUpdate::StatusUpdate( const string& serverName, U32 serverId ) : Threading::CChainedThread < BasePacket* >( false, DefaultSleepTime, false ),
-                  Queryer(),
+StatusUpdate::StatusUpdate( const string& serverName, U32 serverId ) : Queryer(),
+                  ParentType( false, DefaultSleepTime, false ),
                   m_newAccountTimeoutSeconds( 48 ),
                   m_checkOnautoCreateTimeoutSeconds( 60 ),
                   m_checkOnOldEmailsTimeoutSeconds( OneDay ),/// once per day
@@ -68,6 +68,12 @@ StatusUpdate::StatusUpdate( const string& serverName, U32 serverId ) : Threading
    m_resetPasswordHandler = new ResetPasswordQueryHandler( QueryType_ResetPasswords, this, queryForPasswordReset );
    m_resetPasswordHandler->SetPeriodicty( timeoutResetPassword );
 
+   
+   string queryForChangeEmail = "SELECT id, user_account_uuid, reset_key, new_email, new_username, time_last_email_sent, language_id, user_email, user_name FROM playdek.reset_user_email_name INNER JOIN playdek.users ON reset_user_email_name.user_account_uuid=users.uuid WHERE was_email_sent=0;";
+
+   m_resetUsernameEmailHandler = new ResetUserEmailQueryHandler( QueryType_ChangeUsernameEmail, this, queryForChangeEmail );
+   m_resetUsernameEmailHandler->SetPeriodicty( timeoutChangeUsernameEmail );
+
    LogOpen();
    LogMessage( LOG_PRIO_INFO, "Accounts::Accounts server created\n" );
    cout << "Accounts::Accounts server created" << endl;
@@ -81,6 +87,7 @@ StatusUpdate::~StatusUpdate()
    delete m_blankUserProfileHandler;
    delete m_newAccountHandler;
    delete m_resetPasswordHandler;
+   delete m_resetUsernameEmailHandler;
 }
 
 //---------------------------------------------------------------
@@ -322,6 +329,8 @@ int      StatusUpdate::CallbackFunction()
          return 0;
       }
 
+      
+
 //      LookForFlaggedAutoCreateAccounts();
       //if( m_
 
@@ -335,6 +344,9 @@ int      StatusUpdate::CallbackFunction()
             ExpireOldUserAccountRequests();
             //Hack();// no longer needed
             m_resetPasswordHandler->Update( currentTime );
+
+            // we are only testing so this should be moved
+            m_resetUsernameEmailHandler->Update( currentTime );
          }
          
          m_newAccountHandler->Update( currentTime );
@@ -408,57 +420,14 @@ bool     StatusUpdate::AddOutputChainData( BasePacket* packet, U32 connectionId 
          {
             wasHandled = true;
          }
+         else if( m_resetUsernameEmailHandler->HandleResult( dbResult ) == true )
+         {
+            wasHandled = true;
+         }
          else
          {
             switch( dbResult->lookup )
             {
-               //cout << "Db query type:"<< dbResult->lookup << ", success=" << dbResult->successfulQuery << endl;
-               /*case QueryType_UserCheckForNewAccount:
-                  {
-                     if( dbResult->successfulQuery == true && dbResult->bucket.bucket.size() > 0 )
-                     {
-                        HandleNewAccounts( dbResult );
-                     }
-                     else
-                     {
-                        string str = "New user accounts db query failed";
-                        Log( str );
-
-                     }
-
-                     wasHandled = true;
-                  }
-                  break;*/
-            /*   case QueryType_LoadStrings:
-                  {
-                     if( dbResult->successfulQuery == true && dbResult->bucket.bucket.size() > 0 )
-                     {
-                        SaveStrings( dbResult );
-                     }
-                     else
-                     {
-                        string str = "String table failed to load";
-                        Log( str );
-                     }
-                     
-                     wasHandled = true;
-                  }
-                  break;
-               case QueryType_LoadWeblinks:
-                  {
-                     if( dbResult->successfulQuery == true && dbResult->bucket.bucket.size() > 0 )
-                     {
-                        HandleWeblinks( dbResult );
-                     }
-                     else
-                     {
-                        string str = "Config table failed to load";
-                        Log( str );
-                     }
-                    
-                     wasHandled = true;
-                  }
-                  break;*/
                case QueryType_GetNewUserRecordAndCreateProfileFromIt:
                   {
                      if( dbResult->successfulQuery == true && dbResult->bucket.bucket.size() > 0 )
@@ -569,7 +538,7 @@ void     StatusUpdate::HandleAutoCreateAccounts( const PacketDbQueryResult* dbRe
       string lowerCaseUserName = row[ TableUserTempNewUser::Column_user_name_match ];
       string languageId =        row[ TableUserTempNewUser::Column_language_id ];
 
-      string query = "INSERT INTO users (user_id, user_name, user_name_match, user_pw_hash, user_email, user_gamekit_hash, user_creation_date, uuid, active, language_id) VALUES ('";
+      string query = "INSERT INTO users (user_id, user_name, user_name_match, user_pw_hash, user_email, user_gamekit_hash, user_creation_date, uuid, active, language_id, user_confirmation_date) VALUES ('";
       query += userId;
       query += "', '";
       query += name;
@@ -587,7 +556,9 @@ void     StatusUpdate::HandleAutoCreateAccounts( const PacketDbQueryResult* dbRe
       query += uuid;
       query += "', ";
       query += "'1',";
-      query += languageId;      
+      query += languageId;   
+      query += "', '";
+      query += timeCreated;
       query += ") ON DUPLICATE KEY UPDATE user_name='";
       query += name;
       query += "', user_name_match='";

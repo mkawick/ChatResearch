@@ -3,7 +3,7 @@
 #pragma once
 
 #include "../NetworkCommon/DataTypes.h"
-#include "../NetworkCommon/NetworkIn/khaan.h"
+#include "../NetworkCommon/NetworkIn/Khaan.h"
 
 class DiplodocusGateway;
 

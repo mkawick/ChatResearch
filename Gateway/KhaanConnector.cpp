@@ -12,8 +12,8 @@ KhaanConnector::KhaanConnector( int id, bufferevent* be ):
       m_numPacketsReceivedBeforeAuth( 0 ),
       m_authorizedConnection( false ),
       m_denyAllFutureData( false ),
-      m_gateway( NULL ),
-      m_adminLevel( 0 )
+      m_adminLevel( 0 ),
+      m_gateway( NULL )
 {
    m_randomNumberOfPacketsBeforeLogin = 30 + rand() % 20;
 }

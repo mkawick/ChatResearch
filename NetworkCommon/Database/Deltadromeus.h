@@ -146,8 +146,9 @@ namespace Database
 
       bool                    m_isConnected;
       bool                    m_needsReconnection;
-      string                  m_serverName;
       U16                     m_port;
+      string                  m_serverName;
+      
       string                  m_username;
       string                  m_password;
       string                  m_dbName;

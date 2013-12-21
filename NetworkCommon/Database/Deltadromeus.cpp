@@ -29,6 +29,10 @@
 #include "../Packets/DbPacket.h"
 #include "Deltadromeus.h"
 
+#if PLATFORM != PLATFORM_WINDOWS
+#undef closesocket
+#endif
+
 #include <my_global.h> // Include this file first to avoid problems
 #include <mysql.h> // MySQL Include File
 #include <errmsg.h> // MySQL Include File
@@ -194,8 +198,8 @@ void  DbJobBase::Cancel()
 
 Deltadromeus::Deltadromeus() : Threading::CChainedThread< BasePacket* >(),
    m_isConnected( false ),
-   m_port( 0 ),
    m_needsReconnection( true ),
+   m_port( 0 ),
    m_DbConnection( NULL )
    
 {

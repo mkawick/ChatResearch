@@ -11,16 +11,21 @@ using namespace std;
 
 #include <boost/lexical_cast.hpp>
 
-#include "DiplodocusPurchase.h"
-#include "../NetworkCommon/NetworkIn/DiplodocusServerToServer.h"
-#include "../NetworkCommon/Database/Deltadromeus.h"
-#include "../Networkcommon/Version.h"
+
+#include "../NetworkCommon/Version.h"
+
 #include "../NetworkCommon/Utils/CommandLineParser.h"
 #include "../NetworkCommon/DataTypes.h"
 #include "../NetworkCommon/Utils/Utils.h"
 
 #include "../NetworkCommon/Daemon/Daemonizer.h"
 #include "../NetworkCommon/Logging/server_log.h"
+
+#include "../NetworkCommon/NetworkIn/DiplodocusServerToServer.h"
+#include "../NetworkCommon/Database/Deltadromeus.h"
+
+#include "DiplodocusPurchase.h"
+
 
 
 #if PLATFORM == PLATFORM_WINDOWS
@@ -92,7 +97,8 @@ int main( int argc, const char* argv[] )
    U32 serverId = (U32)serverUniqueHashValue;
 
    cout << serverName << ":" << endl;
-   cout << "Version " << version << endl;
+   //cout << "Version " << version << endl;
+   cout << "Server stack version " << ServerStackVersion << endl;
    cout << "ServerId " << serverId << endl;
    cout << "------------------------------------------------------------------" << endl << endl << endl;
 

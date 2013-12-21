@@ -22,7 +22,7 @@ public:
 
 public:
    DiplodocusContact( const string& serverName, U32 serverId );
-   void     ServerWasIdentified( ChainedInterface* khaan );
+   void     ServerWasIdentified( IChainedInterface* khaan );
    bool     AddInputChainData( BasePacket* packet, U32 connectionId );
 
    UserContact* GetUser( U32 userId );

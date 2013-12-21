@@ -15,12 +15,12 @@ public:
 
    
    void     SetServerName( const string& name ) { m_serverName = name; }
-   string   SetServerAddr( const string& addr ) { m_serverAddress = addr; }
-   U32      SetServerId( U32 id) { m_serverId = id; }
-   U16      SetServerName( U16 port) { m_serverPort = port; }
-   bool     SetIsGameServer( bool isServer) { m_isGameServer = isServer; }
-   bool     SetIsController( bool isController) { m_isController = isController; }
-   bool     SetIsGateway( bool isGateWay ) { m_isGateway = isGateWay; }
+   void     SetServerAddr( const string& addr ) { m_serverAddress = addr; }
+   void     SetServerId( U32 id) { m_serverId = id; }
+   void     SetServerName( U16 port) { m_serverPort = port; }
+   void     SetIsGameServer( bool isServer) { m_isGameServer = isServer; }
+   void     SetIsController( bool isController) { m_isController = isController; }
+   void     SetIsGateway( bool isGateWay ) { m_isGateway = isGateWay; }
 
    string   GetServerName() const { return m_serverName; }
    string   GetServerAddress() const { return m_serverAddress; }

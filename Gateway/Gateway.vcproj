@@ -193,10 +193,6 @@
 				RelativePath=".\KhaanConnector.cpp"
 				>
 			</File>
-			<File
-				RelativePath="..\NetworkCommon\NetworkUtils.cpp"
-				>
-			</File>
 		</Filter>
 		<Filter
 			Name="Header Files"
@@ -225,6 +221,10 @@
 			>
 			<File
 				RelativePath="..\NetworkCommon\DataTypes.h"
+				>
+			</File>
+			<File
+				RelativePath="..\NetworkCommon\NetworkUtils.cpp"
 				>
 			</File>
 			<File
@@ -348,6 +348,30 @@
 				</File>
 				<File
 					RelativePath="..\NetworkCommon\Utils\Utils.h"
+					>
+				</File>
+			</Filter>
+			<Filter
+				Name="Daemon"
+				>
+				<File
+					RelativePath="..\NetworkCommon\Daemon\Daemonizer.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\NetworkCommon\Daemon\Daemonizer.h"
+					>
+				</File>
+			</Filter>
+			<Filter
+				Name="Logging"
+				>
+				<File
+					RelativePath="..\NetworkCommon\Logging\server_log.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\NetworkCommon\Logging\server_log.h"
 					>
 				</File>
 			</Filter>

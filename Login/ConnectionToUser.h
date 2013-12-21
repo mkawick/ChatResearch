@@ -73,10 +73,10 @@ struct ConnectionToUser
    //----------------------------------
 
    string                  id;
-   string                  userName;
+   string                  m_userName;
    string                  passwordHash;
-   string                  email;
-   string                  userUuid;
+   string                  m_email;
+   string                  m_userUuid;
    string                  loginKey;
    string                  lastLoginTime;
    string                  lastLogoutTime;
@@ -90,12 +90,13 @@ struct ConnectionToUser
    bool                    isLoggingOut;
 
    int                     timeZone;
-   int                     languageId;
+   int                     m_languageId;
    int                     adminLevel;
    bool                    isActive;
    bool                    showWinLossRecord;
    bool                    marketingOptOut;
    bool                    showGenderProfile;
+   bool                    m_isSavingUserProfile;
    /*
    address1
    address2
@@ -120,7 +121,7 @@ protected:
    ConnectionToUser() {};
    
 
-   bool m_isSavingUserProfile;
+   
    static DiplodocusLogin* userManager;
 
    typedef map< string, ConnectionToUser>    UserConnectionMap;
@@ -141,7 +142,7 @@ protected:
 
    void     ClearAllProductsOwned();
    void     AddToProductsOwned( int productDbId, const string& productName, const string& productUuid, float quantity );
-   void     SendListOfProductsToClient( U32 connectionId );
+   void     SendListOfOwnedProductsToClient( U32 connectionId );
 
    UserConnectionMapIterator FindUser( const string& email, const string& userUuid, const string& userName );
    

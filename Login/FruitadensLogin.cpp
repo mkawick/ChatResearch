@@ -27,23 +27,23 @@ bool FruitadensLogin::FilterOutwardPacket( BasePacket* packet ) const
    assert( m_serverId != 0 );
 
    //PacketType type = static_cast< PacketType > ( wrapper->pPacket->packetType );
+   U32 packetType = static_cast< U32 >( packet->packetType );
+   U32 packetSubType = static_cast< U32 >( packet->packetSubType );
 
-   if( packet->packetType == PacketType_ServerToServerWrapper )
+   if( packetType == PacketType_ServerToServerWrapper )
    {
       return true;
    }
 
-   if( packet->packetType == PacketType_Login ) 
+   if( packetType == PacketType_Login ) 
    {
-      PacketType subtype = static_cast< PacketType > ( packet->packetSubType );
-
-      if( subtype == PacketLogin::LoginType_PrepareForUserLogin ||
-         subtype == PacketLogin::LoginType_PrepareForUserLogout)
+      if( packetSubType == PacketLogin::LoginType_PrepareForUserLogin ||
+         packetSubType == PacketLogin::LoginType_PrepareForUserLogout)
       {
          return true;
       }
       
-      if( subtype == PacketLogin::LoginType_ListOfProductsS2S )
+      if( packetSubType == PacketLogin::LoginType_ListOfProductsS2S )
       {
          if( m_serverType == ServerType_Asset )
             return true;
@@ -51,9 +51,9 @@ bool FruitadensLogin::FilterOutwardPacket( BasePacket* packet ) const
       }
    }
 
-   if( packet->packetType == PacketType_Gameplay ) 
+   if( packetType == PacketType_Gameplay ) 
    {
-      if( packet->packetSubType == PacketGameToServer::GamePacketType_ListOfGames )
+      if( packetSubType == PacketGameToServer::GamePacketType_ListOfGames )
       {
          return true;
       }

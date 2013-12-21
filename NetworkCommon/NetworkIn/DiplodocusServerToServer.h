@@ -1,6 +1,7 @@
 #pragma once
 
 #include "KhaanServerToServer.h"
+#include "Diplodocus.h"
 #include <deque>
 using namespace std;
 
@@ -19,6 +20,8 @@ public:
 
 class DiplodocusServerToServer : public Diplodocus< KhaanServerToServer >
 {
+public: 
+   typedef Diplodocus< KhaanServerToServer > ChainedType;
 public:
    DiplodocusServerToServer( const string& serverName, U32 serverId, U8 gameProductId = 0 );
    ~DiplodocusServerToServer();
@@ -31,7 +34,7 @@ public:
 
    //---------------------------------------------------
 
-   void     ServerWasIdentified( ChainedInterface* khaan );
+   void     ServerWasIdentified( IChainedInterface* khaan );
 
 private:
 

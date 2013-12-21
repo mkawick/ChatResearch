@@ -2,7 +2,7 @@
 #include "../NetworkCommon/Packets/ServerToServerPacket.h"
 #include "../NetworkCommon/Packets/AssetPacket.h"
 #include "../NetworkCommon/Packets/LoginPacket.h"
-#include "../NetworkCommon/Packets/Packetfactory.h"
+#include "../NetworkCommon/Packets/PacketFactory.h"
 
 #include "AssetOrganizer.h"
 
@@ -31,12 +31,15 @@ DiplodocusAsset :: ~DiplodocusAsset()
 }
 //---------------------------------------------------------------
 
-void     DiplodocusAsset::ServerWasIdentified( ChainedInterface* khaan )
+void     DiplodocusAsset::ServerWasIdentified( IChainedInterface* khaan )
 {
    BasePacket* packet = NULL;
    PackageForServerIdentification( m_serverName, m_localIpAddress, m_serverId, m_listeningPort, m_gameProductId, m_isGame, m_isControllerApp, true, m_isGateway, &packet );
-   khaan->AddOutputChainData( packet, 0 );
-   m_serversNeedingUpdate.push_back( static_cast<InputChainType*>( khaan )->GetServerId() );
+  /* khaan->AddOutputChainData( packet, 0 );
+   m_serversNeedingUpdate.push_back( static_cast<InputChainType*>( khaan )->GetServerId() );*/
+   ChainedType* localKhaan = static_cast< ChainedType* >( khaan );
+   localKhaan->AddOutputChainData( packet, 0 );
+   m_serversNeedingUpdate.push_back( localKhaan->GetServerId() );
 }
 
 //---------------------------------------------------------------
@@ -111,7 +114,7 @@ bool     DiplodocusAsset::AddInputChainData( BasePacket* packet, U32 connectionI
       PacketCleaner cleaner( packet );
       PacketGatewayWrapper* wrapper = static_cast< PacketGatewayWrapper* >( packet );
       BasePacket* unwrappedPacket = wrapper->pPacket;
-      U32 connectionIdToUse = wrapper->connectionId;
+      //U32 connectionIdToUse = wrapper->connectionId;
       
       if( unwrappedPacket->packetType == PacketType_Asset)
       {
@@ -158,7 +161,8 @@ bool     DiplodocusAsset::AddInputChainData( BasePacket* packet, U32 connectionI
             {
                found->second.SetConnectionId( connectionId );
                Threading::MutexLock locker( m_mutex );
-               bool result = found->second.HandleRequestFromClient( static_cast< PacketAsset* >( unwrappedPacket ) );
+               //bool result = 
+                  found->second.HandleRequestFromClient( static_cast< PacketAsset* >( unwrappedPacket ) );
             }
          }
          
@@ -187,6 +191,7 @@ bool  DiplodocusAsset::HandlePacketFromOtherServer( BasePacket* packet, U32 conn
    PacketServerJobWrapper* wrapper = static_cast< PacketServerJobWrapper* >( packet );
    BasePacket* unwrappedPacket = wrapper->pPacket;
    U32  serverIdLookup = wrapper->serverId;
+   serverIdLookup = serverIdLookup;
 
    bool success = false;
 
@@ -256,6 +261,7 @@ bool     DiplodocusAsset::ConnectUser( PacketPrepareForUserLogin* loginPacket )
 bool     DiplodocusAsset::DisconnectUser( PacketPrepareForUserLogout* loginPacket )
 {
    U32 connectionId = loginPacket->connectionId;
+   connectionId = connectionId;
    string uuid = loginPacket->uuid;
    U64 hashForUser = GenerateUniqueHash( uuid );
 

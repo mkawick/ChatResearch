@@ -201,6 +201,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\ResetUserEmailQueryHandler.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\StatusUpdate.cpp"
 				>
 			</File>
@@ -232,6 +236,10 @@
 			</File>
 			<File
 				RelativePath=".\ResetPasswordQueryHandler.h"
+				>
+			</File>
+			<File
+				RelativePath=".\ResetUserEmailQueryHandler.h"
 				>
 			</File>
 			<File
@@ -341,10 +349,6 @@
 					RelativePath="..\NetworkCommon\Logging\server_log.h"
 					>
 				</File>
-			</Filter>
-			<Filter
-				Name="Packets"
-				>
 			</Filter>
 			<Filter
 				Name="Utils"

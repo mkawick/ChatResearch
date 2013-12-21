@@ -14,6 +14,8 @@ public:
       LoginType_Login,
       LoginType_Logout,
       LoginType_PacketLogoutToClient,
+      LoginType_EchoToServer,
+      LoginType_EchoToClient,
       LoginType_InformClientOfLoginStatus,
       LoginType_InformGatewayOfLoginStatus,
       LoginType_PrepareForUserLogin,
@@ -71,6 +73,21 @@ public:
    bool  SerializeOut( U8* data, int& bufferOffset ) const { return PacketLogin::SerializeOut( data, bufferOffset ); }
 };
 
+///////////////////////////////////////////////////////////////
+
+class PacketLogin_EchoToServer : public BasePacket
+{
+public:
+   PacketLogin_EchoToServer(): BasePacket( PacketType_Login, PacketLogin::LoginType_EchoToServer ) {}
+};
+
+///////////////////////////////////////////////////////////////
+
+class PacketLogin_EchoToClient : public BasePacket
+{
+public:
+   PacketLogin_EchoToClient(): BasePacket( PacketType_Login, PacketLogin::LoginType_EchoToClient ) {}
+};
 
 ///////////////////////////////////////////////////////////////
 

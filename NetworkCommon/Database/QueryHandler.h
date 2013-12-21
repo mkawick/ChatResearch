@@ -64,9 +64,9 @@ QueryHandler <QueryParentPtr>:: QueryHandler( U32 type, int periodicity, ParentQ
                               m_queryType( type ), 
                               m_periodicitySeconds( periodicity ), 
                               m_runSlower( false ),
-                              m_parent( parent ),
                               m_onlyRunsOnce( false ),
-                              m_countOfTimesExecuted( 0 )
+                              m_countOfTimesExecuted( 0 ),
+                              m_parent( parent )
 {
    if( fireImmediately == false )// look at how the timers work and if this is set to 0, then we will execute the query on first run, else we wait for the timeout period.
    {

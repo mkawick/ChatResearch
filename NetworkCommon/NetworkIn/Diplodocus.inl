@@ -400,7 +400,7 @@ void  Diplodocus< InputChain, OutputChain >::OnAccept( evconnlistener* listenerO
    struct event_base*  base = evconnlistener_get_base( listenerObj );
    struct bufferevent* bufferEvent = bufferevent_socket_new( base, newSocketId, BEV_OPT_CLOSE_ON_FREE );
 
-   Diplodocus< InputChain, OutputChain >* This = (Diplodocus< InputChain, OutputChain > *) context;
+   Diplodocus< InputChain, OutputChain >* This = static_cast< Diplodocus< InputChain, OutputChain > * >( context );
 
    InputChainType* khaan = new InputChainType( newSocketId, bufferEvent );
    khaan->SetIPAddress( *((struct sockaddr_in*)ClientAddr) );
@@ -554,6 +554,7 @@ void	Diplodocus< InputChain, OutputChain >::UpdateAllConnections()
    if( m_clientsNeedingUpdate.size() == 0 )// no locking a mutex if you don't need to do it.
       return;
 
+   
    while( m_clientsNeedingUpdate.size() )// threads can remove themselves.
    {
       U32 id = m_clientsNeedingUpdate.front();

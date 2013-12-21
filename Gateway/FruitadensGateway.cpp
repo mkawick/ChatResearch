@@ -195,7 +195,7 @@ void  FruitadensGateway::PostProcessInputPackets( int bytesRead )
          return;
       }
 
-      int previousOffset = offset;
+      //int previousOffset = offset;
       BasePacket* packetIn = NULL;
       if( factory.Parse( m_receiveBuffer, offset, &packetIn ) == true )
       {

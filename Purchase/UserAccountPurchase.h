@@ -3,6 +3,7 @@
 #include <time.h>
 #include <set>
 #include <vector>
+#include <string>
 using namespace std;
 
 #include "../NetworkCommon/DataTypes.h"

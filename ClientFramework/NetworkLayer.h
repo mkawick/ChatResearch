@@ -1,7 +1,7 @@
 #pragma once
-#include "..\networkcommon\networkout\fruitadens.h"
-#include "..\networkcommon\packets\BasePacket.h"
-#include "..\networkcommon\packets\GamePacket.h"
+#include "../NetworkCommon/NetworkOut/Fruitadens.h"
+#include "../NetworkCommon/Packets/BasePacket.h"
+#include "../NetworkCommon/Packets/GamePacket.h"
 
 ///////////////////////////////////////////////////////
 

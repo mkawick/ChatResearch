@@ -55,6 +55,7 @@ void  AssetInfoExtended:: operator = ( const AssetInfo& asset )
 {
    productId = asset.productId;
    assetHash = asset.assetHash;
+   assetName = asset.assetName;
    version = asset.version;
    beginDate = asset.beginDate;
    endDate = asset.endDate;
@@ -66,6 +67,7 @@ void  AssetInfoExtended:: operator = ( const AssetInfoExtended& asset )
 {
    productId = asset.productId;
    assetHash = asset.assetHash;
+   assetName = asset.assetName;
    version = asset.version;
    beginDate = asset.beginDate;
    endDate = asset.endDate;

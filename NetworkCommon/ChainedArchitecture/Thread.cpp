@@ -21,6 +21,7 @@ const int mutexTimeout = 1000;
 
 
 #if PLATFORM == PLATFORM_WINDOWS
+#pragma warning (disable: 4996)
 #pragma comment( lib, "winmm.lib" )
 #else
 #endif

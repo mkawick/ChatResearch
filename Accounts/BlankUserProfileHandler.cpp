@@ -11,21 +11,22 @@ using namespace std;
 
 ///////////////////////////////////////////////////////////////////////////////////////////
 
-BlankUserProfileHandler::BlankUserProfileHandler( U32 id, Queryer* parent, string& query ) : QueryHandler< Queryer* >( id, 20, parent ), m_isServicingBlankUUID( false )
+BlankUserProfileHandler::BlankUserProfileHandler( U32 id, Queryer* parent, string& query ) : ParentType( id, 20, parent ), m_isServicingBlankUUID( false )
 {
    m_queryString = query;
 }
 
 void     BlankUserProfileHandler::Update( time_t currentTime )
 {
-   QueryHandler< Queryer* >::Update( currentTime, m_isServicingBlankUUID );
+   ParentType::Update( currentTime, m_isServicingBlankUUID );
 }
 
 //---------------------------------------------------------------
 
 bool     BlankUserProfileHandler::HandleResult( const PacketDbQueryResult* dbResult )
 {
-   if( dbResult->lookup == m_queryType )
+   U32 queryType = static_cast< U32 >( dbResult->lookup );
+   if( queryType == m_queryType )
    {
       SetValueOnExit< bool >           setter( m_isServicingBlankUUID, false );// due to multiple exit points...
 

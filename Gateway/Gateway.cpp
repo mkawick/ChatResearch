@@ -12,10 +12,11 @@
 #include <assert.h>
 
 #include <boost/lexical_cast.hpp>
+#include <boost/format.hpp>
 
 #include <cstdio>
 #include "../NetworkCommon/Version.h"
-#include "../NetworkCommon/Utils/utils.h"
+#include "../NetworkCommon/Utils/Utils.h"
 #include "../NetworkCommon/Utils/CommandLineParser.h"
 #include "../NetworkCommon/Packets/ServerToServerPacket.h"
 
@@ -38,6 +39,40 @@ void  SetupLoadBalancerConnection( DiplodocusGateway* gateway, string address, U
 
 ////////////////////////////////////////////////////////////////////////
 
+void  PrintInstructions()
+{
+   cout << "Gateway takes the following parameters using this format:" << endl;
+   cout << "> gateway_server param1=localhost param1.extension='path' ... " << endl;
+
+   cout << endl << endl;
+   cout << ": params are as follows:" << endl;
+   cout << "    server.name       - allows a new name reported in logs and connections" << endl;
+   cout << "    listen.address    - what is the ipaddress that this app should be using; usually localhost or null" << endl;
+   cout << "    listen.address    - listen on which port" << endl;
+   cout << "    balancer.address  - where is the load balancer" << endl;
+   cout << "    balancer.port     - load balancer" << endl;
+   
+   cout << "    asset.address     - asset server ipaddress" << endl;
+   cout << "    asset.port        - asset server port" << endl;
+
+   cout << "    chat.address      - chat server ipaddress" << endl;
+   cout << "    chat.port         - chat server port" << endl;
+
+   cout << "    contact.address   - contact server ipaddress" << endl;
+   cout << "    contact.port      - contact server port" << endl;
+
+   cout << "    purchase.address  - purchase server ipaddress" << endl;
+   cout << "    purchase.port     - purchase server port" << endl;
+
+   cout << "    print.packets     - print each packet for debugging" << endl;
+
+   cout << "    games = [192.168.1.0:21000:MFM,localhost:21100:game1]     - game list" << endl;
+
+   cout << " -h, -help, -? for help " << endl;
+}
+
+////////////////////////////////////////////////////////////////////////
+
 int main( int argc, const char* argv[] )
 {
    CommandLineParser    parser( argc, argv );
@@ -53,10 +88,10 @@ int main( int argc, const char* argv[] )
    string chatPortString = "7400";
    string chatIpAddressString = "localhost";
 
-   string game1PortString = "21000";
+  /* string game1PortString = "21000";
    string game1Address = "localhost";
    string game2PortString = "21100";
-   string game2Address = "localhost";
+   string game2Address = "localhost";*/
 
    string loginPortString = "7600";
    string loginIpAddressString = "localhost";
@@ -78,6 +113,12 @@ int main( int argc, const char* argv[] )
 
    //--------------------------------------------------------------
 
+   if( parser.IsRequestingInstructions() == true )
+   {
+      PrintInstructions();
+      return 0;
+   }
+
    parser.FindValue( "server.name", serverName );
 
    parser.FindValue( "balancer.port", loadBalancerPortString );
@@ -89,10 +130,10 @@ int main( int argc, const char* argv[] )
    parser.FindValue( "chat.port", chatPortString );
    parser.FindValue( "chat.address", chatIpAddressString );
 
-   parser.FindValue( "game.port", game1PortString );
+ /*  parser.FindValue( "game.port", game1PortString );
    parser.FindValue( "game.address", game1Address );
    parser.FindValue( "game2.port", game2PortString );
-   parser.FindValue( "game2.address", game2Address );
+   parser.FindValue( "game2.address", game2Address );*/
 
    parser.FindValue( "login.port", loginPortString );
    parser.FindValue( "login.address", loginIpAddressString );
@@ -111,10 +152,16 @@ int main( int argc, const char* argv[] )
    parser.FindValue( "reroute.port", reroutePortString );
    parser.FindValue( "reroute.address", rerouteAddressString );
 
+   vector< string > params;
+   if( parser.FindValue( "games", params ) )
+   {
+      cout << "No games were listed. No connections will be made with any games" << endl;
+   }
+
    int   listenPort = 9600, 
          chatPort = 7400, 
-         game1Port = 21000, 
-         game2Port = 21100, 
+       /*  game1Port = 21000, 
+         game2Port = 21100, */
          loginPort = 7600, 
          assetPort = 7300, 
          contactPort = 7500, 
@@ -128,8 +175,8 @@ int main( int argc, const char* argv[] )
        listenPort = boost::lexical_cast<int>( listenPortString );
        chatPort = boost::lexical_cast<int>( chatPortString );
        loginPort = boost::lexical_cast<int>( loginPortString );
-       game1Port = boost::lexical_cast<int>( game1PortString );
-       game2Port = boost::lexical_cast<int>( game2PortString );
+    /*   game1Port = boost::lexical_cast<int>( game1PortString );
+       game2Port = boost::lexical_cast<int>( game2PortString );*/
        assetPort = boost::lexical_cast<int>( assetDeliveryPortString );
        contactPort = boost::lexical_cast<int>( contactPortString );
        purchasePort = boost::lexical_cast<int>( purchasePortString );
@@ -152,7 +199,7 @@ int main( int argc, const char* argv[] )
    U32 serverId = (U32)serverUniqueHashValue;
 
    cout << serverName << endl;
-   cout << "Version " << version << endl;
+   cout << "Server stack version " << ServerStackVersion << endl;
    cout << "ServerId " << serverId << endl;
    cout << "------------------------------------------------------------------" << endl << endl << endl;
 
@@ -192,20 +239,44 @@ int main( int argc, const char* argv[] )
    //--------------------------------------------------------------
 
 #ifndef _TRACK_MEMORY_LEAK_
-   FruitadensGateway* game1 = PrepFruitadens( game1Address, game1Port, serverId, gateway, "game1" );
-   FruitadensGateway* mfm = PrepFruitadens( "localhost", game2Port, serverId, gateway, "MFM" );
-   //FruitadensGateway* game3 = PrepFruitadens( "localhost", 23402, serverId, gateway );
-   //FruitadensGateway* game4 = PrepFruitadens( "localhost", 23550, serverId, gateway );// summoner wars
 
-   U8 gameProductId = 0;
-   game1->NotifyEndpointOfIdentification( serverName, gateway->GetIpAddress(), serverId, gateway->GetPort(), gameProductId, false, false, true, true  );
-   mfm->NotifyEndpointOfIdentification( serverName, gateway->GetIpAddress(), serverId, gateway->GetPort(), gameProductId, false, false, true, true  );
+   U8    gameProductId = 0;
+   cout << "games found = " << endl << "[ " << endl; 
+   vector< string >::iterator it = params.begin();
+   while( it != params.end() )
+   {
+      string str = *it++;
+      vector< string > values;
+      if( parser.SeparateStringIntoValues( str, values, 3 ) == true )
+      {
+         cout << boost::format("%15s ={ %6s - %-6s }")  % values[0] % values[1] % values[2] << endl;
+         //192.168.1.0:21000:MFM
+         string gameAddress = values[0];
+         string gameName = values[2];
+         int port = 0;
+         bool success = false;
+         try
+         {
+            port = boost::lexical_cast<int>( values[1] );
+            success = true;
+         } 
+         catch( boost::bad_lexical_cast const& ) 
+         {
+             cout << "Error: input string was not valid" << endl;
+         }
+         if( success )
+         {
+            FruitadensGateway* game = PrepFruitadens( gameAddress, port, serverId, gateway, gameName );
+            game->NotifyEndpointOfIdentification( serverName, gateway->GetIpAddress(), serverId, gateway->GetPort(), gameProductId, false, false, true, true  );
+         }
+      }
+      else
+      {
+         cout << "Not enough params for this game:" << str << endl;
+      }
+   }
+   cout << "]" << endl;
 #endif // _TRACK_MEMORY_LEAK_
-
-   
-   
-   //game3->SetupServerNotification( serverName, serverId, gameProductId, false, false, true, true  );
-   //game4->SetupServerNotification( serverName, serverId, gameProductId, false, false, true, true  );
 
    cout << "Chat server: " << chatIpAddressString << ":" << chatPort << endl;
    chatOut.Connect( chatIpAddressString.c_str(), chatPort );

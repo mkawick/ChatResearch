@@ -9,6 +9,8 @@ using namespace std;
 class BlankUUIDQueryHandler;
 
 static const bool isMailServiceEnabled = true;
+extern const char* newAccountEmailAddress;
+extern const char* resetPasswordEmailAddress;
 
 ///////////////////////////////////////////////////////////////////////////////////////////
 
@@ -39,6 +41,8 @@ struct EmailToSend
 
 class NewAccountQueryHandler : public QueryHandler< Queryer* >
 {
+public:
+   typedef QueryHandler< Queryer* > ParentType;
 
 public:
    NewAccountQueryHandler( U32 id, Queryer* parent, string& query );
@@ -100,9 +104,11 @@ protected:
    static bool                            m_hasLoadedWeblinks;
    static string                          m_linkToAccountCreated;
    static string                          m_linkToResetPasswordConfirm;
+   static string                          m_linkToResetEmailConfirm;
    static string                          m_pathToConfirmationEmailFile;
    static string                          m_confirmationEmailTemplate;
    static string                          m_passwordResetEmailTemplate;
+   static string                          m_emailResetEmailTemplate;
    static StringTableLookup               m_stringsTable;
    static map< stringhash, stringhash >   m_replacemetStringsLookup;
    static const char*                     m_mailServer;

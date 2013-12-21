@@ -85,10 +85,12 @@ public:
       ProductType_ticket,
       ProductType_money
    };
+public: 
+   typedef Diplodocus< KhaanLogin > ChainedType;
 
 public:
    DiplodocusLogin( const string& serverName, U32 serverId );
-   void     ServerWasIdentified( ChainedInterface* khaan );
+   void     ServerWasIdentified( IChainedInterface* khaan );
    void     AutoAddTheProductFromWhichYouLogin( bool addIt = false ) { m_autoAddProductFromWhichUsersLogin = addIt; }
 
    bool     AddInputChainData( BasePacket* packet, U32 connectionId );

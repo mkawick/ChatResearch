@@ -20,11 +20,14 @@ class PacketListOfUserProductsS2S;
 
 class DiplodocusAsset : public Diplodocus< KhaanAsset >
 {
+public: 
+   typedef Diplodocus< KhaanAsset > ChainedType;
+
 public:
    DiplodocusAsset( const string& serverName, U32 serverId );
    ~DiplodocusAsset();
 
-   void                    ServerWasIdentified( ChainedInterface* khaan );// callback really
+   void                    ServerWasIdentified( IChainedInterface* khaan );// callback really
    bool                    SetIniFilePath( const string& assetPath, const string& assetDictionary, const string& dynamicAssetDictionary );
 
    bool                    AddInputChainData( BasePacket* packet, U32 connectionId );

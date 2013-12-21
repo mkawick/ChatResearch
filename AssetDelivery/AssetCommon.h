@@ -1,5 +1,6 @@
 #pragma once
 #include "../NetworkCommon/DataTypes.h"
+#include <string>
 #include <vector>
 using namespace std;
 

@@ -173,6 +173,8 @@ public:
    virtual void  OtherUsersProfile( const string& userName, const string& userUuid, const string& avatarIcon, bool showWinLoss, int timeZoneGMT, const SerializedKeyValueVector< int >& listOfItemsAndCounts ){}
 
    virtual void  ListOfAvailableProducts( const SerializedVector< ProductBriefPacketed >& products, int platformId ) {}
+   // this list of purchases will not have localized names for products, especially on other players' products. 
+   // make sure to request the list of available products first.
    virtual void  ListOfAggregateUserPurchases( const SerializedVector< PurchaseEntry >& purchases, int platformId ) {}
 
    virtual void  UserDemographics( const string& username, const Demographics& userDemographics ) {}

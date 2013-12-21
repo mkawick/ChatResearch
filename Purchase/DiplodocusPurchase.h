@@ -26,6 +26,9 @@ class PacketTournament_PurchaseTournamentEntry;
 
 class DiplodocusPurchase : public Queryer, public Diplodocus< KhaanPurchase > 
 {
+public: 
+   typedef Diplodocus< KhaanPurchase > ChainedType;
+
 public:
    enum QueryType
    {
@@ -42,7 +45,7 @@ public:
    DiplodocusPurchase( const string& serverName, U32 serverId );
    ~DiplodocusPurchase();
 
-   void                    ServerWasIdentified( ChainedInterface* khaan );// callback really
+   void                    ServerWasIdentified( IChainedInterface* khaan );// callback really
 
    bool                    AddInputChainData( BasePacket* packet, U32 connectionId );
    bool                    AddOutputChainData( BasePacket* packet, U32 connectionId );

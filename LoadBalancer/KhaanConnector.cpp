@@ -14,8 +14,8 @@ enum GatewayConstants
 
 KhaanConnector::KhaanConnector( int id, bufferevent* be ): 
       Khaan( id, be ), 
-      m_denyAllFutureData( false ),
       m_loadBalancer( NULL ),
+      m_denyAllFutureData( false ),
       m_markedToBeCleanedup( false )
 {
 }

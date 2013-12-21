@@ -19,6 +19,7 @@
 #include "DiplodocusGame.h"
 #include "FruitadensServerToServer.h"
 
+#include "../NetworkCommon/Version.h"
 #include "../NetworkCommon/Packets/ServerToServerPacket.h"
 #include "../NetworkCommon/NetworkIn/DiplodocusServerToServer.h"
 
@@ -92,9 +93,9 @@ int main(int argc, const char* argv[])
    U64 serverUniqueHashValue = GenerateUniqueHash( serverName );
    U32 serverId = (U32)serverUniqueHashValue;
 
-   string version = "0.06";
    cout << serverName << ":" << endl;
-   cout << "Version " << version << endl;
+   //cout << "Version " << ServerStackVersion << endl;
+   cout << "Server stack version " << ServerStackVersion << endl;
    cout << "ServerId " << serverId << endl;
    cout << "------------------------------------------------------------------" << endl << endl << endl;
 

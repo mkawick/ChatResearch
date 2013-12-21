@@ -105,7 +105,7 @@ public:
 
    //---------------------------------------------
 
-   virtual void   ServerWasIdentified( ChainType* khaan ){}
+   virtual void   ServerWasIdentified( IChainedInterface* khaan ){}
 
    void           AddGatewayConnection( U32 id ) { m_connectionIdGateway = id; }
    virtual bool   HandleCommandFromGateway( BasePacket* packet, U32 connectionId ) { return false; }

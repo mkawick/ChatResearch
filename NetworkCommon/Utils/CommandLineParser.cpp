@@ -68,6 +68,25 @@ CommandLineParser::CommandLineParser( const string& textToSeparateAndSort, const
 
 //-------------------------------------------------------------------------------------------
 
+bool  CommandLineParser::IsRequestingInstructions() const
+{
+   ValuesListConstIterator it = m_values.begin();
+   while( it != m_values.end() )
+   {
+      const string& key = (*it++).key;
+      if( key == "-h" ||
+          key == "-?" ||
+          key == "-help" )
+      {
+         return true;
+      }
+   }
+
+   return false;
+}
+
+//-------------------------------------------------------------------------------------------
+
 bool  CommandLineParser::FindValue( const string& key, string& valueOut ) const
 {
    string searchKey = ConvertStringToLower( key );
@@ -146,7 +165,7 @@ bool  CommandLineParser::SeparateStringIntoValues( const string& inString, vecto
       listOfStuff.push_back( str );
    }
 
-   if( listOfStuff.size() == expectedNum )
+   if( static_cast<int>( listOfStuff.size() ) == expectedNum )
    {
       return true;
    }

@@ -16,6 +16,7 @@
 #include <cstdio>
 #include <memory.h>
 
+#include "../NetworkCommon/Version.h"
 #include "../NetworkCommon/Utils/Utils.h"
 
 #include "../NetworkCommon/Utils/CommandLineParser.h"
@@ -136,13 +137,13 @@ int main( int argc, const char* argv[] )
    U64 serverUniqueHashValue = GenerateUniqueHash( serverName );
    U32 serverId = (U32)serverUniqueHashValue;
 
-   string version = "0.11";
    cout << serverName << endl;
-   cout << "Version " << version << endl;
+//   cout << "Version " << ServerStackVersion << endl;
+   cout << "Server stack version " << ServerStackVersion << endl;
    cout << "ServerId " << serverId << endl;
    cout << "------------------------------------------------------------------" << endl << endl << endl;
    LogMessage(LOG_PRIO_ERR, "serverName\n");
-   LogMessage(LOG_PRIO_ERR, "Version %s\n", version.c_str() );
+   LogMessage(LOG_PRIO_ERR, "Server stack version %s\n", ServerStackVersion );
    LogMessage(LOG_PRIO_ERR, "ServerId %d\n", serverId);
    LogMessage(LOG_PRIO_ERR, "------------------------------------------------------------------\n\n\n");
 

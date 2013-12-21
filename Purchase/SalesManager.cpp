@@ -15,7 +15,7 @@ using namespace std;
 
 ///////////////////////////////////////////////////////////////////////////////////////////
 
-SalesManager::SalesManager( U32 id, ParentQueryerPtr parent, string& query, bool runQueryImmediately ) : QueryHandler< DiplodocusPurchase* >( id, 20, parent, runQueryImmediately ), 
+SalesManager::SalesManager( U32 id, ParentQueryerPtr parent, string& query, bool runQueryImmediately ) : ParentType( id, 20, parent, runQueryImmediately ), 
                               m_isServicingExchangeRates( false ),
                               m_isInitializing( true ),
                               m_hasSendProductRequest( false )
@@ -36,7 +36,7 @@ void     SalesManager::Update( time_t currentTime )
    else
    {
       // request strings first for all of the sales.
-      QueryHandler::Update( currentTime, m_isServicingExchangeRates );
+      ParentType::Update( currentTime, m_isServicingExchangeRates );
    }
 }
 

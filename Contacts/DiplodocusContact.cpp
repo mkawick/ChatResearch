@@ -23,12 +23,17 @@ DiplodocusContact::DiplodocusContact( const string& serverName, U32 serverId ): 
 
 //---------------------------------------------------------------
 
-void     DiplodocusContact::ServerWasIdentified( ChainedInterface* khaan )
+void     DiplodocusContact::ServerWasIdentified( IChainedInterface* khaan )
 {
    BasePacket* packet = NULL;
    PackageForServerIdentification( m_serverName, m_localIpAddress, m_serverId, m_listeningPort, m_gameProductId, m_isGame, m_isControllerApp, true, m_isGateway, &packet );
-   khaan->AddOutputChainData( packet, 0 );
-   m_serversNeedingUpdate.push_back( static_cast<InputChainType*>( khaan )->GetServerId() );
+   //khaan->AddOutputChainData( packet, 0 );
+   
+
+   InputChainType* localKhaan = static_cast< InputChainType* >( khaan );
+   localKhaan->AddOutputChainData( packet, 0 );
+   //m_clientsNeedingUpdate.push_back( localKhaan->GetChainedId() );
+   m_serversNeedingUpdate.push_back( localKhaan->GetServerId() );
 }
 
 //---------------------------------------------------------------
@@ -66,6 +71,7 @@ bool     DiplodocusContact::AddInputChainData( BasePacket* packet, U32 connectio
       PacketGatewayWrapper* wrapper = static_cast< PacketGatewayWrapper* >( packet );
       BasePacket* unwrappedPacket = wrapper->pPacket;
       U32 connectionIdToUse = wrapper->connectionId;
+      connectionIdToUse = connectionIdToUse;
 
       if( unwrappedPacket->packetType == PacketType_Contact )
       {
@@ -78,9 +84,9 @@ bool     DiplodocusContact::AddInputChainData( BasePacket* packet, U32 connectio
 
          PacketContact* packetContact = static_cast< PacketContact* >( unwrappedPacket );
          bool result = found->second.HandleRequestFromClient( packetContact );
+         result = result;
         
-         delete unwrappedPacket;
-         delete wrapper;
+         PacketCleaner cleaner( packet );
          return true;
       }
       else
@@ -162,8 +168,9 @@ bool  DiplodocusContact::HandlePacketFromOtherServer( BasePacket* packet, U32 co
    PacketServerJobWrapper* wrapper = static_cast< PacketServerJobWrapper* >( packet );
    BasePacket* unwrappedPacket = wrapper->pPacket;
    U32  serverIdLookup = wrapper->serverId;
+   serverIdLookup = serverIdLookup;
 
-   bool success = false;
+   //bool success = false;
 
    if( unwrappedPacket->packetType == PacketType_Login )
    {
@@ -221,7 +228,7 @@ bool     DiplodocusContact::AddOutputChainData( BasePacket* packet, U32 connecti
    {
       if( packet->packetSubType == BasePacketDbQuery::QueryType_Result )
       {
-         bool wasHandled = false;
+         //bool wasHandled = false;
          PacketDbQueryResult* dbResult = static_cast<PacketDbQueryResult*>( packet );
          return HandleDbQueryResult( dbResult );
       }
@@ -234,7 +241,7 @@ bool     DiplodocusContact::AddOutputChainData( BasePacket* packet, U32 connecti
 
 bool     DiplodocusContact::HandleDbQueryResult( PacketDbQueryResult* dbResult )
 {
-   bool success = false;
+   //bool success = false;
 
    if( dbResult->id )
    {

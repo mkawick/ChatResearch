@@ -117,6 +117,7 @@ bool     UserAccountPurchase::MakePurchase( const PacketPurchase_Buy* packet )
    assert( m_salesManager != NULL || m_userTicket.connectionId == 0 );
 
    bool success = m_salesManager->PerformSale( packet->purchaseUuid, m_userTicket );
+   success = success;// warnings
 
    return true;
 }
@@ -134,6 +135,7 @@ bool     UserAccountPurchase::MakePurchase( const PacketTournament_PurchaseTourn
    bool success = m_salesManager->PerformSale( packet->purchaseUuid, m_userTicket );*/
 
    bool success = m_salesManager->PerformSale( packet->exchangeUuid, m_userTicket, connectionId, packet->uniqueTransactionId );
+   success = success;// warnings
 
    return true;
 }

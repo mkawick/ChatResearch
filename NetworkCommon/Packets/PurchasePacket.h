@@ -60,6 +60,8 @@ public:
    {
       PurchaseType_Base,
       PurchaseType_TestNotification,
+      PurchaseType_EchoToServer,
+      PurchaseType_EchoToClient,
 
       PurchaseType_Buy,
       PurchaseType_BuyResponse,
@@ -91,6 +93,23 @@ public:
    int      type;
 };
 
+///////////////////////////////////////////////////////////////
+
+class PacketPurchase_EchoToServer : public BasePacket
+{
+public:
+   PacketPurchase_EchoToServer(): BasePacket( PacketType_Purchase, PacketPurchase::PurchaseType_EchoToServer ) {}
+};
+
+///////////////////////////////////////////////////////////////
+
+class PacketPurchase_EchoToClient : public BasePacket
+{
+public:
+   PacketPurchase_EchoToClient(): BasePacket( PacketType_Purchase, PacketPurchase::PurchaseType_EchoToClient ) {}
+};
+
+///////////////////////////////////////////////////////////////
 
 ///////////////////////////////////////////////////////////////
 

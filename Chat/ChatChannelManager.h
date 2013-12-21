@@ -180,7 +180,7 @@ protected:
    void              AddUserToChannelInternal( stringhash hashedUserUuid, const string& channelUuid, const string& channelName, UserUuidSet& otherUsersToNotify );
    void              AddChatchannel( int id, const string& channelName, const string& channelUuid, bool isActive, int maxPlayers, int gameType, int gameId, const string& createDate );
    void              AddAllUsersToChannel( const string& channelUuid, const SerializedKeyValueVector< string >& usersAndIds );
-   void              AddUserToChannel( const string& channelUuid, UserBasics& ub );
+   void              AddUserToChannel( const string& channelUuid, const UserBasics& ub );
    bool              AddChatChannelToStorage( const string& channelUuid, const string& channelName );
    void              AssembleListOfUsersToNotifyForAllChannelsForUser( stringhash userUuidHash, stringhash channelUuid, const string& userUuid, UserUuidSet& otherUsersToNotify );
    void              RemoveUserFromChannelInternal( stringhash hashedUserUuid, stringhash channelUuid, const string& userUuide, UserUuidSet& otherUsersToNotify );

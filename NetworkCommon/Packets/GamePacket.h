@@ -45,7 +45,9 @@ public:
 
       GamePacketType_ListOfGames,// usually s2s
       GamePacketType_GameIdentification, // to client
-      GamePacketType_RawGameData
+      GamePacketType_RawGameData,
+      GamePacketType_EchoToServer,
+      GamePacketType_EchoToClient,
    };
 public:
    PacketGameToServer( int packet_type = PacketType_Gameplay, int packet_sub_type = GamePacketType_LoginToServer ) : BasePacket( packet_type, packet_sub_type ) {}
@@ -411,6 +413,23 @@ public:
    U8       dataType;
    U8       data[ MaxBufferSize ];
 };
+
+///////////////////////////////////////////////////////////////
+
+class PacketGame_EchoToServer : public BasePacket
+{
+public:
+   PacketGame_EchoToServer(): BasePacket( PacketType_Gameplay, PacketGameToServer::GamePacketType_EchoToServer ) {}
+};
+
+///////////////////////////////////////////////////////////////
+
+class PacketGame_EchoToClient : public BasePacket
+{
+public:
+   PacketGame_EchoToClient(): BasePacket( PacketType_Gameplay, PacketGameToServer::GamePacketType_EchoToClient ) {}
+};
+
 
 ///////////////////////////////////////////////////////////////
 

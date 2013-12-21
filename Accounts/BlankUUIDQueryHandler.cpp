@@ -22,7 +22,7 @@ struct UserAccountLookup
 
 ///////////////////////////////////////////////////////////////////////////////////////////
 
-BlankUUIDQueryHandler::BlankUUIDQueryHandler( U32 id, Queryer* parent, string& query ) : QueryHandler< Queryer* >( id, 20, parent ), m_isServicingBlankUUID( false ), m_numberPendingUuids( 0 )
+BlankUUIDQueryHandler::BlankUUIDQueryHandler( U32 id, Queryer* parent, string& query ) : ParentType( id, 20, parent ), m_isServicingBlankUUID( false ), m_numberPendingUuids( 0 )
 {
    m_queryString = query;
 }
@@ -33,20 +33,20 @@ void     BlankUUIDQueryHandler::Update( time_t currentTime )
    {
       GenerateAListOfAvailableUUIDS();
    }
-   QueryHandler< Queryer* >::Update( currentTime, m_isServicingBlankUUID );
+   ParentType::Update( currentTime, m_isServicingBlankUUID );
 }
 
 //---------------------------------------------------------------
 
 bool     BlankUUIDQueryHandler::HandleResult( const PacketDbQueryResult* dbResult )
 {
-   int resultType = dbResult->lookup;
-   if( resultType != m_queryType &&
-      //resultType != StatusUpdate::QueryType_UserFindBlankUUIDInUsers &&
-      resultType != StatusUpdate::QueryType_DoesUuidExist )
+   U32 queryType = static_cast< U32 >( dbResult->lookup );
+   if( queryType != m_queryType &&
+      //queryType != StatusUpdate::QueryType_UserFindBlankUUIDInUsers &&
+      queryType != StatusUpdate::QueryType_DoesUuidExist )
       return false;
 
-   if( resultType == m_queryType )
+   if( queryType == m_queryType )
    {
       SetValueOnExit< bool >           setter( m_isServicingBlankUUID, false );// due to multiple exit points...
 
@@ -82,7 +82,7 @@ bool     BlankUUIDQueryHandler::HandleResult( const PacketDbQueryResult* dbResul
       return true;
    }
 
-  /* if( resultType == StatusUpdate::QueryType_UserFindBlankUUIDInUsers )
+  /* if( queryType == StatusUpdate::QueryType_UserFindBlankUUIDInUsers )
    {
       UserAccountLookup* lookup = static_cast< UserAccountLookup* >( dbResult->customData );
       IndexTableParser              enigma( dbResult->bucket );
@@ -125,7 +125,7 @@ bool     BlankUUIDQueryHandler::HandleResult( const PacketDbQueryResult* dbResul
       delete static_cast< UserAccountLookup* >( dbResult->customData );
    }*/
 
-   if( resultType == StatusUpdate::QueryType_DoesUuidExist )
+   if( queryType == StatusUpdate::QueryType_DoesUuidExist )
    {
       if( dbResult->bucket.bucket.size() == 0 )
       {

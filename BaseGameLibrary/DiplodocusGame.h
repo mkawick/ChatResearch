@@ -36,6 +36,9 @@ struct TournamentOverview
 
 class DiplodocusGame : public Diplodocus< KhaanGame >
 {
+public: 
+   typedef Diplodocus< KhaanGame > ChainedType;
+
 public:
    DiplodocusGame( const string& serverName, U32 serverId, U8 gameProductId = 0 );
 
@@ -51,7 +54,7 @@ public:
    void     AddTimer( U32 timerId, U32 callbackTimeMs = 100 ); // timers must be unique
    void     InputRemovalInProgress( IChainedInterface* chainedInput );
    void     InputConnected( IChainedInterface* chainedInput );
-   void     ServerWasIdentified( ChainedInterface* khaan );
+   void     ServerWasIdentified( IChainedInterface* khaan );
 
    //-----------------------------------------------------------------------------
 

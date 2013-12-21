@@ -13,7 +13,7 @@ using namespace std;
 
 #include "DiplodocusContact.h"
 #include "../NetworkCommon/NetworkIn/DiplodocusServerToServer.h"
-#include "../Networkcommon/Version.h"
+#include "../NetworkCommon/Version.h"
 #include "../NetworkCommon/Utils/CommandLineParser.h"
 #include "../NetworkCommon/DataTypes.h"
 #include "../NetworkCommon/Utils/Utils.h"
@@ -90,7 +90,8 @@ int main( int argc, const char* argv[] )
    U32 serverId = (U32)serverUniqueHashValue;
 
    cout << serverName << ":" << endl;
-   cout << "Version " << version << endl;
+   //cout << "Version " << version << endl;
+   cout << "Server stack version " << ServerStackVersion << endl;
    cout << "ServerId " << serverId << endl;
    cout << "Db " << dbIpAddress << ":" << dbPortAddress << endl;
    cout << "------------------------------------------------------------------" << endl << endl << endl;

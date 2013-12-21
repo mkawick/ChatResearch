@@ -13,6 +13,8 @@ class BasePacket;
 
 class DiplodocusGateway : public Diplodocus< KhaanConnector >
 {
+public: 
+   typedef Diplodocus< KhaanConnector > ChainedType;
 public:
    DiplodocusGateway( const string& serverName, U32 serverId );
    ~DiplodocusGateway();

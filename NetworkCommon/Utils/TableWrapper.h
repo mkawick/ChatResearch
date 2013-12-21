@@ -273,22 +273,6 @@ typedef Enigmosaurus <ConfigTable> ConfigParser;
 
 //////////////////////////////////////////////////////////////
 
-class EmailAddressesOfPasswordsToResetTable
-{
-public:
-   enum Columns
-   {
-      Column_id,
-      Column_email,
-      Column_language_id,
-      Column_reset_key,
-      Column_end
-   };
-};
-
-typedef Enigmosaurus <EmailAddressesOfPasswordsToResetTable> PasswordResetParser;
-
-
 //////////////////////////////////////////////////////////////
 
 class TableUserProfile

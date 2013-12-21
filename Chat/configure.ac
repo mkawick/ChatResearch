@@ -1,4 +1,4 @@
-AC_INIT([gateway_serverd], [1.0])
+AC_INIT([chat_serverd], [1.0])
 AM_INIT_AUTOMAKE([-Wall -Werror foreign])
 AC_PROG_CXX
 AC_PROG_CC

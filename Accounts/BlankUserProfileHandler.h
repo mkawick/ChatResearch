@@ -10,6 +10,9 @@
 class BlankUserProfileHandler : public QueryHandler< Queryer* >
 {
 public:
+   typedef QueryHandler< Queryer* > ParentType;
+
+public:
    BlankUserProfileHandler( U32 id, Queryer* parent, string& query );
    bool     HandleResult( const PacketDbQueryResult* dbResult );
    void     CreateBlankProfile( const string& user_id, int productId = 0 );

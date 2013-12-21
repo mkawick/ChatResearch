@@ -6,8 +6,8 @@
 #include "../NetworkCommon/Packets/LoginPacket.h"
 
 #include "DiplodocusChat.h"
-#include "chatChannelManager.h"
 #include "../NetworkCommon/Utils/TableWrapper.h"
+#include "ChatChannelManager.h"
 
 #include <boost/lexical_cast.hpp>
 
@@ -24,9 +24,9 @@ UserConnection::UserConnection( U32 connectionId ) :
                   m_userDbId( 0 ),
                   m_connectionId( connectionId ),
                   m_isUserDbLookupPending( false ),
-                  m_badConnection( false ),
                   m_userFriendsComplete( false ),
-                  m_userChannelsComplete( false )
+                  m_userChannelsComplete( false ),
+                  m_badConnection( false )
 {
 }
 
@@ -583,6 +583,7 @@ bool     UserConnection::ProcessPacket( BasePacket* packet )
          case PacketChatToServer::ChatType_ChangeChatChannel:
             {
                PacketChangeChatChannel* channelChange = static_cast< PacketChangeChatChannel* >( packet );
+               channelChange = channelChange;
                //if( channelChange->chatChannelUuid != m_currentChannel )// ignore changes to the same channel
                {
                   //SetChatChannel( channelChange->chatChannelUuid );
@@ -604,7 +605,7 @@ bool     UserConnection::ProcessPacket( BasePacket* packet )
             break;
          case PacketChatToServer::ChatType_RequestHistorySinceLastLogin:
             {
-               PacketChatMissedHistoryRequest* request = static_cast< PacketChatMissedHistoryRequest* > ( packet );
+               //PacketChatMissedHistoryRequest* request = static_cast< PacketChatMissedHistoryRequest* > ( packet );
                GetAllChatHistroySinceLastLogin();
             }
             break;
@@ -647,7 +648,7 @@ bool     UserConnection::ProcessPacket( BasePacket* packet )
             break;
          case PacketChatToServer::ChatType_EnableDisableFiltering:
             {
-               PacketChatEnableFiltering* request = static_cast< PacketChatEnableFiltering* > ( packet );
+               //PacketChatEnableFiltering* request = static_cast< PacketChatEnableFiltering* > ( packet );
                //m_chatChannelManager->AddUserToChannel( request->name, m_uuid );
             }
             break;
@@ -659,7 +660,7 @@ bool     UserConnection::ProcessPacket( BasePacket* packet )
             break;
          case PacketChatToServer::ChatType_AdminLoadAllChannels:
             {
-               PacketChatAdminLoadAllChannels* request = static_cast< PacketChatAdminLoadAllChannels* > ( packet );
+               //PacketChatAdminLoadAllChannels* request = static_cast< PacketChatAdminLoadAllChannels* > ( packet );
                m_chatChannelManager->LoadAllChannels( m_uuid );
             }
             break;

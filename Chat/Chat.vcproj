@@ -230,6 +230,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\NetworkCommon\NetworkUtils.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\NetworkCommon\Platform.h"
 				>
 			</File>
@@ -328,10 +332,6 @@
 					RelativePath="..\NetworkCommon\NetworkIn\KhaanServerToServer.h"
 					>
 				</File>
-				<File
-					RelativePath="..\NetworkCommon\NetworkUtils.cpp"
-					>
-				</File>
 			</Filter>
 			<Filter
 				Name="NetworkOut"
@@ -398,6 +398,18 @@
 				</File>
 				<File
 					RelativePath="..\NetworkCommon\Logging\server_log.h"
+					>
+				</File>
+			</Filter>
+			<Filter
+				Name="Daemon"
+				>
+				<File
+					RelativePath="..\NetworkCommon\Daemon\Daemonizer.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\NetworkCommon\Daemon\Daemonizer.h"
 					>
 				</File>
 			</Filter>

@@ -48,12 +48,15 @@ DiplodocusPurchase :: ~DiplodocusPurchase()
 }
 //---------------------------------------------------------------
 
-void     DiplodocusPurchase::ServerWasIdentified( ChainedInterface* khaan )
+void     DiplodocusPurchase::ServerWasIdentified( IChainedInterface* khaan )
 {
    BasePacket* packet = NULL;
    PackageForServerIdentification( m_serverName, m_localIpAddress, m_serverId, m_listeningPort, m_gameProductId, m_isGame, m_isControllerApp, true, m_isGateway, &packet );
-   khaan->AddOutputChainData( packet, 0 );
-   m_serversNeedingUpdate.push_back( static_cast<InputChainType*>( khaan )->GetServerId() );
+   //khaan->AddOutputChainData( packet, 0 );
+   //m_serversNeedingUpdate.push_back( static_cast<InputChainType*>( khaan )->GetServerId() );
+   ChainedType* localKhaan = static_cast< ChainedType* >( khaan );
+   localKhaan->AddOutputChainData( packet, 0 );
+   m_serversNeedingUpdate.push_back( localKhaan->GetServerId() );
 }
 // 
 
@@ -150,8 +153,9 @@ bool  DiplodocusPurchase::HandlePacketFromOtherServer( BasePacket* packet, U32 c
    PacketServerJobWrapper* wrapper = static_cast< PacketServerJobWrapper* >( packet );
    BasePacket* unwrappedPacket = wrapper->pPacket;
    U32  serverIdLookup = wrapper->serverId;
+   serverIdLookup = serverIdLookup;
 
-   bool success = false;
+   //bool success = false;
 
    if( unwrappedPacket->packetType == PacketType_Login )
    {
@@ -229,6 +233,8 @@ bool     DiplodocusPurchase::ConnectUser( PacketPrepareForUserLogin* loginPacket
 bool     DiplodocusPurchase::DisconnectUser( PacketPrepareForUserLogout* loginPacket )
 {
    U32 connectionId = loginPacket->connectionId;
+   connectionId = connectionId;
+
    string uuid = loginPacket->uuid;
    U64 hashForUser = GenerateUniqueHash( uuid );
 

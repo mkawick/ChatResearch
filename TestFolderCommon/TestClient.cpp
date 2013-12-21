@@ -4,6 +4,7 @@
 //#include <winsock2.h>
 #include "FruitadensClientChat.h"
 
+#include "../NetworkCommon/Version.h"
 #include "../NetworkCommon/Utils/CommandLineParser.h"
 #include "../NetworkCommon/Utils/Utils.h"
 
@@ -98,7 +99,7 @@ int main(int argc, const char* argv[])
    Pyroraptor pyro;
    pyro.SetConsoleColor( Pyroraptor::ColorsNormal );
    cout << endl << "    Client communications app." << endl << endl;
-   cout << "     version 0.04 " << endl;
+   cout << "     version: " << ServerStackVersion << endl;
    cout << " ------------------------------------------- " << endl;
    pyro.SetConsoleColor( Pyroraptor::ColorsNormal );
    

@@ -2,7 +2,7 @@
 #pragma once
 
 
-typedef std::deque< int >               ConnectionIdQueue;
+typedef std::deque< U32 >               ConnectionIdQueue;
 
 enum GatewayConstants
 {

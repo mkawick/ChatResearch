@@ -15,22 +15,25 @@
 using namespace std;
 
 const char* newAccountEmailAddress = "account_create@playdekgames.com";
+const char* resetPasswordEmailAddress = "account_reset@playdekgames.com";
 
 bool                            NewAccountQueryHandler::m_hasLoadedStringTable = false;
 bool                            NewAccountQueryHandler::m_hasLoadedWeblinks = false;
 const char*                     NewAccountQueryHandler::m_mailServer = "mail.playdekgames.com";
 string                          NewAccountQueryHandler::m_linkToAccountCreated;
+string                          NewAccountQueryHandler::m_linkToResetEmailConfirm;
 string                          NewAccountQueryHandler::m_linkToResetPasswordConfirm;
 string                          NewAccountQueryHandler::m_pathToConfirmationEmailFile;
 string                          NewAccountQueryHandler::m_confirmationEmailTemplate;
 string                          NewAccountQueryHandler::m_passwordResetEmailTemplate;
+string                          NewAccountQueryHandler::m_emailResetEmailTemplate;
 NewAccountQueryHandler::StringTableLookup               
                                  NewAccountQueryHandler::m_stringsTable;
 map< stringhash, stringhash >   NewAccountQueryHandler::m_replacemetStringsLookup;
 
 ///////////////////////////////////////////////////////////////////////////////////////////
 
-NewAccountQueryHandler::NewAccountQueryHandler( U32 id, Queryer* parent, string& query ) : QueryHandler< Queryer* >( id, 20, parent ), 
+NewAccountQueryHandler::NewAccountQueryHandler( U32 id, Queryer* parent, string& query ) : ParentType( id, 20, parent ), 
                      m_isServicingNewAccounts( false ),
                      m_isServicingStringLoading( false ),
                      m_isServicingWebLinks( false )
@@ -54,7 +57,7 @@ void     NewAccountQueryHandler::Update( time_t currentTime )
    }
    if( isMailServiceEnabled == true )
    {
-      QueryHandler< Queryer* >::Update( currentTime, m_isServicingNewAccounts );
+      ParentType::Update( currentTime, m_isServicingNewAccounts );
    }
 }
 
@@ -84,7 +87,7 @@ void     NewAccountQueryHandler::PreloadLanguageStrings()
          dbQuery->id = 0;
          dbQuery->lookup = m_loadStringsQueryType;
 
-         dbQuery->query = "SELECT * FROM string WHERE category='account' OR category='reset_password'";
+         dbQuery->query = "SELECT * FROM string WHERE category='account' OR category='reset_password' OR category='change_email'";
          m_parent->AddQueryToOutput( dbQuery );
 
          //LogMessage( LOG_PRIO_INFO, "Accounts::PreloadLanguageStrings\n" );
@@ -111,6 +114,7 @@ void     NewAccountQueryHandler::PreloadWeblinks()
 
          m_linkToAccountCreated = "http://accounts.playdekgames.com/account_created.php";
          m_linkToResetPasswordConfirm = "http://accounts.playdekgames.com/reset_password_confirm.php";
+         m_linkToResetPasswordConfirm = "http://accounts.playdekgames.com/reset_user_email_name_confirm.php";
 
          PacketDbQuery* dbQuery = new PacketDbQuery;
          dbQuery->id = 0;
@@ -202,9 +206,12 @@ void     NewAccountQueryHandler::PrepToSendUserEmail( const PacketDbQueryResult*
       string email =             row[ TableUserTempNewUser::Column_email ];
       string userId =            row[ TableUserTempNewUser::Column_user_id ];
       string uuid =              row[ TableUserTempNewUser::Column_uuid ];
+      string lookup =            row[ TableUserTempNewUser::Column_lookup_key ];
 
       if( uuid == "NULL" || uuid == "null" || uuid == "0" ) 
          uuid.clear();
+      if( lookup == "NULL" || lookup == "null" || lookup == "0" ) 
+         lookup.clear();
 
       int languageId =           boost::lexical_cast< int >( row[ TableUserTempNewUser::Column_language_id ] );
 
@@ -221,8 +228,13 @@ void     NewAccountQueryHandler::PrepToSendUserEmail( const PacketDbQueryResult*
          string subjectText = GetString( "email.new_account.welcome.subject", languageId ); //"Confirmation email";
          string bodyText = GetString( "email.new_account.welcome.body_text", languageId );//"Thank you for signing up with Playdek. Click this link to confirm your new account.";
 
-         string userLookupKey = GenerateUUID( GetCurrentMilliseconds() + static_cast<U32>( GenerateUniqueHash( name + email ) ) );
-         userLookupKey += GenerateUUID( GetCurrentMilliseconds() ); // double long text
+         string userLookupKey = lookup;
+         if( userLookupKey.size() == 0 )// do not regenerate the uuid
+         {
+            userLookupKey = GenerateUUID( GetCurrentMilliseconds() + static_cast<U32>( GenerateUniqueHash( name + email ) ) );
+            userLookupKey += GenerateUUID( GetCurrentMilliseconds() ); // double long text
+         }
+         
 
          string linkPath = m_linkToAccountCreated;
          linkPath += "?key=";
@@ -360,9 +372,11 @@ void     NewAccountQueryHandler::HandleWeblinks( const PacketDbQueryResult* dbRe
    string middle = "";
    string accountCreated = "account_created.php";
    string resetPassword = "reset_password_confirm.php";
+   string resetEmail = "reset_user_email_name_confirm.php";
 
    string pathToConfirmationEmailFile;
    string pathToResetPasswordEmailFile;
+   string pathToResetUserEmailEmailFile;
    
    while( it != enigma.end() )
    {
@@ -387,6 +401,10 @@ void     NewAccountQueryHandler::HandleWeblinks( const PacketDbQueryResult* dbRe
       {
          resetPassword = value;
       }
+      else if( key == "user_account.web_reset_password_confirmed" )
+      {
+         resetEmail = value;
+      }
       else if( key == "user_account.account_created.confirmation_email_path" )
       {
          pathToConfirmationEmailFile = value;
@@ -395,6 +413,10 @@ void     NewAccountQueryHandler::HandleWeblinks( const PacketDbQueryResult* dbRe
       {
          pathToResetPasswordEmailFile = value;
       }
+      else if( key == "user_account.email_reset.reset_user_email_path" )
+      {
+         pathToResetUserEmailEmailFile = value;
+      }
    }
 
    //--------------------------------------------------
@@ -402,6 +424,7 @@ void     NewAccountQueryHandler::HandleWeblinks( const PacketDbQueryResult* dbRe
    // assemble the path
    m_linkToAccountCreated = begin;
    m_linkToResetPasswordConfirm = begin;
+   m_linkToResetEmailConfirm = begin;
 
    char character = *m_linkToAccountCreated.rbegin();
 
@@ -430,8 +453,13 @@ void     NewAccountQueryHandler::HandleWeblinks( const PacketDbQueryResult* dbRe
    }
    
    m_linkToResetPasswordConfirm = m_linkToAccountCreated;
-   m_linkToAccountCreated += accountCreated;
    m_linkToResetPasswordConfirm += resetPassword;
+    
+   m_linkToResetEmailConfirm = m_linkToAccountCreated;
+   m_linkToResetEmailConfirm += resetEmail;
+   
+   m_linkToAccountCreated += accountCreated;  // make sure that in string additions, this comes last
+
 
    if( pathToConfirmationEmailFile.size() )
    {
@@ -451,6 +479,7 @@ void     NewAccountQueryHandler::HandleWeblinks( const PacketDbQueryResult* dbRe
       cout << "Success email: confirmation email file found" << endl;
    }
 
+   //-------------------------------------------
    if( pathToResetPasswordEmailFile.size() )
    {
       cout << "reset password file: " << pathToResetPasswordEmailFile << endl;
@@ -468,6 +497,28 @@ void     NewAccountQueryHandler::HandleWeblinks( const PacketDbQueryResult* dbRe
    {
       cout << "Success email: reset password email file found" << endl;
    }
+
+   //-------------------------------------------
+   if( pathToResetUserEmailEmailFile.size() )
+   {
+      cout << "reset email file: " << pathToResetUserEmailEmailFile << endl;
+      m_emailResetEmailTemplate = OpenAndLoadFile( pathToResetUserEmailEmailFile );
+   }
+   else
+   {
+      cout << "Error email: pathToResetPasswordEmailFile not specified" << endl;
+   }
+   if( m_emailResetEmailTemplate.size() == 0 )
+   {
+      cout << "Error email: reset user_email email file not found" << endl;
+   }
+   else
+   {
+      cout << "Success email: reset user_email email file found" << endl;
+   }
+   //-------------------------------------------
+
+   
 }
 
 //---------------------------------------------------------------

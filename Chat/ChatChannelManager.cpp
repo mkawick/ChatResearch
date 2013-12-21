@@ -249,7 +249,8 @@ bool     ChatChannelManager::FinishJob( PacketDbQueryResult* dbResult, ChatChann
          UserUuidMapIterator addedIter = m_userUuidMap.find( GenerateUniqueHash( job.uuid ) );
          if( addedIter != m_userUuidMap.end() )
          {
-            AddUserToChannel( job.name, UserBasics( addedIter->second.userName, addedIter->second.userUuid ) );
+            UserBasics ub( addedIter->second.userName, addedIter->second.userUuid );
+            AddUserToChannel( job.name, ub );
          }
 
          // we will notify both the requestor and the target
@@ -545,6 +546,16 @@ bool     ChatChannelManager::FinishJob( PacketDbQueryResult* dbResult, ChatChann
       {
          FinishAddingRemovingUserFromChatchannelFromGameServer( dbResult, job );
       }
+      break;
+   case ChatChannelDbJob::JobType_SelectAllChannelsForAUser:
+      {
+      }
+      break;
+   case ChatChannelDbJob::JobType_MakeInactiveFromGameServer:
+      {
+      }
+      break;
+   default:
       break;
    }
    
@@ -855,7 +866,7 @@ void     ChatChannelManager::AddChatchannel( int id, const string& channelName, 
    }
 }
 
-void     ChatChannelManager::AddUserToChannel( const string& channelUuid, UserBasics& ub )
+void     ChatChannelManager::AddUserToChannel( const string& channelUuid, const UserBasics& ub )
 {
    stringhash  keyLookup = GenerateUniqueHash( channelUuid );
 
@@ -976,7 +987,7 @@ void     ChatChannelManager::AssembleListOfUsersToNotifyForAllChannelsForUser( s
       return;
    }
 
-   bool erasedFlag = false;
+   //bool erasedFlag = false;
    list< stringhash >& listReference = channelIter->second.userUuidList;
    list< stringhash >::iterator userIter = listReference.begin();
    while( userIter != listReference.end() )
@@ -1244,6 +1255,7 @@ bool   ChatChannelManager::CreateNewChannel( const string& channelName, const st
    listOfStrings.push_back( channelName );
    U32 serverId = 0;
    int jobId = DbQueryAndPacket( channelName, newId, serverId, authUuid, authHash, queryString, ChatChannelDbJob::JobType_Create, false, &listOfStrings );
+   jobId = jobId;
 
    return true;
 }
@@ -1290,7 +1302,7 @@ bool   ChatChannelManager::CreateNewChannel( const PacketChatCreateChatChannelFr
 
    // no need to escape these values
    string authUuid;
-   stringhash authHash = 0;
+   //stringhash authHash = 0;
    U32 serverId = pPacket->gameInstanceId;
    int jobId = DbQueryAndPacket( channelName, newUuid, serverId, authUuid, pPacket->gameId, queryString, ChatChannelDbJob::JobType_CreateFromGameServer, false );
 
@@ -1315,9 +1327,10 @@ bool   ChatChannelManager::DeleteChannel( const PacketChatDeleteChatChannelFromG
    queryString += "' AND game_instance_id='";
    queryString += boost::lexical_cast< string >( (int)( pPacket->gameId ) );
    queryString += "'";
-   U32 serverId = 0;
+   //U32 serverId = 0;
 
    int jobId = DbQueryAndPacket( "", "", pPacket->gameInstanceId, "", pPacket->gameId, queryString, ChatChannelDbJob::JobType_MakeInactiveFromGameServer, false );
+   jobId = jobId;
 
  /*  DbJobIterator iter;
    bool success = FindDbJob( jobId, m_pendingDbJobs, iter );*/
@@ -1567,9 +1580,10 @@ bool     ChatChannelManager::AddUserToChannel( const PacketChatAddUserToChatChan
    queryString += "' AND game_instance_id='";
    queryString += boost::lexical_cast< string >( (int)( pPacket->gameId ) );
    queryString += "'";
-   U32 serverId = 0;
+   //U32 serverId = 0;
 
    int jobId = DbQueryAndPacket( "", "", pPacket->gameInstanceId, pPacket->userUuid, pPacket->gameId, queryString, ChatChannelDbJob::JobType_AddUserFromGameServer, false );
+   jobId = jobId;
 
  /*  DbJobIterator iter;
    bool success = FindDbJob( jobId, m_pendingDbJobs, iter );*/
@@ -1660,7 +1674,7 @@ bool     ChatChannelManager::RemoveUserFromChannel( const string& channelUuid, c
    DbQueryAndPacket( channelUuid, userUuid, serverId, authUuid, userHashLookup, queryString, ChatChannelDbJob::JobType_RemoveUser, false, &listOfStrings );
 
    UserUuidSet otherUsersToNotify;
-   ChatChannel& channel = channelIter->second;
+   //ChatChannel& channel = channelIter->second;
    RemoveUserFromChannelInternal( userHashLookup, channelHash, userUuid, otherUsersToNotify );
    InformUsersAboutUserStatusChange( userHashLookup, otherUsersToNotify, UserStatusChange_UserRemovedFromChannel );
 
@@ -1677,9 +1691,10 @@ bool     ChatChannelManager::RemoveUserFromChannel( const PacketChatRemoveUserFr
    queryString += "' AND game_instance_id='";
    queryString += boost::lexical_cast< string >( (int)( pPacket->gameId ) );
    queryString += "'";
-   U32 serverId = 0;
+   //U32 serverId = 0;
 
    int jobId = DbQueryAndPacket( "", "", pPacket->gameInstanceId, pPacket->userUuid, pPacket->gameId, queryString, ChatChannelDbJob::JobType_RemoveUserFromGameServer, false );
+   jobId = jobId;
 
  /*  DbJobIterator iter;
    bool success = FindDbJob( jobId, m_pendingDbJobs, iter );*/

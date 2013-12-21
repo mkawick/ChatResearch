@@ -33,6 +33,8 @@ enum
 
 class StringLookup : public QueryHandler< Queryer* >
 {
+public: 
+   typedef QueryHandler< Queryer* > ParentType;
 public:
    StringLookup( U32 id, ParentQueryerPtr parent, vector< string >& stringCategories );
 

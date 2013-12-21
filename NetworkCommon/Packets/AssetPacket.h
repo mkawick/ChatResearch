@@ -9,6 +9,7 @@ struct AssetInfo
    U8       productId;
    bool     isOptional;
    string   assetHash;
+   string   assetName;
    string   version;
    string   beginDate, endDate;
 
@@ -21,6 +22,7 @@ struct AssetInfo
       isOptional = false;
       productId = 0;
       assetHash.clear();
+      assetName.clear();
       version.clear();
       beginDate.clear();
       endDate.clear();
@@ -39,6 +41,8 @@ public:
    {
       AssetType_Base,
       AssetType_TestNotification,
+      AssetType_EchoToServer,
+      AssetType_EchoToClient,
 
       AssetType_GetListOfStaticAssets,
       AssetType_GetListOfStaticAssetsResponse,
@@ -53,6 +57,22 @@ public:
 
    bool  SerializeIn( const U8* data, int& bufferOffset );
    bool  SerializeOut( U8* data, int& bufferOffset ) const;
+};
+
+///////////////////////////////////////////////////////////////
+
+class PacketAsset_EchoToServer : public BasePacket
+{
+public:
+   PacketAsset_EchoToServer(): BasePacket( PacketType_Asset, PacketAsset::AssetType_EchoToServer ) {}
+};
+
+///////////////////////////////////////////////////////////////
+
+class PacketAsset_EchoToClient : public BasePacket
+{
+public:
+   PacketAsset_EchoToClient(): BasePacket( PacketType_Asset, PacketAsset::AssetType_EchoToClient ) {}
 };
 
 ///////////////////////////////////////////////////////////////

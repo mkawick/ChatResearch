@@ -40,8 +40,8 @@ std::string    Reduce(const std::string& str,
                    const std::string& whitespace = " \t");
 unsigned int split( const std::string& txt, std::vector< std::string >& strs, char ch = ' ');
 
-std::string    OpenAndLoadFile( const std::string& path );
-std::string    itos(int n);
+const std::string    OpenAndLoadFile( const std::string& path );
+const std::string    itos(int n);
 
 #if PLATFORM != PLATFORM_WINDOWS
 int kbhit();
@@ -74,7 +74,7 @@ template < class T >
 bool ConvertFromString( const std::string& InputString, T& Value )
 {
    Value = 0;
-   T tempValue = 0;
+   //T tempValue = 0;
    int numConverted = 0;
    bool makeNegative = false;
    for(std::string::const_iterator it = InputString.begin() ; it < InputString.end(); ++it)
@@ -151,7 +151,7 @@ bool ConvertToString( T value, std::string& InputString, int radix = 10 )
          else
          {
             ins -= 10;
-            ins = lookup[ ins ];
+            ins = lookup[ (int) ins ];// cast for compiler warning only
          }
          InputString.insert( 0, 1, ins );
          value /= radix;
@@ -166,4 +166,9 @@ bool ConvertToString( T value, std::string& InputString, int radix = 10 )
    return true;
 }
 
-std::string  ConvertStringToLower( const std::string& str );
+// losts of string utils
+bool  splitOnFirstFound( std::vector< std::string >& listOfStuff, const std::string& text, const char* delimiter = "=:" );
+bool  ParseListOfItems( std::vector< std::string >& listOfStuff, std::string text, const char* delimiter = "=:", const char* charsToRemove = NULL );
+std::string  RemoveEnds( std::string s, const char* charsToStrip = "\"\'" );
+
+const std::string  ConvertStringToLower( const std::string& str );

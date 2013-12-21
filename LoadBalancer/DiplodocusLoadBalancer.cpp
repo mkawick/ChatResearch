@@ -213,6 +213,7 @@ bool  DiplodocusLoadBalancer::HandlePacketFromOtherServer( BasePacket* packet, U
    PacketServerJobWrapper* wrapper = static_cast< PacketServerJobWrapper* >( packet );
    BasePacket* unwrappedPacket = wrapper->pPacket;
    U32  serverIdLookup = wrapper->serverId;
+   serverIdLookup = serverIdLookup;
 
    bool success = false;
 
@@ -278,7 +279,7 @@ void     DiplodocusLoadBalancer::HandleRerouteRequest( U32 connectionId )
    {
       PacketRerouteRequestResponse* response = new PacketRerouteRequestResponse;
       list< GatewayInfo >::iterator it = m_gatewayRoutes.begin();
-      bool  hasFoundViableGateway = false;
+      //bool  hasFoundViableGateway = false;
 
       while( it != m_gatewayRoutes.end() )
       {

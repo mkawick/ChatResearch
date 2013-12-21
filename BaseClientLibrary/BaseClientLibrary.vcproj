@@ -214,10 +214,6 @@
 				RelativePath=".\NetworkLayer.cpp"
 				>
 			</File>
-			<File
-				RelativePath="..\NetworkCommon\Serialize.cpp"
-				>
-			</File>
 		</Filter>
 		<Filter
 			Name="Header Files"
@@ -238,6 +234,10 @@
 			</File>
 			<File
 				RelativePath="..\NetworkCommon\Platform.h"
+				>
+			</File>
+			<File
+				RelativePath="..\NetworkCommon\Serialize.cpp"
 				>
 			</File>
 			<File
@@ -291,10 +291,6 @@
 					RelativePath="..\NetworkCommon\NetworkUtils.cpp"
 					>
 				</File>
-			</Filter>
-			<Filter
-				Name="Packets"
-				>
 			</Filter>
 			<Filter
 				Name="Utils"

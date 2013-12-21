@@ -11,6 +11,9 @@
 class BlankUUIDQueryHandler : public QueryHandler< Queryer* >
 {
 public:
+   typedef QueryHandler< Queryer* > ParentType;
+
+public:
    BlankUUIDQueryHandler( U32 id, Queryer* parent, string& query );
    bool     HandleResult( const PacketDbQueryResult* dbResult );
 

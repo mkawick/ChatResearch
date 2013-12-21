@@ -10,6 +10,7 @@
 #include "NewAccountQueryHandler.h"
 #include "ProductEntryCreateBasedOnPlayHistory.h"
 #include "ResetPasswordQueryHandler.h"
+#include "ResetUserEmailQueryHandler.h"
 #include <map>
 
 const int DefaultSleepTime = 30;
@@ -27,6 +28,9 @@ class PacketDbQueryResult;
 
 class StatusUpdate : public Queryer, public Threading::CChainedThread < BasePacket* >
 {
+public:
+   typedef Threading::CChainedThread < BasePacket* > ParentType;
+
 public:
    enum QueryType 
    {
@@ -47,6 +51,7 @@ public:
       QueryType_MoveOlderAccountsRequest,
       QueryType_DeleteOlderAccountsRequest,
       QueryType_ResetPasswords,
+      QueryType_ChangeUsernameEmail,
       QueryType_DuplicateUUIDSearch,
       QueryType_LoadProductIds,
       //QueryType_FindEarliestPlayDateForProduct,
@@ -124,12 +129,14 @@ private:
    NewAccountQueryHandler*                m_newAccountHandler;
    ProductEntryCreateBasedOnPlayHistory*  m_addProductEntryHandler;
    ResetPasswordQueryHandler*             m_resetPasswordHandler;
+   ResetUserEmailQueryHandler*            m_resetUsernameEmailHandler;
 
    static const U32 timeoutBlankUserProfileTimer = 60;
    static const U32 timeoutBlankUUIDTimer = 15;
    static const U32 timeoutNewAccount = 28;
    static const U32 timeoutAddProductEntry = 45;
    static const U32 timeoutResetPassword = 30;
+   static const U32 timeoutChangeUsernameEmail = 30;
    static const U32 timeoutCheckDuplicateUUids = 60;
 
    

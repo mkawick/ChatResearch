@@ -29,6 +29,8 @@ struct  UserWhoMayNeedUpdate
 
 class ProductEntryCreateBasedOnPlayHistory : public QueryHandler< Queryer* >
 {
+public:
+   typedef QueryHandler< Queryer* > ParentType;
 
 public:
    //BlankUserProfileHandler( U32 id, Queryer* parent, string& query );
@@ -68,9 +70,10 @@ private:
    int      m_currentProductIndex;
    int      m_currentUserIndex;
    int      m_startingProductId;
+   int      m_numRecordsToPullAtATime;
 
    vector <QueryPerProduct> m_listOfQueries;
    list <UserWhoMayNeedUpdate> m_listOfUsersQueryingUpdate;
    list <UserWhoMayNeedUpdate> m_listOfUsersAwaitingQueryResult;
-   int      m_numRecordsToPullAtATime;
+   
 };

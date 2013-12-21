@@ -1,6 +1,6 @@
 #include "NetworkLayer.h"
 
-#include "../networkcommon/Utils/utils.h"
+#include "../networkcommon/Utils/Utils.h"
 #include "../networkcommon/Packets/LoginPacket.h"
 #include "../networkcommon/Packets/PacketFactory.h"
 

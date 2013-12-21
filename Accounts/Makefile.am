@@ -9,6 +9,7 @@ BlankUUIDQueryHandler.cpp \
 BlankUserProfileHandler.cpp \
 NewAccountQueryHandler.cpp \
 ProductEntryCreateBasedOnPlayHistory.cpp \
+ResetUserEmailQueryHandler.cpp \
 ResetPasswordQueryHandler.cpp \
 ../NetworkCommon/NetworkUtils.cpp \
 ../NetworkCommon/ServerConstants.cpp \
