@@ -258,6 +258,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\NetworkCommon\Packets\StatPacket.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\NetworkCommon\Packets\TournamentPacket.cpp"
 				>
 			</File>
@@ -317,6 +321,10 @@
 			</File>
 			<File
 				RelativePath="..\NetworkCommon\Packets\ServerToServerPacket.h"
+				>
+			</File>
+			<File
+				RelativePath="..\NetworkCommon\Packets\StatPacket.h"
 				>
 			</File>
 			<File

@@ -30,7 +30,13 @@ using namespace std;
 
 #if PLATFORM == PLATFORM_WINDOWS
 #pragma comment( lib, "ws2_32.lib" )
-#pragma comment(lib, "libevent.lib")
+
+#if (_MSC_VER == 1400) // 2005
+#pragma comment( lib, "libevent2005.lib")
+#else // (_MSC_VER == 1500) // 2008
+#pragma comment( lib, "libevent.lib")
+#endif
+
 #endif
 
 

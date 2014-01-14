@@ -1,11 +1,5 @@
 #include "KhaanPurchase.h"
 
-#include <iostream>
-#include <memory.h>
-
-#include "../NetworkCommon/Packets/PacketFactory.h"
-#include "../NetworkCommon/Packets/BasePacket.h"
-#include "../NetworkCommon/Packets/GamePacket.h"
 
 ///////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////

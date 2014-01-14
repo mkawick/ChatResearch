@@ -29,6 +29,7 @@ struct ConnectionToUser
 
    ConnectionToUser( const string& name, const string& pword, const string& key );
    void     SetManager( DiplodocusLogin* manager )  { userManager = manager; }
+   void     ClearLoggingOutStatus() { loggedOutTime = 0; }
 
    //------------------------------------------------
 

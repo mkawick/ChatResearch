@@ -16,7 +16,7 @@ using namespace std;
 ///////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////
 
-DiplodocusPurchase::DiplodocusPurchase( const string& serverName, U32 serverId ): Diplodocus< KhaanPurchase >( serverName, serverId, 0,  ServerType_Contact )
+DiplodocusPurchase::DiplodocusPurchase( const string& serverName, U32 serverId ): Diplodocus< KhaanPurchase >( serverName, serverId, 0,  ServerType_Purchase )
                                          
 {
     //time( &m_lastTimeStamp );

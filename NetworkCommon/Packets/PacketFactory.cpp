@@ -18,6 +18,7 @@
 #include "LoginPacket.h"
 #include "PurchasePacket.h"
 #include "ServerToServerPacket.h"
+#include "StatPacket.h"
 #include "TournamentPacket.h"
 
 using namespace std;
@@ -103,6 +104,10 @@ bool	PacketFactory::Parse( const U8* bufferIn, int& bufferOffset, BasePacket** p
    case PacketType_Purchase:
       {
          return ParsePurchase( bufferIn, bufferOffset, &firstPassParse, packetOut );
+      }
+   case PacketType_Stat:
+      {
+         return ParseStat( bufferIn, bufferOffset, &firstPassParse, packetOut );
       }
    case PacketType_Tournament:
       {
@@ -993,6 +998,14 @@ bool     PacketFactory::ParsePurchase( const U8* bufferIn, int& bufferOffset, co
       return true;
    }
    return false;
+}
+
+//-----------------------------------------------------------------------------------------
+
+bool     PacketFactory::ParseStat( const U8* bufferIn, int& bufferOffset, const BasePacket* firstPassParse, BasePacket** packetOut ) const
+{
+   *packetOut = SerializeIn< PacketStat >( bufferIn, bufferOffset );
+   return true;
 }
 
 //-----------------------------------------------------------------------------------------

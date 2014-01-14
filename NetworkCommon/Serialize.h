@@ -169,7 +169,7 @@ namespace Serialize
 	   }
       static inline void Out( U8* destination, int& offset, const std::string& value )
 	   {
-		   U16 len = value.size();// there should be a maximum size to strings
+		   U16 len = static_cast< U16 >( value.size() );// there should be a maximum size to strings
          int size = sizeof( len );
          memcpy( destination + offset, &len, size );// precede with size info
          offset += size;

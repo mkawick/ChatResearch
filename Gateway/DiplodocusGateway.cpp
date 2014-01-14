@@ -213,7 +213,8 @@ bool     DiplodocusGateway::PushPacketToProperOutput( BasePacket* packet )
    {
       IChainedInterface* outputPtr = (*itOutput).m_interface;
       FruitadensGateway* fruity = static_cast< FruitadensGateway* >( outputPtr );
-      if( fruity->AddOutputChainData( packet, -1 ) == true )
+      U32 unusedParam = -1;
+      if( fruity->AddOutputChainData( packet, unusedParam ) == true )
       {
          return true;
       }
@@ -262,6 +263,7 @@ void  DiplodocusGateway::SendStatsToLoadBalancer()
       m_timestampSendConnectionStatisics = currentTime;
       int num = m_connectedClients.size();
 
+      bool statsSent = false;
       ChainLinkIteratorType itOutput = m_listOfOutputs.begin();
       while( itOutput != m_listOfOutputs.end() )
       {
@@ -274,8 +276,11 @@ void  DiplodocusGateway::SendStatsToLoadBalancer()
             packet->serverAddress = GetIpAddress();
             packet->serverId = GetServerId();
 
-            if( fruity->AddOutputChainData( packet, -1 ) == true )
+            U32 unusedParam = -1;
+            if( fruity->AddOutputChainData( packet, unusedParam ) == true )
             {
+               statsSent = true;
+               PrintText( "SendStatsToLoadBalancer" ); 
                return;
             }
             else

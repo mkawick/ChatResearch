@@ -17,6 +17,7 @@ enum  ServerType
    ServerType_Contact,
    ServerType_Purchase,
    ServerType_LoadBalancer,
+   ServerType_Stat,
    ServerType_Test
 };
 

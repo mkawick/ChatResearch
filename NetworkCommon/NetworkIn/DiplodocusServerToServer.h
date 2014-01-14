@@ -38,7 +38,7 @@ public:
 
 private:
 
-   void  CreateJob( const KhaanServerToServer* khaan, BasePacket* packet );
+   virtual void  CreateJob( const KhaanServerToServer* khaan, BasePacket* packet );
    int   CallbackFunction();
 
    deque<U32>     m_serversNeedingUpdate;

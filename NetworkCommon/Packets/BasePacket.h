@@ -32,7 +32,8 @@ enum PacketType
    PacketType_ErrorReport,
    PacketType_Cheat,
    PacketType_Purchase,
-   PacketType_Tournament
+   PacketType_Tournament,
+   PacketType_Stat
 };
 
 

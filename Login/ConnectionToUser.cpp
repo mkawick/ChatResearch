@@ -324,6 +324,8 @@ bool  ConnectionToUser::BeginLogout( bool wasDisconnectedByError )
 
    isLoggingOut = true;
 
+   UpdateLastLoggedOutTime();
+
    status = LoginStatus_Invalid;
 
    time( &loggedOutTime ); // time stamp this guy
@@ -445,6 +447,13 @@ bool    ConnectionToUser:: SuccessfulLogin( U32 connectId, bool isReloggedIn )
    productFilterNames.clear();
    productsWaitingForInsertionToDb.clear();
 
+   bool success = true;
+
+   if( isActive == false )
+   {
+      success = false; // we only have this one condition right now.
+   }
+
    PacketLoginToGateway* loginStatus = new PacketLoginToGateway();
    if( m_userName.size() )
    {
@@ -453,7 +462,7 @@ bool    ConnectionToUser:: SuccessfulLogin( U32 connectId, bool isReloggedIn )
       loginStatus->lastLogoutTime = lastLogoutTime;
       loginStatus->loginKey = loginKey;
    }
-   loginStatus->wasLoginSuccessful = true;
+   loginStatus->wasLoginSuccessful = success;
    loginStatus->adminLevel = adminLevel;
 
   /* if( isReloggedIn == false )
@@ -476,7 +485,7 @@ bool    ConnectionToUser:: SuccessfulLogin( U32 connectId, bool isReloggedIn )
 
    //This is where we inform all of the games that the user is logged in.
 
-   return true;//SendLoginStatusToOtherServers( userName, userUuid, connectionId, gameProductId, lastLoginTime, active, email, passwordHash, userId, loginKey, true, false );
+   return success;//SendLoginStatusToOtherServers( userName, userUuid, connectionId, gameProductId, lastLoginTime, active, email, passwordHash, userId, loginKey, true, false );
 }
 
 //---------------------------------------------------------------

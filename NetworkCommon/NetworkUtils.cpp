@@ -10,7 +10,13 @@
 
 #if PLATFORM == PLATFORM_WINDOWS
 #pragma comment( lib, "ws2_32.lib" )
+
+#if (_MSC_VER == 1400) // 2005
+#pragma comment( lib, "libevent2005.lib")
+#else // (_MSC_VER == 1500) // 2008
 #pragma comment( lib, "libevent.lib")
+#endif
+
 #pragma warning( disable : 4996 )
 #else
 #include <sys/socket.h>

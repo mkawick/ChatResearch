@@ -11,6 +11,11 @@
 #undef UNICODE
 #define WIN32_LEAN_AND_MEAN
 
+#if _MSC_VER < 1500
+//#include <windows.h>
+#include <winsock2.h>
+#endif
+
 #include <ws2tcpip.h>
 #pragma warning (disable:4996)
 

@@ -95,7 +95,7 @@ bool     DiplodocusLogin:: AddInputChainData( BasePacket* packet, U32 connection
          case PacketLogin::LoginType_Logout:
             {
                PacketLogout* logout = static_cast<PacketLogout*>( actualPacket );
-               UpdateLastLoggedOutTime( userConnectionId );
+               //UpdateLastLoggedOutTime( userConnectionId );
                LogUserOut( userConnectionId, logout->wasDisconnectedByError );
             }
             break;
@@ -226,26 +226,36 @@ bool     DiplodocusLogin:: LogUserIn( const string& userName, const string& pass
 
       if( connection )
       {
-         SendLoginStatusToOtherServers( connection->m_userName, 
-                                          connection->m_userUuid, 
-                                          connectionId, 
-                                          gameProductId, 
-                                          connection->lastLoginTime, 
-                                          connection->isActive, 
-                                          connection->m_email, 
-                                          connection->passwordHash, 
-                                          connection->id, 
-                                          connection->loginKey, 
-                                          connection->m_languageId, true, false );
-
-         if( connection->SuccessfulLogin( connectionId, true ) == true )
+         connection->ClearLoggingOutStatus();
+         if( connection->isActive )
          {
-            UpdateLastLoggedInTime( connectionId ); // update the user logged in time
+            SendLoginStatusToOtherServers( connection->m_userName, 
+                                             connection->m_userUuid, 
+                                             connectionId, 
+                                             gameProductId, 
+                                             connection->lastLoginTime, 
+                                             connection->isActive, 
+                                             connection->m_email, 
+                                             connection->passwordHash, 
+                                             connection->id, 
+                                             connection->loginKey, 
+                                             connection->m_languageId, true, false );
+
+            if( connection->SuccessfulLogin( connectionId, true ) == true )
+            {
+               UpdateLastLoggedInTime( connectionId ); // update the user logged in time
+            }
+         }
+         else
+         {
+            connection->BeginLogout( false );
+            connection->FinalizeLogout();
+            return false;
          }
       }
       else
       {
-         Log( "Major bug on relogin ");
+         cout << "Error: could not find user by connectionId after verifying that s/he exists" << endl;
       }
    }
    else
@@ -283,6 +293,13 @@ bool     DiplodocusLogin:: HandleLoginResultFromDb( U32 connectionId, PacketDbQu
    if( connection )
    {
       connection->LoginResult( dbResult );
+      if( connection->isActive == false )
+      {
+         connection->ClearLoggingOutStatus();
+         connection->BeginLogout( false );
+         bool result = connection->FinalizeLogout();
+         return false;
+      }
 
       if( dbResult->successfulQuery == true && dbResult->bucket.bucket.size() > 0 )
       {
@@ -1032,7 +1049,7 @@ bool  DiplodocusLogin:: ForceUserLogoutAndBlock( U32 connectionId )
       active =                connection->isActive;
       passwordHash =          connection->passwordHash;
       userId =                connection->id;
-      email =               connection->m_email;
+      email =                 connection->m_email;
       gameProductId =         connection->gameProductId;
       loginKey =              connection->loginKey;
       languageId =            connection->m_languageId;

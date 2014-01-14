@@ -43,12 +43,16 @@ void  PrintInstructions()
 {
    cout << "Gateway takes the following parameters using this format:" << endl;
    cout << "> gateway_server param1=localhost param1.extension='path' ... " << endl;
+   cout << " NOTE: the gateway does not talk to the DB in any way" << endl;
 
    cout << endl << endl;
    cout << ": params are as follows:" << endl;
    cout << "    server.name       - allows a new name reported in logs and connections" << endl;
    cout << "    listen.address    - what is the ipaddress that this app should be using; usually localhost or null" << endl;
    cout << "    listen.address    - listen on which port" << endl;
+
+   cout << " ------ all of the following parameters are optional. --------" << endl;
+   
    cout << "    balancer.address  - where is the load balancer" << endl;
    cout << "    balancer.port     - load balancer" << endl;
    
@@ -63,6 +67,9 @@ void  PrintInstructions()
 
    cout << "    purchase.address  - purchase server ipaddress" << endl;
    cout << "    purchase.port     - purchase server port" << endl;
+
+   cout << "    stat.address      - stat server ipaddress" << endl;
+   cout << "    stat.port         - stat server port" << endl;
 
    cout << "    print.packets     - print each packet for debugging" << endl;
 
@@ -109,6 +116,9 @@ int main( int argc, const char* argv[] )
 
    string rerouteAddressString = "";
    string reroutePortString = "";
+
+   string statPortString = "7802";
+   string statIpAddressString = "localhost";
    
 
    //--------------------------------------------------------------
@@ -152,36 +162,38 @@ int main( int argc, const char* argv[] )
    parser.FindValue( "reroute.port", reroutePortString );
    parser.FindValue( "reroute.address", rerouteAddressString );
 
+   parser.FindValue( "stat.port", statPortString );
+   parser.FindValue( "stat.address", statIpAddressString );
+
    vector< string > params;
    if( parser.FindValue( "games", params ) )
    {
       cout << "No games were listed. No connections will be made with any games" << endl;
    }
 
-   int   listenPort = 9600, 
-         chatPort = 7400, 
-       /*  game1Port = 21000, 
-         game2Port = 21100, */
-         loginPort = 7600, 
-         assetPort = 7300, 
+   int   assetPort = 7300,  
+         balancerPort = 9502,
+         chatPort = 7400,
          contactPort = 7500, 
+         loginPort = 7600,
          purchasePort = 7700,
-         balancerPort = 9502;
+         statPort = 7802,
+         listenPort = 9600;
 
    U16 reroutePort = 0;
    bool printPackets = false;
    try 
    {
-       listenPort = boost::lexical_cast<int>( listenPortString );
-       chatPort = boost::lexical_cast<int>( chatPortString );
-       loginPort = boost::lexical_cast<int>( loginPortString );
-    /*   game1Port = boost::lexical_cast<int>( game1PortString );
-       game2Port = boost::lexical_cast<int>( game2PortString );*/
-       assetPort = boost::lexical_cast<int>( assetDeliveryPortString );
-       contactPort = boost::lexical_cast<int>( contactPortString );
-       purchasePort = boost::lexical_cast<int>( purchasePortString );
-       reroutePort = boost::lexical_cast<U16>( reroutePortString );
-       balancerPort = boost::lexical_cast<U16>( loadBalancerPortString );
+      assetPort = boost::lexical_cast<int>( assetDeliveryPortString );
+      balancerPort = boost::lexical_cast<U16>( loadBalancerPortString );
+      chatPort = boost::lexical_cast<int>( chatPortString );
+      contactPort = boost::lexical_cast<int>( contactPortString );
+
+      loginPort = boost::lexical_cast<int>( loginPortString );
+
+      purchasePort = boost::lexical_cast<int>( purchasePortString );
+      reroutePort = boost::lexical_cast<U16>( reroutePortString );
+      listenPort = boost::lexical_cast<int>( listenPortString );
    } 
    catch( boost::bad_lexical_cast const& ) 
    {
@@ -226,12 +238,16 @@ int main( int argc, const char* argv[] )
    FruitadensGateway purchaseServer( "fruity to purchase" );
    purchaseServer.SetConnectedServerType( ServerType_Purchase );
 
+   FruitadensGateway statOut( "fruity to stat" );
+   statOut.SetConnectedServerType( ServerType_Stat );
+
    gateway->AddOutputChain( &chatOut );
    gateway->AddOutputChain( &gameServerOut );
    gateway->AddOutputChain( &loginServerOut );
    gateway->AddOutputChain( &assetServer );
    gateway->AddOutputChain( &contactServer );
    gateway->AddOutputChain( &purchaseServer );
+   gateway->AddOutputChain( &statOut );
 
    gateway->SetupListening( listenPort );
    gateway->SetupReroute( rerouteAddressString, reroutePort );
