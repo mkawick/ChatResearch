@@ -56,6 +56,9 @@ void     DiplodocusLogin:: ServerWasIdentified( IChainedInterface* khaan )
    m_clientsNeedingUpdate.push_back( localKhaan->GetChainedId() );
 }
 
+/*OutputConnected
+FruitadensServer*/
+
 //---------------------------------------------------------------
 
 bool     DiplodocusLogin:: AddInputChainData( BasePacket* packet, U32 connectionId )

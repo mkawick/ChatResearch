@@ -40,8 +40,7 @@ public:
    void        RegisterPacketHandlerInterface( PacketHandlerInterface* handler ) { m_packetHandlerInterface = handler; }
 
    bool        AddOutputChainData( BasePacket* packet, U32 filingData );// standard code, no need to modify
-   void        NotifyEndpointOfIdentification( const string& serverName, const string& serverAddress, U32 serverId, U16 serverPort, U8 gameProductId, bool isGameServer, bool isController, bool requiresWrapper, bool isGateway );
-
+   
    void        SetConnectedServerType( ServerType type ) { m_serverType = type; }
    ServerType  GetConnectedServerType() const { return m_serverType; }
 
@@ -101,6 +100,32 @@ protected:
 
    U8       m_overflowBuffer[ OverflowBufferSize ];
    int      m_bytesInOverflow;
+};
+
+//-------------------------------------------------------------------------
+
+class FruitadensServer : public Fruitadens
+{
+public:
+   FruitadensServer( const char* name, bool processOnlyOneIncommingPacketPerLoop = false );
+   void        NotifyEndpointOfIdentification( const string& serverName, const string& serverAddress, U32 serverId, U16 serverPort, U8 gameProductId, bool isGameServer, bool isController, bool requiresWrapper, bool isGateway );
+
+   void        InitalConnectionCallback();
+
+protected:
+
+   bool        PackageLocalServerIdentificationToSend();
+
+   bool        m_areLocalIdentifyingParamsSet;
+   string      m_localServerName;
+   string      m_localIpAddress;
+   U32         m_localServerId;
+   U16         m_localServerPort;
+   U8          m_localGameProductId;
+   bool        m_localIsGameServer;
+   bool        m_localIsController;
+   bool        m_localRequiresWrapper;
+   bool        m_localIsGateway;
 };
 
 //-------------------------------------------------------------------------

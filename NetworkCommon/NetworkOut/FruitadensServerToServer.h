@@ -7,7 +7,7 @@ class BasePacket;
 
 ///////////////////////////////////////////////////////////////
 
-class FruitadensServerToServer : public Fruitadens
+class FruitadensServerToServer : public FruitadensServer
 {
 public:
    FruitadensServerToServer( const char* name );

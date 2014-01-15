@@ -17,7 +17,7 @@
 
 //-----------------------------------------------------------------------------------------
 
-FruitadensServerToServer::FruitadensServerToServer( const char* name ) : Fruitadens( name ), m_serverId( 0 ), m_gameProductId( 0 )
+FruitadensServerToServer::FruitadensServerToServer( const char* name ) : FruitadensServer( name ), m_serverId( 0 ), m_gameProductId( 0 )
 {
 }
 

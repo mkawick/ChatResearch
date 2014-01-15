@@ -12,10 +12,17 @@
 
 //-----------------------------------------------------------------------------------------
 
-FruitadensLogin::FruitadensLogin( const char* name ) : Fruitadens( name )
+FruitadensLogin::FruitadensLogin( const char* name ) : FruitadensServer( name )
 {
    SetSleepTime( 30 );// Sleeping frees up CPU
 }
+
+//-----------------------------------------------------------------------------------------
+
+/*void     FruitadensLogin::InitalConnectionCallback()
+{
+   //NotifyEndpointOfIdentification( serverName, serverAddress, serverId, serverPort, 0, false, false, true, false  );
+}*/
 
 //-----------------------------------------------------------------------------------------
 //-----------------------------------------------------------------------------------------

@@ -13,7 +13,7 @@
 
 //-----------------------------------------------------------------------------------------
 
-FruitadensGateway::FruitadensGateway( const char* name ) : Fruitadens( name )
+FruitadensGateway::FruitadensGateway( const char* name ) : FruitadensServer( name )
 {
    SetSleepTime( 30 );// Sleeping frees up CPU
 }
@@ -213,15 +213,3 @@ void  FruitadensGateway::PostProcessInputPackets( int bytesRead )
 
 //-----------------------------------------------------------------------------------------
 
-void FruitadensGateway::InitalConnectionCallback()
-{
-   ChainLinkIteratorType   itInputs = m_listOfInputs.begin();
-   while( itInputs != m_listOfInputs.end() )
-   {
-      IChainedInterface* inputPtr = itInputs->m_interface;
-      inputPtr->OutputConnected( this );
-      itInputs++;
-   }
-}
-
-//-----------------------------------------------------------------------------------------

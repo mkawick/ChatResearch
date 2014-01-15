@@ -34,7 +34,7 @@ using namespace std;
 
 ////////////////////////////////////////////////////////////////////////
 
-FruitadensGateway* PrepFruitadens( const string& ipaddress, U16 port, U32 serverId, DiplodocusGateway* loginServer, const string& name );
+FruitadensGateway* PrepFruitadens( const string& ipaddress, U16 port, U32 serverId, DiplodocusGateway* gatewayServer, const string& gameName, const string& serverName, const string& listenAddressString, U16 serverPort );
 void  SetupLoadBalancerConnection( DiplodocusGateway* gateway, string address, U16 port );
 
 ////////////////////////////////////////////////////////////////////////
@@ -282,8 +282,9 @@ int main( int argc, const char* argv[] )
          }
          if( success )
          {
-            FruitadensGateway* game = PrepFruitadens( gameAddress, port, serverId, gateway, gameName );
-            game->NotifyEndpointOfIdentification( serverName, gateway->GetIpAddress(), serverId, gateway->GetPort(), gameProductId, false, false, true, true  );
+            // PrepFruitadens( const string& ipaddress, U16 port, U32 serverId, DiplodocusGateway* gatewayServer, const string& gameName, const string& serverName, const string& listenAddressString, U16 serverPort )
+            FruitadensGateway* game = PrepFruitadens( gameAddress, port, serverId, gateway, gameName, serverName, gateway->GetIpAddress(), gateway->GetPort() );
+            //game->NotifyEndpointOfIdentification( serverName, gateway->GetIpAddress(), serverId, gateway->GetPort(), gameProductId, false, false, true, true );
          }
       }
       else
@@ -329,23 +330,25 @@ int main( int argc, const char* argv[] )
 }
 ////////////////////////////////////////////////////////////////////////
 
-FruitadensGateway* PrepFruitadens( const string& ipaddress, U16 port, U32 serverId, DiplodocusGateway* loginServer, const string& name )
+FruitadensGateway* PrepFruitadens( const string& ipaddress, U16 port, U32 serverId, DiplodocusGateway* gatewayServer, const string& gameName, const string& serverName, const string& listenAddressString, U16 serverPort )
 {
-   string servername = "fruity to ";
-   if( name.size() )
+   string gameServerText = "fruity to ";
+   if( gameName.size() )
    {
-      servername += name;
+      gameServerText += gameName;
    }
    else
    {
-      servername += "gameserver";
+      gameServerText += "gameserver";
    }
-   FruitadensGateway* gameServerOut = new FruitadensGateway( servername.c_str() );
+   FruitadensGateway* gameServerOut = new FruitadensGateway( gameServerText.c_str() );
    gameServerOut->SetConnectedServerType( ServerType_GameInstance );
    gameServerOut->SetServerUniqueId( serverId );
 
-   loginServer->AddOutputChain( gameServerOut );
+   gatewayServer->AddOutputChain( gameServerOut );
 
+   U32 gameProductId = 0;
+   gameServerOut->NotifyEndpointOfIdentification( serverName, listenAddressString, serverId, serverPort, gameProductId, false, false, true, true );
    cout << "Game server: " << ipaddress << ":" << port << endl;
    gameServerOut->Connect( ipaddress.c_str(), port );
    gameServerOut->Resume();

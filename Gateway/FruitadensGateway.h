@@ -6,13 +6,11 @@
 
 //-----------------------------------------------------------------------------
 
-class FruitadensGateway : public Fruitadens
+class FruitadensGateway : public FruitadensServer
 {
 public:
    FruitadensGateway( const char* name );
    ~FruitadensGateway();
-
-   void     InitalConnectionCallback();
 
 private:
 

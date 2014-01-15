@@ -155,10 +155,6 @@
 				>
 			</File>
 			<File
-				RelativePath="..\NetworkCommon\NetworkOut\FruitadensServerToServer.cpp"
-				>
-			</File>
-			<File
 				RelativePath=".\GameFramework.cpp"
 				>
 			</File>
@@ -174,10 +170,6 @@
 			>
 			<File
 				RelativePath=".\DiplodocusGame.h"
-				>
-			</File>
-			<File
-				RelativePath="..\NetworkCommon\NetworkOut\FruitadensServerToServer.h"
 				>
 			</File>
 			<File
@@ -313,6 +305,14 @@
 				</File>
 				<File
 					RelativePath="..\NetworkCommon\NetworkOut\Fruitadens.h"
+					>
+				</File>
+				<File
+					RelativePath="..\NetworkCommon\NetworkOut\FruitadensServerToServer.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\NetworkCommon\NetworkOut\FruitadensServerToServer.h"
 					>
 				</File>
 			</Filter>

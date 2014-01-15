@@ -90,29 +90,33 @@ public:
 
 public:
    DiplodocusLogin( const string& serverName, U32 serverId );
-   void     ServerWasIdentified( IChainedInterface* khaan );
-   void     AutoAddTheProductFromWhichYouLogin( bool addIt = false ) { m_autoAddProductFromWhichUsersLogin = addIt; }
+   void           ServerWasIdentified( IChainedInterface* khaan );
+   //void           OutputConnected( IChainedInterface * );
+   void           AutoAddTheProductFromWhichYouLogin( bool addIt = false ) { m_autoAddProductFromWhichUsersLogin = addIt; }
 
-   bool     AddInputChainData( BasePacket* packet, U32 connectionId );
-   bool     AddOutputChainData( BasePacket* packet, U32 connectionId );
+   bool           AddInputChainData( BasePacket* packet, U32 connectionId );
+   bool           AddOutputChainData( BasePacket* packet, U32 connectionId );
 
-   bool     AddQueryToOutput( PacketDbQuery* query );
+   bool           AddQueryToOutput( PacketDbQuery* query );
 
    //--------------------------------------
    //bool     LoadUserProfile( U32 connectionId );
-   bool     RequestListOfGames( U32 connectionId, const string& userUuid );
-   bool     RequestListOfProducts( U32 connectionId, const string& userUuid );
+   bool           RequestListOfGames( U32 connectionId, const string& userUuid );
+   bool           RequestListOfProducts( U32 connectionId, const string& userUuid );
 
-   int      FindProductByName( const string& name );
-   void     AddNewProductToDb( const PurchaseEntry& product );   
-   void     SendListOfUserProductsToAssetServer( U32 connectionId );
+   int            FindProductByName( const string& name );
+   void           AddNewProductToDb( const PurchaseEntry& product );   
+   void           SendListOfUserProductsToAssetServer( U32 connectionId );
 
    ConnectionToUser* GetLoadedUserConnectionByUuid(const string & uuid );
-   bool     FindProductByUuid( const string& uuid, ProductInfo& returnPi  );
-   bool     GetProductByIndex( int index, ProductInfo& returnPi );
-   bool     GetProductByProductId( int productId, ProductInfo& returnPi );
+   bool           FindProductByUuid( const string& uuid, ProductInfo& returnPi  );
+   bool           GetProductByIndex( int index, ProductInfo& returnPi );
+   bool           GetProductByProductId( int productId, ProductInfo& returnPi );
 
    StringLookup*  GetStringLookup() { return m_stringLookup; }
+
+   //--------------------------------------
+
 private:
 
    int      CallbackFunction();

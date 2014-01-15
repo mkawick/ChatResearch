@@ -384,9 +384,11 @@ void     GameFramework::SetupS2SConnections( const string& address, U16 port )
       serverComm->SetServerId( GetServerId() );
       serverComm->SetGameProductId( GetGameProductId() );
 
+      serverComm->NotifyEndpointOfIdentification( GetServerName(), address, GetServerId(), port, GetGameProductId(), true, false, false, false );
+
       serverComm->Connect( setup.address.c_str(), setup.port );
       serverComm->Resume();
-      serverComm->NotifyEndpointOfIdentification( GetServerName(), address, GetServerId(), port, GetGameProductId(), true, false, false, false );
+      
 
       vector< PacketType >::iterator packetTypeIt = setup.packetType.begin();
       while( packetTypeIt != setup.packetType.end() )

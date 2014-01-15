@@ -38,7 +38,7 @@ using namespace std;
 // db.address=10.16.4.44 db.port=3306 db.username=admin db.password=Pz5328!@ db.schema=pleiades
 ////////////////////////////////////////////////////////////////////////
 
-FruitadensLogin* PrepFruitadensLogin( const string& ipaddress, U16 port, U32 serverId, DiplodocusLogin* loginServer, const string& name );
+FruitadensLogin* PrepFruitadensLogin( const string& ipaddress, U16 port, U32 serverId, DiplodocusLogin* loginServer, const string& serverName, const string& listenAddressString, U16 serverPort, const string& name );
 void  SendServerNotification( const string& serverName, const string& serverAddress, U32 serverId, U16 serverPort, FruitadensLogin* fruity )
 {
    fruity->NotifyEndpointOfIdentification( serverName, serverAddress, serverId, serverPort, 0, false, false, true, false  );
@@ -173,43 +173,47 @@ int main( int argc, const char* argv[] )
    chatOut.SetConnectedServerType( ServerType_Chat );
    chatOut.SetServerUniqueId( serverId );
    loginServer->AddOutputChain( &chatOut );
+
+   SendServerNotification( serverName, listenAddressString, serverId, listenPort, &chatOut );
    chatOut.Connect( chatIpAddressString.c_str(), chatPort );
    chatOut.Resume();
-   SendServerNotification( serverName, listenAddressString, serverId, listenPort, &chatOut );
+   
 
    FruitadensLogin contactOut( "login to contact" );
    contactOut.SetConnectedServerType( ServerType_Contact );
    contactOut.SetServerUniqueId( serverId );
    loginServer->AddOutputChain( &contactOut );
+   SendServerNotification( serverName, listenAddressString, serverId, listenPort, &contactOut );
    contactOut.Connect( contactIpAddressString.c_str(), contactPort );
    contactOut.Resume();
-   SendServerNotification( serverName, listenAddressString, serverId, listenPort, &contactOut );
+   
 
    FruitadensLogin assetOut( "login to asset" );
    assetOut.SetConnectedServerType( ServerType_Asset );
    assetOut.SetServerUniqueId( serverId );
    loginServer->AddOutputChain( &assetOut );
+   SendServerNotification( serverName, listenAddressString, serverId, listenPort, &assetOut );
    assetOut.Connect( assetIpAddressString.c_str(), assetPort );
    assetOut.Resume();
-   SendServerNotification( serverName, listenAddressString, serverId, listenPort, &assetOut );
+   
 
    FruitadensLogin purchaseOut( "login to purchase" );
    purchaseOut.SetConnectedServerType( ServerType_Purchase );
    purchaseOut.SetServerUniqueId( serverId );
    loginServer->AddOutputChain( &purchaseOut );
+   SendServerNotification( serverName, listenAddressString, serverId, listenPort, &purchaseOut );
    purchaseOut.Connect( purchaseIpAddressString.c_str(), purchasePort );
    purchaseOut.Resume();
-   SendServerNotification( serverName, listenAddressString, serverId, listenPort, &purchaseOut );
    
 
    // various games. We will need to deal with allowing a dynamic number of games in future
-   FruitadensLogin* game1 = PrepFruitadensLogin( gameIpAddressString, gamePort, serverId, loginServer, "Game1" );
-   FruitadensLogin* game2 = PrepFruitadensLogin( "localhost", 23996, serverId, loginServer, "MFM" );
+   FruitadensLogin* game1 = PrepFruitadensLogin( gameIpAddressString, gamePort, serverId, loginServer, serverName, listenAddressString, listenPort, "Game1" );
+   //FruitadensLogin* game2 = PrepFruitadensLogin( "localhost", 23996, serverId, loginServer, "MFM" );
   /* FruitadensLogin* game3 = PrepFruitadensLogin( "localhost", 24602, serverId, loginServer );
    FruitadensLogin* game4 = PrepFruitadensLogin( "localhost", 24604, serverId, loginServer );*/
 
-   SendServerNotification( serverName, listenAddressString, serverId, listenPort, game1 );// serverName, , serverId, , &chatOut
-   SendServerNotification( serverName, listenAddressString, serverId, listenPort, game2 );
+   //SendServerNotification( serverName, listenAddressString, serverId, listenPort, game1 );// serverName, , serverId, , &chatOut
+   //SendServerNotification( serverName, listenAddressString, serverId, listenPort, game2 );
    /*SendServerNotification( serverName, serverId, game2 );
    SendServerNotification( serverName, serverId, game3 );
    SendServerNotification( serverName, serverId, game4 );*/
@@ -225,7 +229,7 @@ int main( int argc, const char* argv[] )
 
 ////////////////////////////////////////////////////////////////////////
 
-FruitadensLogin* PrepFruitadensLogin( const string& ipaddress, U16 port, U32 serverId, DiplodocusLogin* loginServer, const string& name )
+FruitadensLogin* PrepFruitadensLogin( const string& ipaddress, U16 port, U32 serverId, DiplodocusLogin* loginServer, const string& serverName, const string& listenAddressString, U16 listenPort, const string& name )
 {
    string servername = "fruity to ";
    if( name.size() )
@@ -241,6 +245,7 @@ FruitadensLogin* PrepFruitadensLogin( const string& ipaddress, U16 port, U32 ser
    gameServerOut->SetServerUniqueId( serverId );
 
    loginServer->AddOutputChain( gameServerOut );
+   SendServerNotification( serverName, listenAddressString, serverId, listenPort, gameServerOut );
 
    gameServerOut->Connect( ipaddress.c_str(), port );
    gameServerOut->Resume();

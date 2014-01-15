@@ -3,13 +3,14 @@
 
 ///////////////////////////////////////////////////////////////////////////////
 
-class FruitadensLogin : public Fruitadens
+class FruitadensLogin : public FruitadensServer
 {
 public:
    FruitadensLogin( const char* name );
 
 private:
 
+   //void     InitalConnectionCallback();
    bool     FilterOutwardPacket( BasePacket* packet ) const;
    int      ProcessOutputFunction();
 };

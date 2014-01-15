@@ -105,12 +105,6 @@ void  Fruitadens :: SetupServerNotification( const string& serverName, const str
    }
 }*/
 
-void  Fruitadens :: NotifyEndpointOfIdentification( const string& serverName, const string& serverAddress, U32 serverId, U16 serverPort, U8 gameProductId, bool isGameServer, bool isController, bool requiresWrapper, bool isGateway )
-{
-   BasePacket* packet = NULL;
-   PackageForServerIdentification( serverName, serverAddress, serverId, serverPort, gameProductId, isGameServer, isController, requiresWrapper, isGateway, &packet );
-   AddOutputChainData( packet, 0 );
-}
 //-----------------------------------------------------------------------------
 
 bool        Fruitadens :: AddOutputChainData( BasePacket* packet, U32 filingData )
@@ -543,5 +537,74 @@ bool  Fruitadens :: SendPacket( const U8* buffer, int length ) const
    return true;
 }
 
+//-----------------------------------------------------------------------------
+
+FruitadensServer :: FruitadensServer( const char* name, bool processOnlyOneIncommingPacketPerLoop ) : 
+                              Fruitadens( name, processOnlyOneIncommingPacketPerLoop ),
+                              m_areLocalIdentifyingParamsSet( false ),
+                              m_localServerId( 0 ),
+                              m_localServerPort( 0 ),
+                              m_localGameProductId( 0 ),
+                              m_localIsGameServer( false ),
+                              m_localIsController( false ),
+                              m_localRequiresWrapper( true ),
+                              m_localIsGateway( false )
+{
+}
 
 //-----------------------------------------------------------------------------
+
+void     FruitadensServer :: NotifyEndpointOfIdentification( const string& serverName, const string& serverAddress, U32 serverId, U16 serverPort, U8 gameProductId, bool isGameServer, bool isController, bool requiresWrapper, bool isGateway )
+{
+   m_areLocalIdentifyingParamsSet = true;
+   m_localServerName = serverName;
+   m_localIpAddress = serverAddress;
+   m_localServerId = serverId;
+   m_localServerPort = serverPort;
+   m_localGameProductId = gameProductId;
+   m_localIsGameServer = isGameServer;
+   m_localIsController = isController;
+   m_localRequiresWrapper = requiresWrapper;
+   m_localIsGateway = isGateway;
+
+   //PackageLocalServerIdentificationToSend();
+}
+
+//-----------------------------------------------------------------------------
+
+void     FruitadensServer::InitalConnectionCallback()
+{
+   ChainLinkIteratorType   itInputs = m_listOfInputs.begin();
+   while( itInputs != m_listOfInputs.end() )
+   {
+      IChainedInterface* inputPtr = itInputs->m_interface;
+      inputPtr->OutputConnected( this );
+      itInputs++;
+   }
+
+   PackageLocalServerIdentificationToSend();
+}
+
+//-------------------------------------------------------------------------
+
+bool     FruitadensServer::PackageLocalServerIdentificationToSend()
+{
+   if( m_areLocalIdentifyingParamsSet == false )
+      return false;
+
+   BasePacket* packet = NULL;
+   PackageForServerIdentification( m_localServerName, 
+                                   m_localIpAddress, 
+                                   m_localServerId, 
+                                   m_localServerPort, 
+                                   m_localGameProductId, 
+                                   m_localIsGameServer, 
+                                   m_localIsController, 
+                                   m_localRequiresWrapper, 
+                                   m_localIsGateway, &packet );
+   AddOutputChainData( packet, 0 );
+
+   return true;
+}
+
+//-------------------------------------------------------------------------
