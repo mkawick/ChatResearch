@@ -227,7 +227,7 @@ bool     DiplodocusLogin:: LogUserIn( const string& userName, const string& pass
       if( connection )
       {
          connection->ClearLoggingOutStatus();
-         if( connection->isActive )
+         if( connection->CanContinueLogginIn() == true )
          {
             SendLoginStatusToOtherServers( connection->m_userName, 
                                              connection->m_userUuid, 
@@ -248,8 +248,10 @@ bool     DiplodocusLogin:: LogUserIn( const string& userName, const string& pass
          }
          else
          {
-            connection->BeginLogout( false );
-            connection->FinalizeLogout();
+            connection->UpdateConnectionId( connectionId );
+            ForceUserLogoutAndBlock( connectionId );
+           /* connection->BeginLogout( false );
+            connection->FinalizeLogout();*/
             return false;
          }
       }
@@ -293,11 +295,11 @@ bool     DiplodocusLogin:: HandleLoginResultFromDb( U32 connectionId, PacketDbQu
    if( connection )
    {
       connection->LoginResult( dbResult );
-      if( connection->isActive == false )
+      if( connection->CanContinueLogginIn() == false )
       {
          connection->ClearLoggingOutStatus();
-         connection->BeginLogout( false );
-         bool result = connection->FinalizeLogout();
+         /*connection->BeginLogout( false );
+         bool result = connection->FinalizeLogout();*/
          return false;
       }
 
@@ -448,7 +450,9 @@ void     DiplodocusLogin:: RemoveOldConnections()
    while( it != m_userConnectionMap.end() )
    {
       UserConnectionMapIterator temp = it++;
-      if( temp->second.isLoggingOut && temp->second.loggedOutTime )
+      // todo.. restore this code
+      /*if( temp->second.isLoggingOut == false && // do not remove in the middle of logging out
+         temp->second.loggedOutTime )
       {
          const int normalExpireTime = 15; // seconds
          if( difftime( testTimer, temp->second.loggedOutTime ) >= normalExpireTime )
@@ -456,7 +460,7 @@ void     DiplodocusLogin:: RemoveOldConnections()
             FinalizeLogout( temp->first, false );
             m_userConnectionMap.erase( temp );
          }
-      }
+      }*/
    }
 }
 

@@ -129,7 +129,7 @@ void     DiplodocusGateway::InputConnected( IChainedInterface * chainedInput )
    U32 newId = GetNextConnectionId();
    m_socketToConnectionMap.insert( SocketToConnectionPair( khaan->GetSocketId(), newId ) );
    m_connectionToSocketMap.insert( SocketToConnectionPair( newId, khaan->GetSocketId() ) );
-   m_connectionMap.insert( ConnectionPair( newId, khaan ) );
+   m_connectionMap.insert( ConnectionPair( newId, KhaanConnectorWrapper( khaan ) ) );
 
    khaan->SetConnectionId( newId );
 
@@ -160,7 +160,17 @@ void     DiplodocusGateway::InputRemovalInProgress( IChainedInterface * chainedI
 
    m_socketToConnectionMap.erase( socketId );
    m_connectionToSocketMap.erase( connectionId );
-   m_connectionMap.erase( connectionId );
+
+   // this may be invalid - TBR
+   ConnectionMapIterator connIt = m_connectionMap.find( connectionId );
+   if( connIt != m_connectionMap.end() )
+   {
+      time_t currentTime;
+      time( &currentTime );
+      connIt->second.MarkForDeletion( currentTime );
+      connIt->second.m_connector = NULL;
+   }
+   //m_connectionMap.erase( connectionId );
 }
 
 //-----------------------------------------------------------------------------------------
@@ -233,6 +243,8 @@ int  DiplodocusGateway::ProcessInputFunction()
 
    SendStatsToLoadBalancer();
 
+   CleanupOldConnections();
+
    if( m_packetsToBeSentInternally.size() == 0 )
       return 0;
 
@@ -248,7 +260,31 @@ int  DiplodocusGateway::ProcessInputFunction()
       }
       m_packetsToBeSentInternally.pop_front();
    }
+
    return 1;
+}
+
+//-----------------------------------------------------------------------------------------
+
+void  DiplodocusGateway::CleanupOldConnections()
+{
+   // cleanup old connections
+   time_t currentTime;
+   time( &currentTime );
+
+   ConnectionMapIterator nextIt = m_connectionMap.begin();
+   while( nextIt != m_connectionMap.end() )
+   {
+      ConnectionMapIterator oldConnIt = nextIt++;
+      KhaanConnectorWrapper& khaanWrapper = oldConnIt->second;
+      if( khaanWrapper.IsMarkedForDeletion () == true )
+      {
+         if( khaanWrapper.HasDeleteTimeElapsed( currentTime ) == true )
+         {
+            m_connectionMap.erase( oldConnIt );
+         }
+      }
+   }
 }
 
 //-----------------------------------------------------------------------------------------
@@ -334,7 +370,18 @@ void  DiplodocusGateway::HandlePacketToKhaan( KhaanConnector* khaan, BasePacket*
       }
       else
       {
+         PrintText( "HandlePacketToKhaan:: MarkForDeletion", 2 );
          khaan->DenyAllFutureData();
+
+         ConnectionMapIterator it = m_connectionMap.find( connectionId );
+         if( it != m_connectionMap.end() )
+         {
+            KhaanConnectorWrapper& khaanWrapper = it->second;
+            time_t currentTime;
+            time( &currentTime );
+            khaanWrapper.MarkForDeletion( currentTime );
+         }
+         
          connectionId = 0;
       }
 
@@ -373,8 +420,6 @@ int   DiplodocusGateway::ProcessOutputFunction()
 {
    // mutex is locked already
 
-   
-
    // lookup packet info and pass it back to the proper socket if we can find it.
    if( m_connectionsNeedingUpdate.size() || m_outputTempStorage.size() )
    {
@@ -397,8 +442,11 @@ int   DiplodocusGateway::ProcessOutputFunction()
             ConnectionMapIterator connIt = m_connectionMap.find( connectionId );
             if( connIt != m_connectionMap.end() )
             {
-               KhaanConnector* khaan = connIt->second;
-               HandlePacketToKhaan( khaan, dataPacket );// all deletion and such is handled lower
+               KhaanConnector* khaan = connIt->second.m_connector;
+               if( khaan )
+               {
+                  HandlePacketToKhaan( khaan, dataPacket );// all deletion and such is handled lower
+               }
                handled = true;
             }
          }
@@ -416,15 +464,18 @@ int   DiplodocusGateway::ProcessOutputFunction()
          ConnectionMapIterator connIt = m_connectionMap.find( connectionId );
          if( connIt != m_connectionMap.end() )
          {
-            KhaanConnector* khaan = connIt->second;
-            bool didFinish = khaan->Update();
-            if( didFinish == false )
+            KhaanConnector* khaan = connIt->second.m_connector;
+            if( khaan )
             {
-               moreTimeNeededQueue.push_back( connectionId );
+               bool didFinish = khaan->Update();
+               if( didFinish == false )
+               {
+                  moreTimeNeededQueue.push_back( connectionId );
+               }
             }
          }
       }
-
+      //
       m_connectionsNeedingUpdate = moreTimeNeededQueue; // copy 
    }
    return 1;

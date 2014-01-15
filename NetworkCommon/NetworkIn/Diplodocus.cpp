@@ -45,7 +45,7 @@ event_base* BasePacketChainHandler::m_LibEventInstance = NULL;
 
 void  UpdateConsoleWindow( time_t& timeOfLastTitleUpdate, time_t uptime, int numTotalConnections, int numCurrentConnections, int listeningPort, const string& serverName )
 {
-   static format titleFormat("%1% -- ( port:%2% ) -- connections[%3%:%4%] -- uptime(%5$3d:%6$2d:%7$2d)");
+   static format titleFormat("%1% -- ( port:%2% ) -- connections[%3%:%4%] -- uptime(%5$003d:%6$02d:%7$02d)");
 
    time_t currentTime;
    time( &currentTime );

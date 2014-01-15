@@ -30,6 +30,7 @@ struct ConnectionToUser
    ConnectionToUser( const string& name, const string& pword, const string& key );
    void     SetManager( DiplodocusLogin* manager )  { userManager = manager; }
    void     ClearLoggingOutStatus() { loggedOutTime = 0; }
+   bool     CanContinueLogginIn() const { return isActive; }
 
    //------------------------------------------------
 
@@ -49,6 +50,7 @@ struct ConnectionToUser
    bool     UpdateLastLoggedInTime();
    bool     UpdateLastLoggedOutTime();
    bool     SuccessfulLogin( U32 connectionId, bool isReloggedIn );
+   void     UpdateConnectionId( U32 connectionId );
 
    bool     RequestListOfGames( const string& userUuid );
    bool     RequestListOfPurchases( const string& userUuid );

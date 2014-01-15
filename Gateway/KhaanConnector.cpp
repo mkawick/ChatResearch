@@ -23,7 +23,6 @@ KhaanConnector::KhaanConnector( int id, bufferevent* be ):
 KhaanConnector::~KhaanConnector()
 {
 }
-
 //-----------------------------------------------------------------------------------------
 
 void  KhaanConnector::PreCleanup()

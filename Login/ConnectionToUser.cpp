@@ -317,6 +317,13 @@ void  ConnectionToUser::SaveUpdatedProfile( const PacketUpdateUserProfile* profi
 
 //-----------------------------------------------------------------
 
+void     ConnectionToUser::UpdateConnectionId( U32 connectId )
+{
+   connectionId = connectId;
+}
+
+//-----------------------------------------------------------------
+
 bool  ConnectionToUser::BeginLogout( bool wasDisconnectedByError )
 {
    if( loggedOutTime != 0 ) /// we are already logging out. The gateway may send us multiple logouts so we simply have to ignore further attemps
@@ -442,7 +449,7 @@ bool  ConnectionToUser::UpdateLastLoggedOutTime()
 bool    ConnectionToUser:: SuccessfulLogin( U32 connectId, bool isReloggedIn )
 {
    isLoggingOut = false;// for relogin, we need this to be cleared.
-   connectionId =          connectId;
+   UpdateConnectionId( connectId );
 
    productFilterNames.clear();
    productsWaitingForInsertionToDb.clear();

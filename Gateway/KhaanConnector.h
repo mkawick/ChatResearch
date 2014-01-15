@@ -21,7 +21,6 @@ public:
 
    void     SetGateway( DiplodocusGateway* gateway ) { m_gateway = gateway; }
    //bool     AddOutputChainData( BasePacket* packet, int filingData = -1 );// already built in base class. Completely encapsulated.
-
 private:
    
    bool  IsWhiteListedIn( const BasePacket* packet ) const;

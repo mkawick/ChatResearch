@@ -9,6 +9,28 @@
 #include <deque>
 class BasePacket;
 
+class KhaanConnectorWrapper
+{
+public:
+   KhaanConnectorWrapper( KhaanConnector* connector) : m_connector( connector ), m_markedForDeleteTime( 0 ){}
+   KhaanConnector*      m_connector;
+   time_t               m_markedForDeleteTime;
+public:
+   void     MarkForDeletion( time_t& time ) { m_markedForDeleteTime = time; }
+   bool     IsMarkedForDeletion() const { return m_markedForDeleteTime != 0; }
+   bool     HasDeleteTimeElapsed( time_t& currentTime ) const 
+   {
+      if( difftime( currentTime, m_markedForDeleteTime ) >= 5 ) // once per second
+      {
+         return true;
+      }
+      return false;
+   }
+
+private:
+   KhaanConnectorWrapper(){}
+};
+
 //-----------------------------------------------------------------------------
 
 class DiplodocusGateway : public Diplodocus< KhaanConnector >
@@ -42,20 +64,26 @@ private:
 
    int            ProcessInputFunction();
    int            ProcessOutputFunction();
+
+   void           CleanupOldConnections();
    void           SendStatsToLoadBalancer();
    U32            GetNextConnectionId();
 
    time_t         m_timestampSendConnectionStatisics;
    static const U32 timeoutSendConnectionStatisics = 15;
 
-   U32                        m_connectionIdTracker;
+   //--------------------------------------------------------
+
    typedef map< int, int >    SocketToConnectionMap;
    typedef pair<int, int>     SocketToConnectionPair;
    typedef SocketToConnectionMap::iterator SocketToConnectionMapIterator;
 
-   typedef map< int, KhaanConnector* >    ConnectionMap;
-   typedef pair< int, KhaanConnector* >   ConnectionPair;
+   typedef map< int, KhaanConnectorWrapper >    ConnectionMap;
+   typedef pair< int, KhaanConnectorWrapper >   ConnectionPair;
    typedef ConnectionMap::iterator        ConnectionMapIterator;
+
+
+   U32                        m_connectionIdTracker;   
    std::deque< BasePacket* >  m_outputTempStorage;
 
    SocketToConnectionMap      m_socketToConnectionMap;
