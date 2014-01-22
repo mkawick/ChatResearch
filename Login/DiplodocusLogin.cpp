@@ -232,6 +232,9 @@ bool     DiplodocusLogin:: LogUserIn( const string& userName, const string& pass
          connection->ClearLoggingOutStatus();
          if( connection->CanContinueLogginIn() == true )
          {
+            const bool isLoggedIn = true; 
+            const bool wasDisconnectedByError = false;
+
             SendLoginStatusToOtherServers( connection->m_userName, 
                                              connection->m_userUuid, 
                                              connectionId, 
@@ -242,7 +245,9 @@ bool     DiplodocusLogin:: LogUserIn( const string& userName, const string& pass
                                              connection->passwordHash, 
                                              connection->id, 
                                              connection->loginKey, 
-                                             connection->m_languageId, true, false );
+                                             connection->m_languageId, 
+                                             isLoggedIn, 
+                                             wasDisconnectedByError );
 
             if( connection->SuccessfulLogin( connectionId, true ) == true )
             {
@@ -252,10 +257,8 @@ bool     DiplodocusLogin:: LogUserIn( const string& userName, const string& pass
          else
          {
             connection->UpdateConnectionId( connectionId );
-            ForceUserLogoutAndBlock( connectionId );
-           /* connection->BeginLogout( false );
-            connection->FinalizeLogout();*/
-            return false;
+          /*  ForceUserLogoutAndBlock( connectionId );*/
+            return LoadUserAccount( userName, password, loginKey, gameProductId, connectionId );
          }
       }
       else
@@ -265,29 +268,36 @@ bool     DiplodocusLogin:: LogUserIn( const string& userName, const string& pass
    }
    else
    {
-      ConnectionToUser conn( userName, password, loginKey );
-      conn.gameProductId = gameProductId;
-      conn.connectionId = connectionId;
-      AddUserConnection( UserConnectionPair( connectionId, conn ) );
-
-      //*********************************************************************************
-      // perhaps some validation here is in order like is this user valid based on the key
-      //*********************************************************************************
-
-      PacketDbQuery* dbQuery = new PacketDbQuery;
-      dbQuery->id =           connectionId;
-      dbQuery->lookup =       QueryType_UserLoginInfo;
-      dbQuery->meta =         userName;
-      dbQuery->serverLookup = gameProductId;
-
-      dbQuery->query = "SELECT * FROM users JOIN user_profile ON users.user_id=user_profile.user_id WHERE users.user_email='%s' AND users.user_pw_hash='%s'";
-      dbQuery->escapedStrings.insert( userName );
-      dbQuery->escapedStrings.insert( password );
-      
-      return AddQueryToOutput( dbQuery );
+      return LoadUserAccount( userName, password, loginKey, gameProductId, connectionId );
    }
 
    return false;
+}
+
+//---------------------------------------------------------------
+
+bool  DiplodocusLogin:: LoadUserAccount( const string& userName, const string& password, const string& loginKey, U8 gameProductId, U32 connectionId )
+{
+   ConnectionToUser conn( userName, password, loginKey );
+   conn.gameProductId = gameProductId;
+   conn.connectionId = connectionId;
+   AddUserConnection( UserConnectionPair( connectionId, conn ) );
+
+   //*********************************************************************************
+   // perhaps some validation here is in order like is this user valid based on the key
+   //*********************************************************************************
+
+   PacketDbQuery* dbQuery = new PacketDbQuery;
+   dbQuery->id =           connectionId;
+   dbQuery->lookup =       QueryType_UserLoginInfo;
+   dbQuery->meta =         userName;
+   dbQuery->serverLookup = gameProductId;
+
+   dbQuery->query = "SELECT * FROM users JOIN user_profile ON users.user_id=user_profile.user_id WHERE users.user_email='%s' AND users.user_pw_hash='%s'";
+   dbQuery->escapedStrings.insert( userName );
+   dbQuery->escapedStrings.insert( password );
+
+   return AddQueryToOutput( dbQuery );
 }
 
 //---------------------------------------------------------------
@@ -308,18 +318,22 @@ bool     DiplodocusLogin:: HandleLoginResultFromDb( U32 connectionId, PacketDbQu
 
       if( dbResult->successfulQuery == true && dbResult->bucket.bucket.size() > 0 )
       {
+         const bool isLoggedIn = true; 
+         const bool wasDisconnectedByError = false;
+
          SendLoginStatusToOtherServers( connection->m_userName, 
-                                                   connection->m_userUuid, 
-                                                   connectionId, 
-                                                   connection->gameProductId, 
-                                                   connection->lastLoginTime, 
-                                                   connection->isActive, 
-                                                   connection->m_email, 
-                                                   connection->passwordHash, 
-                                                   connection->id,
-                                                   connection->loginKey, 
-                                                   connection->m_languageId, 
-                                                   true, false );
+                                       connection->m_userUuid, 
+                                       connectionId, 
+                                       connection->gameProductId, 
+                                       connection->lastLoginTime, 
+                                       connection->isActive, 
+                                       connection->m_email, 
+                                       connection->passwordHash, 
+                                       connection->id,
+                                       connection->loginKey, 
+                                       connection->m_languageId, 
+                                       isLoggedIn, 
+                                       wasDisconnectedByError);
          if( connection->SuccessfulLogin( connectionId, false ) == true )
          {
             UpdateLastLoggedInTime( dbResult->id ); // update the user logged in time
@@ -368,6 +382,7 @@ void     DiplodocusLogin:: FinalizeLogout( U32 connectionId, bool wasDisconnecte
    ConnectionToUser* connection = GetUserConnection( connectionId );
    if( connection )
    {
+      const bool isLoggedIn = false; 
       bool result = connection->FinalizeLogout();
       result = result;
       SendLoginStatusToOtherServers( connection->m_userName, 
@@ -381,7 +396,7 @@ void     DiplodocusLogin:: FinalizeLogout( U32 connectionId, bool wasDisconnecte
                                     connection->id, 
                                     connection->loginKey,
                                     connection->m_languageId, 
-                                    false, 
+                                    isLoggedIn, 
                                     wasDisconnectedByError );
    }
 }
@@ -1073,7 +1088,10 @@ bool  DiplodocusLogin:: ForceUserLogoutAndBlock( U32 connectionId )
    loginStatus->adminLevel = 0;
    
    SendPacketToGateway( loginStatus, connectionId );
-   SendLoginStatusToOtherServers( userName, uuid, connectionId, gameProductId, lastLoginTime, active, email, passwordHash, userId, loginKey, languageId, false, false );
+   const bool isLoggedIn = false; 
+   const bool wasDisconnectedByError = false;
+
+   SendLoginStatusToOtherServers( userName, uuid, connectionId, gameProductId, lastLoginTime, active, email, passwordHash, userId, loginKey, languageId, isLoggedIn, wasDisconnectedByError );
 
    return true;
 }

@@ -129,6 +129,7 @@ private:
    
    bool     LogUserIn( const string& username, const string& password, const string& loginKey, U8 gameProductId, U32 connectionId );
    bool     LogUserOut( U32 connectionId, bool wasDisconnectedByError );
+   bool     LoadUserAccount( const string& userName, const string& password, const string& loginKey, U8 gameProductId, U32 connectionId );
    bool     CreateUserAccount( U32 connectionId, const string& email, const string& password, const string& username, const string& deviceAccountId, const string& deviceId, U8 languageId, U8 gameProductId );
    U32      FindUserAlreadyInGame( const string& username, U8 gameProductId );
 

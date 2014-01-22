@@ -23,6 +23,23 @@ KhaanConnector::KhaanConnector( int id, bufferevent* be ):
 KhaanConnector::~KhaanConnector()
 {
 }
+
+//-----------------------------------------------------------------------------------------
+
+void     KhaanConnector::AuthorizeConnection() 
+{ 
+   m_authorizedConnection = true; 
+   m_gateway->TrackStats( DiplodocusGateway::StatTracking_UserBlocked, 0, static_cast< float >( m_connectionId ) );
+}
+
+//-----------------------------------------------------------------------------------------
+
+void     KhaanConnector::DenyAllFutureData() 
+{ 
+   m_denyAllFutureData = true; 
+   m_gateway->TrackStats( DiplodocusGateway::StatTracking_UserBlocked, 0, static_cast< float >( m_connectionId ) );
+}
+
 //-----------------------------------------------------------------------------------------
 
 void  KhaanConnector::PreCleanup()
@@ -31,6 +48,64 @@ void  KhaanConnector::PreCleanup()
    {
       m_gateway->InputRemovalInProgress( this );
    }
+}
+
+//-----------------------------------------------------------------------------------------
+
+bool  KhaanConnector::IsPacketSafe( unsigned char* data, int& offset)
+{
+   PacketFactory parser;
+   // before we parse, which is potentially dangerous, we will do a quick check
+   BasePacket testPacket;
+   parser.SafeParse( data, offset, testPacket );
+
+   // we only allow a few packet types
+   bool allow = false;
+   if( testPacket.packetType == PacketType_Login &&
+      ( testPacket.packetSubType == PacketLogin::LoginType_Login || 
+         testPacket.packetSubType == PacketLogin::LoginType_CreateAccount ) )
+      allow = true;
+
+   if( testPacket.packetType == PacketType_Base && testPacket.packetSubType == BasePacket::BasePacket_Hello )
+      allow = true;
+
+   if( allow == false )
+   {
+      m_numPacketsReceivedBeforeAuth ++;
+      if( m_numPacketsReceivedBeforeAuth > m_randomNumberOfPacketsBeforeLogin )
+      {
+         DenyAllFutureData ();
+         Log( "Gateway: hacker alert. Too many packet received without a login.", 3 );
+         CloseConnection();
+      }
+
+      // we never proceed beyond here. If you are not authorized and you are not passing login packets, you get no pass, whatsoever.
+      return false;
+   }
+
+   return true;
+}
+
+//-----------------------------------------------------------------------------------------
+
+bool  KhaanConnector::IsHandshaking( const BasePacket* packetIn )
+{
+   if( packetIn->packetType == PacketType_Base && 
+       packetIn->packetSubType == BasePacket::BasePacket_Hello )
+   {
+      //<< do nothing
+
+      if( packetIn->versionNumber != GlobalNetworkProtocolVersion )
+      {
+         m_gateway->TrackStats( DiplodocusGateway::StatTracking_BadPacketVersion, packetIn->versionNumber, 0 );
+      }
+
+      // we are only sending version numbers at this point.
+      PacketHello* hello = new PacketHello();
+      AddOutputChainData( hello );
+      return true;
+   }
+   return false;
 }
 
 //-----------------------------------------------------------------------------------------
@@ -51,42 +126,24 @@ bool	KhaanConnector::OnDataReceived( unsigned char* data, int length )
    {
       FlushReadBuffer();
 
-      m_denyAllFutureData = true;
+      DenyAllFutureData ();
       Log( "Gateway: hacker alert. Packet length is far too long", 3 );
       return false;
    }
 
    if( m_authorizedConnection == false )
    {
-      // before we parse, which is potentially dangerous, we will do a quick check
-      BasePacket testPacket;
-      parser.SafeParse( data, offset, testPacket );
-      // we only allow a few packet types
-      bool allow = false;
-      if( testPacket.packetType == PacketType_Login &&
-         ( testPacket.packetSubType == PacketLogin::LoginType_Login || 
-            testPacket.packetSubType == PacketLogin::LoginType_CreateAccount ) )
-         allow = true;
-
-    /*  if( testPacket.packetType == PacketType_Base && testPacket.packetSubType == BasePacket::BasePacket_RerouteRequest )
-         allow = true;*/
-
-      if( allow == false )
+      /*if( IsHandshaking( data, length ) == true )
       {
-         m_numPacketsReceivedBeforeAuth ++;
-         if( m_numPacketsReceivedBeforeAuth > m_randomNumberOfPacketsBeforeLogin )
-         {
-            m_denyAllFutureData = true;
-            Log( "Gateway: hacker alert. Too many packet received without a login.", 3 );
-            CloseConnection();
-         }
+         return false;
+      }*/
 
-         // we never proceed beyond here. If you are not authorized and you are not passing login packets, you get no pass, whatsoever.
+      if( IsPacketSafe( data, offset ) == false )
+      {
          return false;
       }
-   }
-
-   
+      
+   }   
 
    bool result = false;
    // catch bad packets, buffer over runs, or other badly formed data.
@@ -95,24 +152,41 @@ bool	KhaanConnector::OnDataReceived( unsigned char* data, int length )
       try 
       {
          result = parser.Parse( data, offset, &packetIn );
+         TrackInwardPacketType( packetIn );
       }
       catch( ... )
       {
          Log( "parsing in KhaanConnector threw an exception" );
-         m_denyAllFutureData = true;
+         DenyAllFutureData ();
          break;
       }
 
       if( result == true )
       {
-         if( IsWhiteListedIn( packetIn ) || HasPermission( packetIn ) )
+         bool packetCleanupRequired = false;
+         if( m_authorizedConnection == false )
          {
-            m_gateway->AddInputChainData( packetIn , m_connectionId );
+            if( IsHandshaking( packetIn ) == true )
+            {
+               packetCleanupRequired = true;
+            }
          }
-         else
+         if( packetCleanupRequired == false )// we still have work to do
          {
-            FlushReadBuffer();// apparently bad data, let's prevent buffer overruns, etc
-            delete packetIn;
+            if( IsWhiteListedIn( packetIn ) || HasPermission( packetIn ) )
+            {
+               m_gateway->AddInputChainData( packetIn, m_connectionId );
+            }
+            else
+            {
+               FlushReadBuffer();// apparently bad data, let's prevent buffer overruns, etc
+               packetCleanupRequired = true;
+            }
+         }
+
+         if( packetCleanupRequired )
+         {
+            parser.CleanupPacket( packetIn );
          }
       }
       else
@@ -132,10 +206,14 @@ bool  KhaanConnector::IsWhiteListedIn( const BasePacket* packet ) const
    {
    case  PacketType_Base:
       {
-        /* if( packet->packetSubType == BasePacket::BasePacket_RerouteRequest )
+         /*if( packet->packetSubType == BasePacket::BasePacket_RerouteRequest )
          {
             return true;
          }*/
+         if( packet->packetSubType == BasePacket::BasePacket_Hello )
+         {
+            return true;
+         }
          return false;
       }
    case PacketType_Login:
@@ -166,6 +244,32 @@ bool  KhaanConnector::IsWhiteListedIn( const BasePacket* packet ) const
       return true;
    }
 
+   return false;
+}
+
+//-----------------------------------------------------------------------------------------
+
+bool  KhaanConnector::TrackInwardPacketType( const BasePacket* packet )
+{
+   switch( packet->packetType )
+   {
+      case PacketType_Gameplay:
+         m_gateway->TrackStats( DiplodocusGateway::StatTracking_GamePacketsSentToGame, 1, static_cast< float >( m_connectionId ) );
+      return true;
+   }
+   return false;
+}
+
+//-----------------------------------------------------------------------------------------
+
+bool  KhaanConnector::TrackOutwardPacketType( const BasePacket* packet )
+{
+   switch( packet->packetType )
+   {
+      case PacketType_Gameplay:
+         m_gateway->TrackStats( DiplodocusGateway::StatTracking_GamePacketsSentToClient, 1, static_cast< float >( m_connectionId ) );
+      return true;
+   }
    return false;
 }
 

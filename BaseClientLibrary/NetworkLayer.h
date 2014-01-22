@@ -167,6 +167,7 @@ class UserNetworkEventNotifier
 public:
    virtual void  UserLogin( bool success ) {}
    virtual void  UserLogout() {}
+   virtual void  AreWeUsingCorrectNetworkVersion( bool isCorrect ){}
    virtual void  ServerRequestsListOfUserPurchases() {}
    virtual void  UserProfileResponse( string username, string email, string userUuid, string lastLoginTime, string loggedOutTime, int adminLevel, bool isActive, bool showWinLossRecord, bool marketingOptOut, bool showGenderProfile ) {}
    virtual void  UserProfileResponse( const map< string, string >& keyValues ) {}
@@ -436,6 +437,7 @@ private:
 
    void     NotifyClientLoginStatus( bool isLoggedIn );
    void     NotifyClientToBeginSendingRequests();
+   void     InitalConnectionCallback();
 };
 ///////////////////////////////////////////////////////
 

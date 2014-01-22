@@ -86,6 +86,8 @@ public:
    virtual void   UpdateInwardPacketList();// this class doesn't do much with the data. It's up to the derived classes to decide what to do with it
    virtual void   UpdateOutwardPacketList();
 
+   virtual bool   TrackInwardPacketType( const BasePacket* packet ) { return false; }
+   virtual bool   TrackOutwardPacketType( const BasePacket* packet ) { return false; }
    bool           AddInputChainData( BasePacket*, U32 filingData = -1 );
    bool           AddOutputChainData( BasePacket*, U32 filingData = -1 );
 

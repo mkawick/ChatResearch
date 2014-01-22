@@ -61,6 +61,7 @@
 			<Tool
 				Name="VCLinkerTool"
 				AdditionalDependencies="../Debug/PacketLibrary.lib"
+				OutputFile="$(OutDir)\$(ProjectName)Server.exe"
 				LinkIncremental="2"
 				IgnoreDefaultLibraryNames="libcmt.lib"
 				GenerateDebugInformation="true"
@@ -184,6 +185,10 @@
 				RelativePath=".\Stat.cpp"
 				>
 			</File>
+			<File
+				RelativePath=".\StatsCommon.cpp"
+				>
+			</File>
 		</Filter>
 		<Filter
 			Name="Header Files"
@@ -196,6 +201,10 @@
 			</File>
 			<File
 				RelativePath=".\KhaanStat.h"
+				>
+			</File>
+			<File
+				RelativePath=".\StatsCommon.h"
 				>
 			</File>
 		</Filter>

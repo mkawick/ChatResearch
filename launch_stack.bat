@@ -27,6 +27,10 @@ ping -n 1 -w 1000 127.0.0.1 > nul
 
 start ./debug/PurchaseServer.exe listen.port=7700 s2s.port=7702 s2s.address=localhost db.address=10.16.4.44 db.port=3306 db.username=incinerator db.password=Cm8235 db.schema=playdek
 
+ping -n 1 -w 1000 127.0.0.1 > nul
+
+start ./debug/StatServer.exe listen.port=7800 s2s.port=7802 db.address=10.16.4.44 db.port=3306 db.username=incinerator db.password=Cm8235 
+
 
 REM start ./debug/GameServer.exe db.port=16384 listen.port=21000
 

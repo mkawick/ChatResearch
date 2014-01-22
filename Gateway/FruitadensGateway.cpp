@@ -32,9 +32,9 @@ bool FruitadensGateway::FilterOutwardPacket( BasePacket* packet ) const
    {
       PacketGatewayWrapper* wrapper = static_cast< PacketGatewayWrapper* >( packet );
 
-      PacketType type = static_cast< PacketType > ( wrapper->pPacket->packetType );
+      PacketType packetType = static_cast< PacketType > ( wrapper->pPacket->packetType );
       
-      if( type == PacketType_Cheat )// these are filtered differently
+      if( packetType == PacketType_Cheat )// these are filtered differently
       {
          PacketCheat* cheatPacket = static_cast <PacketCheat*> ( wrapper->pPacket );
          int serverType = cheatPacket->whichServer;
@@ -46,7 +46,7 @@ bool FruitadensGateway::FilterOutwardPacket( BasePacket* packet ) const
 
       if( m_serverType == ServerType_GameInstance )
       {
-         if( type == PacketType_Gameplay )
+         if( packetType == PacketType_Gameplay )
          {
             // sending packets to the correct server.
             if( m_connectedServerId == wrapper->pPacket->gameInstanceId && 
@@ -55,7 +55,7 @@ bool FruitadensGateway::FilterOutwardPacket( BasePacket* packet ) const
                return true;
             }
          }
-         if( type == PacketType_Tournament )
+         if( packetType == PacketType_Tournament )
          {
             if( m_connectedServerId == wrapper->pPacket->gameInstanceId && 
                   wrapper->pPacket->gameProductId == m_connectedGameProductId )
@@ -66,45 +66,51 @@ bool FruitadensGateway::FilterOutwardPacket( BasePacket* packet ) const
       }
       else if( m_serverType == ServerType_Chat )
       {
-         if( type == PacketType_Chat )
+         if( packetType == PacketType_Chat )
             return true;
-         if( type == PacketType_UserInfo )// todo, remove me once we have other things in place
+         if( packetType == PacketType_UserInfo )// todo, remove me once we have other things in place
             return true;
-         if( type == PacketType_GatewayInformation )
+         if( packetType == PacketType_GatewayInformation )
             return true;
       }
       else if( m_serverType == ServerType_Login )
       {
-         if( type == PacketType_Login )// login is always acceptable... for now. Once we have a login server, we need to remove this exception.
+         if( packetType == PacketType_Login )// login is always acceptable... for now. Once we have a login server, we need to remove this exception.
          {
             return true;
          }
       }
       else if( m_serverType == ServerType_Contact )
       {
-         if( type == PacketType_UserInfo )
+         if( packetType == PacketType_UserInfo )
          {
             return true;
          }
-         if( type == PacketType_Contact )
+         if( packetType == PacketType_Contact )
          {
             return true;
          }
       }
       else if( m_serverType == ServerType_Asset )
       {
-         if( type == PacketType_Asset )
+         if( packetType == PacketType_Asset )
          {
             return true;
          }
       }
       else if( m_serverType == ServerType_Purchase )
       {
-         if( type == PacketType_Purchase )
+         if( packetType == PacketType_Purchase )
          {
             return true;
          }
-         
+      }
+      else if( m_serverType == ServerType_Stat )
+      {
+         if( packetType == PacketType_Stat )
+         {
+            return true;
+         }
       }
    }
    else if( packet->packetType == PacketType_ServerToServerWrapper )

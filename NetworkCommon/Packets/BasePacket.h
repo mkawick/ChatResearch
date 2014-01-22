@@ -10,6 +10,8 @@
 
 //#define _MEMLEAK_TESTING_
 
+static const U8   GlobalNetworkProtocolVersion = 1;
+
 ///////////////////////////////////////////////////////////////
 
 // todo, make login, logout, etc into authentication packets
@@ -60,7 +62,7 @@ public:
    BasePacket( int packet_type = PacketType_Base, int packet_sub_type = BasePacket_Type ) :
       packetType( packet_type ),
       packetSubType( packet_sub_type ),
-      versionNumber( 0 ),
+      versionNumber( GlobalNetworkProtocolVersion ),
       gameInstanceId( 0 )
       {
 #ifdef _MEMORY_TEST_

@@ -7,7 +7,7 @@
 #include "../NetworkCommon/Packets/ServerToServerPacket.h"
 #include "../NetworkCommon/Packets/LoginPacket.h"
 #include "../NetworkCommon/Packets/PacketFactory.h"
-
+#include "../NetworkCommon/Packets/StatPacket.h"
 
 //#define VERBOSE
 void  PrintText( const char* text, int extraCr = 0 )
@@ -25,7 +25,108 @@ void  PrintText( const char* text, int extraCr = 0 )
 //-----------------------------------------------------------------------------------------
 //-----------------------------------------------------------------------------------------
 
-DiplodocusGateway::DiplodocusGateway( const string& serverName, U32 serverId ) : Diplodocus< KhaanConnector > ( serverName, serverId, 0, ServerType_Gateway ),
+StatTrackingConnections :: StatTrackingConnections() : m_timeoutSendStatServerStats ( 0 )
+{
+}
+
+//-----------------------------------------------------------------------------------------
+
+void     StatTrackingConnections::TrackStats( StatTracking stat, float value1, float value2 )
+{
+   PacketStat* packet = new PacketStat;
+   packet->serverReporting = "gateway";
+
+   switch( stat )
+   {
+   case StatTracking_BadPacketVersion:
+      packet->statName = "packet.version";
+      break;
+   case StatTracking_UserBlocked:
+      packet->statName = "user.blocked";
+      break;
+   case StatTracking_ForcedDisconnect:
+      packet->statName = "user.force_disconnect";
+      break;
+   case StatTracking_UserLoginSuccess:
+      packet->statName = "user.login_success";
+      break;
+   case StatTracking_UserTimeOnline:
+      packet->statName = "user.aggregate.timeonline";
+      break;
+   case StatTracking_GamePacketsSentToGame:
+      packet->statName = "game_packet.count_to_server";
+      break;
+   case StatTracking_GamePacketsSentToClient:
+      packet->statName = "game_packet.count_to_client";
+      break;
+   case StatTracking_NumUsersOnline:
+      packet->statName = "gateway.num_users_current";
+      break;
+   case StatTracking_UserTotalCount:
+      packet->statName = "gateway.num_users_total";
+      break;
+   }
+
+   packet->value = value1;
+   packet->timestamp = GetDateInUTC();
+   //packet->subValue = value2;
+   //packet->minValue = 0;
+   //packet->maxValue = 0;
+   //packet->numValues = 1;
+   //packet->stdDev = 0;
+
+   m_stats.push_back( packet );
+}
+
+//-----------------------------------------------------------------------------------------
+
+void     StatTrackingConnections::SendStatsToStatServer( Fruitadens* fruity, const string& serverName, U32 serverId, ServerType serverType )
+{
+   PacketFactory factory;
+   if( fruity != NULL )
+   {
+      while( m_stats.size() )
+      {
+         PacketStat* packet = static_cast< PacketStat* >( m_stats.front() );
+         m_stats.pop_front();
+
+         packet->serverReporting = serverName;
+         packet->category = serverType;
+         packet->subCategory = serverId;
+
+         //Gateway
+         PacketServerToServerWrapper* wrapper = new PacketServerToServerWrapper;
+         wrapper->gameInstanceId = serverId;
+         wrapper->gameProductId = 0;
+         wrapper->serverId = serverId;
+         wrapper->pPacket = packet;
+         
+         U32 unusedParam = -1;
+         if( fruity->AddOutputChainData( wrapper, unusedParam ) == false )
+         {
+            PrintText( "SendStatsToStatServer had a problem" ); 
+            BasePacket* deletedPacket = static_cast< BasePacket* >( packet );
+            factory.CleanupPacket( deletedPacket );
+            return;
+         }
+      }
+
+   }
+   else// simply cleanup
+   {
+      while( m_stats.size() )
+      {
+         BasePacket* packet = static_cast< BasePacket* >( m_stats.front() );
+         m_stats.pop_front();
+         factory.CleanupPacket( packet );
+      }
+   }
+}
+
+//-----------------------------------------------------------------------------------------
+//-----------------------------------------------------------------------------------------
+
+DiplodocusGateway::DiplodocusGateway( const string& serverName, U32 serverId ) : Diplodocus< KhaanConnector > ( serverName, serverId, 0, ServerType_Gateway ), StatTrackingConnections(),
                                           m_connectionIdTracker( 12 ),
                                           m_printPacketTypes( false ),
                                           m_reroutePort( 0 )
@@ -201,6 +302,7 @@ void     DiplodocusGateway::SetupReroute( const string& address, U16 port )
    // todo, add dynamic rerouting allowing an admin to login and 
 }
 
+
 //-----------------------------------------------------------------------------------------
 
 bool     DiplodocusGateway::PushPacketToProperOutput( BasePacket* packet )
@@ -242,6 +344,7 @@ int  DiplodocusGateway::ProcessInputFunction()
    CommonUpdate();
 
    SendStatsToLoadBalancer();
+   SendStatsToStatServer();
 
    CleanupOldConnections();
 
@@ -299,6 +402,8 @@ void  DiplodocusGateway::SendStatsToLoadBalancer()
       m_timestampSendConnectionStatisics = currentTime;
       int num = m_connectedClients.size();
 
+      TrackStats( StatTracking_UserTotalCount, static_cast<float>( num ), 0 );
+
       bool statsSent = false;
       ChainLinkIteratorType itOutput = m_listOfOutputs.begin();
       while( itOutput != m_listOfOutputs.end() )
@@ -329,7 +434,40 @@ void  DiplodocusGateway::SendStatsToLoadBalancer()
    }
 }
 
+//-----------------------------------------------------------------------------------------
 
+void  DiplodocusGateway::SendStatsToStatServer()
+{
+   time_t currentTime;
+   time( &currentTime );
+
+   if( difftime( currentTime, m_timeoutSendStatServerStats ) >= timeoutSendStatServerStats ) 
+   {
+      m_timeoutSendStatServerStats = currentTime;
+      int num = m_connectedClients.size();
+      FruitadensGateway* fruity = NULL;
+      PacketFactory  factory;
+
+      bool statsSent = false;
+      ChainLinkIteratorType itOutput = m_listOfOutputs.begin();
+      while( itOutput != m_listOfOutputs.end() )
+      {
+         IChainedInterface* outputPtr = (*itOutput).m_interface;
+         fruity = static_cast< FruitadensGateway* >( outputPtr );
+         if( fruity->GetConnectedServerType() == ServerType_Stat )
+         {
+            break;
+         }
+         else
+         {
+            fruity = NULL;
+         }
+         itOutput++;
+      }
+
+      StatTrackingConnections::SendStatsToStatServer( fruity, m_serverName, m_serverId, m_serverType );
+   }
+}
 
 //-----------------------------------------------------------------------------------------
 
@@ -372,6 +510,7 @@ void  DiplodocusGateway::HandlePacketToKhaan( KhaanConnector* khaan, BasePacket*
       {
          PrintText( "HandlePacketToKhaan:: MarkForDeletion", 2 );
          khaan->DenyAllFutureData();
+         TrackStats( StatTracking_ForcedDisconnect, static_cast< float>( connectionId ), 0 );
 
          ConnectionMapIterator it = m_connectionMap.find( connectionId );
          if( it != m_connectionMap.end() )

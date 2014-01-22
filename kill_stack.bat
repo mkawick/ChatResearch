@@ -20,4 +20,6 @@ taskkill /f /im GatewayServer.exe
 
 taskkill /f /im LoadBalancer.exe
 
+taskkill /f /im StatServer.exe
+
 REM exit

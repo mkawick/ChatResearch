@@ -8,6 +8,8 @@
 #include "GatewayCommon.h"
 #include <deque>
 class BasePacket;
+class PacketStat;
+class Fruitadens;
 
 class KhaanConnectorWrapper
 {
@@ -33,10 +35,44 @@ private:
 
 //-----------------------------------------------------------------------------
 
-class DiplodocusGateway : public Diplodocus< KhaanConnector >
+class StatTrackingConnections
+{
+public:
+   enum StatTracking
+   {
+      StatTracking_BadPacketVersion,
+      StatTracking_UserBlocked,
+      StatTracking_ForcedDisconnect,
+      StatTracking_UserLoginSuccess,
+      StatTracking_UserTimeOnline,
+      StatTracking_GamePacketsSentToGame,
+      StatTracking_GamePacketsSentToClient,
+      StatTracking_NumUsersOnline,
+      StatTracking_UserTotalCount
+   };
+
+   StatTrackingConnections();
+
+   deque< PacketStat* > m_stats;
+   time_t         m_timeoutSendStatServerStats;
+   static const U32 timeoutSendStatServerStats = 60;
+
+   void           TrackStats( StatTracking stat, float value1, float value2 );
+   void           SendStatsToStatServer( Fruitadens*, const string& serverName, U32 serverId, ServerType m_serverType );// meant to be invoked periodically
+};
+
+//-----------------------------------------------------------------------------
+
+class DiplodocusGateway : public Diplodocus< KhaanConnector >, public StatTrackingConnections
 {
 public: 
    typedef Diplodocus< KhaanConnector > ChainedType;
+
+   //-----------------------------------------
+
+
+   //-----------------------------------------
+
 public:
    DiplodocusGateway( const string& serverName, U32 serverId );
    ~DiplodocusGateway();
@@ -50,8 +86,6 @@ public:
 
    void           SetupReroute( const string& address, U16 port );
    bool           IsRerouoting() { return ( m_reroutePort != 0 ) && ( m_rerouteAddress.size() > 0 ); }
-
-   //-----------------------------------------
 
 private:
    
@@ -67,6 +101,7 @@ private:
 
    void           CleanupOldConnections();
    void           SendStatsToLoadBalancer();
+   void           SendStatsToStatServer();
    U32            GetNextConnectionId();
 
    time_t         m_timestampSendConnectionStatisics;

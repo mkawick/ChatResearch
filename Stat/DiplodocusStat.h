@@ -7,10 +7,9 @@
 
 #include "KhaanStat.h"
 
-#include <map>
 #include <deque>
-
 using namespace std;
+#include "StatsCommon.h"
 
 // averaging
 // time averaging (average value based on the gap time)
@@ -46,18 +45,18 @@ public:
    ~DiplodocusStat();
 
    bool                    AddInputChainData( BasePacket* packet, U32 connectionId );
-   bool                    AddOutputChainData( BasePacket* packet, U32 connectionId );
+   bool                    AddOutputChainData( BasePacket* packet, U32 connectionId ) { return false; }
 
    bool                    AddQueryToOutput( PacketDbQuery* packet );
-
-  /* const SalesManager*     GetSalesOrganizer() const { return m_salesManager; }
-   const StringLookup*     GetStringLookup() const { return m_stringLookup; }*/
    void                    ServerWasIdentified( IChainedInterface* khaan );
 private:
    bool                    HandlePacketFromOtherServer( BasePacket* packet, U32 connectionId );
    int                     CallbackFunction();
+   
+   void                    PeriodicWriteToDB();
 
-   typedef map< string, PacketStat >   HistoricalStats;
+   time_t                  m_lastDbWriteTimeStamp;
+   static const int        timeoutDBWriteStatisics = 60 * 60;// one hour
    HistoricalStats         m_history;
 };
 

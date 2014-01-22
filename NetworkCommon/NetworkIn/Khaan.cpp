@@ -133,6 +133,8 @@ void	Khaan :: UpdateInwardPacketList()
       {
          BasePacket* packet = m_packetsIn.front();
       
+         TrackInwardPacketType( packet );
+
          Threading::MutexLock  locker( m_inputChainListMutex );
          static_cast< ChainType*> ( chain )->AddInputChainData( packet, m_socketId );
 
@@ -184,6 +186,8 @@ void	Khaan :: UpdateOutwardPacketList()
       U16 sizeOfLastWrite = 0;
       bufferOffset += sizeof( sizeOfLastWrite );// reserve space
       packet->SerializeOut( buffer, bufferOffset ); 
+
+      TrackOutwardPacketType( packet );
 
       sizeOfLastWrite = bufferOffset - temp - sizeof( sizeOfLastWrite );// set aside two bytes
       Serialize::Out( buffer, temp, sizeOfLastWrite );// write in the size

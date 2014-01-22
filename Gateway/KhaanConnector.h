@@ -15,8 +15,8 @@ public:
    KhaanConnector( int id, bufferevent* be );
    ~KhaanConnector();
 
-   void     AuthorizeConnection() { m_authorizedConnection = true; }
-   void     DenyAllFutureData() { m_denyAllFutureData = true; }
+   void     AuthorizeConnection();
+   void     DenyAllFutureData();
    void     SetAdminLevelOperations( int level ) { m_adminLevel = level; }
 
    void     SetGateway( DiplodocusGateway* gateway ) { m_gateway = gateway; }
@@ -26,6 +26,10 @@ private:
    bool  IsWhiteListedIn( const BasePacket* packet ) const;
    bool  HasPermission( const BasePacket* packet ) const;
    bool  HandleGatewayPackets( const BasePacket* packet ) const ;
+   bool  IsPacketSafe( unsigned char* data, int& offset);
+   bool  IsHandshaking( const BasePacket* packetIn );
+   bool  TrackInwardPacketType( const BasePacket* packet ); // based on base class
+   bool  TrackOutwardPacketType( const BasePacket* packet );
 
    U32                  m_numPacketsReceivedBeforeAuth;
    U32                  m_randomNumberOfPacketsBeforeLogin;

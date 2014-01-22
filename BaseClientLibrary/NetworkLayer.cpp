@@ -1065,6 +1065,25 @@ bool  NetworkLayer::HandlePacketReceived( BasePacket* packetIn )
 
    switch( packetIn->packetType )
    {
+      case PacketType_Base:
+      {
+         switch( packetIn->packetSubType )
+         {
+         case BasePacket::BasePacket_Hello:
+            {
+               PacketHello* packet = static_cast< PacketHello* >( packetIn );
+               cout << "Server protocol version: " << (int)(packet->versionNumber) << endl;
+               cout << "Client protocol version: " << (int)(GlobalNetworkProtocolVersion) << endl;
+
+               for( list< UserNetworkEventNotifier* >::iterator it = m_callbacks.begin(); it != m_callbacks.end(); ++it )
+               {
+                  (*it)->AreWeUsingCorrectNetworkVersion( GlobalNetworkProtocolVersion == packet->versionNumber );
+               }
+            }
+         }
+         break;
+      }
+      break;
       case PacketType_Contact:
       {
          switch( packetIn->packetSubType )
@@ -1821,6 +1840,15 @@ void     NetworkLayer::NotifyClientToBeginSendingRequests()
          (*it)->ReadyToStartSendingRequestsToGame();
       }
    }
+}
+
+//------------------------------------------------------------------------
+
+void     NetworkLayer::InitalConnectionCallback()
+{
+   PacketHello hello;
+
+   SerializePacketOut( &hello );
 }
 
 //------------------------------------------------------------------------
