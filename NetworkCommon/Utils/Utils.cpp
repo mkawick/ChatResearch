@@ -478,3 +478,15 @@ string RemoveEnds( std::string s, const char* charsToStrip )
 
    return s;
 }
+
+void  PrintDebugText( const char* text, int extraCr )
+{
+#if defined (VERBOSE)
+
+   cout << text << endl;
+   while( --extraCr >= 0 )
+   {
+      cout << endl;
+   }
+#endif
+}

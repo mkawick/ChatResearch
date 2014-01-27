@@ -14,6 +14,7 @@
 #include "KhaanGame.h"
 #include "GameCallbacks.h"
 #include "../NetworkCommon/Packets/GamePacket.h"
+#include "../NetworkCommon/Stat/StatTrackingConnections.h"
 #include <list>
 using namespace std;
 
@@ -34,7 +35,7 @@ struct TournamentOverview
 
 ////////////////////////////////////////////////////////////////////////////////////////
 
-class DiplodocusGame : public Diplodocus< KhaanGame >
+class DiplodocusGame : public Diplodocus< KhaanGame >, public StatTrackingConnections
 {
 public: 
    typedef Diplodocus< KhaanGame > ChainedType;

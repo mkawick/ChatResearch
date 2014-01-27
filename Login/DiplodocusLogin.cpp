@@ -1,6 +1,8 @@
 // DiplodocusLogin.cpp
 
 #include "DiplodocusLogin.h"
+#include "FruitadensLogin.h"
+
 #include "../NetworkCommon/Utils/TableWrapper.h"
 #include "../NetworkCommon/Utils/Utils.h"
 
@@ -22,16 +24,35 @@
 
 //////////////////////////////////////////////////////////
 
+time_t  ZeroOutMinutes( time_t currentTime )
+{
+   struct tm * now = localtime( &currentTime );
+   now->tm_min = 0;
+   now->tm_sec = 0;
+   return mktime( now );
+}
 
+time_t  ZeroOutHours( time_t currentTime )
+{
+   struct tm * now = localtime( &currentTime );
+   now->tm_hour = 0;
+   now->tm_min = 0;
+   now->tm_sec = 0;
+   return mktime( now );
+}
 
 //////////////////////////////////////////////////////////
 
 DiplodocusLogin:: DiplodocusLogin( const string& serverName, U32 serverId )  : 
+                  StatTrackingConnections(),
                   Queryer(),
                   Diplodocus< KhaanLogin >( serverName, serverId, 0, ServerType_Login ), 
                   m_isInitialized( false ), 
                   m_isInitializing( false ),
-                  m_autoAddProductFromWhichUsersLogin( true )
+                  m_autoAddProductFromWhichUsersLogin( true ),
+                  m_numRelogins( 0 ),
+                  m_numFailedLogins( 0 ),
+                  m_numSuccessfulLogins( 0 )
 {
    SetSleepTime( 30 );
    LogOpen();
@@ -42,6 +63,12 @@ DiplodocusLogin:: DiplodocusLogin( const string& serverName, U32 serverId )  :
    stringCategories.push_back( string( "product" ) );
    stringCategories.push_back( string( "sale" ) );
    m_stringLookup = new StringLookup( QueryType_ProductStringLookup, this, stringCategories );
+
+   time( &m_timestampHourlyStatServerStatisics );
+   m_timestampDailyStatServerStatisics = m_timestampHourlyStatServerStatisics;
+
+   m_timestampHourlyStatServerStatisics = ZeroOutMinutes( m_timestampHourlyStatServerStatisics );
+   m_timestampDailyStatServerStatisics = ZeroOutHours( m_timestampDailyStatServerStatisics );
 }
 
 
@@ -251,12 +278,15 @@ bool     DiplodocusLogin:: LogUserIn( const string& userName, const string& pass
 
             if( connection->SuccessfulLogin( connectionId, true ) == true )
             {
+               m_uniqueUsers.insert( connection->m_userUuid );
                UpdateLastLoggedInTime( connectionId ); // update the user logged in time
             }
+            m_numRelogins ++;
          }
          else
          {
             connection->UpdateConnectionId( connectionId );
+            m_numFailedLogins ++;
           /*  ForceUserLogoutAndBlock( connectionId );*/
             return LoadUserAccount( userName, password, loginKey, gameProductId, connectionId );
          }
@@ -336,9 +366,11 @@ bool     DiplodocusLogin:: HandleLoginResultFromDb( U32 connectionId, PacketDbQu
                                        wasDisconnectedByError);
          if( connection->SuccessfulLogin( connectionId, false ) == true )
          {
+            m_uniqueUsers.insert( connection->m_userUuid );
             UpdateLastLoggedInTime( dbResult->id ); // update the user logged in time
             return true;
          }
+         
       }
    }
 
@@ -468,17 +500,16 @@ void     DiplodocusLogin:: RemoveOldConnections()
    while( it != m_userConnectionMap.end() )
    {
       UserConnectionMapIterator temp = it++;
-      // todo.. restore this code
-      /*if( temp->second.isLoggingOut == false && // do not remove in the middle of logging out
-         temp->second.loggedOutTime )
+      if( temp->second.isLoggingOut == false && // do not remove in the middle of logging out
+         temp->second.loggedOutTime != 0 )
       {
-         const int normalExpireTime = 15; // seconds
+         const int normalExpireTime = 3; // seconds
          if( difftime( testTimer, temp->second.loggedOutTime ) >= normalExpireTime )
          {
             FinalizeLogout( temp->first, false );
             m_userConnectionMap.erase( temp );
          }
-      }*/
+      }
    }
 }
 
@@ -764,7 +795,9 @@ bool        DiplodocusLogin:: CreateUserAccount( U32 connectionId, const string&
    }
 
    CreateAccountResultsAggregator* aggregator = new CreateAccountResultsAggregator( connectionId, lowercase_useremail, password, userName, deviceAccountId, deviceId, languageId, gameProductId ); 
+   LockMutex();
    m_userAccountCreationMap.insert( UserCreateAccountPair( connectionId, aggregator ) );
+   UnlockMutex();
 
    U64 passwordHash = 0;
    ConvertFromString( password, passwordHash );
@@ -1240,6 +1273,11 @@ bool  DiplodocusLogin:: SendLoginStatusToOtherServers( const string& userName,
       itOutputs++;
    }
 
+   if( isLoggedIn )
+   {
+      m_numSuccessfulLogins++;
+   }
+
    return true;
 }
 
@@ -1332,6 +1370,7 @@ bool     DiplodocusLogin:: AddOutputChainData( BasePacket* packet, U32 chainId )
             {
                UpdateUserRecord( aggregator );
                delete aggregator;
+               Threading::MutexLock locker( m_inputChainListMutex );
                m_userAccountCreationMap.erase( createIt );
             }
             return true;
@@ -1732,6 +1771,104 @@ void     DiplodocusLogin:: LoadInitializationData()
    AddQueryToOutput( dbQuery );
 }
 
+
+//-----------------------------------------------------------------------------------------
+
+void     DiplodocusLogin::TrackCountStats( StatTracking stat, float value, int sub_category )
+{
+   StatTrackingConnections::TrackCountStats( m_serverName, m_serverId, stat, value, sub_category );
+}
+
+//-----------------------------------------------------------------------------------------
+//-----------------------------------------------------------------------------------------
+
+//-----------------------------------------------------------------------------------------
+
+void     DiplodocusLogin::RunHourlyStats()
+{
+   if( m_userConnectionMap.size() == 0 )
+      return;
+
+   time_t currentTime;
+   time( &currentTime );
+
+   if( difftime( currentTime, m_timestampHourlyStatServerStatisics ) >= timeoutHourlyStatisics ) 
+   {
+      m_timestampHourlyStatServerStatisics = ZeroOutMinutes( currentTime );
+
+      //--------------------------------
+      float numConnections = static_cast<float>( m_userConnectionMap.size() );
+      float totalNumSeconds = 0;
+
+      UserConnectionMapIterator nextIt = m_userConnectionMap.begin();
+      while( nextIt != m_userConnectionMap.end() )
+      {
+         const ConnectionToUser& user = nextIt->second;
+         nextIt++;
+         time_t loginTime = user.GetLoginTime();
+
+         totalNumSeconds += static_cast<float>( difftime( currentTime, loginTime ) );
+      }
+
+      float averageNumSeconds = totalNumSeconds / numConnections;
+      TrackCountStats( StatTracking_UserAverageTimeOnline, averageNumSeconds, 0 );
+      TrackCountStats( StatTracking_UserTotalTimeOnline, totalNumSeconds, 0 );
+      TrackCountStats( StatTracking_NumUsersOnline, numConnections, 0 );
+
+      // if we decide to track these
+      m_numFailedLogins = 0;
+      m_numRelogins = 0;
+      m_numSuccessfulLogins = 0;
+   }
+}
+
+//---------------------------------------------------------------
+
+void     DiplodocusLogin::RunDailyStats()
+{
+   time_t currentTime;
+   time( &currentTime );
+   if( difftime( currentTime, m_timestampDailyStatServerStatisics ) >= timeoutDailyStatisics ) 
+   {
+      m_timestampDailyStatServerStatisics = ZeroOutHours( currentTime );
+
+      float numUniqueUsers = static_cast< float >( m_uniqueUsers.size() );
+      if( numUniqueUsers == 0 )
+         return;
+
+      ClearOutUniqueUsersNotLoggedIn();
+
+      TrackCountStats( StatTracking_UniquesUsersPerDay, numUniqueUsers, 0 );
+   }
+}
+
+//---------------------------------------------------------------
+
+void     DiplodocusLogin::ClearOutUniqueUsersNotLoggedIn()
+{
+   // clear out
+   set< string >::iterator it = m_uniqueUsers.begin();
+   while( it != m_uniqueUsers.end() )
+   {
+      set< string >::iterator currentIt = it++;
+      UserConnectionMapIterator userIt = m_userConnectionMap.begin();
+      bool found = false;
+      while( userIt != m_userConnectionMap.end() )
+      {
+         const ConnectionToUser& user = userIt->second;
+         userIt++;
+         if( m_uniqueUsers.find( user.m_email ) != m_uniqueUsers.end() )
+         {
+            found = true;
+            break;
+         }
+      }
+      if( found == false )
+      {
+         m_uniqueUsers.erase( currentIt );
+      }
+   }
+}
 //---------------------------------------------------------------
 
 int      DiplodocusLogin:: CallbackFunction()
@@ -1769,6 +1906,11 @@ int      DiplodocusLogin:: CallbackFunction()
    RemoveOldConnections();
 
    UpdatePendingGatewayPackets();
+
+   RunHourlyStats();
+   RunDailyStats();
+
+   StatTrackingConnections::SendStatsToStatServer( m_listOfOutputs, m_serverName, m_serverId, m_serverType );
 
    return 1;
 }

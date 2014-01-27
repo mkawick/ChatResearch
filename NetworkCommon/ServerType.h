@@ -18,8 +18,11 @@ enum  ServerType
    ServerType_Purchase,
    ServerType_LoadBalancer,
    ServerType_Stat,
-   ServerType_Test
+   ServerType_Test,
+   ServerType_Count // << end of list
 };
+
+const char* GetServerTypeName( ServerType );
 
 template < typename type >
 struct Range

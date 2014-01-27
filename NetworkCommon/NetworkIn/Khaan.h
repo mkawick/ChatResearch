@@ -70,6 +70,8 @@ public:
 
    void           SetPort( U16 port ) { m_listeningPort = port; }
    U16            GetPort() const { return m_listeningPort; }
+
+   time_t         GetConnectionTime() const { return m_timeOfConnection; }
 	
 	//-----------------------------------------------
 
@@ -107,6 +109,7 @@ protected:
 	sockaddr_in		m_ipAddress;
    U16            m_listeningPort;
 
+   time_t         m_timeOfConnection;
    bool           m_useLibeventToSend;
 
    deque< BasePacket* > m_packetsOut;

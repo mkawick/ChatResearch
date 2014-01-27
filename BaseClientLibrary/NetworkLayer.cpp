@@ -421,7 +421,7 @@ bool  NetworkLayer::RequestChatChannelHistory( const string& channelUuid, int nu
    history.chatChannelUuid = channelUuid;
    history.numRecords = numRecords;
    history.startingIndex = startingIndex;
-   SerializePacketOut( &history );
+   //SerializePacketOut( &history );
    return true;
 }
 

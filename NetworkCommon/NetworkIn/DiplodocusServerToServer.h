@@ -23,7 +23,7 @@ class DiplodocusServerToServer : public Diplodocus< KhaanServerToServer >
 public: 
    typedef Diplodocus< KhaanServerToServer > ChainedType;
 public:
-   DiplodocusServerToServer( const string& serverName, U32 serverId, U8 gameProductId = 0 );
+   DiplodocusServerToServer( const string& serverName, U32 serverId, U8 gameProductId = 0, ServerType type = ServerType_Chat );
    ~DiplodocusServerToServer();
 
    bool     AddInputChainData( BasePacket* packet, U32 connectionId );

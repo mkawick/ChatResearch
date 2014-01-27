@@ -349,22 +349,22 @@ public:
    string   FindFriend( const string& name ) const;
    string   FindFriendFromUuid( const string& uuid ) const;
 
-   int      GetNumFriends() const { return m_friends.size(); }
+   int      GetNumFriends() const { return static_cast<int>( m_friends.size() ); }
    bool     GetFriend( int index, const BasicUser*& user );
 
-   int      GetNumChannels() const { return m_channels.size(); }
+   int      GetNumChannels() const { return static_cast<int>( m_channels.size() ); }
    bool     GetChannel( int index, ChatChannel& channel );
 
-   int      GetNumStaticAssets() const { return m_staticAssets.size(); }
+   int      GetNumStaticAssets() const { return static_cast<int>( m_staticAssets.size() ); }
    bool     GetStaticAssetInfo( int index, AssetInfoExtended& assetInfo );
 
-   int      GetNumDynamicAssets() const { return m_dynamicAssets.size(); }
+   int      GetNumDynamicAssets() const { return static_cast<int>( m_dynamicAssets.size() ); }
    bool     GetDynamicAssetInfo( int index, AssetInfoExtended& assetInfo );
 
    bool     GetAssetInfo( const string& hash, AssetInfoExtended& asset ) { return GetAsset( hash, asset ); }
    bool     ClearAssetInfo( const string& hash );
 
-   int      GetNumAvailableTournaments() const { return m_availableTournaments.size(); }
+   int      GetNumAvailableTournaments() const { return static_cast<int>( m_availableTournaments.size() ); }
    bool     GetTournamentInfo( int index, TournamentInfo& tournamentInfo );
 
    string   GetLocalUUID() { return m_uuid; }
@@ -534,19 +534,19 @@ public:
    int      GetNumFriends() const { return m_friends.size(); }
    bool     GetFriend( int index, const BasicUser*& user );
 
-   int      GetNumChannels() const { return m_channels.size(); }
+   int      GetNumChannels() const { return static_cast<int>( m_channels.size() ); }
    bool     GetChannel( int index, ChatChannel& channel );
 
-   int      GetNumStaticAssets() const { return m_staticAssets.size(); }
+   int      GetNumStaticAssets() const { return static_cast<int>( m_staticAssets.size() ); }
    bool     GetStaticAssetInfo( int index, AssetInfoExtended& assetInfo );
 
-   int      GetNumDynamicAssets() const { return m_dynamicAssets.size(); }
+   int      GetNumDynamicAssets() const { return static_cast<int>( m_dynamicAssets.size() ); }
    bool     GetDynamicAssetInfo( int index, AssetInfoExtended& assetInfo );
 
    bool     GetAssetInfo( const string& hash, AssetInfoExtended& asset ) { return GetAsset( hash, asset ); }
    bool     ClearAssetInfo( const string& hash );
 
-   int      GetNumAvailableTournaments() const { return m_availableTournaments.size(); }
+   int      GetNumAvailableTournaments() const { return static_cast<int>( m_availableTournaments.size() ); }
    bool     GetTournamentInfo( int index, TournamentInfo& tournamentInfo );
 
    string   GetLocalUUID() { return m_uuid; }

@@ -13,7 +13,7 @@
 #include "../Packets/ServerToServerPacket.h"
 #include "DiplodocusServerToServer.h"
 
-DiplodocusServerToServer::DiplodocusServerToServer( const string& serverName, U32 serverId, U8 gameProductId ) : Diplodocus< KhaanServerToServer >( serverName, serverId, gameProductId, ServerType_Chat ), 
+DiplodocusServerToServer::DiplodocusServerToServer( const string& serverName, U32 serverId, U8 gameProductId, ServerType type ) : Diplodocus< KhaanServerToServer >( serverName, serverId, gameProductId, type ), 
                                     m_jobIdTracker( 32 ) // 32 is a non-zero value useful for test only
 {
    SetConnectionId( ServerToServerConnectionId );
@@ -102,7 +102,9 @@ void  DiplodocusServerToServer::ServerWasIdentified( IChainedInterface* khaan )
    PackageForServerIdentification( m_serverName, m_localIpAddress, m_serverId, m_listeningPort, m_gameProductId, m_isGame, m_isControllerApp, true, m_isGateway, &packet );
    ChainedType* localKhaan = static_cast< ChainedType* >( khaan );
    localKhaan->AddOutputChainData( packet, 0 );
+   LockMutex();
    m_clientsNeedingUpdate.push_back( localKhaan->GetServerId() );
+   UnlockMutex();
 
    // bubble this identifying info up to the next layer.
 
@@ -217,13 +219,14 @@ int   DiplodocusServerToServer::CallbackFunction()
       UnlockMutex();
    }
 
+   LockMutex();
    while( m_clientsNeedingUpdate.size() )
    {
       m_clientsNeedingUpdate.front();
       U32 serverId = m_clientsNeedingUpdate.front();
       m_clientsNeedingUpdate.pop_front();
 
-      LockMutex();
+      
       ChainLinkIteratorType itInputs = m_listOfInputs.begin();
       while( itInputs != m_listOfInputs.end() )
       {
@@ -238,8 +241,8 @@ int   DiplodocusServerToServer::CallbackFunction()
             }
          }
       }
-      UnlockMutex();
    }
+   UnlockMutex();
 
    UpdateAllConnections();
 

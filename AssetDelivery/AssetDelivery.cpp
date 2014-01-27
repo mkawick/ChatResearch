@@ -82,7 +82,7 @@ int main( int argc, const char* argv[] )
    assetServer->SetupListening( listenPortAddress );
    assetServer->SetIniFilePath( assetPath, assetDictionary, assetDynamicDictionary );
 
-   DiplodocusServerToServer* s2s = new DiplodocusServerToServer( serverName, serverId );
+   DiplodocusServerToServer* s2s = new DiplodocusServerToServer( serverName, serverId, 0, ServerType_Asset );
    s2s->SetupListening( listenS2SPort );
    
    //----------------------------------------------------------------

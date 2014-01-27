@@ -264,6 +264,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\NetworkCommon\ServerType.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\NetworkCommon\ServerType.h"
 				>
 			</File>
@@ -444,6 +448,18 @@
 				</File>
 				<File
 					RelativePath="..\NetworkCommon\Daemon\Daemonizer.h"
+					>
+				</File>
+			</Filter>
+			<Filter
+				Name="Stats"
+				>
+				<File
+					RelativePath="..\NetworkCommon\Stat\StatTrackingConnections.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\NetworkCommon\Stat\StatTrackingConnections.h"
 					>
 				</File>
 			</Filter>

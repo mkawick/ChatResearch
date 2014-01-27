@@ -94,11 +94,11 @@ bool        Diplodocus< InputChain, OutputChain >::SetupListeningSocket()
    m_isListeningWorking = true;
 
    cout << " ******************************* " << endl;
-   cout << "New server instance listening " << endl;
-   cout << "Server name: " << m_serverName << endl;
-   cout << "Server id: " << m_serverId << endl;
-   cout << "Server type: " << m_serverType << endl;
-   cout << "Currently listening on port: " << m_listeningPort << endl;
+   cout << " >This server is now listening " << endl;
+   cout << "    name:              " << m_serverName << endl;
+   cout << "    id:                " << m_serverId << endl;
+   cout << "    connection type:   " << GetServerTypeName( m_serverType ) << "  " << m_serverType << endl;
+   cout << "    listening on port: " << m_listeningPort << endl;
    cout << " ******************************* " << endl;
 
 	return true;
@@ -604,27 +604,6 @@ void     Diplodocus< InputChain, OutputChain >::UpdatePendingGatewayPackets()
 template< typename InputChain, typename OutputChain >
 void     Diplodocus< InputChain, OutputChain >::SendServerIdentification()
 {
-   if( m_listOfOutputsNeedingToSendServerId.size() )
-   {
-      LockMutex();
-      ChainLinkIteratorType   itOutputs = m_listOfOutputsNeedingToSendServerId.begin();
-      while( itOutputs != m_listOfOutputsNeedingToSendServerId.end() )
-      {
-         ChainLink& chainedOutput = *itOutputs++;
-         OutputChain* interfacePtr = static_cast<OutputChain*>( chainedOutput.m_interface );
-
-         BasePacket* packet = NULL;
-         PackageForServerIdentification( m_serverName, m_localIpAddress, m_serverId, m_listeningPort, m_gameProductId, m_isGame, m_isControllerApp, true, m_isGateway, &packet );
-         bool  accepted = interfacePtr->AddOutputChainData( packet, m_chainId );
-
-         if( accepted == false )
-         {
-            delete packet;
-         }
-      }
-      m_listOfOutputsNeedingToSendServerId.clear();
-      UnlockMutex();
-   }
 }
 
 //------------------------------------------------------------------------------------------
@@ -635,11 +614,6 @@ void  Diplodocus< InputChain, OutputChain >::OutputConnected( IChainedInterface 
 {
    if( chainedOutput == NULL )
       return;
-
-   LockMutex();
-   ChainType* ptr = static_cast< ChainType* >( chainedOutput );
-   m_listOfOutputsNeedingToSendServerId.push_back( ptr );
-   UnlockMutex();
 }
 
 //------------------------------------------------------------------------------
@@ -665,7 +639,7 @@ void  Diplodocus< InputChain, OutputChain >::NotifyFinishedRemoving( IChainedInt
       m_connectedClients.erase( it );
    }
 
-   int num = m_clientsNeedingUpdate.size();
+   int num = static_cast<int>( m_clientsNeedingUpdate.size() );
    for( int i=0; i<num; i++ )
    {
       if( m_clientsNeedingUpdate[i] == id )
@@ -685,7 +659,7 @@ int      Diplodocus< InputChain, OutputChain >::CommonUpdate()
    if( m_isNetworkingEnabled == false )
       return 1;
 
-   UpdateConsoleWindow( m_timeOfLastTitleUpdate, m_uptime, m_numTotalConnections, m_connectedClients.size(), m_listeningPort, m_serverName );
+   UpdateConsoleWindow( m_timeOfLastTitleUpdate, m_uptime, m_numTotalConnections, static_cast<int>( m_connectedClients.size() ), m_listeningPort, m_serverName );
 
    SendServerIdentification();
 
@@ -761,4 +735,36 @@ bool  SendRawData( const U8* data, int size, int dataType, int maxPacketSize, U3
    return true;
 }
 
-//------------------------------------------------------------------------------------------
+////////////////////////////////////////////////////////////////////////
+
+template <typename return_type, typename type >
+return_type* PrepConnection( const string& remoteIpaddress, U16 remotePort, const string& remoteServerName, type* localServer, ServerType type, bool requiresS2SWrapper )
+{
+   string serverOutputText = localServer->GetServerName();
+   serverOutputText += " to ";
+   if( remoteServerName.size() )
+   {
+      serverOutputText += remoteServerName;
+   }
+   else
+   {
+      serverOutputText += "remote server";
+   }
+   return_type* serverOut = new return_type( serverOutputText.c_str() );
+   serverOut->SetConnectedServerType( type );
+   serverOut->SetServerUniqueId( localServer->GetServerId() );
+
+   serverOut->AddInputChain( localServer );
+
+   bool isGame = localServer->IsGameServer();
+   U32 gameProductId = 0;
+   serverOut->NotifyEndpointOfIdentification( localServer->GetServerName(), localServer->GetIpAddress(), localServer->GetServerId(), localServer->GetPort(), 
+                                             gameProductId, localServer->IsGameServer(), localServer->IsControllerApp(), requiresS2SWrapper, localServer->IsGateway() );
+   cout << "server (" << remoteServerName << "): " << remoteIpaddress << ":" << remotePort << endl;
+   serverOut->Connect( remoteIpaddress.c_str(), remotePort );
+   serverOut->Resume();
+
+   return serverOut;
+}
+
+////////////////////////////////////////////////////////////////////////

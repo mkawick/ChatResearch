@@ -68,6 +68,9 @@ int main( int argc, const char* argv[] )
    string purchasePortString = "7702";
    string purchaseIpAddressString = "localhost";
 
+   string statPortString = "7802";
+   string statIpAddressString = "localhost";
+
    string gamePortString = "21002";
    string gameIpAddressString = "localhost";
 
@@ -91,6 +94,9 @@ int main( int argc, const char* argv[] )
 
    parser.FindValue( "purchase.port", assetPortString );
    parser.FindValue( "purchase.address", assetIpAddressString );
+
+   parser.FindValue( "stat.port", statPortString );
+   parser.FindValue( "stat.address", statIpAddressString );
    
    parser.FindValue( "game.port", gamePortString );
    parser.FindValue( "game.address", gameIpAddressString );
@@ -110,7 +116,7 @@ int main( int argc, const char* argv[] )
    parser.FindValue( "db.schema", dbSchema );
 
 
-   int listenPort = 7600, dbPortAddress = 3306, chatPort = 7402, contactPort=7502, assetPort=7302, purchasePort=7702;
+   int listenPort = 7600, dbPortAddress = 3306, chatPort = 7402, contactPort=7502, assetPort=7302, purchasePort=7702, statPort = 7802 ;
    int gamePort = 23996;
    bool autoAddLoginProduct = true;
 
@@ -122,6 +128,8 @@ int main( int argc, const char* argv[] )
        chatPort = boost::lexical_cast<int>( chatPortString );
        contactPort = boost::lexical_cast<int>( contactPortString );
        assetPort = boost::lexical_cast<int>( assetPortString );
+
+       statPort = boost::lexical_cast<int>( statPortString );
 
        gamePort = boost::lexical_cast<int>( gamePortString );
 
@@ -163,60 +171,25 @@ int main( int argc, const char* argv[] )
    cout << "------------------------------------------------------------------" << endl << endl << endl;
 
    DiplodocusLogin* loginServer = new DiplodocusLogin( serverName, serverId );
+   loginServer->SetAsControllerApp( false );
+   loginServer->SetAsGateway( false );
+   loginServer->SetAsGame( false );
+
    loginServer->AddOutputChain( delta );
    loginServer->SetupListening( listenPort );
    loginServer->AutoAddTheProductFromWhichYouLogin( autoAddLoginProduct );
    
    //----------------------------------
 
-   FruitadensLogin chatOut( "login to chat" );
-   chatOut.SetConnectedServerType( ServerType_Chat );
-   chatOut.SetServerUniqueId( serverId );
-   loginServer->AddOutputChain( &chatOut );
-
-   SendServerNotification( serverName, listenAddressString, serverId, listenPort, &chatOut );
-   chatOut.Connect( chatIpAddressString.c_str(), chatPort );
-   chatOut.Resume();
-   
-
-   FruitadensLogin contactOut( "login to contact" );
-   contactOut.SetConnectedServerType( ServerType_Contact );
-   contactOut.SetServerUniqueId( serverId );
-   loginServer->AddOutputChain( &contactOut );
-   SendServerNotification( serverName, listenAddressString, serverId, listenPort, &contactOut );
-   contactOut.Connect( contactIpAddressString.c_str(), contactPort );
-   contactOut.Resume();
-   
-
-   FruitadensLogin assetOut( "login to asset" );
-   assetOut.SetConnectedServerType( ServerType_Asset );
-   assetOut.SetServerUniqueId( serverId );
-   loginServer->AddOutputChain( &assetOut );
-   SendServerNotification( serverName, listenAddressString, serverId, listenPort, &assetOut );
-   assetOut.Connect( assetIpAddressString.c_str(), assetPort );
-   assetOut.Resume();
-   
-
-   FruitadensLogin purchaseOut( "login to purchase" );
-   purchaseOut.SetConnectedServerType( ServerType_Purchase );
-   purchaseOut.SetServerUniqueId( serverId );
-   loginServer->AddOutputChain( &purchaseOut );
-   SendServerNotification( serverName, listenAddressString, serverId, listenPort, &purchaseOut );
-   purchaseOut.Connect( purchaseIpAddressString.c_str(), purchasePort );
-   purchaseOut.Resume();
+   PrepConnection< FruitadensLogin, DiplodocusLogin > ( chatIpAddressString, chatPort, "chat", loginServer, ServerType_Chat, true );
+   PrepConnection< FruitadensLogin, DiplodocusLogin > ( contactIpAddressString, contactPort, "contact", loginServer, ServerType_Contact, true );
+   PrepConnection< FruitadensLogin, DiplodocusLogin > ( assetIpAddressString, assetPort, "asset", loginServer, ServerType_Asset, true );
+   PrepConnection< FruitadensLogin, DiplodocusLogin > ( purchaseIpAddressString, purchasePort, "purchase", loginServer, ServerType_Purchase, true );
+   PrepConnection< FruitadensLogin, DiplodocusLogin > ( statIpAddressString, statPort, "stat", loginServer, ServerType_Stat, true );
    
 
    // various games. We will need to deal with allowing a dynamic number of games in future
    FruitadensLogin* game1 = PrepFruitadensLogin( gameIpAddressString, gamePort, serverId, loginServer, serverName, listenAddressString, listenPort, "Game1" );
-   //FruitadensLogin* game2 = PrepFruitadensLogin( "localhost", 23996, serverId, loginServer, "MFM" );
-  /* FruitadensLogin* game3 = PrepFruitadensLogin( "localhost", 24602, serverId, loginServer );
-   FruitadensLogin* game4 = PrepFruitadensLogin( "localhost", 24604, serverId, loginServer );*/
-
-   //SendServerNotification( serverName, listenAddressString, serverId, listenPort, game1 );// serverName, , serverId, , &chatOut
-   //SendServerNotification( serverName, listenAddressString, serverId, listenPort, game2 );
-   /*SendServerNotification( serverName, serverId, game2 );
-   SendServerNotification( serverName, serverId, game3 );
-   SendServerNotification( serverName, serverId, game4 );*/
 
    loginServer->Init();
    loginServer->Resume();

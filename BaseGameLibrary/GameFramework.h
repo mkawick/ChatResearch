@@ -6,6 +6,7 @@ using namespace std;
 
 #include "../NetworkCommon/DataTypes.h"
 #include "../NetworkCommon/Packets/BasePacket.h"
+#include "../NetworkCommon/Packets/StatPacket.h"
 
 #include "GameCallbacks.h"
 
@@ -48,6 +49,8 @@ public:
       // DO NOT INVOKE THESE AFTER INVOKING THE RUN FUNCTION... they will have no effect
    void  SetupDefaultDatabaseConnection( const string& serverAddress, U16 port, const string& username,const string& password, const string& dbSchemaName );
    void  SetupDefaultListeningPort( U16 port );
+
+   void  SetupDefaultStatConnection( const string& address, U16 port );
    void  SetupDefaultChatConnection( const string& address, U16 port );
    void  SetupDefaultS2S( const string& address, U16 port );
    void  SetupConnectionToAnotherServer( const string& address, const string& serverName, U16 port, ServerType serverType, PacketType packetType );
@@ -71,6 +74,10 @@ public:
    bool     SendToAnotherServer( BasePacket* );// based on packet type... see SetupConnectionToAnotherServer
    bool     InformClientWhoThisServerIs( U32 connectionId );
    bool     SendPacketToGateway( BasePacket* packet, U32 connectionId );
+
+   void     SendStat( const string& statName, U16 integerIdentifier, float value, PacketStat::StatType type );
+
+
    DiplodocusGame*   GetGame() { return m_connectionManager; }
 
    //----------------------------------------------
@@ -98,6 +105,9 @@ private:
 
    // default connection values
    U16            m_listenPort;
+
+   U16            m_statServerPort;
+   string         m_statServerAddress;
 
    U16            m_chatServerPort;
    string         m_chatServerAddress;

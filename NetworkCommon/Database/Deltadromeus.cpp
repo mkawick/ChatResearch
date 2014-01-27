@@ -98,7 +98,7 @@ void  DbJobBase::AddEscapedString( DbHandle* connection, const string& escapeMe 
 
    char escapedVersion[512];
 
-   mysql_real_escape_string( connection, escapedVersion, escapeMe.c_str(), escapeMe.size() );
+   mysql_real_escape_string( connection, escapedVersion, escapeMe.c_str(), static_cast< U32 >( escapeMe.size() ) );
    if( strlen( escapedVersion ) == 0 )
       return;
 
@@ -328,7 +328,7 @@ bool     Deltadromeus::GetResults( JobId id, ResultSet& results )
 
 bool     Deltadromeus::HasResults( JobId id ) const 
 { 
-   int num = m_jobsComplete.size();
+   int num = static_cast<int>( m_jobsComplete.size() );
    for( int i=0; i<num; i++ )
    {
       const DbJobBase* job = m_jobsComplete[i];
@@ -344,7 +344,7 @@ bool     Deltadromeus::HasResults( JobId id ) const
 
 bool     Deltadromeus::IsComplete( JobId id ) const
 {
-   int num = m_jobsComplete.size();
+   int num = static_cast<int>( m_jobsComplete.size() );
    for( int i=0; i<num; i++ )
    {
       const DbJobBase* job = m_jobsComplete[i];
@@ -450,15 +450,13 @@ void     Deltadromeus::Connect()
    output += m_dbName;
    output += " using  user=";
    output += m_username;
- /*  output += " password=";
-   output += m_password;*/
 
    if( m_DbConnection )    // If instance didn't initialize say so and exit with fault.
    {
       m_isConnected = true;
       m_needsReconnection = false;
       cout << "Successful" << output << endl;
-      LogMessage(LOG_PRIO_ERR, "Successful%s\n", output.c_str());
+      //LogMessage(LOG_PRIO_ERR, "Successful%s\n", output.c_str());
 
       //zeroMeansSuccess = mysql_set_character_set( m_DbConnection, "utf8" );
 

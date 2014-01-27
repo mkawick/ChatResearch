@@ -1,6 +1,8 @@
 #include "DiplodocusGame.h"
 #include "KhaanGame.h"
 
+#include "../NetworkCommon/NetworkOut/Fruitadens.h"
+
 #include "../NetworkCommon/Packets/ServerToServerPacket.h"
 #include "../NetworkCommon/Packets/GamePacket.h"
 #include "../NetworkCommon/Packets/LoginPacket.h"
@@ -15,6 +17,7 @@ using namespace std;
 ///////////////////////////////////////////////////////////////////
 
 DiplodocusGame::DiplodocusGame( const string& serverName, U32 serverId, U8 gameProductId ): Diplodocus< KhaanGame >( serverName, serverId, gameProductId, ServerType_GameInstance ),
+                  StatTrackingConnections(),
                   m_callbacks( NULL )
 {
 }
@@ -334,6 +337,8 @@ int   DiplodocusGame::CallbackFunction()
    }
    UpdateAllConnections();
    UpdateAllTimers();
+
+   StatTrackingConnections::SendStatsToStatServer( m_listOfOutputs, m_serverName, m_serverId, m_serverType );
 
    UpdateConsoleWindow( m_timeOfLastTitleUpdate, m_uptime, m_numTotalConnections, m_connectedClients.size(), m_listeningPort, m_serverName );
 

@@ -1,4 +1,6 @@
 #include "../Platform.h"
+#include <iostream>
+using namespace std;
 
 #if PLATFORM == PLATFORM_WINDOWS
 #include <winsock2.h>
@@ -114,6 +116,34 @@ int  FruitadensServerToServer::ProcessOutputFunction()
    }
 
    return 0;
+}
+
+//-----------------------------------------------------------------------------------------
+
+FruitadensServerToServer*     PrepS2SOutwardConnection( const string& ipaddress, U16 port, U32 serverId, const string& serverName, ServerType serverType, 
+                                                       LinkedInterface* diplodocus, const string& localAddress, U16 localPort, U32 gameProductId )
+{
+   string connectionText = "fruity to ";
+   if( serverName.size() )
+   {
+      connectionText += serverName;
+   }
+   else
+   {
+      connectionText += "stats";
+   }
+   FruitadensServerToServer* remoteServer = new FruitadensServerToServer( connectionText.c_str() );
+   remoteServer->SetConnectedServerType( serverType );
+   remoteServer->SetServerUniqueId( serverId );
+
+   remoteServer->AddInputChain( diplodocus );
+
+   remoteServer->NotifyEndpointOfIdentification( serverName, localAddress, serverId, localPort, gameProductId, false, false, true, true );
+   cout << "Remote server: " << ipaddress << ":" << port << endl;
+   remoteServer->Connect( ipaddress.c_str(), port );
+   remoteServer->Resume();
+
+   return remoteServer;
 }
 
 //-----------------------------------------------------------------------------------------

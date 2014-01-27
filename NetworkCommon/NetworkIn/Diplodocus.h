@@ -73,6 +73,7 @@ public:
 
    //------------------------------------------------------------
    void           SetAsControllerApp( bool isController = true ) { m_isControllerApp = isController ; }
+   bool           IsControllerApp() const { return m_isControllerApp; }
    void           SetAsGame( bool isGame = true ) { m_isGame = isGame; }
    bool           IsGameServer() const { return m_isGame; }
    void           SetAsGateway( bool isGateway = true ) { m_isGateway = isGateway; }
@@ -87,6 +88,7 @@ public:
    U16            GetPort() const { return m_listeningPort; }
    bool           RequestUpdate( const string& connectionUuid ); // todo, update this
    void           SetSendHelloPacketOnLogin( bool value ) { m_sendHelloPacket = value; }
+   //void           SendStatsToStatServer();
 
    static bool    Run(); // None of the networking starts until this is invoked. This is a blocking call. Be sure to keep a thread running to call the exit.
    static bool    ExitApp();
@@ -134,7 +136,6 @@ protected:
 
    list< DelayedPacket >   m_delayedGatewayPackets;
 
-   BaseOutputContainer     m_listOfOutputsNeedingToSendServerId;
    bool                    m_isListeningWorking;
    bool                    m_hasSentServerIdentification;
    bool                    m_isControllerApp;

@@ -66,7 +66,7 @@ namespace Database
       bool        HasStarted() const { return m_hasStarted; }
       bool        IsComplete() const { return m_isComplete; }
       bool        HasResultSet() const { return m_hasResultSet; }
-      int         GetNumRows() const { return m_results.size(); }
+      int         GetNumRows() const { return static_cast<int>( m_results.size() ); }
 
       Database::ResultSet& 
                   GetResults() { return m_results; }

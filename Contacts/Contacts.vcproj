@@ -237,6 +237,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\NetworkCommon\ServerType.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\NetworkCommon\ServerType.h"
 				>
 			</File>

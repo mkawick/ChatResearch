@@ -1,3 +1,3 @@
-start ./debug/GatewayServer.exe server.name=Gateway1 listen.port=9600 chat.address=127.0.0.1 chat.port=7400 login.port=7600 login.address=localhost asset.address=localhost asset.port=7300
+start ./debug/GatewayServer.exe listen.port=9600 chat.address=localhost chat.port=7400 asset.port=7300 print.packets=true login.port=7600 games=[localhost:21000:summon_war,192.168.1.1:21100:MFM]
 
 exit

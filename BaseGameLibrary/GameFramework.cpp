@@ -43,6 +43,9 @@ GameFramework::GameFramework( const char* name, const char* shortName, U8 gamePr
    m_chatServerPort = 7402;
    m_chatServerAddress = "localhost";
 
+   m_statServerPort = 7802;
+   m_statServerAddress = "localhost";
+
    m_listenForS2SPort = 21002;
    m_listenForS2SAddress = "localHost";
 
@@ -82,6 +85,14 @@ void  GameFramework::SetupDefaultDatabaseConnection( const string& serverAddress
 void  GameFramework::SetupDefaultListeningPort( U16 port )
 {
    m_listenPort = port;
+}
+
+//-----------------------------------------------------
+
+void  GameFramework::SetupDefaultStatConnection( const string& address, U16 port )
+{
+   m_statServerPort = port;
+   m_statServerAddress = address;
 }
 
 //-----------------------------------------------------
@@ -134,15 +145,17 @@ void  GameFramework::AddPacketTypeToServer( const string& serverName, PacketType
 
 void  GameFramework::UseCommandlineOverrides( int argc, const char* argv[] )
 {
-   string gatewayListenPort;
-   string chatPort;
-   string listenForS2SPort;
-   string dbPort;
+   string   gatewayListenPort;
+   string   statPort;
+   string   chatPort;
+   string   listenForS2SPort;
+   string   dbPort;
 
 
    try // these really can't throw, but to be consistent
    {
       gatewayListenPort = boost::lexical_cast<string>( m_listenPort );
+      statPort = boost::lexical_cast<string>( m_statServerPort );
       chatPort = boost::lexical_cast<string>( m_chatServerPort );
       listenForS2SPort = boost::lexical_cast<string>( m_listenForS2SPort );
       dbPort = boost::lexical_cast<string>( m_dbPort );
@@ -160,6 +173,9 @@ void  GameFramework::UseCommandlineOverrides( int argc, const char* argv[] )
    parser.FindValue( "listen.port", gatewayListenPort );
    parser.FindValue( "listen.address", m_serverAddress );   
 
+   parser.FindValue( "stat.port", statPort );
+   parser.FindValue( "stat.address", m_statServerAddress );
+
    parser.FindValue( "chat.port", chatPort );
    parser.FindValue( "chat.address", m_chatServerAddress );
 
@@ -175,6 +191,7 @@ void  GameFramework::UseCommandlineOverrides( int argc, const char* argv[] )
    try 
    {
       m_listenPort = boost::lexical_cast<int>( gatewayListenPort );
+      m_statServerPort = boost::lexical_cast<int>( statPort );
       m_chatServerPort = boost::lexical_cast<int>( chatPort );
       m_listenForS2SPort = boost::lexical_cast<int>( listenForS2SPort );
       
@@ -274,6 +291,13 @@ bool  GameFramework::SendPacketToGateway( BasePacket* packet, U32 connectionId )
 
 //-----------------------------------------------------
 
+void  GameFramework::SendStat( const string& statName, U16 integerIdentifier, float value, PacketStat::StatType type )
+{
+   GetGame()->TrackStats( m_serverName, m_serverId, statName, integerIdentifier, value, type );
+}
+
+//-----------------------------------------------------
+
 void     GameFramework::AddTimer( U32 timerId, U32 callbackTimeMs ) // timers must be unique
 {
    map< U32, TimerInfo >:: iterator it = m_timers.find( timerId );
@@ -320,11 +344,12 @@ bool  GameFramework::Run()
    //----------------------------------------------------------------
    m_connectionManager = new DiplodocusGame( GetServerName(), GetServerId(), GetGameProductId() );
    m_connectionManager->SetDatabaseIdentification( m_gameUuid );
+   m_connectionManager->SetAsGateway( false );
+   m_connectionManager->SetAsControllerApp( false );
+   m_connectionManager->SetAsGame();
 
    m_connectionManager->AddOutputChain( delta );
-
-   m_connectionManager->SetupListening( m_listenPort );
-   m_connectionManager->SetAsGame();
+   m_connectionManager->SetupListening( m_listenPort );   
    m_connectionManager->RegisterCallbacks( m_callbacksObject );
 
    // copy all timers
@@ -337,25 +362,31 @@ bool  GameFramework::Run()
 
    m_timers.clear();
 
-   string nameOfChatServerConnection = GetServerName();
-   nameOfChatServerConnection += " to chat";
-   m_chatServer = new FruitadensServerToServer( nameOfChatServerConnection.c_str() );
+   /*string nameOfChatServerConnection = GetServerName();
+   nameOfChatServerConnection += " to chat";*/
+   
+      /*new FruitadensServerToServer( nameOfChatServerConnection.c_str() );
    m_chatServer->SetConnectedServerType( ServerType_Chat );
    m_chatServer->SetServerId( GetServerId() );
    m_chatServer->SetGameProductId( GetGameProductId() );
 
+   m_chatServer->NotifyEndpointOfIdentification( GetServerName(), "localhost", GetServerId(), m_listenPort, GetGameProductId(), true, false, false, false );
    m_chatServer->Connect( m_chatServerAddress.c_str(), m_chatServerPort );
    m_chatServer->Resume();
-   m_chatServer->NotifyEndpointOfIdentification( GetServerName(), "localhost", GetServerId(), m_listenPort, GetGameProductId(), true, false, false, false );
-   m_chatServer->AddToOutwardFilters( PacketType_Chat );
+   m_chatServer->AddToOutwardFilters( PacketType_Chat );*/
 
-   DiplodocusServerToServer* s2s = new DiplodocusServerToServer( GetServerName(), GetServerId(), GetGameProductId() );
+   DiplodocusServerToServer* s2s = new DiplodocusServerToServer( GetServerName(), GetServerId(), GetGameProductId(), ServerType_GameInstance );
    s2s->SetAsGame();
    s2s->SetupListening( m_listenForS2SPort );
 
+   FruitadensServerToServer* fS2S = PrepS2SOutwardConnection( m_statServerAddress, m_statServerPort, GetServerId(), "stat server", ServerType_Stat, 
+                                    m_connectionManager, m_connectionManager->GetIpAddress(), m_connectionManager->GetPort(), GetGameProductId() );
+
+   m_chatServer = PrepConnection< FruitadensServerToServer, DiplodocusGame > ( m_chatServerAddress, m_chatServerPort, "chat", m_connectionManager, ServerType_Chat, true );
+
    //----------------------------------------------------------------
    s2s->AddOutputChain( m_connectionManager );
-   m_connectionManager->AddOutputChain( m_chatServer );
+   //m_connectionManager->AddOutputChain( m_chatServer );
 
    SetupS2SConnections( m_serverAddress, 0 );
 

@@ -32,6 +32,8 @@ struct ConnectionToUser
    void     ClearLoggingOutStatus() { loggedOutTime = 0; }
    bool     CanContinueLogginIn() const { return isActive; }
 
+   time_t   GetLoginTime() const { return m_loginTime; }
+
    //------------------------------------------------
 
    void     LoginResult( PacketDbQueryResult* dbResult );
@@ -89,6 +91,7 @@ struct ConnectionToUser
    U8                      gameProductId;
    U32                     connectionId;
    
+   time_t                  m_loginTime;
    time_t                  loggedOutTime;
    bool                    isLoggingOut;
 

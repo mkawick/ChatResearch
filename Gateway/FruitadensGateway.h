@@ -4,6 +4,7 @@
 
 #include "GatewayCommon.h"
 
+class DiplodocusGateway;
 //-----------------------------------------------------------------------------
 
 class FruitadensGateway : public FruitadensServer
@@ -19,6 +20,9 @@ private:
    void     PostProcessInputPackets( int bytesRead );
 
    int      ProcessInputFunction();
+   void     FindGateway();
+
+   DiplodocusGateway* m_gateway;
 };
 
 //-----------------------------------------------------------------------------

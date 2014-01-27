@@ -172,3 +172,5 @@ bool  ParseListOfItems( std::vector< std::string >& listOfStuff, std::string tex
 std::string  RemoveEnds( std::string s, const char* charsToStrip = "\"\'" );
 
 const std::string  ConvertStringToLower( const std::string& str );
+
+void  PrintDebugText( const char* text, int extraCr = 0 );

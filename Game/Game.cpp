@@ -114,7 +114,7 @@ int main(int argc, const char* argv[])
    chatControl.Resume();
    chatControl.NotifyEndpointOfIdentification( serverName, listenAddressString, static_cast< U32 >( serverUniqueHashValue ), listenPort, GameProductId_SUMMONWAR, true, false, true, false );
 
-   DiplodocusServerToServer* s2s = new DiplodocusServerToServer( serverName, serverId );
+   DiplodocusServerToServer* s2s = new DiplodocusServerToServer( serverName, serverId, 0, ServerType_GameInstance );
    s2s->SetAsGame();
    s2s->SetupListening( listenS2SPort );
 

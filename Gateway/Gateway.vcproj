@@ -190,7 +190,7 @@
 				>
 			</File>
 			<File
-				RelativePath=".\KhaanConnector.cpp"
+				RelativePath=".\KhaanGateway.cpp"
 				>
 			</File>
 		</Filter>
@@ -212,7 +212,7 @@
 				>
 			</File>
 			<File
-				RelativePath=".\KhaanConnector.h"
+				RelativePath=".\KhaanGateway.h"
 				>
 			</File>
 		</Filter>
@@ -245,6 +245,10 @@
 			</File>
 			<File
 				RelativePath="..\NetworkCommon\ServerConstants.h"
+				>
+			</File>
+			<File
+				RelativePath="..\NetworkCommon\ServerType.cpp"
 				>
 			</File>
 			<File
@@ -372,6 +376,18 @@
 				</File>
 				<File
 					RelativePath="..\NetworkCommon\Logging\server_log.h"
+					>
+				</File>
+			</Filter>
+			<Filter
+				Name="Stats"
+				>
+				<File
+					RelativePath="..\NetworkCommon\Stat\StatTrackingConnections.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\NetworkCommon\Stat\StatTrackingConnections.h"
 					>
 				</File>
 			</Filter>

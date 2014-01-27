@@ -69,43 +69,6 @@ Fruitadens::~Fruitadens()
 }
 
 //-----------------------------------------------------------------------------
-/*
-void  Fruitadens :: SetupServerNotification( const string& serverName, const string& serverAddress, U32 serverId, U16 serverPort, U8 gameProductId, bool isGameServer, bool isController, bool requiresWrapper, bool isGateway )
-{
-   m_serverNotificationInfo.serverName = serverName;
-   m_serverNotificationInfo.serverAddress = serverAddress;
-   m_serverNotificationInfo.serverId = serverId;
-   m_serverNotificationInfo.serverPort = serverPort;
-   m_serverNotificationInfo.gameProductId = gameProductId;
-   m_serverNotificationInfo.isController = isController;
-   m_serverNotificationInfo.isGameServer = isGameServer;
-   m_serverNotificationInfo.requiresWrapper = requiresWrapper;
-   m_serverNotificationInfo.isGateway = isGateway;
-}*/
-
-//-----------------------------------------------------------------------------
-
-//const string& serverName, const string& serverAddress, U32 serverId, U16 serverPort, bool isGameServer, bool isController, bool requiresWrapper )
-/*void  Fruitadens :: NotifyEndpointOfIdentification()
-{
-   if( m_serverNotificationInfo.serverName.size() && 
-      m_serverNotificationInfo.serverAddress.size() )
-   {
-      BasePacket* packet = NULL;
-      PackageForServerIdentification( m_serverNotificationInfo.serverName, 
-                                      m_serverNotificationInfo.serverAddress, 
-                                      m_serverNotificationInfo.serverId, 
-                                      m_serverNotificationInfo.serverPort, 
-                                      m_serverNotificationInfo.gameProductId, 
-                                      m_serverNotificationInfo.isGameServer, 
-                                      m_serverNotificationInfo.isController, 
-                                      m_serverNotificationInfo.requiresWrapper, 
-                                      m_serverNotificationInfo.isGateway, &packet );
-      AddOutputChainData( packet, 0 );
-   }
-}*/
-
-//-----------------------------------------------------------------------------
 
 bool        Fruitadens :: AddOutputChainData( BasePacket* packet, U32 filingData )
 {
@@ -258,8 +221,6 @@ void  Fruitadens :: AttemptConnection()
    }
 
    m_isConnected = true;
-
-   //NotifyEndpointOfIdentification();
 
    InitalConnectionCallback();
 }
@@ -602,7 +563,11 @@ bool     FruitadensServer::PackageLocalServerIdentificationToSend()
                                    m_localIsController, 
                                    m_localRequiresWrapper, 
                                    m_localIsGateway, &packet );
-   AddOutputChainData( packet, 0 );
+   if( AddOutputChainData( packet, 0 ) == false )
+   {
+      PacketFactory factory;
+      factory.CleanupPacket( packet );
+   }
 
    return true;
 }

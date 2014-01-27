@@ -1,5 +1,5 @@
-// KhaanConnector.cpp
-#include "KhaanConnector.h"
+// KhaanGateway.cpp
+#include "KhaanGateway.h"
 #include "DiplodocusGateway.h"
 
 #include "../NetworkCommon/Packets/LoginPacket.h"
@@ -7,11 +7,12 @@
 
 //-----------------------------------------------------------------------------------------
 
-KhaanConnector::KhaanConnector( int id, bufferevent* be ): 
+KhaanGateway::KhaanGateway( int id, bufferevent* be ): 
       Khaan( id, be ), 
       m_numPacketsReceivedBeforeAuth( 0 ),
       m_authorizedConnection( false ),
       m_denyAllFutureData( false ),
+      m_logoutPacketSent( false ),
       m_adminLevel( 0 ),
       m_gateway( NULL )
 {
@@ -20,39 +21,45 @@ KhaanConnector::KhaanConnector( int id, bufferevent* be ):
 
 //-----------------------------------------------------------------------------------------
 
-KhaanConnector::~KhaanConnector()
+KhaanGateway::~KhaanGateway()
 {
 }
 
 //-----------------------------------------------------------------------------------------
 
-void     KhaanConnector::AuthorizeConnection() 
+void     KhaanGateway::AuthorizeConnection() 
 { 
    m_authorizedConnection = true; 
-   m_gateway->TrackStats( DiplodocusGateway::StatTracking_UserBlocked, 0, static_cast< float >( m_connectionId ) );
+   m_gateway->TrackCountStats( StatTrackingConnections::StatTracking_UserLoginSuccess, 1, 0 );
 }
 
 //-----------------------------------------------------------------------------------------
 
-void     KhaanConnector::DenyAllFutureData() 
+void     KhaanGateway::DenyAllFutureData() 
 { 
    m_denyAllFutureData = true; 
-   m_gateway->TrackStats( DiplodocusGateway::StatTracking_UserBlocked, 0, static_cast< float >( m_connectionId ) );
+   m_gateway->TrackCountStats( StatTrackingConnections::StatTracking_UserBlocked, 1, 0 );
 }
 
 //-----------------------------------------------------------------------------------------
 
-void  KhaanConnector::PreCleanup()
+void  KhaanGateway::PreCleanup()
 {
    if( m_gateway )
    {
       m_gateway->InputRemovalInProgress( this );
+      if( m_authorizedConnection && 
+          m_denyAllFutureData == false &&
+          m_logoutPacketSent == false )
+      {
+         m_gateway->TrackCountStats( StatTrackingConnections::StatTracking_UsersLostConnection, 1, 0 );
+      }
    }
 }
 
 //-----------------------------------------------------------------------------------------
 
-bool  KhaanConnector::IsPacketSafe( unsigned char* data, int& offset)
+bool  KhaanGateway::IsPacketSafe( unsigned char* data, int& offset)
 {
    PacketFactory parser;
    // before we parse, which is potentially dangerous, we will do a quick check
@@ -88,7 +95,7 @@ bool  KhaanConnector::IsPacketSafe( unsigned char* data, int& offset)
 
 //-----------------------------------------------------------------------------------------
 
-bool  KhaanConnector::IsHandshaking( const BasePacket* packetIn )
+bool  KhaanGateway::IsHandshaking( const BasePacket* packetIn )
 {
    if( packetIn->packetType == PacketType_Base && 
        packetIn->packetSubType == BasePacket::BasePacket_Hello )
@@ -97,7 +104,7 @@ bool  KhaanConnector::IsHandshaking( const BasePacket* packetIn )
 
       if( packetIn->versionNumber != GlobalNetworkProtocolVersion )
       {
-         m_gateway->TrackStats( DiplodocusGateway::StatTracking_BadPacketVersion, packetIn->versionNumber, 0 );
+         m_gateway->TrackCountStats( StatTrackingConnections::StatTracking_BadPacketVersion, 1, packetIn->versionNumber );
       }
 
       // we are only sending version numbers at this point.
@@ -110,7 +117,7 @@ bool  KhaanConnector::IsHandshaking( const BasePacket* packetIn )
 
 //-----------------------------------------------------------------------------------------
 
-bool	KhaanConnector::OnDataReceived( unsigned char* data, int length )
+bool	KhaanGateway::OnDataReceived( unsigned char* data, int length )
 {
    if( m_denyAllFutureData == true )
    {
@@ -156,7 +163,7 @@ bool	KhaanConnector::OnDataReceived( unsigned char* data, int length )
       }
       catch( ... )
       {
-         Log( "parsing in KhaanConnector threw an exception" );
+         Log( "parsing in KhaanGateway threw an exception" );
          DenyAllFutureData ();
          break;
       }
@@ -200,7 +207,7 @@ bool	KhaanConnector::OnDataReceived( unsigned char* data, int length )
 
 //-----------------------------------------------------------------------------------------
 
-bool  KhaanConnector::IsWhiteListedIn( const BasePacket* packet ) const
+bool  KhaanGateway::IsWhiteListedIn( const BasePacket* packet ) const
 {
    switch( packet->packetType )
    {
@@ -249,12 +256,12 @@ bool  KhaanConnector::IsWhiteListedIn( const BasePacket* packet ) const
 
 //-----------------------------------------------------------------------------------------
 
-bool  KhaanConnector::TrackInwardPacketType( const BasePacket* packet )
+bool  KhaanGateway::TrackInwardPacketType( const BasePacket* packet )
 {
    switch( packet->packetType )
    {
       case PacketType_Gameplay:
-         m_gateway->TrackStats( DiplodocusGateway::StatTracking_GamePacketsSentToGame, 1, static_cast< float >( m_connectionId ) );
+         //m_gateway->TrackCountStats( StatTrackingConnections::StatTracking_GamePacketsSentToGame, 1, packet->gameProductId );
       return true;
    }
    return false;
@@ -262,12 +269,21 @@ bool  KhaanConnector::TrackInwardPacketType( const BasePacket* packet )
 
 //-----------------------------------------------------------------------------------------
 
-bool  KhaanConnector::TrackOutwardPacketType( const BasePacket* packet )
+bool  KhaanGateway::TrackOutwardPacketType( const BasePacket* packet )
 {
    switch( packet->packetType )
    {
+      case PacketType_Login:
+      {
+         if( packet->packetSubType == PacketLogin::LoginType_Logout )
+         {
+            m_logoutPacketSent = true;
+         }
+      }
+      break;
       case PacketType_Gameplay:
-         m_gateway->TrackStats( DiplodocusGateway::StatTracking_GamePacketsSentToClient, 1, static_cast< float >( m_connectionId ) );
+         //m_gateway->TrackCountStats( StatTrackingConnections::StatTracking_GamePacketsSentToClient, 1, packet->gameProductId );
+         //m_gateway->TrackStats( const string& serverName, int ServerId, const string& statName, U16 stat, float value, PacketStat::StatType type )
       return true;
    }
    return false;
@@ -275,7 +291,7 @@ bool  KhaanConnector::TrackOutwardPacketType( const BasePacket* packet )
 
 //-----------------------------------------------------------------------------------------
 
-bool  KhaanConnector::HasPermission( const BasePacket* packet ) const
+bool  KhaanGateway::HasPermission( const BasePacket* packet ) const
 {
    if( m_adminLevel > 0 )
    {

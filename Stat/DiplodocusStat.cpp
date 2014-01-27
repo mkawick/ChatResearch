@@ -22,9 +22,18 @@ using namespace std;
 ///////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////
 
+time_t  ZeroOutMinutes( time_t currentTime )
+{
+   struct tm * now = localtime( &currentTime );
+   now->tm_min = 0;
+   now->tm_sec = 0;
+   return mktime( now );
+}
+
 DiplodocusStat::DiplodocusStat( const string& serverName, U32 serverId ): Diplodocus< KhaanStat >( serverName, serverId, 0,  ServerType_Stat )
 {
    time( &m_lastDbWriteTimeStamp );
+   m_lastDbWriteTimeStamp = ZeroOutMinutes( m_lastDbWriteTimeStamp );
    SetSleepTime( 100 );
 }
 
@@ -122,7 +131,7 @@ void     DiplodocusStat::PeriodicWriteToDB()
 
    if( difftime( currentTime, m_lastDbWriteTimeStamp ) >= timeoutDBWriteStatisics ) 
    {
-      m_lastDbWriteTimeStamp = currentTime;
+      m_lastDbWriteTimeStamp = ZeroOutMinutes( currentTime );// advance the hour.
    
       HistoricalStats::iterator historyIt = m_history.begin();
       while( historyIt != m_history.end() )
@@ -134,7 +143,7 @@ void     DiplodocusStat::PeriodicWriteToDB()
 
          CalculatedStats means = CalcStats( list );
 
-         string query = "insert into playdek.stats_server (stat_name, server_reporting, category, sub_category, mean, final_value, min_value, max_value, num_values, std_dev, begin_time, end_time) VALUES ( \'";
+         string query = "INSERT INTO playdek.stats_server (stat_name, server_reporting, category, sub_category, mean, final_value, min_value, max_value, num_values, std_dev, begin_time, end_time) VALUES ( \'";
          query += statPacket.statName;
          query += "\',\'";
          query += statPacket.serverReporting;

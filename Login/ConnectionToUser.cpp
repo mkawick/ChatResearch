@@ -35,6 +35,7 @@ ConnectionToUser:: ConnectionToUser( const string& name, const string& pword, co
                      status( LoginStatus_Pending ), 
                      gameProductId( 0 ),
                      connectionId( 0 ),
+                     m_loginTime( 0 ),
                      loggedOutTime( 0 ),
                      isLoggingOut( false ),
                      timeZone( 0 ),
@@ -472,6 +473,7 @@ bool    ConnectionToUser:: SuccessfulLogin( U32 connectId, bool isReloggedIn )
    loginStatus->wasLoginSuccessful = success;
    loginStatus->adminLevel = adminLevel;
 
+   time( &m_loginTime );
   /* if( isReloggedIn == false )
    {
       LoadUserProfile();

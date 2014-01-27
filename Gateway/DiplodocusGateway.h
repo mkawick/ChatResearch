@@ -3,19 +3,20 @@
 // DiplodocusGateway.h
 
 #include "../NetworkCommon/NetworkIn/Diplodocus.h"
+#include "../NetworkCommon/Stat/StatTrackingConnections.h"
 
-#include "KhaanConnector.h"
+#include "KhaanGateway.h"
 #include "GatewayCommon.h"
 #include <deque>
 class BasePacket;
 class PacketStat;
 class Fruitadens;
 
-class KhaanConnectorWrapper
+class KhaanGatewayWrapper
 {
 public:
-   KhaanConnectorWrapper( KhaanConnector* connector) : m_connector( connector ), m_markedForDeleteTime( 0 ){}
-   KhaanConnector*      m_connector;
+   KhaanGatewayWrapper( KhaanGateway* connector) : m_connector( connector ), m_markedForDeleteTime( 0 ){}
+   KhaanGateway*      m_connector;
    time_t               m_markedForDeleteTime;
 public:
    void     MarkForDeletion( time_t& time ) { m_markedForDeleteTime = time; }
@@ -30,43 +31,15 @@ public:
    }
 
 private:
-   KhaanConnectorWrapper(){}
+   KhaanGatewayWrapper(){}
 };
 
 //-----------------------------------------------------------------------------
 
-class StatTrackingConnections
-{
-public:
-   enum StatTracking
-   {
-      StatTracking_BadPacketVersion,
-      StatTracking_UserBlocked,
-      StatTracking_ForcedDisconnect,
-      StatTracking_UserLoginSuccess,
-      StatTracking_UserTimeOnline,
-      StatTracking_GamePacketsSentToGame,
-      StatTracking_GamePacketsSentToClient,
-      StatTracking_NumUsersOnline,
-      StatTracking_UserTotalCount
-   };
-
-   StatTrackingConnections();
-
-   deque< PacketStat* > m_stats;
-   time_t         m_timeoutSendStatServerStats;
-   static const U32 timeoutSendStatServerStats = 60;
-
-   void           TrackStats( StatTracking stat, float value1, float value2 );
-   void           SendStatsToStatServer( Fruitadens*, const string& serverName, U32 serverId, ServerType m_serverType );// meant to be invoked periodically
-};
-
-//-----------------------------------------------------------------------------
-
-class DiplodocusGateway : public Diplodocus< KhaanConnector >, public StatTrackingConnections
+class DiplodocusGateway : public Diplodocus< KhaanGateway >, public StatTrackingConnections
 {
 public: 
-   typedef Diplodocus< KhaanConnector > ChainedType;
+   typedef Diplodocus< KhaanGateway > ChainedType;
 
    //-----------------------------------------
 
@@ -87,12 +60,14 @@ public:
    void           SetupReroute( const string& address, U16 port );
    bool           IsRerouoting() { return ( m_reroutePort != 0 ) && ( m_rerouteAddress.size() > 0 ); }
 
+   void           TrackCountStats( StatTracking stat, float value, int sub_category );
+
 private:
    
    void           InputConnected( IChainedInterface * );
    bool           PushPacketToProperOutput( BasePacket* packet );
 
-   void           HandlePacketToKhaan( KhaanConnector* khaan, BasePacket* packet );
+   void           HandlePacketToKhaan( KhaanGateway* khaan, BasePacket* packet );
 
    void           HandleReroutRequest( U32 connectionId );
 
@@ -101,11 +76,13 @@ private:
 
    void           CleanupOldConnections();
    void           SendStatsToLoadBalancer();
-   void           SendStatsToStatServer();
+   void           RunHourlyAverages();
    U32            GetNextConnectionId();
 
    time_t         m_timestampSendConnectionStatisics;
-   static const U32 timeoutSendConnectionStatisics = 15;
+   static const U32 timeoutSendConnectionStatisics = 61*2; // 2 minutes
+   time_t         m_timestampSendStatServerStatisics;
+   static const U32 timeoutSendStatServerStatisics = 10*60;// ten minutes
 
    //--------------------------------------------------------
 
@@ -113,8 +90,8 @@ private:
    typedef pair<int, int>     SocketToConnectionPair;
    typedef SocketToConnectionMap::iterator SocketToConnectionMapIterator;
 
-   typedef map< int, KhaanConnectorWrapper >    ConnectionMap;
-   typedef pair< int, KhaanConnectorWrapper >   ConnectionPair;
+   typedef map< int, KhaanGatewayWrapper >    ConnectionMap;
+   typedef pair< int, KhaanGatewayWrapper >   ConnectionPair;
    typedef ConnectionMap::iterator        ConnectionMapIterator;
 
 

@@ -105,7 +105,7 @@ int main( int argc, const char* argv[] )
    DiplodocusPurchase*    purchaseServer = new DiplodocusPurchase( serverName, serverId );
    purchaseServer->SetupListening( listenPortAddress );
 
-   DiplodocusServerToServer* s2s = new DiplodocusServerToServer( serverName, serverId );
+   DiplodocusServerToServer* s2s = new DiplodocusServerToServer( serverName, serverId, 0, ServerType_Purchase );
    s2s->SetupListening( listenS2SPort );
    
    //----------------------------------------------------------------

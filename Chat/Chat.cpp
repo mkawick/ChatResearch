@@ -100,7 +100,7 @@ int main( int argc, const char* argv[] )
 
    middleware->SetupListening( listenPortAddress );
 
-   DiplodocusServerToServer* s2s = new DiplodocusServerToServer( serverName, serverId, 0 );
+   DiplodocusServerToServer* s2s = new DiplodocusServerToServer( serverName, serverId, 0, ServerType_Chat );
    s2s->SetupListening( listenS2SPort );
    
    //----------------------------------------------------------------

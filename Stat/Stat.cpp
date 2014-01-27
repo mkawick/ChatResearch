@@ -147,7 +147,7 @@ int main( int argc, const char* argv[] )
    DiplodocusStat*    statServer = new DiplodocusStat( serverName, serverId );
    statServer->SetupListening( listenPortAddress );
 
-   DiplodocusServerToServer* s2s = new DiplodocusServerToServer( serverName, serverId );
+   DiplodocusServerToServer* s2s = new DiplodocusServerToServer( serverName, serverId, 0, ServerType_Stat );
    s2s->SetupListening( listenS2SPort );
    
    //----------------------------------------------------------------

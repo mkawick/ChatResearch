@@ -16,7 +16,11 @@
 
 //-----------------------------------------------------------------------
 
-Khaan :: Khaan() : ChainedInterface< BasePacket* >(), m_socketId (0), m_bufferEvent(NULL), m_useLibeventToSend( true )
+Khaan :: Khaan() : ChainedInterface< BasePacket* >(), 
+                  m_socketId (0), 
+                  m_bufferEvent(NULL), 
+                  m_useLibeventToSend( true ),
+                  m_timeOfConnection( 0 )
 {
 }
 
@@ -178,7 +182,8 @@ void	Khaan :: UpdateOutwardPacketList()
    deque< BasePacket* >::iterator it = m_packetsOut.begin();
 
    // todo, plan for the degenerate case where a single packet is over 2k
-   for( int i=0; i< num; i++ )
+   m_outputChainListMutex.lock();
+   for( int i=0; i< num; i++ ) // we often fall out early because we go over the buffer size
    {
       BasePacket* packet = *it++;
 
@@ -187,17 +192,11 @@ void	Khaan :: UpdateOutwardPacketList()
       bufferOffset += sizeof( sizeOfLastWrite );// reserve space
       packet->SerializeOut( buffer, bufferOffset ); 
 
-      TrackOutwardPacketType( packet );
-
       sizeOfLastWrite = bufferOffset - temp - sizeof( sizeOfLastWrite );// set aside two bytes
       Serialize::Out( buffer, temp, sizeOfLastWrite );// write in the size
-
-     // packet->SerializeOut( buffer, bufferOffset ); 
       if( bufferOffset < (int)( MaxBufferSize - sizeof( BasePacket ) ) )// do not write past the end
       {
          numPacketsPackaged ++;
-        /* factory.CleanupPacket( packet );
-         m_packetsOut.pop_front();*/
          length = bufferOffset;
       }
       else
@@ -205,7 +204,9 @@ void	Khaan :: UpdateOutwardPacketList()
          break;
       }
    }
+   m_outputChainListMutex.unlock();
 
+   // final cleanup
    if( length > 0 )
    {
       static int numWrites = 0;
@@ -217,12 +218,15 @@ void	Khaan :: UpdateOutwardPacketList()
       cout << "Send result: " << result << endl;
       if( result != -1 && numPacketsPackaged>0 )
       {
+         m_outputChainListMutex.lock();
          for( int i=0; i< numPacketsPackaged; i++ )
          {
             BasePacket* packet = m_packetsOut.front();
+            TrackOutwardPacketType( packet );
             factory.CleanupPacket( packet );
             m_packetsOut.pop_front();
          }
+         m_outputChainListMutex.unlock();
       }
    }
    
@@ -276,6 +280,8 @@ void     Khaan :: RegisterToReceiveNetworkTraffic()
    DisableNagle( m_socketId );
 
    PreStart();
+
+   time( &m_timeOfConnection );
 }
 
 //---------------------------------------------------------------

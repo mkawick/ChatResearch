@@ -192,7 +192,7 @@
 				>
 			</File>
 			<File
-				RelativePath=".\KhaanConnector.cpp"
+				RelativePath=".\KhaanGateway.cpp"
 				>
 			</File>
 		</Filter>
@@ -214,7 +214,7 @@
 				>
 			</File>
 			<File
-				RelativePath=".\KhaanConnector.h"
+				RelativePath=".\KhaanGateway.h"
 				>
 			</File>
 		</Filter>

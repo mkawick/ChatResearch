@@ -1,7 +1,10 @@
 // FruitadensGateway.cpp
 
 #include "../NetworkCommon/ServerConstants.h"
+
 #include "FruitadensGateway.h"
+#include "DiplodocusGateway.h"
+
 #include "../NetworkCommon/Packets/PacketFactory.h"
 #include "../NetworkCommon/Packets/BasePacket.h"
 #include "../NetworkCommon/Packets/CheatPacket.h"
@@ -13,7 +16,7 @@
 
 //-----------------------------------------------------------------------------------------
 
-FruitadensGateway::FruitadensGateway( const char* name ) : FruitadensServer( name )
+FruitadensGateway::FruitadensGateway( const char* name ) : FruitadensServer( name ), m_gateway( NULL )
 {
    SetSleepTime( 30 );// Sleeping frees up CPU
 }
@@ -22,6 +25,23 @@ FruitadensGateway::FruitadensGateway( const char* name ) : FruitadensServer( nam
 
 FruitadensGateway::~FruitadensGateway()
 {
+}
+
+//-----------------------------------------------------------------------------------------
+//-----------------------------------------------------------------------------------------
+
+void  FruitadensGateway::FindGateway()
+{
+   if( m_gateway == NULL )
+   {
+      Threading::MutexLock locker( m_inputChainListMutex );
+      // we don't do much interpretation here, we simply pass output data onto our output, which should be the DB or other servers.
+      ChainLinkIteratorType itInput = m_listOfInputs.begin();
+      if( itInput != m_listOfInputs.end() )// only one input currently supported.
+      {
+         m_gateway = static_cast< DiplodocusGateway*> ( (*itInput).m_interface );
+      }
+   }
 }
 
 //-----------------------------------------------------------------------------------------
@@ -52,6 +72,7 @@ bool FruitadensGateway::FilterOutwardPacket( BasePacket* packet ) const
             if( m_connectedServerId == wrapper->pPacket->gameInstanceId && 
                   wrapper->pPacket->gameProductId == m_connectedGameProductId )
             {
+               m_gateway->TrackCountStats( StatTrackingConnections::StatTracking_GamePacketsSentToGame, 1, m_connectedGameProductId );
                return true;
             }
          }
@@ -130,6 +151,8 @@ int   FruitadensGateway::ProcessInputFunction()
    //m_receiveBufferOffset = m_bytesInOverflow;// save the offset
 
    int returnVal = Fruitadens :: ProcessInputFunction();
+
+   FindGateway();
 
    //m_bytesInOverflow = 0;
    return returnVal;

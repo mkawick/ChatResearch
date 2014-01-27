@@ -20,7 +20,7 @@
 #include "../NetworkCommon/Utils/CommandLineParser.h"
 #include "../NetworkCommon/Packets/ServerToServerPacket.h"
 
-#include "KhaanConnector.h"
+#include "KhaanGateway.h"
 #include "DiplodocusGateway.h"
 #include "FruitadensGateway.h"
 #include "../NetworkCommon/NetworkOut/FruitadensServerToServer.h"
@@ -34,9 +34,8 @@ using namespace std;
 
 ////////////////////////////////////////////////////////////////////////
 
-FruitadensGateway* PrepFruitadens( const string& ipaddress, U16 port, U32 serverId, DiplodocusGateway* gatewayServer, const string& gameName, const string& serverName, const string& listenAddressString, U16 serverPort );
-
-void  PrepS2SServer( const string& ipaddress, U16 port, U32 serverId, DiplodocusGateway* gatewayServer, const string& serverName, const string& listenAddressString, U16 serverPort, ServerType serverType );
+FruitadensGateway* PrepGameConnection( const string& ipaddress, U16 port, U32 serverId, DiplodocusGateway* gatewayServer, const string& gameName, const string& serverName, const string& listenAddressString, U16 serverPort );
+void  PrepS2SServer( const string& ipaddress, U16 port, U32 serverId, Diplodocus<Khaan>* gatewayServer, const string& serverName, const string& listenAddressString, U16 serverPort, ServerType serverType );
 void  SetupLoadBalancerConnection( DiplodocusGateway* gateway, string address, U16 port );
 
 ////////////////////////////////////////////////////////////////////////
@@ -158,10 +157,10 @@ int main( int argc, const char* argv[] )
    parser.FindValue( "stat.address", statIpAddressString );
 
    vector< string > params;
-   if( parser.FindValue( "games", params ) )
+  /* if( parser.FindValue( "games", params ) )
    {
       cout << "No games were listed. No connections will be made with any games" << endl;
-   }
+   }*/
 
    int   assetPort = 7300,  
          balancerPort = 9502,
@@ -209,45 +208,12 @@ int main( int argc, const char* argv[] )
    cout << "ServerId " << serverId << endl;
    cout << "------------------------------------------------------------------" << endl << endl << endl;
 
-   DiplodocusGateway* gateway = new DiplodocusGateway( serverName, serverId );
-   gateway->SetAsGateway( true );
-   gateway->SetAsGame( false );
-   gateway->PrintPacketTypes( printPackets );
-   gateway->SetupListening( listenPort );
-   gateway->SetupReroute( rerouteAddressString, reroutePort );
-
-   FruitadensGateway chatOut( "fruity to chat" );
-   chatOut.SetConnectedServerType( ServerType_Chat );
-
-   FruitadensGateway gameServerOut( "fruity to gameserver" );
-   gameServerOut.SetConnectedServerType( ServerType_GameInstance );
-
-   FruitadensGateway loginServerOut( "fruity to login" );
-   loginServerOut.SetConnectedServerType( ServerType_Login );
-
-   FruitadensGateway assetServer( "fruity to asset" );
-   assetServer.SetConnectedServerType( ServerType_Asset );
-
-   FruitadensGateway contactServer( "fruity to contact" );
-   contactServer.SetConnectedServerType( ServerType_Contact );
-
-   FruitadensGateway purchaseServer( "fruity to purchase" );
-   purchaseServer.SetConnectedServerType( ServerType_Purchase );
-
-   //FruitadensGateway statOut( "fruity to stat" );
-   //statOut.SetConnectedServerType( ServerType_Stat );
-   //FruitadensGateway* statOut = 
-      PrepS2SServer( statIpAddressString, statsPort, serverId, gateway, serverName, gateway->GetIpAddress(), gateway->GetPort(), ServerType_Stat );
-   //purchaseServer.Connect( statIpAddressString.c_str(), statsPort );
-
-   gateway->AddOutputChain( &chatOut );
-   gateway->AddOutputChain( &gameServerOut );
-   gateway->AddOutputChain( &loginServerOut );
-   gateway->AddOutputChain( &assetServer );
-   gateway->AddOutputChain( &contactServer );
-   gateway->AddOutputChain( &purchaseServer );
-   //gateway->AddOutputChain( &statOut );
-
+   DiplodocusGateway* gatewayServer = new DiplodocusGateway( serverName, serverId );
+   gatewayServer->SetAsGateway( true );
+   gatewayServer->SetAsGame( false );
+   gatewayServer->PrintPacketTypes( printPackets );
+   gatewayServer->SetupListening( listenPort );
+   gatewayServer->SetupReroute( rerouteAddressString, reroutePort );
    
    
    //--------------------------------------------------------------
@@ -280,7 +246,7 @@ int main( int argc, const char* argv[] )
          }
          if( success )
          {
-            FruitadensGateway* game = PrepFruitadens( gameAddress, port, serverId, gateway, gameName, serverName, gateway->GetIpAddress(), gateway->GetPort() );
+            FruitadensGateway* game = PrepGameConnection( gameAddress, port, serverId, gatewayServer, gameName, serverName, gatewayServer->GetIpAddress(), gatewayServer->GetPort() );
          }
       }
       else
@@ -291,44 +257,34 @@ int main( int argc, const char* argv[] )
    cout << "]" << endl;
 #endif // _TRACK_MEMORY_LEAK_
 
-   cout << "Chat server: " << chatIpAddressString << ":" << chatPort << endl;
-   chatOut.Connect( chatIpAddressString.c_str(), chatPort );
-   chatOut.Resume();
+   PrepConnection< FruitadensGateway, DiplodocusGateway > ( chatIpAddressString, chatPort, "chat", gatewayServer, ServerType_Chat, true );
 
-   cout << "Login server: " << loginIpAddressString << ":" << loginPort << endl;
-   loginServerOut.Connect( loginIpAddressString.c_str(), loginPort );
-   loginServerOut.Resume();
+   PrepConnection< FruitadensGateway, DiplodocusGateway > ( assetDeliveryIpAddressString, assetPort, "asset", gatewayServer, ServerType_Asset, true );
 
-   cout << "Asset server: " << assetDeliveryIpAddressString << ":" << assetPort << endl;
-   assetServer.Connect( assetDeliveryIpAddressString.c_str(), assetPort );
-   assetServer.Resume();
+   PrepConnection< FruitadensGateway, DiplodocusGateway > ( loginIpAddressString, loginPort, "logon", gatewayServer, ServerType_Login, true );
 
-   cout << "Contact server: " << contactIpAddressString << ":" << contactPort << endl;
-   contactServer.Connect( contactIpAddressString.c_str(), contactPort );
-   contactServer.Resume();
+   PrepConnection< FruitadensGateway, DiplodocusGateway > ( contactIpAddressString, contactPort, "contact", gatewayServer, ServerType_Contact, true );
+   
+   PrepConnection< FruitadensGateway, DiplodocusGateway > ( purchaseIpAddressString, purchasePort, "purchase", gatewayServer, ServerType_Purchase, true );
 
-   cout << "Purchase server: " << purchaseIpAddressString << ":" << purchasePort << endl;
-   purchaseServer.Connect( purchaseIpAddressString.c_str(), purchasePort );
-   purchaseServer.Resume();
 
    cout << "Stat server: " << statIpAddressString << ":" << statsPort << endl;
-  /* cout << "Stat server: " << statIpAddressString << ":" << statsPort << endl;
-   purchaseServer.Connect( statIpAddressString.c_str(), statsPort );
-   purchaseServer.Resume();*/
+
+   FruitadensServerToServer* ptr =  PrepS2SOutwardConnection( statIpAddressString, statsPort, serverId, serverName, ServerType_Stat, gatewayServer, gatewayServer->GetIpAddress(), gatewayServer->GetPort() );
    
    cout << "---------------------------- finished connecting ----------------------------" << endl;
 
-   SetupLoadBalancerConnection( gateway, loadBalancerAddressString, balancerPort );
+   SetupLoadBalancerConnection( gatewayServer, loadBalancerAddressString, balancerPort );
 
-   gateway->Init();
-
-   gateway->Resume();   
-   gateway->Run();
+   gatewayServer->Init();
+   gatewayServer->Resume();   
+   gatewayServer->Run();
 
    getch();
    
 	return 0;
 }
+
 
 ////////////////////////////////////////////////////////////////////////
 
@@ -347,18 +303,19 @@ void PrepS2SServer( const string& ipaddress, U16 port, U32 serverId, DiplodocusG
    remoteServer->SetConnectedServerType( serverType );
    remoteServer->SetServerUniqueId( serverId );
 
-   gatewayServer->AddOutputChain( remoteServer );
-
    U32 gameProductId = 0;
    remoteServer->NotifyEndpointOfIdentification( serverName, listenAddressString, serverId, serverPort, gameProductId, false, false, true, true );
    cout << "Remote server: " << ipaddress << ":" << port << endl;
    remoteServer->Connect( ipaddress.c_str(), port );
    remoteServer->Resume();
+
+   remoteServer->AddInputChain( gatewayServer );
+   //gatewayServer->AddOutputChain( remoteServer );
 }
 
 ////////////////////////////////////////////////////////////////////////
 
-FruitadensGateway* PrepFruitadens( const string& ipaddress, U16 port, U32 serverId, DiplodocusGateway* gatewayServer, const string& gameName, const string& serverName, const string& listenAddressString, U16 serverPort )
+FruitadensGateway* PrepGameConnection( const string& ipaddress, U16 port, U32 serverId, DiplodocusGateway* gatewayServer, const string& gameName, const string& serverName, const string& listenAddressString, U16 serverPort )
 {
    string gameServerText = "fruity to ";
    if( gameName.size() )

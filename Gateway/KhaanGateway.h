@@ -1,4 +1,4 @@
-// KhaanConnector.h
+// KhaanGateway.h
 
 #pragma once
 
@@ -9,18 +9,18 @@ class DiplodocusGateway;
 
 //--------------------------------------------------------------
 
-class KhaanConnector : public Khaan
+class KhaanGateway : public Khaan
 {
 public:
-   KhaanConnector( int id, bufferevent* be );
-   ~KhaanConnector();
+   KhaanGateway( int id, bufferevent* be );
+   ~KhaanGateway();
 
    void     AuthorizeConnection();
    void     DenyAllFutureData();
    void     SetAdminLevelOperations( int level ) { m_adminLevel = level; }
 
    void     SetGateway( DiplodocusGateway* gateway ) { m_gateway = gateway; }
-   //bool     AddOutputChainData( BasePacket* packet, int filingData = -1 );// already built in base class. Completely encapsulated.
+
 private:
    
    bool  IsWhiteListedIn( const BasePacket* packet ) const;
@@ -35,6 +35,7 @@ private:
    U32                  m_randomNumberOfPacketsBeforeLogin;
    bool                 m_authorizedConnection;
    bool                 m_denyAllFutureData;
+   bool                 m_logoutPacketSent;
    int                  m_adminLevel;
    DiplodocusGateway*   m_gateway;
 

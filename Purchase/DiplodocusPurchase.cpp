@@ -430,7 +430,7 @@ int      DiplodocusPurchase::CallbackFunction()
    m_stringLookup->Update( currentTime );
 
 
-   UpdateConsoleWindow( m_timeOfLastTitleUpdate, m_uptime, m_numTotalConnections, m_connectedClients.size(), m_listeningPort, m_serverName );
+   UpdateConsoleWindow( m_timeOfLastTitleUpdate, m_uptime, m_numTotalConnections, static_cast<int>( m_connectedClients.size() ), m_listeningPort, m_serverName );
    // check for new friend requests and send a small list of notifications
 
    return 1;

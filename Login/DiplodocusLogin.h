@@ -6,10 +6,16 @@
 #include "ConnectionToUser.h"
 
 #include "../NetworkCommon/NetworkIn/Diplodocus.h"
-#include "KhaanLogin.h"
+#include "../NetworkCommon/Stat/StatTrackingConnections.h"
 #include "../NetworkCommon/Database/QueryHandler.h"
+
+#include "KhaanLogin.h"
 #include "CreateAccountResultsAggregator.h"
+
 #include <ctime>
+
+#include <set>
+using namespace std;
 
 class PacketDbQuery;
 class PacketDbQueryResult;
@@ -39,7 +45,7 @@ enum LanguageList // corresponds to the db-language table
 
 //-----------------------------------------------------------------------------------------
 
-class DiplodocusLogin : public Queryer, public Diplodocus< KhaanLogin >
+class DiplodocusLogin : public Queryer, public Diplodocus< KhaanLogin >, public StatTrackingConnections
 {
 public:
    enum QueryType 
@@ -187,6 +193,13 @@ private:
    void     RequestListOfProductsFromClient( U32 connectionId );
    void     SendListOfPurchasesToUser( U32 connectionId, PacketDbQueryResult* dbResult );
 
+   //---------------------------------------------------------------
+
+   void     TrackCountStats( StatTracking stat, float value, int sub_category );
+   void     RunHourlyStats();
+   void     RunDailyStats();
+   void     ClearOutUniqueUsersNotLoggedIn();
+
    //bool     SendPacketToGateway( BasePacket*, U32 connectionId );
    //bool     SendErrorToClient( U32 connectionId, PacketErrorReport::ErrorType );
 
@@ -221,6 +234,17 @@ private:
 
    void                       FinalizeLogout( U32 connectionId, bool wasDisconnectedByError );
 
+
+   // stat tracking
+   time_t                     m_timestampHourlyStatServerStatisics;
+   static const U32           timeoutHourlyStatisics = 60*60;
+   time_t                     m_timestampDailyStatServerStatisics;
+   static const U32           timeoutDailyStatisics = timeoutHourlyStatisics*24;
+
+   int                        m_numRelogins;
+   int                        m_numFailedLogins;
+   int                        m_numSuccessfulLogins;
+   set< string >              m_uniqueUsers;
 };
 
 //-----------------------------------------------------------------------------------------
