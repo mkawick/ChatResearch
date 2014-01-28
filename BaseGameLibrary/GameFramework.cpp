@@ -362,31 +362,21 @@ bool  GameFramework::Run()
 
    m_timers.clear();
 
-   /*string nameOfChatServerConnection = GetServerName();
-   nameOfChatServerConnection += " to chat";*/
-   
-      /*new FruitadensServerToServer( nameOfChatServerConnection.c_str() );
-   m_chatServer->SetConnectedServerType( ServerType_Chat );
-   m_chatServer->SetServerId( GetServerId() );
-   m_chatServer->SetGameProductId( GetGameProductId() );
-
-   m_chatServer->NotifyEndpointOfIdentification( GetServerName(), "localhost", GetServerId(), m_listenPort, GetGameProductId(), true, false, false, false );
-   m_chatServer->Connect( m_chatServerAddress.c_str(), m_chatServerPort );
-   m_chatServer->Resume();
-   m_chatServer->AddToOutwardFilters( PacketType_Chat );*/
-
    DiplodocusServerToServer* s2s = new DiplodocusServerToServer( GetServerName(), GetServerId(), GetGameProductId(), ServerType_GameInstance );
    s2s->SetAsGame();
    s2s->SetupListening( m_listenForS2SPort );
+   s2s->AddOutputChain( m_connectionManager );
 
-   FruitadensServerToServer* fS2S = PrepS2SOutwardConnection( m_statServerAddress, m_statServerPort, GetServerId(), "stat server", ServerType_Stat, 
-                                    m_connectionManager, m_connectionManager->GetIpAddress(), m_connectionManager->GetPort(), GetGameProductId() );
+  /* FruitadensServerToServer* fS2S = PrepS2SOutwardConnection( m_statServerAddress, m_statServerPort, GetServerId(), "stat server", ServerType_Stat, 
+                                    m_connectionManager, m_connectionManager->GetIpAddress(), m_connectionManager->GetPort(), GetGameProductId() );*/
+
+   PrepConnection< FruitadensServerToServer, DiplodocusGame > ( m_statServerAddress, m_statServerPort, "stat", m_connectionManager, ServerType_Stat, true, GetGameProductId() );
+  
 
    m_chatServer = PrepConnection< FruitadensServerToServer, DiplodocusGame > ( m_chatServerAddress, m_chatServerPort, "chat", m_connectionManager, ServerType_Chat, true );
 
    //----------------------------------------------------------------
-   s2s->AddOutputChain( m_connectionManager );
-   //m_connectionManager->AddOutputChain( m_chatServer );
+   
 
    SetupS2SConnections( m_serverAddress, 0 );
 
@@ -405,21 +395,7 @@ void     GameFramework::SetupS2SConnections( const string& address, U16 port )
    while( it != m_serverConnections.end() )
    {
       S2SConnectionSetupData& setup = *it++;
-      string nameOfServerConnection = GetServerName();
-      nameOfServerConnection += " to ";
-      nameOfServerConnection += setup.serverName;
-
-      setup.s2sCommunication;
-      FruitadensServerToServer* serverComm = new FruitadensServerToServer( nameOfServerConnection.c_str() );
-      serverComm->SetConnectedServerType( setup.serverType );
-      serverComm->SetServerId( GetServerId() );
-      serverComm->SetGameProductId( GetGameProductId() );
-
-      serverComm->NotifyEndpointOfIdentification( GetServerName(), address, GetServerId(), port, GetGameProductId(), true, false, false, false );
-
-      serverComm->Connect( setup.address.c_str(), setup.port );
-      serverComm->Resume();
-      
+      FruitadensServerToServer* serverComm = PrepConnection< FruitadensServerToServer, DiplodocusGame > ( address, port, "game", m_connectionManager, ServerType_GameInstance, true );      
 
       vector< PacketType >::iterator packetTypeIt = setup.packetType.begin();
       while( packetTypeIt != setup.packetType.end() )

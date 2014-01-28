@@ -22,7 +22,7 @@ using namespace std;
 
 //-----------------------------------------------------------------------------------------
 
-FruitadensServerToServer::FruitadensServerToServer( const char* name ) : FruitadensServer( name ), m_serverId( 0 )
+FruitadensServerToServer::FruitadensServerToServer( const char* name ) : FruitadensServer( name )
 {
 }
 
@@ -30,13 +30,6 @@ FruitadensServerToServer::FruitadensServerToServer( const char* name ) : Fruitad
 
 FruitadensServerToServer::~FruitadensServerToServer(void)
 {
-}
-
-//-----------------------------------------------------------------------------------------
-
-void  FruitadensServerToServer::SetServerId( U32 serverId ) // when routing messages back to a server, it's good to know from where it came.
-{
-   m_serverId = serverId;
 }
 
 //-----------------------------------------------------------------------------------------
@@ -99,7 +92,7 @@ int  FruitadensServerToServer::ProcessOutputFunction()
          else
          {
             PacketServerToServerWrapper wrapper;
-            wrapper.serverId = m_serverId;
+            wrapper.serverId = m_localServerId;
             wrapper.pPacket = packet;
             SerializePacketOut( &wrapper );
          }

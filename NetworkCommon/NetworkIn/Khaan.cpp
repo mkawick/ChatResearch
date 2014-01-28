@@ -122,7 +122,7 @@ void	Khaan :: UpdateInwardPacketList()
    if( m_packetsIn.size() == 0 )
       return;
 
-   int numOutputs = m_listOfOutputs.size();
+   int numOutputs = static_cast<int>( m_listOfOutputs.size() );
    if( numOutputs > 1 )
    {
       assert( 0 );// need support for multiple outputs, each packet should be copied because of the memory ownership, or use shared pointers
@@ -171,65 +171,40 @@ void	Khaan :: UpdateOutwardPacketList()
    if( m_packetsOut.size() == 0 )
       return;
 
-   int length = 0;
-   int bufferOffset = 0;
+   int length;
    int numPacketsPackaged = 0;
+   int offset = 0;
 
    U8 buffer[ MaxBufferSize + 1024 ];
    PacketFactory factory;
 
-   int num = m_packetsOut.size();
-   deque< BasePacket* >::iterator it = m_packetsOut.begin();
+   int totalBytesLeftToWrite = MaxBufferSize + 1024;
 
    // todo, plan for the degenerate case where a single packet is over 2k
    m_outputChainListMutex.lock();
-   for( int i=0; i< num; i++ ) // we often fall out early because we go over the buffer size
+   while( m_packetsOut.size() ) 
    {
-      BasePacket* packet = *it++;
+      offset = 0;
+      U16 sizeOfLastWrite;
+      int sizeOfHeader = sizeof( sizeOfLastWrite );
+      length = sizeOfHeader;// reserve space
 
-      int temp = bufferOffset;
-      U16 sizeOfLastWrite = 0;
-      bufferOffset += sizeof( sizeOfLastWrite );// reserve space
-      packet->SerializeOut( buffer, bufferOffset ); 
-
-      sizeOfLastWrite = bufferOffset - temp - sizeof( sizeOfLastWrite );// set aside two bytes
-      Serialize::Out( buffer, temp, sizeOfLastWrite );// write in the size
-      if( bufferOffset < (int)( MaxBufferSize - sizeof( BasePacket ) ) )// do not write past the end
-      {
-         numPacketsPackaged ++;
-         length = bufferOffset;
-      }
-      else
-      {
+      BasePacket* packet = m_packetsOut.front();      
+      packet->SerializeOut( buffer, length );
+      
+      totalBytesLeftToWrite -= length;
+      if( totalBytesLeftToWrite < 0 )
          break;
-      }
-   }
-   m_outputChainListMutex.unlock();
 
-   // final cleanup
-   if( length > 0 )
-   {
-      static int numWrites = 0;
-      numWrites ++;
-      static int numBytes = 0;
-      numBytes += length;
+      sizeOfLastWrite = length - sizeOfHeader;
+      Serialize::Out( buffer, offset, sizeOfLastWrite );// write in the size
 
-      int result = SendData( buffer, length );
-      cout << "Send result: " << result << endl;
-      if( result != -1 && numPacketsPackaged>0 )
-      {
-         m_outputChainListMutex.lock();
-         for( int i=0; i< numPacketsPackaged; i++ )
-         {
-            BasePacket* packet = m_packetsOut.front();
-            TrackOutwardPacketType( packet );
-            factory.CleanupPacket( packet );
-            m_packetsOut.pop_front();
-         }
-         m_outputChainListMutex.unlock();
-      }
+      SendData( buffer, length );
+      m_packetsOut.pop_front();
+      TrackOutwardPacketType( packet );
+      factory.CleanupPacket( packet );
    }
-   
+   m_outputChainListMutex.unlock();   
 }
 
 //---------------------------------------------------------------

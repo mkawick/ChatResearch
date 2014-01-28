@@ -107,6 +107,20 @@ bool   DiplodocusGame::AddInputChainData( BasePacket* packet, U32 connectionId )
       return true;
    }
 
+   if( packet->packetType == PacketType_ServerToServerWrapper )
+   {
+      PacketServerToServerWrapper* wrapper = static_cast< PacketServerToServerWrapper* >( packet );
+      BasePacket* unwrappedPacket = wrapper->pPacket;
+      U32  serverIdLookup = wrapper->serverId;
+      if( HandlePacketFromOtherServer( unwrappedPacket, serverIdLookup ) == true )
+      {
+         wrapper->pPacket = NULL;
+      }
+      factory.CleanupPacket( packet );
+
+      return true;
+   }
+
    if( packet->packetType == PacketType_GatewayWrapper )
    {
       PacketCleaner cleaner( packet );

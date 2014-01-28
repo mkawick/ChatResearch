@@ -47,6 +47,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Tournament2005", "Tournamen
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Login2005", "Login\Login2005.vcproj", "{4EA7BD02-1AD5-4BAF-81AA-EACCBFB3F738}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Stat2005", "Stat\Stat2005.vcproj", "{FAD378D3-3CDC-4C55-AC43-1ABB365A29EC}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Win32 = Debug|Win32
@@ -105,6 +107,10 @@ Global
 		{4EA7BD02-1AD5-4BAF-81AA-EACCBFB3F738}.Debug|Win32.Build.0 = Debug|Win32
 		{4EA7BD02-1AD5-4BAF-81AA-EACCBFB3F738}.Release|Win32.ActiveCfg = Release|Win32
 		{4EA7BD02-1AD5-4BAF-81AA-EACCBFB3F738}.Release|Win32.Build.0 = Release|Win32
+		{FAD378D3-3CDC-4C55-AC43-1ABB365A29EC}.Debug|Win32.ActiveCfg = Debug|Win32
+		{FAD378D3-3CDC-4C55-AC43-1ABB365A29EC}.Debug|Win32.Build.0 = Debug|Win32
+		{FAD378D3-3CDC-4C55-AC43-1ABB365A29EC}.Release|Win32.ActiveCfg = Release|Win32
+		{FAD378D3-3CDC-4C55-AC43-1ABB365A29EC}.Release|Win32.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

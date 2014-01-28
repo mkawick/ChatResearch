@@ -66,16 +66,21 @@ void	KhaanServerToServer :: UpdateInwardPacketList()
       if( packetType == PacketType_ServerToServerWrapper )
       {
          PacketServerToServerWrapper* wrapper = static_cast< PacketServerToServerWrapper* >( packetIn );
+         BasePacket* subPacket = wrapper->pPacket;
 
-         if( wrapper->pPacket->packetType == PacketType_ServerInformation &&
-            wrapper->pPacket->packetSubType == PacketServerConnectionInfo::PacketServerIdentifier_TypicalInfo )
+         if( subPacket->packetType == PacketType_ServerInformation &&
+            subPacket->packetSubType == PacketServerConnectionInfo::PacketServerIdentifier_TypicalInfo )
          {
-            PacketServerIdentifier* serverId = static_cast< PacketServerIdentifier * > ( wrapper->pPacket );
+            PacketServerIdentifier* serverId = static_cast< PacketServerIdentifier * > ( subPacket );
             SaveOffServerIdentification( serverId );
          }
          else
          {
             m_connectionId = wrapper->serverId;
+           /* if( m_connectionId == 0 )// badly formed
+            {
+               m_connectionId = subPacket->serverId;
+            }*/
             if( PassPacketOn( wrapper, m_connectionId ) == true )
             {
                packetIn = NULL;// do not delete

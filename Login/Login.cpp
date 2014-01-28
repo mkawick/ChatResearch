@@ -8,6 +8,7 @@
 //#include <conio.h>
 #include <assert.h>
 
+#include <boost/format.hpp>
 #include <boost/lexical_cast.hpp>
 
 #include <cstdio>
@@ -34,15 +35,6 @@
 #endif
 
 using namespace std;
-
-// db.address=10.16.4.44 db.port=3306 db.username=admin db.password=Pz5328!@ db.schema=pleiades
-////////////////////////////////////////////////////////////////////////
-
-FruitadensLogin* PrepFruitadensLogin( const string& ipaddress, U16 port, U32 serverId, DiplodocusLogin* loginServer, const string& serverName, const string& listenAddressString, U16 serverPort, const string& name );
-void  SendServerNotification( const string& serverName, const string& serverAddress, U32 serverId, U16 serverPort, FruitadensLogin* fruity )
-{
-   fruity->NotifyEndpointOfIdentification( serverName, serverAddress, serverId, serverPort, 0, false, false, true, false  );
-}
 
 ////////////////////////////////////////////////////////////////////////
 
@@ -98,8 +90,8 @@ int main( int argc, const char* argv[] )
    parser.FindValue( "stat.port", statPortString );
    parser.FindValue( "stat.address", statIpAddressString );
    
-   parser.FindValue( "game.port", gamePortString );
-   parser.FindValue( "game.address", gameIpAddressString );
+  /* parser.FindValue( "game.port", gamePortString );
+   parser.FindValue( "game.address", gameIpAddressString );*/
 
    parser.FindValue( "autoAddLoginProduct", autoAddLoginProductString );
 
@@ -187,9 +179,7 @@ int main( int argc, const char* argv[] )
    PrepConnection< FruitadensLogin, DiplodocusLogin > ( purchaseIpAddressString, purchasePort, "purchase", loginServer, ServerType_Purchase, true );
    PrepConnection< FruitadensLogin, DiplodocusLogin > ( statIpAddressString, statPort, "stat", loginServer, ServerType_Stat, true );
    
-
-   // various games. We will need to deal with allowing a dynamic number of games in future
-   FruitadensLogin* game1 = PrepFruitadensLogin( gameIpAddressString, gamePort, serverId, loginServer, serverName, listenAddressString, listenPort, "Game1" );
+   ConnectToMultipleGames< FruitadensLogin, DiplodocusLogin > ( parser, loginServer, true );
 
    loginServer->Init();
    loginServer->Resume();
@@ -198,32 +188,6 @@ int main( int argc, const char* argv[] )
    getch();
    
 	return 0;
-}
-
-////////////////////////////////////////////////////////////////////////
-
-FruitadensLogin* PrepFruitadensLogin( const string& ipaddress, U16 port, U32 serverId, DiplodocusLogin* loginServer, const string& serverName, const string& listenAddressString, U16 listenPort, const string& name )
-{
-   string servername = "fruity to ";
-   if( name.size() )
-   {
-      servername += name;
-   }
-   else
-   {
-      servername += "gameserver";
-   }
-   FruitadensLogin* gameServerOut = new FruitadensLogin( servername.c_str() );
-   gameServerOut->SetConnectedServerType( ServerType_GameInstance );
-   gameServerOut->SetServerUniqueId( serverId );
-
-   loginServer->AddOutputChain( gameServerOut );
-   SendServerNotification( serverName, listenAddressString, serverId, listenPort, gameServerOut );
-
-   gameServerOut->Connect( ipaddress.c_str(), port );
-   gameServerOut->Resume();
-
-   return gameServerOut;
 }
 
 ////////////////////////////////////////////////////////////////////////

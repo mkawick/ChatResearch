@@ -738,7 +738,7 @@ bool  SendRawData( const U8* data, int size, int dataType, int maxPacketSize, U3
 ////////////////////////////////////////////////////////////////////////
 
 template <typename return_type, typename type >
-return_type* PrepConnection( const string& remoteIpaddress, U16 remotePort, const string& remoteServerName, type* localServer, ServerType type, bool requiresS2SWrapper )
+return_type* PrepConnection( const string& remoteIpaddress, U16 remotePort, const string& remoteServerName, type* localServer, ServerType type, bool requiresS2SWrapper, U32 gameProductId = 0 )
 {
    string serverOutputText = localServer->GetServerName();
    serverOutputText += " to ";
@@ -757,7 +757,6 @@ return_type* PrepConnection( const string& remoteIpaddress, U16 remotePort, cons
    serverOut->AddInputChain( localServer );
 
    bool isGame = localServer->IsGameServer();
-   U32 gameProductId = 0;
    serverOut->NotifyEndpointOfIdentification( localServer->GetServerName(), localServer->GetIpAddress(), localServer->GetServerId(), localServer->GetPort(), 
                                              gameProductId, localServer->IsGameServer(), localServer->IsControllerApp(), requiresS2SWrapper, localServer->IsGateway() );
    cout << "server (" << remoteServerName << "): " << remoteIpaddress << ":" << remotePort << endl;
@@ -765,6 +764,54 @@ return_type* PrepConnection( const string& remoteIpaddress, U16 remotePort, cons
    serverOut->Resume();
 
    return serverOut;
+}
+
+////////////////////////////////////////////////////////////////////////
+
+class CommandLineParser;
+template <typename return_type, typename type >
+void  ConnectToMultipleGames( CommandLineParser& parser, type* localServer, bool requiresWrapper = true )
+{
+   vector< string > gamesConfiguration;
+   if( parser.FindValue( "games", gamesConfiguration ) == false )
+   {
+      cout << "No games were listed. No connections will be made with any games" << endl;
+   }
+
+   U8    gameProductId = 0;
+   cout << "games found = " << endl << "[ " << endl; 
+   vector< string >::iterator it = gamesConfiguration.begin();
+   while( it != gamesConfiguration.end() )
+   {
+      string str = *it++;
+      vector< string > values;
+      if( parser.SeparateStringIntoValues( str, values, 3 ) == true )
+      {
+         cout << boost::format("%15s ={ %6s - %-6s }")  % values[0] % values[1] % values[2] << endl;
+         string gameAddress = values[0];
+         string gameName = values[2];
+         int port = 0;
+         bool success = false;
+         try
+         {
+            port = boost::lexical_cast<int>( values[1] );
+            success = true;
+         } 
+         catch( boost::bad_lexical_cast const& ) 
+         {
+             cout << "Error: input string was not valid" << endl;
+         }
+         if( success )
+         {
+            PrepConnection< return_type, type > ( gameAddress, port, gameName, localServer, ServerType_GameInstance, requiresWrapper );
+         }
+      }
+      else
+      {
+         cout << "Not enough gamesConfiguration for this game:" << str << endl;
+      }
+   }
+   cout << "]" << endl;
 }
 
 ////////////////////////////////////////////////////////////////////////
