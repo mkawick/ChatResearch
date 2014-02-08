@@ -3,7 +3,8 @@
 #include "../Packets/BasePacket.h"
 #include "../Packets/StatPacket.h"
 
-class Fruitadens;
+#include "../NetworkOut/Fruitadens.h"
+#include "../ChainedArchitecture/ChainedInterface.h"
 ///////////////////////////////////////////////////////////////
 
 class StatTrackingConnections

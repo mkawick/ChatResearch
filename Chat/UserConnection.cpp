@@ -4,6 +4,11 @@
 #include "../NetworkCommon/Packets/ChatPacket.h"
 #include "../NetworkCommon/Packets/DbPacket.h"
 #include "../NetworkCommon/Packets/LoginPacket.h"
+#include "../NetworkCommon/Utils/CommandLineParser.h"
+
+#include <boost/format.hpp>
+#include <boost/lexical_cast.hpp>
+using boost::format;
 
 #include "DiplodocusChat.h"
 #include "../NetworkCommon/Utils/TableWrapper.h"

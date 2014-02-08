@@ -5,26 +5,35 @@
 
 #include <iostream>
 
-#include "Khaan.h"
-
 #include "../ServerConstants.h"
 #include "../Packets/BasePacket.h"
 #include "../Packets/ServerToServerPacket.h"
 #include "../Packets/PacketFactory.h"
-#include "Diplodocus.h"
+#include "../Utils/CommandLineParser.h"
+#include "../Utils/Utils.h"
 
+#include <boost/lexical_cast.hpp>
+#include <boost/format.hpp>
+using boost::format;
+
+#include "Khaan.h"
+#include "Diplodocus.h"
 
 //-----------------------------------------------------------------------
 
 Khaan :: Khaan() : ChainedInterface< BasePacket* >(), 
                   m_socketId (0), 
                   m_bufferEvent(NULL), 
-                  m_useLibeventToSend( true ),
-                  m_timeOfConnection( 0 )
+                  m_timeOfConnection( 0 ),
+                  m_useLibeventToSend( true )
 {
 }
 
-Khaan ::Khaan( int socketId, bufferevent* be, int connectionId ) : ChainedInterface< BasePacket* >(), m_socketId( socketId ), m_bufferEvent( be ), m_useLibeventToSend( true )
+Khaan ::Khaan( int socketId, bufferevent* be, int connectionId ) : ChainedInterface< BasePacket* >(), 
+                                                                  m_socketId( socketId ), 
+                                                                  m_bufferEvent( be ), 
+                                                                  m_timeOfConnection( 0 ),
+                                                                  m_useLibeventToSend( true )
 {
    SetConnectionId( connectionId );
 }

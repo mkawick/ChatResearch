@@ -7,8 +7,10 @@ using namespace std;
 
 class DiplodocusAsset;
 class PacketAsset;
-class PacketAsset_GetListOfStaticAssets;
-class PacketAsset_GetListOfDynamicAssets;
+/*class PacketAsset_GetListOfStaticAssets;
+class PacketAsset_GetListOfDynamicAssets;*/
+class PacketAsset_GetListOfAssets;
+class PacketAsset_GetListOfAssetCategories;
 class PacketAsset_RequestAsset;
 class StringBucket;
 
@@ -52,8 +54,10 @@ public:
 
 private:
 
-   bool              GetListOfStaticAssets( const PacketAsset_GetListOfStaticAssets* packet );
-   bool              GetListOfDynamicAssets( const PacketAsset_GetListOfDynamicAssets* packet );
+   bool              GetListOfAssetCategories( const PacketAsset_GetListOfAssetCategories* packet );
+   bool              GetListOfAssets( const PacketAsset_GetListOfAssets* packet );
+   //bool              GetListOfStaticAssets( const PacketAsset_GetListOfStaticAssets* packet );
+   //bool              GetListOfDynamicAssets( const PacketAsset_GetListOfDynamicAssets* packet );
    bool              GetAsset( const PacketAsset_RequestAsset* packet );
 
    UserTicket        m_userTicket;

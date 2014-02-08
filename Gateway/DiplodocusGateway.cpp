@@ -1,13 +1,20 @@
 // DiplodocusGateway.cpp
 
-#include "DiplodocusGateway.h"
-#include "FruitadensGateway.h"
+#include <boost/format.hpp>
+#include <boost/lexical_cast.hpp>
+using boost::format;
+
 #include "../NetworkCommon/ServerConstants.h"
 #include "../NetworkCommon/Packets/BasePacket.h"
 #include "../NetworkCommon/Packets/ServerToServerPacket.h"
 #include "../NetworkCommon/Packets/LoginPacket.h"
 #include "../NetworkCommon/Packets/PacketFactory.h"
 #include "../NetworkCommon/Packets/StatPacket.h"
+#include "../NetworkCommon/Utils/CommandLineParser.h"
+//#include "../NetworkCommon/ChainedArchitecture/ChainedInterface.h"
+
+#include "FruitadensGateway.h"
+#include "DiplodocusGateway.h"
 
 //#define VERBOSE
 

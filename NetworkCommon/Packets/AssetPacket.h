@@ -12,6 +12,7 @@ struct AssetInfo
    string   assetName;
    string   version;
    string   beginDate, endDate;
+   string   category;
 
    AssetInfo()
    {
@@ -26,6 +27,7 @@ struct AssetInfo
       version.clear();
       beginDate.clear();
       endDate.clear();
+      category.clear();
    }
 
    bool  SerializeIn( const U8* data, int& bufferOffset );
@@ -48,6 +50,12 @@ public:
       AssetType_GetListOfStaticAssetsResponse,
       AssetType_GetListOfDynamicAssets, 
       AssetType_GetListOfDynamicAssetsResponse,
+
+      AssetType_GetListOfAssetCategories,
+      AssetType_GetListOfAssetCategoriesResponse,
+      AssetType_GetListOfAssets,
+      AssetType_GetListOfAssetsResponse,
+
       AssetType_RequestAsset  // mostly for testing
 
    };
@@ -148,6 +156,64 @@ public:
    bool  SerializeIn( const U8* data, int& bufferOffset );
    bool  SerializeOut( U8* data, int& bufferOffset ) const;
 
+   SerializedKeyValueVector< AssetInfo >   updatedAssets;
+};
+
+
+///////////////////////////////////////////////////////////////
+
+class PacketAsset_GetListOfAssetCategories : public PacketAsset
+{
+public:
+   PacketAsset_GetListOfAssetCategories() : PacketAsset( PacketType_Asset, AssetType_GetListOfAssetCategories ){  }
+
+   bool  SerializeIn( const U8* data, int& bufferOffset );
+   bool  SerializeOut( U8* data, int& bufferOffset ) const;
+
+   string   uuid;
+   string   loginKey;
+};
+
+///////////////////////////////////////////////////////////////////
+
+class PacketAsset_GetListOfAssetCategoriesResponse : public PacketAsset
+{
+public:
+   PacketAsset_GetListOfAssetCategoriesResponse() : PacketAsset( PacketType_Asset, AssetType_GetListOfAssetCategoriesResponse ){  }
+
+   bool  SerializeIn( const U8* data, int& bufferOffset );
+   bool  SerializeOut( U8* data, int& bufferOffset ) const;
+
+   SerializedVector< string >   assetcategory;
+};
+
+///////////////////////////////////////////////////////////////
+
+class PacketAsset_GetListOfAssets : public PacketAsset
+{
+public:
+   PacketAsset_GetListOfAssets() : PacketAsset( PacketType_Asset, AssetType_GetListOfAssets ){  }
+
+   bool  SerializeIn( const U8* data, int& bufferOffset );
+   bool  SerializeOut( U8* data, int& bufferOffset ) const;
+
+   string   uuid;
+   string   loginKey;
+   string   assetCategory;
+   int      platformId;
+};
+
+///////////////////////////////////////////////////////////////////
+
+class PacketAsset_GetListOfAssetsResponse : public PacketAsset
+{
+public:
+   PacketAsset_GetListOfAssetsResponse() : PacketAsset( PacketType_Asset, AssetType_GetListOfAssetsResponse ){  }
+
+   bool  SerializeIn( const U8* data, int& bufferOffset );
+   bool  SerializeOut( U8* data, int& bufferOffset ) const;
+
+   string   assetCategory;
    SerializedKeyValueVector< AssetInfo >   updatedAssets;
 };
 

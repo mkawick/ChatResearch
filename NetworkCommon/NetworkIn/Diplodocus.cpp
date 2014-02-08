@@ -23,8 +23,9 @@ using boost::format;
 #include "../Platform.h"
 #include "../DataTypes.h"
 #include "../Serialize.h"
-#include "Diplodocus.h"
 #include "../Utils/OsLevelUtils.h"
+#include "../Utils/CommandLineParser.h"
+#include "Diplodocus.h"
 
 using namespace std;
 

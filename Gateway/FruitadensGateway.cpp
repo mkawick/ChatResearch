@@ -1,18 +1,22 @@
 // FruitadensGateway.cpp
 
+#include <boost/format.hpp>
+#include <boost/lexical_cast.hpp>
+using boost::format;
+
 #include "../NetworkCommon/ServerConstants.h"
-
-#include "FruitadensGateway.h"
-#include "DiplodocusGateway.h"
-
 #include "../NetworkCommon/Packets/PacketFactory.h"
 #include "../NetworkCommon/Packets/BasePacket.h"
 #include "../NetworkCommon/Packets/CheatPacket.h"
 #include "../NetworkCommon/Packets/ServerToServerPacket.h"
+#include "../NetworkCommon/Utils/CommandLineParser.h"
 
 #include <iostream>
 #include <iomanip>
 #include <assert.h>
+
+#include "FruitadensGateway.h"
+#include "DiplodocusGateway.h"
 
 //-----------------------------------------------------------------------------------------
 

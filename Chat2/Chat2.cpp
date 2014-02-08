@@ -1,65 +1,53 @@
-// Stat.cpp : Defines the entry point for the console application.
+// Chat2.cpp : Defines the entry point for the console application.
 //
 
 #include <iostream>
 #include <list>
 #include <vector>
+
+#include "../NetworkCommon/Platform.h"
+#include "../NetworkCommon/Version.h"
+#include "../NetworkCommon/Utils/CommandLineParser.h"
+
+#if PLATFORM == PLATFORM_WINDOWS
 #pragma warning (disable:4996)
-using namespace std;
+#endif
 
 #include <assert.h>
 
-#include <boost/format.hpp>
 #include <boost/lexical_cast.hpp>
+#include <boost/format.hpp>
 using boost::format;
 
-#include "../NetworkCommon/Version.h"
 
-#include "../NetworkCommon/Utils/CommandLineParser.h"
-#include "../NetworkCommon/DataTypes.h"
-#include "../NetworkCommon/Utils/Utils.h"
-
-#include "../NetworkCommon/Daemon/Daemonizer.h"
-#include "../NetworkCommon/Logging/server_log.h"
-
+#include "../NetworkCommon/NetworkIn/Diplodocus.h"
 #include "../NetworkCommon/NetworkIn/DiplodocusServerToServer.h"
-#include "../NetworkCommon/Database/Deltadromeus.h"
-
 #include "../NetworkCommon/Daemon/Daemonizer.h"
 
-#include "DiplodocusStat.h"
-
-
-////////////////////////////////////////////////////////////////////////
+#include "DiplodocusChat.h"
 
 #if PLATFORM == PLATFORM_WINDOWS
 #include <conio.h>
 #endif   
 
+using namespace std;
+
 ////////////////////////////////////////////////////////////////////////
 
 void  PrintInstructions()
 {
-   cout << "Stat Server:" << endl;
-   cout << "* This may be the simplest server that we have. It only accepts" << endl;
-   cout << "* connections on the s2s endpoint and then saves off the stats." << endl;
-   cout << "* Once per hour on the hour, it writes all stats to the db." << endl;
-   cout << "* After writing the stats once per hour, the stats are cleared." << endl;
-   cout << "* All stats arriving have a particular format which are then used" << endl;
-   cout << "* for future lookup (key-value indexing) and all future stat-posts" << endl;
-   cout << "* add to or modify that data. You may write as often as you see fit." << endl;   
-
-   cout << "Stat takes the following parameters using this format:" << endl;
-   cout << "> stat_server param1=localhost param1.extension='path' ... " << endl;
+   cout << "Chat takes params as follows:" << endl;
+   cout << "> chat_server listen.port=7400 db.address=10.16.4.44 db.port=3306 db.username=incinerator db.password=Cm8235 db.schema=playdek ... " << endl;
+   cout << " NOTE: chat is a server-to-games, who connect to it." << endl;
 
    cout << endl << endl;
    cout << ": params are as follows:" << endl;
    cout << "    server.name       - allows a new name reported in logs and connections" << endl;
    cout << "    listen.address    - what is the ipaddress that this app should be using;" << endl;
    cout << "                        usually localhost or null" << endl;
-   cout << "    listen.port       - listen on which port" << endl;
-   cout << "    s2s.address       - where is the for gateway, login and others" << endl;
-   cout << "    s2s.port          - where is the port for gateway, login and others" << endl;
+   cout << "    listen.port       - listen on which port to gateway connections" << endl;
+   cout << "    s2s.address       - where is the load balancer" << endl;
+   cout << "    s2s.port          - load balancer" << endl;
    
    cout << "    db.address        - database ipaddress" << endl;
    cout << "    db.port           - database port" << endl;
@@ -69,32 +57,24 @@ void  PrintInstructions()
 
    cout << " -h, -help, -? for help " << endl;
 }
+
 ////////////////////////////////////////////////////////////////////////
 
 int main( int argc, const char* argv[] )
 {
-   daemonize( "stat_serverd" );
+   daemonize( "chat_serverd" );
 
-	CommandLineParser    parser( argc, argv );
+   CommandLineParser    parser( argc, argv );
 
-   string serverName = "Stat Server";
-
-   string listenPort = "7800";    // this connection is for consistency, it may not be used at all
+   string serverName = "Chat Server";
+   string listenPort = "8400";
    string listenAddress = "localhost";
 
-   string listenForS2SPort = "7802";
+   string listenForS2SPort = "8402";
    string listenForS2SAddress = "localHost";
 
    //---------------------------------------
 
-   if( parser.IsRequestingInstructions() == true )
-   {
-      PrintInstructions();
-      return 0;
-   }
-
-   //--------------------------------------------------------------
-   
    parser.FindValue( "server.name", serverName );
 
    parser.FindValue( "listen.port", listenPort );
@@ -109,14 +89,21 @@ int main( int argc, const char* argv[] )
    string dbPassword = "password";
    string dbSchema = "playdek";
 
+   //--------------------------------------------------------------
+
+   if( parser.IsRequestingInstructions() == true )
+   {
+      PrintInstructions();
+      return 0;
+   }
+
    parser.FindValue( "db.address", dbIpAddress );
    parser.FindValue( "db.port", dbPortString );
    parser.FindValue( "db.username", dbUsername );
    parser.FindValue( "db.password", dbPassword );
    parser.FindValue( "db.schema", dbSchema );
 
-
-   int listenPortAddress = 7800, dbPortAddress = 3306, listenS2SPort= 7802;
+   int listenPortAddress = 7400, dbPortAddress = 3306, listenS2SPort = 7402;
    try 
    {
       listenS2SPort = boost::lexical_cast<int>( listenForS2SPort );
@@ -128,14 +115,11 @@ int main( int argc, const char* argv[] )
        std::cout << "Error: input string was not valid" << std::endl;
    }
 
-   //--------------------------------------------------------------
-
    Database::Deltadromeus* delta = new Database::Deltadromeus;
    delta->SetConnectionInfo( dbIpAddress, dbPortAddress, dbUsername, dbPassword, dbSchema );
    if( delta->IsConnected() == false )
    {
       cout << "Error: Database connection is invalid." << endl;
-      LogMessage(LOG_PRIO_ERR, "Error: Database connection is invalid.\n");
       getch();
       return 1;
    }
@@ -148,25 +132,26 @@ int main( int argc, const char* argv[] )
    cout << serverName << ":" << endl;
    cout << "Server stack version " << ServerStackVersion << endl;
    cout << "ServerId " << serverId << endl;
+   cout << "Db " << dbIpAddress << ":" << dbPortAddress << endl;
    cout << "------------------------------------------------------------------" << endl << endl << endl;
 
-   DiplodocusStat*    statServer = new DiplodocusStat( serverName, serverId );
-   statServer->SetupListening( listenPortAddress );
+   DiplodocusChat*    middleware = new DiplodocusChat( serverName, serverId );
+   middleware->SetupListening( listenPortAddress );
 
-   DiplodocusServerToServer* s2s = new DiplodocusServerToServer( serverName, serverId, 0, ServerType_Stat );
+   DiplodocusServerToServer* s2s = new DiplodocusServerToServer( serverName, serverId, 0, ServerType_Chat );
    s2s->SetupListening( listenS2SPort );
-   
+
    //----------------------------------------------------------------
    
-   statServer->Init();
+   middleware->Init();
+   middleware->AddOutputChain( delta );
+   s2s->AddOutputChain( middleware );
 
-   s2s->AddOutputChain( statServer );
-   statServer->AddOutputChain( delta );
-
-   s2s->Resume();
-   statServer->Run();
+   middleware->Run();
 
    getch();
+	return 0;
 }
 
-////////////////////////////////////////////////////////////////////////
+//-------------------------------------------------------------------------------------------------
+//-------------------------------------------------------------------------------------------------

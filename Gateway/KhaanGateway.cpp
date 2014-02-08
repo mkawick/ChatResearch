@@ -1,9 +1,15 @@
 // KhaanGateway.cpp
-#include "KhaanGateway.h"
-#include "DiplodocusGateway.h"
+
+#include <boost/format.hpp>
+#include <boost/lexical_cast.hpp>
+using boost::format;
 
 #include "../NetworkCommon/Packets/LoginPacket.h"
 #include "../NetworkCommon/Packets/PacketFactory.h"
+#include "../NetworkCommon/Utils/CommandLineParser.h"
+
+#include "KhaanGateway.h"
+#include "DiplodocusGateway.h"
 
 //-----------------------------------------------------------------------------------------
 

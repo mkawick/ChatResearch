@@ -17,6 +17,7 @@
 
 #include <boost/lexical_cast.hpp>
 #include <boost/format.hpp>
+using boost::format;
 
 #include <cstdio>
 #include "../NetworkCommon/Version.h"

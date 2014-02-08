@@ -405,9 +405,10 @@ public:
 
    void  Prep( U16 numBytes, const U8* ptr, int packetIndex );
 
-   enum { MaxBufferSize = 1008-sizeof( PacketGameToServer) }; // 1024 - the other variables
+   enum { MaxBufferSize = 1500 - 39 - sizeof( PacketGameToServer) }; // 1500 minus the other variables in this struct
    enum DataType{ Game, Asset, NumDataTypes };
-   string   identifier;
+
+   string   identifier; // variable length... at least 2 and up to 34 bytes
    U16      size;
    U16      index; // when subdividing these, these are reverse ordered. 6.5.4.3.2.1 so that we can send up to 254k.We still rely on high layers to serialize properly.
    U8       dataType;

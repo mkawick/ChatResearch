@@ -1,5 +1,9 @@
 // ConnectionToUser.cpp
 
+#include <boost/lexical_cast.hpp>
+#include <boost/format.hpp>
+using boost::format;
+
 #include "ConnectionToUser.h"
 
 #include "../NetworkCommon/Packets/DbPacket.h"
@@ -7,6 +11,8 @@
 #include "../NetworkCommon/Packets/CheatPacket.h"
 #include "../NetworkCommon/Packets/PacketFactory.h"
 #include "../NetworkCommon/Database/StringLookup.h"
+
+#include "../NetworkCommon/Utils/CommandLineParser.h"
 #include "../NetworkCommon/Utils/Utils.h"
 #include <boost/lexical_cast.hpp>
 
@@ -460,6 +466,7 @@ bool    ConnectionToUser:: SuccessfulLogin( U32 connectId, bool isReloggedIn )
    if( isActive == false )
    {
       success = false; // we only have this one condition right now.
+      cout << "User is inactive and will not be able to login" << endl;
    }
 
    PacketLoginToGateway* loginStatus = new PacketLoginToGateway();
@@ -494,6 +501,14 @@ bool    ConnectionToUser:: SuccessfulLogin( U32 connectId, bool isReloggedIn )
 
    //This is where we inform all of the games that the user is logged in.
 
+   if( success == true )
+   {
+      cout << "User successfully logged in" << endl;
+   }
+   else
+   {
+      cout << "User not successfully logged in" << endl;
+   }
    return success;//SendLoginStatusToOtherServers( userName, userUuid, connectionId, gameProductId, lastLoginTime, active, email, passwordHash, userId, loginKey, true, false );
 }
 

@@ -174,3 +174,6 @@ std::string  RemoveEnds( std::string s, const char* charsToStrip = "\"\'" );
 const std::string  ConvertStringToLower( const std::string& str );
 
 void  PrintDebugText( const char* text, int extraCr = 0 );
+
+bool DoesFileExist ( const std::string& name ) ;
+time_t   GetFileModificationTime( const std::string& name );

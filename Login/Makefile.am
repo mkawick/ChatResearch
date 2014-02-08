@@ -11,6 +11,7 @@ Login.cpp \
 ../NetworkCommon/NetworkUtils.cpp \
 ../NetworkCommon/Serialize.cpp \
 ../NetworkCommon/ServerConstants.cpp \
+../NetworkCommon/ServerType.cpp \
 ../NetworkCommon/ChainedArchitecture/Thread.cpp \
 ../NetworkCommon/Daemon/Daemonizer.cpp \
 ../NetworkCommon/Database/Deltadromeus.cpp \
@@ -32,6 +33,7 @@ Login.cpp \
 ../NetworkCommon/Packets/PacketFactory.cpp \
 ../NetworkCommon/Packets/PurchasePacket.cpp \
 ../NetworkCommon/Packets/ServerToServerPacket.cpp \
+../NetworkCommon/Packets/StatPacket.cpp \
 ../NetworkCommon/Packets/TournamentPacket.cpp \
 ../NetworkCommon/Utils/CommandLineParser.cpp \
 ../NetworkCommon/Utils/OsLevelUtils.cpp \

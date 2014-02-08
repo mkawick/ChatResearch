@@ -25,7 +25,7 @@ private:
    
    bool  IsWhiteListedIn( const BasePacket* packet ) const;
    bool  HasPermission( const BasePacket* packet ) const;
-   bool  HandleGatewayPackets( const BasePacket* packet ) const ;
+   bool  HandleGatewayPackets( const BasePacket* packet ) const;
    bool  IsPacketSafe( unsigned char* data, int& offset);
    bool  IsHandshaking( const BasePacket* packetIn );
    bool  TrackInwardPacketType( const BasePacket* packet ); // based on base class

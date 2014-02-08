@@ -1,22 +1,24 @@
-bin_PROGRAMS = load_balancer_serverd
+bin_PROGRAMS = stat_serverd
 
-load_balancer_serverddir = $(datadir)/@PACKAGE@
+stat_serverddir = $(datadir)/@PACKAGE@
 
-load_balancer_serverd_SOURCES = DiplodocusLoadBalancer.cpp \
-LoadBalancer.cpp \
-KhaanConnector.cpp \
+stat_serverd_SOURCES = DiplodocusStat.cpp \
+KhaanStat.cpp \
+Stat.cpp \
+StatCommon.cpp \
 ../NetworkCommon/NetworkUtils.cpp \
 ../NetworkCommon/Serialize.cpp \
 ../NetworkCommon/ServerConstants.cpp \
 ../NetworkCommon/ServerType.cpp \
 ../NetworkCommon/ChainedArchitecture/Thread.cpp \
 ../NetworkCommon/Daemon/Daemonizer.cpp \
+../NetworkCommon/Database/Deltadromeus.cpp \
+../NetworkCommon/Database/QueryHandler.cpp \
+../NetworkCommon/Database/StringLookup.cpp \
 ../NetworkCommon/NetworkIn/Diplodocus.cpp \
 ../NetworkCommon/NetworkIn/DiplodocusServerToServer.cpp \
 ../NetworkCommon/NetworkIn/Khaan.cpp \
 ../NetworkCommon/NetworkIn/KhaanServerToServer.cpp \
-../NetworkCommon/NetworkOut/Fruitadens.cpp \
-../NetworkCommon/NetworkOut/FruitadensServerToServer.cpp \
 ../NetworkCommon/Packets/AssetPacket.cpp \
 ../NetworkCommon/Packets/BasePacket.cpp \
 ../NetworkCommon/Packets/ChatPacket.cpp \
@@ -34,19 +36,20 @@ KhaanConnector.cpp \
 ../NetworkCommon/Utils/CommandLineParser.cpp \
 ../NetworkCommon/Utils/MemoryLeakTracker.cpp \
 ../NetworkCommon/Utils/OsLevelUtils.cpp \
+../NetworkCommon/Utils/TableWrapper.cpp \
 ../NetworkCommon/Utils/Utils.cpp \
 ../NetworkCommon/Logging/server_log.cpp
 
-load_balancer_serverd_LDFLAGS = -L
+stat_serverd_LDFLAGS = -L
 
-load_balancer_serverd_LDADD = ../../libevent/linux-libs/libevent.a \
+stat_serverd_LDADD = ../../libevent/linux-libs/libevent.a \
 ../../libevent/linux-libs/libevent_pthreads.a \
 ../../libevent/linux-libs/libevent_core.a \
 ../../libevent/linux-libs/libevent_extra.a \
 -lrt
 
 install-exec-hook:
-	chown root $(bindir)/load_balancer_serverd
-	sudo chmod u+s $(bindir)/load_balancer_serverd
+	chown root $(bindir)/stat_serverd
+	sudo chmod u+s $(bindir)/stat_serverd
 
 

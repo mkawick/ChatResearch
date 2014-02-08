@@ -25,6 +25,7 @@ void  Copy( const AssetDefinition* asset, AssetInfo& assetInfo )
    assetInfo.beginDate  = asset->beginTime;
    assetInfo.endDate    = asset->endTime;
    assetInfo.isOptional = asset->isOptional;
+   assetInfo.category   = asset->category;
 }
 
 UserAccountAssetDelivery::UserAccountAssetDelivery( const UserTicket& ticket ) : m_userTicket( ticket ), m_status( Status_initial_login ), m_readyForCleanup( false ), m_assetManager( NULL )
@@ -99,11 +100,17 @@ bool     UserAccountAssetDelivery::HandleRequestFromClient( const PacketAsset* p
 {
    switch( packet->packetSubType )
    {
-   case PacketAsset::AssetType_GetListOfStaticAssets:
+  /* case PacketAsset::AssetType_GetListOfStaticAssets:
       return GetListOfStaticAssets( static_cast< const PacketAsset_GetListOfStaticAssets* >( packet ) );
 
    case PacketAsset::AssetType_GetListOfDynamicAssets:
-      return GetListOfDynamicAssets( static_cast< const PacketAsset_GetListOfDynamicAssets* >( packet ) );
+      return GetListOfDynamicAssets( static_cast< const PacketAsset_GetListOfDynamicAssets* >( packet ) );*/
+
+   case PacketAsset::AssetType_GetListOfAssetCategories:
+      return GetListOfAssetCategories( static_cast< const PacketAsset_GetListOfAssetCategories* >( packet ) );
+
+   case PacketAsset::AssetType_GetListOfAssets:
+      return GetListOfAssets( static_cast< const PacketAsset_GetListOfAssets* >( packet ) );
 
    case PacketAsset::AssetType_RequestAsset:
       return GetAsset( static_cast< const PacketAsset_RequestAsset* >( packet ) );
@@ -114,7 +121,7 @@ bool     UserAccountAssetDelivery::HandleRequestFromClient( const PacketAsset* p
 
 
 //------------------------------------------------------------------------------------------------
-
+/*
 bool     UserAccountAssetDelivery::GetListOfStaticAssets( const PacketAsset_GetListOfStaticAssets* packet )
 {
    if( m_assetManager == NULL )
@@ -192,6 +199,78 @@ bool     UserAccountAssetDelivery::GetListOfDynamicAssets( const PacketAsset_Get
 
    /// product filter
    return true;
+}*/
+
+//------------------------------------------------------------------------------------------------
+
+bool     UserAccountAssetDelivery::GetListOfAssetCategories( const PacketAsset_GetListOfAssetCategories* packet )
+{
+   vector<string> listOfStrings;
+   m_assetManager->GetListOfAssetCategories( listOfStrings );
+   if( listOfStrings.size() == 0 )
+   {
+      m_assetManager->SendErrorToClient( m_userTicket.connectionId, PacketErrorReport::ErrorType_Asset_NoCategoriesAvailable );
+      return false;
+   }
+
+   PacketAsset_GetListOfAssetCategoriesResponse*    response = new PacketAsset_GetListOfAssetCategoriesResponse;
+   vector< string >::iterator it = listOfStrings.begin();
+   while( it != listOfStrings.end() )
+   {
+      response->assetcategory.push_back( *it++ );
+   }
+
+   U32 connectionId = m_userTicket.connectionId;
+   PacketGatewayWrapper* wrapper = new PacketGatewayWrapper;
+   wrapper->SetupPacket( response, connectionId );
+   
+   m_assetManager->AddOutputChainData( wrapper, connectionId );
+   return true;
+}
+
+//------------------------------------------------------------------------------------------------
+
+bool     UserAccountAssetDelivery::GetListOfAssets( const PacketAsset_GetListOfAssets* packet )
+{
+   U8 gameProductId = packet->gameProductId;
+   vector< string > assetIds;
+   const AssetOrganizer*   assetOrganizer = m_assetManager->GetAssetOrganizer( packet->assetCategory );
+   if( assetOrganizer == NULL )
+   {
+      m_assetManager->SendErrorToClient( m_userTicket.connectionId, PacketErrorReport::ErrorType_Asset_UnknownAssetCategory );
+      return false;
+   }
+
+   assetOrganizer->GetListOfAssets( packet->platformId, m_productFilterNames, assetIds );
+   // 1) reduce the set of products by device type.
+
+   //-----------------------------
+   PacketAsset_GetListOfAssetsResponse*    response = new PacketAsset_GetListOfAssetsResponse;
+   response->assetCategory = packet->assetCategory;
+   vector< string >::iterator it = assetIds.begin();
+   while( it != assetIds.end() )
+   {
+      const AssetDefinition * asset;
+      bool  found = assetOrganizer->FindByHash( *it++ , asset );
+      if( found )
+      {
+         AssetInfo assetInfo;
+         Copy( asset, assetInfo ); // operator = is not an option in this version of VS
+
+         assetInfo.productId  = gameProductId;
+
+         response->updatedAssets.insert( assetInfo.assetHash, assetInfo );
+      }
+   }
+
+   U32 connectionId = m_userTicket.connectionId;
+   PacketGatewayWrapper* wrapper = new PacketGatewayWrapper;
+   wrapper->SetupPacket( response, connectionId );
+   
+   m_assetManager->AddOutputChainData( wrapper, connectionId );
+
+   /// product filter
+   return true;
 }
 
 //------------------------------------------------------------------------------------------------
@@ -207,13 +286,13 @@ bool     UserAccountAssetDelivery::GetAsset( const PacketAsset_RequestAsset* pac
       int size = 0;
 
       U32 connectionId = m_userTicket.connectionId;
-      const AssetDefinition* asset;
-      bool found = m_assetManager->GetStaticAssetOrganizer()->FindByHash( packet->assetHash, asset );
+      const AssetDefinition* asset = m_assetManager->GetAsset( packet->assetHash );
+    /*  bool found = m_assetManager->GetStaticAssetOrganizer()->FindByHash( packet->assetHash, asset );
       if( found == false )
       {
          found = m_assetManager->GetDynamicAssetOrganizer()->FindByHash( packet->assetHash, asset );
-      }
-      if( found )
+      }*/
+      if( asset != NULL )
       {
          data = asset->fileData;
          size = asset->fileSize;

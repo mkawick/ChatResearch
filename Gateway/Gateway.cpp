@@ -13,12 +13,15 @@
 
 #include <boost/lexical_cast.hpp>
 #include <boost/format.hpp>
+using boost::format;
 
 #include <cstdio>
 #include "../NetworkCommon/Version.h"
 #include "../NetworkCommon/Utils/Utils.h"
 #include "../NetworkCommon/Utils/CommandLineParser.h"
 #include "../NetworkCommon/Packets/ServerToServerPacket.h"
+
+#include "../NetworkCommon/Daemon/Daemonizer.h"
 
 #include "KhaanGateway.h"
 #include "DiplodocusGateway.h"
@@ -43,8 +46,9 @@ void  PrintInstructions()
    cout << endl << endl;
    cout << ": params are as follows:" << endl;
    cout << "    server.name       - allows a new name reported in logs and connections" << endl;
-   cout << "    listen.address    - what is the ipaddress that this app should be using; usually localhost or null" << endl;
-   cout << "    listen.address    - listen on which port" << endl;
+   cout << "    listen.address    - what is the ipaddress that this app should be using;" << endl;
+   cout << "                        usually localhost or null" << endl;
+   cout << "    listen.port       - listen on which port" << endl;
 
    cout << " ------ all of the following parameters are optional. --------" << endl;
    
@@ -77,6 +81,8 @@ void  PrintInstructions()
 
 int main( int argc, const char* argv[] )
 {
+   daemonize( "gateway_serverd" );
+
    CommandLineParser    parser( argc, argv );
 
    string serverName = "Gateway server";

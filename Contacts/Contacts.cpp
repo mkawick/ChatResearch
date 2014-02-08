@@ -4,35 +4,65 @@
 #include <iostream>
 #include <list>
 #include <vector>
-#pragma warning (disable:4996)
+
 using namespace std;
 
 #include <assert.h>
 
+#include <boost/format.hpp>
 #include <boost/lexical_cast.hpp>
+using boost::format;
 
-#include "DiplodocusContact.h"
-#include "../NetworkCommon/NetworkIn/DiplodocusServerToServer.h"
+
 #include "../NetworkCommon/Version.h"
 #include "../NetworkCommon/Utils/CommandLineParser.h"
 #include "../NetworkCommon/DataTypes.h"
 #include "../NetworkCommon/Utils/Utils.h"
 #include "../NetworkCommon/Database/Deltadromeus.h"
-
+#include "../NetworkCommon/Daemon/Daemonizer.h"
+#include "../NetworkCommon/NetworkIn/DiplodocusServerToServer.h"
 
 #if PLATFORM == PLATFORM_WINDOWS
+#pragma warning (disable:4996)
 #include <conio.h>
 #endif   
 
+#include "DiplodocusContact.h"
+
+////////////////////////////////////////////////////////////////////////
+
+void  PrintInstructions()
+{
+   cout << "contact takes params as follows:" << endl;
+   cout << "> contact_server listen.port=7500 db.address=10.16.4.44 db.port=3306" << endl;
+   cout << "   db.username=incinerator db.password=Cm8235 db.schema=playdek s2s.port=7502" << endl;
+   cout << " NOTE: contact is a server-to-login, mainly." << endl;
+
+   cout << endl << endl;
+   cout << ": params are as follows:" << endl;
+   cout << "    server.name       - allows a new name reported in logs and connections" << endl;
+   cout << "    listen.address    - what is the ipaddress that this app should be using;" << endl;
+   cout << "                        usually localhost or null" << endl;
+   cout << "    listen.port       - listen on which port to gateway connections" << endl;
+   cout << "    s2s.address       - where is the load balancer" << endl;
+   cout << "    s2s.port          - load balancer" << endl;
+   
+   cout << "    db.address        - database ipaddress" << endl;
+   cout << "    db.port           - database port" << endl;
+   cout << "    db.username       - database username" << endl;
+   cout << "    db.password       - database password" << endl;
+   cout << "    db.schema         - database schema-table collection" << endl;
+
+   cout << " -h, -help, -? for help " << endl;
+}
+
+////////////////////////////////////////////////////////////////////////
+
 int main( int argc, const char* argv[] )
 {
+   daemonize( "contact_serverd" );
+
 	CommandLineParser    parser( argc, argv );
-
-   // listen.address=127.0.0.1 listen.port=9800 
-   // db.address=10.16.4.44 db.port=3306 db.username=incinerator db.password=Cm8235 db.schema=playdek 
-   // s2s.port=9802
-
-   // listen.address=127.0.0.1 listen.port=9800 db.address=10.16.4.44 db.port=3306 db.username=admin db.password=Pz5328!@ db.schema=playdek s2s.port=9802
    string serverName = "Contact Server";
    
    string listenPort = "7500";
@@ -115,3 +145,4 @@ int main( int argc, const char* argv[] )
    getch();
 }
 
+////////////////////////////////////////////////////////////////////////

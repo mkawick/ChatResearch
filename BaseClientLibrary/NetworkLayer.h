@@ -126,37 +126,7 @@ struct AssetInfoExtended : public AssetInfo
 
    bool  SerializeIn( const U8* data, int& bufferOffset ) { return false; } // do not serialize
    bool  SerializeOut( U8* data, int& bufferOffset ) const { return false; }
-
-private:
-   
-
 };
-/*
-
-const char* productNames [] = {
-   "",
-   "ascension",
-   "dominion",
-   "thunderstone",
-   "wowcmg",
-   "summonwar",
-   "foodfight",
-   "nightfall",
-   "pennyarcade",
-   "infinitecity",
-   "agricola",
-   "fluxx",
-   "smashup"
-};
-
-const char* platformStrings[] = {
-   "",
-   "ios",
-   "android",
-   "pc",
-   "mac",
-   "blackberry"
-};*/
 
 ///////////////////////////////////////////////////////
 
@@ -182,7 +152,7 @@ public:
    virtual void  UserWinLoss( const string& username, const WinLoss& userWinLoss ) {}
 
    virtual void  GameData( U16 length, const U8* rawdata ) {}
-   virtual void  AssetDataAvailable( const string& assetHash ) {}
+   virtual void  AssetDataAvailable( const string& category, const string& assetHash ) {}
 
    virtual void  FriendsUpdate() {}
    virtual void  FriendOnlineStatusChanged( const string& uuid ) {}
@@ -204,8 +174,8 @@ public:
    virtual void  ChatChannelHistory( const string& channelUuid, const list< ChatEntry >& listOfChats ) {  }
    virtual void  ChatP2PHistory( const string& userUuid, const list< ChatEntry >& listOfChats ) { }
 
-   virtual void  StaticAssetManifestAvalable() const {}
-   virtual void  DynamicicAssetManifestAvalable() const {}
+   virtual void  AssetCategoriesLoaded() {}
+   virtual void  AssetManifestAvailable( const string& category ) {}
    virtual bool  AssetLoaded( const string& name, const U8* buffer, int size ) { return true; }
    virtual void  TournamentListAvalable() const {}
    virtual void  TournamentPurchaseResult( const string& tournamentUuid, int result ) const {}
@@ -231,6 +201,12 @@ public:
 
 typedef list< UserNetworkEventNotifier* > MBerNotifierList;
 typedef list< UserNetworkEventNotifier2* > MBerNotifierList2;
+
+typedef vector< AssetInfoExtended > AssetCollection;
+typedef map< string, AssetCollection > AssetMap;
+typedef pair< string, AssetCollection > AssetMapPair;
+typedef AssetMap::iterator AssetMapIter;
+typedef AssetMap::const_iterator AssetMapConstIter;
 
 ///////////////////////////////////////////////////////
 
@@ -329,9 +305,10 @@ public:
    bool     RequestListOfTournaments();
    bool     PurchaseEntryIntoTournament( const string& tournamentUuid );
 
-   bool     RequestListOfStaticAssets( int platformId = Platform_ios );
-   bool     RequestListOfDynamicAssets( int platformId = Platform_ios );
-   bool     RequestAsset( const string& assetName );
+   bool     RequestListOfAssetCategories();
+   bool     RequestListOfAssets( const string& category, int platformId = Platform_ios );
+   bool     RequestAssetByHash( const string& assetHash );
+   bool     RequestAssetByName( const string& assetName );
 
    bool     SendPurchases( const vector< RegisteredProduct >& purchases, int platformId = Platform_ios );
    bool     GiveProduct( const string& userName, const string& productUuid, int quantity, const string& notes, int platformId = Platform_ios );
@@ -355,14 +332,12 @@ public:
    int      GetNumChannels() const { return static_cast<int>( m_channels.size() ); }
    bool     GetChannel( int index, ChatChannel& channel );
 
-   int      GetNumStaticAssets() const { return static_cast<int>( m_staticAssets.size() ); }
-   bool     GetStaticAssetInfo( int index, AssetInfoExtended& assetInfo );
+   int      GetAssetCategories( vector< string >& categories ) const;
+   int      GetNumAssets( const string& category );
+   bool     GetAssetInfo( const string& category, int index, AssetInfoExtended& assetInfo );
 
-   int      GetNumDynamicAssets() const { return static_cast<int>( m_dynamicAssets.size() ); }
-   bool     GetDynamicAssetInfo( int index, AssetInfoExtended& assetInfo );
-
-   bool     GetAssetInfo( const string& hash, AssetInfoExtended& asset ) { return GetAsset( hash, asset ); }
-   bool     ClearAssetInfo( const string& hash );
+   bool     GetAssetInfo( const string& category, const string& hash, AssetInfoExtended& asset ) { return GetAsset( category, hash, asset ); }
+   bool     ClearAssetInfo( const string& category, const string& hash );
 
    int      GetNumAvailableTournaments() const { return static_cast<int>( m_availableTournaments.size() ); }
    bool     GetTournamentInfo( int index, TournamentInfo& tournamentInfo );
@@ -386,45 +361,45 @@ private:
    typedef vector< PacketGameIdentification >      GameList;
 
 
-   string               m_userName, m_attemptedUsername;
-   string               m_uuid;
-   string               m_serverDns;
-   string               m_loginKey;
-   U32                  m_selectedGame;
+   string                                    m_userName, m_attemptedUsername;
+   string                                    m_uuid;
+   string                                    m_serverDns;
+   string                                    m_loginKey;
+   U32                                       m_selectedGame;
 
    SerializedKeyValueVector< InvitationInfo > m_invitationsReceived;
    SerializedKeyValueVector< InvitationInfo > m_invitationsSent;
-   UserNameKeyValue     m_friends;
-   ChatChannelVector    m_channels;
-   GameList             m_gameList;
+   UserNameKeyValue                          m_friends;
+   ChatChannelVector                         m_channels;
+   GameList                                  m_gameList;
 
-   U8                   m_gameProductId;
-   bool                 m_isLoggingIn;
-   bool                 m_isLoggedIn;
-   bool                 m_isCreatingAccount;
-   U32                  m_connectionId;
-   string               m_lastLoggedOutTime;
-   int                  m_lastRawDataIndex;
-   int                  m_connectionPort;
+   U8                                        m_gameProductId;
+   bool                                      m_isLoggingIn;
+   bool                                      m_isLoggedIn;
+   bool                                      m_isCreatingAccount;
+   U32                                       m_connectionId;
+   string                                    m_lastLoggedOutTime;
+   int                                       m_lastRawDataIndex;
+   int                                       m_connectionPort;
 
-   mutable U32          m_beginTime, m_endTime;
+   mutable U32                               m_beginTime, m_endTime;
 
-   int                  m_normalSleepTime, m_boostedSleepTime;
-   bool                 m_isThreadPerformanceBoosted;
-   time_t               m_timeWhenThreadPerformanceBoosted;
+   int                                       m_normalSleepTime, m_boostedSleepTime;
+   bool                                      m_isThreadPerformanceBoosted;
+   time_t                                    m_timeWhenThreadPerformanceBoosted;
 
-   MBerNotifierList     m_callbacks;
-   RawDataAccumulator   m_rawDataBuffer[ PacketGameplayRawData::NumDataTypes ];
+   MBerNotifierList                          m_callbacks;
+   RawDataAccumulator                        m_rawDataBuffer[ PacketGameplayRawData::NumDataTypes ];
 
-   vector< AssetInfoExtended >  m_staticAssets;
-   vector< AssetInfoExtended >  m_dynamicAssets;
-   vector< TournamentInfo >     m_availableTournaments;
+   AssetMap                                  m_assets;
+   vector< TournamentInfo >                  m_availableTournaments;
 
 private:
    bool     SerializePacketOut( BasePacket* packet ) const;// helper
 
    bool     HandlePacketReceived( BasePacket* packetIn );
    int      ProcessInputFunction();
+   void     HandleData( PacketGameplayRawData* );
 
    bool     AddChatChannel( const ChatChannel& channel );
 
@@ -432,6 +407,7 @@ private:
    void     RestoreNormalThreadPerformance();
    void     ExpireThreadPerformanceBoost();
 
+   bool     GetAsset( const string& category, const string& hash, AssetInfoExtended& asset );
    bool     GetAsset( const string& hash, AssetInfoExtended& asset );
    bool     UpdateAssetData( const string& hash, AssetInfoExtended& asset );
 
@@ -439,6 +415,7 @@ private:
    void     NotifyClientToBeginSendingRequests();
    void     InitalConnectionCallback();
 };
+
 ///////////////////////////////////////////////////////
 
 class NetworkLayer2 : public PacketHandlerInterface
@@ -575,40 +552,40 @@ private:
    typedef vector< PacketGameIdentification >      GameList;
 
 
-   string               m_userName, m_attemptedUsername;
-   string               m_uuid;
-   string               m_serverDns;
-   string               m_loginKey;
-   U32                  m_selectedGame;
+   string                           m_userName, m_attemptedUsername;
+   string                           m_uuid;
+   string                           m_serverDns;
+   string                           m_loginKey;
+   U32                              m_selectedGame;
 
    SerializedKeyValueVector< InvitationInfo > m_invitationsReceived;
    SerializedKeyValueVector< InvitationInfo > m_invitationsSent;
-   UserNameKeyValue     m_friends;
-   ChatChannelVector    m_channels;
-   GameList             m_gameList;
+   UserNameKeyValue                 m_friends;
+   ChatChannelVector                m_channels;
+   GameList                         m_gameList;
 
-   U8                   m_gameProductId;
-   bool                 m_requiresGatewayDiscovery;
-   bool                 m_isLoggingIn;
-   bool                 m_isLoggedIn;
-   bool                 m_isCreatingAccount;
-   U32                  m_connectionId;
-   string               m_lastLoggedOutTime;
-   int                  m_lastRawDataIndex;
-   int                  m_connectionPort;
+   U8                               m_gameProductId;
+   bool                             m_requiresGatewayDiscovery;
+   bool                             m_isLoggingIn;
+   bool                             m_isLoggedIn;
+   bool                             m_isCreatingAccount;
+   U32                              m_connectionId;
+   string                           m_lastLoggedOutTime;
+   int                              m_lastRawDataIndex;
+   int                              m_connectionPort;
 
-   mutable U32          m_beginTime, m_endTime;
+   mutable U32                      m_beginTime, m_endTime;
 
-   int                  m_normalSleepTime, m_boostedSleepTime;
-   bool                 m_isThreadPerformanceBoosted;
-   time_t               m_timeWhenThreadPerformanceBoosted;
+   int                              m_normalSleepTime, m_boostedSleepTime;
+   bool                             m_isThreadPerformanceBoosted;
+   time_t                           m_timeWhenThreadPerformanceBoosted;
 
-   MBerNotifierList2    m_callbacks;
-   RawDataAccumulator   m_rawDataBuffer[ PacketGameplayRawData::NumDataTypes ];
+   MBerNotifierList2                m_callbacks;
+   RawDataAccumulator               m_rawDataBuffer[ PacketGameplayRawData::NumDataTypes ];
 
-   vector< AssetInfoExtended >  m_staticAssets;
-   vector< AssetInfoExtended >  m_dynamicAssets;
-   vector< TournamentInfo >     m_availableTournaments;
+   vector< AssetInfoExtended >      m_staticAssets;
+   vector< AssetInfoExtended >      m_dynamicAssets;
+   vector< TournamentInfo >         m_availableTournaments;
 
 private:
    bool     SerializePacketOut( BasePacket* packet ) const;// helper

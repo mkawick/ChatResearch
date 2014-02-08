@@ -7,20 +7,25 @@
 #include <deque>
 #include <iomanip>
 
-#include "ChatChannelManager.h"
-#include "DiplodocusChat.h"
-#include "UserConnection.h"
-#include <boost/lexical_cast.hpp>
-#include <mysql.h>
-
-#include "../NetworkCommon/Utils/TableWrapper.h"
 
 #include "../NetworkCommon/Packets/DbPacket.h"
 #include "../NetworkCommon/Packets/GamePacket.h"
 #include "../NetworkCommon/Packets/ChatPacket.h"
 #include "../NetworkCommon/Packets/ServerToServerPacket.h"
 #include "../NetworkCommon/Packets/PacketFactory.h"
+#include "../NetworkCommon/Utils/CommandLineParser.h"
 
+#include <boost/format.hpp>
+#include <boost/lexical_cast.hpp>
+using boost::format;
+
+#include "ChatChannelManager.h"
+#include "DiplodocusChat.h"
+#include "UserConnection.h"
+
+#include <mysql.h>
+
+#include "../NetworkCommon/Utils/TableWrapper.h"
 
 using namespace std;
 

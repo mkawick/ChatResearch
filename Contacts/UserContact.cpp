@@ -2,10 +2,14 @@
 
 #include <string>
 
+#include <boost/format.hpp>
+#include <boost/lexical_cast.hpp>
+using boost::format;
+
+#include "../NetworkCommon/Utils/CommandLineParser.h"
 #include "../NetworkCommon/Packets/BasePacket.h"
 #include "UserContact.h"
 #include "DiplodocusContact.h"
-#include <boost/lexical_cast.hpp>
 
 using namespace std;
 
@@ -13,8 +17,8 @@ using namespace std;
 
 
 UserContact::UserContact( const UserInfo& info, U32 connectionId ): 
+               m_connectionId( connectionId ),
                m_userInfo( info ), 
-               m_connectionId( connectionId ), 
                m_requiresUpdate( false ),
                m_isLoggedOut( false ),
                m_hasBeenInitialized( false ),

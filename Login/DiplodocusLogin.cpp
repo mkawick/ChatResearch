@@ -1,7 +1,8 @@
 // DiplodocusLogin.cpp
 
-#include "DiplodocusLogin.h"
-#include "FruitadensLogin.h"
+#include <boost/lexical_cast.hpp>
+#include <boost/format.hpp>
+using boost::format;
 
 #include "../NetworkCommon/Utils/TableWrapper.h"
 #include "../NetworkCommon/Utils/Utils.h"
@@ -14,10 +15,15 @@
 #include "../NetworkCommon/Packets/CheatPacket.h"
 #include "../NetworkCommon/Packets/LoginPacket.h"
 #include "../NetworkCommon/Packets/PacketFactory.h"
+#include "../NetworkCommon/Utils/CommandLineParser.h"
 
 #include "../NetworkCommon/Logging/server_log.h"
 
 #include <boost/lexical_cast.hpp>
+
+
+#include "DiplodocusLogin.h"
+#include "FruitadensLogin.h"
 
 #define _DEMO_13_Aug_2013
 
@@ -249,6 +255,7 @@ bool     DiplodocusLogin:: LogUserIn( const string& userName, const string& pass
       Log( userName.c_str(), 4 );
       ForceUserLogoutAndBlock( connectionId );
       return false;*/
+      Log( "Reconnect user", 1 );
 
       ReinsertUserConnection( oldConnectionId, connectionId );// and we remove the old connection
 
@@ -343,6 +350,7 @@ bool     DiplodocusLogin:: HandleLoginResultFromDb( U32 connectionId, PacketDbQu
          connection->ClearLoggingOutStatus();
          /*connection->BeginLogout( false );
          bool result = connection->FinalizeLogout();*/
+         Log( "Connect user: Cannot continue logging in", 1 );
          return false;
       }
 
@@ -366,9 +374,14 @@ bool     DiplodocusLogin:: HandleLoginResultFromDb( U32 connectionId, PacketDbQu
                                        wasDisconnectedByError);
          if( connection->SuccessfulLogin( connectionId, false ) == true )
          {
+            Log( "User connection success", 1 );
             m_uniqueUsers.insert( connection->m_userUuid );
             UpdateLastLoggedInTime( dbResult->id ); // update the user logged in time
             return true;
+         }
+         else
+         {
+            Log( "User connection failure", 1 );
          }
          
       }
@@ -500,7 +513,7 @@ void     DiplodocusLogin:: RemoveOldConnections()
    while( it != m_userConnectionMap.end() )
    {
       UserConnectionMapIterator temp = it++;
-      if( temp->second.isLoggingOut == false && // do not remove in the middle of logging out
+      if( temp->second.isLoggingOut == true && // do not remove in the middle of logging out
          temp->second.loggedOutTime != 0 )
       {
          const int normalExpireTime = 3; // seconds

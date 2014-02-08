@@ -4,6 +4,17 @@
 #include <vector>
 using namespace std;
 
+
+#include <boost/lexical_cast.hpp>
+#include <boost/format.hpp>
+
+
+#include "../NetworkCommon/Version.h"
+#include "../NetworkCommon/DataTypes.h"
+#include "../NetworkCommon/Utils/Utils.h"
+#include "../NetworkCommon/Daemon/Daemonizer.h"
+#include "../NetworkCommon/Utils/CommandLineParser.h"
+
 struct Manifest
 {
    vector< string > fileManifest;

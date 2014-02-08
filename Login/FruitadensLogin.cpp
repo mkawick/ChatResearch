@@ -1,14 +1,19 @@
 
 #include <memory.h>
+#include <boost/lexical_cast.hpp>
+#include <boost/format.hpp>
+using boost::format;
 
-#include "FruitadensLogin.h"
 #include "../NetworkCommon/Packets/PacketFactory.h"
 #include "../NetworkCommon/Packets/BasePacket.h"
 #include "../NetworkCommon/Packets/ServerToServerPacket.h"
 #include "../NetworkCommon/Packets/GamePacket.h"
 #include "../NetworkCommon/Packets/LoginPacket.h"
+#include "../NetworkCommon/Utils/CommandLineParser.h"
 
 #include <assert.h>
+
+#include "FruitadensLogin.h"
 
 //-----------------------------------------------------------------------------------------
 

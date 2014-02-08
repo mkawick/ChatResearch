@@ -763,6 +763,27 @@ bool     PacketFactory::ParseAsset( const U8* bufferIn, int& bufferOffset, const
          *packetOut = SerializeIn< PacketAsset_GetListOfDynamicAssetsResponse >( bufferIn, bufferOffset );
       }
       return true;
+   case PacketAsset::AssetType_GetListOfAssetCategories:
+      {
+         *packetOut = SerializeIn< PacketAsset_GetListOfAssetCategories >( bufferIn, bufferOffset );
+      }
+      return true;
+   case PacketAsset::AssetType_GetListOfAssetCategoriesResponse:
+      {
+         *packetOut = SerializeIn< PacketAsset_GetListOfAssetCategoriesResponse >( bufferIn, bufferOffset );
+      }
+      return true;
+   case PacketAsset::AssetType_GetListOfAssets:
+      {
+         *packetOut = SerializeIn< PacketAsset_GetListOfAssets >( bufferIn, bufferOffset );
+      }
+      return true;
+   case PacketAsset::AssetType_GetListOfAssetsResponse:
+      {
+         *packetOut = SerializeIn< PacketAsset_GetListOfAssetsResponse >( bufferIn, bufferOffset );
+      }
+      return true;
+   
    case PacketAsset::AssetType_RequestAsset:
       {
          *packetOut = SerializeIn< PacketAsset_RequestAsset >( bufferIn, bufferOffset );

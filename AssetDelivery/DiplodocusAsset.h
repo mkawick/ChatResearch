@@ -1,20 +1,21 @@
 #pragma once
 
-#include "../NetworkCommon/NetworkIn/Diplodocus.h"
+#include <map>
+#include <deque>
+using namespace std;
 
+#include "../NetworkCommon/NetworkIn/Diplodocus.h"
 #include "../NetworkCommon/Database/QueryHandler.h"
 #include "AssetCommon.h"
 #include "UserAccountAssetDelivery.h"
 #include "KhaanAsset.h"
 //#include "UserContact.h"
 
-#include <map>
-#include <deque>
-using namespace std;
-class AssetOrganizer;
-class PacketPrepareForUserLogin;
-class PacketPrepareForUserLogout;
-class PacketListOfUserProductsS2S;
+class    AssetOrganizer;
+struct   AssetDefinition;
+class    PacketPrepareForUserLogin;
+class    PacketPrepareForUserLogout;
+class    PacketListOfUserProductsS2S;
 
 ///////////////////////////////////////////////////////////////////
 
@@ -28,15 +29,19 @@ public:
    ~DiplodocusAsset();
 
    void                    ServerWasIdentified( IChainedInterface* khaan );// callback really
-   bool                    SetIniFilePath( const string& assetPath, const string& assetDictionary, const string& dynamicAssetDictionary );
+   bool                    SetIniFilePath( const string& assetPath, const string& assetOfAssets );
 
    bool                    AddInputChainData( BasePacket* packet, U32 connectionId );
    bool                    AddOutputChainData( BasePacket* packet, U32 connectionId );
 
-   const AssetOrganizer*   GetStaticAssetOrganizer() const { return m_staticAssets; }
-   const AssetOrganizer*   GetDynamicAssetOrganizer() const { return m_dynamicAssets; }
+   const AssetOrganizer*   GetAssetOrganizer( const string& AssetCategory ) const;
+   bool                    GetListOfAssetCategories( vector<string>& categories ) const;
+   const AssetDefinition*  GetAsset( const string& hash ) const;
+   //const AssetOrganizer*   GetDynamicAssetOrganizer() const { return m_dynamicAssets; }
 
 private:
+
+   bool                    LoadAllAssetManifests();
    bool                    HandlePacketFromOtherServer( BasePacket* packet, U32 connectionId );
    bool                    ConnectUser( PacketPrepareForUserLogin* loginPacket );
    bool                    DisconnectUser( PacketPrepareForUserLogout* loginPacket );
@@ -50,10 +55,18 @@ private:
    typedef pair< U64, UserAccountAssetDelivery >     UAADPair;
    typedef UAADMap::iterator                       UAADMapIterator;
 
+public:
+   typedef map< string, AssetOrganizer >           CategorizedAssetLists;// asset category paired with a list of assets.
+   typedef pair< string, AssetOrganizer >          CategorizedAssetPair;
+
    deque< U32 >                     m_serversNeedingUpdate;
    UAADMap                          m_userTickets;
-   AssetOrganizer*                  m_dynamicAssets;
-   AssetOrganizer*                  m_staticAssets;
+   CategorizedAssetLists            m_assetsByCategory;
+
+   string                           m_mainAssetFilePath;
+   time_t                           m_checkForFileChangeTimestamp;
+   time_t                           m_assetOfAssetFileModificationTime;
+   static const int                 CheckForFileModificationTimeout = 2 * 60; // two minutes
 };
 
 ///////////////////////////////////////////////////////////////////

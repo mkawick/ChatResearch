@@ -6,6 +6,11 @@
 #include "../Packets/BasePacket.h"
 #include "../Packets/GamePacket.h"
 #include "../Packets/ServerToServerPacket.h"
+#include "../Utils/CommandLineParser.h"
+
+#include <boost/lexical_cast.hpp>
+#include <boost/format.hpp>
+using boost::format;
 
 #include "KhaanServerToServer.h"
 #include "Diplodocus.h"
@@ -32,7 +37,10 @@ bool	KhaanServerToServer :: OnDataReceived( unsigned char* data, int length )
             assert( 0 );
          }
          
+#ifdef VERBOSE
          cout<<  " KhaanServerToServer :: OnDataReceived( p=" << packetType << ":" << packetIn->packetSubType << ")"<< endl;
+#endif
+
          Threading::MutexLock  locker( m_inputChainListMutex );
          m_packetsIn.push_back( packetIn );
          RequestUpdate();
@@ -121,7 +129,10 @@ void	KhaanServerToServer :: UpdateInwardPacketList()
 
 void  KhaanServerToServer :: RequestUpdate()
 {
-   //cout << " KhaanServerToServer :: RequestUpdate(" << endl;
+#ifdef VERBOSE
+   cout << " KhaanServerToServer :: RequestUpdate(" << endl;
+#endif
+
    ChainLinkIteratorType itOutputs = m_listOfOutputs.begin();
    if( itOutputs != m_listOfOutputs.end() )// only one output currently supported.
    {
@@ -139,7 +150,10 @@ void  KhaanServerToServer :: RequestUpdate()
 
 bool  KhaanServerToServer :: PassPacketOn( BasePacket* packet, U32 connectionId )
 {
-   //cout << " KhaanServerToServer :: PassPacketOn(" << endl;
+#ifdef VERBOSE
+   cout << " KhaanServerToServer :: PassPacketOn(" << endl;
+#endif
+
    ChainLinkIteratorType itOutputs = m_listOfOutputs.begin();
    if( itOutputs != m_listOfOutputs.end() )// only one output currently supported.
    {
@@ -156,7 +170,10 @@ bool  KhaanServerToServer :: PassPacketOn( BasePacket* packet, U32 connectionId 
 
 bool  KhaanServerToServer :: HandleCommandFromGateway( BasePacket* packet, U32 connectionId )
 {
-   //cout << " KhaanServerToServer :: HandleCommandFromGateway(" << endl;
+#ifdef VERBOSE
+   cout << " KhaanServerToServer :: HandleCommandFromGateway(" << endl;
+#endif
+
    ChainLinkIteratorType itOutputs = m_listOfOutputs.begin();
    if( itOutputs != m_listOfOutputs.end() )// only one output currently supported.
    {
@@ -172,7 +189,6 @@ bool  KhaanServerToServer :: HandleCommandFromGateway( BasePacket* packet, U32 c
 
 void  KhaanServerToServer :: SaveOffServerIdentification( const PacketServerIdentifier* packet )
 {
-   //cout << " KhaanServerToServer :: SaveOffServerIdentification(" << endl;
    //if( m_serverName == packet->serverName && m_serverId == packet->serverId ) // prevent dups from reporting.
    //   return;
 
@@ -214,4 +230,5 @@ void   KhaanServerToServer ::PreCleanup()
    Khaan::PreCleanup();
    cout << "Server has disconnected, name = '" << m_serverName << "' : " << m_serverId << endl;
 }
+
 ///////////////////////////////////////////////////////////////////

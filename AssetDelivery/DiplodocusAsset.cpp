@@ -1,3 +1,5 @@
+
+#include "AssetCommon.h"
 #include "DiplodocusAsset.h"
 #include "../NetworkCommon/Packets/ServerToServerPacket.h"
 #include "../NetworkCommon/Packets/AssetPacket.h"
@@ -8,26 +10,23 @@
 
 #include <iostream>
 #include <time.h>
+#include <fstream> 
 
 using namespace std;
 
 ///////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////
 
-DiplodocusAsset::DiplodocusAsset( const string& serverName, U32 serverId ): Diplodocus< KhaanAsset >( serverName, serverId, 0,  ServerType_Contact ), m_staticAssets( NULL ), m_dynamicAssets( NULL )
-/*, 
-                        //m_initializationStage( InitializationStage_Begin ),
-                        m_queryPeriodicity( 10000 ),
-                        m_isExecutingQuery( false )*/
+DiplodocusAsset::DiplodocusAsset( const string& serverName, U32 serverId ): Diplodocus< KhaanAsset >( serverName, serverId, 0,  ServerType_Contact ), 
+                                                                              m_assetOfAssetFileModificationTime( 0 )
 {
-    //time( &m_lastTimeStamp );
+    time( &m_checkForFileChangeTimestamp );
    SetSleepTime( 100 );
 }
 
 DiplodocusAsset :: ~DiplodocusAsset()
 {
-   delete m_staticAssets;
-   delete m_dynamicAssets;
+   m_assetsByCategory.clear();
 }
 //---------------------------------------------------------------
 
@@ -64,32 +63,209 @@ string AssembleFullPath( const string& path, const string& fileName )
    return finalPath;
 }
 
-bool     DiplodocusAsset::SetIniFilePath( const string& assetPath, const string& assetDictionary, const string& dynamicAssetDictionary )
+//////////////////////////////////////////////////////////////////////////
+
+bool  FillInAssetOrganizer( string& line, AssetOrganizer& assetDictionary )
 {
-   if( m_staticAssets )
+   vector< string > listOfStuff;
+
+   splitOnFirstFound( listOfStuff, line );
+
+   if( listOfStuff.size() != 0 )
    {
-      delete m_staticAssets;
-   }
-   m_staticAssets = new AssetOrganizer();
+      const string& potentionalKey = ConvertStringToLower( listOfStuff[ 0 ] );
+      const string& value = ConvertStringToLower( listOfStuff[ 1 ] );
+      const string undecoratedValue = RemoveEnds( listOfStuff[ 1 ] );
 
-   if( m_dynamicAssets )
+      if( listOfStuff.size() == 2 )// simplest case
+      {
+         if( potentionalKey == "type" || potentionalKey == "name" )
+         {
+            assetDictionary.SetCategory( undecoratedValue.c_str() );
+            if( assetDictionary.GetCategory().size() == 0 ) // bad id
+               return true;
+         }
+         else if( potentionalKey == "path" || potentionalKey == "file" )
+         {
+            assetDictionary.SetPath( undecoratedValue );
+            if( DoesFileExist( assetDictionary.GetPath() ) == true )
+            {
+               return true;
+            }
+            else
+            {
+               cout << "Invalid file :  " << assetDictionary.GetPath() << endl;
+            }
+         }
+         else
+         {
+            return false; // no other usable keys
+         }
+      }
+      else
+      {
+         return false; // no support for one or three things on a line.
+      }
+   }
+
+   return false;
+}
+
+int  SetupAssetList( ifstream& infile, DiplodocusAsset::CategorizedAssetLists& categorizedAssetLists )
+{
+   AssetOrganizer ao;
+   string line;
+   // we are expecting two lines
+   int numLines = 0;
+
+   if( safeGetline( infile, line ) == 0 )// could be spaces, etc
+      assert( 0 );
+   FillInAssetOrganizer( line, ao );
+
+   numLines ++;
+
+   if( safeGetline( infile, line ) == 0 )// could be spaces, etc
+      assert( 0 );
+   FillInAssetOrganizer( line, ao );
+
+   numLines ++;
+
+   if( ao.GetPath().size() != 0 && ao.GetCategory().size() != 0 )
    {
-      delete m_dynamicAssets;
+      if( categorizedAssetLists.find( ao.GetCategory() ) != categorizedAssetLists.end() ) // we already have this category so move on.
+         return 0;
+
+      categorizedAssetLists.insert( DiplodocusAsset::CategorizedAssetPair( ao.GetCategory(), ao ) );
    }
-   m_dynamicAssets = new AssetOrganizer();
+   else
+      assert( 0 );
 
-   string   finalPath = AssembleFullPath( assetPath, assetDictionary );
+   return numLines;
+}
+//////////////////////////////////////////////////////////////////////////
 
-   bool success = m_staticAssets->Init( finalPath );
+bool  LoadListOfFiles( const string& assetManifestFile, DiplodocusAsset::CategorizedAssetLists& categorizedAssetLists )
+{
+   //ifstream infile( assetDictionary.dictionaryPath.c_str() );
+   ifstream infile( assetManifestFile.c_str() );
+   string line;
+   if (!infile) 
+   { 
+      std::cerr << "Error opening file!" << endl; 
+      std::cout << "file not found: " << assetManifestFile << endl; 
+      return false; 
+   }
 
-   //-----------------------------------------------
+   int lineCount = 0;
+   const char* bracketPairs = "[]{}<>()";
+   DiplodocusAsset::CategorizedAssetLists:: reverse_iterator it = categorizedAssetLists.rend();
 
-   finalPath = AssembleFullPath( assetPath, dynamicAssetDictionary );
+   while( safeGetline( infile, line ) )// could be spaces, etc
+   {
+      lineCount ++;
+      if( line.size() == 0 )
+         continue;
+      if( IsBracketedTag( line, bracketPairs ) ) // start a new asset or item
+      {
+         string tag = RemoveEnds( line, bracketPairs );
+         cout << "INVALID Tag in assets of assets file: " << tag << endl;
+         assert( tag == "file" );
 
-   success &= m_dynamicAssets->Init( finalPath );
+         // we'll keep reading after this
+         int num = categorizedAssetLists.size();
+         lineCount += SetupAssetList( infile, categorizedAssetLists );
+         if( num == categorizedAssetLists.size() )// nothing was added
+         {
+            //assert( 0 );
+            continue;
+         }
 
-   return success;
+         it = categorizedAssetLists.rbegin();
+         if( it == categorizedAssetLists.rend() )
+         {
+            assert( 0 );
+         }
+      }
+      else
+      {
+         //assert( 0 );
+         continue;
+      }
+   }
+   return true;
+}
+/*
+int  LoadAssetOrganizerFile( AssetOrganizer& assetDictionary )
+{
+   ifstream infile( assetDictionary.GetPath().c_str() );
+   string line;
+
+   if (!infile) 
+   { 
+      std::cerr << "Error opening file!\n"; 
+      return 1; 
+   }
+
+   int errorCode = 0;
+   int lineCount = 0;
+   while( safeGetline( infile, line ) )// could be spaces, etc
+   {
+      lineCount ++;
+      if( line == "[asset]" )
+      {
+         bool result = ParseNextAsset( infile, lineCount, assetDictionary );
+         if( result == false )
+         {
+            cout << "**********************************************" << endl;
+            cout << "Error in asset file reading line " << lineCount << endl;
+            cout << "**********************************************" << endl;
+            errorCode = true;
+            break;
+         }
+      }
+   }
+   return 0;
+}*/
+
+//////////////////////////////////////////////////////////////////////////
+
+bool     DiplodocusAsset::SetIniFilePath( const string& assetPath, const string& assetOfAssets )
+{
+   m_assetsByCategory.clear();
+   m_mainAssetFilePath = AssembleFullPath( assetPath, assetOfAssets );
+
+   return LoadAllAssetManifests();
    
+}
+
+//////////////////////////////////////////////////////////////////////////
+
+bool     DiplodocusAsset::LoadAllAssetManifests()
+{
+   if( LoadListOfFiles( m_mainAssetFilePath, m_assetsByCategory ) == false )
+      return false;
+
+   m_assetOfAssetFileModificationTime = GetFileModificationTime( m_mainAssetFilePath );
+   if( m_assetOfAssetFileModificationTime == 0 )
+      return false;
+
+   if( m_assetsByCategory.size() == 0 )
+      return false;
+
+   int errorCode = 0;
+
+   CategorizedAssetLists::iterator it = m_assetsByCategory.begin();
+   while( it != m_assetsByCategory.end() )
+   {
+      AssetOrganizer& assetDictionary = it->second;
+      it++;
+      if( assetDictionary.IsFullyLoaded() == false )
+      {
+         assetDictionary.LoadAssetManifest();
+      }
+   }
+
+   return true;
 }
 
 //---------------------------------------------------------------
@@ -124,7 +300,7 @@ bool     DiplodocusAsset::AddInputChainData( BasePacket* packet, U32 connectionI
 
          switch( type )
          {
-         case PacketAsset::AssetType_GetListOfStaticAssets:
+        /* case PacketAsset::AssetType_GetListOfStaticAssets:
             {
                PacketAsset_GetListOfStaticAssets* packetAsset = static_cast< PacketAsset_GetListOfStaticAssets* >( unwrappedPacket );
                uuid = packetAsset->uuid;
@@ -134,6 +310,20 @@ bool     DiplodocusAsset::AddInputChainData( BasePacket* packet, U32 connectionI
          case PacketAsset::AssetType_GetListOfDynamicAssets:
             {
                PacketAsset_GetListOfDynamicAssets* packetAsset = static_cast< PacketAsset_GetListOfDynamicAssets* >( unwrappedPacket );
+               uuid = packetAsset->uuid;
+               loginKey = packetAsset->loginKey;
+            }
+            break;*/
+            case PacketAsset::AssetType_GetListOfAssetCategories:
+            {
+               PacketAsset_GetListOfAssetCategories* packetAsset = static_cast< PacketAsset_GetListOfAssetCategories* >( unwrappedPacket );
+               uuid = packetAsset->uuid;
+               loginKey = packetAsset->loginKey;
+            }
+            break;
+         case PacketAsset::AssetType_GetListOfAssets:
+            {
+               PacketAsset_GetListOfAssets* packetAsset = static_cast< PacketAsset_GetListOfAssets* >( unwrappedPacket );
                uuid = packetAsset->uuid;
                loginKey = packetAsset->loginKey;
             }
@@ -212,10 +402,6 @@ bool  DiplodocusAsset::HandlePacketFromOtherServer( BasePacket* packet, U32 conn
          return true;
       }
    }
- /*  else if( unwrappedPacket->packetType == PacketType_Contact)
-   {
-      return HandlePacketRequests( static_cast< PacketContact* >( packet ), connectionId );
-   }*/
 
    return false;
 }
@@ -270,7 +456,6 @@ bool     DiplodocusAsset::DisconnectUser( PacketPrepareForUserLogout* loginPacke
    if( it == m_userTickets.end() )
       return false;
 
-   //it->second.NeedsUpdate();
    it->second.UserLoggedOut();
    // we need to send notifications
 
@@ -342,6 +527,8 @@ bool     DiplodocusAsset::AddOutputChainData( BasePacket* packet, U32 connection
    return false;
 }
 
+//---------------------------------------------------------------
+
 void     DiplodocusAsset::AddServerNeedingUpdate( U32 serverId )
 {
    deque< U32 >::iterator it = m_serversNeedingUpdate.begin();
@@ -383,13 +570,28 @@ int      DiplodocusAsset::CallbackFunction()
    }
    UpdateAllConnections();
 
-   if( m_staticAssets->IsFullyLoaded() == false )
+   CategorizedAssetLists::iterator it = m_assetsByCategory.begin();
+   while( it != m_assetsByCategory.end() )
    {
-      m_staticAssets->Update();
+      AssetOrganizer& assetDictionary = it->second;
+      it++;
+      //if( assetDictionary.IsFullyLoaded() == false )
+
+      assetDictionary.Update();
    }
-   if( m_dynamicAssets->IsFullyLoaded() == false )
+
+   time_t currentTime;
+   time( &currentTime );
+   if( m_assetOfAssetFileModificationTime && 
+      difftime( currentTime, m_checkForFileChangeTimestamp ) >= CheckForFileModificationTimeout )  
    {
-      m_dynamicAssets->Update();
+      m_checkForFileChangeTimestamp = currentTime;
+
+      time_t fileTime = GetFileModificationTime( m_mainAssetFilePath );
+      if( fileTime != m_assetOfAssetFileModificationTime ) // m_mainAssetFilePath
+      {
+         LoadAllAssetManifests();
+      }
    }
 
    UpdateConsoleWindow( m_timeOfLastTitleUpdate, m_uptime, m_numTotalConnections, m_connectedClients.size(), m_listeningPort, m_serverName );
@@ -398,6 +600,46 @@ int      DiplodocusAsset::CallbackFunction()
    return 1;
 }
 
+//---------------------------------------------------------------
+
+const AssetOrganizer*   DiplodocusAsset::GetAssetOrganizer( const string& AssetCategory ) const
+{
+   CategorizedAssetLists::const_iterator it = m_assetsByCategory.find( AssetCategory );
+   if( it != m_assetsByCategory.end() )
+      return &it->second;
+
+   return NULL;
+}
+
+//---------------------------------------------------------------
+
+bool                    DiplodocusAsset::GetListOfAssetCategories( vector<string>& categories ) const
+{
+   CategorizedAssetLists::const_iterator it = m_assetsByCategory.begin();
+   while( it != m_assetsByCategory.end() )
+   {
+      categories.push_back( it->first );
+      it++;
+   }
+   return true;
+}
+
+//---------------------------------------------------------------
+
+const AssetDefinition*  DiplodocusAsset::GetAsset( const string& hash ) const
+{
+   const AssetDefinition* assetDefn = NULL;
+   CategorizedAssetLists::const_iterator it = m_assetsByCategory.begin();
+   while( it != m_assetsByCategory.end() )
+   {
+      const AssetOrganizer& assetDictionary = it->second;
+      assetDictionary.FindByHash( hash, assetDefn );
+      if( assetDefn != NULL )
+         return assetDefn;
+      it++;
+   }
+   return NULL;
+}
 
 //---------------------------------------------------------------
 //---------------------------------------------------------------

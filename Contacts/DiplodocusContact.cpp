@@ -1,4 +1,10 @@
 // DiplodocusContact.cpp
+
+#include <boost/format.hpp>
+#include <boost/lexical_cast.hpp>
+using boost::format;
+
+#include "../NetworkCommon/Utils/CommandLineParser.h"
 #include "../NetworkCommon/Packets/ServerToServerPacket.h"
 #include "../NetworkCommon/Packets/ContactPacket.h"
 #include "../NetworkCommon/Packets/LoginPacket.h"

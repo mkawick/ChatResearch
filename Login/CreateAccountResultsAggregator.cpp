@@ -1,6 +1,12 @@
 // CreateAccountResultsAggregator.cpp
 
+#include <boost/lexical_cast.hpp>
+#include <boost/format.hpp>
+using boost::format;
+
 #include "../NetworkCommon/Utils/TableWrapper.h"
+#include "../NetworkCommon/Utils/CommandLineParser.h"
+
 #include "CreateAccountResultsAggregator.h"
 #include "DiplodocusLogin.h"
 

@@ -10,7 +10,7 @@
 
 //#define _MEMLEAK_TESTING_
 
-static const U8   GlobalNetworkProtocolVersion = 1;
+static const U8   GlobalNetworkProtocolVersion = 3;
 
 ///////////////////////////////////////////////////////////////
 
@@ -399,6 +399,8 @@ public:
       ErrorType_Asset_BadLoginKey =                            600,
       ErrorType_Asset_UnknownAsset =                           601,
       ErrorType_Asset_UserDisconnected =                       602,
+      ErrorType_Asset_UnknownAssetCategory =                   603,
+      ErrorType_Asset_NoCategoriesAvailable =                  604,
       
       ErrorType_Cheat_BadPermissions =                         700,
       ErrorType_Cheat_BadUserLookup =                          701,

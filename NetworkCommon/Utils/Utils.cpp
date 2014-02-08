@@ -15,12 +15,14 @@
 #if PLATFORM == PLATFORM_WINDOWS
    #include <windows.h>
    #include <mmsystem.h>
+   #include <sys/stat.h>
 #pragma warning (disable:4996)
 #else
    #include <sys/time.h>
    #include <termios.h>
    #include <unistd.h>
    #include <fcntl.h>
+   #include <sys/stat.h>  // not too sure about this
 #endif
 
 #define BOOST_NO_CXX11_EXPLICIT_CONVERSION_OPERATORS  // workaround for compile error on linux
@@ -29,7 +31,6 @@
 #include <boost/algorithm/string.hpp>
 #include <boost/format.hpp>
 #include <boost/tokenizer.hpp>
-//#include <boost/date_time/posix_time/posix_time.hpp>
 #include <boost/range/algorithm/remove_if.hpp>
 
 #include <climits>
@@ -41,6 +42,7 @@
    #ifndef min
    #define min(a,b)            (((a) < (b)) ? (a) : (b))
    #endif
+#define _stat stat
 #endif
 
 using namespace std;
@@ -479,6 +481,8 @@ string RemoveEnds( std::string s, const char* charsToStrip )
    return s;
 }
 
+//////////////////////////////////////////////////////////////////////////
+
 void  PrintDebugText( const char* text, int extraCr )
 {
 #if defined (VERBOSE)
@@ -490,3 +494,24 @@ void  PrintDebugText( const char* text, int extraCr )
    }
 #endif
 }
+
+//////////////////////////////////////////////////////////////////////////
+// found here and is the fastest
+// http://stackoverflow.com/questions/12774207/fastest-way-to-check-if-a-file-exist-using-standard-c-c11-c
+
+bool DoesFileExist ( const std::string& name ) 
+{
+  struct _stat buffer;
+  return ( _stat( name.c_str(), &buffer ) == 0 ); 
+}
+
+time_t   GetFileModificationTime( const std::string& name )
+{
+   struct _stat fileInfo;
+   if( _stat( name.c_str(), &fileInfo ) == 0 )
+   {
+      return  fileInfo.st_mtime;
+   }
+   return 0;
+}
+//////////////////////////////////////////////////////////////////////////

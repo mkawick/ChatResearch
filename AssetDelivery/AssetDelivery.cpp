@@ -5,27 +5,57 @@
 #include <iostream>
 #include <list>
 #include <vector>
-#pragma warning (disable:4996)
+
 using namespace std;
 
 #include <assert.h>
 
-#include <boost/lexical_cast.hpp>
-
+#include "AssetCommon.h"
 #include "DiplodocusAsset.h"
 #include "../NetworkCommon/NetworkIn/DiplodocusServerToServer.h"
-#include "../NetworkCommon/Version.h"
-#include "../NetworkCommon/Utils/CommandLineParser.h"
-#include "../NetworkCommon/DataTypes.h"
-#include "../NetworkCommon/Utils/Utils.h"
 
 
 #if PLATFORM == PLATFORM_WINDOWS
 #include <conio.h>
-#endif   
+#pragma warning (disable:4996)
+#endif 
+
+
+
+////////////////////////////////////////////////////////////////////////
+
+void  PrintInstructions()
+{
+   cout << "asset takes params as follows:" << endl;
+   cout << "> asset_server listen.port=7300 s2s.port=7302 game.port=21002" << endl;
+   cout << "  asset.path='C:/projects/Mber/ServerStack/X_testFiles_X'" << endl;
+   cout << "  asset.dictionary=\"assets_of_assets.ini\"" << endl;
+   cout << " NOTE: asset is a server-to-games, who connect to it." << endl;
+
+   cout << endl << endl;
+   cout << ": params are as follows:" << endl;
+   cout << "    server.name       - allows a new name reported in logs and connections" << endl;
+   cout << "    listen.address    - what is the ipaddress that this app should be using;" << endl;
+   cout << "                        usually localhost or null" << endl;
+   cout << "    listen.port       - listen on which port to gateway connections" << endl;
+   cout << "    s2s.address       - where is the load balancer" << endl;
+   cout << "    s2s.port          - load balancer" << endl;
+
+   cout << "    asset.dictionary  - name of the dictionary/project file" << endl;
+   cout << "    asset.path        - base directory for asset server assets" << endl;
+   
+   cout << "    asset server does not have db access" << endl;
+
+
+   cout << " -h, -help, -? for help " << endl;
+}
+
+////////////////////////////////////////////////////////////////////////
 
 int main( int argc, const char* argv[] )
 {
+   daemonize( "asset_serverd" );
+
 	CommandLineParser    parser( argc, argv );
 
    string serverName = "Asset Server";
@@ -35,8 +65,7 @@ int main( int argc, const char* argv[] )
    string listenForS2SPort = "7302";
    string listenForS2SAddress = "localHost";
 
-   string assetDictionary = "assets.ini";
-   string assetDynamicDictionary = "assets_dynamic.ini";
+   string assetDictionary = "assets_of_assets.ini";
    string assetPath = "C:/projects/Mber/ServerStack/X_testFiles_X";
 
    //---------------------------------------
@@ -50,7 +79,6 @@ int main( int argc, const char* argv[] )
    parser.FindValue( "s2s.address", listenForS2SAddress );
 
    parser.FindValue( "asset.dictionary", assetDictionary );
-   parser.FindValue( "asset_dynamic.dictionary", assetDynamicDictionary );
    parser.FindValue( "asset.path", assetPath );
 
    int listenPortAddress = 7300, listenS2SPort = 7302;
@@ -80,7 +108,7 @@ int main( int argc, const char* argv[] )
 
    DiplodocusAsset*    assetServer = new DiplodocusAsset( serverName, serverId );
    assetServer->SetupListening( listenPortAddress );
-   assetServer->SetIniFilePath( assetPath, assetDictionary, assetDynamicDictionary );
+   assetServer->SetIniFilePath( assetPath, assetDictionary );
 
    DiplodocusServerToServer* s2s = new DiplodocusServerToServer( serverName, serverId, 0, ServerType_Asset );
    s2s->SetupListening( listenS2SPort );
@@ -96,3 +124,4 @@ int main( int argc, const char* argv[] )
    getch();
 }
 
+////////////////////////////////////////////////////////////////////////

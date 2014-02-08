@@ -1,14 +1,21 @@
 // DiplodocusChat .cpp
 
-#include "DiplodocusChat.h"
-#include "ChatChannelManager.h"
-#include "../NetworkCommon/NetworkIn/DiplodocusServerToServer.h"
 
 #include "../NetworkCommon/Packets/DbPacket.h"
 #include "../NetworkCommon/Packets/GamePacket.h"
 #include "../NetworkCommon/Packets/ChatPacket.h"
 #include "../NetworkCommon/Packets/LoginPacket.h"
 #include "../NetworkCommon/Packets/ServerToServerPacket.h"
+#include "../NetworkCommon/Packets/PacketFactory.h"
+#include "../NetworkCommon/Utils/CommandLineParser.h"
+#include <boost/format.hpp>
+#include <boost/lexical_cast.hpp>
+using boost::format;
+
+#include "DiplodocusChat.h"
+#include "ChatChannelManager.h"
+#include "../NetworkCommon/NetworkIn/DiplodocusServerToServer.h"
+
 
 ///////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////

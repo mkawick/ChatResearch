@@ -7,11 +7,12 @@
 
 #include <assert.h>
 #include <iostream>
-#pragma warning ( disable: 4996 )
 #include <boost/lexical_cast.hpp>
-
 using namespace Mber;
 
+#if PLATFORM == PLATFORM_WINDOWS
+#pragma warning ( disable: 4996 )
+#endif
 
 ///////////////////////////////////////////////////////////////////////////////////
 
@@ -60,7 +61,7 @@ void  AssetInfoExtended:: operator = ( const AssetInfo& asset )
    beginDate = asset.beginDate;
    endDate = asset.endDate;
    isOptional = asset.isOptional;
-
+   category = asset.category;
 }
 
 void  AssetInfoExtended:: operator = ( const AssetInfoExtended& asset )
@@ -72,6 +73,7 @@ void  AssetInfoExtended:: operator = ( const AssetInfoExtended& asset )
    beginDate = asset.beginDate;
    endDate = asset.endDate;
    isOptional = asset.isOptional;
+   category = asset.category;
 
    SetData( asset.data, asset.size );
 }
@@ -141,8 +143,7 @@ void  NetworkLayer::Exit()
 
    m_invitationsReceived.clear();
    m_invitationsSent.clear();
-   m_staticAssets.clear();
-   m_dynamicAssets.clear();
+   m_assets.clear();
    m_availableTournaments.clear();
 }
 
@@ -585,78 +586,57 @@ bool    NetworkLayer::GetChannel( int index, ChatChannel& channel )
 
 //-----------------------------------------------------------------------------
 
-bool    NetworkLayer::GetStaticAssetInfo( int index, AssetInfoExtended& asset )
+int      NetworkLayer::GetAssetCategories( vector< string >& categories ) const
 {
-   if( index < 0 || index >= (int) m_staticAssets.size() )
+   AssetMapConstIter it = m_assets.begin();
+   while( it != m_assets.end() )
    {
-      asset.Clear();
-      return false;
+      categories.push_back( it->first );
+      it++;
    }
 
-   int i = 0;
-   vector< AssetInfoExtended >::const_iterator itAssets = m_staticAssets.begin();
-   while( itAssets != m_staticAssets.end() )
-   {
-      if( i == index )
-      {
-         asset = *itAssets;
-         return true;
-      }
-      i ++;
-      itAssets++;
-   }
-
-   return false;
+   return categories.size();
 }
 
 //-----------------------------------------------------------------------------
 
-bool    NetworkLayer::GetDynamicAssetInfo( int index, AssetInfoExtended& asset )
+int      NetworkLayer::GetNumAssets( const string& category )
 {
-   if( index < 0 || index >= (int) m_dynamicAssets.size() )
-   {
-      asset.Clear();
-      return false;
-   }
-
-   int i = 0;
-   vector< AssetInfoExtended >::const_iterator itAssets = m_dynamicAssets.begin();
-   while( itAssets != m_dynamicAssets.end() )
-   {
-      if( i == index )
-      {
-         asset = *itAssets;
-         return true;
-      }
-      i ++;
-      itAssets++;
-   }
-
-   return false;
+   AssetMapConstIter it = m_assets.find( category );
+   if( it == m_assets.end() )
+      return 0;
+   return it->second.size();
 }
 
 //-----------------------------------------------------------------------------
 
-bool     NetworkLayer:: ClearAssetInfo( const string& hash )
+bool     NetworkLayer::GetAssetInfo( const string& category, int index, AssetInfoExtended& assetInfo )
 {
-   vector< AssetInfoExtended >::iterator itAssets = m_dynamicAssets.begin();
-   while( itAssets != m_dynamicAssets.end() )
-   {
-      if( itAssets->assetHash == hash )
-      {
-         //itAssets->Clear();
-         itAssets->ClearData();
-         return true;
-      }
-      itAssets++;
-   }
+   AssetMapConstIter it = m_assets.find( category );
+   if( it == m_assets.end() )
+      return false;
+   
+   if( index < 0 || index >= static_cast< int >( it->second.size() ) )
+      return false;
 
-   itAssets = m_staticAssets.begin();
-   while( itAssets != m_staticAssets.end() )
+   assetInfo = it->second[ index ];
+   return true;
+}
+
+//-----------------------------------------------------------------------------
+
+bool     NetworkLayer:: ClearAssetInfo( const string& category, const string& hash )
+{
+   AssetMapIter it = m_assets.find( category );
+   if( it == m_assets.end() )
+      return false;
+
+   vector< AssetInfoExtended >& arrayOfAssets = it->second;
+   vector< AssetInfoExtended >::iterator itAssets = arrayOfAssets.begin();
+   while( itAssets != arrayOfAssets.end() )
    {
       if( itAssets->assetHash == hash )
       {
-         //itAssets->Clear();
          itAssets->ClearData();
          return true;
       }
@@ -908,41 +888,61 @@ bool	   NetworkLayer::SendChannelTextMessage( const string& message, const strin
 
 //-----------------------------------------------------------------------------
 
-bool     NetworkLayer::RequestListOfStaticAssets( int platformId )
+bool     NetworkLayer::RequestListOfAssetCategories()
 {
-   PacketAsset_GetListOfStaticAssets assetRequest;
-   assetRequest.uuid = m_uuid;
-   assetRequest.loginKey = m_loginKey;
-   assetRequest.platformId = platformId;
-   SerializePacketOut( &assetRequest );
+   PacketAsset_GetListOfAssetCategories assetCategoryRequest;
+   assetCategoryRequest.uuid = m_uuid;
+   assetCategoryRequest.loginKey = m_loginKey;
+   SerializePacketOut( &assetCategoryRequest );
 
    return true;
 }
 
 //-----------------------------------------------------------------------------
 
-bool     NetworkLayer::RequestListOfDynamicAssets( int platformId )
+bool     NetworkLayer::RequestListOfAssets( const string& category, int platformId )
 {
-   PacketAsset_GetListOfDynamicAssets assetRequest;
+   PacketAsset_GetListOfAssets assetRequest;
    assetRequest.uuid = m_uuid;
    assetRequest.loginKey = m_loginKey;
    assetRequest.platformId = platformId;
+   assetRequest.assetCategory = category;
+
    SerializePacketOut( &assetRequest );
    return true;
 }
 
 //-----------------------------------------------------------------------------
 
-bool     NetworkLayer::RequestAsset( const string& assetName )
+bool     NetworkLayer::RequestAssetByHash( const string& assetHash )
 {
+   AssetInfoExtended asset;
+   if( GetAsset( assetHash, asset ) == false )
+      return false;
+
    PacketAsset_RequestAsset assetRequest;
    assetRequest.uuid = m_uuid;
    assetRequest.loginKey = m_loginKey;
-   assetRequest.assetHash = assetName;
-  /* assetRequest.asset.version = "1.0";
-   assetRequest.asset.productId = m_gameProductId;
-   assetRequest.asset.beginDate = "";
-   assetRequest.asset.beginDate = "";*/
+   assetRequest.assetHash = assetHash;
+
+   SerializePacketOut( &assetRequest );
+
+   return true;
+}
+
+//-----------------------------------------------------------------------------
+
+bool     NetworkLayer::RequestAssetByName( const string& assetName )
+{
+   AssetInfoExtended asset;
+   const string assetHash = GenerateHash( assetName );
+   if( GetAsset( assetHash, asset ) == false )
+      return false;
+
+   PacketAsset_RequestAsset assetRequest;
+   assetRequest.uuid = m_uuid;
+   assetRequest.loginKey = m_loginKey;
+   assetRequest.assetHash = assetHash ;
 
    SerializePacketOut( &assetRequest );
 
@@ -1629,58 +1629,7 @@ bool  NetworkLayer::HandlePacketReceived( BasePacket* packetIn )
                PacketGameplayRawData* data = 
                   static_cast<PacketGameplayRawData*>( packetIn );
 
-               int dataType = data->dataType;
-               RawDataAccumulator& rawDataBuffer = m_rawDataBuffer[ dataType ];
-               rawDataBuffer.AddPacket( data );
-               string hash = data->identifier;
-               if( rawDataBuffer.GetRemainingSize() > 10*1024 )
-               {
-                  BoostThreadPerformance();
-               }
-
-               
-               cout << "packet type: " << dataType << ", index: " << (int) data->index << ", size:" << (int) data->size;
-               if( m_lastRawDataIndex - data->index > 1 )
-               {
-                  cout << "***";
-               }
-               m_lastRawDataIndex = data->index;
-               cout << endl;
-
-               if( rawDataBuffer.IsDone() )
-               {
-                  
-                  if( dataType == PacketGameplayRawData::Game )
-                  {
-                     U8* buffer = NULL;
-                     int size = 0;
-                     rawDataBuffer.PrepPackage( buffer, size );
-                     for( list< UserNetworkEventNotifier* >::iterator it = m_callbacks.begin(); it != m_callbacks.end(); ++it )
-                     {
-                        (*it)->GameData( size, buffer );
-                     }
-                     delete buffer;
-                  }
-                  else
-                  {
-                     AssetInfoExtended asset;
-                     if( GetAsset( hash, asset ) )
-                     {
-                        rawDataBuffer.PrepPackage( asset );
-                        UpdateAssetData( hash, asset );
-                        for( list< UserNetworkEventNotifier* >::iterator it = m_callbacks.begin(); it != m_callbacks.end(); ++it )
-                        {
-                           (*it)->AssetDataAvailable( hash );
-                        }
-                     }
-                     else
-                     {
-                        cout << " unknown asset has arrived " << hash << endl;
-                     }
-                  }
-                  
-                  RestoreNormalThreadPerformance();
-               }
+               HandleData( data );
                cleaner.Clear();
             }
             //return false;// this is important... we will delete the packets.
@@ -1700,64 +1649,65 @@ bool  NetworkLayer::HandlePacketReceived( BasePacket* packetIn )
          }
       }
       break;
+      //------------------------------------------------------------
       case PacketType_Asset:
       {
          switch( packetIn->packetSubType )
          {
-         case PacketAsset::AssetType_GetListOfStaticAssetsResponse:
+            case PacketAsset::AssetType_GetListOfAssetCategoriesResponse:
             {
-               PacketAsset_GetListOfStaticAssetsResponse* assetList = 
-                  static_cast<PacketAsset_GetListOfStaticAssetsResponse*>( packetIn );
+               PacketAsset_GetListOfAssetCategoriesResponse* categoryList = 
+                  static_cast<PacketAsset_GetListOfAssetCategoriesResponse*>( packetIn );
 
+               int num = categoryList->assetcategory.size();
+               m_assets.clear();
 
-               m_staticAssets.clear();
-               SerializedKeyValueVector< AssetInfo >::KeyValueVectorIterator it = assetList->updatedAssets.begin();
-               while ( it != assetList->updatedAssets.end() )
+               for( int i=0; i< num; i++ )
                {
-                  AssetInfoExtended extender( it->value );
-                  m_staticAssets.push_back( extender );
-                  it ++;
-               }
-
-               if( m_staticAssets.size() )
-               {
-                  for( list< UserNetworkEventNotifier* >::iterator it = m_callbacks.begin(); it != m_callbacks.end(); ++it )
+                  const string& name = categoryList->assetcategory[i];
+                  AssetMapIter it = m_assets.find( name );
+                  if( it == m_assets.end() )
                   {
-                     (*it)->StaticAssetManifestAvalable();
+                     m_assets.insert( AssetMapPair( name, AssetCollection () ) );
                   }
                }
-               else
+               for( list< UserNetworkEventNotifier* >::iterator callbackIt = m_callbacks.begin(); callbackIt != m_callbacks.end(); ++callbackIt )
                {
-                  cout << "No static assets available" << endl;
+                  (*callbackIt)->AssetCategoriesLoaded();
                }
             }
             break;
-          
-          case PacketAsset::AssetType_GetListOfDynamicAssetsResponse:
+
+            case PacketAsset::AssetType_GetListOfAssetsResponse:
             {
-               PacketAsset_GetListOfDynamicAssetsResponse* assetList = 
-                  static_cast<PacketAsset_GetListOfDynamicAssetsResponse*>( packetIn );
+               PacketAsset_GetListOfAssetsResponse* assetList = 
+                  static_cast<PacketAsset_GetListOfAssetsResponse*>( packetIn );
 
+               string& category = assetList->assetCategory;
+               assert( category.size() > 0 );
 
-               m_dynamicAssets.clear();
-               SerializedKeyValueVector< AssetInfo >::KeyValueVectorIterator it = assetList->updatedAssets.begin();
-               while ( it != assetList->updatedAssets.end() )
+               AssetMapIter it = m_assets.find( category );
+               if( it == m_assets.end() )
                {
-                  AssetInfoExtended extender = it->value;
-                  m_dynamicAssets.push_back( extender );
-                  it++;
+                  m_assets.insert( AssetMapPair( category, AssetCollection () ) );
+                  it = m_assets.find( category );
                }
 
-               if( m_dynamicAssets.size() )
+               AssetCollection& collection = it->second;
+               collection.clear();
+
+
+               SerializedKeyValueVector< AssetInfo >::KeyValueVectorIterator updatedAssetIt = assetList->updatedAssets.begin();
+               while ( updatedAssetIt != assetList->updatedAssets.end() )
                {
-                  for( list< UserNetworkEventNotifier* >::iterator it = m_callbacks.begin(); it != m_callbacks.end(); ++it )
-                  {
-                     (*it)->DynamicicAssetManifestAvalable();
-                  }
+                  AssetInfoExtended extender( updatedAssetIt->value );
+                  collection.push_back( extender );
+                  updatedAssetIt ++;
                }
-               else
+
+               for( list< UserNetworkEventNotifier* >::iterator callbackIt = m_callbacks.begin(); callbackIt != m_callbacks.end(); ++callbackIt )
                {
-                  cout << "No dynamic assets available" << endl;
+                  (*callbackIt)->AssetManifestAvailable( category );
                }
             }
             break;
@@ -1811,6 +1761,63 @@ bool  NetworkLayer::HandlePacketReceived( BasePacket* packetIn )
    }
 
    return true;
+}
+
+//------------------------------------------------------------------------
+
+void     NetworkLayer::HandleData( PacketGameplayRawData* data )
+{
+   int dataType = data->dataType;
+   RawDataAccumulator& rawDataBuffer = m_rawDataBuffer[ dataType ];
+   rawDataBuffer.AddPacket( data );
+   string hash = data->identifier;
+   if( rawDataBuffer.GetRemainingSize() > 10*1024 )
+   {
+      BoostThreadPerformance();
+   }
+   
+   cout << "packet type: " << dataType << ", index: " << (int) data->index << ", size:" << (int) data->size;
+   if( m_lastRawDataIndex - data->index > 1 )
+   {
+      cout << "***";
+   }
+   m_lastRawDataIndex = data->index;
+   cout << endl;
+
+   if( rawDataBuffer.IsDone() )
+   {
+      if( dataType == PacketGameplayRawData::Game )
+      {
+         U8* buffer = NULL;
+         int size = 0;
+         rawDataBuffer.PrepPackage( buffer, size );
+         for( list< UserNetworkEventNotifier* >::iterator it = m_callbacks.begin(); it != m_callbacks.end(); ++it )
+         {
+            (*it)->GameData( size, buffer );
+         }
+         delete buffer;
+      }
+      else
+      {
+         AssetInfoExtended asset;
+         if( GetAsset( hash, asset ) )
+         {
+            rawDataBuffer.PrepPackage( asset );
+            UpdateAssetData( hash, asset );
+            for( list< UserNetworkEventNotifier* >::iterator it = m_callbacks.begin(); it != m_callbacks.end(); ++it )
+            {
+               (*it)->AssetDataAvailable( asset.category, hash );
+            }
+         }
+         else
+         {
+            cout << " unknown asset has arrived " << hash << endl;
+         }
+      }
+      
+      RestoreNormalThreadPerformance();
+   }
+   
 }
 
 //------------------------------------------------------------------------
@@ -1872,53 +1879,70 @@ bool     NetworkLayer::AddChatChannel( const ChatChannel& channel )
 
 bool     NetworkLayer::GetAsset( const string& hash, AssetInfoExtended& asset )
 {
-   vector< AssetInfoExtended >::iterator it = m_staticAssets.begin();
-   while( it != m_staticAssets.end() )
+   AssetMapConstIter it = m_assets.begin();//find( category );
+   while( it != m_assets.end() )
    {
-      if( it->assetHash == hash )
-      {
-         asset = *it;
-         return true;
-      }
-      it ++;
-   }
+      const vector< AssetInfoExtended >& arrayOfAssets = it->second;
+      it++;
 
-   it = m_dynamicAssets.begin();
-   while( it != m_dynamicAssets.end() )
-   {
-      if( it->assetHash == hash )
+      vector< AssetInfoExtended >::const_iterator itAssets = arrayOfAssets.begin();
+      while( itAssets != arrayOfAssets.end() )
       {
-         asset = *it;
-         return true;
+         if( itAssets->assetHash == hash )
+         {
+            asset = *itAssets;
+            return true;
+         }
+         itAssets++;
       }
-      it ++;
    }
 
    return false;
 }
 
-bool     NetworkLayer::UpdateAssetData( const string& hash, AssetInfoExtended& asset )
+//------------------------------------------------------------------------
+
+bool     NetworkLayer::GetAsset( const string& category, const string& hash, AssetInfoExtended& asset )
 {
-   vector< AssetInfoExtended >::iterator it = m_staticAssets.begin();
-   while( it != m_staticAssets.end() )
+   AssetMapConstIter it = m_assets.find( category );
+   if( it != m_assets.end() )
    {
-      if( it->assetHash == hash )
+      const vector< AssetInfoExtended >& arrayOfAssets = it->second;
+      vector< AssetInfoExtended >::const_iterator itAssets = arrayOfAssets.begin();
+      while( itAssets != arrayOfAssets.end() )
       {
-         it->MoveData( asset );
-         return true;
+         if( itAssets->assetHash == hash )
+         {
+            asset = *itAssets;
+            return true;
+         }
+         itAssets++;
       }
-      it ++;
    }
 
-   it = m_dynamicAssets.begin();
-   while( it != m_dynamicAssets.end() )
+   return false;
+}
+
+//------------------------------------------------------------------------
+
+bool     NetworkLayer::UpdateAssetData( const string& hash, AssetInfoExtended& asset )
+{
+   AssetMapIter it = m_assets.begin();
+   while( it != m_assets.end() )
    {
-      if( it->assetHash == hash )
+      vector< AssetInfoExtended >& arrayOfAssets = it->second;
+      it++;
+
+      vector< AssetInfoExtended >::iterator itAssets = arrayOfAssets.begin();
+      while( itAssets != arrayOfAssets.end() )
       {
-         it->MoveData( asset );
-         return true;
+         if( itAssets->assetHash == hash )
+         {
+            itAssets->MoveData( asset );
+            return true;
+         }
+         itAssets++;
       }
-      it ++;
    }
 
    return false;
@@ -3519,7 +3543,7 @@ bool  NetworkLayer2::HandlePacketReceived( BasePacket* packetIn )
                         UpdateAssetData( hash, asset );
                         for( list< UserNetworkEventNotifier2* >::iterator it = m_callbacks.begin(); it != m_callbacks.end(); ++it )
                         {
-                           (*it)->AssetDataAvailable( hash );
+                           (*it)->AssetDataAvailable( asset.category, hash );
                         }
                      }
                      else
@@ -3553,61 +3577,57 @@ bool  NetworkLayer2::HandlePacketReceived( BasePacket* packetIn )
       {
          switch( packetIn->packetSubType )
          {
-         case PacketAsset::AssetType_GetListOfStaticAssetsResponse:
+            case PacketAsset::AssetType_GetListOfAssetCategoriesResponse:
             {
-               PacketAsset_GetListOfStaticAssetsResponse* assetList = 
-                  static_cast<PacketAsset_GetListOfStaticAssetsResponse*>( packetIn );
+              /* PacketAsset_GetListOfAssetCategoriesResponse* categoryList = 
+                  static_cast<PacketAsset_GetListOfAssetCategoriesResponse*>( packetIn );
 
+               int num = categoryList->assetcategory.size();
+               m_assets.clear();
 
-               m_staticAssets.clear();
-               SerializedKeyValueVector< AssetInfo >::KeyValueVectorIterator it = assetList->updatedAssets.begin();
-               while ( it != assetList->updatedAssets.end() )
+               for( int i=0; i< num; i++ )
                {
-                  AssetInfoExtended extender( it->value );
-                  m_staticAssets.push_back( extender );
-                  it ++;
-               }
-
-               if( m_staticAssets.size() )
-               {
-                  for( list< UserNetworkEventNotifier2* >::iterator it = m_callbacks.begin(); it != m_callbacks.end(); ++it )
+                  const string& name = categoryList->assetcategory[i];
+                  AssetMapIter it = m_assets.find( name );
+                  if( it == m_assets.end() )
                   {
-                     (*it)->StaticAssetManifestAvalable();
+                     m_assets.insert( AssetMapPair( name, AssetCollection () ) );
                   }
-               }
-               else
-               {
-                  cout << "No static assets available" << endl;
-               }
+               }*/
             }
             break;
-          
-          case PacketAsset::AssetType_GetListOfDynamicAssetsResponse:
+
+            case PacketAsset::AssetType_GetListOfAssetsResponse:
             {
-               PacketAsset_GetListOfDynamicAssetsResponse* assetList = 
-                  static_cast<PacketAsset_GetListOfDynamicAssetsResponse*>( packetIn );
+              /* PacketAsset_GetListOfAssetsResponse* assetList = 
+                  static_cast<PacketAsset_GetListOfAssetsResponse*>( packetIn );
 
+               string& category = assetList->assetCategory;
+               assert( category.size() > 0 );
 
-               m_dynamicAssets.clear();
-               SerializedKeyValueVector< AssetInfo >::KeyValueVectorIterator it = assetList->updatedAssets.begin();
-               while ( it != assetList->updatedAssets.end() )
+               AssetMapIter it = m_assets.find( category );
+               if( it == m_assets.end() )
                {
-                  AssetInfoExtended extender = it->value;
-                  m_dynamicAssets.push_back( extender );
-                  it++;
+                  m_assets.insert( AssetMapPair( category, AssetCollection () ) );
+                  it = m_assets.find( category );
                }
 
-               if( m_dynamicAssets.size() )
+               AssetCollection& collection = it->second;
+               collection.clear();
+
+
+               SerializedKeyValueVector< AssetInfo >::KeyValueVectorIterator updatedAssetIt = assetList->updatedAssets.begin();
+               while ( updatedAssetIt != assetList->updatedAssets.end() )
                {
-                  for( list< UserNetworkEventNotifier2* >::iterator it = m_callbacks.begin(); it != m_callbacks.end(); ++it )
-                  {
-                     (*it)->DynamicicAssetManifestAvalable();
-                  }
+                  AssetInfoExtended extender( updatedAssetIt->value );
+                  collection.push_back( extender );
+                  updatedAssetIt ++;
                }
-               else
+
+               for( list< UserNetworkEventNotifier* >::iterator callbackIt = m_callbacks.begin(); callbackIt != m_callbacks.end(); ++callbackIt )
                {
-                  cout << "No dynamic assets available" << endl;
-               }
+                  (*callbackIt)->AssetManifestAvalable( category );
+               }*/
             }
             break;
           }

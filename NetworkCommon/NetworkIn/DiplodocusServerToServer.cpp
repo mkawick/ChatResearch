@@ -5,12 +5,16 @@
 
 #include "../Utils/CommandLineParser.h"
 #include "../Utils/Utils.h"
+#include "../Packets/ServerToServerPacket.h"
+
+#include <boost/lexical_cast.hpp>
+#include <boost/format.hpp>
+using boost::format;
 
 #include "../NetworkIn/Khaan.h"
 #include "../NetworkIn/Diplodocus.h"
 #include "../Database/Deltadromeus.h"
 
-#include "../Packets/ServerToServerPacket.h"
 #include "DiplodocusServerToServer.h"
 
 DiplodocusServerToServer::DiplodocusServerToServer( const string& serverName, U32 serverId, U8 gameProductId, ServerType type ) : Diplodocus< KhaanServerToServer >( serverName, serverId, gameProductId, type ), 
@@ -219,7 +223,7 @@ int   DiplodocusServerToServer::CallbackFunction()
       UnlockMutex();
    }
 
-   LockMutex();
+ /*  LockMutex();
    while( m_clientsNeedingUpdate.size() )
    {
       m_clientsNeedingUpdate.front();
@@ -242,7 +246,7 @@ int   DiplodocusServerToServer::CallbackFunction()
          }
       }
    }
-   UnlockMutex();
+   UnlockMutex();*/
 
    UpdateAllConnections();
 

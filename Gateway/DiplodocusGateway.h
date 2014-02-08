@@ -1,13 +1,16 @@
 #pragma once
 
 // DiplodocusGateway.h
+#include <deque>
+#include <list>
+using namespace std;
 
 #include "../NetworkCommon/NetworkIn/Diplodocus.h"
 #include "../NetworkCommon/Stat/StatTrackingConnections.h"
 
 #include "KhaanGateway.h"
 #include "GatewayCommon.h"
-#include <deque>
+
 class BasePacket;
 class PacketStat;
 class Fruitadens;

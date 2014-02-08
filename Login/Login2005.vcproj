@@ -266,6 +266,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\NetworkCommon\ServerType.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\NetworkCommon\ServerType.h"
 				>
 			</File>
@@ -434,6 +438,18 @@
 				</File>
 				<File
 					RelativePath="..\NetworkCommon\Database\StringLookup.h"
+					>
+				</File>
+			</Filter>
+			<Filter
+				Name="Stat"
+				>
+				<File
+					RelativePath="..\NetworkCommon\Stat\StatTrackingConnections.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\NetworkCommon\Stat\StatTrackingConnections.h"
 					>
 				</File>
 			</Filter>

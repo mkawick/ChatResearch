@@ -18,12 +18,6 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Chat", "Chat\Chat.vcproj", 
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Game", "Game\Game.vcproj", "{E1CCE861-3A89-4B2F-8635-B543B90EFA5C}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "TestClient", "TestClient\TestClient.vcproj", "{163C7BC4-C317-45E0-9EF2-82F182473725}"
-	ProjectSection(ProjectDependencies) = postProject
-		{F74C7545-C2D2-4FDE-9B4C-F875FA9D5C22} = {F74C7545-C2D2-4FDE-9B4C-F875FA9D5C22}
-		{78928F69-C7AC-44BB-B4E1-BC050C188EDE} = {78928F69-C7AC-44BB-B4E1-BC050C188EDE}
-	EndProjectSection
-EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{FF127F69-75F1-43E9-ABD3-BBD0663D3D88}"
 	ProjectSection(SolutionItems) = preProject
 		CommmonQueries.txt = CommmonQueries.txt
@@ -77,6 +71,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "LoadBalancer", "LoadBalance
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Stat", "Stat\Stat.vcproj", "{5F4F1B30-68FE-446C-A8C7-527518266278}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Chat2", "Chat2\Chat2.vcproj", "{BC097E9D-3A7F-4840-AC4F-E3B5399B1545}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Win32 = Debug|Win32
@@ -108,12 +104,6 @@ Global
 		{E1CCE861-3A89-4B2F-8635-B543B90EFA5C}.DebugForCLR|Win32.Build.0 = Debug|Win32
 		{E1CCE861-3A89-4B2F-8635-B543B90EFA5C}.Release|Win32.ActiveCfg = Release|Win32
 		{E1CCE861-3A89-4B2F-8635-B543B90EFA5C}.Release|Win32.Build.0 = Release|Win32
-		{163C7BC4-C317-45E0-9EF2-82F182473725}.Debug|Win32.ActiveCfg = Debug|Win32
-		{163C7BC4-C317-45E0-9EF2-82F182473725}.Debug|Win32.Build.0 = Debug|Win32
-		{163C7BC4-C317-45E0-9EF2-82F182473725}.DebugForCLR|Win32.ActiveCfg = Debug|Win32
-		{163C7BC4-C317-45E0-9EF2-82F182473725}.DebugForCLR|Win32.Build.0 = Debug|Win32
-		{163C7BC4-C317-45E0-9EF2-82F182473725}.Release|Win32.ActiveCfg = Release|Win32
-		{163C7BC4-C317-45E0-9EF2-82F182473725}.Release|Win32.Build.0 = Release|Win32
 		{C3B3C31F-671D-4FC0-A69A-A90C2DEBEEF3}.Debug|Win32.ActiveCfg = Debug|Win32
 		{C3B3C31F-671D-4FC0-A69A-A90C2DEBEEF3}.Debug|Win32.Build.0 = Debug|Win32
 		{C3B3C31F-671D-4FC0-A69A-A90C2DEBEEF3}.DebugForCLR|Win32.ActiveCfg = Debug|Win32
@@ -180,6 +170,12 @@ Global
 		{5F4F1B30-68FE-446C-A8C7-527518266278}.DebugForCLR|Win32.Build.0 = Debug|Win32
 		{5F4F1B30-68FE-446C-A8C7-527518266278}.Release|Win32.ActiveCfg = Release|Win32
 		{5F4F1B30-68FE-446C-A8C7-527518266278}.Release|Win32.Build.0 = Release|Win32
+		{BC097E9D-3A7F-4840-AC4F-E3B5399B1545}.Debug|Win32.ActiveCfg = Debug|Win32
+		{BC097E9D-3A7F-4840-AC4F-E3B5399B1545}.Debug|Win32.Build.0 = Debug|Win32
+		{BC097E9D-3A7F-4840-AC4F-E3B5399B1545}.DebugForCLR|Win32.ActiveCfg = Debug|Win32
+		{BC097E9D-3A7F-4840-AC4F-E3B5399B1545}.DebugForCLR|Win32.Build.0 = Debug|Win32
+		{BC097E9D-3A7F-4840-AC4F-E3B5399B1545}.Release|Win32.ActiveCfg = Release|Win32
+		{BC097E9D-3A7F-4840-AC4F-E3B5399B1545}.Release|Win32.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

@@ -9,7 +9,9 @@ using namespace std;
 
 #include <assert.h>
 
+#include <boost/format.hpp>
 #include <boost/lexical_cast.hpp>
+using boost::format;
 
 
 #include "../NetworkCommon/Version.h"
@@ -23,6 +25,7 @@ using namespace std;
 
 #include "../NetworkCommon/NetworkIn/DiplodocusServerToServer.h"
 #include "../NetworkCommon/Database/Deltadromeus.h"
+#include "../NetworkCommon/Daemon/Daemonizer.h"
 
 #include "DiplodocusPurchase.h"
 
@@ -32,8 +35,40 @@ using namespace std;
 #include <conio.h>
 #endif   
 
+////////////////////////////////////////////////////////////////////////
+
+void  PrintInstructions()
+{
+   cout << "purchase takes params as follows:" << endl;
+   cout << "> purchase_server listen.port=7700 s2s.port=7702 s2s.address=localhost" << endl;
+   cout << "    db.address=10.16.4.44 db.port=3306 db.username=incinerator" << endl;
+   cout << "    db.password=Cm8235 db.schema=playdek" << endl;
+   cout << " NOTE: purchase is a server-to-games, who connect to it and trade items." << endl;
+
+   cout << endl << endl;
+   cout << ": params are as follows:" << endl;
+   cout << "    server.name       - allows a new name reported in logs and connections" << endl;
+   cout << "    listen.address    - what is the ipaddress that this app should be using;" << endl;
+   cout << "                        usually localhost or null" << endl;
+   cout << "    listen.port       - listen on which port to gateway connections" << endl;
+   cout << "    s2s.address       - where is the load balancer" << endl;
+   cout << "    s2s.port          - load balancer" << endl;
+   
+   cout << "    db.address        - database ipaddress" << endl;
+   cout << "    db.port           - database port" << endl;
+   cout << "    db.username       - database username" << endl;
+   cout << "    db.password       - database password" << endl;
+   cout << "    db.schema         - database schema-table collection" << endl;
+
+   cout << " -h, -help, -? for help " << endl;
+}
+
+////////////////////////////////////////////////////////////////////////
+
 int main( int argc, const char* argv[] )
 {
+   daemonize( "purchase_serverd" );
+
 	CommandLineParser    parser( argc, argv );
 
    string serverName = "Purchase Server";
@@ -121,3 +156,4 @@ int main( int argc, const char* argv[] )
    getch();
 }
 
+////////////////////////////////////////////////////////////////////////

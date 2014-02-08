@@ -2,9 +2,9 @@
 <VisualStudioProject
 	ProjectType="Visual C++"
 	Version="9.00"
-	Name="TestClient"
-	ProjectGUID="{163C7BC4-C317-45E0-9EF2-82F182473725}"
-	RootNamespace="TestClient"
+	Name="Chat2"
+	ProjectGUID="{BC097E9D-3A7F-4840-AC4F-E3B5399B1545}"
+	RootNamespace="Chat2"
 	Keyword="Win32Proj"
 	TargetFrameworkVersion="196613"
 	>
@@ -60,7 +60,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="..\Debug\BaseClientLibrary.lib ../Debug/PacketLibrary.lib"
+				AdditionalDependencies="../Debug/PacketLibrary.lib"
 				LinkIncremental="2"
 				IgnoreDefaultLibraryNames="libcmt.lib"
 				GenerateDebugInformation="true"
@@ -118,7 +118,6 @@
 				EnableIntrinsicFunctions="true"
 				PreprocessorDefinitions="WIN32;NDEBUG;_CONSOLE"
 				RuntimeLibrary="2"
-				BufferSecurityCheck="false"
 				EnableFunctionLevelLinking="true"
 				UsePrecompiledHeader="0"
 				WarningLevel="3"
@@ -135,9 +134,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="..\Release\BaseClientLibrary.lib  ../Debug/PacketLibrary.lib"
 				LinkIncremental="1"
-				IgnoreDefaultLibraryNames="libcmt.lib"
 				GenerateDebugInformation="true"
 				SubSystem="1"
 				OptimizeReferences="2"
@@ -176,11 +173,19 @@
 			UniqueIdentifier="{4FC737F1-C7A5-4376-A066-2A32D752A2FF}"
 			>
 			<File
-				RelativePath="..\TestFolderCommon\FruitadensClientChat.cpp"
+				RelativePath=".\Chat2.cpp"
 				>
 			</File>
 			<File
-				RelativePath="..\TestFolderCommon\TestClient.cpp"
+				RelativePath=".\ChatUser.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\DiplodocusChat.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\KhaanChat.cpp"
 				>
 			</File>
 		</Filter>
@@ -190,7 +195,15 @@
 			UniqueIdentifier="{93995380-89BD-4b04-88EB-625FBE52EBFB}"
 			>
 			<File
-				RelativePath="..\TestFolderCommon\FruitadensClientChat.h"
+				RelativePath=".\ChatUser.h"
+				>
+			</File>
+			<File
+				RelativePath=".\DiplodocusChat.h"
+				>
+			</File>
+			<File
+				RelativePath=".\KhaanChat.h"
 				>
 			</File>
 		</Filter>
@@ -202,7 +215,15 @@
 				>
 			</File>
 			<File
+				RelativePath="..\NetworkCommon\NetworkUtils.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\NetworkCommon\Platform.h"
+				>
+			</File>
+			<File
+				RelativePath="..\NetworkCommon\Serialize.cpp"
 				>
 			</File>
 			<File
@@ -210,7 +231,15 @@
 				>
 			</File>
 			<File
+				RelativePath="..\NetworkCommon\ServerConstants.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\NetworkCommon\ServerConstants.h"
+				>
+			</File>
+			<File
+				RelativePath="..\NetworkCommon\ServerType.cpp"
 				>
 			</File>
 			<File
@@ -229,6 +258,10 @@
 					>
 				</File>
 				<File
+					RelativePath="..\NetworkCommon\ChainedArchitecture\Thread.cpp"
+					>
+				</File>
+				<File
 					RelativePath="..\NetworkCommon\ChainedArchitecture\Thread.h"
 					>
 				</File>
@@ -238,22 +271,66 @@
 				</File>
 			</Filter>
 			<Filter
+				Name="Database"
+				>
+				<File
+					RelativePath="..\NetworkCommon\Database\Deltadromeus.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\NetworkCommon\Database\Deltadromeus.h"
+					>
+				</File>
+			</Filter>
+			<Filter
+				Name="NetworkIn"
+				>
+				<File
+					RelativePath="..\NetworkCommon\NetworkIn\Diplodocus.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\NetworkCommon\NetworkIn\Diplodocus.h"
+					>
+				</File>
+				<File
+					RelativePath="..\NetworkCommon\NetworkIn\Diplodocus.inl"
+					>
+				</File>
+				<File
+					RelativePath="..\NetworkCommon\NetworkIn\DiplodocusServerToServer.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\NetworkCommon\NetworkIn\DiplodocusServerToServer.h"
+					>
+				</File>
+				<File
+					RelativePath="..\NetworkCommon\NetworkIn\Khaan.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\NetworkCommon\NetworkIn\Khaan.h"
+					>
+				</File>
+				<File
+					RelativePath="..\NetworkCommon\NetworkIn\KhaanServerToServer.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\NetworkCommon\NetworkIn\KhaanServerToServer.h"
+					>
+				</File>
+			</Filter>
+			<Filter
 				Name="NetworkOut"
 				>
 				<File
+					RelativePath="..\NetworkCommon\NetworkOut\Fruitadens.cpp"
+					>
+				</File>
+				<File
 					RelativePath="..\NetworkCommon\NetworkOut\Fruitadens.h"
-					>
-				</File>
-				<File
-					RelativePath="..\NetworkCommon\NetworkUtils.cpp"
-					>
-				</File>
-				<File
-					RelativePath="..\NetworkCommon\NetworkOut\Pyroraptor.cpp"
-					>
-				</File>
-				<File
-					RelativePath="..\NetworkCommon\NetworkOut\Pyroraptor.h"
 					>
 				</File>
 			</Filter>
@@ -261,11 +338,79 @@
 				Name="Utils"
 				>
 				<File
+					RelativePath="..\NetworkCommon\Utils\CommandLineParser.cpp"
+					>
+				</File>
+				<File
 					RelativePath="..\NetworkCommon\Utils\CommandLineParser.h"
 					>
 				</File>
 				<File
+					RelativePath="..\NetworkCommon\Utils\Enigmosaurus.h"
+					>
+				</File>
+				<File
+					RelativePath="..\NetworkCommon\Utils\MemoryLeakTracker.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\NetworkCommon\Utils\OsLevelUtils.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\NetworkCommon\Utils\OsLevelUtils.h"
+					>
+				</File>
+				<File
+					RelativePath="..\NetworkCommon\Utils\TableWrapper.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\NetworkCommon\Utils\TableWrapper.h"
+					>
+				</File>
+				<File
+					RelativePath="..\NetworkCommon\Utils\Utils.cpp"
+					>
+				</File>
+				<File
 					RelativePath="..\NetworkCommon\Utils\Utils.h"
+					>
+				</File>
+			</Filter>
+			<Filter
+				Name="Logging"
+				>
+				<File
+					RelativePath="..\NetworkCommon\Logging\server_log.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\NetworkCommon\Logging\server_log.h"
+					>
+				</File>
+			</Filter>
+			<Filter
+				Name="Daemon"
+				>
+				<File
+					RelativePath="..\NetworkCommon\Daemon\Daemonizer.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\NetworkCommon\Daemon\Daemonizer.h"
+					>
+				</File>
+			</Filter>
+			<Filter
+				Name="Stats"
+				>
+				<File
+					RelativePath="..\NetworkCommon\Stat\StatTrackingConnections.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\NetworkCommon\Stat\StatTrackingConnections.h"
 					>
 				</File>
 			</Filter>

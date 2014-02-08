@@ -738,7 +738,7 @@ bool  SendRawData( const U8* data, int size, int dataType, int maxPacketSize, U3
 ////////////////////////////////////////////////////////////////////////
 
 template <typename return_type, typename type >
-return_type* PrepConnection( const string& remoteIpaddress, U16 remotePort, const string& remoteServerName, type* localServer, ServerType type, bool requiresS2SWrapper, U32 gameProductId = 0 )
+return_type* PrepConnection( const string& remoteIpaddress, U16 remotePort, const string& remoteServerName, type* localServer, ServerType serverType, bool requiresS2SWrapper, U32 gameProductId = 0 )
 {
    string serverOutputText = localServer->GetServerName();
    serverOutputText += " to ";
@@ -751,7 +751,7 @@ return_type* PrepConnection( const string& remoteIpaddress, U16 remotePort, cons
       serverOutputText += "remote server";
    }
    return_type* serverOut = new return_type( serverOutputText.c_str() );
-   serverOut->SetConnectedServerType( type );
+   serverOut->SetConnectedServerType( serverType );
    serverOut->SetServerUniqueId( localServer->GetServerId() );
 
    serverOut->AddInputChain( localServer );

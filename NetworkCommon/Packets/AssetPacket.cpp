@@ -32,6 +32,7 @@ bool  AssetInfo::SerializeIn( const U8* data, int& bufferOffset )
    Serialize::In( data, bufferOffset, version );
    Serialize::In( data, bufferOffset, beginDate );
    Serialize::In( data, bufferOffset, endDate );
+   Serialize::In( data, bufferOffset, category );
 
    return true;
 }
@@ -45,6 +46,7 @@ bool  AssetInfo::SerializeOut( U8* data, int& bufferOffset ) const
    Serialize::Out( data, bufferOffset, version );
    Serialize::Out( data, bufferOffset, beginDate );
    Serialize::Out( data, bufferOffset, endDate );
+   Serialize::Out( data, bufferOffset, category );
 
    return true;
 }
@@ -149,6 +151,88 @@ bool  PacketAsset_GetListOfDynamicAssetsResponse::SerializeIn( const U8* data, i
 bool  PacketAsset_GetListOfDynamicAssetsResponse::SerializeOut( U8* data, int& bufferOffset ) const 
 { 
    PacketAsset::SerializeOut( data, bufferOffset );
+   Serialize::Out( data, bufferOffset, updatedAssets );
+
+   return true; 
+}
+
+///////////////////////////////////////////////////////////////
+
+bool  PacketAsset_GetListOfAssetCategories::SerializeIn( const U8* data, int& bufferOffset )
+{ 
+   PacketAsset::SerializeIn( data, bufferOffset );
+   Serialize::In( data, bufferOffset, uuid );
+   Serialize::In( data, bufferOffset, loginKey );
+
+   return true; 
+}
+
+bool  PacketAsset_GetListOfAssetCategories::SerializeOut( U8* data, int& bufferOffset ) const 
+{ 
+   PacketAsset::SerializeOut( data, bufferOffset );
+   Serialize::Out( data, bufferOffset, uuid );
+   Serialize::Out( data, bufferOffset, loginKey );
+
+   return true; 
+}
+
+///////////////////////////////////////////////////////////////
+
+bool  PacketAsset_GetListOfAssetCategoriesResponse::SerializeIn( const U8* data, int& bufferOffset )
+{ 
+   PacketAsset::SerializeIn( data, bufferOffset );
+   Serialize::In( data, bufferOffset, assetcategory );
+
+   return true; 
+}
+
+bool  PacketAsset_GetListOfAssetCategoriesResponse::SerializeOut( U8* data, int& bufferOffset ) const 
+{ 
+   PacketAsset::SerializeOut( data, bufferOffset );
+   Serialize::Out( data, bufferOffset, assetcategory );
+
+   return true; 
+}
+
+///////////////////////////////////////////////////////////////
+
+bool  PacketAsset_GetListOfAssets::SerializeIn( const U8* data, int& bufferOffset )
+{ 
+   PacketAsset::SerializeIn( data, bufferOffset );
+   Serialize::In( data, bufferOffset, uuid );
+   Serialize::In( data, bufferOffset, loginKey );
+   Serialize::In( data, bufferOffset, assetCategory );
+   Serialize::In( data, bufferOffset, platformId );
+
+   return true; 
+}
+
+bool  PacketAsset_GetListOfAssets::SerializeOut( U8* data, int& bufferOffset ) const 
+{ 
+   PacketAsset::SerializeOut( data, bufferOffset );
+   Serialize::Out( data, bufferOffset, uuid );
+   Serialize::Out( data, bufferOffset, loginKey );
+   Serialize::Out( data, bufferOffset, assetCategory );
+   Serialize::Out( data, bufferOffset, platformId );
+
+   return true; 
+}
+
+///////////////////////////////////////////////////////////////
+
+bool  PacketAsset_GetListOfAssetsResponse::SerializeIn( const U8* data, int& bufferOffset )
+{ 
+   PacketAsset::SerializeIn( data, bufferOffset );
+   Serialize::In( data, bufferOffset, assetCategory );
+   Serialize::In( data, bufferOffset, updatedAssets );
+
+   return true; 
+}
+
+bool  PacketAsset_GetListOfAssetsResponse::SerializeOut( U8* data, int& bufferOffset ) const 
+{ 
+   PacketAsset::SerializeOut( data, bufferOffset );
+   Serialize::Out( data, bufferOffset, assetCategory );
    Serialize::Out( data, bufferOffset, updatedAssets );
 
    return true; 

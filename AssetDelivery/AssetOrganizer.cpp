@@ -11,6 +11,7 @@
 #include <string>
 using namespace std;
 
+#include <sys/stat.h>
 #include <time.h>
 
 
@@ -24,25 +25,85 @@ using namespace std;
 #endif
 
 #include <boost/format.hpp>
-//#include <boost/algorithm/string.hpp>
 #include <boost/lexical_cast.hpp>
-//#include <boost/date_time.hpp>
-
-//using namespace boost::posix_time;
-//namespace bt = boost::posix_time;
-
 
 #include "AssetOrganizer.h"
-
-
 
 // found here:
 //http://stackoverflow.com/questions/3786201/parsing-of-date-time-from-string-boost
 
+//////////////////////////////////////////////////////////////////////////
 
-
-AssetOrganizer::AssetOrganizer() : m_isInitializedProperly( false ), m_allFilesAreNowLoaded( false ), m_lastFileLoadedTime( 0 )
+std::istream& safeGetline(std::istream& is, std::string& t)
 {
+    t.clear();
+
+    // The characters in the stream are read one-by-one using a std::streambuf.
+    // That is faster than reading them one-by-one using the std::istream.
+    // Code that uses streambuf this way must be guarded by a sentry object.
+    // The sentry object performs various tasks,
+    // such as thread synchronization and updating the stream state.
+
+    std::istream::sentry se(is, true);
+    std::streambuf* sb = is.rdbuf();
+
+    for(;;) {
+        int c = sb->sbumpc();
+        switch (c) {
+        case '\n':
+            return is;
+        case '\r':
+            if(sb->sgetc() == '\n')
+                sb->sbumpc();
+            return is;
+        case EOF:
+            // Also handle the case when the last line has no line ending
+            if(t.empty())
+                is.setstate(std::ios::eofbit);
+            return is;
+        default:
+            t += (char)c;
+        }
+    }
+}
+//////////////////////////////////////////////////////////////////////////
+
+bool IsStringBracketed( const std::string& s, const char* bracketPairs )
+{
+   int len = strlen( bracketPairs ) / 2;
+
+   for( int i=0; i<len; i+=2 )
+   {
+      if( *s.begin() == bracketPairs[i] && 
+         *s.rbegin() == bracketPairs[i+1] )
+         return true;
+   }
+
+   return false;
+}
+
+//////////////////////////////////////////////////////////////////////////
+
+bool IsBracketedTag( const string& line, const char* bracketPairs ) // asset, layout
+{
+   // no spaces allowed
+   if (line.find(' ') != std::string::npos)
+   {
+       return false;
+   }
+
+   // brackets on the ends.
+   if( IsStringBracketed( line, bracketPairs ) == false )
+      return false;
+   return true;
+}
+
+//////////////////////////////////////////////////////////////////////////
+
+AssetOrganizer::AssetOrganizer() : m_isInitializedProperly( false ), m_allFilesAreNowLoaded( false ), m_lastFileLoadedTime( 0 ), m_assetFileModificationTime( 0 )
+{
+   time( &m_checkFileChangesTime );
+   //m_assets.reserve( 120 );
 }
 
 AssetOrganizer::~AssetOrganizer()
@@ -61,159 +122,9 @@ T stoa(const std::string& s)
 
 string ConvertStringToStandardTimeFormat(const std::string& timeString )
 {
-   /*const char* timeFormats [] = 
-   {
-      "%Y/%m/%d %H:%M:%S",
-      "%Y/%m/%d %H:%M:%S",
-      "%d.%m.%Y %H:%M:%S",
-      "%Y-%m-%d",
-      "%d-%m-%Y"
-   };
-
-   const size_t timeFormatsCount = sizeof(timeFormats)/sizeof(timeFormats[0]);
-
-   bt::ptime pt;
-   bool success = false;
-   for( size_t i=0; i<timeFormatsCount; ++i )
-   {
-      std::istringstream is( timeString );
-      is.imbue( std::locale( std::locale::classic(), new bt::time_input_facet( timeFormats[i] ) ) );
-      is >> pt;
-      if(pt != bt::ptime()) 
-      {
-         success = true;
-         break;
-      }
-   }
-
-   if( success )
-   {
-      return bt::to_simple_string( pt );
-   }
-
-   return string();*/
-   // because of all of the boost problems, this was my only real solution
- /*  int year, month, day, hour, minute, second = 0;
-   int r = 0;
-
-   string returnString;
-
-   tm brokenTime;
-   strftime( timeString.c_str(), "%Y-%m-%d %T", &brokenTime);
-   r = scanf ("%d-%d-%d %d:%d:%d", &year, &month, &day,
-              &hour, &minute, &second);
-   if (r == 6) 
-   {
-      char buffer[100];
-     sprintf ( buffer, "%d-%d-%d %d:%d:%d\n", year, month, day, hour, minute,
-             second);
-     returnString = buffer;
-   }
-   return returnString;*/
-
-   /*std::wstring input = L"2011-Februar-18 23:12:34";
-    std::tm t;
-    std::wistringstream ss(input);
-    ss.imbue(std::locale("de_DE"));
-    ss >> std::get_time(&t, L"%Y-%b-%d %H:%M:%S"); // uses std::time_get<wchar_t>
-    std::cout << std::asctime(&t);*/
-
-  /* ios_base::iostate;
-
-   std::locale loc;        // classic "C" locale
-
-   // get time_get facet:
-   const std::time_get<char>& tmget = std::use_facet <std::time_get<char> > (loc);
-
-   std::ios::iostate state;
-   std::istringstream iss ( timeString );
-   std::tm when;
-
-   tmget.get_date (iss, std::time_get<char>::iter_type(), iss, state, &when);
-
-   std::cout << "year: " << when.tm_year << '\n';
-   std::cout << "month: " << when.tm_mon << '\n';
-   std::cout << "day: " << when.tm_mday << '\n';*/
-
-/*
-  int year, mon, day, hour, minute, second;
-
-   year = stoa<int>(timeString.substr(0, 4));
-   mon = stoa<int>(timeString.substr(5, 2));
-   day = stoa<int>(timeString.substr(8, 2));
-   hour = stoa<int>(timeString.substr(11, 2));
-   minute = stoa<int>(timeString.substr(14, 2));
-   second = stoa<int>(timeString.substr(17, 2));
-
-   if (timeString.substr(20, 2) == "PM")
-   {
-      hour += 12;
-   }
-
-   std::locale loc;        // classic "C" locale
-
-   // get time_get facet:
-   const std::time_get<char>& tmget = std::use_facet <std::time_get<char> > (loc);
-
-   std::ios::iostate state;
-   std::istringstream iss ( timeString );
-   std::tm when;
-
-   tmget.get_date (iss, std::time_get<char>::iter_type(), iss, state, &when);
-
-   char buffer[100];
-   sprintf ( buffer, "%d-%d-%d %d:%d:%d", year, month, day, hour, minute,
-             second);
-   returnString = buffer;
-
-   return returnString;*/
-
-   typedef std::istreambuf_iterator<char, std::char_traits<char> > Iter;
-
     // time struct to parse date into
     std::tm datetime;  // zero initialized
     memset( &datetime, 0, sizeof( datetime ) );
-
-    // Unused, required by time_get
-    std::ios_base::iostate state;
-
-    // Stream object to read from
-    std::istringstream ins ("");
-
-    // Iterators into the stream object
-    Iter begin (ins);
-    Iter end;
-
-    const std::locale loc ("C");
-
-    // Get a reference to the time_get facet in locale loc.
-    const std::time_get<char, Iter> &tg =
-        std::use_facet<std::time_get<char, Iter> >(loc);
-
-    // Display time_base::dateorder value.
-    std::cout << "time_base::dateorder == " << tg.date_order () << ".\n";
-  
-    // Insert date string into stream.
-    ins.str ( timeString );
-
-    // get_date from the stream and output tm contents.
-    /*tg.get_date (begin, end, ins, state, &timeb);
-    std::cout << "Date: " << timeb.tm_year << "-" << timeb.tm_mon << "-" << timeb.tm_mday << std::endl;*/
-
-  /*  // Insert weekday string into stream.
-    ins.str ("Monday");
-
-    // get_weekday from the stream and output tm contents.
-    tg.get_weekday (begin, end, ins, state, &timeb);
-    std::cout << "Weekday: Monday\n" << timeb << std::endl;
-  
-    // Insert time string into stream.
-    ins.str ("06:47:32");
-
-    // get_time from the stream and output tm contents.
-    tg.get_time (begin, end, ins, state, &timeb);
-    std::cout << "Time: 06:47:32\n" << timeb << std::endl;*/
-
 
     int year, month, day, hour, minute, second;
     sscanf( timeString.c_str(), "%d-%d-%d %d:%d:%d", &year, &month, &day, &hour, &minute, &second );
@@ -233,37 +144,6 @@ string ConvertStringToStandardTimeFormat(const std::string& timeString )
 }
 
 //////////////////////////////////////////////////////////////////////////
-/*
-const char* productNames [] = {
-   "",
-   "ascension",
-   "dominion",
-   "thunderstone",
-   "wowcmg",
-   "summonwar",
-   "foodfight",
-   "nightfall",
-   "pennyarcade",
-   "infinitecity",
-   "agricola",
-   "fluxx",
-   "smashup"
-};
-
-const char* platformStrings[] = {
-   "",
-   "ios",
-   "iphone",
-   "android",
-   "androidtablet",
-   "pc",
-   "mac",
-   "vita",
-   "xbox",
-   "blackberry",
-   "wii"
-};
-*/
 
 const char* assetPriotityType[] = {
    "default",
@@ -279,11 +159,41 @@ AssetDefinition:: AssetDefinition() :  isLoaded( false ),
                                        productId( 0 ), 
                                        platform( 0 ), 
                                        priority( 0 ),
-                                       version( "0.7" ),
+                                       fileModificationTime( 0 ),
+                                       version( "0.8" ),
                                        fileData( NULL ), 
                                        fileSize( 0 ),
                                        compressionType( 0 )
 {
+}
+
+AssetDefinition:: AssetDefinition( const AssetDefinition& assetDefn ) : isLoaded( assetDefn.isLoaded ), 
+                                       isLayout( assetDefn.isLayout ), 
+                                       isOptional( assetDefn.isOptional ), 
+                                       productId( assetDefn.productId ), 
+                                       platform( assetDefn.platform ), 
+                                       priority( assetDefn.priority ),
+                                       fileModificationTime( assetDefn.fileModificationTime ),
+                                       version( assetDefn.version ),
+                                       path( assetDefn.path ),
+                                       beginTime( assetDefn.beginTime ),
+                                       endTime( assetDefn.endTime ),
+                                       payload( assetDefn.payload ),
+                                       name( assetDefn.name ),
+                                       hash( assetDefn.hash ),
+                                       category( assetDefn.category ),
+                                       filters( assetDefn.filters ),
+                                       gates( assetDefn.gates ),
+                                       fileData( NULL ), 
+                                       fileSize( assetDefn.fileSize ),
+                                       compressionType( assetDefn.compressionType )
+{
+   if( assetDefn.fileData )
+   {
+      fileData = new U8[ assetDefn.fileSize ];
+      memcpy( fileData, assetDefn.fileData, assetDefn.fileSize );
+   }
+
 }
 
 AssetDefinition::~AssetDefinition()
@@ -291,15 +201,48 @@ AssetDefinition::~AssetDefinition()
    delete [] fileData;
 }
 
+AssetDefinition& AssetDefinition:: operator = ( const AssetDefinition& assetDefn )
+{
+   isLoaded = assetDefn.isLoaded;
+   isLayout = assetDefn.isLayout; 
+   isOptional = assetDefn.isOptional; 
+   productId = assetDefn.productId; 
+   platform = assetDefn.platform; 
+   priority = assetDefn.priority;
+   fileModificationTime = assetDefn.fileModificationTime;
+   version = assetDefn.version;
+   path = assetDefn.path;
+   beginTime = assetDefn.beginTime;
+   endTime = assetDefn.endTime;
+   payload = assetDefn.payload;
+   name = assetDefn.name;
+   hash = assetDefn.hash;
+   category = assetDefn.category;
+   filters = assetDefn.filters;
+   gates = assetDefn.gates;
+   fileSize = assetDefn.fileSize;
+   compressionType = assetDefn.compressionType;
+
+   if( assetDefn.fileData )
+   {
+      fileData = new U8[ assetDefn.fileSize ];
+      memcpy( fileData, assetDefn.fileData, assetDefn.fileSize );
+   }
+
+   return *this;
+}
+
 void  AssetDefinition:: SetupHash()
 {
    if( name.size() > 0 )
    {
-      ConvertToString( GenerateUniqueHash( name ), hash );
+      string lowerCaseString = ConvertStringToLower( name );
+      ConvertToString( GenerateUniqueHash( lowerCaseString ), hash );
    }
    else
    {
-      ConvertToString( GenerateUniqueHash( path ), hash );
+      string lowerCaseString = ConvertStringToLower( name );
+      ConvertToString( GenerateUniqueHash( lowerCaseString ), hash );
    }
 
    if( hash.size() > TypicalMaxHexLenForNetworking )// limit
@@ -313,12 +256,15 @@ bool  AssetDefinition:: LoadFile()
    ifstream file ( path.c_str(), ios::in|ios::binary|ios::ate);
    if (file.is_open())
    {
+      delete fileData;// delete any previous data
       fileSize = file.tellg();
       fileData = new U8 [fileSize];
       file.seekg (0, ios::beg);
       file.read ( reinterpret_cast< char* >( fileData ), fileSize);
       file.close();
       isLoaded = true;
+
+      fileModificationTime = GetFileModificationTime( path );
    }
    else
    {
@@ -342,6 +288,17 @@ bool  AssetDefinition:: IsDefinitionComplete()
          return false;
    }
    return true;
+}
+
+bool  AssetDefinition:: IsFileChanged() const 
+{
+   struct stat fileInfo;
+   stat( path.c_str(), &fileInfo);
+   if( fileModificationTime != fileInfo.st_mtime )
+   {
+      return true;
+   }
+   return false;
 }
 
 void  AssetDefinition:: Print()
@@ -389,14 +346,14 @@ int   Findpriority( const string& value )
 bool  FillInAsset( string& line, AssetDefinition& asset )
 {
    vector< string > listOfStuff;
+
    splitOnFirstFound( listOfStuff, line );
 
    if( listOfStuff.size() != 0 )
    {
       const string& potentionalKey = ConvertStringToLower( listOfStuff[ 0 ] );
-      const string& value = RemoveEnds( ConvertStringToLower( listOfStuff[ 1 ] ) );
-      const string originalValue = RemoveEnds( listOfStuff[ 1 ] );
-      
+      const string& value = ConvertStringToLower( listOfStuff[ 1 ] );
+      const string undecoratedValue = RemoveEnds( listOfStuff[ 1 ] );
 
       if( listOfStuff.size() == 2 )// simplest case
       {
@@ -408,7 +365,7 @@ bool  FillInAsset( string& line, AssetDefinition& asset )
          }
          else if( potentionalKey == "priority" )
          {
-            asset.priority = boost::lexical_cast< int >( value );//Findpriority( value );
+            asset.priority = boost::lexical_cast< int >( value );
             return true;
          }
          else if( potentionalKey == "platform" )
@@ -424,11 +381,9 @@ bool  FillInAsset( string& line, AssetDefinition& asset )
          }
          else if( potentionalKey == "path" || potentionalKey == "file" )
          {
-            asset.path = originalValue;
-            FILE* test = fopen( asset.path.c_str(), "rb" );
-            if( test != NULL )
+            asset.path = undecoratedValue;
+            if( DoesFileExist( asset.path ) == true )
             {
-               fclose( test );
                return true;
             }
             else
@@ -438,7 +393,12 @@ bool  FillInAsset( string& line, AssetDefinition& asset )
          }
          else if( potentionalKey == "begintime" ) 
          {
-            asset.beginTime = ConvertStringToStandardTimeFormat( value );
+            asset.beginTime = ConvertStringToStandardTimeFormat( undecoratedValue );
+            return true;
+         }
+         else if( potentionalKey == "endtime" ) 
+         {
+            asset.endTime = ConvertStringToStandardTimeFormat( undecoratedValue );
             return true;
          }
          else if( potentionalKey == "optional" ) 
@@ -453,11 +413,6 @@ bool  FillInAsset( string& line, AssetDefinition& asset )
             }
             return true;
          }
-         else if( potentionalKey == "endtime" ) 
-         {
-            asset.endTime = ConvertStringToStandardTimeFormat( value );
-            return true;
-         }
          else if( potentionalKey == "payload" )
          {
             asset.payload = value;
@@ -465,7 +420,7 @@ bool  FillInAsset( string& line, AssetDefinition& asset )
          }
          else if( potentionalKey == "name" )
          {
-            asset.name = value;
+            asset.name = undecoratedValue;
             return true;
          }
          else if( potentionalKey == "filters" )
@@ -479,6 +434,11 @@ bool  FillInAsset( string& line, AssetDefinition& asset )
          else if( potentionalKey == "notes" )
          {
             return true;// ignore notes
+         }
+         else if( potentionalKey == "payload" )
+         {
+            asset.payload = value;
+            return true;
          }
          else
          {
@@ -570,42 +530,6 @@ bool  FillInLayout( string& line, AssetDefinition& asset )
    return false;
 }
 
-
-//////////////////////////////////////////////////////////////////////////
-
-std::istream& safeGetline(std::istream& is, std::string& t)
-{
-    t.clear();
-
-    // The characters in the stream are read one-by-one using a std::streambuf.
-    // That is faster than reading them one-by-one using the std::istream.
-    // Code that uses streambuf this way must be guarded by a sentry object.
-    // The sentry object performs various tasks,
-    // such as thread synchronization and updating the stream state.
-
-    std::istream::sentry se(is, true);
-    std::streambuf* sb = is.rdbuf();
-
-    for(;;) {
-        int c = sb->sbumpc();
-        switch (c) {
-        case '\n':
-            return is;
-        case '\r':
-            if(sb->sgetc() == '\n')
-                sb->sbumpc();
-            return is;
-        case EOF:
-            // Also handle the case when the last line has no line ending
-            if(t.empty())
-                is.setstate(std::ios::eofbit);
-            return is;
-        default:
-            t += (char)c;
-        }
-    }
-}
-
 //////////////////////////////////////////////////////////////////////////
 
 bool  AssetOrganizer::ParseNextAsset( ifstream& infile, int& lineCount )
@@ -662,6 +586,7 @@ bool  AssetOrganizer::ParseNextLayout( ifstream& infile, int& lineCount )
 
 bool  AssetOrganizer::ReplaceExistingAssetBasedOnHash( AssetDefinition& asset )
 {
+   asset.category = m_category;
    AssetVectorIterator it = m_assets.begin();
    while( it != m_assets.end() )
    {
@@ -673,15 +598,18 @@ bool  AssetOrganizer::ReplaceExistingAssetBasedOnHash( AssetDefinition& asset )
             ( testAsset.name.size() > 0 && testAsset.name == asset.name )// these are the same item...
              )
          {
-            if( testAsset.version > asset.version )
-            {
-               // toss the new one since it is an older version
-            }
-            else
+            // the file will self update if the time has changed, so don't do this.
+            //time_t recentMileModificationTime = GetFileModificationTime( asset.path );
+            //asset.fileModificationTime
+
+            if( testAsset.version < asset.version ) // only replace older versions. 
             {
                *it = asset;// simple replacement
                return true;
             }
+
+            // same asset but not replaced..  we don't want dups.
+            return true;
          }
          
       }
@@ -698,6 +626,7 @@ void  AssetOrganizer::AddAssetDefinition( AssetDefinition& asset )
       return;
 
 
+   asset.category = m_category;
    if( asset.priority )
    {
       if( m_assets.size() == 0 )
@@ -742,17 +671,23 @@ string ExePath() {
 
 //////////////////////////////////////////////////////////////////////////
 
-bool  AssetOrganizer::Init( const string& assetManifestFile )
+bool  AssetOrganizer::LoadAssetManifest()
 {
    m_isInitializedProperly = false;
 
-   ifstream infile( assetManifestFile.c_str() );
+   ifstream infile( m_dictionaryPath.c_str() );
    string line;
    if (!infile) 
    { 
       std::cerr << "Error opening file!" << endl; 
-      std::cout << "file not found: " << assetManifestFile << endl; 
+      std::cout << "file not found: " << m_dictionaryPath << endl; 
       return 1; 
+   }
+
+   m_assetFileModificationTime = GetFileModificationTime( m_dictionaryPath );
+   if( m_assetFileModificationTime == 0 )
+   {
+      return false;
    }
 
    bool errorCode = false;
@@ -897,11 +832,33 @@ bool  AssetOrganizer::GetListOfAssets( int platformId, const set< string >& list
 
 void  AssetOrganizer::Update()
 {
-   if( m_assets.size() == 0 || m_allFilesAreNowLoaded == true || m_isInitializedProperly == false )
-      return;
-
    time_t currentTime;
    time( &currentTime );
+
+   if( m_allFilesAreNowLoaded == true && 
+      difftime( currentTime, m_checkFileChangesTime ) >= FileChangesTimeout ) 
+   {
+      m_checkFileChangesTime = currentTime;
+
+      vector< AssetDefinition >::iterator it = m_assets.begin();
+      while( it != m_assets.end() )
+      {
+         if( it->IsFileChanged() == true )
+         {
+            //m_allFilesAreNowLoaded = false;
+            it->LoadFile();
+         }
+         it++;
+      }
+      time_t fileTime = GetFileModificationTime( m_dictionaryPath );
+      if( m_assetFileModificationTime != fileTime )
+      {
+         LoadAssetManifest();
+      }
+   }
+
+   if( m_assets.size() == 0 || m_allFilesAreNowLoaded == true || m_isInitializedProperly == false )
+      return;
 
    if( difftime( currentTime, m_lastFileLoadedTime ) >= 0.3 ) // 1/3rd of a second
    {
