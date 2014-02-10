@@ -16,33 +16,23 @@ using namespace std;
 
 #include "DiplodocusChat.h"
 #include "ChatUser.h"
+#include "ChatChannelManager.h"
 
 
 ///////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////
 
 DiplodocusChat::DiplodocusChat( const string& serverName, U32 serverId ): Diplodocus< KhaanChat >( serverName, serverId, 0,  ServerType_Chat ),
-                                             StatTrackingConnections()/*, 
-                                          m_inputsNeedUpdate( false ), 
-                                          m_chatChannelManagerNeedsUpdate( false )*/
+                                             StatTrackingConnections(),
+                                             m_chatChannelManagerNeedsUpdate( true )
 {
    this->SetSleepTime( 66 );
-
-   //time( &m_lastDbWriteTimeStamp );
 }
 
 void  DiplodocusChat :: Init()
 {
-  /* ChatChannelManager::SetDiplodocusChat( this );
-   
-   m_chatChannelManager = new ChatChannelManager();
-   m_chatChannelManager->SetConnectionId( ChatChannelManagerConnectionId );
-
-   UserConnection::SetDiplodocusChat( this );
-   UserConnection::SetChatManager( m_chatChannelManager );
-   m_chatChannelManager->Init();*/
-
-   //m_users.reserve( 200 );
+   ChatUser::Set( this );
+   ChatChannelManager::Set( this );
 }
 
 //---------------------------------------------------------------
@@ -264,15 +254,9 @@ bool     DiplodocusChat::HandleLoginPacket( BasePacket* packet, U32 connectionId
             //ChatUser* user = GetUserByUsername( pPacket->userName );
             if( user == NULL )
             {
-               Threading::MutexLock locker( m_mutex );
-               user = CreateNewUser( connectionId );
-               //m_users.insert( UserMapPair( connectionId, user ) );                           
+               user = CreateNewUser( connectionId );                        
                user->Init( pPacket->userId, pPacket->userName, pPacket->uuid, pPacket->lastLoginTime );
             }
-           /* else
-            {
-               user->SetConnectionId( connectionId );
-            }*/
             
             user->LoggedIn();
 
@@ -319,6 +303,72 @@ bool     DiplodocusChat::AddInputChainData( BasePacket* packet, U32 connectionId
    }
 
    return false;
+}
+
+//---------------------------------------------------------------
+
+// data going out can go only a few directions
+// coming from the DB, we can have a result or possibly a different packet meant for a single chat UserConnection
+// otherwise, coming from a UserConnection, to go out, it will already be packaged as a Gateway Wrapper and then 
+// we simply send it on.
+bool   DiplodocusChat::AddOutputChainData( BasePacket* packet, U32 connectionId ) 
+{
+   if( packet->packetType == PacketType_ServerJobWrapper )
+   {
+      return HandlePacketToOtherServer( packet, connectionId );
+   }
+
+   Threading::MutexLock locker( m_mutex );
+
+   if( packet->packetType == PacketType_DbQuery )
+   {
+      if( packet->packetSubType == BasePacketDbQuery::QueryType_Result )
+      {
+         PacketDbQueryResult* result = static_cast<PacketDbQueryResult*>( packet );
+         Threading::MutexLock locker( m_mutex );
+         m_dbQueries.push_back( result );
+      }
+      return true;
+   }
+
+   
+   return false;
+}
+
+//---------------------------------------------------------------
+
+void  DiplodocusChat::UpdateDbResults()
+{
+   PacketFactory factory;
+   Threading::MutexLock locker( m_mutex );
+
+   deque< PacketDbQueryResult* >::iterator it = m_dbQueries.begin();
+   while( it != m_dbQueries.end() )
+   {
+      PacketDbQueryResult* result = *it++;
+      BasePacket* packet = static_cast<BasePacket*>( result );
+
+      U32 connectionId = result->id;
+      bool isChatChannelManager = result->serverLookup > 0 ? true:false;
+
+      if( isChatChannelManager )
+      {
+         m_chatChannelManager->HandleDbResult( result );
+         m_chatChannelManagerNeedsUpdate = true;
+      }
+      else
+      {
+         ChatUser* user = GetUser( connectionId );
+         if( user )
+         {
+            user->HandleDbResult( result );
+         }
+         else
+         {
+            factory.CleanupPacket( packet );
+         }
+      }
+   }
 }
 
 //---------------------------------------------------------------
@@ -376,24 +426,65 @@ void     DiplodocusChat::PeriodicWriteToDB()
    }*/
 }
 
+void     DiplodocusChat::RemoveLoggedOutUsers()
+{
+   time_t currentTime;
+   time( &currentTime );
+
+   UserMapIterator it = m_users.begin(); 
+   while( it != m_users.end() )
+   {
+      bool wasRemoved = false;
+      time_t loggedOutTime = it->second->GetLoggedOutTime();
+      if( loggedOutTime != 0 )
+      {
+         if( difftime( currentTime, loggedOutTime ) >= logoutTimeout )
+         {
+            wasRemoved = true;
+            m_users.erase( it );
+         }
+      }
+      if( wasRemoved == false )
+      {
+         it++;
+      }
+   }
+}
 //---------------------------------------------------------------
 //---------------------------------------------------------------
 
-bool     DiplodocusChat::AddQueryToOutput( PacketDbQuery* packet )
+bool     DiplodocusChat::AddQueryToOutput( PacketDbQuery* dbQuery, U32 connectionId, bool isChatChannelManager )
 {
+   PacketFactory factory;
+   dbQuery->id = m_connectionId;
+   dbQuery->serverLookup = isChatChannelManager ? 1 : 0;
+
    ChainLinkIteratorType itOutputs = m_listOfOutputs.begin();
    while( itOutputs != m_listOfOutputs.end() )// only one output currently supported.
    {
       ChainType* outputPtr = static_cast< ChainType*> ( (*itOutputs).m_interface );
-      if( outputPtr->AddInputChainData( packet, m_chainId ) == true )
+      if( outputPtr->AddInputChainData( dbQuery, m_chainId ) == true )
       {
          return true;
       }
       itOutputs++;
    }
 
-   delete packet;/// normally, we'd leave this up to the invoker to cleanup. 
+   BasePacket* deleteMe = static_cast< BasePacket*>( dbQuery );
+
+   factory.CleanupPacket( deleteMe );
    return false;
+}
+
+//---------------------------------------------------------------
+
+void     DiplodocusChat::UpdateChatChannelManager()
+{
+   if( m_chatChannelManagerNeedsUpdate == false )
+      return;
+   m_chatChannelManager->Update();
+
+   m_chatChannelManagerNeedsUpdate = false;
 }
 
 //---------------------------------------------------------------
@@ -410,6 +501,9 @@ int      DiplodocusChat::CallbackFunction()
    UpdateConsoleWindow( m_timeOfLastTitleUpdate, m_uptime, m_numTotalConnections, m_connectedClients.size(), m_listeningPort, m_serverName );
 
    PeriodicWriteToDB();
+   RemoveLoggedOutUsers();
+   UpdateChatChannelManager();
+   UpdateDbResults();
 
    return 1;
 }

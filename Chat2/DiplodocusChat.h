@@ -16,6 +16,8 @@ using namespace std;
 
 class ChatUser;
 class PacketDbQuery;
+class PacketDbQueryResult;
+class ChatChannelManager;
 
 //////////////////////////////////////////////////////////////////////////////////
 
@@ -28,31 +30,49 @@ public:
    DiplodocusChat( const string& serverName, U32 serverId );
    void     Init();
 
+   void     ChatChannelManagerNeedsUpdate() { m_chatChannelManagerNeedsUpdate = true; }
    void     ServerWasIdentified( IChainedInterface* khaan );
 
    bool     AddInputChainData( BasePacket* packet, U32 connectionId );
-   bool     AddQueryToOutput( PacketDbQuery* packet );
+   bool     AddOutputChainData( BasePacket* packet, U32 connectionId );
 
+   // from both the ChatUser and the ChatChannelManager
+   bool     AddQueryToOutput( PacketDbQuery* packet, U32 connectionId, bool isChatChannelManager );
+
+   //-------------------------------------
+public:
+// utility functions used by the ChatChannelManager
+   ChatUser*    UpdateExistingUsersConnectionId( const string& uuid, U32 connectionId );
+   ChatUser*    GetUser( U32 connectionId );
+   ChatUser*    GetUserById( U32 userId );
+   ChatUser*    GetUserByUuid( const string& userName );
+   ChatUser*    GetUserByUsername( const string& userName );
+
+   //-------------------------------------
 private:
-   ChatUser* CreateNewUser( U32 connectionId );
-   ChatUser* UpdateExistingUsersConnectionId( const string& uuid, U32 connectionId );
-   ChatUser* GetUser( U32 connectionId );
-   ChatUser* GetUserById( U32 userId );
-   ChatUser* GetUserByUuid( const string& userName );
-   ChatUser* GetUserByUsername( const string& userName );
+   ChatUser*    CreateNewUser( U32 connectionId );
 
    bool     HandleChatPacket( BasePacket* packet, U32 connectionId );
    bool     HandleLoginPacket( BasePacket* packet, U32 connectionId );
    bool     HandlePacketFromOtherServer( BasePacket* packet, U32 connectionId );
    void     PeriodicWriteToDB();
+   void     RemoveLoggedOutUsers();
+
+   void     UpdateChatChannelManager();
+   void     UpdateDbResults();
    int      CallbackFunction();
 
    typedef map< U32, ChatUser* >  UserMap;
    typedef UserMap::iterator      UserMapIterator;
    typedef pair< U32, ChatUser* > UserMapPair;
 
-   map< U32, ChatUser* >     m_users;
+   map< U32, ChatUser* >         m_users;
+   deque< PacketDbQueryResult* > m_dbQueries;
 
+   static const int              logoutTimeout = 2 * 60; // two minutes 
+
+   ChatChannelManager*           m_chatChannelManager;
+   bool                          m_chatChannelManagerNeedsUpdate;
 };
 
 //////////////////////////////////////////////////////////////////////////////////

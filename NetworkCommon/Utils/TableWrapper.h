@@ -110,6 +110,7 @@ public:
       Column_game_type, // summoner wars
       Column_game_instance_id, // game instance
       Column_date_created,
+      Column_date_expired,
       Column_end
    };
    static const char* const column_names[];

@@ -2,6 +2,7 @@
 
 #pragma once
 
+
 class DiplodocusChat;
 class ChatChannelManager;
 
@@ -14,18 +15,23 @@ public:
    ChatUser( U32 connectionId );
    ~ChatUser();
 
-   void     SetConnectionId( U32 connId ) { m_connectionId = connId; }
-   U32      GetConnectionId() const { return m_connectionId; }
-   U32      GetUserId() const { return m_userId ; }
-   string   GetUserName() const { return m_userName; }
-   string   GetUuid() const { return m_uuid; }
-   time_t   GetLoggedOutTime() const { return m_loggedOutTime; }
+   void           SetConnectionId( U32 connId ) { m_connectionId = connId; }
+   U32            GetConnectionId() const { return m_connectionId; }
+   U32            GetUserId() const { return m_userId ; }
+   string         GetUserName() const { return m_userName; }
+   string         GetUuid() const { return m_uuid; }
+   time_t         GetLoggedOutTime() const { return m_loggedOutTime; }
 
-   void     Init( U32 userId, const string& name, const string& uuid, const string& lastLoginTime );
+   void           Init( U32 userId, const string& name, const string& uuid, const string& lastLoginTime );
 
-   void     LoggedIn() { m_isLoggedIn = true; }
-   void     LoggedOut();
+   void           LoggedIn() { m_isLoggedIn = true; }
+   void           LoggedOut();
 
+   static void    Set( DiplodocusChat* chat );
+   static void    Set( ChatChannelManager* mgr );
+
+
+   bool           HandleDbResult( PacketDbQueryResult* packet );
    //--------------------------------------
 private:
    

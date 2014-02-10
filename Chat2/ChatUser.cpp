@@ -23,6 +23,16 @@ using boost::format;
 DiplodocusChat*      ChatUser::  m_chatServer = NULL;
 ChatChannelManager*  ChatUser::  m_chatChannelManager = NULL;
 
+void ChatUser::Set( DiplodocusChat* chat )
+{
+   m_chatServer = chat;
+}
+
+void ChatUser::Set( ChatChannelManager* mgr )
+{
+   m_chatChannelManager = mgr;
+}
+
 ///////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////
 
