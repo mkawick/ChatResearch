@@ -30,6 +30,10 @@ bool  BasePacketDbQuery::SerializeOut( U8* data, int& bufferOffset ) const
    return true;
 }
 
+BasePacketDbQuery::~BasePacketDbQuery()
+{
+}
+
 ///////////////////////////////////////////////////////////////
 
 bool  PacketDbQuery::SerializeIn( const U8* data, int& bufferOffset )
@@ -54,6 +58,11 @@ bool  PacketDbQuery::SerializeOut( U8* data, int& bufferOffset ) const
    return true;
 }
 
+
+PacketDbQuery::~PacketDbQuery()
+{
+}
+
 ///////////////////////////////////////////////////////////////
 
 bool  PacketDbQueryResult::SerializeIn( const U8* data, int& bufferOffset )
@@ -75,3 +84,10 @@ bool  PacketDbQueryResult::SerializeOut( U8* data, int& bufferOffset ) const
 
    return true;
 }
+
+PacketDbQueryResult::~PacketDbQueryResult()
+{
+}
+
+///////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////

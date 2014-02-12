@@ -33,6 +33,7 @@ void  DiplodocusChat :: Init()
 {
    ChatUser::Set( this );
    ChatChannelManager::Set( this );
+   m_chatChannelManager = new ChatChannelManager();
 }
 
 //---------------------------------------------------------------
@@ -318,15 +319,16 @@ bool   DiplodocusChat::AddOutputChainData( BasePacket* packet, U32 connectionId 
       return HandlePacketToOtherServer( packet, connectionId );
    }
 
-   Threading::MutexLock locker( m_mutex );
-
    if( packet->packetType == PacketType_DbQuery )
    {
+      Threading::MutexLock locker( m_mutex );
       if( packet->packetSubType == BasePacketDbQuery::QueryType_Result )
       {
          PacketDbQueryResult* result = static_cast<PacketDbQueryResult*>( packet );
          Threading::MutexLock locker( m_mutex );
          m_dbQueries.push_back( result );
+         if( result->customData != NULL )
+            cout << "AddOutputChainData: Non-null custom data " << endl;
       }
       return true;
    }
@@ -346,12 +348,14 @@ void  DiplodocusChat::UpdateDbResults()
    while( it != m_dbQueries.end() )
    {
       PacketDbQueryResult* result = *it++;
+      if( result->customData != NULL )
+            cout << "UpdateDbResults: Non-null custom data " << endl;
       BasePacket* packet = static_cast<BasePacket*>( result );
 
       U32 connectionId = result->id;
       bool isChatChannelManager = result->serverLookup > 0 ? true:false;
 
-      if( isChatChannelManager )
+      if( isChatChannelManager ) //&& connectionId == ChatChannelManagerUniqueId )
       {
          m_chatChannelManager->HandleDbResult( result );
          m_chatChannelManagerNeedsUpdate = true;
@@ -369,6 +373,7 @@ void  DiplodocusChat::UpdateDbResults()
          }
       }
    }
+   m_dbQueries.clear();
 }
 
 //---------------------------------------------------------------
@@ -482,9 +487,11 @@ void     DiplodocusChat::UpdateChatChannelManager()
 {
    if( m_chatChannelManagerNeedsUpdate == false )
       return;
-   m_chatChannelManager->Update();
 
-   m_chatChannelManagerNeedsUpdate = false;
+   if( m_chatChannelManager->Update() == true )
+   {
+      m_chatChannelManagerNeedsUpdate = false;
+   }
 }
 
 //---------------------------------------------------------------

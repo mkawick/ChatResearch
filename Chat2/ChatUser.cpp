@@ -67,6 +67,12 @@ void     ChatUser::LoggedOut()
    time( &m_loggedOutTime );
 }
 
+//---------------------------------------------------------
+
+bool     ChatUser::HandleDbResult( PacketDbQueryResult * dbResult )
+{
+   return false;
+}
 
 ///////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////
