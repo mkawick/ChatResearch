@@ -28,6 +28,7 @@ public:
       JobType_SelectAllUsersToSendToAuth,
       JobType_FindChatters,
       JobType_AllUsersInChannel,
+      JobType_AllUsersInAllChannels,
 
       JobType_CreateFromGameServer,
       JobType_MakeInactiveFromGameServer,

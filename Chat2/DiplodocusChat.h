@@ -35,6 +35,7 @@ public:
 
    bool     AddInputChainData( BasePacket* packet, U32 connectionId );
    bool     AddOutputChainData( BasePacket* packet, U32 connectionId );
+   bool     SendMessageToClient( BasePacket* packet, U32 connectionId );
 
    // from both the ChatUser and the ChatChannelManager
    bool     AddQueryToOutput( PacketDbQuery* packet, U32 connectionId, bool isChatChannelManager );
@@ -55,10 +56,12 @@ private:
    bool     HandleChatPacket( BasePacket* packet, U32 connectionId );
    bool     HandleLoginPacket( BasePacket* packet, U32 connectionId );
    bool     HandlePacketFromOtherServer( BasePacket* packet, U32 connectionId );
+   bool     HandlePacketFromClient( BasePacket* packet );
    void     PeriodicWriteToDB();
    void     RemoveLoggedOutUsers();
 
    void     UpdateChatChannelManager();
+   void     UpdateAllChatUsers();
    void     UpdateDbResults();
    int      CallbackFunction();
 

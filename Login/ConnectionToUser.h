@@ -41,6 +41,7 @@ struct ConnectionToUser
    bool     FinalizeLogout();
    
    bool     StoreProductInfo( PacketDbQueryResult* dbResult );
+   bool     IsReadyToBeCleanedUp() const { return isReadyToBeCleanedUp; }
 
    //------------------------------------------------
    
@@ -94,6 +95,7 @@ struct ConnectionToUser
    time_t                  m_loginTime;
    time_t                  loggedOutTime;
    bool                    isLoggingOut;
+   bool                    isReadyToBeCleanedUp;
 
    int                     timeZone;
    int                     m_languageId;

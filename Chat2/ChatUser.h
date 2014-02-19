@@ -31,19 +31,50 @@ public:
    static void    Set( ChatChannelManager* mgr );
 
 
+   bool           HandleClientRequest( BasePacket* packet );
    bool           HandleDbResult( PacketDbQueryResult* packet );
+
+   void           ChatReceived( const string& message, const string& senderUuid, const string& senderDisplayName, string groupUuid, string timeStamp );
+
+   bool           Update();
+
+   //--------------------------------------
+
+   bool              SendErrorMessage( PacketErrorReport::ErrorType );
+
+   bool              NotifyChannelAdded( const string& channelName, const string& channelUuid, bool wasSuccessful );
+   bool              NotifyChannelMovedToInactive( const string& channelUuid, int numremoved, bool wasSuccessful );
+   bool              NotifyChannelRemoved( const string& channelUuid, int numremoved );
+   bool              NotifyAllChannelsLoaded( bool loaded );
+   bool              NotifyUserStatusHasChanged( const string& userName, const string& userUuid, int statusChange );
+   bool              NotifyYouWereAddedToChannel( const string& channelUuid );
+
+   bool              NotifyAddedToChannel( const string& channelUuid, const string& userUuid, bool wasSuccessful );
+   bool              NotifyRemovedFromChannel( const string& channelName, const string& channelUuid, bool wasSuccessful );
+
    //--------------------------------------
 private:
+   bool              SendChat( const string& message, const string& userUuid, const string& channelUuid, U32 gameTurn );
+
+   bool              SendMessageToClient( BasePacket* packet ) const;
+   void              RequestChatChannels();
+   void              RequestAllBasicChatInfo();
+   void              QueryChatChannelHistory( const string& channelUuid, int numRecords, int startingIndex );
+   void              SendChatChannelHistoryToClient( PacketDbQueryResult * dbResult );
+
+   void              QueryChatP2PHistory( const string& userUuid, int numRecords, int startingIndex );
+   void              SendChatp2pHistoryToClient( PacketDbQueryResult * dbResult );
+
+   void              GetAllChatHistroySinceLastLogin();
+   void              SendChatHistorySinceLastLogin( const vector< MissedChatChannelEntry >& );
+   void              StoreChatHistoryMissedSinceLastLogin( PacketDbQueryResult * dbResult );
    
    enum QueryType
    {
-      QueryType_UserLoginInfo =     1<<0,
-      QueryType_UserFriendsList =   1<<1,
-      QueryType_UserChannelList =   1<<2,
-      QueryType_ChatChannelHistory =1<<3,
-      QueryType_ChatP2PHistory =    1<<4,
-      QueryType_ChatHistoryMissedSinceLastLogin = 1<<5,
-      QueryType_Last =              1<<6,
+      QueryType_ChatChannelHistory =               1<<0,
+      QueryType_ChatP2PHistory =                   1<<1,
+      QueryType_ChatHistoryMissedSinceLastLogin =  1<<2,
+      QueryType_Last =                             1<<3,
       QueryType_All =               QueryType_Last - 1 // tricky math here.. pay attention
    };
 
@@ -55,6 +86,7 @@ private:
 
    bool                       m_isLoggedIn;
    time_t                     m_loggedOutTime;
+   bool                       m_initialRequestForInfoSent;
 
   /* bool                       m_isUserDbLookupPending;
    bool                       m_userFriendsComplete;

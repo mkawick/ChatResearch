@@ -173,6 +173,7 @@ public:
 
    virtual void  ChatChannelHistory( const string& channelUuid, const list< ChatEntry >& listOfChats ) {  }
    virtual void  ChatP2PHistory( const string& userUuid, const list< ChatEntry >& listOfChats ) { }
+   virtual void  ChatHistoryMissedSinceLastLoginComposite( const list< MissedChatChannelEntry >& listOfChats ) { }
 
    virtual void  AssetCategoriesLoaded() {}
    virtual void  AssetManifestAvailable( const string& category ) {}

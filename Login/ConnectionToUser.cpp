@@ -44,6 +44,7 @@ ConnectionToUser:: ConnectionToUser( const string& name, const string& pword, co
                      m_loginTime( 0 ),
                      loggedOutTime( 0 ),
                      isLoggingOut( false ),
+                     isReadyToBeCleanedUp( false ),
                      timeZone( 0 ),
                      m_languageId( 1 ),
                      adminLevel( 0 ),
@@ -192,7 +193,7 @@ void  ConnectionToUser::SaveUserSettings( UserPlusProfileTable& enigma, U8 produ
    m_email =                        row[ TableUserPlusProfile::Column_email ];
    passwordHash =                   row[ TableUserPlusProfile::Column_password_hash ];
    
-   lastLoginTime =                  GetDateInUTC(); 
+   lastLoginTime =                  row[ TableUserPlusProfile::Column_last_login_time ];
    loggedOutTime = 0;
    //loggedOutTime = GetDateFromString( lastLoginTime.c_str() );
    lastLogoutTime =                 row[ TableUserPlusProfile::Column_last_logout_time ];
@@ -375,6 +376,7 @@ bool  ConnectionToUser::FinalizeLogout()
    queryString += "'";
    dbQuery->query =           queryString;
    isLoggingOut = false;
+   isReadyToBeCleanedUp = true;
 
    //userManager->SendPacketToGateway( logout, connectionId );
    return userManager->AddQueryToOutput( dbQuery );
@@ -455,6 +457,7 @@ bool  ConnectionToUser::UpdateLastLoggedOutTime()
 
 bool    ConnectionToUser:: SuccessfulLogin( U32 connectId, bool isReloggedIn )
 {
+   isReadyToBeCleanedUp = false;
    isLoggingOut = false;// for relogin, we need this to be cleared.
    UpdateConnectionId( connectId );
 

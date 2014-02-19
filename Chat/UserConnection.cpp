@@ -585,7 +585,7 @@ bool     UserConnection::ProcessPacket( BasePacket* packet )
                SendChatOut( chat->message, chat->userUuid, chat->channelUuid, chat->gameTurn );
             }
             break;
-         case PacketChatToServer::ChatType_ChangeChatChannel:
+        /* case PacketChatToServer::ChatType_ChangeChatChannel:
             {
                PacketChangeChatChannel* channelChange = static_cast< PacketChangeChatChannel* >( packet );
                channelChange = channelChange;
@@ -594,7 +594,7 @@ bool     UserConnection::ProcessPacket( BasePacket* packet )
                   //SetChatChannel( channelChange->chatChannelUuid );
                }
             }
-            break;
+            break;*/
          case PacketChatToServer::ChatType_RequestHistory:
             {
                PacketChatHistoryRequest* request = static_cast< PacketChatHistoryRequest* > ( packet );
@@ -879,7 +879,7 @@ bool     UserConnection::HandleDbQueryResult( BasePacket* packet )
          }
          break;
       case QueryType_ChatHistoryMissedSinceLastLogin:
-         {
+         {/*
             if( dbResult->bucket.bucket.size() == 0 )
             {
                m_chatServer->SendErrorToClient( m_connectionId, PacketErrorReport::ErrorType_NoChatHistoryExistsForThisUser );
@@ -907,14 +907,6 @@ bool     UserConnection::HandleDbQueryResult( BasePacket* packet )
                {
                   entry.gameTurn  = 0;
                }
-              /* if( row[ TableChat::Column_game_instance_id ] != "NULL" )
-               {
-                  entry.gameTurn =  boost::lexical_cast< int >( row[ TableChat::Column_game_instance_id ] );
-               }
-               else
-               {
-                  entry.gameTurn  = 0;
-               }*/
               
                result->history.push_back( entry );
                // send once we have so many items
@@ -935,7 +927,7 @@ bool     UserConnection::HandleDbQueryResult( BasePacket* packet )
             if( result && result->history.size() )
             {
                SendPacketToGateway( result );
-            }
+            }*/
          }
          break;
    }

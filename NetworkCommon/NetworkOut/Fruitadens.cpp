@@ -416,19 +416,6 @@ bool  Fruitadens::HandlePacketReceived( BasePacket* packetIn )
             handled2SPacket = true;
          }
          break;
-         // no other current needs
-  /*    case BasePacket::ChatType_CreateChatChannelFromGameServerResponse: 
-         {
-            PacketChatCreateChatChannelFromGameServerResponse* unwrappedPacket = static_cast< PacketChatCreateChatChannelFromGameServerResponse * > ( wrapper->pPacket ); 
-            if( unwrappedPacket->success )
-            {
-               CServerGameData* serverGameData = FindServerGameData( GAME_SELECT_SUMMONWAR, unwrappedPacket->gameId );
-               serverGameData->SetUUID();
-            }
-            delete unwrappedPacket;
-         }
-         break;*/
-
       }
 
 

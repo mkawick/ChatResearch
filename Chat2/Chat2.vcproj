@@ -200,6 +200,10 @@
 				RelativePath=".\KhaanChat.cpp"
 				>
 			</File>
+			<File
+				RelativePath=".\UserInChatChannel.cpp"
+				>
+			</File>
 		</Filter>
 		<Filter
 			Name="Header Files"
@@ -228,6 +232,10 @@
 			</File>
 			<File
 				RelativePath=".\KhaanChat.h"
+				>
+			</File>
+			<File
+				RelativePath=".\UserInChatChannel.h"
 				>
 			</File>
 		</Filter>

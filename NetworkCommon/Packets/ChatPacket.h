@@ -78,7 +78,7 @@ public:
 };
 
 ///////////////////////////////////////////////////////////////
-
+/*
 class PacketChangeChatChannel : public PacketChatToServer
 {
 public:
@@ -102,7 +102,7 @@ public:
 
    string   userName;
    string   chatChannel;
-};
+};*/
 
 ///////////////////////////////////////////////////////////////
 
@@ -238,7 +238,7 @@ public:
 };
 
 ///////////////////////////////////////////////////////////////
-
+/*
 struct FullChatChannelEntry
 {
    bool  SerializeIn( const U8* data, int& bufferOffset );
@@ -248,7 +248,6 @@ struct FullChatChannelEntry
    string   senderUuid;
    string   chatChannelUuid;
    string   timeStamp;
-   //U32      gameInstance;
    U16      gameTurn;
    
 };
@@ -262,6 +261,29 @@ public:
    bool  SerializeOut( U8* data, int& bufferOffset ) const;
 
    SerializedVector< FullChatChannelEntry > history;
+};*/
+
+
+struct MissedChatChannelEntry
+{
+   bool  SerializeIn( const U8* data, int& bufferOffset );
+   bool  SerializeOut( U8* data, int& bufferOffset ) const;
+
+   string   senderUuid;
+   string   chatChannelUuid;
+   U16      numMessages;
+   bool     isGamechannel;
+};
+
+class PacketChatMissedHistoryResult : public BasePacket
+{
+public:
+   PacketChatMissedHistoryResult( int packet_type = PacketType_Chat, int packet_sub_type = PacketChatToServer::ChatType_RequestHistorySinceLastLoginResponse ) : BasePacket( packet_type, packet_sub_type ){  }
+
+   bool  SerializeIn( const U8* data, int& bufferOffset );
+   bool  SerializeOut( U8* data, int& bufferOffset ) const;
+
+   SerializedVector< MissedChatChannelEntry > history;
 };
 
 ///////////////////////////////////////////////////////////////

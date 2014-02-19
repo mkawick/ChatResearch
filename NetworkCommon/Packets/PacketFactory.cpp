@@ -344,11 +344,11 @@ bool  PacketFactory::ParseChat( const U8* bufferIn, int& bufferOffset, const Bas
       }
       return true;
 
-   case PacketChatToServer::ChatType_ChangeChatChannel:
+  /* case PacketChatToServer::ChatType_ChangeChatChannel:
       {
          *packetOut = SerializeIn< PacketChangeChatChannel >( bufferIn, bufferOffset );
       }
-      return true;
+      return true;*/
 
    case PacketChatToServer::ChatType_RequestHistory:
       {
@@ -356,11 +356,11 @@ bool  PacketFactory::ParseChat( const U8* bufferIn, int& bufferOffset, const Bas
       }
       return true;
 
-   case PacketChatToServer::ChatType_ChangeChatChannelToClient:
+   /*case PacketChatToServer::ChatType_ChangeChatChannelToClient:
       {
          *packetOut = SerializeIn< PacketChangeChatChannelToClient >( bufferIn, bufferOffset );
       }
-      return true;
+      return true;*/
 
    case PacketChatToServer::ChatType_SendListOfChannelsToClient:
       {

@@ -30,14 +30,14 @@ struct ChatChannel
    int         maxPlayers;
    string      channelDetails;
    U8          gameType;
-   U32         gameId;
+   U32         gameInstanceId;
    U16         gameTurn;
    string      createDate;
 
    // TODO.. add expry date for channels.
 
    //vector< ChatUser >   admins;
-   list< stringhash >   userUuidList;
+   //list< stringhash >   userUuidList;
    list< UserBasics >   userBasics;
    
 

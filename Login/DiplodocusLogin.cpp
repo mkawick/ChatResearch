@@ -513,7 +513,7 @@ void     DiplodocusLogin:: RemoveOldConnections()
    while( it != m_userConnectionMap.end() )
    {
       UserConnectionMapIterator temp = it++;
-      if( temp->second.isLoggingOut == true && // do not remove in the middle of logging out
+      if( temp->second.IsReadyToBeCleanedUp() == true && // do not remove in the middle of logging out
          temp->second.loggedOutTime != 0 )
       {
          const int normalExpireTime = 3; // seconds

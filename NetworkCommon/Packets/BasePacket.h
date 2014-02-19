@@ -10,7 +10,7 @@
 
 //#define _MEMLEAK_TESTING_
 
-static const U8   GlobalNetworkProtocolVersion = 3;
+static const U8   GlobalNetworkProtocolVersion = 4;
 
 ///////////////////////////////////////////////////////////////
 
@@ -377,6 +377,7 @@ public:
       ErrorType_CannotAddUserToChannel_AlreadyExists =         307,
       ErrorType_NoChatHistoryExistsOnSelectedChannel =         308,
       ErrorType_NoChatHistoryExistsForThisUser =               309,
+      ErrorType_ChatChannelCannotBeCreated =                   310,
 
       ErrorType_CreateFailed_BadPassword =                     410,
       ErrorType_CreateFailed_DisallowedUsername =              411,

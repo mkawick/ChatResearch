@@ -7,12 +7,20 @@ using namespace std;
 
 #include "ChatChannel.h"
 #include "ChatChannelDbJob.h"
+#include "UsersChatChannelList.h"
+
+#include "../NetworkCommon/Utils/TableWrapper.h"
+
+//------------------------------------------------------
 
 class DiplodocusChat;
 class ChatUser;
 class BasePacket;
 class PacketDbQuery;
 class PacketDbQueryResult;
+
+class PacketChatCreateChatChannelFromGameServer;
+class PacketChatDeleteChatChannelFromGameServer;
 
 
 // The chat channel manager maintains a list of all chat channels, adds new ones, and removes old ones
@@ -50,15 +58,31 @@ public:
    bool           AddInboundPacket( BasePacket* packet ); // not thread safe
    bool           HandleDbResult( PacketDbQueryResult* packet );
 
+   //bool           CreateNewChannel( const string& channelName, U32 serverId, U8 gameType, U32 gameInstanceId );
+   bool           CreateNewChannel( const string& channelName, const string& userUuid );
+   bool           GetChatChannels( const string& userUuid, ChannelKeyValue& availableChannels );
+
+
+   bool           CreateNewChannel( const PacketChatCreateChatChannelFromGameServer* pPacket );
+   bool           DeleteChannel( const PacketChatDeleteChatChannelFromGameServer* request );
+
+   
+   void           UserSendP2PChat( const string& senderUuid, const string& receiverUuid, const string& message );
+   void           UserSendsChatToChannel( const string& senderUuid, const string& channelUuid, const string& message, U16 gameTurn );
+
 private:
 
    //---------------------------------------------------
-   typedef list< ChatChannelDbJob >        DbJobList;
+   typedef list< ChatChannelDbJob >          DbJobList;
    typedef DbJobList::iterator               DbJobIterator;
 
    typedef map< stringhash, ChatChannel >    ChannelMap;
    typedef ChannelMap::iterator              ChannelMapIterator;
    typedef pair< stringhash, ChatChannel >   ChannelMapPair;
+
+   typedef map< stringhash, UsersChatChannelList >    UserMap;
+   typedef UserMap::iterator                          UserMapIterator;
+   typedef pair< stringhash, UsersChatChannelList >   UserPair;
    //---------------------------------------------------
 
    void           ProcessIncomingPacket( BasePacket* );
@@ -74,22 +98,35 @@ private:
    bool           AddSanitizedStrings( PacketDbQuery* dbQuery, list< string >& sanitizedStrings );
    bool           AddCustomData( PacketDbQuery* dbQuery, void* data );
    bool           Send( PacketDbQuery* dbQuery );
+   void           PackageAndSendToOtherServer( BasePacket* packet, U32 serverId );
+   string         CreateUniqueChatChannelId();
 
 
    bool           FindDbJob( int jobId, list< ChatChannelDbJob >& listOfJobs, DbJobIterator& iter );
-   void           AddChatchannel( int id, const string& channelName, const string& channelUuid, bool isActive, int maxPlayers, int gameType, int gameId, const string& createDate );
+   void           AddChatchannel( int id, const string& channelName, const string& channelUuid, bool isActive, int maxPlayers, int gameType, U32 gameInstanceId, const string& createDate );
    void           AddMetaData( PacketDbQueryResult* dbQuery, void* myData );
    int            NewDbId();
+   ChannelMapIterator   FindChatChannel( U32 gameInstanceId, U8 gameType );
 
-   void           AddUserToChannel( const string& channelUuid, const UserBasics& ub );
-   void           AddAllUsersToChannel( const string& channelUuid, const SerializedKeyValueVector< string >& usersAndIds );
-   bool           GetChatChannels( const string& uuid, ChannelKeyValue& availableChannels );
+   void           AddUserToChannel( const string& channelUuid, const string& userUuid, const string username, bool sendNotification );
+   void           AddAllUsersToChannel( const string& channelUuid, const SerializedKeyValueVector< string >& usersAndIds, bool sendNotification = false );
+   bool           NotifyUserThatHeWasAddedToChannel( const string& userUuid, const string& channelUuid ); 
+   U32            QueryAllUsersInAllChatChannels();
+
+   //void           HandleChatChannelCreateResult( PacketDbQueryResult* dbResult, ChatChannelDbJob& job );
+   string         CreateNewChannel( const string& channelName, const string userUuid, U32 serverId, U8 gameType, U32 gameInstanceId );
+   bool           DeleteChannel( const string& chanelUuid );
+
+   bool           HandleLoadAllChannelsResult( PacketDbQueryResult* dbResult, ChatChannelDbJob& job );
+   void           SaveChatChannelLoadResult( ChatChannelTable::row row );
+   bool           HandleAllUsersInAllChannelsResult( PacketDbQueryResult* dbResult, ChatChannelDbJob& job );
 
    //-----------------------------------------------------
 
-   // query fundtions
+   // query functions
    bool     RequestAllUsersInChatChannel( const string& channelUuid, bool fullList, const string& authUuid );
    bool     QueryAllUsersInChatChannel( const string& channelUuid );
+   void     WriteChatToDb( const string& message, const string& senderUuid, const string& friendUuid, const string& channelUuid, U16 gameTurn, U32 connectionId );
 
    //-----------------------------------------------------
 
@@ -100,10 +137,14 @@ private:
 
    DbJobList                     m_jobsPending;
    ChannelMap                    m_channelMap;
+   UserMap                       m_userMap;
 
    bool                          m_isInitialized;
 
    int                           m_dbIdTracker;
+   time_t                        m_initializationTimeStamp;
+   int                           m_numChannelsToLoad;
+   bool                          m_isPullingAllUsersAndChannels;
    // we need several maps.
    //static ChatChannelManager;
 };

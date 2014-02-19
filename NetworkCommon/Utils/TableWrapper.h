@@ -65,6 +65,22 @@ public:
 
 typedef Enigmosaurus <TableSimpleUser> SimpleUserTable;
 
+class TableUserJoinChatChannel
+{
+public:
+   enum Columns
+   {
+      Column_name,
+      Column_uuid,
+      Column_id,
+      Column_channel_uuid,
+      Column_end
+   };
+   static const char* const column_names[];
+};
+
+typedef Enigmosaurus <TableUserJoinChatChannel> UserJoinChatChannelTable;
+
 //////////////////////////////////////////////////////////////
 
 class TableUserTempNewUser

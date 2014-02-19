@@ -1576,7 +1576,24 @@ bool  NetworkLayer::HandlePacketReceived( BasePacket* packetIn )
                }
             }
             break;
-          case PacketChatToServer::ChatType_UserChatStatusChange:
+         case PacketChatToServer:: ChatType_RequestHistorySinceLastLoginResponse:
+            {
+               PacketChatMissedHistoryResult* history = static_cast< PacketChatMissedHistoryResult* >( packetIn );
+               SerializedVector< MissedChatChannelEntry >& optimizedDataAccessHistory = history->history;
+               int num = history->history.size();
+
+               list< MissedChatChannelEntry > listOfChats;
+               for( int i=0; i<num; i++ )
+               {
+                  listOfChats.push_back( optimizedDataAccessHistory[i] );
+               }
+               for( list< UserNetworkEventNotifier* >::iterator it = m_callbacks.begin(); it != m_callbacks.end(); ++it )
+               {
+                  (*it)->ChatHistoryMissedSinceLastLoginComposite( listOfChats );
+               }
+            }
+            break;
+         case PacketChatToServer::ChatType_UserChatStatusChange:
             {
                cout << "char contacts received" << endl;
                PacketChatUserStatusChangeBase* packet = static_cast< PacketChatUserStatusChangeBase* >( packetIn );
