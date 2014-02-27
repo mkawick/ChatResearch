@@ -111,6 +111,7 @@ protected:
 
    time_t         m_timeOfConnection;
    bool           m_useLibeventToSend;
+   bool           m_criticalFailure;
 
    deque< BasePacket* > m_packetsOut;
    deque< BasePacket* > m_packetsIn;//ToBeProcessed;

@@ -21,7 +21,7 @@ struct UserInfo
 
 ///////////////////////////////////////////////////////////////////
 
-class FriendInfo     //string userUuid.. will be sotred by id using uuid
+class FriendInfo     //string userUuid.. will be stored by id using uuid
 {
 public:
    FriendInfo(): avatarId( 0 ), isOnline( false ) {}
@@ -317,6 +317,32 @@ public:
 
    string userName;
    string uuid;
+};
+
+///////////////////////////////////////////////////////////////////
+
+class PacketContact_SearchForUser : public PacketContact
+{
+public:
+   PacketContact_SearchForUser() : PacketContact( PacketType_Contact, ContactType_Search ){  }
+
+   bool  SerializeIn( const U8* data, int& bufferOffset );
+   bool  SerializeOut( U8* data, int& bufferOffset ) const;
+
+   string   searchString;
+   int      limit;
+   int      offset;
+};
+
+class PacketContact_SearchForUserResult : public PacketContact
+{
+public:
+   PacketContact_SearchForUserResult() : PacketContact( PacketType_Contact, ContactType_SearchResults ){  }
+
+   bool  SerializeIn( const U8* data, int& bufferOffset );
+   bool  SerializeOut( U8* data, int& bufferOffset ) const;
+
+   SerializedKeyValueVector< FriendInfo >   found;
 };
 
 ///////////////////////////////////////////////////////////////////

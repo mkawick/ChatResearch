@@ -352,6 +352,44 @@ bool  PacketContact_DeclineInvitation::SerializeOut( U8* data, int& bufferOffset
 
 ///////////////////////////////////////////////////////////////
 
+bool  PacketContact_SearchForUser::SerializeIn( const U8* data, int& bufferOffset )
+{ 
+   PacketContact::SerializeIn( data, bufferOffset );
+   Serialize::In( data, bufferOffset, searchString );
+   Serialize::In( data, bufferOffset, limit );
+   Serialize::In( data, bufferOffset, offset );
+
+   return true; 
+}
+
+bool  PacketContact_SearchForUser::SerializeOut( U8* data, int& bufferOffset ) const 
+{ 
+   PacketContact::SerializeOut( data, bufferOffset );
+   Serialize::Out( data, bufferOffset, searchString );
+   Serialize::Out( data, bufferOffset, limit );
+   Serialize::Out( data, bufferOffset, offset );
+
+   return true; 
+}
+///////////////////////////////////////////////////////////////
+
+bool  PacketContact_SearchForUserResult::SerializeIn( const U8* data, int& bufferOffset )
+{ 
+   PacketContact::SerializeIn( data, bufferOffset );
+   Serialize::In( data, bufferOffset, found );
+
+   return true; 
+}
+
+bool  PacketContact_SearchForUserResult::SerializeOut( U8* data, int& bufferOffset ) const 
+{ 
+   PacketContact::SerializeOut( data, bufferOffset );
+   Serialize::Out( data, bufferOffset, found );
+
+   return true; 
+}
+///////////////////////////////////////////////////////////////
+
 bool  PacketContact_InviteBlockUser::SerializeIn( const U8* data, int& bufferOffset )
 { 
    PacketContact::SerializeIn( data, bufferOffset );

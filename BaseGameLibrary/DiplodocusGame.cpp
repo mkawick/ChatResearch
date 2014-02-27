@@ -412,7 +412,7 @@ bool  DiplodocusGame::HandlePacketFromOtherServer( BasePacket* packet, U32 conne
    {
       
       Threading::MutexLock locker( m_mutex );
-      return m_callbacks->HandlePacketFromOtherServer( packet );
+      m_callbacks->HandlePacketFromOtherServer( packet );
    }
 
    return true;// cleaner will cleanup this memory

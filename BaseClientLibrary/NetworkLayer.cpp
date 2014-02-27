@@ -277,6 +277,19 @@ bool  NetworkLayer::RequestOtherUserInGameProfile( const string& userName ) // f
 
 //-----------------------------------------------------------------------------
 
+bool  NetworkLayer::RequestChatChannelList( )
+{
+   if( m_isConnected == false )
+   {
+      return false;
+   }
+   PacketChatChannelListRequest request;
+   SerializePacketOut( &request );
+   return true;
+}
+
+//-----------------------------------------------------------------------------
+
 bool  NetworkLayer::UpdateUserProfile( const string userName, const string& email, const string& userUuid, int adminLevel, int languageId, bool isActive, bool showWinLossRecord, bool marketingOptOut, bool showGenderProfile )
 {
    if( m_isConnected == false )
@@ -560,6 +573,32 @@ bool     NetworkLayer::GetFriend( int index, const BasicUser*& user )
 
 //-----------------------------------------------------------------------------
 
+bool     NetworkLayer::GetUserSearchResult( int index, const BasicUser*& user )
+{
+   if( index < 0 || index >= m_lastUserSearch.size() )
+   {
+      user = NULL;
+      return false;
+   }
+
+   int i = 0;
+   UserNameKeyValue::const_KVIterator  itFound = m_lastUserSearch.begin();
+   while( itFound != m_lastUserSearch.end() )
+   {
+      if( i == index )
+      {
+         user = &itFound->value;
+         return true;
+      }
+      i ++;
+      itFound++;
+   }
+
+   return false;
+}
+
+//-----------------------------------------------------------------------------
+
 bool    NetworkLayer::GetChannel( int index, ChatChannel& channel )
 {
    if( index < 0 || index >= (int) m_channels.size() )
@@ -578,6 +617,24 @@ bool    NetworkLayer::GetChannel( int index, ChatChannel& channel )
          return true;
       }
       i ++;
+      itChannels++;
+   }
+
+   return false;
+}
+//-----------------------------------------------------------------------------
+
+bool    NetworkLayer::FindChannel( const string& channelUuid, ChatChannel& channel )
+{
+   vector< ChatChannel >::const_iterator itChannels = m_channels.begin();
+   while( itChannels != m_channels.end() )
+   {
+      if( channelUuid == itChannels->uuid )
+      {
+         channel = *itChannels;
+         return true;
+      }
+
       itChannels++;
    }
 
@@ -839,9 +896,18 @@ bool     NetworkLayer::SendSearchForUsers( const string& searchString, int numRe
 {
    if( searchString.size() < 2 )
       return false;
+   if( numRequested < 1 || numRequested > 25 )
+      return false;
 
-   assert( 0 ); // ContactType_Search
-   return true;
+   if( offset < 0 )
+      return false;
+
+   PacketContact_SearchForUser search;
+   search.searchString = searchString;
+   search.limit = numRequested;
+   search.offset = offset;
+
+   return SerializePacketOut( &search );
 }
 
 //-----------------------------------------------------------------------------
@@ -882,6 +948,73 @@ bool	   NetworkLayer::SendChannelTextMessage( const string& message, const strin
    // chat.userUuid = m_uuid; // not used
    chat.channelUuid = chatChannelUuid;
    SerializePacketOut( &chat );
+
+   return true;
+}
+//-----------------------------------------------------------------------------
+
+bool	   NetworkLayer::CreateNewChatChannel( const string& channelName )
+{
+   PacketChatCreateChatChannel chat;
+   chat.name = channelName;
+   SerializePacketOut( &chat );
+
+   return true;
+}
+
+//-----------------------------------------------------------------------------
+
+bool	   NetworkLayer::RenameChannel( const string& channelUuid, const string& newName )
+{
+   ChatChannel channel;
+   if( FindChannel( channelUuid, channel ) == false )
+      return false;
+
+   PacketChatRenameChannel rename;
+   rename.channelUuid = channelUuid;
+   rename.newName = newName;
+
+   SerializePacketOut( &rename );
+
+   return true;
+}
+
+//-----------------------------------------------------------------------------
+
+bool	   NetworkLayer::AddUserToChannel( const string& userUuid, const string& channelUuid ) // PacketChatAddUserToChatChannel
+{
+   ChatChannel channel;
+   if( FindChannel( channelUuid, channel ) == false )
+      return false;
+
+   PacketChatAddUserToChatChannel addUser;
+   addUser.chatChannelUuid = channelUuid;
+   addUser.userUuid = userUuid;
+
+   SerializePacketOut( &addUser );
+
+   return true;
+}
+
+//-----------------------------------------------------------------------------
+/*
+bool	   NetworkLayer::DeleteChannel( const string& channelUuid ) // PacketChatDeleteChatChannel
+{
+}*/
+
+//-----------------------------------------------------------------------------
+
+bool	   NetworkLayer::LeaveChannel( const string& channelUuid )
+{
+   ChatChannel channel;
+   if( FindChannel( channelUuid, channel ) == false )
+      return false;
+
+   PacketChatRemoveUserFromChatChannel leave;
+   leave.userUuid = m_uuid;
+   leave.chatChannelUuid = channelUuid;
+
+   SerializePacketOut( &leave );
 
    return true;
 }
@@ -1231,6 +1364,39 @@ bool  NetworkLayer::HandlePacketReceived( BasePacket* packetIn )
                cout << "request a new list of friends" << endl;
             }
             break;
+         case PacketContact::ContactType_SearchResults:
+            {
+               cout << "search for user results received" << endl;
+               PacketContact_SearchForUserResult* packet = static_cast< PacketContact_SearchForUserResult* >( packetIn );
+               cout << "Num found: " << packet->found.size() << endl;
+
+               m_lastUserSearch.clear();
+               SerializedKeyValueVector< FriendInfo >& kvVector = packet->found;
+               SerializedKeyValueVector< FriendInfo >::const_KVIterator it = kvVector.begin();
+               while (it != kvVector.end() )
+               {
+                  const FriendInfo& friendly = it->value; // friend is a keyword
+
+                  BasicUser bu;
+                  bu.userName = friendly.userName;
+                  bu.isOnline = friendly.isOnline;
+                  bu.UUID = it->key;
+                  m_lastUserSearch.insert( it->key, bu );
+                  cout << " **found user: " << friendly.userName << endl;
+                  cout << "   uuid: " << bu.UUID << endl;
+                  it++;
+               }
+
+               if( m_callbacks.size() )
+               {
+                  for( list< UserNetworkEventNotifier* >::iterator it = m_callbacks.begin(); it != m_callbacks.end(); ++it )
+                  {
+                     (*it)->SearchForUserResultsAvailable();
+                  }
+               }
+               
+            }
+            break;
          }
          
       }
@@ -1529,7 +1695,7 @@ bool  NetworkLayer::HandlePacketReceived( BasePacket* packetIn )
                   }
                }
              }
-             break;
+             break;          
           case PacketChatToServer::ChatType_RequestHistoryResult:
             {
                PacketChatHistoryResult* history = static_cast<PacketChatHistoryResult*>( packetIn );
@@ -1595,7 +1761,7 @@ bool  NetworkLayer::HandlePacketReceived( BasePacket* packetIn )
             break;
          case PacketChatToServer::ChatType_UserChatStatusChange:
             {
-               cout << "char contacts received" << endl;
+               cout << "user status changed" << endl;
                PacketChatUserStatusChangeBase* packet = static_cast< PacketChatUserStatusChangeBase* >( packetIn );
               // cout << "num records: " << packet->m_>friends.size() << endl;
                cout << packet->userName << " online status = " << boolalpha << packet->statusChange << noboolalpha << endl;
@@ -1619,6 +1785,62 @@ bool  NetworkLayer::HandlePacketReceived( BasePacket* packetIn )
                   }
                }
              }
+            break;
+         case PacketChatToServer::ChatType_CreateChatChannelResponse:
+            {
+               PacketChatCreateChatChannelResponse* chat = static_cast< PacketChatCreateChatChannelResponse* >( packetIn );
+               if( m_callbacks.size() )
+               {
+                  for( list< UserNetworkEventNotifier* >::iterator it = m_callbacks.begin(); it != m_callbacks.end(); ++it )
+                  {
+                     (*it)->NewChatChannelAdded( chat->name, chat->uuid, chat->successfullyCreated );
+                  }
+               }
+            }
+            break;
+         case PacketChatToServer::ChatType_DeleteChatChannelResponse:
+            {
+               PacketChatDeleteChatChannelResponse* chat = static_cast< PacketChatDeleteChatChannelResponse* >( packetIn );
+               if( m_callbacks.size() )
+               {
+                  for( list< UserNetworkEventNotifier* >::iterator it = m_callbacks.begin(); it != m_callbacks.end(); ++it )
+                  {
+                     (*it)->ChatChannelDeleted( chat->uuid, chat->successfullyDeleted );
+                  }
+               }
+            }
+            break;
+         case PacketChatToServer::ChatType_AddUserToChatChannelResponse:
+            {
+               cout << "char contacts received" << endl;
+               PacketChatAddUserToChatChannelResponse* chat = static_cast< PacketChatAddUserToChatChannelResponse* >( packetIn );
+
+
+               if( m_callbacks.size() )
+               {
+                  for( list< UserNetworkEventNotifier* >::iterator it = m_callbacks.begin(); it != m_callbacks.end(); ++it )
+                  {
+                     (*it)->ChatChannel_UserAdded( chat->channelName, chat->channelUuid, chat->userName, chat->userUuid );
+                  }
+               }
+             }
+            break;
+         case PacketChatToServer::ChatType_RemoveUserFromChatChannelResponse:
+            {
+               PacketChatRemoveUserFromChatChannelResponse* chat = static_cast< PacketChatRemoveUserFromChatChannelResponse* >( packetIn );
+             
+               if( m_callbacks.size() )
+               {
+                  for( list< UserNetworkEventNotifier* >::iterator it = m_callbacks.begin(); it != m_callbacks.end(); ++it )
+                  {
+                     (*it)->ChatChannel_UserRemoved( chat->chatChannelUuid, chat->userUuid, chat->success );
+                  }
+               }
+               if( chat->success )
+               {
+                  RemoveChatChannel( chat->chatChannelUuid );// do this last because we may want to display something about the channel
+               }
+            }
             break;
          }
       }
@@ -1890,6 +2112,23 @@ bool     NetworkLayer::AddChatChannel( const ChatChannel& channel )
    }
    m_channels.push_back( channel );
    return true;
+}
+
+//------------------------------------------------------------------------
+
+bool     NetworkLayer::RemoveChatChannel( const string& channelUuid )
+{
+   vector< ChatChannel >::iterator it =  m_channels.begin();
+   while( it != m_channels.end() )
+   {
+      if( it->uuid == channelUuid )
+      {
+         m_channels.erase( it );
+         return true;
+      }
+      it++;
+   }
+   return false;;
 }
 
 //------------------------------------------------------------------------

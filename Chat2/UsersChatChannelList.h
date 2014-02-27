@@ -17,6 +17,6 @@ public:
    list< stringhash >   channels;
    bool                 isOnline;
 
-   //string            userName;
+   string               userName;
    //UserConnection*   connection;
 };

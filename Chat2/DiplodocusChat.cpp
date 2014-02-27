@@ -30,6 +30,8 @@ DiplodocusChat::DiplodocusChat( const string& serverName, U32 serverId ): Diplod
    this->SetSleepTime( 66 );
 }
 
+//---------------------------------------------------------------
+
 void  DiplodocusChat :: Init()
 {
    ChatChannelManager::Set( this );
@@ -167,45 +169,25 @@ bool     DiplodocusChat::HandleChatPacket( BasePacket* packet, U32 connectionId 
       case PacketChatToServer::ChatType_CreateChatChannelFromGameServer:
          {
             PacketChatCreateChatChannelFromGameServer* pPacket = static_cast< PacketChatCreateChatChannelFromGameServer* > ( packet );
-            //m_chatChannelManager->CreateNewChannel( pPacket );
-         }
-         break;
-      case PacketChatToServer::ChatType_CreateChatChannelFromGameServerResponse:
-         {
-            assert( 0 );
+            m_chatChannelManager->CreateNewChannel( pPacket );
          }
          break;
       case PacketChatToServer::ChatType_AddUserToChatChannelGameServer:
          {
             PacketChatAddUserToChatChannelGameServer* pPacket = static_cast< PacketChatAddUserToChatChannelGameServer* > ( packet );
-            //m_chatChannelManager->AddUserToChannel( pPacket );
-         }
-         break;
-      case PacketChatToServer::ChatType_AddUserToChatChannelGameServerResponse:
-         {
-            assert( 0 );
+            m_chatChannelManager->AddUserToChannel( pPacket );
          }
          break;
       case PacketChatToServer::ChatType_RemoveUserFromChatChannelGameServer:
          {
             PacketChatRemoveUserFromChatChannelGameServer* pPacket = static_cast< PacketChatRemoveUserFromChatChannelGameServer* > ( packet );
-            //m_chatChannelManager->RemoveUserFromChannel( pPacket );
-         }
-         break;
-      case PacketChatToServer::ChatType_RemoveUserFromChatChannelGameServerResponse:
-         {
-            assert( 0 );
+            m_chatChannelManager->RemoveUserFromChannel( pPacket );
          }
          break;
       case PacketChatToServer::ChatType_DeleteChatChannelFromGameServer:
          {
             PacketChatDeleteChatChannelFromGameServer* pPacket = static_cast< PacketChatDeleteChatChannelFromGameServer* > ( packet );
-            //m_chatChannelManager->DeleteChannel( pPacket );
-         }
-         break;
-      case PacketChatToServer::ChatType_DeleteChatChannelFromGameServerResponse:
-         {
-            assert( 0 );
+            m_chatChannelManager->DeleteChannel( pPacket );
          }
          break;
   /* ChatType_InviteUserToChatChannel,
@@ -258,7 +240,7 @@ bool     DiplodocusChat::HandleLoginPacket( BasePacket* packet, U32 connectionId
             //ChatUser* user = GetUserByUsername( pPacket->userName );
             if( user == NULL )
             {
-               user = CreateNewUser( userConnectionId );                        
+               user = CreateNewUser( userConnectionId );              
                user->Init( pPacket->userId, pPacket->userName, pPacket->uuid, pPacket->lastLoginTime );
             }
             
@@ -570,7 +552,7 @@ bool     DiplodocusChat::AddQueryToOutput( PacketDbQuery* dbQuery, U32 connectio
 
 void     DiplodocusChat::UpdateChatChannelManager()
 {
-   if( m_chatChannelManagerNeedsUpdate == false )
+   if( m_chatChannelManagerNeedsUpdate == false || m_chatChannelManager == NULL )
       return;
 
    if( m_chatChannelManager->Update() == true )

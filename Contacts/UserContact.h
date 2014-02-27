@@ -59,6 +59,7 @@ public:
 private:
 
    void  InitContactsAndInvitations();
+   void  PrepInvitationsQueries();
    bool  GetListOfContacts();
    bool  GetListOfInvitationsReceived();
    bool  GetListOfInvitationsSent();
@@ -66,8 +67,10 @@ private:
    bool  InviteUser( const PacketContact_InviteContact* packet );
    bool  AcceptInvitation( const PacketContact_AcceptInvite* packet );
    bool  DeclineInvitation( const PacketContact_DeclineInvitation* packet );
+   bool  PerformSearch( const PacketContact_SearchForUser* packet );
    void  FinishAcceptingInvitation( const PacketDbQueryResult* result ); 
    void  FinishDecliningingInvitation(  const PacketDbQueryResult* dbResult );
+   void  FinishSearchResult( const PacketDbQueryResult* dbResult );
    void  FinishInvitation( U32 inviteeId, const string& message, UserContact* contact = NULL );
    void  YouHaveBeenInvitedToBeAFriend( const string& userName, const string& uuid, const string& message, const string& curentTime );
    void  InvitationAccepted( const string& sentFromuserName, const string& sentToUserName, const string& message, bool accepted );
@@ -89,6 +92,7 @@ private:
       QueryType_GetInvitationPriorToAcceptance,
       QueryType_GetInvitationPriorToDeclination,
       QueryType_DeleteInvitation,
+      QueryType_SearchForUser,
       QueryType_InsertNewFriend,
    };
 

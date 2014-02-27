@@ -537,8 +537,10 @@ bool  PacketChatAddUserToChatChannelResponse::SerializeIn( const U8* data, int& 
 {
    BasePacket::SerializeIn( data, bufferOffset );
 
-   Serialize::In( data, bufferOffset, chatChannelUuid );
+   Serialize::In( data, bufferOffset, channelName );
+   Serialize::In( data, bufferOffset, channelUuid );
    Serialize::In( data, bufferOffset, userUuid );
+   Serialize::In( data, bufferOffset, userName );
    Serialize::In( data, bufferOffset, success );
 
    return true;
@@ -548,8 +550,10 @@ bool  PacketChatAddUserToChatChannelResponse::SerializeOut( U8* data, int& buffe
 {
    BasePacket::SerializeOut( data, bufferOffset );
 
-   Serialize::Out( data, bufferOffset, chatChannelUuid );
+   Serialize::Out( data, bufferOffset, channelName );
+   Serialize::Out( data, bufferOffset, channelUuid );
    Serialize::Out( data, bufferOffset, userUuid );
+   Serialize::Out( data, bufferOffset, userName );
    Serialize::Out( data, bufferOffset, success );
 
    return true;
@@ -919,3 +923,47 @@ bool  PacketChatAdminLoadAllChannelsResponse::SerializeOut( U8* data, int& buffe
 
    return true;
 }
+
+///////////////////////////////////////////////////////////////
+
+bool  PacketChatRenameChannel::SerializeIn( const U8* data, int& bufferOffset )
+{
+   BasePacket::SerializeIn( data, bufferOffset );
+   Serialize::In( data, bufferOffset, channelUuid );
+   Serialize::In( data, bufferOffset, newName );
+
+   return true;
+}
+
+bool  PacketChatRenameChannel::SerializeOut( U8* data, int& bufferOffset ) const
+{
+   BasePacket::SerializeOut( data, bufferOffset );
+   Serialize::Out( data, bufferOffset, channelUuid );
+   Serialize::Out( data, bufferOffset, newName );
+
+   return true;
+}
+
+///////////////////////////////////////////////////////////////
+
+bool  PacketChatRenameChannelResponse::SerializeIn( const U8* data, int& bufferOffset )
+{
+   BasePacket::SerializeIn( data, bufferOffset );
+   Serialize::In( data, bufferOffset, success );
+   Serialize::In( data, bufferOffset, channelUuid );
+   Serialize::In( data, bufferOffset, newName );
+
+   return true;
+}
+
+bool  PacketChatRenameChannelResponse::SerializeOut( U8* data, int& bufferOffset ) const
+{
+   BasePacket::SerializeOut( data, bufferOffset );
+   Serialize::Out( data, bufferOffset, success );
+   Serialize::Out( data, bufferOffset, channelUuid );
+   Serialize::Out( data, bufferOffset, newName );
+
+   return true;
+}
+
+///////////////////////////////////////////////////////////////

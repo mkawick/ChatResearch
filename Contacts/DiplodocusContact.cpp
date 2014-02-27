@@ -438,7 +438,7 @@ bool     DiplodocusContact::ConnectUser( PacketPrepareForUserLogin* loginPacket 
 {
    U32 connectionId = loginPacket->connectionId;
 
-   UserContactMapIterator it = m_users.find( connectionId );
+   UserContactMapIterator it = m_users.find( connectionId );// don't do anything if this user is already logged in.
    if( it != m_users.end() )
       return false;
 

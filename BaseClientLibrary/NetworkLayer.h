@@ -164,16 +164,25 @@ public:
    virtual void  ReadyToStartSendingRequestsToGame() {}
 
    virtual void  ChatReceived( const string& message, const string& channelUUID, const string& userUUID, const string& timeStamp ){}
+   virtual void  ChatChannelUpdated( const string& channelUuid ) {} // rename, added users, etc
    virtual void  AssetReceived( const U8* buffer, int size, const string& assetId ){}
 
    virtual void  InvitationReceived( const InvitationInfo& newInvitation ){}
    virtual void  InvitationsReceivedUpdate() {}
    virtual void  InvitationsSentUpdate() {}
    virtual void  InvitationAccepted( const string& sender, const string& receiver, bool wasAccepted ){}
+   virtual void  SearchForUserResultsAvailable() {}
 
    virtual void  ChatChannelHistory( const string& channelUuid, const list< ChatEntry >& listOfChats ) {  }
    virtual void  ChatP2PHistory( const string& userUuid, const list< ChatEntry >& listOfChats ) { }
    virtual void  ChatHistoryMissedSinceLastLoginComposite( const list< MissedChatChannelEntry >& listOfChats ) { }
+   
+   virtual void  NewChatChannelAdded( const string& channelName, const string& channelUuid, bool success ) { }
+   virtual void  ChatChannelDeleted( const string& channelUuid, bool success ) { }
+
+   virtual void  ChatChannel_UserAdded( const string& channelName, const string& channelUuid, const string userName, const string userUuid ) { }
+   virtual void  ChatChannel_UserRemoved( const string& channelUuid, const string& userUuid, bool success ) { }
+   //virtual void  NewChatChannelAdded( const string& channelName, const string& channelUuid, bool success ) { }
 
    virtual void  AssetCategoriesLoaded() {}
    virtual void  AssetManifestAvailable( const string& category ) {}
@@ -261,6 +270,7 @@ public:
 
    bool     RequestProfile( const string userName ); //if empty, profile for currently logged in user is used. For other users, you must have admin
    bool     RequestOtherUserInGameProfile( const string& userName ); // friends, games list, etc
+   bool     RequestChatChannelList();
 
    // note that changing a username, email, or uuid is not possible. This is for lookup only.
    bool     UpdateUserProfile( const string userName, const string& email, const string& userUuid, int adminLevel, int languageId, bool isActive, bool showWinLossRecord, bool marketingOptOut, bool showGenderProfile );
@@ -297,6 +307,14 @@ public:
    bool	   SendChannelTextMessage( const string& message, const string& chatChannelUuid, U32 gameTurn = 0 );
 
    //--------------------------------------------------------------
+
+   bool     CreateNewChatChannel( const string& channelName );
+   bool     RenameChannel( const string& channelUuid, const string& newName );
+   bool     AddUserToChannel( const string& userUuid, const string& channelUuid ); // PacketChatAddUserToChatChannel
+   //bool     DeleteChannel( const string& channelUuid ); // PacketChatDeleteChatChannel
+   bool     LeaveChannel( const string& channelUuid );// remove self from channel .. PacketChatRemoveUserFromChatChannel
+
+   //--------------------------------------------------------------
    // ********************   Purchases/Products   *******************
    bool     RequestListOfProducts() const; // everything
    bool     RequestListOfProductsInStore() const; // just things that you can buy in our store
@@ -330,8 +348,12 @@ public:
    int      GetNumFriends() const { return static_cast<int>( m_friends.size() ); }
    bool     GetFriend( int index, const BasicUser*& user );
 
+   int      GetNumUserSearchResults() const { return m_lastUserSearch.size(); }
+   bool     GetUserSearchResult( int index, const BasicUser*& user );
+
    int      GetNumChannels() const { return static_cast<int>( m_channels.size() ); }
    bool     GetChannel( int index, ChatChannel& channel );
+   bool     FindChannel( const string& channelUuid, ChatChannel& channel );
 
    int      GetAssetCategories( vector< string >& categories ) const;
    int      GetNumAssets( const string& category );
@@ -371,6 +393,7 @@ private:
    SerializedKeyValueVector< InvitationInfo > m_invitationsReceived;
    SerializedKeyValueVector< InvitationInfo > m_invitationsSent;
    UserNameKeyValue                          m_friends;
+   UserNameKeyValue                          m_lastUserSearch;
    ChatChannelVector                         m_channels;
    GameList                                  m_gameList;
 
@@ -403,6 +426,7 @@ private:
    void     HandleData( PacketGameplayRawData* );
 
    bool     AddChatChannel( const ChatChannel& channel );
+   bool     RemoveChatChannel( const string& channelUuid );
 
    void     BoostThreadPerformance();
    void     RestoreNormalThreadPerformance();

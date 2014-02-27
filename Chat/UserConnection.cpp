@@ -1033,7 +1033,7 @@ bool     UserConnection::NotifyUserStatusHasChanged( const string& userName, con
 bool     UserConnection::NotifyAddedToChannel( const string& channelUuid, const string& userUuid, bool wasSuccessful )
 {
    PacketChatAddUserToChatChannelResponse* response = new PacketChatAddUserToChatChannelResponse;
-   response->chatChannelUuid = channelUuid;
+   //response->chatChannelUuid = channelUuid;
    response->userUuid = userUuid;
    response->success = wasSuccessful;
 

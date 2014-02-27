@@ -548,6 +548,17 @@ bool  PacketFactory::ParseChat( const U8* bufferIn, int& bufferOffset, const Bas
          *packetOut = SerializeIn< PacketChatAdminRequestUsersListResponse >( bufferIn, bufferOffset );
       }
       return true;
+
+   case PacketChatToServer::ChatType_RenameChatChannel:
+      {
+         *packetOut = SerializeIn< PacketChatRenameChannel >( bufferIn, bufferOffset );
+      }
+      return true;
+   case PacketChatToServer::ChatType_RenameChatChannelResponse:
+      {
+         *packetOut = SerializeIn< PacketChatRenameChannelResponse >( bufferIn, bufferOffset );
+      }
+      return true;
    }
 
    return false;
@@ -701,6 +712,16 @@ bool     PacketFactory::ParseContact( const U8* bufferIn, int& bufferOffset, con
       }
       return true;
 
+   case PacketContact::ContactType_Search:
+      {
+         *packetOut = SerializeIn< PacketContact_SearchForUser >( bufferIn, bufferOffset );
+      }
+      return true;
+   case PacketContact::ContactType_SearchResults:
+      {
+         *packetOut = SerializeIn< PacketContact_SearchForUserResult >( bufferIn, bufferOffset );
+      }
+      return true;
    case PacketContact::ContactType_BlockUser:
       {
          *packetOut = SerializeIn< PacketContact_InviteBlockUser >( bufferIn, bufferOffset );

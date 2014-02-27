@@ -33,7 +33,8 @@ Khaan ::Khaan( int socketId, bufferevent* be, int connectionId ) : ChainedInterf
                                                                   m_socketId( socketId ), 
                                                                   m_bufferEvent( be ), 
                                                                   m_timeOfConnection( 0 ),
-                                                                  m_useLibeventToSend( true )
+                                                                  m_useLibeventToSend( true ),
+                                                                  m_criticalFailure( false )
 {
    SetConnectionId( connectionId );
 }
@@ -79,6 +80,9 @@ void	Khaan :: SetIPAddress( const sockaddr_in& addr )
 
 bool	Khaan :: OnDataReceived( unsigned char* data, int length )
 {
+   if( m_criticalFailure )
+      return false;
+
    BasePacket* packetIn = NULL;
    int offset = 0;
    PacketFactory parser;
@@ -165,6 +169,12 @@ int	Khaan :: SendData( const U8* buffer, int length )
       // I cannot get the socket to write the first time... it alsways writes the second time and after.. 40 hours of research later...
       bufferevent*	bev = GetBufferEvent();
       struct evbuffer* outputBuffer = bufferevent_get_output( bev );
+      if( outputBuffer == NULL )
+      {
+         m_criticalFailure = true;
+         return false;
+      }
+
       return evbuffer_add( outputBuffer, buffer, length );
    }
 
@@ -227,6 +237,9 @@ bool  Khaan :: AddInputChainData( BasePacket*, U32 filingData )
 
 bool Khaan :: AddOutputChainData( BasePacket* packet, U32 filingData ) 
 { 
+   if( m_criticalFailure )
+      return false;
+
    m_outputChainListMutex.lock();
    m_packetsOut.push_back( packet );
    m_outputChainListMutex.unlock();

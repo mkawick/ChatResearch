@@ -32,6 +32,7 @@ public:
       ChatType_DeleteChatChannelResponse,
       ChatType_DeleteChatChannelFromGameServer,
       ChatType_DeleteChatChannelFromGameServerResponse,
+
       ChatType_InviteUserToChatChannel,
       ChatType_InviteUserToChatChannelResponse,
       
@@ -62,6 +63,9 @@ public:
 
       ChatType_S2SSendNotificationToUser,
       ChatType_SendNotificationToUser,
+
+      ChatType_RenameChatChannel,
+      ChatType_RenameChatChannelResponse,
 
       ChatType_Friend
    };
@@ -459,8 +463,10 @@ public:
    bool  SerializeIn( const U8* data, int& bufferOffset );
    bool  SerializeOut( U8* data, int& bufferOffset ) const;
 
-   string   chatChannelUuid;
+   string   channelName;
+   string   channelUuid;
    string   userUuid;
+   string   userName;
    bool     success;
 };
 
@@ -714,10 +720,37 @@ public:
    bool  success;
 };
 
+///////////////////////////////////////////////////////////////
+
+class PacketChatRenameChannel : public BasePacket
+{
+public:
+   PacketChatRenameChannel( int packet_type = PacketType_Chat, int packet_sub_type = PacketChatToServer::ChatType_RenameChatChannel ) : BasePacket( packet_type, packet_sub_type ){  }
+
+   bool  SerializeIn( const U8* data, int& bufferOffset );
+   bool  SerializeOut( U8* data, int& bufferOffset ) const;
+   
+   string   channelUuid;
+   string   newName;
+};
 
 ///////////////////////////////////////////////////////////////
 
+class PacketChatRenameChannelResponse : public BasePacket
+{
+public:
+   PacketChatRenameChannelResponse( int packet_type = PacketType_Chat, int packet_sub_type = PacketChatToServer::ChatType_RenameChatChannelResponse ) : BasePacket( packet_type, packet_sub_type ){  }
 
+   bool  SerializeIn( const U8* data, int& bufferOffset );
+   bool  SerializeOut( U8* data, int& bufferOffset ) const;
+
+   bool     success;
+   string   channelUuid;
+   string   newName;
+};
+
+
+///////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////
 
 ///////////////////////////////////////////////////////////////

@@ -62,10 +62,21 @@ void  ChatUser::Init( U32 userId, const string& name, const string& uuid, const 
 
 //---------------------------------------------------------
 
+void     ChatUser::LoggedIn() 
+{
+   m_isLoggedIn = true;
+   m_loggedOutTime = 0;
+   m_initialRequestForInfoSent = false;// relogging rerequests the data.
+   m_chatChannelManager->UserHasLoggedIn( m_uuid );
+}
+
+//---------------------------------------------------------
+
 void     ChatUser::LoggedOut() 
 { 
    m_isLoggedIn = false; 
    time( &m_loggedOutTime );
+   m_chatChannelManager->UserHasLoggedOut( m_uuid );
 }
 
 //---------------------------------------------------------
@@ -163,18 +174,18 @@ bool     ChatUser::HandleClientRequest( BasePacket* packet )
                m_chatChannelManager->CreateNewChannel( request->name, m_uuid );
             }
             break;
-      /*   case PacketChatToServer::ChatType_DeleteChatChannel:
+         case PacketChatToServer::ChatType_DeleteChatChannel:
             {
                PacketChatDeleteChatChannel* request = static_cast< PacketChatDeleteChatChannel* > ( packet );
                m_chatChannelManager->DeleteChannel( request->uuid, m_uuid );
             }
             break;
-         case PacketChatToServer::ChatType_InviteUserToChatChannel:
+         /*case PacketChatToServer::ChatType_InviteUserToChatChannel:
             {
                PacketChatInviteUserToChatChannel* request = static_cast< PacketChatInviteUserToChatChannel* > ( packet );
                m_chatChannelManager->InviteUserToChannel( request->chatChannelUuid, request->userUuid, m_uuid );
             }
-            break;
+            break;*/
          case PacketChatToServer::ChatType_AddUserToChatChannel:
             {
                PacketChatAddUserToChatChannel* request = static_cast< PacketChatAddUserToChatChannel* > ( packet );
@@ -184,16 +195,25 @@ bool     ChatUser::HandleClientRequest( BasePacket* packet )
          case PacketChatToServer::ChatType_RemoveUserFromChatChannel:
             {
                PacketChatRemoveUserFromChatChannel* request = static_cast< PacketChatRemoveUserFromChatChannel* > ( packet );
-               m_chatChannelManager->RemoveUserFromChannel( request->chatChannelUuid, request->userUuid, m_uuid );
+               if(m_chatChannelManager->RemoveUserFromChannel( request->chatChannelUuid, request->userUuid ) == false )// usually self
+               {
+                  SendErrorMessage( PacketErrorReport::ErrorType_BadChatChannel );
+               }
             }
             break;
-         case PacketChatToServer::ChatType_RequestChatters:
+         case PacketChatToServer::ChatType_RenameChatChannel:
+            {
+               PacketChatRenameChannel* request = static_cast< PacketChatRenameChannel* > ( packet );
+               m_chatChannelManager->RenameChatChannel( request->channelUuid, request->newName, m_uuid );
+            }
+            break;
+      /*   case PacketChatToServer::ChatType_RequestChatters:
             {
                PacketChatRequestChatters* request = static_cast< PacketChatRequestChatters* > ( packet );
                m_chatChannelManager->RequestChatters( request->chatChannelUuid, m_uuid );
             }
             break;
-         case PacketChatToServer::ChatType_EnableDisableFiltering:
+      /*   case PacketChatToServer::ChatType_EnableDisableFiltering:
             {
                //PacketChatEnableFiltering* request = static_cast< PacketChatEnableFiltering* > ( packet );
                //m_chatChannelManager->AddUserToChannel( request->name, m_uuid );
@@ -454,6 +474,7 @@ void     ChatUser::ChatReceived( const string& message, const string& senderUuid
 
    SendMessageToClient( packet );
 }
+
 //---------------------------------------------------------------
 
 vector< MissedChatChannelEntry > ::iterator 
@@ -728,39 +749,53 @@ bool     ChatUser::NotifyUserStatusHasChanged( const string& userName, const str
 }
 
 //---------------------------------------------------------------
+//---------------------------------------------------------------
 
-bool     ChatUser::NotifyAddedToChannel( const string& channelUuid, const string& userUuid, bool wasSuccessful )
+bool     ChatUser::NotifyAddedToChannel( const string& channelName, const string& channelUuid, const string userName, const string userUuid )
 {
-   PacketChatAddUserToChatChannelResponse* response = new PacketChatAddUserToChatChannelResponse;
-   response->chatChannelUuid = channelUuid;
-   response->userUuid = userUuid;
-   response->success = wasSuccessful;
-
-   SendMessageToClient( response );
-
-   // send notification then go to the db and pull all groups again and send to client
-   if( userUuid == m_uuid )
+   // send notification, then go to the db and pull all groups again and send to client before sending the new notification
+   if( userUuid.size() == 0 || userUuid == m_uuid )
    {
       RequestChatChannels();
    }
-   
+
+   // now send the notification
+   PacketChatAddUserToChatChannelResponse* packet = new PacketChatAddUserToChatChannelResponse;
+   packet->channelName = channelName;
+   packet->channelUuid = channelUuid;
+   packet->userUuid = userUuid;
+   if( userUuid.size() == 0 )
+      packet->userUuid = m_uuid;
+
+   packet->userName = userName;
+   if( userName.size() == 0 )
+      packet->userName = m_userName;
+
+   packet->success = true;
+
+   SendMessageToClient( packet );
+
    return true;
 }
 
 //---------------------------------------------------------------
-
+/*
 bool     ChatUser::NotifyYouWereAddedToChannel( const string& channelUuid )
 {
    return true;
 }
-
+*/
 //---------------------------------------------------------------
 
-bool     ChatUser::NotifyRemovedFromChannel( const string& channelName, const string& channelUuid, bool wasSuccessful )
+bool     ChatUser::NotifyRemovedFromChannel( const string& channelName, const string& channelUuid, bool wasSuccessful, string userUuid )
 {
    PacketChatRemoveUserFromChatChannelResponse* response = new PacketChatRemoveUserFromChatChannelResponse;
    response->chatChannelUuid = channelUuid;
    response->userUuid = m_uuid;
+   if( userUuid.size() )
+   {
+      response->userUuid = userUuid;
+   }
    response->success = wasSuccessful;
 
    SendMessageToClient( response );

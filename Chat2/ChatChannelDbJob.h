@@ -18,8 +18,9 @@ public:
    {
       JobType_Create,
       JobType_Delete,
-      //JobType_LoadSingleChannel,
+      JobType_LoadSingleChannel,
       JobType_LoadAllChannels,
+      JobType_LoadAllUsers,
       JobType_SelectAllChannelsForAUser,
       JobType_Exists,
       JobType_AddUser,

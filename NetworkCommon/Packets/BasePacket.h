@@ -10,7 +10,7 @@
 
 //#define _MEMLEAK_TESTING_
 
-static const U8   GlobalNetworkProtocolVersion = 4;
+static const U8   GlobalNetworkProtocolVersion = 5;
 
 ///////////////////////////////////////////////////////////////
 
@@ -378,6 +378,8 @@ public:
       ErrorType_NoChatHistoryExistsOnSelectedChannel =         308,
       ErrorType_NoChatHistoryExistsForThisUser =               309,
       ErrorType_ChatChannelCannotBeCreated =                   310,
+      ErrorType_ChatChannelCannotBeDeleted =                   311,
+      ErrorType_UserUnknown =                                  312,
 
       ErrorType_CreateFailed_BadPassword =                     410,
       ErrorType_CreateFailed_DisallowedUsername =              411,
@@ -396,6 +398,9 @@ public:
       ErrorType_Contact_Invitation_Accepted =                  506,
       ErrorType_Contact_Invitation_BadInvitation =             507,
       ErrorType_Contact_BadLoginKey =                          508,
+      ErrorType_Contact_BadSearchString =                      509,
+      ErrorType_Contact_NoSearchResult =                       510,
+      ErrorType_Contact_SearchRequestHasTooMany =              511,
 
       ErrorType_Asset_BadLoginKey =                            600,
       ErrorType_Asset_UnknownAsset =                           601,

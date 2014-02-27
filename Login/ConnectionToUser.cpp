@@ -491,7 +491,7 @@ bool    ConnectionToUser:: SuccessfulLogin( U32 connectId, bool isReloggedIn )
 
    status = LoginStatus_LoggedIn;
 
-   userManager->SendPacketToGateway( loginStatus, connectionId, 1.8f );// two second delay
+   userManager->SendPacketToGateway( loginStatus, connectionId, 0.6f );// two second delay
 
    if( loginStatus->adminLevel > 0 )
    {

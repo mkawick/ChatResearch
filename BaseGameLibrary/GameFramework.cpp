@@ -367,13 +367,10 @@ bool  GameFramework::Run()
    s2s->SetupListening( m_listenForS2SPort );
    s2s->AddOutputChain( m_connectionManager );
 
-  /* FruitadensServerToServer* fS2S = PrepS2SOutwardConnection( m_statServerAddress, m_statServerPort, GetServerId(), "stat server", ServerType_Stat, 
-                                    m_connectionManager, m_connectionManager->GetIpAddress(), m_connectionManager->GetPort(), GetGameProductId() );*/
-
    PrepConnection< FruitadensServerToServer, DiplodocusGame > ( m_statServerAddress, m_statServerPort, "stat", m_connectionManager, ServerType_Stat, true, GetGameProductId() );
-  
 
    m_chatServer = PrepConnection< FruitadensServerToServer, DiplodocusGame > ( m_chatServerAddress, m_chatServerPort, "chat", m_connectionManager, ServerType_Chat, true );
+   m_chatServer->AddToOutwardFilters( PacketType_Chat );
 
    //----------------------------------------------------------------
    

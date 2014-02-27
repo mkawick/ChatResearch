@@ -24,7 +24,7 @@ public:
 
    void           Init( U32 userId, const string& name, const string& uuid, const string& lastLoginTime );
 
-   void           LoggedIn() { m_isLoggedIn = true; }
+   void           LoggedIn();
    void           LoggedOut();
 
    static void    Set( DiplodocusChat* chat );
@@ -47,10 +47,11 @@ public:
    bool              NotifyChannelRemoved( const string& channelUuid, int numremoved );
    bool              NotifyAllChannelsLoaded( bool loaded );
    bool              NotifyUserStatusHasChanged( const string& userName, const string& userUuid, int statusChange );
-   bool              NotifyYouWereAddedToChannel( const string& channelUuid );
+   //bool              NotifyYouWereAddedToChannel( const string& channelUuid );
 
-   bool              NotifyAddedToChannel( const string& channelUuid, const string& userUuid, bool wasSuccessful );
-   bool              NotifyRemovedFromChannel( const string& channelName, const string& channelUuid, bool wasSuccessful );
+   bool              NotifyAddedToChannel( const string& channelName, const string& channelUuid, const string userName = "", const string userUuid = "" );
+   //bool              NotifyAddedToChannel( const string& channelUuid, const string& userUuid, bool wasSuccessful );
+   bool              NotifyRemovedFromChannel( const string& channelName, const string& channelUuid, bool wasSuccessful, string userUuid = "" );
 
    //--------------------------------------
 private:

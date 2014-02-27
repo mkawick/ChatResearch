@@ -72,8 +72,6 @@ void  UserContact::InitContactsAndInvitations()
    string idString = boost::lexical_cast< string >( m_userInfo.id );
 
    m_friendListFilled = false;
-   m_friendRequestSentListFilled = false;
-   m_friendRequestReceivedListFilled = false;
 
    PacketDbQuery* dbQuery = new PacketDbQuery;
    dbQuery = new PacketDbQuery;
@@ -89,7 +87,19 @@ void  UserContact::InitContactsAndInvitations()
 
    //-------------------------------
 
-   dbQuery = new PacketDbQuery;
+   PrepInvitationsQueries();
+}
+
+//------------------------------------------------------------------------------------------------
+
+void  UserContact::PrepInvitationsQueries()
+{
+   string idString = boost::lexical_cast< string >( m_userInfo.id );
+
+   m_friendRequestSentListFilled = false;
+   m_friendRequestReceivedListFilled = false;
+
+   PacketDbQuery* dbQuery = new PacketDbQuery;
    dbQuery->id =           m_connectionId;
    dbQuery->meta =         "";
    dbQuery->lookup =       QueryType_FriendRequestsSent;
@@ -112,8 +122,6 @@ void  UserContact::InitContactsAndInvitations()
    dbQuery->query += "'";
 
    m_infoServer->AddQueryToOutput( dbQuery );
-
-   //-------------------------------
 }
 
 //------------------------------------------------------------------------------------------------
@@ -328,6 +336,12 @@ bool  UserContact::HandleDbQueryResult( const PacketDbQueryResult* dbResult )
          }
          FinishDecliningingInvitation( dbResult );
       }
+      break;
+   case QueryType_SearchForUser:
+      {
+         FinishSearchResult( dbResult );
+      }
+      break;
    case QueryType_InsertNewFriend:
       {
          InitContactsAndInvitations();// when we finish this, reset the user's contacts.
@@ -366,6 +380,9 @@ bool     UserContact::HandleRequestFromClient( const PacketContact* packet )
 
    case PacketContact::ContactType_DeclineInvitation:
       return DeclineInvitation( static_cast< const PacketContact_DeclineInvitation* >( packet ) );
+
+   case PacketContact::ContactType_Search:
+      return PerformSearch( static_cast< const PacketContact_SearchForUser* >( packet ) );
    }
 
    return false;
@@ -675,6 +692,61 @@ bool  UserContact::DeclineInvitation( const PacketContact_DeclineInvitation* pac
    return true;
 }
 
+
+//------------------------------------------------------------------------------------------------
+
+bool  UserContact::PerformSearch( const PacketContact_SearchForUser* packet )
+{
+   cout << "Search packet received: " << packet->searchString << endl;
+   cout << "num requested: " << packet->limit << endl;
+   cout << "offset: " << packet->offset << endl;
+   if( packet->searchString.size() < 2 )
+   {
+      // do not add any contacts
+      PacketContact_SearchForUserResult* response = new PacketContact_SearchForUserResult;
+      m_infoServer->SendPacketToGateway( response, m_connectionId );
+
+      m_infoServer->SendErrorToClient( m_connectionId, PacketErrorReport::ErrorType_Contact_BadSearchString );
+      return false;
+   }
+
+   if( packet->limit > 25 )
+   {
+      // do not add any contacts
+      PacketContact_SearchForUserResult* response = new PacketContact_SearchForUserResult;
+      m_infoServer->SendPacketToGateway( response, m_connectionId );
+
+      m_infoServer->SendErrorToClient( m_connectionId, PacketErrorReport::ErrorType_Contact_SearchRequestHasTooMany );
+      return false;
+   }
+
+   PacketDbQuery* dbQuery = new PacketDbQuery;
+   dbQuery->id =           m_connectionId;
+   dbQuery->meta =         packet->searchString;
+   dbQuery->lookup =       QueryType_SearchForUser;
+   dbQuery->serverLookup = m_userInfo.id;
+
+   dbQuery->query = "SELECT user_name, uuid, user_id FROM users WHERE user_name LIKE '%%s%' ORDER BY user_id LIMIT ";
+   int limit = 25;// always limit the numebr of searched items
+   if( packet->limit )
+   {
+      limit = packet->limit;
+   }
+
+   dbQuery->query += boost::lexical_cast< string >( limit );
+   if( packet->offset )
+   {
+      dbQuery->query += " OFFSET ";
+      dbQuery->query += boost::lexical_cast< string >( packet->offset );
+   }
+
+   dbQuery->escapedStrings.insert( packet->searchString );
+
+   m_infoServer->AddQueryToOutput( dbQuery );
+
+   return true;
+}
+
 //------------------------------------------------------------------------------------------------
 
 void  UserContact::FinishAcceptingInvitation( const PacketDbQueryResult* dbResult )
@@ -757,7 +829,7 @@ void  UserContact::FinishAcceptingInvitation( const PacketDbQueryResult* dbResul
 
 //------------------------------------------------------------------------------------------------
 
-void  UserContact::FinishDecliningingInvitation(  const PacketDbQueryResult* dbResult )
+void  UserContact::FinishDecliningingInvitation( const PacketDbQueryResult* dbResult )
 {
    U32 invitationId = 0;
    U32 inviterId = 0;
@@ -795,6 +867,34 @@ void  UserContact::FinishDecliningingInvitation(  const PacketDbQueryResult* dbR
 
    // do not notify sender for now
    InvitationAccepted( inviterUsername, m_userInfo.userName, userMessage, false );
+   PrepInvitationsQueries();
+}
+
+//------------------------------------------------------------------------------------------------
+
+void  UserContact::FinishSearchResult( const PacketDbQueryResult* dbResult )
+{
+   PacketContact_SearchForUserResult* response = new PacketContact_SearchForUserResult;
+   if( dbResult->successfulQuery == false || dbResult->bucket.bucket.size() == 0 )
+   {
+      m_infoServer->SendPacketToGateway( response, m_connectionId );
+      m_infoServer->SendErrorToClient( m_connectionId, PacketErrorReport::ErrorType_Contact_NoSearchResult );
+      return;
+   }
+
+   SerializedKeyValueVector< FriendInfo > & foundList = response->found;
+   SimpleUserTable            enigma( dbResult->bucket );
+   SimpleUserTable::iterator  it = enigma.begin();
+   while( it != enigma.end() )
+   {
+      SimpleUserTable::row row = *it++;
+      const string& userName = row[ TableSimpleUser::Column_name ];
+      const string& uuid = row[ TableSimpleUser::Column_uuid ];
+      U32 userId = boost::lexical_cast< U32 >( row[ TableSimpleUser::Column_id ] );
+      foundList.insert( uuid, FriendInfo( userName, 0, false ) );// we never inform users if someone is online during a search.. privacy and spamming reasons
+   }
+
+   m_infoServer->SendPacketToGateway( response, m_connectionId );
 }
 
 //------------------------------------------------------------------------------------------------

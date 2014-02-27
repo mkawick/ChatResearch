@@ -15,6 +15,8 @@ struct UserBasics
    UserBasics( const string& name, const string& uuid ) : userName( name ), userUuid( uuid ) {}
    string            userName;
    string            userUuid;
+   /*UserBasics( const string& uuid ) : userUuid( uuid ) {}
+   string            userUuid;*/
 };
 
 //---------------------------------------------------------------
