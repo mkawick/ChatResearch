@@ -63,6 +63,9 @@ private:
    void     UpdateChatChannelManager();
    void     UpdateAllChatUsers();
    void     UpdateDbResults();
+   void     TrackCountStats( StatTracking stat, float value, int sub_category );
+   void     RunHourlyStats();
+   void     RunDailyStats();
    int      CallbackFunction();
 
    typedef map< U32, ChatUser* >  UserMap;
@@ -76,6 +79,11 @@ private:
 
    ChatChannelManager*           m_chatChannelManager;
    bool                          m_chatChannelManagerNeedsUpdate;
+
+   time_t                        m_timestampHourlyStatServerStatisics;
+   static const U32              timeoutHourlyStatisics = 60*60;
+   time_t                        m_timestampDailyStatServerStatisics;
+   static const U32              timeoutDailyStatisics = timeoutHourlyStatisics*24;
 };
 
 //////////////////////////////////////////////////////////////////////////////////

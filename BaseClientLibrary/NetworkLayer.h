@@ -301,6 +301,7 @@ public:
 
    bool     SendSearchForUsers( const string& searchString, int numRequested, int offset ) const; // min 2 char
    bool     InviteUserToBeFriend( const string& uuid, const string& username, const string& message );
+   bool     RemoveContact( const string& uuid, const string message = "" );
 
    //bool     ChangeGame( const string& gameName );
    bool	   SendP2PTextMessage( const string& message, const string& destinationUserUuid );
@@ -347,13 +348,16 @@ public:
 
    int      GetNumFriends() const { return static_cast<int>( m_friends.size() ); }
    bool     GetFriend( int index, const BasicUser*& user );
+   bool     IsFriend( const string& userUuid );
+   bool     IsFriendByName( const string& userName );
 
    int      GetNumUserSearchResults() const { return m_lastUserSearch.size(); }
    bool     GetUserSearchResult( int index, const BasicUser*& user );
 
    int      GetNumChannels() const { return static_cast<int>( m_channels.size() ); }
    bool     GetChannel( int index, ChatChannel& channel );
-   bool     FindChannel( const string& channelUuid, ChatChannel& channel );
+   bool     IsGameChannel( const string& channelUuid ) const;
+   bool     FindChannel( const string& channelUuid, ChatChannel& channel ) const;
 
    int      GetAssetCategories( vector< string >& categories ) const;
    int      GetNumAssets( const string& category );

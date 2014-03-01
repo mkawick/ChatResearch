@@ -568,7 +568,47 @@ bool     NetworkLayer::GetFriend( int index, const BasicUser*& user )
    }
 
    return false;
+}
 
+//-----------------------------------------------------------------------------
+
+bool     NetworkLayer::IsFriend( const string& userUuid )
+{
+   if( userUuid.size() < 2 )
+   {
+      return false;
+   }
+   UserNameKeyValue::const_KVIterator  itFriends = m_friends.begin();
+   while( itFriends != m_friends.end() )
+   {
+      if( itFriends->key == userUuid )
+      {
+         return true;
+      }
+      itFriends++;
+   }
+   return false;
+}
+
+//-----------------------------------------------------------------------------
+
+bool     NetworkLayer::IsFriendByName( const string& userName )
+{
+   if( userName.size() < 2 )
+   {
+      return false;
+   }
+
+   UserNameKeyValue::const_KVIterator  itFriends = m_friends.begin();
+   while( itFriends != m_friends.end() )
+   {
+      if( itFriends->value.userName == userName )
+      {
+         return true;
+      }
+      itFriends++;
+   }
+   return false;
 }
 
 //-----------------------------------------------------------------------------
@@ -622,9 +662,24 @@ bool    NetworkLayer::GetChannel( int index, ChatChannel& channel )
 
    return false;
 }
+
 //-----------------------------------------------------------------------------
 
-bool    NetworkLayer::FindChannel( const string& channelUuid, ChatChannel& channel )
+bool     NetworkLayer::IsGameChannel( const string& channelUuid ) const
+{
+   ChatChannel channel;
+   if( FindChannel( channelUuid, channel ) == false )
+      return false;
+
+   if( channel.gameProductId != 0 )
+      return true;
+
+   return false;
+}
+
+//-----------------------------------------------------------------------------
+
+bool    NetworkLayer::FindChannel( const string& channelUuid, ChatChannel& channel ) const
 {
    vector< ChatChannel >::const_iterator itChannels = m_channels.begin();
    while( itChannels != m_channels.end() )
@@ -923,6 +978,20 @@ bool     NetworkLayer::InviteUserToBeFriend( const string& uuid, const string& u
    invitation.message = message;
 
    return SerializePacketOut( &invitation );
+}
+
+//-----------------------------------------------------------------------------
+
+bool     NetworkLayer::RemoveContact( const string& contactUuid, const string message )
+{
+   if( IsFriend( contactUuid ) == false )
+      return false;
+
+   PacketContact_ContactRemove removal;
+   removal.contactUuid = contactUuid;
+   removal.message = message;
+
+   return SerializePacketOut( &removal );
 }
 
 //-----------------------------------------------------------------------------

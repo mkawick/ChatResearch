@@ -93,7 +93,7 @@ int main( int argc, const char* argv[] )
    string listenPortString = "9500";
    string listenAddressString = "localhost";
 
-   string chatPortString = "7400";
+   string chatPortString = "8400";
    string chatIpAddressString = "localhost";
 
    string loginPortString = "7600";

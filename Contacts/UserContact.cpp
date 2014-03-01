@@ -69,6 +69,14 @@ void  UserContact::Init() // send queries
 
 void  UserContact::InitContactsAndInvitations()
 {
+   PrepFriendQuery();
+   PrepInvitationsQueries();
+}
+
+//------------------------------------------------------------------------------------------------
+
+void  UserContact::PrepFriendQuery()
+{
    string idString = boost::lexical_cast< string >( m_userInfo.id );
 
    m_friendListFilled = false;
@@ -84,10 +92,6 @@ void  UserContact::InitContactsAndInvitations()
    dbQuery->query += "'";
 
    m_infoServer->AddQueryToOutput( dbQuery );
-
-   //-------------------------------
-
-   PrepInvitationsQueries();
 }
 
 //------------------------------------------------------------------------------------------------
@@ -383,6 +387,9 @@ bool     UserContact::HandleRequestFromClient( const PacketContact* packet )
 
    case PacketContact::ContactType_Search:
       return PerformSearch( static_cast< const PacketContact_SearchForUser* >( packet ) );
+
+   case PacketContact::ContactType_RemoveContact:
+      return RemoveContact( static_cast< const PacketContact_ContactRemove* >( packet ) );
    }
 
    return false;
@@ -637,6 +644,7 @@ bool     UserContact::InviteUser( const PacketContact_InviteContact* packet )
          dbQuery->escapedStrings.insert( inviteeName );
       }
       m_infoServer->AddQueryToOutput( dbQuery );
+      m_infoServer->TrackInviteSent();
 
       //m_invitationsPendingUserLookup.push_back( *packet );
 
@@ -743,6 +751,77 @@ bool  UserContact::PerformSearch( const PacketContact_SearchForUser* packet )
    dbQuery->escapedStrings.insert( packet->searchString );
 
    m_infoServer->AddQueryToOutput( dbQuery );
+   m_infoServer->TrackNumSearches();
+
+   return true;
+}
+
+//------------------------------------------------------------------------------------------------
+
+bool  UserContact::RemoveContact( const PacketContact_ContactRemove* packet )
+{
+   const string& contactUuid = packet->contactUuid;
+   const string& message = packet->message;
+
+   bool found = false;
+    // major problem here... they may not be friends
+   vector< UserInfo >::const_iterator it = m_friends.begin();
+   while( it != m_friends.end() )
+   {
+      const UserInfo& fr = *it;
+      if( fr.uuid == contactUuid )
+      {
+         found = true;
+         break;
+      }
+      it++;
+   }
+
+   if( found == false )
+   {
+      m_infoServer->SendErrorToClient( m_connectionId, PacketErrorReport::ErrorType_Contact_NotAUserContact );
+      return false;
+   }
+
+   
+   string query = "DELETE FROM friends WHERE userid1='";
+   query += boost::lexical_cast< string >( it->id );
+   query += "' AND userid2='";
+   query += boost::lexical_cast< string >( m_userInfo.id );
+   query += "'";
+
+   PacketDbQuery* dbQuery = new PacketDbQuery;   
+   dbQuery->query =        query;
+   dbQuery->id =           m_connectionId;
+   dbQuery->meta =         "";
+   dbQuery->lookup =       QueryType_DeleteFriend;
+   dbQuery->serverLookup = m_userInfo.id;
+   dbQuery->isFireAndForget = true;
+   m_infoServer->AddQueryToOutput( dbQuery );
+     
+   query = "DELETE FROM friends WHERE userid2='";
+   query += boost::lexical_cast< string >( it->id );
+   query += "' AND userid1='";
+   query += boost::lexical_cast< string >( m_userInfo.id );
+   query += "'";
+
+   dbQuery = new PacketDbQuery; 
+   dbQuery->query =        query;
+   dbQuery->id =           m_connectionId;
+   dbQuery->meta =         "";
+   dbQuery->lookup =       QueryType_DeleteFriend;
+   dbQuery->serverLookup = m_userInfo.id;
+   dbQuery->isFireAndForget = true;
+   m_infoServer->AddQueryToOutput( dbQuery );
+
+   // send notification to both people if online.
+   UserContact* contact = m_infoServer->GetUserByUuid( contactUuid );
+   if( contact )
+   {
+      contact->PrepFriendQuery();
+   }
+
+   PrepFriendQuery();
 
    return true;
 }
@@ -960,6 +1039,15 @@ void     UserContact::InvitationAccepted( const string& sentFromuserName, const 
    packet->message = message;
 
    m_infoServer->SendPacketToGateway( packet, m_connectionId );
+
+   if( accepted == true )
+   {
+      m_infoServer->TrackInviteAccepted();
+   }
+   else
+   {
+      m_infoServer->TrackInviteRejected();
+   }
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////

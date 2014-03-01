@@ -55,6 +55,10 @@ public:
    void           Init();
 
    static void    Set( DiplodocusChat* svr ) { m_chatServer = svr; }
+   int            GetNumChannelChatsSent() const { return m_numChannelChatsSent; }
+   int            GetNumP2PChatsSent() const { return m_numP2PChatsSent; }
+   int            GetNumChangesToChatChannel() const { return m_numChangesToChatChannel; }
+   void           ClearStats();
 
    bool           Update();
    bool           AddInboundPacket( BasePacket* packet ); // not thread safe
@@ -171,8 +175,11 @@ private:
    time_t                        m_initializationTimeStamp;
    int                           m_numChannelsToLoad;
    bool                          m_isPullingAllUsersAndChannels;
-   // we need several maps.
-   //static ChatChannelManager;
+   
+   int                           m_numChannelChatsSent;
+   int                           m_numP2PChatsSent;
+   int                           m_numChangesToChatChannel;
+   
 };
 
 ///////////////////////////////////////////////////////////////////

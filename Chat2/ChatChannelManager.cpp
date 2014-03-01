@@ -28,7 +28,10 @@ const int maxNumPlayersInChatChannel = 32;
 ChatChannelManager::ChatChannelManager(): m_dbIdTracker( 0 ),
                                           m_isInitialized( false ),
                                           m_numChannelsToLoad( 0 ),
-                                          m_isPullingAllUsersAndChannels( false )
+                                          m_isPullingAllUsersAndChannels( false ),
+                                          m_numChannelChatsSent( 0 ),
+                                          m_numP2PChatsSent( 0 ),
+                                          m_numChangesToChatChannel( 0 )
 {
    //m_inboundPackets.reserve( 120 );// absolutely arbitrary.. it seems big enough and log(n) means that this will never be reallocated much
 }
@@ -69,6 +72,13 @@ SaveQueryDetails( dbQuery, const string& channelUuid, const string& authUuid, co
 AddSanitizedStrings( dbQuery, list< string >* sanitizedStrings );
 AddCustomData( dbQuery, void* data );
 Send( dbQuery );*/
+
+void     ChatChannelManager::ClearStats()
+{
+   m_numChannelChatsSent = 0;
+   m_numP2PChatsSent = 0;
+   m_numChangesToChatChannel = 0;
+}
 
 //---------------------------------------------------------------
 
@@ -834,7 +844,6 @@ bool     ChatChannelManager::DeleteChannel( const string& channelUuid, const str
       m_chatServer->SendErrorToClient( connectionId, PacketErrorReport::ErrorType_ChatChannelCannotBeDeleted );
    }
 
-
    return true;
 }
 
@@ -882,6 +891,8 @@ bool     ChatChannelManager::DeleteChannel( const string& channelUuid )
    queryString += "' AND game_instance_id='";
    queryString += boost::lexical_cast< string >( (int)( gameInstanceId ) );
    queryString += "'";
+
+   m_numChangesToChatChannel ++;
 
    return true;
 }
@@ -934,6 +945,7 @@ bool     ChatChannelManager::UserSendP2PChat( const string& senderUuid, const st
 
    string channelUuid;
    WriteChatToDb( message, senderUuid, destinationUuid, channelUuid, 0, connectionId );
+
    return true;
 }
 
@@ -1200,6 +1212,8 @@ bool     ChatChannelManager::AddUserToChannelAndWriteToDB( const string& channel
 
    Send( dbQuery );
 
+   m_numChangesToChatChannel ++;
+
    return true;
 }
 
@@ -1222,6 +1236,8 @@ bool     ChatChannelManager::RemoveUserFromChannelAndWriteToDB( const string& ch
    AddSanitizedStrings( dbQuery, sanitizedStrings );
 
    Send( dbQuery );
+
+   m_numChangesToChatChannel ++;
 
    return true;
 }
@@ -1262,6 +1278,8 @@ bool     ChatChannelManager::RemoveChannelAndMarkChannelInDB( const string& chan
    }
 
    m_channelMap.erase( channelIter );
+
+   m_numChangesToChatChannel ++;
 
    return true;
 }
@@ -1706,6 +1724,11 @@ void     ChatChannelManager::WriteChatToDb( const string& message, const string&
    AddSanitizedStrings( dbQuery, sanitizedStrings );
 
    Send( dbQuery );
+
+   if( friendUuid.size() )
+      m_numP2PChatsSent ++;
+   else
+      m_numChannelChatsSent ++;
 }
 
 //---------------------------------------------------------------------

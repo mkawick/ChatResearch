@@ -122,7 +122,7 @@ int main( int argc, const char* argv[] )
    string assetPortString = "7302";
    string assetIpAddressString = "localhost";
 
-   string chatPortString = "7402";
+   string chatPortString = "8402";
    string chatIpAddressString = "localhost";
 
    string contactPortString = "7502";

@@ -401,6 +401,7 @@ public:
       ErrorType_Contact_BadSearchString =                      509,
       ErrorType_Contact_NoSearchResult =                       510,
       ErrorType_Contact_SearchRequestHasTooMany =              511,
+      ErrorType_Contact_NotAUserContact =                      512,
 
       ErrorType_Asset_BadLoginKey =                            600,
       ErrorType_Asset_UnknownAsset =                           601,

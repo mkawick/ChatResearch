@@ -25,7 +25,8 @@ Khaan :: Khaan() : ChainedInterface< BasePacket* >(),
                   m_socketId (0), 
                   m_bufferEvent(NULL), 
                   m_timeOfConnection( 0 ),
-                  m_useLibeventToSend( true )
+                  m_useLibeventToSend( true ),
+                  m_criticalFailure( false )
 {
 }
 
@@ -169,13 +170,18 @@ int	Khaan :: SendData( const U8* buffer, int length )
       // I cannot get the socket to write the first time... it alsways writes the second time and after.. 40 hours of research later...
       bufferevent*	bev = GetBufferEvent();
       struct evbuffer* outputBuffer = bufferevent_get_output( bev );
+      evbuffer_lock( outputBuffer );
+
       if( outputBuffer == NULL )
       {
          m_criticalFailure = true;
          return false;
       }
 
-      return evbuffer_add( outputBuffer, buffer, length );
+      int result = evbuffer_add( outputBuffer, buffer, length );
+
+      evbuffer_unlock( outputBuffer );
+      return result;
    }
 
 
@@ -271,9 +277,9 @@ void     Khaan :: RegisterToReceiveNetworkTraffic()
    // We have to enable it before our callbacks will be called. 
    bufferevent_enable( GetBufferEvent(), EV_READ | EV_WRITE );
 
-   //struct timeval timeout_read = {0, 10000};
-   //bufferevent_set_timeouts( GetBufferEvent(), &timeout_read, &timeout_read );
-   //event_buffer_timeout_set(
+   struct evbuffer* outputBuffer = bufferevent_get_output( GetBufferEvent() );
+   evbuffer_enable_locking( outputBuffer, NULL );
+
    DisableNagle( m_socketId );
 
    PreStart();

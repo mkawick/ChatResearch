@@ -31,7 +31,17 @@ public:
       StatTracking_UsersAverageTimePerGame,
       StatTracking_UsersPlayedMultipleGames,
       StatTracking_UsersLostConnection,
-      StatTracking_UniquesUsersPerDay
+      StatTracking_UniquesUsersPerDay,
+
+      StatTracking_ChatNumberOfChatsSentPerHour,
+      StatTracking_ChatNumberOfChannelChatsSentPerHour,
+      StatTracking_ChatNumberOfP2PChatsSentPerHour,
+      StatTracking_ChatNumberOfChatChannelChangesPerHour,
+      
+      StatTracking_ContactNumberSearchesForUserPerformed,
+      StatTracking_ContactNumInvitesSentPerDay,
+      StatTracking_ContactAcceptedInvitesPerDay,
+      StatTracking_ContactRejectedInvitesPerDay,
    };
 
    StatTrackingConnections();

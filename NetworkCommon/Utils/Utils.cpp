@@ -234,6 +234,26 @@ U32            GetCurrentMilliseconds()
    return static_cast< U32 >( now.tv_sec * 1000ul + now.tv_usec / 1000ul );
 #endif
 }
+
+
+//////////////////////////////////////////////////////////
+
+time_t  ZeroOutMinutes( time_t currentTime )
+{
+   struct tm * now = localtime( &currentTime );
+   now->tm_min = 0;
+   now->tm_sec = 0;
+   return mktime( now );
+}
+
+time_t  ZeroOutHours( time_t currentTime )
+{
+   struct tm * now = localtime( &currentTime );
+   now->tm_hour = 0;
+   now->tm_min = 0;
+   now->tm_sec = 0;
+   return mktime( now );
+}
 //-------------------------------------------------------------------------
 //-------------------------------------------------------------------------
 

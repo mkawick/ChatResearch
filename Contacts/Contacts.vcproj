@@ -408,6 +408,18 @@
 					>
 				</File>
 			</Filter>
+			<Filter
+				Name="Stats"
+				>
+				<File
+					RelativePath="..\NetworkCommon\Stat\StatTrackingConnections.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\NetworkCommon\Stat\StatTrackingConnections.h"
+					>
+				</File>
+			</Filter>
 		</Filter>
 		<File
 			RelativePath=".\ReadMe.txt"

@@ -28,6 +28,11 @@ DiplodocusChat::DiplodocusChat( const string& serverName, U32 serverId ): Diplod
                                              m_chatChannelManager( NULL )
 {
    this->SetSleepTime( 66 );
+
+   time_t currentTime;
+   time( &currentTime );
+   m_timestampDailyStatServerStatisics = ZeroOutHours( currentTime );
+   m_timestampHourlyStatServerStatisics = ZeroOutMinutes( currentTime );
 }
 
 //---------------------------------------------------------------
@@ -577,6 +582,61 @@ void     DiplodocusChat::UpdateAllChatUsers()
    }
 }
 
+//-----------------------------------------------------------------------------------------
+
+void     DiplodocusChat::TrackCountStats( StatTracking stat, float value, int sub_category )
+{
+   StatTrackingConnections::TrackCountStats( m_serverName, m_serverId, stat, value, sub_category );
+}
+
+//---------------------------------------------------------------
+
+void     DiplodocusChat::RunHourlyStats()
+{
+   if( m_chatChannelManager == NULL )
+      return;
+
+   time_t currentTime;
+   time( &currentTime );
+
+   if( difftime( currentTime, m_timestampHourlyStatServerStatisics ) >= timeoutHourlyStatisics ) 
+   {
+      m_timestampHourlyStatServerStatisics = ZeroOutMinutes( currentTime );
+
+      //--------------------------------
+
+      int totalCount = m_chatChannelManager->GetNumChannelChatsSent() + m_chatChannelManager->GetNumP2PChatsSent();
+      TrackCountStats( StatTracking_ChatNumberOfChatsSentPerHour, static_cast< float >( totalCount ), 0 );
+      TrackCountStats( StatTracking_ChatNumberOfChannelChatsSentPerHour, static_cast< float >( m_chatChannelManager->GetNumChannelChatsSent() ), 0 );
+      TrackCountStats( StatTracking_ChatNumberOfP2PChatsSentPerHour, static_cast< float >( m_chatChannelManager->GetNumP2PChatsSent() ), 0 );
+      TrackCountStats( StatTracking_ChatNumberOfChatChannelChangesPerHour, static_cast< float >( m_chatChannelManager->GetNumChangesToChatChannel() ), 0 );
+      m_chatChannelManager->ClearStats();
+   }
+}
+
+//---------------------------------------------------------------
+
+void     DiplodocusChat::RunDailyStats()
+{
+   if( m_chatChannelManager == NULL )
+      return;
+
+   time_t currentTime;
+   time( &currentTime );
+   if( difftime( currentTime, m_timestampDailyStatServerStatisics ) >= timeoutDailyStatisics ) 
+   {
+      m_timestampDailyStatServerStatisics = ZeroOutHours( currentTime );
+
+     /* float numUniqueUsers = static_cast< float >( m_uniqueUsers.size() );
+      if( numUniqueUsers == 0 )
+         return;
+
+      ClearOutUniqueUsersNotLoggedIn();
+
+      TrackCountStats( StatTracking_UniquesUsersPerDay, numUniqueUsers, 0 );*/
+   }
+}
+
 //---------------------------------------------------------------
 //---------------------------------------------------------------
 
@@ -595,6 +655,10 @@ int      DiplodocusChat::CallbackFunction()
    UpdateChatChannelManager();
    UpdateDbResults();
    UpdateAllChatUsers();
+
+   RunHourlyStats();
+   RunDailyStats();
+   StatTrackingConnections::SendStatsToStatServer( m_listOfOutputs, m_serverName, m_serverId, m_serverType );
 
    return 1;
 }

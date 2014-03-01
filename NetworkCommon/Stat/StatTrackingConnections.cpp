@@ -88,6 +88,36 @@ void  StatTrackingConnections :: GetStatString( U16 statId, PacketStat* packet )
       packet->statName = "gateway.unique_users_per_day";
       packet->statType = PacketStat::StatType_SimpleValue;
       break;
+
+   case StatTracking_ChatNumberOfChatsSentPerHour:
+      packet->statName = "chat.num_total_chats_sent_per_hour";
+      packet->statType = PacketStat::StatType_SimpleValue;
+      break;
+   case StatTracking_ChatNumberOfChannelChatsSentPerHour:
+      packet->statName = "chat.num_channel_chats_sent_per_hour";
+      break;
+   case StatTracking_ChatNumberOfP2PChatsSentPerHour:
+      packet->statName = "chat.num_p2p_chats_sent_per_hour";
+      break;
+   case StatTracking_ChatNumberOfChatChannelChangesPerHour:
+      packet->statName = "chat.num_chat_channel_mods_per_hour";
+      packet->statType = PacketStat::StatType_SimpleValue;
+      break;
+
+   case StatTracking_ContactNumberSearchesForUserPerformed:
+      packet->statName = "contact.searches_for_user_per_day";
+      packet->statType = PacketStat::StatType_SimpleValue;
+      break;
+   case StatTracking_ContactNumInvitesSentPerDay:
+      packet->statName = "contact.invites_sent_per_day";
+      break;
+   case StatTracking_ContactAcceptedInvitesPerDay:
+      packet->statName = "contact.invites_accepted_per_day";
+      break;
+   case StatTracking_ContactRejectedInvitesPerDay:
+      packet->statName = "contact.invites_rejected_per_day";
+      packet->statType = PacketStat::StatType_SimpleValue;
+      break;
    }
 
 }
@@ -151,8 +181,8 @@ void     StatTrackingConnections::SendStatsToStatServer( Fruitadens* fruity, con
          m_stats.pop_front();
 
          packet->serverReporting = serverName;
-         packet->category = serverType;
-         packet->subCategory = serverId;
+         //packet->category = serverType;
+         //packet->subCategory = serverId;
 
          //Gateway
          PacketServerToServerWrapper* wrapper = new PacketServerToServerWrapper;

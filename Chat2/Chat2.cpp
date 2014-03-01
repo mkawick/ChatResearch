@@ -49,6 +49,9 @@ void  PrintInstructions()
    cout << "    s2s.address       - where is the load balancer" << endl;
    cout << "    s2s.port          - load balancer" << endl;
    
+   cout << "    stat.address      - stat server ipaddress" << endl;
+   cout << "    stat.port         - stat server port" << endl;
+   
    cout << "    db.address        - database ipaddress" << endl;
    cout << "    db.port           - database port" << endl;
    cout << "    db.username       - database username" << endl;
@@ -73,21 +76,14 @@ int main( int argc, const char* argv[] )
    string listenForS2SPort = "8402";
    string listenForS2SAddress = "localHost";
 
-   //---------------------------------------
-
-   parser.FindValue( "server.name", serverName );
-
-   parser.FindValue( "listen.port", listenPort );
-   parser.FindValue( "listen.address", listenAddress );
-
-   parser.FindValue( "s2s.port", listenForS2SPort );
-   parser.FindValue( "s2s.address", listenForS2SAddress );
-
    string dbPortString = "16384";
    string dbIpAddress = "localhost";
    string dbUsername = "root";
    string dbPassword = "password";
    string dbSchema = "playdek";
+
+   string statPortString = "7802";
+   string statIpAddressString = "localhost";
 
    //--------------------------------------------------------------
 
@@ -103,12 +99,27 @@ int main( int argc, const char* argv[] )
    parser.FindValue( "db.password", dbPassword );
    parser.FindValue( "db.schema", dbSchema );
 
-   int listenPortAddress = 7400, dbPortAddress = 3306, listenS2SPort = 7402;
+   parser.FindValue( "server.name", serverName );
+
+   parser.FindValue( "listen.port", listenPort );
+   parser.FindValue( "listen.address", listenAddress );
+
+   parser.FindValue( "s2s.port", listenForS2SPort );
+   parser.FindValue( "s2s.address", listenForS2SAddress );
+
+   parser.FindValue( "stat.port", statPortString );
+   parser.FindValue( "stat.address", statIpAddressString );
+
+   int   listenPortAddress = 7400, 
+         dbPortAddress = 3306,
+         statPort = 7802, 
+         listenS2SPort = 7402;
    try 
    {
-      listenS2SPort = boost::lexical_cast<int>( listenForS2SPort );
       listenPortAddress = boost::lexical_cast<int>( listenPort );
+      statPort = boost::lexical_cast<int>( statPortString );
       dbPortAddress = boost::lexical_cast<int>( dbPortString );
+      listenS2SPort = boost::lexical_cast<int>( listenForS2SPort );
    } 
    catch( boost::bad_lexical_cast const& ) 
    {
@@ -141,6 +152,8 @@ int main( int argc, const char* argv[] )
    DiplodocusServerToServer* s2s = new DiplodocusServerToServer( serverName, serverId, 0, ServerType_Chat );
    s2s->SetupListening( listenS2SPort );
 
+   PrepConnection< FruitadensServer, DiplodocusChat > ( statIpAddressString, statPort, "stat", middleware, ServerType_Stat, true );
+   
    //----------------------------------------------------------------
    
    middleware->Init();

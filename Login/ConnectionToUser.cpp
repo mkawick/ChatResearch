@@ -344,19 +344,21 @@ bool  ConnectionToUser::BeginLogout( bool wasDisconnectedByError )
    status = LoginStatus_Invalid;
 
    time( &loggedOutTime ); // time stamp this guy
-   if( wasDisconnectedByError )
+  /* if( wasDisconnectedByError )
    {
-      return FinalizeLogout();
-   }
+      return ;
+   }*/
    if( wasDisconnectedByError == false )
    {
       PacketLogoutToClient* logout = new PacketLogoutToClient();
       logout->userName =            m_userName;// just for loggin purposes
       logout->uuid =                m_userUuid;
-      return userManager->SendPacketToGateway( logout, connectionId );
+      userManager->SendPacketToGateway( logout, connectionId );
    }
 
-   return false;
+   return FinalizeLogout();
+
+   //return false;
 }
 
 //-----------------------------------------------------------------

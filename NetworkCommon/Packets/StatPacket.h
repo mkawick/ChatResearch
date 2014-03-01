@@ -26,16 +26,16 @@ public:
    bool  SerializeIn( const U8* data, int& bufferOffset );
    bool  SerializeOut( U8* data, int& bufferOffset ) const;
 
-   U16      category;
-   U16      subCategory;
-   U8       statType;
-   U8       pad;
+   U16         category;
+   U16         subCategory;
+   U8          statType;
+   U8          pad;
 
-   string   statName;
-   string   serverReporting;
-   string   timestamp;
+   string      statName;
+   string      serverReporting;
+   string      timestamp;
 
-   float    value;
+   float       value;
 };
 
 ///////////////////////////////////////////////////////////////

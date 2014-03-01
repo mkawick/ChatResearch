@@ -30,25 +30,6 @@ using boost::format;
 
 //////////////////////////////////////////////////////////
 
-time_t  ZeroOutMinutes( time_t currentTime )
-{
-   struct tm * now = localtime( &currentTime );
-   now->tm_min = 0;
-   now->tm_sec = 0;
-   return mktime( now );
-}
-
-time_t  ZeroOutHours( time_t currentTime )
-{
-   struct tm * now = localtime( &currentTime );
-   now->tm_hour = 0;
-   now->tm_min = 0;
-   now->tm_sec = 0;
-   return mktime( now );
-}
-
-//////////////////////////////////////////////////////////
-
 DiplodocusLogin:: DiplodocusLogin( const string& serverName, U32 serverId )  : 
                   StatTrackingConnections(),
                   Queryer(),
@@ -58,7 +39,9 @@ DiplodocusLogin:: DiplodocusLogin( const string& serverName, U32 serverId )  :
                   m_autoAddProductFromWhichUsersLogin( true ),
                   m_numRelogins( 0 ),
                   m_numFailedLogins( 0 ),
-                  m_numSuccessfulLogins( 0 )
+                  m_numSuccessfulLogins( 0 ),
+                  m_totalUserLoginSeconds( 0 ),
+                  m_totalNumLogouts( 0 )
 {
    SetSleepTime( 30 );
    LogOpen();
@@ -376,6 +359,7 @@ bool     DiplodocusLogin:: HandleLoginResultFromDb( U32 connectionId, PacketDbQu
          {
             Log( "User connection success", 1 );
             m_uniqueUsers.insert( connection->m_userUuid );
+
             UpdateLastLoggedInTime( dbResult->id ); // update the user logged in time
             return true;
          }
@@ -430,6 +414,12 @@ void     DiplodocusLogin:: FinalizeLogout( U32 connectionId, bool wasDisconnecte
       const bool isLoggedIn = false; 
       bool result = connection->FinalizeLogout();
       result = result;
+      time_t currentTime;
+      time( &currentTime );
+
+      m_totalUserLoginSeconds += static_cast<int>( difftime( currentTime, connection->GetLoginTime() ) );
+      m_totalNumLogouts ++; 
+
       SendLoginStatusToOtherServers( connection->m_userName, 
                                     connection->m_userUuid, 
                                     connectionId, 
@@ -1799,8 +1789,8 @@ void     DiplodocusLogin::TrackCountStats( StatTracking stat, float value, int s
 
 void     DiplodocusLogin::RunHourlyStats()
 {
-   if( m_userConnectionMap.size() == 0 )
-      return;
+   /*if( m_userConnectionMap.size() == 0 )
+      return;*/
 
    time_t currentTime;
    time( &currentTime );
@@ -1819,9 +1809,14 @@ void     DiplodocusLogin::RunHourlyStats()
          const ConnectionToUser& user = nextIt->second;
          nextIt++;
          time_t loginTime = user.GetLoginTime();
+         if( loginTime == 0 )
+            loginTime = currentTime;
 
          totalNumSeconds += static_cast<float>( difftime( currentTime, loginTime ) );
       }
+
+      totalNumSeconds += m_totalUserLoginSeconds;
+      numConnections += m_totalNumLogouts;
 
       float averageNumSeconds = totalNumSeconds / numConnections;
       TrackCountStats( StatTracking_UserAverageTimeOnline, averageNumSeconds, 0 );
@@ -1832,6 +1827,8 @@ void     DiplodocusLogin::RunHourlyStats()
       m_numFailedLogins = 0;
       m_numRelogins = 0;
       m_numSuccessfulLogins = 0;
+      m_totalUserLoginSeconds = 0;
+      m_totalNumLogouts = 0;
    }
 }
 

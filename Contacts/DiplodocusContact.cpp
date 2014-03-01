@@ -19,12 +19,17 @@ using namespace std;
 ///////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////
 
-DiplodocusContact::DiplodocusContact( const string& serverName, U32 serverId ): Diplodocus< KhaanContact >( serverName, serverId, 0,  ServerType_Contact )/*, 
-                        //m_initializationStage( InitializationStage_Begin ),
-                        m_queryPeriodicity( 10000 ),
-                        m_isExecutingQuery( false )*/
+DiplodocusContact::DiplodocusContact( const string& serverName, U32 serverId ): Diplodocus< KhaanContact >( serverName, serverId, 0,  ServerType_Contact ),
+                        StatTrackingConnections(),
+                        m_numSearches( 0 ),
+                        m_numInvitesSent( 0 ),
+                        m_numInvitesAccepted( 0 ),
+                        m_numInvitesRejected( 0 )
 {
-    //time( &m_lastTimeStamp );
+   time_t currentTime;
+   time( &currentTime );
+   m_timestampDailyStatServerStatisics = ZeroOutHours( currentTime );
+   m_timestampHourlyStatServerStatisics = ZeroOutMinutes( currentTime );
 }
 
 //---------------------------------------------------------------
@@ -275,6 +280,45 @@ bool     DiplodocusContact::HandleDbQueryResult( PacketDbQueryResult* dbResult )
    return false;
 }
 
+
+//-----------------------------------------------------------------------------------------
+
+void     DiplodocusContact::TrackCountStats( StatTracking stat, float value, int sub_category )
+{
+   StatTrackingConnections::TrackCountStats( m_serverName, m_serverId, stat, value, sub_category );
+}
+
+//---------------------------------------------------------------
+
+void     DiplodocusContact::RunHourlyStats()
+{
+   time_t currentTime;
+   time( &currentTime );
+
+   if( difftime( currentTime, m_timestampHourlyStatServerStatisics ) >= timeoutHourlyStatisics ) 
+   {
+      m_timestampHourlyStatServerStatisics = ZeroOutMinutes( currentTime );
+   }
+}
+
+//---------------------------------------------------------------
+
+void     DiplodocusContact::RunDailyStats()
+{
+   time_t currentTime;
+   time( &currentTime );
+   if( difftime( currentTime, m_timestampDailyStatServerStatisics ) >= timeoutDailyStatisics ) 
+   {
+      m_timestampDailyStatServerStatisics = ZeroOutHours( currentTime );
+
+      TrackCountStats( StatTracking_ContactNumberSearchesForUserPerformed, static_cast< float >( m_numSearches ), 0 );
+      TrackCountStats( StatTracking_ContactNumInvitesSentPerDay, static_cast< float >( m_numInvitesSent ), 0 );
+      TrackCountStats( StatTracking_ContactAcceptedInvitesPerDay, static_cast< float >( m_numInvitesAccepted ), 0 );
+      TrackCountStats( StatTracking_ContactRejectedInvitesPerDay, static_cast< float >( m_numInvitesRejected ), 0 );
+      ClearStats();
+   }
+}
+
 //---------------------------------------------------------------
 
 int      DiplodocusContact::CallbackFunction()
@@ -304,6 +348,9 @@ int      DiplodocusContact::CallbackFunction()
 
    UpdateConsoleWindow( m_timeOfLastTitleUpdate, m_uptime, m_numTotalConnections, m_connectedClients.size(), m_listeningPort, m_serverName );
 
+   RunHourlyStats();
+   RunDailyStats();
+   StatTrackingConnections::SendStatsToStatServer( m_listOfOutputs, m_serverName, m_serverId, m_serverType );
    /*ContinueInitialization();*/
    // check for new friend requests and send a small list of notifications
 
@@ -554,6 +601,16 @@ bool     DiplodocusContact::AddQueryToOutput( PacketDbQuery* packet )
 
    delete packet;/// normally, we'd leave this up to the invoker to cleanup. 
    return false;
+}
+
+//---------------------------------------------------------------
+
+void     DiplodocusContact::ClearStats()
+{
+   m_numSearches = 0;
+   m_numInvitesSent = 0;
+   m_numInvitesAccepted = 0;
+   m_numInvitesRejected = 0;
 }
 
 //---------------------------------------------------------------

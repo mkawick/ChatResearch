@@ -138,7 +138,9 @@ int  SetupAssetList( ifstream& infile, DiplodocusAsset::CategorizedAssetLists& c
       categorizedAssetLists.insert( DiplodocusAsset::CategorizedAssetPair( ao.GetCategory(), ao ) );
    }
    else
-      assert( 0 );
+   {
+    //  assert( 0 );
+   }
 
    return numLines;
 }

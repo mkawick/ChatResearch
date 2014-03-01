@@ -244,6 +244,8 @@ private:
    int                        m_numRelogins;
    int                        m_numFailedLogins;
    int                        m_numSuccessfulLogins;
+   int                        m_totalUserLoginSeconds;
+   int                        m_totalNumLogouts;
    set< string >              m_uniqueUsers;
 };
 

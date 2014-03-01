@@ -22,13 +22,6 @@ using namespace std;
 ///////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////
 
-time_t  ZeroOutMinutes( time_t currentTime )
-{
-   struct tm * now = localtime( &currentTime );
-   now->tm_min = 0;
-   now->tm_sec = 0;
-   return mktime( now );
-}
 
 DiplodocusStat::DiplodocusStat( const string& serverName, U32 serverId ): Diplodocus< KhaanStat >( serverName, serverId, 0,  ServerType_Stat )
 {
@@ -102,16 +95,16 @@ bool  DiplodocusStat::HandlePacketFromOtherServer( BasePacket* packet, U32 conne
       PacketCleaner cleaner( unwrappedPacket );
 
       PacketStat* statPacket = static_cast< PacketStat* >( unwrappedPacket );
-      cout << "***********************************************" << endl;
-      cout << " stat packet contents " << endl;
-      cout << "   statName    :" << statPacket->statName << endl;
-      cout << "serverReporting:" << statPacket->serverReporting << endl;
-      cout << "   category    :" << statPacket->category << endl;
-      cout << "   subCategory :" << statPacket->subCategory << endl;
-      cout << "   value       :" << statPacket->value << endl;
-      cout << "   timestamp  :" << statPacket->timestamp<< endl;
 
-      cout << "***********************************************" << endl;
+      cout << "***********************************************"      << endl;
+      cout << "* stat packet contents *" << endl;
+      cout << "  statName       :"  << statPacket->statName          << endl;
+      cout << "  serverReporting:"  << statPacket->serverReporting   << endl;
+      cout << "  category       :"  << statPacket->category          << endl;
+      cout << "  subCategory    :"  << statPacket->subCategory       << endl;
+      cout << "  value          :"  << statPacket->value             << endl;
+      cout << "  timestamp      :"  << statPacket->timestamp         << endl;
+      cout << "***********************************************"      << endl;
 
       AddStatUtil( m_history, *statPacket );
 

@@ -21,6 +21,9 @@ int            GetDiffTimeFromRightNow( const char* UTCFormatted );// negative t
 std::string    CreatePrintablePair( const std::string& key, const std::string& value );
 U32            GetCurrentMilliseconds();
 
+time_t         ZeroOutMinutes( time_t currentTime );
+time_t         ZeroOutHours( time_t currentTime );
+
 void           PrintCurrentTime();
 
 std::string    Trim(const std::string& str,
