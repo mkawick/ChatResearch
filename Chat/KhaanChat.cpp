@@ -1,4 +1,4 @@
-// Khaanchat.cpp
+#include "KhaanChat.h"
 
 #include <iostream>
 
@@ -14,7 +14,7 @@ using boost::format;
 #include "DiplodocusChat.h"
 
 ///////////////////////////////////////////////////////////////////
-
+/*
 bool	KhaanChat::OnDataReceived( unsigned char* data, int length )
 {
    BasePacket* packetIn = NULL;
@@ -40,7 +40,6 @@ bool	KhaanChat::OnDataReceived( unsigned char* data, int length )
          {
             const ChainLink& chain = *itOutputs++;
             ChainType* interfacePtr = static_cast< ChainType*> ( chain.m_interface );
-            //DiplodocusChat * middle = static_cast<DiplodocusChat*>( interfacePtr );
 
             m_connectionId = wrapper->connectionId;
             if( interfacePtr->AddInputChainData( wrapper->pPacket, m_connectionId ) == false )
@@ -57,53 +56,31 @@ bool	KhaanChat::OnDataReceived( unsigned char* data, int length )
       else if( type == PacketType_ServerToServerWrapper )
       {
          PacketServerToServerWrapper* wrapper = static_cast< PacketServerToServerWrapper* >( packetIn );
-         // so this is just server information about the gateway since we only accept connections about the gateway on this port
-         PacketServerIdentifier* packet = static_cast< PacketServerIdentifier * > ( wrapper->pPacket );
+         U32 serverId = wrapper->serverId;
+         BasePacket* packet = wrapper->pPacket;
 
-         SaveOffServerIdentification( packet );
+         ChainLinkIteratorType itOutputs = m_listOfOutputs.begin();
+         if( itOutputs != m_listOfOutputs.end() )// only one output currently supported.
+         {
+            const ChainLink& chain = *itOutputs++;
+            ChainType* interfacePtr = static_cast< ChainType*> ( chain.m_interface );
 
+            m_connectionId = serverId;
+            if( interfacePtr->AddInputChainData( packet, m_connectionId ) == false )
+            {
+               delete wrapper->pPacket;
+               wrapper->pPacket = NULL;
+            }
+            else
+            {
+               return true;
+            }
+         }
       }
    }
    parser.CleanupPacket( packetIn );
    return true;
-}
-
-//---------------------------------------------------------------
-
-void  KhaanChat :: SaveOffServerIdentification( const PacketServerIdentifier* packet )
-{
-   //if( m_serverName == packet->serverName && m_serverId == packet->serverId ) // prevent dups from reporting.
-   //   return;
-
-   m_serverName = packet->serverName;
-   m_serverId = packet->serverId;
-   m_isGameServer = packet->isGameServer;
-   m_isController = packet->isController;
-   m_isGateway = packet->isGateway;
-   U8 gameProductId = packet->gameProductId;
-
-   std::string ip_txt( inet_ntoa( m_ipAddress.sin_addr ) );
-   cout << "---------  Connected as server to " << m_serverName << "  ------------------" << endl;
-   cout << "    " << ip_txt << " : " << static_cast<U32>( GetPort() ) << endl;
-   cout << "    type " << static_cast<U32>( gameProductId ) << " -- server ID = " << m_serverId << endl;
-   cout << "    isGame = " << boolalpha << m_isGameServer << ", isController : " << m_isController << noboolalpha << endl;
-   cout << "------------------------------------------------------" << endl;
-
-   ChainLinkIteratorType itOutputs = m_listOfOutputs.begin();
-   if( itOutputs != m_listOfOutputs.end() )// only one output currently supported.
-   {
-      const ChainLink& chain = *itOutputs++;
-      IChainedInterface* interfacePtr = chain.m_interface;
-      DiplodocusChat * middle = static_cast<DiplodocusChat*>( interfacePtr );
-
-      middle->ServerWasIdentified( this );
-
-      if( m_isGateway )
-      {
-         middle->AddGatewayConnection( m_serverId );
-      }
-   }
-}
+}*/
 
 //---------------------------------------------------------------
 
@@ -113,14 +90,15 @@ void  KhaanChat::PreStart()
    if( m_listOfOutputs.size() == 0 )
       return;
 
-   ChainLinkIteratorType output = m_listOfOutputs.begin();
+    cout << "Gateway has connected, name = '" << m_serverName << "' : " << m_serverId << endl;
+  /* ChainLinkIteratorType output = m_listOfOutputs.begin();
 
    IChainedInterface*	chain = (*output).m_interface;
    if( chain )
    {
       DiplodocusChat* chatServer = static_cast<DiplodocusChat*>( chain );
-      chatServer->TurnOnUpdates( true );
-   }
+      //chatServer->TurnOnUpdates( true );
+   }*/
 }
 //---------------------------------------------------------------
 
@@ -130,19 +108,18 @@ void   KhaanChat ::PreCleanup()
    if( m_listOfOutputs.size() == 0 )
       return;
 
-   ChainLinkIteratorType output = m_listOfOutputs.begin();
+  /* ChainLinkIteratorType output = m_listOfOutputs.begin();
 
    IChainedInterface*	chain = (*output).m_interface;
    if( chain )
    {
       DiplodocusChat* chatServer = static_cast< DiplodocusChat * >( chain );
-      chatServer->TurnOnUpdates( false );
-   }
+      //chatServer->TurnOnUpdates( false );
+   }*/
 
    cout << "Gateway has disconnected, name = '" << m_serverName << "' : " << m_serverId << endl;
 
 }
-//---------------------------------------------------------------
 
 ///////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////

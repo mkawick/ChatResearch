@@ -1,29 +1,27 @@
-// DiplodocusChat.h
-
 #pragma once
+
+#include <map>
+using namespace std;
 
 #include "../NetworkCommon/DataTypes.h"
 #include "../NetworkCommon/Utils/CommandLineParser.h"
 #include "../NetworkCommon/Utils/Utils.h"
 #include "../NetworkCommon/NetworkIn/Khaan.h"
 #include "../NetworkCommon/Database/Deltadromeus.h"
+
 #include "../NetworkCommon/NetworkIn/Diplodocus.h"
-#include "../NetworkCommon/ServerConstants.h"
+#include "../NetworkCommon/Stat/StatTrackingConnections.h"
 #include "KhaanChat.h"
-#include "UserConnection.h"
-//#include "DiplodocusController.h"
 
+
+class ChatUser;
+class PacketDbQuery;
+class PacketDbQueryResult;
 class ChatChannelManager;
-class DiplodocusServerToServer;
-class PacketPrepareForUserLogin;
-class PacketPrepareForUserLogout;
-class PacketListOfUserProductsS2S;
 
-const int ChatChannelManagerConnectionId = ConnectionIdExclusion.low;
+//////////////////////////////////////////////////////////////////////////////////
 
-////////////////////////////////////////////////////////////////////////////////////////
-
-class DiplodocusChat : public Diplodocus< KhaanChat >
+class DiplodocusChat : public Diplodocus< KhaanChat >, StatTrackingConnections
 {
 public: 
    typedef Diplodocus< KhaanChat > ChainedType;
@@ -32,69 +30,60 @@ public:
    DiplodocusChat( const string& serverName, U32 serverId );
    void     Init();
 
+   void     ChatChannelManagerNeedsUpdate() { m_chatChannelManagerNeedsUpdate = true; }
    void     ServerWasIdentified( IChainedInterface* khaan );
 
    bool     AddInputChainData( BasePacket* packet, U32 connectionId );
-   // data going out can go only a few directions
-   // coming from the DB, we can have a result or possibly a different packet meant for a single chat UserConnection
-   // otherwise, coming from a UserConnection, to go out, it will already be packaged as a Gateway Wrapper and then 
-   // we simply send it on.
    bool     AddOutputChainData( BasePacket* packet, U32 connectionId );
-   bool     AddPacketFromUserConnection( BasePacket* packet, U32 connectionId );// not thread safe
+   bool     SendMessageToClient( BasePacket* packet, U32 connectionId );
 
-   int      CallbackFunction();
-   void     ChatChannelManagerNeedsUpdate() { m_chatChannelManagerNeedsUpdate = true; }
+   // from both the ChatUser and the ChatChannelManager
+   bool     AddQueryToOutput( PacketDbQuery* packet, U32 connectionId, bool isChatChannelManager );
 
-   void     TurnOnUpdates( bool onOff = true ) { m_inputsNeedUpdate = onOff; }
+   //-------------------------------------
+public:
+// utility functions used by the ChatChannelManager
+   ChatUser*    UpdateExistingUsersConnectionId( const string& uuid, U32 connectionId );
+   ChatUser*    GetUser( U32 connectionId );
+   ChatUser*    GetUserById( U32 userId );
+   ChatUser*    GetUserByUuid( const string& userName );
+   ChatUser*    GetUserByUsername( const string& userName );
 
-   //-----------------------------------------------------------------------------
-   // ths folowing interface is for the Userconnections to use to communicate
-   void     FinishedLogin( U32 connectionId, const string& uuidUser );
-   void     FinishedLogout( U32 connectionId, const string& uuidUser );
-
-   void     SetupGroup( const string& groupId, const KeyValueVector& userList );// as users load in, group list will be maintained.
-   void     RemoveConnection( int connectionId );
- 
-   //bool     SendErrorReportToClient( PacketErrorReport::ErrorType error, int connectionId );
-   
-   void     InputConnected( IChainedInterface* chainedInput );
-   void     InputRemovalInProgress( IChainedInterface* chainedInput );
-
-   //-----------------------------------------------------------------------------
-
+   //-------------------------------------
 private:
+   ChatUser*    CreateNewUser( U32 connectionId );
 
-   void     SetupForNewUserConnection( PacketPrepareForUserLogin* loginPacket );
-   void     HandleUserDisconnection( PacketPrepareForUserLogout* logoutPacket );
-
-   void     CleanupOldConnections();
-   bool     HandleCommandFromGateway( BasePacket* packet, U32 connectionId );
+   bool     HandleChatPacket( BasePacket* packet, U32 connectionId );
+   bool     HandleLoginPacket( BasePacket* packet, U32 connectionId );
    bool     HandlePacketFromOtherServer( BasePacket* packet, U32 connectionId );
-   //bool     HandlePacketToOtherServer( BasePacket* packet, U32 connectionId );
-   
-   bool                                   m_inputsNeedUpdate;
+   bool     HandlePacketFromClient( BasePacket* packet );
+   void     PeriodicWriteToDB();
+   void     RemoveLoggedOutUsers();
 
-   typedef pair< int, UserConnection* >   ConnectionPair;
-   typedef map< int, UserConnection* >    ConnectionMap;
-   typedef ConnectionMap::iterator        ConnectionMapIterator;
+   void     UpdateChatChannelManager();
+   void     UpdateAllChatUsers();
+   void     UpdateDbResults();
+   void     TrackCountStats( StatTracking stat, float value, int sub_category );
+   void     RunHourlyStats();
+   void     RunDailyStats();
+   int      CallbackFunction();
 
-   typedef map< string, int >             UuidConnectionIdMap;
-   typedef pair< string, int >            UuidConnectionIdPair;
-   typedef map< int, string >             ConnectionIdUuidMap;
-   typedef pair< int, string >            ConnectionIdUuidPair;
+   typedef map< U32, ChatUser* >  UserMap;
+   typedef UserMap::iterator      UserMapIterator;
+   typedef pair< U32, ChatUser* > UserMapPair;
 
-   ConnectionMap                          m_connectionMap;
-   list< UserConnection* >                m_oldConenctions;
+   map< U32, ChatUser* >         m_users;
+   deque< PacketDbQueryResult* > m_dbQueries;
 
-   UuidConnectionIdMap                    m_connectionLookup;// we are looking up the right side
-   ConnectionIdUuidMap                    m_uuidLookup;
+   static const int              logoutTimeout = 2 * 60; // two minutes 
 
-   deque< int >                           m_connectionsNeedingUpdate;
+   ChatChannelManager*           m_chatChannelManager;
+   bool                          m_chatChannelManagerNeedsUpdate;
 
-   //----------------------------------------------
-
-   bool                                   m_chatChannelManagerNeedsUpdate;
-   ChatChannelManager*                    m_chatChannelManager;
+   time_t                        m_timestampHourlyStatServerStatisics;
+   static const U32              timeoutHourlyStatisics = 60*60;
+   time_t                        m_timestampDailyStatServerStatisics;
+   static const U32              timeoutDailyStatisics = timeoutHourlyStatisics*24;
 };
 
-////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////

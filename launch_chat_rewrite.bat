@@ -12,7 +12,7 @@ start ./debug/ContactsServer.exe listen.port=7500 db.address=10.16.4.44 db.port=
 
 ping -n 1 -w 1000 127.0.0.1 > nul
 
-start ./debug/Chat2.exe listen.port=8400 s2s.port=8402 db.address=10.16.4.44 db.port=3306 db.username=incinerator db.password=Cm8235 db.schema=playdek
+start ./debug/ChatServer.exe listen.port=8400 s2s.port=8402 db.address=10.16.4.44 db.port=3306 db.username=incinerator db.password=Cm8235 db.schema=playdek
 
 ping -n 1 -w 1000 127.0.0.1 > nul
 	

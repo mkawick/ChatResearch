@@ -69,8 +69,6 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "LoadBalancer", "LoadBalance
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Stat", "Stat\Stat.vcproj", "{5F4F1B30-68FE-446C-A8C7-527518266278}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Chat2", "Chat2\Chat2.vcproj", "{BC097E9D-3A7F-4840-AC4F-E3B5399B1545}"
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Win32 = Debug|Win32
@@ -162,12 +160,6 @@ Global
 		{5F4F1B30-68FE-446C-A8C7-527518266278}.DebugForCLR|Win32.Build.0 = Debug|Win32
 		{5F4F1B30-68FE-446C-A8C7-527518266278}.Release|Win32.ActiveCfg = Release|Win32
 		{5F4F1B30-68FE-446C-A8C7-527518266278}.Release|Win32.Build.0 = Release|Win32
-		{BC097E9D-3A7F-4840-AC4F-E3B5399B1545}.Debug|Win32.ActiveCfg = Debug|Win32
-		{BC097E9D-3A7F-4840-AC4F-E3B5399B1545}.Debug|Win32.Build.0 = Debug|Win32
-		{BC097E9D-3A7F-4840-AC4F-E3B5399B1545}.DebugForCLR|Win32.ActiveCfg = Debug|Win32
-		{BC097E9D-3A7F-4840-AC4F-E3B5399B1545}.DebugForCLR|Win32.Build.0 = Debug|Win32
-		{BC097E9D-3A7F-4840-AC4F-E3B5399B1545}.Release|Win32.ActiveCfg = Release|Win32
-		{BC097E9D-3A7F-4840-AC4F-E3B5399B1545}.Release|Win32.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

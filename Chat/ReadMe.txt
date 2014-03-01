@@ -1,7 +1,33 @@
-db.address=10.16.4.44     or db.address=10.16.4.52
-db.port=3306 
-db.username=admin         or db.username=incinerator
-db.password=Pz5328!@      or Cm8235
-db.schema=playdek 
-listen.address=127.0.0.1 
-listen.port=9601
+========================================================================
+    CONSOLE APPLICATION : Chat2 Project Overview
+========================================================================
+
+AppWizard has created this Chat2 application for you.
+
+This file contains a summary of what you will find in each of the files that
+make up your Chat2 application.
+
+
+Chat2.vcproj
+    This is the main project file for VC++ projects generated using an Application Wizard.
+    It contains information about the version of Visual C++ that generated the file, and
+    information about the platforms, configurations, and project features selected with the
+    Application Wizard.
+
+Chat2.cpp
+    This is the main application source file.
+
+/////////////////////////////////////////////////////////////////////////////
+Other standard files:
+
+StdAfx.h, StdAfx.cpp
+    These files are used to build a precompiled header (PCH) file
+    named Chat2.pch and a precompiled types file named StdAfx.obj.
+
+/////////////////////////////////////////////////////////////////////////////
+Other notes:
+
+AppWizard uses "TODO:" comments to indicate parts of the source code you
+should add to or customize.
+
+/////////////////////////////////////////////////////////////////////////////

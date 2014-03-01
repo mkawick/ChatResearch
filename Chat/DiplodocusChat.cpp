@@ -1,115 +1,319 @@
-// DiplodocusChat .cpp
+// DiplodocusChat.cpp
+
+#include <iostream>
+#include <time.h>
+
+using namespace std;
 
 
-#include "../NetworkCommon/Packets/DbPacket.h"
-#include "../NetworkCommon/Packets/GamePacket.h"
-#include "../NetworkCommon/Packets/ChatPacket.h"
-#include "../NetworkCommon/Packets/LoginPacket.h"
 #include "../NetworkCommon/Packets/ServerToServerPacket.h"
 #include "../NetworkCommon/Packets/PacketFactory.h"
-#include "../NetworkCommon/Utils/CommandLineParser.h"
-#include <boost/format.hpp>
-#include <boost/lexical_cast.hpp>
-using boost::format;
+
+#include "../NetworkCommon/Packets/DbPacket.h"
+#include "../NetworkCommon/Packets/ChatPacket.h"
+#include "../NetworkCommon/Packets/LoginPacket.h"
+#include "../NetworkCommon/Packets/StatPacket.h"
 
 #include "DiplodocusChat.h"
+#include "ChatUser.h"
 #include "ChatChannelManager.h"
-#include "../NetworkCommon/NetworkIn/DiplodocusServerToServer.h"
 
 
 ///////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////
 
-DiplodocusChat :: DiplodocusChat( const string& serverName, U32 serverId ) : Diplodocus< KhaanChat >( serverName, serverId, 0,  ServerType_Chat ), m_inputsNeedUpdate( false ), m_chatChannelManagerNeedsUpdate( false )
+DiplodocusChat::DiplodocusChat( const string& serverName, U32 serverId ): Diplodocus< KhaanChat >( serverName, serverId, 0,  ServerType_Chat ),
+                                             StatTrackingConnections(),
+                                             m_chatChannelManagerNeedsUpdate( true ),
+                                             m_chatChannelManager( NULL )
 {
-   this->SetSleepTime( 33 );// 30 fps
+   this->SetSleepTime( 66 );
+
+   time_t currentTime;
+   time( &currentTime );
+   m_timestampDailyStatServerStatisics = ZeroOutHours( currentTime );
+   m_timestampHourlyStatServerStatisics = ZeroOutMinutes( currentTime );
 }
+
+//---------------------------------------------------------------
 
 void  DiplodocusChat :: Init()
 {
-   ChatChannelManager::SetDiplodocusChat( this );
-   
+   ChatChannelManager::Set( this );
    m_chatChannelManager = new ChatChannelManager();
-   m_chatChannelManager->SetConnectionId( ChatChannelManagerConnectionId );
 
-   UserConnection::SetDiplodocusChat( this );
-   UserConnection::SetChatManager( m_chatChannelManager );
-   m_chatChannelManager->Init();
+   ChatUser::Set( this );
+   ChatUser::Set( m_chatChannelManager );
 }
+
 //---------------------------------------------------------------
 
-void     DiplodocusChat:: ServerWasIdentified( IChainedInterface* khaan )
+ChatUser* DiplodocusChat::CreateNewUser( U32 connectionId )
+{
+   UserMapIterator it = m_users.find( connectionId );
+   if( it != m_users.end() )
+      return it->second;
+
+   ChatUser* user = new ChatUser( connectionId );
+   m_users.insert( UserMapPair( connectionId, user ) );
+
+   return user;
+}
+
+//---------------------------------------------------------------
+
+ChatUser* DiplodocusChat::UpdateExistingUsersConnectionId( const string& uuid, U32 connectionId )
+{
+   UserMapIterator it = m_users.begin(); 
+   while( it != m_users.end() )
+   {
+      if( it->second->GetUuid() == uuid )
+      {
+         ChatUser* user = it->second;
+         user->SetConnectionId( connectionId );
+         m_users.insert( UserMapPair( connectionId, user ) );
+         m_users.erase( it );
+         return user;
+      }
+      it++;
+   }
+
+   return NULL;
+}
+
+//---------------------------------------------------------------
+
+ChatUser* DiplodocusChat::GetUser( U32 connectionId )
+{
+   UserMapIterator it = m_users.find( connectionId );
+   if( it == m_users.end() )
+      return NULL;
+
+   return it->second;
+}
+
+//---------------------------------------------------------------
+/*
+ChatUser* DiplodocusChat::GetUser( U32 connectionId )
+{
+   UserMapIterator it = m_users.find( connectionId );
+   if( it == m_users.end() )
+      return NULL;
+
+   return it->second;
+}*/
+
+//---------------------------------------------------------------
+
+ChatUser* DiplodocusChat::GetUserById( U32 userId )
+{
+   UserMapIterator it = m_users.begin();
+   while( it != m_users.end() )
+   {
+      if( it->second->GetUserId() == userId )
+      return it->second;
+      it++;
+   }
+
+   return NULL;
+}
+
+//---------------------------------------------------------------
+
+ChatUser* DiplodocusChat::GetUserByUsername( const string& userName )
+{
+   UserMapIterator it = m_users.begin(); 
+   while( it != m_users.end() )
+   {
+      if( it->second->GetUserName() == userName )
+         return it->second;
+      it++;
+   }
+
+   return NULL;
+}
+
+
+//---------------------------------------------------------------
+
+ChatUser* DiplodocusChat::GetUserByUuid( const string& uuid )
+{
+   UserMapIterator it = m_users.begin(); 
+   while( it != m_users.end() )
+   {
+      if( it->second->GetUuid() == uuid )
+         return it->second;
+      it++;
+   }
+
+   return NULL;
+}
+
+//---------------------------------------------------------------
+
+void     DiplodocusChat::ServerWasIdentified( IChainedInterface* khaan )
 {
    BasePacket* packet = NULL;
    PackageForServerIdentification( m_serverName, m_localIpAddress, m_serverId, m_listeningPort, m_gameProductId, m_isGame, m_isControllerApp, true, m_isGateway, &packet );
    ChainedType* localKhaan = static_cast< ChainedType* >( khaan );
    localKhaan->AddOutputChainData( packet, 0 );
-   m_clientsNeedingUpdate.push_back( localKhaan->GetChainedId() );
+   m_clientsNeedingUpdate.push_back( localKhaan->GetServerId() );
 }
 
 //---------------------------------------------------------------
 
-void  DiplodocusChat::InputConnected( IChainedInterface* chainedInput )
+bool     DiplodocusChat::HandleChatPacket( BasePacket* packet, U32 connectionId )
 {
-   //KhaanChat* khaan = static_cast< KhaanChat* >( chainedInput );
-}
+   U32 packetType = packet->packetType;
+   U32 packetSubType = packet->packetSubType;
 
-void  DiplodocusChat::InputRemovalInProgress( IChainedInterface* chainedInput )
-{
-   // inheritance is hurting us here. the base class GetConnectionId which is invoked later
-   // hides the derived version due to the type of pointers.
-   
-   KhaanChat* khaan = static_cast< KhaanChat* >( chainedInput );
-   ClientMapIterator it = m_connectedClients.find( khaan->GetConnectionId() );
-   if( it != m_connectedClients.end() )
+   if( packetType == PacketType_Chat )
    {
-      LockMutex();
-      m_connectedClients.erase( it );
-      UnlockMutex();
+      switch( packetSubType )
+      {
+      case PacketChatToServer::ChatType_CreateChatChannelFromGameServer:
+         {
+            PacketChatCreateChatChannelFromGameServer* pPacket = static_cast< PacketChatCreateChatChannelFromGameServer* > ( packet );
+            m_chatChannelManager->CreateNewChannel( pPacket );
+         }
+         break;
+      case PacketChatToServer::ChatType_AddUserToChatChannelGameServer:
+         {
+            PacketChatAddUserToChatChannelGameServer* pPacket = static_cast< PacketChatAddUserToChatChannelGameServer* > ( packet );
+            m_chatChannelManager->AddUserToChannel( pPacket );
+         }
+         break;
+      case PacketChatToServer::ChatType_RemoveUserFromChatChannelGameServer:
+         {
+            PacketChatRemoveUserFromChatChannelGameServer* pPacket = static_cast< PacketChatRemoveUserFromChatChannelGameServer* > ( packet );
+            m_chatChannelManager->RemoveUserFromChannel( pPacket );
+         }
+         break;
+      case PacketChatToServer::ChatType_DeleteChatChannelFromGameServer:
+         {
+            PacketChatDeleteChatChannelFromGameServer* pPacket = static_cast< PacketChatDeleteChatChannelFromGameServer* > ( packet );
+            m_chatChannelManager->DeleteChannel( pPacket );
+         }
+         break;
+  /* ChatType_InviteUserToChatChannel,
+   ChatType_InviteUserToChatChannelResponse,*/
+      }
    }
-}
-
-//---------------------------------------------------------------
-
-// this will always be data coming from the gateway or at least from the outside in.
-bool   DiplodocusChat::AddInputChainData( BasePacket* packet, U32 connectionId ) 
-{
-   if( packet->packetType == PacketType_GatewayInformation )
-   {
-      return HandleCommandFromGateway( packet, connectionId );
-   }
-
-   if( packet->packetType == PacketType_ServerJobWrapper )
-   {
-      HandlePacketFromOtherServer( packet, connectionId );
-      return true;
-   }
-   
-   m_mutex.lock();
-
-      ConnectionMapIterator it = m_connectionMap.find( connectionId );
-      //assert( it != m_connectionMap.end() );// this had better not happen
-
-      
-
-   m_mutex.unlock();
-
-   if( it == m_connectionMap.end() )
-   {
-      Log( "Chat server: User attempting to send data on unauthorized channel" );
-      return false;
-   }
-   UserConnection* conn = (*it).second;
-   
-   conn->AddInputChainData( packet, connectionId );
-   m_connectionsNeedingUpdate.push_back( connectionId );
 
    return true;
 }
 
 //---------------------------------------------------------------
 
+bool     DiplodocusChat::HandleLoginPacket( BasePacket* packet, U32 connectionId )
+{
+   //packet->
+   U32 packetType = packet->packetType;
+   U32 packetSubType = packet->packetSubType;
+
+   if( packetType == PacketType_Login )
+   {
+      switch( packetSubType )
+      {
+    /*  case PacketLogin::LoginType_Login:
+         {
+            PacketLogin* pPacket = static_cast< PacketLogin* > ( packet );
+            cout << "Login: " << pPacket->userName << ", " << pPacket->uuid << ", " << pPacket->password << endl;
+            //pPacket->connectionId;
+            //m_chatChannelManager->CreateNewChannel( pPacket );
+            
+         }
+         return true;
+      case PacketLogin::LoginType_Logout:
+         {
+            PacketLogout* pPacket = static_cast< PacketLogout* > ( packet );
+            cout << "Logout: " << pPacket->wasDisconnectedByError << endl;
+            //pPacket->connectionId;
+            //m_chatChannelManager->CreateNewChannel( pPacket );
+         }
+         return true;*/
+      case PacketLogin::LoginType_PrepareForUserLogin:
+         {
+            PacketPrepareForUserLogin* pPacket = static_cast< PacketPrepareForUserLogin* > ( packet );
+            U32 userConnectionId = pPacket->connectionId;
+            string uuid = pPacket->uuid;
+            
+            cout << "Prep for logon: " << connectionId << ", " << pPacket->userName << ", " << uuid << ", " << pPacket->password << endl;
+            
+            // TODO: verify that the user isn't already in the list and if s/he is, assign the new connectionId.
+            ChatUser* user = UpdateExistingUsersConnectionId( uuid, userConnectionId );
+            //ChatUser* user = GetUserByUsername( pPacket->userName );
+            if( user == NULL )
+            {
+               user = CreateNewUser( userConnectionId );              
+               user->Init( pPacket->userId, pPacket->userName, pPacket->uuid, pPacket->lastLoginTime );
+            }
+            
+            user->LoggedIn();
+
+            
+         }
+         return true;
+      case PacketLogin::LoginType_PrepareForUserLogout:
+         {
+            PacketPrepareForUserLogout* pPacket = static_cast< PacketPrepareForUserLogout* > ( packet );
+            cout << "Prep for logout: " << pPacket->connectionId << ", " << pPacket->uuid << ", " << endl;
+            U32 userConnectionId = pPacket->connectionId;
+            LockMutex();
+            UserMapIterator iter = m_users.find( userConnectionId );
+         
+            if( iter != m_users.end() )// a bad user login can cause this so don't worry
+            {
+               iter->second->LoggedOut();
+            }
+            else
+            {
+               string str = "Log user out failed: user not found. userUuid: ";
+               str += pPacket->uuid;
+               Log( str, 4 );
+            }
+            UnlockMutex();
+            
+         }
+         return true;
+      }
+   }
+   return false;
+}
+
 //---------------------------------------------------------------
+
+bool     DiplodocusChat::AddInputChainData( BasePacket* packet, U32 connectionId )
+{
+   U8 packetType = packet->packetType;
+
+   switch( packetType )
+   {
+   case PacketType_GatewayInformation:
+      {
+         PacketCleaner cleaner( packet );
+         HandleCommandFromGateway( packet, connectionId );
+         return true;
+      }
+   case PacketType_ServerJobWrapper:
+      {
+         PacketCleaner cleaner( packet );
+         HandlePacketFromOtherServer( packet, connectionId );
+         return true;
+      }
+ 
+   case PacketType_DbQuery:
+      {
+      }
+   case PacketType_GatewayWrapper:
+      {
+         PacketCleaner cleaner( packet );
+         HandlePacketFromClient( packet );
+         return true;
+      }
+   }
+   return false;
+}
 
 //---------------------------------------------------------------
 
@@ -124,35 +328,16 @@ bool   DiplodocusChat::AddOutputChainData( BasePacket* packet, U32 connectionId 
       return HandlePacketToOtherServer( packet, connectionId );
    }
 
-   Threading::MutexLock locker( m_mutex );
-
    if( packet->packetType == PacketType_DbQuery )
    {
+      Threading::MutexLock locker( m_mutex );
       if( packet->packetSubType == BasePacketDbQuery::QueryType_Result )
       {
          PacketDbQueryResult* result = static_cast<PacketDbQueryResult*>( packet );
-         U32 connectionId = result->id;
-         if( connectionId == m_chatChannelManager->GetConnectionId() )
-         {
-            m_chatChannelManager->AddInputChainData( packet );
-            m_chatChannelManagerNeedsUpdate = true;
-         }
-         else
-         {
-            m_mutex.lock();
-            ConnectionMapIterator it = m_connectionMap.find( connectionId );
-            if( it == m_connectionMap.end() )
-            {
-               Log( "Missing connection" );
-               assert( 0 );
-            }
-            else
-            {
-               (*it).second->AddInputChainData( packet, connectionId );
-               m_connectionsNeedingUpdate.push_back( connectionId );
-            }
-            m_mutex.unlock();
-         }
+         Threading::MutexLock locker( m_mutex );
+         m_dbQueries.push_back( result );
+         if( result->customData != NULL )
+            cout << "AddOutputChainData: Non-null custom data " << endl;
       }
       return true;
    }
@@ -163,251 +348,7 @@ bool   DiplodocusChat::AddOutputChainData( BasePacket* packet, U32 connectionId 
 
 //---------------------------------------------------------------
 
-void  DiplodocusChat::SetupForNewUserConnection( PacketPrepareForUserLogin* loginPacket )
-{
-   U32 connectionId = loginPacket->connectionId;
-   ConnectionMapIterator it = m_connectionMap.find( connectionId );
-   if( it != m_connectionMap.end() )
-   {
-      // we already have this which should be a major problem
-      Log( "Chat server: Attempt to add a user connection fails" );
-      return;
-   }
-
-   bool found = false;
-   // if the user is already here but relogged, simply 
-   m_mutex.lock();
-      it = m_connectionMap.begin();
-      while( it != m_connectionMap.end() )
-      {
-         if( it->second->GetUuid() == loginPacket->uuid ) 
-         {
-            found = true;
-            it->second->SetConnectionId( connectionId );
-            it->second->InformUserOfSuccessfulLogin();
-
-            m_connectionMap.insert( ConnectionPair( connectionId, it->second ) );
-            m_connectionMap.erase( it );
-            break;
-         }
-         it++;
-      }
-   m_mutex.unlock();
-
-   if( found == false )// almost 100% true
-   {
-      UserConnection* connection = new UserConnection( connectionId );
-
-      m_mutex.lock();// the user must be in the list before any further communicatins can continue.
-         m_connectionMap.insert( ConnectionPair ( connectionId, connection ) );
-      m_mutex.unlock();
-
-      connection->SetupFromLogin( loginPacket->userId, loginPacket->userName, loginPacket->uuid, loginPacket->lastLoginTime );
-   }
-}
-
-//---------------------------------------------------------------
-
-void  DiplodocusChat::HandleUserDisconnection( PacketPrepareForUserLogout* logoutPacket )
-{
-   U32 connectionId = logoutPacket->connectionId;
-   ConnectionMapIterator it = m_connectionMap.find( connectionId );
-   if( it == m_connectionMap.end() )
-   {
-      // we already have this which should be a major problem
-      Log( "Chat server: Attempt to remove a user connection fails" );
-      return;
-   }
-
-   const string& username = it->second->GetName();
-   const string& uuid = it->second->GetUuid();
-   
-   m_chatChannelManager->UserLoggedOut( username, uuid, it->second );
-
-   m_mutex.lock();
-      //************************************************
-      // danger here: this object being deleted can cause lots of problems
-      //************************************************
-
-      FinishedLogout( connectionId, uuid );
-   m_mutex.unlock();
-
-}
-
-//---------------------------------------------------------------
-
-bool  DiplodocusChat::HandlePacketFromOtherServer( BasePacket* packet, U32 connectionId )// not thread safe
-{
-   if( packet->packetType != PacketType_ServerJobWrapper )
-   {
-      return false;
-   }
-
-   PacketServerJobWrapper* wrapper = static_cast< PacketServerJobWrapper* >( packet );
-   BasePacket* actualPacket = wrapper->pPacket;
-   U32  serverIdLookup = wrapper->serverId;
-   serverIdLookup = serverIdLookup;
-   // this packet has a job id thanks to the underlying layer (DiplodocusServerToServer) that we do not need so we ignore it.
-   // if we need to reply, we should store the job id.
-
-   delete wrapper;
-   bool success = false;
-
-   if( actualPacket->packetType == PacketType_Login )
-   {
-      switch( actualPacket->packetSubType )
-      {
-      case PacketLogin::LoginType_PrepareForUserLogin:
-         SetupForNewUserConnection( static_cast< PacketPrepareForUserLogin* >( actualPacket ) );
-         return true;
-      case PacketLogin::LoginType_PrepareForUserLogout:
-         HandleUserDisconnection( static_cast< PacketPrepareForUserLogout* >( actualPacket ) );
-         return true;
-      }
-      return false;
-   }
-   else if( actualPacket->packetType == PacketType_Gameplay )
-   {
-     /* switch( actualPacket->packetSubType )
-      {
-      case PacketGameToServer::GamePacketType_CreateGame:
-         {
-            PacketCreateGame* pPacket = static_cast< PacketCreateGame* > ( actualPacket );
-            //success = m_chatChannelManager->CreateNewChannel( pPacket->name, serverIdLookup );
-         }
-         break;
-      case PacketGameToServer::GamePacketType_DeleteGame:
-         {
-            PacketDeleteGame* pPacket = static_cast< PacketDeleteGame* > ( actualPacket );
-            success = m_chatChannelManager->DeleteChannel( pPacket->uuid, serverIdLookup );
-         }
-         break;
-      case PacketGameToServer::GamePacketType_ForfeitGame:
-         {
-            PacketForfeitGame* pPacket = static_cast< PacketForfeitGame* > ( actualPacket );
-            assert( 0 );// not complete
-            //success = m_chatChannelManager->CreateNewChannel( actualPacket->name, serverIdLookup );
-         }
-         break;
-      case PacketGameToServer::GamePacketType_QuitGame:
-         {
-            PacketQuitGame* pPacket = static_cast< PacketQuitGame* > ( actualPacket );
-            assert( 0 );// not complete
-            //success = m_chatChannelManager->CreateNewChannel( actualPacket->name, serverIdLookup );
-         }
-         break;
-      case PacketGameToServer::GamePacketType_AddUser:
-         {
-            PacketAddUserToGame* pPacket = static_cast< PacketAddUserToGame* > ( actualPacket );
-            //success = m_chatChannelManager->AddUserToChannel( pPacket->gameUuid, pPacket->userUuid, serverIdLookup );
-         }
-         break;
-      case PacketGameToServer::GamePacketType_RemoveUser:
-         {
-            PacketRemoveUserFromGame* pPacket = static_cast< PacketRemoveUserFromGame* > ( actualPacket );
-            //success = m_chatChannelManager->RemoveUserFromChannel( pPacket->gameUuid, pPacket->userUuid, serverIdLookup );
-         }
-         break;
-      case PacketGameToServer::GamePacketType_AdvanceTurn:
-         {
-            PacketGameAdvanceTurn* pPacket = static_cast< PacketGameAdvanceTurn* > ( actualPacket );
-            success = m_chatChannelManager->AdvanceGameTurn( pPacket->gameUuid, serverIdLookup );
-         }
-         break;
-      case PacketGameToServer::GamePacketType_RequestListOfGames:
-         {
-            PacketRequestListOfGames* pPacket = static_cast< PacketRequestListOfGames* > ( actualPacket );
-            m_chatChannelManager->RequestChatChannelList( serverIdLookup );
-            success = true;
-         }
-         break;
-      }*/
-
-   }
-   if( actualPacket->packetType == PacketType_Chat )
-   {
-      switch( actualPacket->packetSubType )
-      {
-      case PacketChatToServer::ChatType_CreateChatChannelFromGameServer:
-         {
-            PacketChatCreateChatChannelFromGameServer* pPacket = static_cast< PacketChatCreateChatChannelFromGameServer* > ( actualPacket );
-            m_chatChannelManager->CreateNewChannel( pPacket );
-         }
-         break;
-      case PacketChatToServer::ChatType_CreateChatChannelFromGameServerResponse:
-         {
-            assert( 0 );
-         }
-         break;
-      case PacketChatToServer::ChatType_AddUserToChatChannelGameServer:
-         {
-            PacketChatAddUserToChatChannelGameServer* pPacket = static_cast< PacketChatAddUserToChatChannelGameServer* > ( actualPacket );
-            m_chatChannelManager->AddUserToChannel( pPacket );
-         }
-         break;
-      case PacketChatToServer::ChatType_AddUserToChatChannelGameServerResponse:
-         {
-            assert( 0 );
-         }
-         break;
-      case PacketChatToServer::ChatType_RemoveUserFromChatChannelGameServer:
-         {
-            PacketChatRemoveUserFromChatChannelGameServer* pPacket = static_cast< PacketChatRemoveUserFromChatChannelGameServer* > ( actualPacket );
-            m_chatChannelManager->RemoveUserFromChannel( pPacket );
-         }
-         break;
-      case PacketChatToServer::ChatType_RemoveUserFromChatChannelGameServerResponse:
-         {
-            assert( 0 );
-         }
-         break;
-      case PacketChatToServer::ChatType_DeleteChatChannelFromGameServer:
-         {
-            PacketChatDeleteChatChannelFromGameServer* pPacket = static_cast< PacketChatDeleteChatChannelFromGameServer* > ( actualPacket );
-            m_chatChannelManager->DeleteChannel( pPacket );
-         }
-         break;
-      case PacketChatToServer::ChatType_DeleteChatChannelFromGameServerResponse:
-         {
-            assert( 0 );
-         }
-         break;
-  /* ChatType_InviteUserToChatChannel,
-   ChatType_InviteUserToChatChannelResponse,*/
-      }
-   }
-
-   delete actualPacket;
-   return success;
-}
-
-//---------------------------------------------------------------
-/*
-bool  DiplodocusChat::HandlePacketToOtherServer( BasePacket* packet, U32 connectionId )// not thread safe
-{
-   AddOutputChainData( BasePacket* packet, U32 connectionId ) 
-   ChainLinkIteratorType itInputs = m_listOfInputs.begin();
-   while( itInputs != m_listOfInputs.end() )// only one output currently supported.
-   {
-      ChainType* inputPtr = static_cast< ChainType*> ( itInputs->m_interface );
-      if( inputPtr->GetConnectionId() == ServerToServerConnectionId )
-      {
-         if( inputPtr->AddOutputChainData( packet, connectionId ) )
-         {
-            return true;
-         }
-      }
-
-      itInputs++;
-   }
-   assert( 0 );// should not happen
-   //delete packet;
-   return false;
-}*/
-
-//---------------------------------------------------------------
-
-bool  DiplodocusChat::AddPacketFromUserConnection( BasePacket* packet, U32 connectionId )// not thread safe
+bool     DiplodocusChat::SendMessageToClient( BasePacket* packet, U32 connectionId )
 {
    if( packet->packetType == PacketType_GatewayWrapper )// this is already wrapped up and ready for the gateway... send it on.
    {
@@ -418,7 +359,7 @@ bool  DiplodocusChat::AddPacketFromUserConnection( BasePacket* packet, U32 conne
       {
          KhaanChat* khaan = static_cast< KhaanChat* >( itInputs->second );
          khaan->AddOutputChainData( packet );
-         m_clientsNeedingUpdate.push_back( khaan->GetConnectionId() );
+         m_clientsNeedingUpdate.push_back( khaan->GetChainedId() );
          itInputs++;
       }
       return true;
@@ -446,122 +387,280 @@ bool  DiplodocusChat::AddPacketFromUserConnection( BasePacket* packet, U32 conne
 
 //---------------------------------------------------------------
 
-bool  DiplodocusChat::HandleCommandFromGateway( BasePacket* packet, U32 connectionId )
+void  DiplodocusChat::UpdateDbResults()
 {
+   PacketFactory factory;
    Threading::MutexLock locker( m_mutex );
 
-   // delete connections, etc.
-   assert( 0 );// incomplete
+   deque< PacketDbQueryResult* >::iterator it = m_dbQueries.begin();
+   while( it != m_dbQueries.end() )
+   {
+      PacketDbQueryResult* result = *it++;
+      if( result->customData != NULL )
+            cout << "UpdateDbResults: Non-null custom data " << endl;
+      BasePacket* packet = static_cast<BasePacket*>( result );
 
-   return true;
+      U32 connectionId = result->id;
+      bool isChatChannelManager = result->serverLookup > 0 ? true:false;
+
+      if( isChatChannelManager ) //&& connectionId == ChatChannelManagerUniqueId )
+      {
+         m_chatChannelManager->HandleDbResult( result );
+         m_chatChannelManagerNeedsUpdate = true;
+      }
+      else
+      {
+         ChatUser* user = GetUser( connectionId );
+         if( user )
+         {
+            user->HandleDbResult( result );
+         }
+         else
+         {
+            factory.CleanupPacket( packet );
+         }
+      }
+   }
+   m_dbQueries.clear();
 }
 
 //---------------------------------------------------------------
 
-void     DiplodocusChat::FinishedLogin( U32 connectionId, const string& uuidUser )
+bool  DiplodocusChat::HandlePacketFromOtherServer( BasePacket* packet, U32 connectionId )// not thread safe
 {
-   ConnectionMapIterator it = m_connectionMap.find( connectionId );
-   if( it != m_connectionMap.end() )
-   { 
-      m_chatChannelManager->UserLoggedIn( it->second->GetName(), uuidUser, it->second );
-      m_connectionLookup.insert( UuidConnectionIdPair( uuidUser, connectionId ) );
-      m_uuidLookup.insert( ConnectionIdUuidPair( connectionId, uuidUser ) );
+   if( packet->packetType != PacketType_ServerJobWrapper )
+   {
+      return false;
    }
+
+   PacketServerJobWrapper* wrapper = static_cast< PacketServerJobWrapper* >( packet );
+   BasePacket* unwrappedPacket = wrapper->pPacket;
+   U32  serverIdLookup = wrapper->serverId;
+   serverIdLookup = serverIdLookup;
+
+   U8 packetType = unwrappedPacket->packetType;
+   PacketFactory factory;
    
-   // notify other servers that the user has logged in... this emulates a login server.
-   // However, this functionality should also be done to inform the diplodocus chat.
+   if( packetType == PacketType_Login )
+   {
+      if( HandleLoginPacket( unwrappedPacket, connectionId ) == false )
+      {
+         factory.CleanupPacket( packet );
+      }
+      
+      return true;
+   }
+
+   if( packetType == PacketType_Chat )
+   {
+      if( HandleChatPacket( unwrappedPacket, connectionId ) == false )
+      {
+         factory.CleanupPacket( packet );
+      }
+      return true;
+   }
+
+   return false;
 }
 
 //---------------------------------------------------------------
 
-void     DiplodocusChat::FinishedLogout( U32 connectionId, const string& uuidUser )
+bool  DiplodocusChat::HandlePacketFromClient( BasePacket* packet )
 {
-   Threading::MutexLock locker( m_mutex );
-   ConnectionMapIterator it = m_connectionMap.find( connectionId );
-   if( it != m_connectionMap.end() )
-   { 
-      m_oldConenctions.push_back( (*it).second );
-      m_connectionMap.erase( it );
-   }
-   UuidConnectionIdMap::iterator connIter = m_connectionLookup.find( uuidUser );
-   if( connIter != m_connectionLookup.end() )
+   if( packet->packetType != PacketType_GatewayWrapper )
    {
-      m_connectionLookup.erase( connIter );
+      return false;
    }
-   ConnectionIdUuidMap::iterator uuidIter = m_uuidLookup.find( connectionId );
-   if( uuidIter != m_uuidLookup.end() )
+
+   PacketGatewayWrapper* wrapper = static_cast< PacketGatewayWrapper* >( packet );
+   BasePacket* unwrappedPacket = wrapper->pPacket;
+
+   U32 connectionId = wrapper->connectionId;
+
+   UserMapIterator it = m_users.find( connectionId );
+   if( it != m_users.end() )
    {
-      m_uuidLookup.erase( uuidIter );
+      ChatUser* user = it->second;
+      if( user )
+      {
+         return user->HandleClientRequest( wrapper->pPacket );
+      }
+   }
+
+   return false;
+}
+
+//---------------------------------------------------------------
+//---------------------------------------------------------------
+
+void     DiplodocusChat::PeriodicWriteToDB()
+{
+  /* time_t currentTime;
+   time( &currentTime );
+
+   if( difftime( currentTime, m_lastDbWriteTimeStamp ) >= timeoutDBWriteStatisics ) 
+   {
+      m_lastDbWriteTimeStamp = ZeroOutMinutes( currentTime );// advance the hour.
+   
+      
+   }*/
+}
+
+void     DiplodocusChat::RemoveLoggedOutUsers()
+{
+   time_t currentTime;
+   time( &currentTime );
+
+   UserMapIterator it = m_users.begin(); 
+   while( it != m_users.end() )
+   {
+      UserMapIterator currentUserIt = it++;
+      bool wasRemoved = false;
+      time_t loggedOutTime = currentUserIt->second->GetLoggedOutTime();
+      if( loggedOutTime != 0 )
+      {
+         if( difftime( currentTime, loggedOutTime ) >= logoutTimeout )
+         {
+            wasRemoved = true;
+            m_users.erase( currentUserIt );
+         }
+      }
+   }
+}
+//---------------------------------------------------------------
+//---------------------------------------------------------------
+
+bool     DiplodocusChat::AddQueryToOutput( PacketDbQuery* dbQuery, U32 connectionId, bool isChatChannelManager )
+{
+   PacketFactory factory;
+   dbQuery->id = connectionId;
+   dbQuery->serverLookup = isChatChannelManager ? 1 : 0;
+
+   ChainLinkIteratorType itOutputs = m_listOfOutputs.begin();
+   while( itOutputs != m_listOfOutputs.end() )// only one output currently supported.
+   {
+      ChainType* outputPtr = static_cast< ChainType*> ( (*itOutputs).m_interface );
+      if( outputPtr->AddInputChainData( dbQuery, m_chainId ) == true )
+      {
+         return true;
+      }
+      itOutputs++;
+   }
+
+   BasePacket* deleteMe = static_cast< BasePacket*>( dbQuery );
+
+   factory.CleanupPacket( deleteMe );
+   return false;
+}
+
+//---------------------------------------------------------------
+
+void     DiplodocusChat::UpdateChatChannelManager()
+{
+   if( m_chatChannelManagerNeedsUpdate == false || m_chatChannelManager == NULL )
+      return;
+
+   if( m_chatChannelManager->Update() == true )
+   {
+      m_chatChannelManagerNeedsUpdate = false;
+   }
+}
+
+
+//---------------------------------------------------------------
+
+void     DiplodocusChat::UpdateAllChatUsers()
+{
+   UserMapIterator it = m_users.begin();
+   while( it != m_users.end() )
+   {
+      //string userID = it->first;
+
+      ChatUser* user = it->second;
+      it++;
+      user->Update();
+   }
+}
+
+//-----------------------------------------------------------------------------------------
+
+void     DiplodocusChat::TrackCountStats( StatTracking stat, float value, int sub_category )
+{
+   StatTrackingConnections::TrackCountStats( m_serverName, m_serverId, stat, value, sub_category );
+}
+
+//---------------------------------------------------------------
+
+void     DiplodocusChat::RunHourlyStats()
+{
+   if( m_chatChannelManager == NULL )
+      return;
+
+   time_t currentTime;
+   time( &currentTime );
+
+   if( difftime( currentTime, m_timestampHourlyStatServerStatisics ) >= timeoutHourlyStatisics ) 
+   {
+      m_timestampHourlyStatServerStatisics = ZeroOutMinutes( currentTime );
+
+      //--------------------------------
+
+      int totalCount = m_chatChannelManager->GetNumChannelChatsSent() + m_chatChannelManager->GetNumP2PChatsSent();
+      TrackCountStats( StatTracking_ChatNumberOfChatsSentPerHour, static_cast< float >( totalCount ), 0 );
+      TrackCountStats( StatTracking_ChatNumberOfChannelChatsSentPerHour, static_cast< float >( m_chatChannelManager->GetNumChannelChatsSent() ), 0 );
+      TrackCountStats( StatTracking_ChatNumberOfP2PChatsSentPerHour, static_cast< float >( m_chatChannelManager->GetNumP2PChatsSent() ), 0 );
+      TrackCountStats( StatTracking_ChatNumberOfChatChannelChangesPerHour, static_cast< float >( m_chatChannelManager->GetNumChangesToChatChannel() ), 0 );
+      m_chatChannelManager->ClearStats();
    }
 }
 
 //---------------------------------------------------------------
 
-int   DiplodocusChat::CallbackFunction()
+void     DiplodocusChat::RunDailyStats()
 {
-   while( m_connectionsNeedingUpdate.size() )
+   if( m_chatChannelManager == NULL )
+      return;
+
+   time_t currentTime;
+   time( &currentTime );
+   if( difftime( currentTime, m_timestampDailyStatServerStatisics ) >= timeoutDailyStatisics ) 
    {
-      int index = m_connectionsNeedingUpdate.front();
-      m_connectionsNeedingUpdate.pop_front();
+      m_timestampDailyStatServerStatisics = ZeroOutHours( currentTime );
 
-      LockMutex();
-      ConnectionMapIterator it = m_connectionMap.find( index );
-      if( it != m_connectionMap.end() )
-      {
-         (*it).second->Update();
-      }
-      UnlockMutex();
+     /* float numUniqueUsers = static_cast< float >( m_uniqueUsers.size() );
+      if( numUniqueUsers == 0 )
+         return;
 
+      ClearOutUniqueUsersNotLoggedIn();
+
+      TrackCountStats( StatTracking_UniquesUsersPerDay, numUniqueUsers, 0 );*/
    }
+}
 
+//---------------------------------------------------------------
+//---------------------------------------------------------------
 
-   if( m_inputsNeedUpdate )// should only be one, or however many gateways are connected.
-   {
-      LockMutex();
-      //int num = m_connectedClients.size();
-      ClientMapIterator it = m_connectedClients.begin();
-      while( it != m_connectedClients.end() )
-      {
-         KhaanChat* khaan = it->second;
-         khaan->Update();
-         
-         it++;
-      }
-      UnlockMutex();
-      //UpdateAllConnections();
-   }
+int      DiplodocusChat::CallbackFunction()
+{
+   UpdateAllConnections();
 
-   if( m_chatChannelManagerNeedsUpdate )
-   {
-      m_chatChannelManager->Update();
-   }
+   time_t currentTime;
+   time( &currentTime );
 
-   CleanupOldConnections();
 
    UpdateConsoleWindow( m_timeOfLastTitleUpdate, m_uptime, m_numTotalConnections, m_connectedClients.size(), m_listeningPort, m_serverName );
+
+   PeriodicWriteToDB();
+   RemoveLoggedOutUsers();
+   UpdateChatChannelManager();
+   UpdateDbResults();
+   UpdateAllChatUsers();
+
+   RunHourlyStats();
+   RunDailyStats();
+   StatTrackingConnections::SendStatsToStatServer( m_listOfOutputs, m_serverName, m_serverId, m_serverType );
 
    return 1;
 }
 
-//---------------------------------------------------------------
-
-void     DiplodocusChat::CleanupOldConnections()
-{
-   list< UserConnection* >::iterator it = m_oldConenctions.begin();
-   while( it != m_oldConenctions.end() )
-   {
-      UserConnection* connection = *it++;
-      delete connection;
-   }
-   m_oldConenctions.clear();
-}
-
-//---------------------------------------------------------------
-
-//---------------------------------------------------------------
-
-
-//---------------------------------------------------------------
-
-
-//---------------------------------------------------------------
+///////////////////////////////////////////////////////////////////
