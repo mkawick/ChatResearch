@@ -56,6 +56,7 @@ DbJobBase :: DbJobBase( Database::JobId id, const std::string& query, U32 sender
       m_senderKey( senderKey ),
       m_senderLookup( 0 ),
       m_serverId( 0 ),
+      m_numAttemptsToResend( 0 ),
       m_customData( NULL ),
       m_hasStarted( false ),
       m_hasResultSet( false ),
@@ -523,7 +524,16 @@ int     Deltadromeus::CallbackFunction()
             else if( PutQueryResultInProperChain( currentJob ) == false )
             {
                LogEverything( "DB query result stored " );
-               m_jobsComplete.push_back( currentJob );
+               if( currentJob->GetNumAttemptsToResend() < 5 )
+               {
+                  currentJob->IncrementAttemptsToSend();
+                  m_jobsComplete.push_back( currentJob );
+               }
+               else
+               {
+                  cout << "Result set rejected" << endl;
+                  delete currentJob;// we gave the sender every opportunity to accept
+               }
             }
             m_mutex.lock();
             m_jobsInProgress.pop_front();

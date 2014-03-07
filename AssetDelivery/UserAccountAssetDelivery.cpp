@@ -114,6 +114,10 @@ bool     UserAccountAssetDelivery::HandleRequestFromClient( const PacketAsset* p
 
    case PacketAsset::AssetType_RequestAsset:
       return GetAsset( static_cast< const PacketAsset_RequestAsset* >( packet ) );
+
+   case PacketAsset::AssetType_EchoToServer:
+      EchoHandler();
+      return true;
    }
 
    return false;
@@ -318,6 +322,20 @@ bool     UserAccountAssetDelivery::GetAsset( const PacketAsset_RequestAsset* pac
    }
 
    return false;
+}
+
+//------------------------------------------------------------------------------------------------
+
+bool     UserAccountAssetDelivery::EchoHandler()
+{
+   cout << " Echo " << endl;
+   PacketAsset_EchoToClient* echo = new PacketAsset_EchoToClient;
+   U32 connectionId = m_userTicket.connectionId;
+   PacketGatewayWrapper* wrapper = new PacketGatewayWrapper;
+   wrapper->SetupPacket( echo, connectionId );
+   
+   m_assetManager->AddOutputChainData( wrapper, connectionId );
+   return true;
 }
 
 //------------------------------------------------------------------------------------------------

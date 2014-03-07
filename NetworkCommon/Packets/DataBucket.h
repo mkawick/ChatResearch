@@ -102,6 +102,8 @@ public:
 
    const KeyValueVector&   GetData() const { return dataList; }
    void  clear() { dataList.clear(); }
+   bool  erase( int index );
+   bool  erase( KVIterator iter );
    
    // helper functions
    void  insert( const string& key, const type& obj ) { dataList.push_back( KeyValue( key, obj ) ); }
@@ -143,3 +145,19 @@ protected:
 };
 
 ///////////////////////////////////////////////////////////////
+
+template < typename type >
+bool  SerializedKeyValueVector<type>::erase( int index ) 
+{ 
+   if( index < 0 && index >= dataList.size() ) return false; 
+
+   dataList.erase( dataList.begin() + index ); 
+   return true; 
+}
+
+template < typename type >
+bool  SerializedKeyValueVector<type>::erase( KVIterator iter )
+{
+   dataList.erase( iter ); 
+   return true; 
+}

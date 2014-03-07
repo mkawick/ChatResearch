@@ -422,15 +422,6 @@ public:
    bool  SerializeIn( const U8* data, int& bufferOffset );
    bool  SerializeOut( U8* data, int& bufferOffset ) const;
 
-  /* string   userName;
-   string   userUuid;
-
-   string   profileImage;
-   string   profileIcon;
-
-   int      gmtTimeSoneDifferential;
-   bool     showWinLossRecord;*/
-
    SerializedKeyValueVector< string > basicProfile;
    SerializedKeyValueVector< int > productsOwned; // only games and expansions
    SerializedKeyValueVector< string > awards;

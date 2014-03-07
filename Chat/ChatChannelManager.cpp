@@ -902,6 +902,7 @@ bool     ChatChannelManager::DeleteChannel( const string& channelUuid )
 
 bool     ChatChannelManager::UserSendP2PChat( const string& senderUuid, const string& destinationUuid, const string& message )
 {
+   cout << "Sending p2p chat from " << senderUuid << " to " << destinationUuid << ": msg:" << message << endl;
    stringhash senderHash = GenerateUniqueHash( senderUuid );
    stringhash receiverHash = GenerateUniqueHash( destinationUuid );
 
@@ -953,6 +954,7 @@ bool     ChatChannelManager::UserSendP2PChat( const string& senderUuid, const st
 
 bool     ChatChannelManager::UserSendsChatToChannel( const string& senderUuid, const string& channelUuid, const string& message, U16 gameTurn )
 {
+   cout << "Sending p2p chat from " << senderUuid << " to channel " << channelUuid << ": msg:" << message << endl;
    stringhash userHash = GenerateUniqueHash( senderUuid );
    stringhash channelHash = GenerateUniqueHash( channelUuid );
 

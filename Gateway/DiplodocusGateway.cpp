@@ -32,11 +32,25 @@ DiplodocusGateway::DiplodocusGateway( const string& serverName, U32 serverId ) :
    
    time( &m_timestampSendConnectionStatisics );
    m_timestampSendStatServerStatisics = m_timestampSendConnectionStatisics;
+
+   m_orderedOutputPacketHandlers.reserve( PacketType_Num );
 }
 
 DiplodocusGateway::~DiplodocusGateway()
 {
 }
+
+void     DiplodocusGateway::Init()
+{
+   OrderOutputs();
+}
+
+void   DiplodocusGateway::NotifyFinishedAdding( IChainedInterface* obj ) 
+{
+   //obj->
+   cout << " NotifyFinishedAdding: added obj " << endl;
+   //m_listOfInputs
+} 
 
 //-----------------------------------------------------------------------------------------
 
@@ -208,11 +222,105 @@ void     DiplodocusGateway::TrackCountStats( StatTracking stat, float value, int
 
 //-----------------------------------------------------------------------------------------
 
+bool     DiplodocusGateway::OrderOutputs()
+{
+   if( m_orderedOutputPacketHandlers.size() > 0 )
+      return false;
+
+   for( int packetType=PacketType_Base; packetType< PacketType_Num; packetType++ )
+   {
+      m_orderedOutputPacketHandlers.push_back( OutputConnectorList() );
+      OutputConnectorList& listOfOutputs = m_orderedOutputPacketHandlers[ packetType ];
+
+      ChainLinkIteratorType itOutput = m_listOfOutputs.begin();
+      while( itOutput != m_listOfOutputs.end() )
+      {
+         FruitadensGateway* fg = static_cast<FruitadensGateway*>( (*itOutput).m_interface );
+         if( fg->AcceptsPacketType( packetType ) == true )
+         {
+            listOfOutputs.push_back( fg );
+         }
+         itOutput++;
+      }
+   }
+   return true;
+}
+
+//-----------------------------------------------------------------------------------------
+
 bool     DiplodocusGateway::PushPacketToProperOutput( BasePacket* packet )
 {
+   U32 packetType = packet->packetType;
+   if( packetType == PacketType_GatewayWrapper )
+   {
+      PacketGatewayWrapper* wrapper = static_cast< PacketGatewayWrapper* >( packet );
+      packetType = wrapper->pPacket->packetType;
+   }
+
+   assert( packetType < m_orderedOutputPacketHandlers.size() );
+
+   const OutputConnectorList& listOfOutputs = m_orderedOutputPacketHandlers[ packetType ];
+   assert( listOfOutputs.size() > 0 ); // this should be where we look through our list for a match
+
+   OutputConnectorList::const_iterator it = listOfOutputs.begin();
+   while( it != listOfOutputs.end() )
+   {
+      FruitadensGateway* fruity = *it++;
+      U32 unusedParam = -1;
+      if( fruity->AddOutputChainData( packet, unusedParam ) == true )
+      {
+         return true;
+      }
+   }
+   //
+
+
+
+
+
+
+
+
+/*
+
    PrintDebugText( "PushPacketToProperOutput", 1 );
 
-   BaseOutputContainer tempOutput;
+   U32 packetType = packet->packetType;
+   if( packetType == PacketType_GatewayWrapper )
+   {
+      PacketGatewayWrapper* wrapper = static_cast< PacketGatewayWrapper* >( packet );
+      packetType = wrapper->pPacket->packetType;
+   }
+
+   std::vector< FruitadensGateway* > tempOutput;
+   // create new scope
+   {
+      
+      Threading::MutexLock    locker( m_outputChainListMutex );// quickly copy the list before doing more serious work
+      ChainLinkIteratorType itOutput = m_listOfOutputs.begin();
+      while( itOutput != m_listOfOutputs.end() )
+      {
+         FruitadensGateway* fg = static_cast<FruitadensGateway*>( (*itOutput).m_interface );
+         if( fg->AcceptsPacketType( packetType ) == true )
+         {
+            tempOutput.push_back( fg );
+         }
+         itOutput++;
+      }
+   }
+
+   std::vector< FruitadensGateway* >::iterator itOutput = tempOutput.begin();
+   while( itOutput != tempOutput.end() )
+   {
+      FruitadensGateway* fruity = *itOutput;
+      U32 unusedParam = -1;
+      if( fruity->AddOutputChainData( packet, unusedParam ) == true )
+      {
+         return true;
+      }
+      itOutput++;
+   }*/
+  /* BaseOutputContainer tempOutput;
    // create new scope
    {
       Threading::MutexLock    locker( m_outputChainListMutex );// quickly copy the list before doing more serious work
@@ -234,7 +342,7 @@ bool     DiplodocusGateway::PushPacketToProperOutput( BasePacket* packet )
          return true;
       }
       itOutput++;
-   }
+   }*/
    
    return false;
 }

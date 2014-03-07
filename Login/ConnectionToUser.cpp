@@ -103,6 +103,16 @@ bool  ConnectionToUser::HandleAdminRequestUserProfile( PacketDbQueryResult* dbRe
 
 //-----------------------------------------------------------------
 
+bool  ConnectionToUser::EchoHandler()
+{
+   cout << " Echo " << endl;
+   PacketLogin_EchoToClient* echo = new PacketLogin_EchoToClient;
+   userManager->SendPacketToGateway( echo, connectionId );
+   return true;
+}
+
+//-----------------------------------------------------------------
+
 bool  ConnectionToUser::StoreUserInfo( PacketDbQueryResult* dbResult )
 {
    if( dbResult->successfulQuery == false || dbResult->bucket.bucket.size() == 0 )// no records found

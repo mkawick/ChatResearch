@@ -24,11 +24,12 @@ using namespace std;
 
 FruitadensServerToServer::FruitadensServerToServer( const char* name ) : FruitadensServer( name )
 {
+   SetSleepTime( 16 );// Sleeping frees up CPU
 }
 
 //-----------------------------------------------------------------------------------------
 
-FruitadensServerToServer::~FruitadensServerToServer(void)
+FruitadensServerToServer::~FruitadensServerToServer()
 {
 }
 

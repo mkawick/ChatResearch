@@ -50,12 +50,13 @@ private:
 
    int      CallbackFunction();
    void     UpdateAllConnections();
+   void     UpdateDbResults();
 
    
    bool     HandleCommandFromGateway( BasePacket* packet, U32 connectionId );
    bool     HandlePacketFromOtherServer( BasePacket* packet, U32 connectionId );
    bool     HandlePacketRequests( PacketContact* packet, U32 connectionId );
-   bool     HandleDbQueryResult( PacketDbQueryResult* result );
+   //bool     HandleDbQueryResult( PacketDbQueryResult* result );
 
    bool     ConnectUser( PacketPrepareForUserLogin* login );
    bool     DisconnectUser( PacketPrepareForUserLogout* login );
@@ -79,6 +80,7 @@ private:
    typedef UserIdToContactMap::iterator  UserIdToContactMapIterator;
 
    deque< U32 >                     m_serversNeedingUpdate;
+   deque< PacketDbQueryResult* >    m_dbQueries;
    UserContactMap                   m_users;
    UserIdToContactMap               m_userLookupById;
 

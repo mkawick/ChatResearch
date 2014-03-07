@@ -72,6 +72,8 @@ struct ConnectionToUser
    bool     UpdateProfile( const PacketUpdateUserProfile* updateProfileRequest );
    bool     HandleAdminRequestUserProfile( PacketDbQueryResult* dbResult );
 
+   bool     EchoHandler();
+
    //----------------------------------
 
    bool     HandleCheats( const PacketCheat* cheat );

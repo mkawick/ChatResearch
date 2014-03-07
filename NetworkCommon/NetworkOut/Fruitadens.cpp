@@ -100,6 +100,8 @@ bool  Fruitadens :: Connect( const char* serverName, int port )// work off of DN
 bool  Fruitadens :: Disconnect()
 {
    closesocket( m_clientSocket );
+
+   //m_packetsReadyToSend.clear();
    
    m_clientSocket = SOCKET_ERROR;
    m_isConnected = false;
@@ -123,6 +125,9 @@ bool  Fruitadens :: SetupConnection( const char* serverName, int port )
       return false;
    }
 
+   m_isConnected = false;
+   m_hasFailedCritically = false;
+
    struct hostent *host_entry;
    if ((host_entry = gethostbyname( serverName )) == NULL)
    {
@@ -141,7 +146,7 @@ bool  Fruitadens :: SetupConnection( const char* serverName, int port )
    m_ipAddress.sin_port = htons( port );
    m_ipAddress.sin_addr.s_addr = static_cast< U32 >( *(unsigned long*) host_entry->h_addr );
 
-   AttemptConnection();
+   AttemptConnection();// this will happen naturally in the resume
 
    Resume();
 
@@ -360,6 +365,8 @@ int  Fruitadens::ProcessOutputFunction()
       }
       m_mutex.unlock();
    }
+
+   InheritedUpdate();
 
    return 0;
 }

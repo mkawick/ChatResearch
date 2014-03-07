@@ -86,6 +86,7 @@ private:
    void     DisconnectUser( const PacketPrepareForUserLogout* logoutPacket );
    void     IsUserAllowedToUseThisProduct( const PacketListOfGames* packet );
 
+   void     EchoHandler( U32 connectionId );
    void     HandleUserRequestedTournamentInfo( BasePacket* packet, U32 connectionId );
 
    //U32                                    m_connectionIdGateway;

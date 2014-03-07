@@ -65,6 +65,8 @@ protected:
 
    virtual void   InitalConnectionCallback() {} // this will be invoked on every reconnect 
 
+   virtual void   InheritedUpdate() {}
+
 public:
    virtual bool   SerializePacketOut( const BasePacket* packet );
    bool           SendPacket( const U8* buffer, int length ) const;

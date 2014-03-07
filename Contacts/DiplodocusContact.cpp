@@ -26,6 +26,7 @@ DiplodocusContact::DiplodocusContact( const string& serverName, U32 serverId ): 
                         m_numInvitesAccepted( 0 ),
                         m_numInvitesRejected( 0 )
 {
+   SetSleepTime( 45 );
    time_t currentTime;
    time( &currentTime );
    m_timestampDailyStatServerStatisics = ZeroOutHours( currentTime );
@@ -239,9 +240,11 @@ bool     DiplodocusContact::AddOutputChainData( BasePacket* packet, U32 connecti
    {
       if( packet->packetSubType == BasePacketDbQuery::QueryType_Result )
       {
-         //bool wasHandled = false;
          PacketDbQueryResult* dbResult = static_cast<PacketDbQueryResult*>( packet );
-         return HandleDbQueryResult( dbResult );
+
+         Threading::MutexLock locker( m_mutex );
+         m_dbQueries.push_back( dbResult );
+         return true;
       }
    }
 
@@ -250,36 +253,38 @@ bool     DiplodocusContact::AddOutputChainData( BasePacket* packet, U32 connecti
 
 //---------------------------------------------------------------
 
-bool     DiplodocusContact::HandleDbQueryResult( PacketDbQueryResult* dbResult )
-{
-   //bool success = false;
+void  DiplodocusContact::UpdateDbResults()
+{   
+   PacketFactory factory;
+   Threading::MutexLock locker( m_mutex );
 
-   if( dbResult->id )
+   deque< PacketDbQueryResult* >::iterator it = m_dbQueries.begin();
+   while( it != m_dbQueries.end() )
    {
+      PacketDbQueryResult* dbResult = *it++;
+      if( dbResult->customData != NULL )
+            cout << "UpdateDbResults: Non-null custom data " << endl;
+
       U32 connectionId = dbResult->id;
+      if( connectionId != 0 )
+      {
+         UserContactMapIterator it = m_users.find( connectionId );
+         if( it != m_users.end() )
+         {
+            cout << "Db query type: "<< dbResult->lookup << " handed off to UserContact #" << connectionId << endl;
+            it->second.HandleDbQueryResult( dbResult );
+         }
+         else
+         {
+            cout << "ERROR: DB Result has user that cannot be found" << endl;
+         }
+      }
 
-      UserContactMapIterator it = m_users.find( connectionId );
-      if( it == m_users.end() )
-      {
-         return false;
-      }
-      else
-      {
-         cout << "Db query type:"<< dbResult->lookup << " handed off to UserContact #" << connectionId << endl;
-         return it->second.HandleDbQueryResult( dbResult );
-      }
+      BasePacket* packet = static_cast<BasePacket*>( dbResult );
+      PacketCleaner cleaner( packet );
    }
-
-   else
-      assert( 0 );
-
- /*  switch( dbResult->lookup )
-   {
-      cout << "Db query type:"<< dbResult->lookup << ", success=" << dbResult->successfulQuery << endl;
-   }*/
-   return false;
+   m_dbQueries.clear();
 }
-
 
 //-----------------------------------------------------------------------------------------
 
@@ -323,6 +328,8 @@ void     DiplodocusContact::RunDailyStats()
 
 int      DiplodocusContact::CallbackFunction()
 {
+   UpdateDbResults();
+
    while( m_serversNeedingUpdate.size() )
    {
       U32 serverId = m_serversNeedingUpdate.front();
@@ -385,99 +392,6 @@ void     DiplodocusContact::UpdateAllConnections()
 
    Parent::UpdateAllConnections();
 }
-
-//---------------------------------------------------------------
-/*
-bool     DiplodocusContact::ContinueInitialization()
-{
-   if( m_initializationStage >= InitializationStage_Complete )
-      return;
-
-   time_t   currentTime;
-   time( &currentTime );
-   if( m_isExecutingQuery == true || difftime( currentTime, m_lastTimeStamp ) < m_periodicitySeconds ) 
-   {
-      return;
-   }
-   m_lastTimeStamp = currentTime;
-
-   switch( m_initializationStage )
-   {
-      case InitializationStage_Begin:// do nothing.. allows init to continue
-         break;
-      case InitializationStage_LoadAllUsers:
-         SendInitializationQuery( QueryType_AllUsers );
-         break;
-      case InitializationStage_LoadAllUsersProfiles:
-         SendInitializationQuery( QueryType_AllUserProfiles );
-         break;
-      case InitializationStage_LoadFriends:
-         SendInitializationQuery( QueryType_Friends );
-         break;
-      case InitializationStage_LoadFriendsRequests:
-         dbQuery->lookup = QueryType_AllUsers;
-         break;
-      case InitializationStage_MatchFriends:
-         FillUpUserFriendsLists();
-         break;
-      case InitializationStage_MatchRequestsToUsers:
-         FillUpUserFriendsLists();
-         break;
-      //m_initializationStage = InitializationStage_LoadAllUsers;
-   }
-
-}
-
-//---------------------------------------------------------------
-
-void     DiplodocusContact::AdvanceInitializationStep()
-{
-   if( m_initializationStage >= InitializationStage_Complete )
-      return;
-
-   m_initializationStage ++;
-}
-
-//---------------------------------------------------------------
-
-bool     DiplodocusContact::SendInitializationQuery( QueryType queryType )
-{
-   if( queryType < QueryType_UserLoginInfo || queryType >= QueryType_End )
-      return false;
-
-   PacketDbQuery* dbQuery = new PacketDbQuery;
-   dbQuery->id =           0;
-   dbQuery->meta =         "";
-   dbQuery->lookup =       queryType;
-   dbQuery->serverLookup = 0;
-
-   switch( queryType )
-   {
-      case QueryType_AllUsers:
-         dbQuery->query = "SELECT * FROM users WHERE active='1'";
-      break;
-      case QueryType_AllUserProfiles
-         dbQuery->query = "SELECT * FROM user_profile";
-      break;
-      case QueryType_Friends:
-         dbQuery->query = "SELECT * FROM friends";
-      break;
-      case QueryType_FriendRequest:
-         dbQuery->query = "SELECT * FROM friend_pending";
-      break;
-      //InitializationStage_LoadFriendsRequests
-      //m_initializationStage = InitializationStage_LoadAllUsers;
-   }
-
-   if( dbQuery->query.size() > 0 )
-   {
-      AddQueryToOutput( dbQuery );
-      m_isExecutingQuery = true;
-      return true;
-   }
-   return false;
-}*/
-
 
 //---------------------------------------------------------------
 

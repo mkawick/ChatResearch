@@ -53,6 +53,26 @@ bool  AssetInfo::SerializeOut( U8* data, int& bufferOffset ) const
 
 ///////////////////////////////////////////////////////////////
 
+bool  PacketAsset_EchoToServer::SerializeIn( const U8* data, int& bufferOffset )
+{ 
+   PacketAsset::SerializeIn( data, bufferOffset );
+   Serialize::In( data, bufferOffset, uuid );
+   Serialize::In( data, bufferOffset, loginKey );
+
+   return true; 
+}
+
+bool  PacketAsset_EchoToServer::SerializeOut( U8* data, int& bufferOffset ) const 
+{ 
+   PacketAsset::SerializeOut( data, bufferOffset );
+   Serialize::Out( data, bufferOffset, uuid );
+   Serialize::Out( data, bufferOffset, loginKey );
+
+   return true; 
+}
+
+///////////////////////////////////////////////////////////////
+
 bool  PacketAsset_TestNotification::SerializeIn( const U8* data, int& bufferOffset )
 { 
    PacketAsset::SerializeIn( data, bufferOffset );

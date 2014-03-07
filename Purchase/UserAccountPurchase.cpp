@@ -88,6 +88,9 @@ bool     UserAccountPurchase::HandleRequestFromClient( const PacketPurchase* pac
 
    case PacketPurchase::PurchaseType_RequestListOfSales:
       return GetListOfItemsForSale( static_cast< const PacketPurchase_RequestListOfSales* >( packet ) );
+
+   case PacketPurchase::PurchaseType_EchoToServer:
+      return EchoHandler();
    }
 
    return false;
@@ -106,6 +109,20 @@ bool     UserAccountPurchase::GetListOfItemsForSale( const PacketPurchase_Reques
    wrapper->SetupPacket( response, m_userTicket.connectionId );
 
    m_purchaseManager->AddOutputChainData( wrapper, m_userTicket.connectionId );
+   return true;
+}
+
+
+//---------------------------------------------------------------
+
+bool  UserAccountPurchase::EchoHandler()
+{
+   PacketPurchase_EchoToClient* echo = new PacketPurchase_EchoToClient;
+   PacketGatewayWrapper* wrapper = new PacketGatewayWrapper;
+   wrapper->SetupPacket( echo, m_userTicket.connectionId );
+
+   m_purchaseManager->AddOutputChainData( wrapper, m_userTicket.connectionId );
+
    return true;
 }
 

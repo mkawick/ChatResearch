@@ -14,6 +14,9 @@ using namespace std;
 class BasePacket;
 class PacketStat;
 class Fruitadens;
+class FruitadensGateway;
+typedef vector< FruitadensGateway* > OutputConnectorList;
+typedef vector< OutputConnectorList > ListOfOutputLists;
 
 class KhaanGatewayWrapper
 {
@@ -52,9 +55,11 @@ public:
 public:
    DiplodocusGateway( const string& serverName, U32 serverId );
    ~DiplodocusGateway();
+   void           Init();
 
    bool           AddInputChainData( BasePacket* packet, U32 socketId );
    bool           AddOutputChainData( BasePacket* packet, U32 serverType );
+   void           NotifyFinishedAdding( IChainedInterface* obj );
 
    void           InputRemovalInProgress( IChainedInterface * chainedInput );
 
@@ -81,6 +86,7 @@ private:
    void           SendStatsToLoadBalancer();
    void           RunHourlyAverages();
    U32            GetNextConnectionId();
+   bool           OrderOutputs();
 
    time_t         m_timestampSendConnectionStatisics;
    static const U32 timeoutSendConnectionStatisics = 61*2; // 2 minutes
@@ -96,6 +102,8 @@ private:
    typedef map< int, KhaanGatewayWrapper >    ConnectionMap;
    typedef pair< int, KhaanGatewayWrapper >   ConnectionPair;
    typedef ConnectionMap::iterator        ConnectionMapIterator;
+
+   ListOfOutputLists          m_orderedOutputPacketHandlers;
 
 
    U32                        m_connectionIdTracker;   

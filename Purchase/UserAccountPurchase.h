@@ -74,6 +74,7 @@ private:
 
    bool              MakePurchase( const PacketPurchase_Buy* packet );   
    bool              GetListOfItemsForSale( const PacketPurchase_RequestListOfSales* packet );
+   bool              EchoHandler();
 
    bool              PerformTournamentPurchase();
 

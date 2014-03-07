@@ -13,6 +13,8 @@ public:
    FruitadensGateway( const char* name );
    ~FruitadensGateway();
 
+   bool     AcceptsPacketType( U32 type ) const;
+
 private:
 
    bool     FilterOutwardPacket( BasePacket* packet ) const;

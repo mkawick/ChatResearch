@@ -418,7 +418,7 @@ bool  FillInAsset( string& line, AssetDefinition& asset )
             asset.payload = value;
             return true;
          }
-         else if( potentionalKey == "name" )
+         else if( potentionalKey == "name" || potentionalKey == "id" )
          {
             asset.name = undecoratedValue;
             return true;

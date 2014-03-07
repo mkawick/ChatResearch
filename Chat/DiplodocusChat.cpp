@@ -27,7 +27,7 @@ DiplodocusChat::DiplodocusChat( const string& serverName, U32 serverId ): Diplod
                                              m_chatChannelManagerNeedsUpdate( true ),
                                              m_chatChannelManager( NULL )
 {
-   this->SetSleepTime( 66 );
+   this->SetSleepTime( 45 );
 
    time_t currentTime;
    time( &currentTime );
@@ -334,7 +334,6 @@ bool   DiplodocusChat::AddOutputChainData( BasePacket* packet, U32 connectionId 
       if( packet->packetSubType == BasePacketDbQuery::QueryType_Result )
       {
          PacketDbQueryResult* result = static_cast<PacketDbQueryResult*>( packet );
-         Threading::MutexLock locker( m_mutex );
          m_dbQueries.push_back( result );
          if( result->customData != NULL )
             cout << "AddOutputChainData: Non-null custom data " << endl;
@@ -405,7 +404,10 @@ void  DiplodocusChat::UpdateDbResults()
 
       if( isChatChannelManager ) //&& connectionId == ChatChannelManagerUniqueId )
       {
-         m_chatChannelManager->HandleDbResult( result );
+         if( m_chatChannelManager->HandleDbResult( result ) == false )
+         {
+            factory.CleanupPacket( packet );
+         }
          m_chatChannelManagerNeedsUpdate = true;
       }
       else
@@ -483,7 +485,11 @@ bool  DiplodocusChat::HandlePacketFromClient( BasePacket* packet )
       ChatUser* user = it->second;
       if( user )
       {
-         return user->HandleClientRequest( wrapper->pPacket );
+         //PacketCleaner cleaner( packet );
+         bool result = user->HandleClientRequest( wrapper->pPacket );
+
+         
+         return true;
       }
    }
 

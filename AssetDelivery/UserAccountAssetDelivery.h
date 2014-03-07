@@ -56,6 +56,7 @@ private:
 
    bool              GetListOfAssetCategories( const PacketAsset_GetListOfAssetCategories* packet );
    bool              GetListOfAssets( const PacketAsset_GetListOfAssets* packet );
+   bool              EchoHandler();
    //bool              GetListOfStaticAssets( const PacketAsset_GetListOfStaticAssets* packet );
    //bool              GetListOfDynamicAssets( const PacketAsset_GetListOfDynamicAssets* packet );
    bool              GetAsset( const PacketAsset_RequestAsset* packet );

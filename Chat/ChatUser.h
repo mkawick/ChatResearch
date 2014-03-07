@@ -56,6 +56,7 @@ public:
    //--------------------------------------
 private:
    bool              SendChat( const string& message, const string& userUuid, const string& channelUuid, U32 gameTurn );
+   bool              EchoHandler();
 
    bool              SendMessageToClient( BasePacket* packet ) const;
    void              RequestChatChannels();

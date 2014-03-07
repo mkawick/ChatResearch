@@ -10,7 +10,7 @@
 
 //#define _MEMLEAK_TESTING_
 
-static const U8   GlobalNetworkProtocolVersion = 5;
+static const U8   GlobalNetworkProtocolVersion = 6;
 
 ///////////////////////////////////////////////////////////////
 
@@ -35,7 +35,8 @@ enum PacketType
    PacketType_Cheat,
    PacketType_Purchase,
    PacketType_Tournament,
-   PacketType_Stat
+   PacketType_Stat,
+   PacketType_Num
 };
 
 
@@ -402,6 +403,7 @@ public:
       ErrorType_Contact_NoSearchResult =                       510,
       ErrorType_Contact_SearchRequestHasTooMany =              511,
       ErrorType_Contact_NotAUserContact =                      512,
+      ErrorType_Contact_Invitation_InviteeSentYouInvitation =  513,
 
       ErrorType_Asset_BadLoginKey =                            600,
       ErrorType_Asset_UnknownAsset =                           601,

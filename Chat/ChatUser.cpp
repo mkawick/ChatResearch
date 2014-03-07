@@ -131,6 +131,12 @@ bool     ChatUser::HandleClientRequest( BasePacket* packet )
       {
          switch( packet->packetSubType )
          {
+         case PacketChatToServer::ChatType_EchoToServer:
+            {
+               PacketChatToServer* chat = static_cast< PacketChatToServer* >( packet );
+               EchoHandler();
+            }
+            break;
          case PacketChatToServer::ChatType_ChatToServer:
             {
                PacketChatToServer* chat = static_cast< PacketChatToServer* >( packet );
@@ -394,51 +400,6 @@ bool     ChatUser::HandleDbResult( PacketDbQueryResult * dbResult )
 
    switch( dbResult->lookup )
    {
-     /* case QueryType_UserFriendsList:
-         {
-            m_userFriendsComplete = true;
-
-            availableFriends.clear();
-
-            UserTable            enigma( dbResult->bucket );
-            UserTable::iterator  it = enigma.begin();
-            while( it != enigma.end() )
-            {
-               UserTable::row    row = *it++;
-               string   name =   row[ TableUser::Column_name ];
-               string   uuid =   row[ TableUser::Column_uuid ];
-              
-               availableFriends.push_back( KeyValueString( uuid, name ) );
-            }
-
-            InformUserOfSuccessfulLogin();
-         }
-         break;*/
-    /*  case QueryType_UserChannelList:
-         {
-            m_userChannelsComplete = true;
-            availableChannels.clear();
-
-            //const int maxNumMessagesPerPacket = 2;
-            ChatChannelTable              enigma( dbResult->bucket );
-            ChatChannelTable::iterator    it = enigma.begin();
-            while( it != enigma.end() )
-            {
-               ChatChannelTable::row      row = *it++;
-               string   name =         row[ TableChatChannel::Column_name ];
-               string   uuid =         row[ TableChatChannel::Column_uuid ];
-               int      gameType =     boost::lexical_cast< int >( row[ TableChatChannel::Column_game_type ] );
-               int      gameId =       boost::lexical_cast< int >( row[ TableChatChannel::Column_game_instance_id ] );
-               //int      numNewChats =  boost::lexical_cast< int >( row[ TableChatChannel::Column_record_count ] );
-               int numNewChats = 0;
-               bool     isActive = boost::lexical_cast< bool >( row[ TableChatChannel::Column_is_active ] );
-
-               availableChannels.insert( uuid, ChannelInfo( name, uuid, gameType, gameId, numNewChats, isActive ) );
-            }
-
-            InformUserOfSuccessfulLogin();
-         }
-         break;*/
       case QueryType_ChatChannelHistory:
          {
             SendChatChannelHistoryToClient( dbResult );
@@ -801,6 +762,16 @@ bool     ChatUser::NotifyRemovedFromChannel( const string& channelName, const st
    SendMessageToClient( response );
    RequestChatChannels();
 
+   return true;
+}
+
+//---------------------------------------------------------------
+
+bool     ChatUser::EchoHandler()
+{
+   cout << " Echo " << endl;
+   PacketChat_EchoToClient* echo = new PacketChat_EchoToClient;
+   SendMessageToClient( echo );
    return true;
 }
 

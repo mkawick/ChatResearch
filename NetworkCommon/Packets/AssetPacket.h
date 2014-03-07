@@ -69,10 +69,16 @@ public:
 
 ///////////////////////////////////////////////////////////////
 
-class PacketAsset_EchoToServer : public BasePacket
+class PacketAsset_EchoToServer : public PacketAsset
 {
 public:
-   PacketAsset_EchoToServer(): BasePacket( PacketType_Asset, PacketAsset::AssetType_EchoToServer ) {}
+   PacketAsset_EchoToServer(): PacketAsset( PacketType_Asset, PacketAsset::AssetType_EchoToServer ) {}
+
+   bool  SerializeIn( const U8* data, int& bufferOffset );
+   bool  SerializeOut( U8* data, int& bufferOffset ) const;
+
+   string   uuid;
+   string   loginKey;
 };
 
 ///////////////////////////////////////////////////////////////

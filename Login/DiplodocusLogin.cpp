@@ -43,7 +43,7 @@ DiplodocusLogin:: DiplodocusLogin( const string& serverName, U32 serverId )  :
                   m_totalUserLoginSeconds( 0 ),
                   m_totalNumLogouts( 0 )
 {
-   SetSleepTime( 30 );
+   SetSleepTime( 19 );
    LogOpen();
    LogMessage( LOG_PRIO_INFO, "Login::Login server created" );
    cout << "Login::Login server created" << endl;
@@ -71,9 +71,6 @@ void     DiplodocusLogin:: ServerWasIdentified( IChainedInterface* khaan )
    localKhaan->AddOutputChainData( packet, 0 );
    m_clientsNeedingUpdate.push_back( localKhaan->GetChainedId() );
 }
-
-/*OutputConnected
-FruitadensServer*/
 
 //---------------------------------------------------------------
 
@@ -165,6 +162,11 @@ bool     DiplodocusLogin:: AddInputChainData( BasePacket* packet, U32 connection
             {
                PacketRequestOtherUserProfile* profileRequest = static_cast<PacketRequestOtherUserProfile*>( actualPacket );
                RequestOthersProfile( userConnectionId, profileRequest );
+            }
+            break;
+         case PacketLogin::LoginType_EchoToServer:
+            {
+               EchoHandler( userConnectionId );
             }
             break;
          
@@ -1028,6 +1030,23 @@ bool  DiplodocusLogin:: RequestOthersProfile( U32 connectionId, const PacketRequ
 
    return connection->RequestOthersProfile( profileRequest );
 }
+
+
+//---------------------------------------------------------------
+
+bool     DiplodocusLogin::EchoHandler( U32 connectionId )
+{
+   ConnectionToUser* connection = GetUserConnection( connectionId );
+   if( connection == NULL || connection->status != ConnectionToUser::LoginStatus_LoggedIn )
+   {
+      //Log( "Login server.RequestProfile: major problem logged in user", 4 );
+      cout << "echo failed to find user" << endl;
+      return false;
+   }
+
+   return connection->EchoHandler();
+}
+
 
 //---------------------------------------------------------------
 

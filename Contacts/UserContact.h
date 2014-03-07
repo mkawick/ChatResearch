@@ -46,7 +46,7 @@ public:
 
    void  FinishLoginBySendingUserFriendsAndInvitations();
 
-   void  SetServer( DiplodocusContact* infoServer ) { m_infoServer = infoServer; }
+   void  SetServer( DiplodocusContact* contactServer ) { m_contactServer = contactServer; }
 
    void  NeedsUpdate() { m_requiresUpdate = true; }
    void  UserLoggedOut();
@@ -69,8 +69,10 @@ private:
    bool  InviteUser( const PacketContact_InviteContact* packet );
    bool  AcceptInvitation( const PacketContact_AcceptInvite* packet );
    bool  DeclineInvitation( const PacketContact_DeclineInvitation* packet );
+   bool  RemoveSentInvitation( const PacketContact_RemoveInvitation* packet );
    bool  PerformSearch( const PacketContact_SearchForUser* packet );
    bool  RemoveContact( const PacketContact_ContactRemove* packet );
+   bool  EchoHandler();
 
    void  FinishAcceptingInvitation( const PacketDbQueryResult* result ); 
    void  FinishDecliningingInvitation(  const PacketDbQueryResult* dbResult );
@@ -83,6 +85,8 @@ private:
    bool  YourFriendsOnlineStatusChange( U32 connectionId, const string& userName, const string& UUID, bool isOnline );
 
    bool  DoesPendingInvitationExist( const string& inviteeUuid, const string& inviteeName );
+   bool  HaveIAlreadyBeenInvited( const string& userUuid );
+   void  RemoveInvitationReceived( const string& uuid );
 
    enum 
    {
@@ -112,7 +116,7 @@ private:
    bool                 m_friendRequestSentListFilled;
    bool                 m_friendRequestReceivedListFilled;
 
-   DiplodocusContact*   m_infoServer;
+   DiplodocusContact*   m_contactServer;
 
    time_t               m_timeLoggedOut;
 

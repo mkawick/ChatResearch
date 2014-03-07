@@ -20,6 +20,7 @@ DiplodocusGame::DiplodocusGame( const string& serverName, U32 serverId, U8 gameP
                   StatTrackingConnections(),
                   m_callbacks( NULL )
 {
+   this->SetSleepTime( 15 );
 }
 
 //---------------------------------------------------------------
@@ -162,6 +163,11 @@ bool   DiplodocusGame::AddInputChainData( BasePacket* packet, U32 connectionId )
             }
             return true;
          }
+         if( unwrappedPacket->packetSubType == PacketGameToServer::GamePacketType_EchoToServer )
+         {
+            EchoHandler( connectionId );
+            return true;
+         }
       }
       else if( unwrappedPacket->packetType == PacketType_Tournament )
       {
@@ -175,6 +181,20 @@ bool   DiplodocusGame::AddInputChainData( BasePacket* packet, U32 connectionId )
    
    return false;
 }
+
+//---------------------------------------------------------------
+
+void  DiplodocusGame::EchoHandler( U32 connectionId )
+{
+   PacketGame_EchoToClient* echo = new PacketGame_EchoToClient;
+   PacketFactory factory;
+   PacketGatewayWrapper* wrapper = new PacketGatewayWrapper();
+   wrapper->SetupPacket( echo, connectionId );
+
+   AddOutputChainData( wrapper, connectionId );
+}
+
+//---------------------------------------------------------------
 
 void   DiplodocusGame::HandleUserRequestedTournamentInfo( BasePacket* packet, U32 connectionId )
 {

@@ -10,17 +10,19 @@
 #include "../NetworkCommon/Packets/PurchasePacket.h"
 #include "../NetworkCommon/Packets/TournamentPacket.h"
 
+
 #if defined(ANDROID)
 #define __stdcall 
 #endif
 
+#include <queue>
 #include <map>
 using namespace std;
 
 namespace Mber
 {
 
-   typedef void (__stdcall * SignalReady)(int);
+   //typedef void (__stdcall * SignalReady)(int);
 ///////////////////////////////////////////////////////
 
 struct Demographics
@@ -93,6 +95,7 @@ public:
 
 typedef vector< ChatChannel >    ChatChannelVector;
 
+
 //-------------------------------------------
 //-------------------------------------------
 
@@ -114,10 +117,11 @@ struct AssetInfoExtended : public AssetInfo
 
    AssetInfoExtended();
    AssetInfoExtended( const AssetInfo& asset );
+   AssetInfoExtended( const AssetInfoExtended& asset );
    ~AssetInfoExtended();
 
-   void  operator = ( const AssetInfo& asset );
-   void  operator = ( const AssetInfoExtended& asset );
+   const AssetInfo&  operator = ( const AssetInfo& asset );
+   const AssetInfoExtended&  operator = ( const AssetInfoExtended& asset );
 
    void  SetData( const U8* data, int size );
    void  ClearData();
@@ -139,14 +143,13 @@ public:
    virtual void  UserLogout() {}
    virtual void  AreWeUsingCorrectNetworkVersion( bool isCorrect ){}
    virtual void  ServerRequestsListOfUserPurchases() {}
-   virtual void  UserProfileResponse( string username, string email, string userUuid, string lastLoginTime, string loggedOutTime, int adminLevel, bool isActive, bool showWinLossRecord, bool marketingOptOut, bool showGenderProfile ) {}
    virtual void  UserProfileResponse( const map< string, string >& keyValues ) {}
-   virtual void  OtherUsersProfile( const string& userName, const string& userUuid, const string& avatarIcon, bool showWinLoss, int timeZoneGMT, const SerializedKeyValueVector< int >& listOfItemsAndCounts ){}
+   virtual void  OtherUsersProfile( const map< string, string >& profileKeyValues ){} // items are also available
 
-   virtual void  ListOfAvailableProducts( const SerializedVector< ProductBriefPacketed >& products, int platformId ) {}
+   virtual void  ListOfAvailableProducts() {}
    // this list of purchases will not have localized names for products, especially on other players' products. 
    // make sure to request the list of available products first.
-   virtual void  ListOfAggregateUserPurchases( const SerializedVector< PurchaseEntry >& purchases, int platformId ) {}
+   virtual void  ListOfAggregateUserPurchases() {}
 
    virtual void  UserDemographics( const string& username, const Demographics& userDemographics ) {}
    virtual void  UserWinLoss( const string& username, const WinLoss& userWinLoss ) {}
@@ -156,7 +159,8 @@ public:
 
    virtual void  FriendsUpdate() {}
    virtual void  FriendOnlineStatusChanged( const string& uuid ) {}
-   virtual void  ChatChannelUpdate( const string& uuid ) {}
+   virtual void  ChatChannelUpdate( const string& channelUuid ) {}
+   virtual void  ChatListUpdate() {}
    virtual void  ListOfFriendUpdate() {}
 
    virtual void  SearchResults( vector< string >& values ) {}
@@ -164,8 +168,6 @@ public:
    virtual void  ReadyToStartSendingRequestsToGame() {}
 
    virtual void  ChatReceived( const string& message, const string& channelUUID, const string& userUUID, const string& timeStamp ){}
-   virtual void  ChatChannelUpdated( const string& channelUuid ) {} // rename, added users, etc
-   virtual void  AssetReceived( const U8* buffer, int size, const string& assetId ){}
 
    virtual void  InvitationReceived( const InvitationInfo& newInvitation ){}
    virtual void  InvitationsReceivedUpdate() {}
@@ -197,6 +199,65 @@ public:
 
    UserNetworkEventNotifier(): network( NULL ){}
 
+   enum NotificationType
+   {
+      NotificationType_UserLogin,
+      NotificationType_UserLogout,
+      NotificationType_AreWeUsingCorrectNetworkVersion,
+      NotificationType_ServerRequestsListOfUserPurchases,
+      NotificationType_UserProfileResponse,
+      //NotificationType_UserProfileResponse2,
+      NotificationType_OtherUsersProfile,
+
+      NotificationType_ListOfAvailableProducts,
+      NotificationType_ListOfAggregateUserPurchases,
+
+      NotificationType_UserDemographics,
+      NotificationType_UserWinLoss,
+
+      NotificationType_GameData,
+      NotificationType_AssetDataAvailable,
+
+      NotificationType_FriendsUpdate,
+      NotificationType_FriendOnlineStatusChanged,
+      NotificationType_ChatChannelUpdate,
+      NotificationType_ChatListUpdate,
+      NotificationType_ListOfFriendUpdate,
+
+      NotificationType_SearchResults,
+
+      NotificationType_ReadyToStartSendingRequestsToGame,
+
+      NotificationType_ChatReceived,
+
+      NotificationType_InvitationReceived,
+      NotificationType_InvitationsReceivedUpdate,
+      NotificationType_InvitationsSentUpdate,
+      NotificationType_InvitationAccepted,
+      NotificationType_SearchForUserResultsAvailable,
+
+      NotificationType_ChatChannelHistory,
+      NotificationType_ChatP2PHistory,
+      NotificationType_ChatHistoryMissedSinceLastLoginComposite,
+      
+      NotificationType_NewChatChannelAdded,
+      NotificationType_ChatChannelDeleted,
+
+      NotificationType_ChatChannel_UserAdded,
+      NotificationType_ChatChannel_UserRemoved,
+
+      NotificationType_AssetCategoriesLoaded,
+      NotificationType_AssetManifestAvailable,
+      NotificationType_AssetLoaded,
+      NotificationType_TournamentListAvalable,
+      NotificationType_TournamentPurchaseResult,
+
+      NotificationType_OnError,
+
+      NotificationType_PurchaseSuccess,
+      NotificationType_ProductsForSale,
+      NotificationType_Num
+   };
    NetworkLayer* network;
 };
 
@@ -250,12 +311,14 @@ public:
    NetworkLayer( U8 gameProductId, bool processOnlyOneIncommingPacketPerLoop = false );
    ~NetworkLayer();
 
+   void     EnableMultithreadedCallbackSystem();
    void     CheckForReroutes( bool checkForRerouts );
    void     OverrideSocketPort( int port ) { m_connectionPort = port; }
    void     Init( const char* serverDNS = "gateway.internal.playdekgames.com" );
    bool     RegisterCallbackInterface( UserNetworkEventNotifier* _callbacks );
 
    void     Exit();
+   void     UpdateNotifications();
 
    //--------------------------------------------------------------
    // ********************   Login/Profile   *******************
@@ -296,6 +359,7 @@ public:
    bool     AcceptInvitation( const string& uuid ) const;
    bool     AcceptInvitationFromUsername( const string& userName ) const;
    bool     DeclineInvitation( const string& uuid, string message ) const;
+   bool     RemoveSentInvitation( const string& uuid ) const;
    bool     GetListOfInvitationsReceived( list< InvitationInfo >& keyValues );
    bool     GetListOfInvitationsSent( list< InvitationInfo >& keyValues );
 
@@ -322,13 +386,20 @@ public:
    bool     RequestListOfPurchases( const string userUuid = "" ) const;
    bool     MakePurchase( const string& exchangeUuid ) const;
 
+   int      GetNumPurchases() const { return m_purchases.size(); }
+   bool     GetPurchase( int index, PurchaseEntry& purchase ) const;
    bool     RequestListOfTournaments();
    bool     PurchaseEntryIntoTournament( const string& tournamentUuid );
 
+   int      GetNumAvailableProducts() const { return m_products.size(); }
+   int      GetAvailableProduct( int index, ProductBriefPacketed& purchase ) const; // not complete
+
    bool     RequestListOfAssetCategories();
+   
    bool     RequestListOfAssets( const string& category, int platformId = Platform_ios );
    bool     RequestAssetByHash( const string& assetHash );
    bool     RequestAssetByName( const string& assetName );
+   bool     RequestAvatarById( U32 id );
 
    bool     SendPurchases( const vector< RegisteredProduct >& purchases, int platformId = Platform_ios );
    bool     GiveProduct( const string& userName, const string& productUuid, int quantity, const string& notes, int platformId = Platform_ios );
@@ -347,23 +418,26 @@ public:
    string   FindFriendFromUuid( const string& uuid ) const;
 
    int      GetNumFriends() const { return static_cast<int>( m_friends.size() ); }
-   bool     GetFriend( int index, const BasicUser*& user );
+   bool     GetFriend( int index, BasicUser& user );
    bool     IsFriend( const string& userUuid );
    bool     IsFriendByName( const string& userName );
 
    int      GetNumUserSearchResults() const { return m_lastUserSearch.size(); }
-   bool     GetUserSearchResult( int index, const BasicUser*& user );
+   bool     GetUserSearchResult( int index, BasicUser& user );
 
    int      GetNumChannels() const { return static_cast<int>( m_channels.size() ); }
-   bool     GetChannel( int index, ChatChannel& channel );
+   bool     GetChannel( const string& uuid, ChatChannel& channel ) const;
+   bool     GetChannel( int index, ChatChannel& channel ) const;
    bool     IsGameChannel( const string& channelUuid ) const;
-   bool     FindChannel( const string& channelUuid, ChatChannel& channel ) const;
+   // bool     GetChannel( int index, ChatChannel& channel );
+   //bool     FindChannel( const string& channelUuid, ChatChannel& channel );
 
    int      GetAssetCategories( vector< string >& categories ) const;
    int      GetNumAssets( const string& category );
    bool     GetAssetInfo( const string& category, int index, AssetInfoExtended& assetInfo );
 
    bool     GetAssetInfo( const string& category, const string& hash, AssetInfoExtended& asset ) { return GetAsset( category, hash, asset ); }
+   bool     GetAvatarAsset( U32 index, AssetInfoExtended& assetInfo );
    bool     ClearAssetInfo( const string& category, const string& hash );
 
    int      GetNumAvailableTournaments() const { return static_cast<int>( m_availableTournaments.size() ); }
@@ -372,8 +446,10 @@ public:
    string   GetLocalUUID() { return m_uuid; }
 
    string   GenerateHash( const string& stringThatIWantHashed );
+
+   void     SendNotifications();
    
-private:
+protected:
 
    void     InputConnected( IChainedInterface * ) {}
    void     OutputConnected( IChainedInterface * ) {}
@@ -396,10 +472,13 @@ private:
 
    SerializedKeyValueVector< InvitationInfo > m_invitationsReceived;
    SerializedKeyValueVector< InvitationInfo > m_invitationsSent;
+   SerializedVector< ProductBriefPacketed >   m_products;
    UserNameKeyValue                          m_friends;
    UserNameKeyValue                          m_lastUserSearch;
    ChatChannelVector                         m_channels;
    GameList                                  m_gameList;
+
+   SerializedVector< PurchaseEntry >         m_purchases;
 
    U8                                        m_gameProductId;
    bool                                      m_isLoggingIn;
@@ -422,15 +501,46 @@ private:
    AssetMap                                  m_assets;
    vector< TournamentInfo >                  m_availableTournaments;
 
-private:
+   //----------------------------------
+   bool                                      m_enabledMultithreadedProtections;
+   struct QueuedNotification
+   {
+      QueuedNotification() : eventId( 0 ), meta( NULL ) {}
+      QueuedNotification( int eid, void* data = NULL ) : eventId( eid ), meta( data ) {}
+      int                                 eventId;
+      void*                               meta;
+      SerializedKeyValueVector< string >  genericKeyValuePairs;
+   };
+   Threading::Mutex                          m_notificationMutex;
+   std::queue< QueuedNotification >          m_notifications;
+
+   void     Notification( int type );
+   void     Notification( int type, void* genericData );// try to not use this much
+   void     Notification( int type, U32 data, U32 meta );
+   void     Notification( int type, const string& data );
+   void     Notification( int type, const string& data, const string& data2 );
+   void     Notification( int type, SerializedKeyValueVector< string >& strings );
+
+   //----------------------------------
+
+   // only for dealing with the fact that the game will often login well before the 
+   // server has connected to the client.
+   PacketLogin*                              m_savedLoginInfo;
+
+protected:
+   
+
    bool     SerializePacketOut( BasePacket* packet ) const;// helper
 
    bool     HandlePacketReceived( BasePacket* packetIn );
+   void     InheritedUpdate();
+
    int      ProcessInputFunction();
    void     HandleData( PacketGameplayRawData* );
 
    bool     AddChatChannel( const ChatChannel& channel );
    bool     RemoveChatChannel( const string& channelUuid );
+   bool     RemoveUserfromChatChannel( const string& channelUuid, const string& userUuid );
 
    void     BoostThreadPerformance();
    void     RestoreNormalThreadPerformance();
@@ -443,6 +553,41 @@ private:
    void     NotifyClientLoginStatus( bool isLoggedIn );
    void     NotifyClientToBeginSendingRequests();
    void     InitalConnectionCallback();
+};
+
+///////////////////////////////////////////////////////
+
+class UserNetworkEventNotifierExtended: public UserNetworkEventNotifier
+{
+public:
+   void  SetStartTime();
+
+   virtual void AssetEcho() {}
+   virtual void ChatEcho(){}
+   virtual void ContactEcho() {}
+   virtual void LoginEcho() {}
+   virtual void GameEcho() {}
+   virtual void PurchaseEcho() {}
+
+   unsigned long   m_timeSent;
+   unsigned long   m_timeTaken;
+};
+
+class NetworkLayerExtended: public NetworkLayer
+{
+public:
+   NetworkLayerExtended( U8 gameProductId, bool processOnlyOneIncommingPacketPerLoop = false ) : NetworkLayer( gameProductId, processOnlyOneIncommingPacketPerLoop ){}
+   
+   bool  HandlePacketReceived( BasePacket* packetIn );
+   void  SendAssetEcho();
+   void  SendChatEcho();
+   void  SendContactEcho();
+   void  SendLoginEcho();
+   void  SendGameEcho();
+   void  SendPurchaseEcho();
+
+protected:
+   void  StartTime();
 };
 
 ///////////////////////////////////////////////////////
@@ -538,7 +683,7 @@ public:
    string   FindFriendFromUuid( const string& uuid ) const;
 
    int      GetNumFriends() const { return m_friends.size(); }
-   bool     GetFriend( int index, const BasicUser*& user );
+   bool     GetFriend( int index, BasicUser& user );
 
    int      GetNumChannels() const { return static_cast<int>( m_channels.size() ); }
    bool     GetChannel( int index, ChatChannel& channel );

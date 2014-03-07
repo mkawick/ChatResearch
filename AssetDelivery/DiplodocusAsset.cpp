@@ -20,8 +20,8 @@ using namespace std;
 DiplodocusAsset::DiplodocusAsset( const string& serverName, U32 serverId ): Diplodocus< KhaanAsset >( serverName, serverId, 0,  ServerType_Contact ), 
                                                                               m_assetOfAssetFileModificationTime( 0 )
 {
-    time( &m_checkForFileChangeTimestamp );
-   SetSleepTime( 100 );
+   time( &m_checkForFileChangeTimestamp );
+   SetSleepTime( 45 );
 }
 
 DiplodocusAsset :: ~DiplodocusAsset()
@@ -302,20 +302,6 @@ bool     DiplodocusAsset::AddInputChainData( BasePacket* packet, U32 connectionI
 
          switch( type )
          {
-        /* case PacketAsset::AssetType_GetListOfStaticAssets:
-            {
-               PacketAsset_GetListOfStaticAssets* packetAsset = static_cast< PacketAsset_GetListOfStaticAssets* >( unwrappedPacket );
-               uuid = packetAsset->uuid;
-               loginKey = packetAsset->loginKey;
-            }
-            break;
-         case PacketAsset::AssetType_GetListOfDynamicAssets:
-            {
-               PacketAsset_GetListOfDynamicAssets* packetAsset = static_cast< PacketAsset_GetListOfDynamicAssets* >( unwrappedPacket );
-               uuid = packetAsset->uuid;
-               loginKey = packetAsset->loginKey;
-            }
-            break;*/
             case PacketAsset::AssetType_GetListOfAssetCategories:
             {
                PacketAsset_GetListOfAssetCategories* packetAsset = static_cast< PacketAsset_GetListOfAssetCategories* >( unwrappedPacket );
@@ -335,6 +321,13 @@ bool     DiplodocusAsset::AddInputChainData( BasePacket* packet, U32 connectionI
                PacketAsset_RequestAsset* packetAsset = static_cast< PacketAsset_RequestAsset* >( unwrappedPacket );
                uuid = packetAsset->uuid;
                loginKey = packetAsset->loginKey;
+            }
+            break;
+         case PacketAsset::AssetType_EchoToServer:
+            {
+               PacketAsset_EchoToServer* packetEcho = static_cast< PacketAsset_EchoToServer* >( unwrappedPacket );
+               uuid = packetEcho->uuid;
+               loginKey = packetEcho->loginKey;
             }
             break;
          }

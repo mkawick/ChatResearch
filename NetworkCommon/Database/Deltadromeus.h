@@ -38,6 +38,7 @@ namespace Database
       U32         GetSenderKey() const { return m_senderKey; }
       U32         GetSenderLookup() const { return m_senderLookup; }
       U32         GetServerId() const { return m_serverId; }
+      U16         GetNumAttemptsToResend() const { return m_numAttemptsToResend; }
       string      GetSenderMeta() const { return m_senderMeta; }
       void*       GetCustomData() const { return m_customData; }
       bool        GetErrorCondition() const { return m_errorCondition; }
@@ -45,6 +46,7 @@ namespace Database
 
       void        ResetToResubmitSameQuery() { m_isComplete = false; m_cancelled = false; m_hasStarted = false; m_hasResultSet = false; }
       void        ResetErrorState() { m_errorCondition = false; m_errorConnectionNeedsToBeReset = false; }
+      void        IncrementAttemptsToSend() { m_numAttemptsToResend ++ ; }
 
       void        SetSenderMeta( const string* meta ) { m_senderMeta = *meta; }
       void        SetSenderLookup( U32 lookup ) { m_senderLookup = lookup; }
@@ -62,9 +64,10 @@ namespace Database
       bool        IsCancelled() const { return m_cancelled; }
       // must invoke Resume for the job to start
            
-      U32         GetTimeSubmitted() const { return m_timeSubmitted; }
+      //U32         GetTimeSubmitted() const { return m_timeSubmitted; }
       bool        HasStarted() const { return m_hasStarted; }
       bool        IsComplete() const { return m_isComplete; }
+      //U32         NumSecondsSinceFirstSubmitted() const {}
       bool        HasResultSet() const { return m_hasResultSet; }
       int         GetNumRows() const { return static_cast<int>( m_results.size() ); }
 
@@ -78,16 +81,18 @@ namespace Database
       U32                     m_senderKey;
       U32                     m_senderLookup;
       U32                     m_serverId;
+      U16                     m_numAttemptsToResend;
       void*                   m_customData;
       string                  m_senderMeta;
 
-      U32                     m_timeSubmitted;
+      //time_t                  m_timeSubmitted;
       bool                    m_hasStarted;
       bool                    m_hasResultSet;
       bool                    m_isComplete;
       bool                    m_cancelled;
       bool                    m_fireAndForget;
       bool                    m_isChainData;
+
       
       bool                    m_errorCondition;
       bool                    m_errorConnectionNeedsToBeReset;
