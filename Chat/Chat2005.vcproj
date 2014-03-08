@@ -184,7 +184,19 @@
 				>
 			</File>
 			<File
+				RelativePath=".\ChatChannel.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\ChatChannelDbJob.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\ChatChannelManager.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\ChatUser.cpp"
 				>
 			</File>
 			<File
@@ -196,7 +208,11 @@
 				>
 			</File>
 			<File
-				RelativePath=".\UserConnection.cpp"
+				RelativePath=".\UserInChatChannel.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\UsersChatChannelList.cpp"
 				>
 			</File>
 		</Filter>
@@ -206,7 +222,19 @@
 			UniqueIdentifier="{93995380-89BD-4b04-88EB-625FBE52EBFB}"
 			>
 			<File
+				RelativePath=".\ChatChannel.h"
+				>
+			</File>
+			<File
+				RelativePath=".\ChatChannelDbJob.h"
+				>
+			</File>
+			<File
 				RelativePath=".\ChatChannelManager.h"
+				>
+			</File>
+			<File
+				RelativePath=".\ChatUser.h"
 				>
 			</File>
 			<File
@@ -218,7 +246,11 @@
 				>
 			</File>
 			<File
-				RelativePath=".\UserConnection.h"
+				RelativePath=".\UserInChatChannel.h"
+				>
+			</File>
+			<File
+				RelativePath=".\UsersChatChannelList.h"
 				>
 			</File>
 		</Filter>
@@ -418,6 +450,30 @@
 				</File>
 				<File
 					RelativePath="..\NetworkCommon\Database\QueryHandler.h"
+					>
+				</File>
+			</Filter>
+			<Filter
+				Name="Stat"
+				>
+				<File
+					RelativePath="..\NetworkCommon\Stat\StatTrackingConnections.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\NetworkCommon\Stat\StatTrackingConnections.h"
+					>
+				</File>
+			</Filter>
+			<Filter
+				Name="Daemon"
+				>
+				<File
+					RelativePath="..\NetworkCommon\Daemon\Daemonizer.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\NetworkCommon\Daemon\Daemonizer.h"
 					>
 				</File>
 			</Filter>

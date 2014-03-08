@@ -409,6 +409,18 @@
 					>
 				</File>
 			</Filter>
+			<Filter
+				Name="Daemon"
+				>
+				<File
+					RelativePath="..\NetworkCommon\Daemon\Daemonizer.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\NetworkCommon\Daemon\Daemonizer.h"
+					>
+				</File>
+			</Filter>
 		</Filter>
 		<File
 			RelativePath=".\ReadMe.txt"

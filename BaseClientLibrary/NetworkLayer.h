@@ -508,6 +508,8 @@ protected:
       QueuedNotification() : eventId( 0 ), meta( NULL ) {}
       QueuedNotification( int eid, void* data = NULL ) : eventId( eid ), meta( data ) {}
       int                                 eventId;
+      int                                 intValue;
+      int                                 intValue2;
       void*                               meta;
       SerializedKeyValueVector< string >  genericKeyValuePairs;
    };
@@ -516,7 +518,7 @@ protected:
 
    void     Notification( int type );
    void     Notification( int type, void* genericData );// try to not use this much
-   void     Notification( int type, U32 data, U32 meta );
+   void     Notification( int type, int data, int meta = 0 );
    void     Notification( int type, const string& data );
    void     Notification( int type, const string& data, const string& data2 );
    void     Notification( int type, SerializedKeyValueVector< string >& strings );

@@ -2,9 +2,9 @@
 <VisualStudioProject
 	ProjectType="Visual C++"
 	Version="8.00"
-	Name="Contacts2005"
-	ProjectGUID="{C7AD0C30-7554-4A91-A5C6-3D9A9AF7CD9E}"
-	RootNamespace="Contacts2005"
+	Name="Stat2005"
+	ProjectGUID="{FAD378D3-3CDC-4C55-AC43-1ABB365A29EC}"
+	RootNamespace="Stat2005"
 	Keyword="Win32Proj"
 	>
 	<Platforms>
@@ -62,7 +62,7 @@
 			<Tool
 				Name="VCLinkerTool"
 				AdditionalDependencies="ws2_32.lib winmm.lib ../Debug/PacketLibrary.lib ..\libs2005\w32libs\lib\libmysql.lib"
-				OutputFile="$(OutDir)\ContactsServer.exe"
+				OutputFile="$(OutDir)\StatServer.exe"
 				LinkIncremental="2"
 				AdditionalLibraryDirectories="..\..\libevent"
 				IgnoreDefaultLibraryNames="libcmt.lib"
@@ -180,19 +180,19 @@
 			UniqueIdentifier="{4FC737F1-C7A5-4376-A066-2A32D752A2FF}"
 			>
 			<File
-				RelativePath=".\Contacts.cpp"
+				RelativePath=".\DiplodocusStat.cpp"
 				>
 			</File>
 			<File
-				RelativePath=".\DiplodocusContact.cpp"
+				RelativePath=".\KhaanStat.cpp"
 				>
 			</File>
 			<File
-				RelativePath=".\KhaanContact.cpp"
+				RelativePath=".\Stat.cpp"
 				>
 			</File>
 			<File
-				RelativePath=".\UserContact.cpp"
+				RelativePath=".\StatsCommon.cpp"
 				>
 			</File>
 		</Filter>
@@ -202,15 +202,15 @@
 			UniqueIdentifier="{93995380-89BD-4b04-88EB-625FBE52EBFB}"
 			>
 			<File
-				RelativePath=".\DiplodocusContact.h"
+				RelativePath=".\DiplodocusStat.h"
 				>
 			</File>
 			<File
-				RelativePath=".\KhaanContact.h"
+				RelativePath=".\KhaanStat.h"
 				>
 			</File>
 			<File
-				RelativePath=".\UserContact.h"
+				RelativePath=".\StatsCommon.h"
 				>
 			</File>
 		</Filter>
@@ -289,6 +289,10 @@
 					>
 				</File>
 				<File
+					RelativePath="..\NetworkCommon\Utils\Enigmosaurus.h"
+					>
+				</File>
+				<File
 					RelativePath="..\NetworkCommon\Utils\MemoryLeakTracker.cpp"
 					>
 				</File>
@@ -298,6 +302,14 @@
 				</File>
 				<File
 					RelativePath="..\NetworkCommon\Utils\OsLevelUtils.h"
+					>
+				</File>
+				<File
+					RelativePath="..\NetworkCommon\Utils\TableWrapper.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\NetworkCommon\Utils\TableWrapper.h"
 					>
 				</File>
 				<File
@@ -350,50 +362,6 @@
 				</File>
 			</Filter>
 			<Filter
-				Name="Daemon"
-				>
-				<File
-					RelativePath="..\NetworkCommon\Daemon\Daemonizer.cpp"
-					>
-				</File>
-				<File
-					RelativePath="..\NetworkCommon\Daemon\Daemonizer.h"
-					>
-				</File>
-			</Filter>
-			<Filter
-				Name="Logging"
-				>
-				<File
-					RelativePath="..\NetworkCommon\Logging\server_log.cpp"
-					>
-				</File>
-				<File
-					RelativePath="..\NetworkCommon\Logging\server_log.h"
-					>
-				</File>
-			</Filter>
-			<Filter
-				Name="NetworkOut"
-				>
-				<File
-					RelativePath="..\NetworkCommon\NetworkOut\Fruitadens.cpp"
-					>
-				</File>
-				<File
-					RelativePath="..\NetworkCommon\NetworkOut\Fruitadens.h"
-					>
-				</File>
-				<File
-					RelativePath="..\NetworkCommon\NetworkOut\FruitadensServerToServer.cpp"
-					>
-				</File>
-				<File
-					RelativePath="..\NetworkCommon\NetworkOut\FruitadensServerToServer.h"
-					>
-				</File>
-			</Filter>
-			<Filter
 				Name="Database"
 				>
 				<File
@@ -412,16 +380,36 @@
 					RelativePath="..\NetworkCommon\Database\QueryHandler.h"
 					>
 				</File>
-			</Filter>
-			<Filter
-				Name="Stat"
-				>
 				<File
-					RelativePath="..\NetworkCommon\Stat\StatTrackingConnections.cpp"
+					RelativePath="..\NetworkCommon\Database\StringLookup.cpp"
 					>
 				</File>
 				<File
-					RelativePath="..\NetworkCommon\Stat\StatTrackingConnections.h"
+					RelativePath="..\NetworkCommon\Database\StringLookup.h"
+					>
+				</File>
+			</Filter>
+			<Filter
+				Name="Logging"
+				>
+				<File
+					RelativePath="..\NetworkCommon\Logging\server_log.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\NetworkCommon\Logging\server_log.h"
+					>
+				</File>
+			</Filter>
+			<Filter
+				Name="Daemon"
+				>
+				<File
+					RelativePath="..\NetworkCommon\Daemon\Daemonizer.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\NetworkCommon\Daemon\Daemonizer.h"
 					>
 				</File>
 			</Filter>

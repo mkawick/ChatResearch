@@ -223,7 +223,7 @@ void     NetworkLayer::UpdateNotifications()
          {
          case UserNetworkEventNotifier::NotificationType_AreWeUsingCorrectNetworkVersion:
             {
-               U32 serverVersion = boost::lexical_cast< U32 >( keyValueIt->key );
+               U32 serverVersion = boost::lexical_cast< U32 >( qn.intValue );
                (*it)->AreWeUsingCorrectNetworkVersion( GlobalNetworkProtocolVersion == serverVersion );
             }
             break;
@@ -263,14 +263,14 @@ void     NetworkLayer::UpdateNotifications()
             break;
          case UserNetworkEventNotifier::NotificationType_OnError:
             {
-               U32 code = boost::lexical_cast< U32 >( keyValueIt->key ); 
-               U16 status = boost::lexical_cast< U16 >( keyValueIt->value ); 
+               U32 code = qn.intValue; 
+               U16 status = boost::lexical_cast< U16 >( qn.intValue2 ); 
                (*it)->OnError( code, status );
             }
             break;
          case UserNetworkEventNotifier::NotificationType_UserLogin:
             {
-               bool isLoggedIn = boost::lexical_cast< bool >( keyValueIt->key ); 
+               bool isLoggedIn = qn.intValue ? true: false; 
                (*it)->UserLogin( isLoggedIn );
 
                NotifyClientToBeginSendingRequests(); 
@@ -523,10 +523,12 @@ void     NetworkLayer::Notification( int type, void* meta )
    m_notifications.push( QueuedNotification( type, meta ) );
 }
 
-void     NetworkLayer::Notification( int type, U32 data, U32 meta )
+void     NetworkLayer::Notification( int type, int data, int meta )
 {
    QueuedNotification qn( type );
-   qn.genericKeyValuePairs.insert( boost::lexical_cast<string>( data ), boost::lexical_cast<string>( meta ) );
+   //qn.genericKeyValuePairs.insert( boost::lexical_cast<string>( data ), boost::lexical_cast<string>( meta ) );
+   qn.intValue = data;
+   qn.intValue2 = meta;
 
    Threading::MutexLock    locker( m_notificationMutex );
    m_notifications.push( qn );
@@ -1765,7 +1767,7 @@ bool  NetworkLayer::HandlePacketReceived( BasePacket* packetIn )
                cout << "Server protocol version: " << (int)(packet->versionNumber) << endl;
                cout << "Client protocol version: " << (int)(GlobalNetworkProtocolVersion) << endl;
 
-               Notification( UserNetworkEventNotifier::NotificationType_AreWeUsingCorrectNetworkVersion, boost::lexical_cast< string >( packet->versionNumber ) );
+               Notification( UserNetworkEventNotifier::NotificationType_AreWeUsingCorrectNetworkVersion, (int)packet->versionNumber );
             }
          }
          break;
@@ -2506,7 +2508,7 @@ void     NetworkLayer::NotifyClientLoginStatus( bool isLoggedIn )
    {
       (*it)->UserLogin( isLoggedIn );
    }*/
-   Notification( UserNetworkEventNotifier::NotificationType_UserLogin, isLoggedIn, isLoggedIn );
+   Notification( UserNetworkEventNotifier::NotificationType_UserLogin, (int)isLoggedIn, (int)isLoggedIn );
 }
 
 //------------------------------------------------------------------------
