@@ -28,7 +28,7 @@ bool  CreateAccountResultsAggregator::HandleResult( const PacketDbQueryResult* d
       {
          UserTable            enigma( dbResult->bucket );
          UserTable::iterator  it = enigma.begin();
-         m_numUserRecordsMatching  = dbResult->bucket.bucket.size();
+         m_numUserRecordsMatching  = static_cast< int >( dbResult->bucket.bucket.size() );
                   
          while( it != enigma.end() )
          {
@@ -66,7 +66,7 @@ bool  CreateAccountResultsAggregator::HandleResult( const PacketDbQueryResult* d
       {
          NewUsersTable              enigma( dbResult->bucket );
          UserTable::iterator        it = enigma.begin();
-         m_numPendingUserRecordsMatching  = dbResult->bucket.bucket.size();
+         m_numPendingUserRecordsMatching  = static_cast< int >( dbResult->bucket.bucket.size() );
 
          while( it != enigma.end() )
          {

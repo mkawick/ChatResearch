@@ -653,8 +653,8 @@ int      DiplodocusChat::CallbackFunction()
    time_t currentTime;
    time( &currentTime );
 
-
-   UpdateConsoleWindow( m_timeOfLastTitleUpdate, m_uptime, m_numTotalConnections, m_connectedClients.size(), m_listeningPort, m_serverName );
+   int numClients = static_cast< int >( m_connectedClients.size() );
+   UpdateConsoleWindow( m_timeOfLastTitleUpdate, m_uptime, m_numTotalConnections, numClients, m_listeningPort, m_serverName );
 
    PeriodicWriteToDB();
    RemoveLoggedOutUsers();

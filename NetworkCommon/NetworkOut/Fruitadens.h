@@ -13,6 +13,10 @@
 #include <netinet/in.h>
 #include <fcntl.h>
 
+typedef int SocketType;
+#else
+
+typedef unsigned int SocketType;
 #endif
 
 class BasePacket;
@@ -76,7 +80,7 @@ protected:
 
    void           AttemptConnection();
 
-   int                  m_clientSocket;
+   SocketType           m_clientSocket;
    bool                 m_isConnected;
    bool                 m_hasFailedCritically;
    bool                 m_processOnlyOneIncommingPacketPerLoop;

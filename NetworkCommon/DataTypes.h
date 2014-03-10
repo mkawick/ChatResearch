@@ -15,14 +15,17 @@ typedef int             S32;
 
 typedef unsigned __int64   U64;
 typedef __int64            S64;
+typedef unsigned int       SocketType;
 
 #elif PLATFORM == PLATFORM_MAC || PLATFORM == PLATFORM_UNIX
 #include <inttypes.h>
 
 typedef uint64_t        U64;
 typedef int64_t         S64;
+typedef int             SocketType;
 
 #endif
+
 
 typedef  U32    ConnectionId;
 typedef  U64    stringhash;

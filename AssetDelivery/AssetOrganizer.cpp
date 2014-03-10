@@ -70,7 +70,7 @@ std::istream& safeGetline(std::istream& is, std::string& t)
 
 bool IsStringBracketed( const std::string& s, const char* bracketPairs )
 {
-   int len = strlen( bracketPairs ) / 2;
+   int len = static_cast< int >( strlen( bracketPairs ) ) / 2;
 
    for( int i=0; i<len; i+=2 )
    {

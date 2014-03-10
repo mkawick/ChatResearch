@@ -58,7 +58,7 @@ void	KhaanServerToServer :: UpdateInwardPacketList()
    if( m_packetsIn.size() == 0 )
       return;
 
-   int numOutputs = m_listOfOutputs.size();
+   int numOutputs = static_cast< int >( m_listOfOutputs.size() );
    if( numOutputs > 1 )
    {
       assert( 0 );// need support for multiple outputs, each packet should be copied because of the memory ownership, or use shared pointers

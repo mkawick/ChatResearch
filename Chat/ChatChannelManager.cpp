@@ -791,7 +791,7 @@ bool   ChatChannelManager::DeleteChannel( const PacketChatDeleteChatChannelFromG
    else
    {
       success = DeleteChannel( iter->second.uuid );
-      response->numUsersRemoved = iter->second.userBasics.size();
+      response->numUsersRemoved = static_cast< int >( iter->second.userBasics.size() );
    }
 
    response->successfullyDeleted = success;
@@ -831,7 +831,7 @@ bool     ChatChannelManager::DeleteChannel( const string& channelUuid, const str
       return false;
    }
 
-   int numUsers = channelIter->second.userBasics.size();
+   int numUsers = static_cast< int >( channelIter->second.userBasics.size() );
 
    bool success = DeleteChannel( channelUuid );   
    
@@ -863,7 +863,7 @@ bool     ChatChannelManager::DeleteChannel( const string& channelUuid )
    list< UserBasics >& listOfUsers = channelIter->second.userBasics;
    if( listOfUsers.size() < 1 )
    {
-      int numUsers = listOfUsers.size();
+      int numUsers = static_cast< int >( listOfUsers.size() );
    
       list< UserBasics >::iterator userIt = listOfUsers.begin();
       while( userIt != listOfUsers.end() )
@@ -1619,7 +1619,7 @@ bool     ChatChannelManager::HandleLoadAllChannelsResult( PacketDbQueryResult* d
    {
       ChatChannelTable              enigma( dbResult->bucket );
       ChatChannelTable::iterator    it = enigma.begin();
-      m_numChannelsToLoad = enigma.m_bucket.size();
+      m_numChannelsToLoad = static_cast< int >( enigma.m_bucket.size() );
       while( it != enigma.end() )
       {
          SaveChatChannelLoadResult( *it++ );
@@ -1656,7 +1656,7 @@ bool     ChatChannelManager::HandleSingleChannelLoad( PacketDbQueryResult* dbRes
    {
       ChatChannelTable              enigma( dbResult->bucket );
       ChatChannelTable::iterator    it = enigma.begin();
-      m_numChannelsToLoad = enigma.m_bucket.size();
+      m_numChannelsToLoad = static_cast< int >( enigma.m_bucket.size() );
       while( it != enigma.end() )
       {
          SaveChatChannelLoadResult( *it++ );

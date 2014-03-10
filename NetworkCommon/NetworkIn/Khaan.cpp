@@ -310,7 +310,7 @@ void     Khaan :: OnDataAvailable( struct bufferevent* bufferEventObj, void* arg
 
       if( This )
       {
-         This->OnDataReceived( data, numBytesReceived );
+         This->OnDataReceived( data, static_cast< int>( numBytesReceived ) );
       }
    }
 }

@@ -174,7 +174,7 @@ bool  LoadListOfFiles( const string& assetManifestFile, DiplodocusAsset::Categor
          assert( tag == "file" );
 
          // we'll keep reading after this
-         int num = categorizedAssetLists.size();
+         int num = static_cast< int >( categorizedAssetLists.size() );
          lineCount += SetupAssetList( infile, categorizedAssetLists );
          if( num == categorizedAssetLists.size() )// nothing was added
          {

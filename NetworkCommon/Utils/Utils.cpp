@@ -296,7 +296,7 @@ std::string    Reduce( const std::string& str,
 
 unsigned int split( const std::string &txt, std::vector<std::string> &strs, char ch )
 {
-   unsigned int pos = txt.find( ch );
+   unsigned int pos = static_cast< unsigned int > ( txt.find( ch ) );
    unsigned int initialPos = 0;
    strs.clear();
 
@@ -307,13 +307,13 @@ unsigned int split( const std::string &txt, std::vector<std::string> &strs, char
       strs.push_back( temp );
       initialPos = pos + 1;
 
-      pos = txt.find( ch, initialPos );
+      pos = static_cast< unsigned int > ( txt.find( ch, initialPos ) );
    }
 
    // Add the last one
    strs.push_back( txt.substr( initialPos, min( pos, txt.size() ) - initialPos + 1 ) );
 
-   return strs.size();
+   return static_cast< unsigned int > ( strs.size() );
 }
 
 //-------------------------------------------------------------------------
@@ -483,7 +483,7 @@ bool  ParseListOfItems( vector< string >& listOfStuff, string text, const char* 
 
 string RemoveEnds( std::string s, const char* charsToStrip )
 {
-   int len = strlen( charsToStrip );
+   int len = static_cast< int > ( strlen( charsToStrip ) );
 
    for( int i=0; i<len; i++ )
    {

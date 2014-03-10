@@ -160,7 +160,7 @@ bool  Fruitadens :: CreateSocket()
    string portString = boost::lexical_cast<string>( m_port );
    string notification = "Client on port " + portString;
 
-   m_clientSocket = socket( AF_INET, SOCK_STREAM, 0 );
+   m_clientSocket = static_cast< SocketType >( socket( AF_INET, SOCK_STREAM, 0 ) );
    if (m_clientSocket == SOCKET_ERROR)
    {
       notification += " cannot open a socket ";

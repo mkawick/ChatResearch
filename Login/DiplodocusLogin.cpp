@@ -858,7 +858,8 @@ int         DiplodocusLogin:: FindProductByName( const string& name )
    {
       if( it->filterName == name )   // NOTE: these names may vary
       {
-         return ( it - m_productList.begin() );
+	     int index = static_cast< int >( it - m_productList.begin() );
+         return index;
       }
       it++;
    }
@@ -1586,7 +1587,7 @@ void     DiplodocusLogin:: StoreAllProducts( PacketDbQueryResult* dbResult )
    ProductTable            enigma( dbResult->bucket );
 
    ProductTable::iterator  it = enigma.begin();
-   int numProducts = dbResult->bucket.bucket.size();
+   int numProducts = static_cast< int >( dbResult->bucket.bucket.size() );
    numProducts = numProducts;
             
    while( it != enigma.end() )

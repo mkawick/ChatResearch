@@ -379,7 +379,7 @@ bool     ProductEntryCreateBasedOnPlayHistory::StoreUsersWhoMayNeedAnUpdate( con
          highestId = userId;
       }
 
-      int numUsersFound = enigma.m_bucket.size();
+      int numUsersFound = static_cast< int >( enigma.m_bucket.size() );
       numUsersFound = numUsersFound;// compiler warning.
       //cout << " Successful query: found users " << numUsersFound << " who have played " << FindProductName( qpg.productId ) << endl;
       

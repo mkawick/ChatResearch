@@ -402,7 +402,8 @@ void  Diplodocus< InputChain, OutputChain >::OnAccept( evconnlistener* listenerO
 
    Diplodocus< InputChain, OutputChain >* This = static_cast< Diplodocus< InputChain, OutputChain > * >( context );
 
-   InputChainType* khaan = new InputChainType( newSocketId, bufferEvent );
+   SocketType socketId = static_cast< SocketType >( newSocketId );
+   InputChainType* khaan = new InputChainType( socketId, bufferEvent );
    khaan->SetIPAddress( *((struct sockaddr_in*)ClientAddr) );
    khaan->SetPort( This->m_listeningPort );
    

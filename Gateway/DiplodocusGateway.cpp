@@ -448,7 +448,7 @@ void  DiplodocusGateway::SendStatsToLoadBalancer()
    if( difftime( currentTime, m_timestampSendConnectionStatisics ) >= timeoutSendConnectionStatisics ) 
    {
       m_timestampSendConnectionStatisics = currentTime;
-      int num = m_connectedClients.size();
+      int num = static_cast< int >( m_connectedClients.size() );
 
       TrackCountStats( StatTracking_UserTotalCount, static_cast<float>( num ), 0 );
 
