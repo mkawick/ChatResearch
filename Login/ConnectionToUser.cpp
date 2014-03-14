@@ -324,6 +324,9 @@ void  ConnectionToUser::SaveUpdatedProfile( const PacketUpdateUserProfile* profi
       query += boost::lexical_cast<string>( showWinLossRecord?1:0 );
       query += ",show_profile_gender=";
       query += boost::lexical_cast<string>( showGenderProfile?1:0 );
+      query += ",mber_avatar=";
+      query += boost::lexical_cast<string>( avatarIcon );
+      
       dbQuery->query = query;
 
       userManager->AddQueryToOutput( dbQuery );
@@ -976,12 +979,13 @@ void     ConnectionToUser:: PackUserProfileRequestAndSendToClient( U32 connectio
    response->loggedOutTime =     lastLogoutTime;
 
    response->adminLevel =        adminLevel;
+   response->iconId =            avatarIcon;
    response->isActive =          isActive;
    response->showWinLossRecord = showWinLossRecord;
    response->marketingOptOut =   marketingOptOut;
    response->showGenderProfile = showGenderProfile;
 
-   response->profileKeyValues.insert( "name", m_userName );
+   /*response->profileKeyValues.insert( "name", m_userName );
    response->profileKeyValues.insert( "uuid", m_userUuid );
    response->profileKeyValues.insert( "email", m_email );
    response->profileKeyValues.insert( "last_login_time", lastLoginTime );
@@ -991,6 +995,7 @@ void     ConnectionToUser:: PackUserProfileRequestAndSendToClient( U32 connectio
    response->profileKeyValues.insert( "show_win_loss_record", boost::lexical_cast< string >( showWinLossRecord  ? 1:0 ) );
    response->profileKeyValues.insert( "marketing_opt_out", boost::lexical_cast< string >( marketingOptOut ? 1:0 ) );
    response->profileKeyValues.insert( "showGender_profile", boost::lexical_cast< string >( showGenderProfile ? 1:0 ) );
+   response->profileKeyValues.insert( "mber_avatar", boost::lexical_cast< string >( avatarIcon ) );*/
 
    userManager->SendPacketToGateway( response, connectionId );
 }
@@ -1006,7 +1011,7 @@ void     ConnectionToUser:: PackOtherUserProfileRequestAndSendToClient( U32 conn
    response->basicProfile.insert( "show_win_loss_record", boost::lexical_cast< string >( showWinLossRecord  ? 1:0 ) );
    response->basicProfile.insert( "time_zone", boost::lexical_cast< string >( timeZone ) );
 
-   response->basicProfile.insert( "avatar_icon", avatarIcon );
+   response->basicProfile.insert( "avatar_icon", boost::lexical_cast< string >( avatarIcon ) );
    //this->productsOwned
 
    map< U32, ProductBrief >::iterator it = productsOwned.begin();
@@ -1184,6 +1189,44 @@ bool     ConnectionToUser:: UpdateProfile( const PacketUpdateUserProfile* update
    userManager->SendErrorToClient( connectionId, PacketErrorReport::ErrorType_Cheat_BadUserLookup_TryLoadingUserFirst );
 
    return false;
+}
+
+//-----------------------------------------------------------------
+
+bool     ConnectionToUser:: UpdateProfile( const PacketUpdateSelfProfile* updateProfileRequest )
+{
+   PacketUpdateSelfProfileResponse* response = new PacketUpdateSelfProfileResponse;
+
+   if( ( updateProfileRequest->userName == m_userName &&
+      updateProfileRequest->avatarIconId == avatarIcon ) ||
+      updateProfileRequest->avatarIconId < 0 )
+   {
+      response->success = false;
+   }
+   else
+   {
+      PacketDbQuery* dbQuery = new PacketDbQuery;
+      dbQuery->id =           connectionId;
+      dbQuery->lookup =       DiplodocusLogin::QueryType_UpdateSelfProfile;
+      dbQuery->isFireAndForget = true;
+
+      //  only username and avatar for right now
+      string temp = "UPDATE playdek.user_profile SET mber_avatar='";
+      temp += boost::lexical_cast< string >( updateProfileRequest->avatarIconId );
+      temp += "' WHERE user_id=";
+      temp += boost::lexical_cast< string >( id );
+
+      //dbQuery->escapedStrings.insert( updateProfileRequest->userName );
+      dbQuery->query = temp;
+
+      userManager->AddQueryToOutput( dbQuery );
+
+      response->success = true;
+   }
+
+   userManager->SendPacketToGateway( response, connectionId );
+
+   return true;
 }
 
 //-----------------------------------------------------------------

@@ -4,7 +4,6 @@
 #include <iostream>
 #include <list>
 #include <vector>
-#pragma warning (disable:4996)
 using namespace std;
 
 #include <assert.h>
@@ -29,6 +28,10 @@ using boost::format;
 
 #include "DiplodocusStat.h"
 
+#if PLATFORM == PLATFORM_WINDOWS
+#include <conio.h>
+#pragma warning (disable:4996)
+#endif
 
 ////////////////////////////////////////////////////////////////////////
 

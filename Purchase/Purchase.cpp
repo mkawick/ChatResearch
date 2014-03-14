@@ -4,7 +4,6 @@
 #include <iostream>
 #include <list>
 #include <vector>
-#pragma warning (disable:4996)
 using namespace std;
 
 #include <assert.h>
@@ -12,7 +11,6 @@ using namespace std;
 #include <boost/format.hpp>
 #include <boost/lexical_cast.hpp>
 using boost::format;
-
 
 #include "../NetworkCommon/Version.h"
 
@@ -32,6 +30,7 @@ using boost::format;
 
 
 #if PLATFORM == PLATFORM_WINDOWS
+#pragma warning (disable:4996)
 #include <conio.h>
 #endif   
 

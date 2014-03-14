@@ -394,6 +394,10 @@
 				</File>
 			</Filter>
 		</Filter>
+		<Filter
+			Name="LibEvent"
+			>
+		</Filter>
 		<File
 			RelativePath=".\ReadMe.txt"
 			>

@@ -5,7 +5,7 @@ gateway_serverddir = $(datadir)/@PACKAGE@
 gateway_serverd_SOURCES = DiplodocusGateway.cpp \
 FruitadensGateway.cpp \
 Gateway.cpp \
-KhaanConnector.cpp \
+KhaanGateway.cpp \
 ../NetworkCommon/NetworkUtils.cpp \
 ../NetworkCommon/Serialize.cpp \
 ../NetworkCommon/ServerConstants.cpp \
@@ -30,13 +30,16 @@ KhaanConnector.cpp \
 ../NetworkCommon/Packets/ServerToServerPacket.cpp \
 ../NetworkCommon/Packets/StatPacket.cpp \
 ../NetworkCommon/Packets/TournamentPacket.cpp \
+../NetworkCommon/Stat/StatTrackingConnections.cpp \
 ../NetworkCommon/Utils/CommandLineParser.cpp \
 ../NetworkCommon/Utils/MemoryLeakTracker.cpp \
 ../NetworkCommon/Utils/OsLevelUtils.cpp \
 ../NetworkCommon/Utils/Utils.cpp \
 ../NetworkCommon/Logging/server_log.cpp
 
-gateway_serverd_LDFLAGS = -L
+gateway_serverd_CXXFLAGS = -std=c++0x
+
+gateway_serverd_LDFLAGS = -L 
 
 gateway_serverd_LDADD = ../../libevent/linux-libs/libevent.a \
 ../../libevent/linux-libs/libevent_pthreads.a \

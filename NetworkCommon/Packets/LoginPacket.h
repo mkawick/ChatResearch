@@ -34,6 +34,8 @@ public:
       LoginType_RequestListOfProductsResponse,
       LoginType_RequestOtherUserProfile,
       LoginType_RequestOtherUserProfileResponse,
+      LoginType_UpdateSelfProfile,
+      LoginType_UpdateSelfProfileResponse,
    };
 public:
    PacketLogin( int packet_type = PacketType_Login, int packet_sub_type = LoginType_Login ): BasePacket( packet_type, packet_sub_type ) {}
@@ -305,7 +307,10 @@ class PacketRequestUserProfileResponse : public BasePacket // error packet for n
 {
 public:
    PacketRequestUserProfileResponse() : BasePacket( PacketType_Login, PacketLogin::LoginType_RequestUserProfileResponse ), 
-                              isActive( false ), 
+                              adminLevel( 0 ), 
+                              iconId( 1 ), 
+                              languageId( 1 ),
+                              isActive( true ),  
                               showWinLossRecord( false ),
                               marketingOptOut( false ), 
                               showGenderProfile( false ){}
@@ -320,6 +325,7 @@ public:
    string   lastLoginTime;
    string   loggedOutTime;
    int      adminLevel;
+   int      iconId;
    int      languageId;
 
    bool     isActive;
@@ -327,7 +333,7 @@ public:
    bool     marketingOptOut;
    bool     showGenderProfile;
 
-   SerializedKeyValueVector< string > profileKeyValues;
+   //SerializedKeyValueVector< string > profileKeyValues;
 };
 
 ///////////////////////////////////////////////////////////////
@@ -425,6 +431,45 @@ public:
    SerializedKeyValueVector< string > basicProfile;
    SerializedKeyValueVector< int > productsOwned; // only games and expansions
    SerializedKeyValueVector< string > awards;
+};
+
+///////////////////////////////////////////////////////////////
+
+class    PacketUpdateSelfProfile : public BasePacket // limited to admin priveledges only
+{
+public:
+   PacketUpdateSelfProfile() : BasePacket( PacketType_Login, PacketLogin::LoginType_UpdateSelfProfile ), 
+                              languageId( 1 ),
+                              avatarIconId( false ), 
+                              showWinLossRecord( false ),
+                              marketingOptOut( false ), 
+                              showGenderProfile( false )   {}
+
+   bool  SerializeIn( const U8* data, int& bufferOffset );
+   bool  SerializeOut( U8* data, int& bufferOffset ) const;
+
+   string   userName;
+   string   passwordHash;
+   string   email;
+   int      languageId;
+   int      avatarIconId;
+
+   bool     showWinLossRecord;
+   bool     marketingOptOut;
+   bool     showGenderProfile;
+};
+
+///////////////////////////////////////////////////////////////
+
+class PacketUpdateSelfProfileResponse : public BasePacket // limited to admin priveledges only
+{
+public:
+   PacketUpdateSelfProfileResponse() : BasePacket( PacketType_Login, PacketLogin::LoginType_UpdateSelfProfileResponse ), success( false ) {}
+
+   bool  SerializeIn( const U8* data, int& bufferOffset );
+   bool  SerializeOut( U8* data, int& bufferOffset ) const;
+
+   bool  success;
 };
 
 ///////////////////////////////////////////////////////////////

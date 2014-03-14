@@ -53,6 +53,7 @@ public:
       QueryType_UserLoginInfo = 1,
       QueryType_AdminRequestUserProfile,
       QueryType_UpdateUserProfile,
+      QueryType_UpdateSelfProfile,
       QueryType_UpdateUsers,
       QueryType_CreateBlankUserProfile,
       QueryType_UpdateLastLoggedInTime,
@@ -183,6 +184,7 @@ private:
    bool     AddPurchase( U32 userConnectionId, const PacketAddPurchaseEntry* addPurchase );
    bool     RequestProfile( U32 connectionId, const PacketRequestUserProfile* profileRequest );
    bool     UpdateProfile( U32 connectionId, const PacketUpdateUserProfile* profileRequest );
+   bool     UpdateProfile( U32 connectionId, const PacketUpdateSelfProfile* profileRequest );
    bool     HandleRequestListOfProducts( U32 connectionId, PacketRequestListOfProducts* purchaseRequest );
    bool     RequestOthersProfile( U32 connectionId, const PacketRequestOtherUserProfile* profileRequest );
    bool     EchoHandler( U32 connectionId );

@@ -1,8 +1,17 @@
-#include "SalesManager.h"
+// SalesManager.cpp
 
 
 #include <time.h>
 #include <iostream>
+#include <string>
+using namespace std;
+
+#include <boost/format.hpp>
+#include <boost/lexical_cast.hpp>
+
+#include "../NetworkCommon/Utils/CommandLineParser.h"
+
+#include "SalesManager.h"
 
 #include "../NetworkCommon/Database/StringLookup.h"
 #include "../NetworkCommon/Packets/PurchasePacket.h"
@@ -77,7 +86,7 @@ string   FormatInsertIntoUserJoinProduct( const string& userUuid, const string& 
 bool     SalesManager::HandleResult( const PacketDbQueryResult* dbResult )
 {
    int lookupType = dbResult->lookup;
-   if( lookupType == m_queryType )
+   if( lookupType == static_cast<int>( m_queryType ) )
    {
       SetValueOnExit< bool >           setter( m_isServicingExchangeRates, false );// due to multiple exit points...
 
@@ -257,7 +266,7 @@ bool     SalesManager::GetListOfItemsForSale( PacketPurchase_RequestListOfSalesR
 
 bool     SalesManager::FindItem( const string& exchangeUuid, ExchangeEntry& ee )
 {
-   bool found = false;
+   //bool found = false;
    vector< ExchangeEntry >::iterator it = exchangeRates.begin();
    while( it != exchangeRates.end() )
    {

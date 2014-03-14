@@ -1,3 +1,13 @@
+// UserAccountPurchase.cpp
+
+#include <string>
+using namespace std;
+
+#include <boost/format.hpp>
+#include <boost/lexical_cast.hpp>
+
+#include "../NetworkCommon/Utils/CommandLineParser.h"
+
 #include "UserAccountPurchase.h"
 #include "DiplodocusPurchase.h"
 

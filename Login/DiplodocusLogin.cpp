@@ -31,8 +31,8 @@ using boost::format;
 //////////////////////////////////////////////////////////
 
 DiplodocusLogin:: DiplodocusLogin( const string& serverName, U32 serverId )  : 
-                  StatTrackingConnections(),
                   Queryer(),
+                  StatTrackingConnections(),
                   Diplodocus< KhaanLogin >( serverName, serverId, 0, ServerType_Login ), 
                   m_isInitialized( false ), 
                   m_isInitializing( false ),
@@ -162,6 +162,12 @@ bool     DiplodocusLogin:: AddInputChainData( BasePacket* packet, U32 connection
             {
                PacketRequestOtherUserProfile* profileRequest = static_cast<PacketRequestOtherUserProfile*>( actualPacket );
                RequestOthersProfile( userConnectionId, profileRequest );
+            }
+            break;
+         case PacketLogin::LoginType_UpdateSelfProfile:
+            {
+               PacketUpdateSelfProfile* updateProfileRequest = static_cast<PacketUpdateSelfProfile*>( actualPacket );
+               UpdateProfile( userConnectionId, updateProfileRequest );
             }
             break;
          case PacketLogin::LoginType_EchoToServer:
@@ -979,6 +985,20 @@ bool     DiplodocusLogin:: RequestProfile( U32 connectionId, const PacketRequest
 //---------------------------------------------------------------
 
 bool     DiplodocusLogin:: UpdateProfile( U32 connectionId, const PacketUpdateUserProfile* profileRequest )
+{
+   ConnectionToUser* connection = GetUserConnection( connectionId );
+   if( connection == NULL || connection->status != ConnectionToUser::LoginStatus_LoggedIn )
+   {
+      Log( "Login server.UpdateProfile: major problem logged in user", 4 );
+      return false;
+   }
+
+   return connection->UpdateProfile( profileRequest );
+}
+
+//---------------------------------------------------------------
+
+bool     DiplodocusLogin:: UpdateProfile( U32 connectionId, const PacketUpdateSelfProfile* profileRequest )
 {
    ConnectionToUser* connection = GetUserConnection( connectionId );
    if( connection == NULL || connection->status != ConnectionToUser::LoginStatus_LoggedIn )

@@ -2,7 +2,7 @@
 
 #include <iostream>
 #include <time.h>
-
+#include <string>
 using namespace std;
 
 
@@ -13,6 +13,10 @@ using namespace std;
 #include "../NetworkCommon/Packets/ChatPacket.h"
 #include "../NetworkCommon/Packets/LoginPacket.h"
 #include "../NetworkCommon/Packets/StatPacket.h"
+
+#include <boost/format.hpp>
+#include <boost/lexical_cast.hpp>
+//using namespace boost;
 
 #include "DiplodocusChat.h"
 #include "ChatUser.h"

@@ -76,7 +76,7 @@ private:
    bool  ReplaceExistingAssetBasedOnHash( AssetDefinition& asset );
    bool  ParseNextAsset( ifstream& infile, int& lineCount );
    bool  ParseNextLayout( ifstream& infile, int& lineCount );
-   bool  LoadAllFiles();
+   void  LoadAllAssets( time_t& currentTime );
 
    typedef vector< AssetDefinition >   AssetVector;
    typedef AssetVector::iterator       AssetVectorIterator;

@@ -374,13 +374,13 @@ bool  PacketRequestUserProfileResponse::SerializeIn( const U8* data, int& buffer
    Serialize::In( data, bufferOffset, userUuid );
    Serialize::In( data, bufferOffset, lastLoginTime );
    Serialize::In( data, bufferOffset, loggedOutTime );   
-   Serialize::In( data, bufferOffset, adminLevel );     
+   Serialize::In( data, bufferOffset, adminLevel );
+   Serialize::In( data, bufferOffset, iconId );  
    Serialize::In( data, bufferOffset, languageId ); 
    Serialize::In( data, bufferOffset, isActive );
    Serialize::In( data, bufferOffset, showWinLossRecord );
    Serialize::In( data, bufferOffset, marketingOptOut );
    Serialize::In( data, bufferOffset, showGenderProfile );
-   Serialize::In( data, bufferOffset, profileKeyValues );
 
    return true;
 }
@@ -395,12 +395,12 @@ bool  PacketRequestUserProfileResponse::SerializeOut( U8* data, int& bufferOffse
    Serialize::Out( data, bufferOffset, lastLoginTime );
    Serialize::Out( data, bufferOffset, loggedOutTime );   
    Serialize::Out( data, bufferOffset, adminLevel );   
+   Serialize::Out( data, bufferOffset, iconId );  
    Serialize::Out( data, bufferOffset, languageId );  
    Serialize::Out( data, bufferOffset, isActive );
    Serialize::Out( data, bufferOffset, showWinLossRecord );
    Serialize::Out( data, bufferOffset, marketingOptOut );
    Serialize::Out( data, bufferOffset, showGenderProfile );
-   Serialize::Out( data, bufferOffset, profileKeyValues );
 
    return true;
 }
@@ -527,12 +527,6 @@ bool  PacketRequestOtherUserProfile::SerializeOut( U8* data, int& bufferOffset )
 bool  PacketRequestOtherUserProfileResponse::SerializeIn( const U8* data, int& bufferOffset )
 { 
    BasePacket::SerializeIn( data, bufferOffset );
-  /* Serialize::In( data, bufferOffset, userName );
-   Serialize::In( data, bufferOffset, userUuid );
-   Serialize::In( data, bufferOffset, profileImage );
-   Serialize::In( data, bufferOffset, profileIcon );
-   Serialize::In( data, bufferOffset, gmtTimeSoneDifferential );
-   Serialize::In( data, bufferOffset, showWinLossRecord );*/
 
    Serialize::In( data, bufferOffset, basicProfile );
    Serialize::In( data, bufferOffset, productsOwned );
@@ -544,16 +538,62 @@ bool  PacketRequestOtherUserProfileResponse::SerializeIn( const U8* data, int& b
 bool  PacketRequestOtherUserProfileResponse::SerializeOut( U8* data, int& bufferOffset ) const 
 { 
    BasePacket::SerializeOut( data, bufferOffset );
-  /* Serialize::Out( data, bufferOffset, userName );
-   Serialize::Out( data, bufferOffset, userUuid );
-   Serialize::Out( data, bufferOffset, profileImage );
-   Serialize::Out( data, bufferOffset, profileIcon );
-   Serialize::Out( data, bufferOffset, gmtTimeSoneDifferential );
-   Serialize::Out( data, bufferOffset, showWinLossRecord );*/
 
    Serialize::Out( data, bufferOffset, basicProfile );
    Serialize::Out( data, bufferOffset, productsOwned );
    Serialize::Out( data, bufferOffset, awards );
+
+   return true; 
+}
+
+///////////////////////////////////////////////////////////////
+
+bool  PacketUpdateSelfProfile::SerializeIn( const U8* data, int& bufferOffset )
+{
+   BasePacket::SerializeIn( data, bufferOffset );
+   Serialize::In( data, bufferOffset, userName );
+   Serialize::In( data, bufferOffset, passwordHash );
+   Serialize::In( data, bufferOffset, email ); 
+     
+   Serialize::In( data, bufferOffset, languageId ); 
+   Serialize::In( data, bufferOffset, avatarIconId );
+   Serialize::In( data, bufferOffset, showWinLossRecord );
+   Serialize::In( data, bufferOffset, marketingOptOut );
+   Serialize::In( data, bufferOffset, showGenderProfile );
+
+   return true;
+}
+
+bool  PacketUpdateSelfProfile::SerializeOut( U8* data, int& bufferOffset ) const
+{
+   BasePacket::SerializeOut( data, bufferOffset );
+   Serialize::Out( data, bufferOffset, userName );
+   Serialize::Out( data, bufferOffset, passwordHash );
+   Serialize::Out( data, bufferOffset, email ); 
+
+   Serialize::Out( data, bufferOffset, languageId );    
+   Serialize::Out( data, bufferOffset, avatarIconId ); 
+   Serialize::Out( data, bufferOffset, showWinLossRecord );
+   Serialize::Out( data, bufferOffset, marketingOptOut );
+   Serialize::Out( data, bufferOffset, showGenderProfile );
+
+   return true;
+}
+
+///////////////////////////////////////////////////////////////
+
+bool  PacketUpdateSelfProfileResponse::SerializeIn( const U8* data, int& bufferOffset )
+{ 
+   BasePacket::SerializeIn( data, bufferOffset );
+   Serialize::In( data, bufferOffset, success );
+
+   return true; 
+}
+
+bool  PacketUpdateSelfProfileResponse::SerializeOut( U8* data, int& bufferOffset ) const 
+{ 
+   BasePacket::SerializeOut( data, bufferOffset );
+   Serialize::Out( data, bufferOffset, success );
 
    return true; 
 }

@@ -435,11 +435,6 @@ bool  FillInAsset( string& line, AssetDefinition& asset )
          {
             return true;// ignore notes
          }
-         else if( potentionalKey == "payload" )
-         {
-            asset.payload = value;
-            return true;
-         }
          else
          {
             return false; // no other usable keys
@@ -690,6 +685,8 @@ bool  AssetOrganizer::LoadAssetManifest()
       return false;
    }
 
+   m_assets.clear();// unload all existing assets
+
    bool errorCode = false;
    int lineCount = 0;
    while( safeGetline( infile, line ) )// could be spaces, etc
@@ -733,7 +730,7 @@ bool  AssetOrganizer::LoadAssetManifest()
             (*it).Print();
             it++;
          }
-         m_isInitializedProperly = LoadAllFiles();    
+         m_isInitializedProperly = true;    
       }
       else //if( m_assets.size() == 0 )
       {
@@ -857,6 +854,14 @@ void  AssetOrganizer::Update()
       }
    }
 
+   LoadAllAssets( currentTime );
+   
+}
+
+//////////////////////////////////////////////////////////////////////////
+
+void  AssetOrganizer::LoadAllAssets( time_t& currentTime )
+{
    if( m_assets.size() == 0 || m_allFilesAreNowLoaded == true || m_isInitializedProperly == false )
       return;
 
@@ -901,21 +906,5 @@ bool  AssetOrganizer::FindByHash( const string& hash, AssetDefinition const *& a
 }
 
 //////////////////////////////////////////////////////////////////////////
-
-bool  AssetOrganizer::LoadAllFiles()
-{
-   /*vector< AssetDefinition >::iterator it = m_assets.begin();
-   while( it != m_assets.end() )
-   {
-      if( it->LoadFile() == false )
-      {
-         cout << "Critical failure loading asset : " << it->path << endl;
-         return false;
-      }
-
-      it++;
-   }*/
-   return true;
-}
 
 //////////////////////////////////////////////////////////////////////////

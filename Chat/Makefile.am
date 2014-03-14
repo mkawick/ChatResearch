@@ -3,10 +3,14 @@ bin_PROGRAMS = chat_serverd
 chat_serverddir = $(datadir)/@PACKAGE@
 
 chat_serverd_SOURCES = Chat.cpp \
+ChatChannel.cpp \
+ChatChannelDbJob.cpp \
 ChatChannelManager.cpp \
+ChatUser.cpp \
 DiplodocusChat.cpp \
 KhaanChat.cpp \
-UserConnection.cpp \
+UserInChatChannel.cpp \
+UsersChatChannelList.cpp \
 ../NetworkCommon/NetworkUtils.cpp \
 ../NetworkCommon/Serialize.cpp \
 ../NetworkCommon/ServerConstants.cpp \
@@ -33,12 +37,15 @@ UserConnection.cpp \
 ../NetworkCommon/Packets/ServerToServerPacket.cpp \
 ../NetworkCommon/Packets/StatPacket.cpp \
 ../NetworkCommon/Packets/TournamentPacket.cpp \
+../NetworkCommon/Stat/StatTrackingConnections.cpp \
 ../NetworkCommon/Utils/CommandLineParser.cpp \
 ../NetworkCommon/Utils/MemoryLeakTracker.cpp \
 ../NetworkCommon/Utils/OsLevelUtils.cpp \
 ../NetworkCommon/Utils/TableWrapper.cpp \
 ../NetworkCommon/Utils/Utils.cpp \
 ../NetworkCommon/Logging/server_log.cpp
+
+chat_serverd_CXXFLAGS = -std=c++0x
 
 chat_serverd_LDFLAGS = -L
 

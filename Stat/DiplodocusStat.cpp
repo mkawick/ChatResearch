@@ -2,9 +2,14 @@
 
 #include <iostream>
 #include <time.h>
-
+#include <string>
 using namespace std;
 
+#include <boost/format.hpp>
+#include <boost/lexical_cast.hpp>
+#include <boost/algorithm/string/replace.hpp>
+
+#include "../NetworkCommon/Utils/CommandLineParser.h"
 
 #include "../NetworkCommon/Packets/ServerToServerPacket.h"
 #include "../NetworkCommon/Packets/PacketFactory.h"
@@ -15,9 +20,6 @@ using namespace std;
 #include "StatsCommon.h"
 
 #include "../NetworkCommon/Database/StringLookup.h"
-
-#include <boost/lexical_cast.hpp>
-#include <boost/algorithm/string/replace.hpp>
 
 ///////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////

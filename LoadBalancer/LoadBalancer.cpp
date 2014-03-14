@@ -1,17 +1,9 @@
 // LoadBalancer.cpp : Defines the entry point for the console application.
 //
 
-
-// Gateway.cpp
-//
-
 #include <list>
 #include <vector>
 #include <iostream>
-
-#if PLATFORM == PLATFORM_WINDOWS
-#pragma warning (disable:4996)
-#endif
 
 #include <assert.h>
 
@@ -33,6 +25,7 @@ using boost::format;
 using namespace std;
 
 #if PLATFORM == PLATFORM_WINDOWS
+#pragma warning (disable:4996)
 
 #include <conio.h>
 #endif

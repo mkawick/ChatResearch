@@ -70,6 +70,7 @@ struct ConnectionToUser
    bool     RequestOthersProfile( const PacketRequestOtherUserProfile* profileRequest );
    void     RequestProfile( const string& email, const string& uuid, const string& name, bool asAdmin );
    bool     UpdateProfile( const PacketUpdateUserProfile* updateProfileRequest );
+   bool     UpdateProfile( const PacketUpdateSelfProfile* updateProfileRequest );
    bool     HandleAdminRequestUserProfile( PacketDbQueryResult* dbResult );
 
    bool     EchoHandler();
@@ -88,7 +89,7 @@ struct ConnectionToUser
    string                  loginKey;
    string                  lastLoginTime;
    string                  lastLogoutTime;
-   string                  avatarIcon;
+   int                     avatarIcon;
 
    LoginStatus             status;
    U8                      gameProductId;

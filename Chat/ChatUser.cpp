@@ -11,7 +11,7 @@
 using boost::format;
 
 #include "ChatUser.h"
-#include "diplodocusChat.h"
+#include "DiplodocusChat.h"
 #include "../NetworkCommon/Utils/TableWrapper.h"
 #include "ChatChannelManager.h"
 

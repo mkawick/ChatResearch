@@ -34,12 +34,15 @@ UserAccountPurchase.cpp \
 ../NetworkCommon/Packets/ServerToServerPacket.cpp \
 ../NetworkCommon/Packets/StatPacket.cpp \
 ../NetworkCommon/Packets/TournamentPacket.cpp \
+../NetworkCommon/Stat/StatTrackingConnections.cpp \
 ../NetworkCommon/Utils/CommandLineParser.cpp \
 ../NetworkCommon/Utils/MemoryLeakTracker.cpp \
 ../NetworkCommon/Utils/OsLevelUtils.cpp \
 ../NetworkCommon/Utils/TableWrapper.cpp \
 ../NetworkCommon/Utils/Utils.cpp \
 ../NetworkCommon/Logging/server_log.cpp
+
+purchase_serverd_CXXFLAGS = -std=c++0x
 
 purchase_serverd_LDFLAGS = -L
 

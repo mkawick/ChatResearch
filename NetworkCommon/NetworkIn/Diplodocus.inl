@@ -757,7 +757,7 @@ return_type* PrepConnection( const string& remoteIpaddress, U16 remotePort, cons
 
    serverOut->AddInputChain( localServer );
 
-   bool isGame = localServer->IsGameServer();
+   //bool isGame = localServer->IsGameServer();
    serverOut->NotifyEndpointOfIdentification( localServer->GetServerName(), localServer->GetIpAddress(), localServer->GetServerId(), localServer->GetPort(), 
                                              gameProductId, localServer->IsGameServer(), localServer->IsControllerApp(), requiresS2SWrapper, localServer->IsGateway() );
    cout << "server (" << remoteServerName << "): " << remoteIpaddress << ":" << remotePort << endl;
@@ -779,7 +779,7 @@ void  ConnectToMultipleGames( CommandLineParser& parser, type* localServer, bool
       cout << "No games were listed. No connections will be made with any games" << endl;
    }
 
-   U8    gameProductId = 0;
+   //U8    gameProductId = 0;
    cout << "games found = " << endl << "[ " << endl; 
    vector< string >::iterator it = gamesConfiguration.begin();
    while( it != gamesConfiguration.end() )

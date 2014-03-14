@@ -31,7 +31,9 @@ const char* productNames [] = {
    "fluxx",
    "smashup", 
    "tantocuore",
-   "lordsofwaterdeep"
+   "lordsofwaterdeep",
+   "unsung_card",
+   "unsung_story"
 };
 
 const char* platformStrings[] = {

@@ -146,8 +146,6 @@ bool  Fruitadens :: SetupConnection( const char* serverName, int port )
    m_ipAddress.sin_port = htons( port );
    m_ipAddress.sin_addr.s_addr = static_cast< U32 >( *(unsigned long*) host_entry->h_addr );
 
-   AttemptConnection();// this will happen naturally in the resume
-
    Resume();
 
    return true;

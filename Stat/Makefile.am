@@ -5,7 +5,7 @@ stat_serverddir = $(datadir)/@PACKAGE@
 stat_serverd_SOURCES = DiplodocusStat.cpp \
 KhaanStat.cpp \
 Stat.cpp \
-StatCommon.cpp \
+StatsCommon.cpp \
 ../NetworkCommon/NetworkUtils.cpp \
 ../NetworkCommon/Serialize.cpp \
 ../NetworkCommon/ServerConstants.cpp \
@@ -33,12 +33,15 @@ StatCommon.cpp \
 ../NetworkCommon/Packets/ServerToServerPacket.cpp \
 ../NetworkCommon/Packets/StatPacket.cpp \
 ../NetworkCommon/Packets/TournamentPacket.cpp \
+../NetworkCommon/Stat/StatTrackingConnections.cpp \
 ../NetworkCommon/Utils/CommandLineParser.cpp \
 ../NetworkCommon/Utils/MemoryLeakTracker.cpp \
 ../NetworkCommon/Utils/OsLevelUtils.cpp \
 ../NetworkCommon/Utils/TableWrapper.cpp \
 ../NetworkCommon/Utils/Utils.cpp \
 ../NetworkCommon/Logging/server_log.cpp
+
+stat_serverd_CXXFLAGS = -std=c++0x
 
 stat_serverd_LDFLAGS = -L
 

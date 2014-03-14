@@ -167,7 +167,6 @@ int	Khaan :: SendData( const U8* buffer, int length )
 {
    if( m_useLibeventToSend )
    {
-      // I cannot get the socket to write the first time... it alsways writes the second time and after.. 40 hours of research later...
       bufferevent*	bev = GetBufferEvent();
       struct evbuffer* outputBuffer = bufferevent_get_output( bev );
       evbuffer_lock( outputBuffer );

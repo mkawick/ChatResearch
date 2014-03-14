@@ -1,3 +1,4 @@
+// StatTrackingConnections.h
 #pragma once
 
 #include "../Packets/BasePacket.h"
@@ -68,6 +69,9 @@ private:
 template <typename type >
 void     StatTrackingConnections::SendStatsToStatServer( std::list< type >& listOfOutputs, const string& serverName, U32 serverId, ServerType serverType )
 {
+   typedef std::list< type > ListType;
+   typedef typename ListType::iterator iterator;
+
    time_t currentTime;
    time( &currentTime );
 
@@ -76,7 +80,7 @@ void     StatTrackingConnections::SendStatsToStatServer( std::list< type >& list
       m_timeoutSendStatServerStats = currentTime;
       Fruitadens* fruity = NULL;
 
-      std::list<type>::iterator itOutput = listOfOutputs.begin();
+      iterator itOutput = listOfOutputs.begin();
       while( itOutput != listOfOutputs.end() )
       {
          IChainedInterface* outputPtr = (*itOutput).m_interface;

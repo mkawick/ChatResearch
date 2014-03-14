@@ -143,8 +143,9 @@ public:
    virtual void  UserLogout() {}
    virtual void  AreWeUsingCorrectNetworkVersion( bool isCorrect ){}
    virtual void  ServerRequestsListOfUserPurchases() {}
-   virtual void  UserProfileResponse( const map< string, string >& keyValues ) {}
+   virtual void  UserProfileResponse() {}
    virtual void  OtherUsersProfile( const map< string, string >& profileKeyValues ){} // items are also available
+   virtual void  SelfProfileUpdate( bool success ) {}
 
    virtual void  ListOfAvailableProducts() {}
    // this list of purchases will not have localized names for products, especially on other players' products. 
@@ -208,6 +209,7 @@ public:
       NotificationType_UserProfileResponse,
       //NotificationType_UserProfileResponse2,
       NotificationType_OtherUsersProfile,
+      NotificationType_SelfProfileUpdate,
 
       NotificationType_ListOfAvailableProducts,
       NotificationType_ListOfAggregateUserPurchases,
@@ -330,6 +332,8 @@ public:
    bool     IsLoggingIn() const { return m_isLoggingIn; }
    bool     IsLoggedIn() const { return m_isLoggedIn; }   
    string   GetUsername() const { return m_userName; }
+   int      GetAvatarId() const { return m_avatarId; }
+   bool     RequestChangeAvatarId( int newId ) const;
 
    bool     RequestProfile( const string userName ); //if empty, profile for currently logged in user is used. For other users, you must have admin
    bool     RequestOtherUserInGameProfile( const string& userName ); // friends, games list, etc
@@ -469,6 +473,7 @@ protected:
    string                                    m_serverDns;
    string                                    m_loginKey;
    U32                                       m_selectedGame;
+   int                                       m_avatarId;
 
    SerializedKeyValueVector< InvitationInfo > m_invitationsReceived;
    SerializedKeyValueVector< InvitationInfo > m_invitationsSent;

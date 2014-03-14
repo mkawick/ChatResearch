@@ -293,13 +293,7 @@ void     NetworkLayer::UpdateNotifications()
             break;
          case UserNetworkEventNotifier::NotificationType_UserProfileResponse:
             {
-               map< string, string > profileKeyValues;
-               while( keyValueIt != qn.genericKeyValuePairs.end() )
-               {
-                  profileKeyValues.insert( pair< string, string >( keyValueIt->key, keyValueIt->value ) );
-                  keyValueIt++;
-               }
-               (*it)->UserProfileResponse( profileKeyValues );
+               (*it)->UserProfileResponse();
             }
             break;
          case UserNetworkEventNotifier::NotificationType_ListOfAvailableProducts:
@@ -318,6 +312,13 @@ void     NetworkLayer::UpdateNotifications()
                (*it)->OtherUsersProfile( profileKeyValues );
             }
             break;
+         case UserNetworkEventNotifier::NotificationType_SelfProfileUpdate:
+            {
+               bool success = qn.intValue ? true: false; 
+               (*it)->SelfProfileUpdate( success );
+            }
+            break;
+            
          case UserNetworkEventNotifier::NotificationType_ChatListUpdate:
             {
                (*it)->ChatListUpdate();
@@ -457,7 +458,7 @@ void     NetworkLayer::UpdateNotifications()
                string hash = qn.genericKeyValuePairs.find( "hash" );
                string category = qn.genericKeyValuePairs.find( "category" );
 
-               (*it)->AssetDataAvailable( hash, category );
+               (*it)->AssetDataAvailable( category, hash );
             }
             break;
 
@@ -669,6 +670,25 @@ bool  NetworkLayer::RequestProfile( const string userName )//if empty, profile f
    if( userName == "" )
       request.uuid = m_uuid;
    SerializePacketOut( &request );
+
+   return true;
+}
+
+//-----------------------------------------------------------------------------
+
+bool  NetworkLayer::RequestChangeAvatarId( int newId ) const
+{
+   if( m_isConnected == false )
+   {
+      return false;
+   }
+   PacketUpdateSelfProfile profile;
+   profile.avatarIconId = newId;
+   profile.userName = m_userName;
+   m_avatarId = newId;
+   //profile.email = m_email;
+
+   SerializePacketOut( &profile );
 
    return true;
 }
@@ -2047,8 +2067,9 @@ bool  NetworkLayer::HandlePacketReceived( BasePacket* packetIn )
             case PacketLogin::LoginType_RequestUserProfileResponse:
                {
                   PacketRequestUserProfileResponse* profile = static_cast<PacketRequestUserProfileResponse*>( packetIn );
+                  m_avatarId = profile->iconId;
 
-                  Notification( UserNetworkEventNotifier::NotificationType_UserProfileResponse, profile->profileKeyValues );
+                  Notification( UserNetworkEventNotifier::NotificationType_UserProfileResponse, profile );
                }
                break;
             case PacketLogin::LoginType_RequestListOfProductsResponse:
@@ -2061,8 +2082,13 @@ bool  NetworkLayer::HandlePacketReceived( BasePacket* packetIn )
             case PacketLogin::LoginType_RequestOtherUserProfileResponse:
                {
                   PacketRequestOtherUserProfileResponse* profile = static_cast<PacketRequestOtherUserProfileResponse*>( packetIn );
-
                   Notification( UserNetworkEventNotifier::NotificationType_OtherUsersProfile, profile->basicProfile );
+               }
+               break;
+            case PacketLogin::LoginType_UpdateSelfProfileResponse:
+               {
+                  PacketUpdateSelfProfileResponse* profile = static_cast<PacketUpdateSelfProfileResponse*>( packetIn );
+                  Notification( UserNetworkEventNotifier::NotificationType_SelfProfileUpdate, profile->success );
                }
                break;
          }

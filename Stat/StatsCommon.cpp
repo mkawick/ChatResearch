@@ -1,7 +1,5 @@
 // StatsCommon.cpp
 
-//#include <UnitTest.h>
-#include <conio.h>
 #include <boost/random.hpp>
 #include <boost/generator_iterator.hpp>
 
@@ -16,8 +14,8 @@ void  AddStatUtil( HistoricalStats& stats, PacketStat& stat )
    HistoricalStats::iterator it = stats.find( stat.statName );
    if( it == stats.end() )
    {
-      pair< HistoricalStats::iterator, bool >& tempIt = stats.insert( StatInsert( string( stat.statName ), StatPacketList() ) );
-      it = tempIt.first;
+      stats.insert( StatInsert( string( stat.statName ), StatPacketList() ) );
+      it = stats.find( stat.statName );
    }
    it->second.push_back( stat );
 }
