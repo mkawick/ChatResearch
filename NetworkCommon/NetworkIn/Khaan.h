@@ -78,7 +78,7 @@ public:
    bool           Update();
 
    void           SendThroughLibEvent( bool useLibeventToSend = true ) { m_useLibeventToSend = useLibeventToSend; }
-
+   void           SetOutboudBufferSize( U32 size );
 public:
 
    //void           SetupLibeventCallbacks( event_base* libEvent, int socket );
@@ -110,8 +110,12 @@ protected:
    U16            m_listeningPort;
 
    time_t         m_timeOfConnection;
+   U32            m_maxBytesToSend;
+
    bool           m_useLibeventToSend;
    bool           m_criticalFailure;
+
+   U8*            m_outboundBuffer;
 
    deque< BasePacket* > m_packetsOut;
    deque< BasePacket* > m_packetsIn;//ToBeProcessed;

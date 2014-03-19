@@ -464,12 +464,15 @@ public:
 class PacketUpdateSelfProfileResponse : public BasePacket // limited to admin priveledges only
 {
 public:
-   PacketUpdateSelfProfileResponse() : BasePacket( PacketType_Login, PacketLogin::LoginType_UpdateSelfProfileResponse ), success( false ) {}
+   PacketUpdateSelfProfileResponse() : BasePacket( PacketType_Login, PacketLogin::LoginType_UpdateSelfProfileResponse ), 
+                              avatarIconId( 1 ),
+                              success( false ) {}
 
    bool  SerializeIn( const U8* data, int& bufferOffset );
    bool  SerializeOut( U8* data, int& bufferOffset ) const;
 
-   bool  success;
+   int      avatarIconId;
+   bool     success;
 };
 
 ///////////////////////////////////////////////////////////////

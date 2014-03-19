@@ -31,7 +31,7 @@ const char* productNames [] = {
    "fluxx",
    "smashup", 
    "tantocuore",
-   "lordsofwaterdeep",
+   "waterdeep",
    "unsung_card",
    "unsung_story"
 };

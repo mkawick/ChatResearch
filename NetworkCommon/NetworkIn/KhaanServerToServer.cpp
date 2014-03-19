@@ -203,6 +203,7 @@ void  KhaanServerToServer :: SaveOffServerIdentification( const PacketServerIden
 
    cout << "---------  Connected as server to " << m_serverName << "  ------------------" << endl;
    cout << "    " << m_serverAddress << " : " << static_cast<U32>( m_serverPort ) << endl;
+   cout << "    Time stamp: " << GetDateInUTC() << endl;
    cout << "    type " << static_cast<U32>( gameProductId ) << " -- server ID = " << m_serverId << endl;
    cout << "    isGame = " << boolalpha << m_isGameServer << ", isController : " << m_isController << noboolalpha << endl;
    cout << "------------------------------------------------------" << endl;
@@ -228,7 +229,10 @@ void  KhaanServerToServer :: SaveOffServerIdentification( const PacketServerIden
 void   KhaanServerToServer ::PreCleanup()
 {
    Khaan::PreCleanup();
-   cout << "Server has disconnected, name = '" << m_serverName << "' : " << m_serverId << endl;
+   cout << "*********************************************" << endl;
+   cout << "    Server has disconnected, name = '" << m_serverName << "' : " << m_serverId << endl;
+   cout << "    Time stamp: " << GetDateInUTC() << endl;
+   cout << "*********************************************" << endl;
 }
 
 ///////////////////////////////////////////////////////////////////

@@ -26,8 +26,10 @@ Khaan :: Khaan() : ChainedInterface< BasePacket* >(),
                   m_bufferEvent(NULL), 
                   m_timeOfConnection( 0 ),
                   m_useLibeventToSend( true ),
-                  m_criticalFailure( false )
+                  m_criticalFailure( false ),
+                  m_outboundBuffer( NULL )
 {
+   SetOutboudBufferSize( MaxBufferSize + 1024 );
 }
 
 Khaan ::Khaan( int socketId, bufferevent* be, int connectionId ) : ChainedInterface< BasePacket* >(), 
@@ -35,15 +37,18 @@ Khaan ::Khaan( int socketId, bufferevent* be, int connectionId ) : ChainedInterf
                                                                   m_bufferEvent( be ), 
                                                                   m_timeOfConnection( 0 ),
                                                                   m_useLibeventToSend( true ),
-                                                                  m_criticalFailure( false )
+                                                                  m_criticalFailure( false ),
+                                                                  m_outboundBuffer( NULL )
 {
    SetConnectionId( connectionId );
+   SetOutboudBufferSize( MaxBufferSize + 1024 );
 }
 
 //-----------------------------------------------------------------------
 
 Khaan ::~Khaan()
 {
+   delete [] m_outboundBuffer;
    bufferevent_free( GetBufferEvent() );
 #if PLATFORM == PLATFORM_WINDOWS
    closesocket( GetSocketId() );
@@ -129,6 +134,18 @@ bool	Khaan :: Update()
    return true;
 }
 
+void  Khaan :: SetOutboudBufferSize( U32 size )
+{
+   if( size < 1024 )
+      size = 1024;
+   if( size > 12*1024 )
+      size = 12*1024;
+
+   m_maxBytesToSend = size;
+   delete [] m_outboundBuffer;
+   m_outboundBuffer = new U8[ m_maxBytesToSend ];
+}
+
 //------------------------------------------------------------------------------
 
 void	Khaan :: UpdateInwardPacketList()
@@ -169,7 +186,6 @@ int	Khaan :: SendData( const U8* buffer, int length )
    {
       bufferevent*	bev = GetBufferEvent();
       struct evbuffer* outputBuffer = bufferevent_get_output( bev );
-      evbuffer_lock( outputBuffer );
 
       if( outputBuffer == NULL )
       {
@@ -177,9 +193,8 @@ int	Khaan :: SendData( const U8* buffer, int length )
          return false;
       }
 
+      // buffer locks happen internally
       int result = evbuffer_add( outputBuffer, buffer, length );
-
-      evbuffer_unlock( outputBuffer );
       return result;
    }
 
@@ -199,10 +214,10 @@ void	Khaan :: UpdateOutwardPacketList()
    int numPacketsPackaged = 0;
    int offset = 0;
 
-   U8 buffer[ MaxBufferSize + 1024 ];
+   
    PacketFactory factory;
 
-   int totalBytesLeftToWrite = MaxBufferSize + 1024;
+   int totalBytesLeftToWrite = m_maxBytesToSend;
 
    // todo, plan for the degenerate case where a single packet is over 2k
    m_outputChainListMutex.lock();
@@ -214,16 +229,16 @@ void	Khaan :: UpdateOutwardPacketList()
       length = sizeOfHeader;// reserve space
 
       BasePacket* packet = m_packetsOut.front();      
-      packet->SerializeOut( buffer, length );
+      packet->SerializeOut( m_outboundBuffer, length );
       
       totalBytesLeftToWrite -= length;
       if( totalBytesLeftToWrite < 0 )
          break;
 
       sizeOfLastWrite = length - sizeOfHeader;
-      Serialize::Out( buffer, offset, sizeOfLastWrite );// write in the size
+      Serialize::Out( m_outboundBuffer, offset, sizeOfLastWrite );// write in the size
 
-      SendData( buffer, length );
+      SendData( m_outboundBuffer, length );
       m_packetsOut.pop_front();
       TrackOutwardPacketType( packet );
       factory.CleanupPacket( packet );

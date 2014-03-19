@@ -153,6 +153,7 @@ protected:
 
    void     ClearAllProductsOwned();
    void     AddToProductsOwned( int productDbId, const string& productName, const string& productUuid, float quantity );
+   void     SendListOfProductsToClientAndAsset( U32 connectionId );
    void     SendListOfOwnedProductsToClient( U32 connectionId );
 
    UserConnectionMapIterator FindUser( const string& email, const string& userUuid, const string& userName );

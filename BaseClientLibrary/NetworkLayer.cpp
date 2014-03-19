@@ -685,7 +685,7 @@ bool  NetworkLayer::RequestChangeAvatarId( int newId ) const
    PacketUpdateSelfProfile profile;
    profile.avatarIconId = newId;
    profile.userName = m_userName;
-   m_avatarId = newId;
+   
    //profile.email = m_email;
 
    SerializePacketOut( &profile );
@@ -2088,6 +2088,10 @@ bool  NetworkLayer::HandlePacketReceived( BasePacket* packetIn )
             case PacketLogin::LoginType_UpdateSelfProfileResponse:
                {
                   PacketUpdateSelfProfileResponse* profile = static_cast<PacketUpdateSelfProfileResponse*>( packetIn );
+                  if( profile->success == true )
+                  {
+                     m_avatarId = profile->avatarIconId;
+                  }
                   Notification( UserNetworkEventNotifier::NotificationType_SelfProfileUpdate, profile->success );
                }
                break;

@@ -514,6 +514,7 @@ public:
       Column_product_name_string,
       Column_product_uuid,
       Column_quantity,
+      Column_filter_name,
       Column_end
    };
 };

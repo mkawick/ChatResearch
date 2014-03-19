@@ -181,7 +181,7 @@ bool  CommandLineParser::FindValue( const string& key, int& valueOut ) const
 {
    string searchKey = ConvertStringToLower( key );
 
-   valueOut = 0;
+   //valueOut = 0;
 
    ValuesListConstIterator it = m_values.begin();
    while( it != m_values.end() )

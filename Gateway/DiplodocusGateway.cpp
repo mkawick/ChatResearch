@@ -93,8 +93,6 @@ bool  DiplodocusGateway::AddInputChainData( BasePacket* packet, U32 connectionId
          cout << "Packet to servers: " << (int)packet->packetType << ":" << (int)packet->packetSubType << endl;
       }
 
-      //wrapper->serverType = ServerType_Chat;// we are cheating. we should look at the type of packet and route it appropriately.
-      
       m_inputChainListMutex.lock();
       m_packetsToBeSentInternally.push_back( wrapper );
       m_inputChainListMutex.unlock();
@@ -361,6 +359,9 @@ int  DiplodocusGateway::ProcessInputFunction()
 
    RunHourlyAverages();
 
+   MoveClientBoundPacketsFromTempToKhaan();
+   UpdateAllClientConnections();
+
    if( m_packetsToBeSentInternally.size() == 0 )
       return 0;
 
@@ -491,9 +492,9 @@ bool  DiplodocusGateway::AddOutputChainData( BasePacket* packet, U32 serverType 
    // pass through only
    if( packet->packetType == PacketType_GatewayWrapper )
    {
-      m_outputChainListMutex.lock();
-      m_outputTempStorage.push_back( packet );
-      m_outputChainListMutex.unlock();
+      m_inputChainListMutex.lock();
+      m_clientBoundTempStorage.push_back( packet );
+      m_inputChainListMutex.unlock();
    }
    else
    {
@@ -568,20 +569,17 @@ void  DiplodocusGateway::HandlePacketToKhaan( KhaanGateway* khaan, BasePacket* p
 
 //-----------------------------------------------------------------------------------------
 
-int   DiplodocusGateway::ProcessOutputFunction()
+void  DiplodocusGateway::MoveClientBoundPacketsFromTempToKhaan()
 {
-   // mutex is locked already
-
-   // lookup packet info and pass it back to the proper socket if we can find it.
-   if( m_connectionsNeedingUpdate.size() || m_outputTempStorage.size() )
+   if( m_clientBoundTempStorage.size() )
    {
       PrintDebugText( "ProcessOutputFunction" );
 
       PacketFactory factory;
-      while( m_outputTempStorage.size() )
+      while( m_clientBoundTempStorage.size() )
       {
-         PacketGatewayWrapper* wrapper = static_cast< PacketGatewayWrapper* >( m_outputTempStorage.front() );
-         m_outputTempStorage.pop_front();
+         PacketGatewayWrapper* wrapper = static_cast< PacketGatewayWrapper* >( m_clientBoundTempStorage.front() );
+         m_clientBoundTempStorage.pop_front();
          int connectionId = wrapper->connectionId;
          BasePacket* dataPacket = wrapper->pPacket;
          delete wrapper;
@@ -607,8 +605,7 @@ int   DiplodocusGateway::ProcessOutputFunction()
          }
       }
 
-      ConnectionIdQueue moreTimeNeededQueue;
-      while( m_connectionsNeedingUpdate.size() > 0 )// this has the m_outputChainListMutex protection
+   /*   while( m_connectionsNeedingUpdate.size() > 0 )// this has the m_outputChainListMutex protection
       {
          int connectionId = m_connectionsNeedingUpdate.front();
          m_connectionsNeedingUpdate.pop_front();
@@ -627,8 +624,44 @@ int   DiplodocusGateway::ProcessOutputFunction()
          }
       }
       //
-      m_connectionsNeedingUpdate = moreTimeNeededQueue; // copy 
+      m_connectionsNeedingUpdate = moreTimeNeededQueue; // copy */
    }
+}
+
+void  DiplodocusGateway::UpdateAllClientConnections()
+{
+   ConnectionIdQueue moreTimeNeededQueue;
+   while( m_connectionsNeedingUpdate.size() > 0 )// this has the m_outputChainListMutex protection
+   {
+      int connectionId = m_connectionsNeedingUpdate.front();
+      m_connectionsNeedingUpdate.pop_front();
+      ConnectionMapIterator connIt = m_connectionMap.find( connectionId );
+      if( connIt != m_connectionMap.end() )
+      {
+         KhaanGateway* khaan = connIt->second.m_connector;
+         if( khaan )
+         {
+            bool didFinish = khaan->Update();
+            if( didFinish == false )
+            {
+               moreTimeNeededQueue.push_back( connectionId );
+            }
+         }
+      }
+   }
+   //
+   m_connectionsNeedingUpdate = moreTimeNeededQueue; // copy 
+}
+
+//-----------------------------------------------------------------------------------------
+
+int   DiplodocusGateway::ProcessOutputFunction()
+{
+   // mutex is locked already
+
+   // lookup packet info and pass it back to the proper socket if we can find it.
+   
+   
    return 1;
 }
 //-----------------------------------------------------------------------------------------

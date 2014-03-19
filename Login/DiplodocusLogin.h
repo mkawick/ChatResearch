@@ -112,6 +112,7 @@ public:
    bool           RequestListOfProducts( U32 connectionId, const string& userUuid );
 
    int            FindProductByName( const string& name );
+   bool           FindProductByLookupName( const string& lookupName, ProductInfo& productDefn );
    void           AddNewProductToDb( const PurchaseEntry& product );   
    void           SendListOfUserProductsToAssetServer( U32 connectionId );
 

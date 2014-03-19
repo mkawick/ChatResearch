@@ -872,6 +872,22 @@ int         DiplodocusLogin:: FindProductByName( const string& name )
    return -1;
 }
 
+
+bool        DiplodocusLogin:: FindProductByLookupName( const string& lookupName, ProductInfo& productDefn )
+{
+   ProductList::iterator it = m_productList.begin();
+   while( it != m_productList.end() )
+   {
+      if( it->lookupName == lookupName )   // NOTE: these names may vary
+      {
+	      productDefn = *it;
+         return true;
+      }
+      it++;
+   }
+   return false;
+}
+
 bool        DiplodocusLogin:: FindProductByUuid( const string& uuid, ProductInfo& returnPi  )
 {
    vector< ProductInfo >::iterator it = m_productList.begin();
@@ -1779,7 +1795,11 @@ void     DiplodocusLogin:: SendListOfUserProductsToAssetServer( U32 connectionId
       vector< string >::iterator it =  connection->productFilterNames.begin();
       while( it != connection->productFilterNames.end() )
       {
-         packet->products.insert( *it++ );
+         ProductInfo productDefn;
+         if( FindProductByLookupName( *it++, productDefn ) == true )
+         {
+            packet->products.insert( productDefn.filterName );
+         }
       }
 
 

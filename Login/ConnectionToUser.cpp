@@ -553,7 +553,7 @@ bool     ConnectionToUser:: RequestListOfPurchases( const string& user_uuid )
       dbQuery->lookup = DiplodocusLogin::QueryType_UserListOfUserProducts;
       dbQuery->meta = user_uuid;
 
-      string queryString = "SELECT product.product_id, name_string, product.uuid, num_purchased FROM product INNER JOIN user_join_product AS user_join_product ON product.uuid=user_join_product.product_id WHERE user_join_product.user_uuid='%s'";
+      string queryString = "SELECT product.product_id, name_string, product.uuid, num_purchased, filter_name FROM product INNER JOIN user_join_product AS user_join_product ON product.uuid=user_join_product.product_id WHERE user_join_product.user_uuid='%s'";
       dbQuery->query =  queryString;
       dbQuery->escapedStrings.insert( user_uuid );
 
@@ -577,10 +577,21 @@ bool     ConnectionToUser:: HandleRequestForListOfPurchases( const PacketListOfU
 
    if( purchase->userUuid == m_userUuid )
    {
-      SendListOfOwnedProductsToClient( connectionId );
+      SendListOfProductsToClientAndAsset( connectionId );
    }
 
    return true;
+}
+
+//---------------------------------------------------------------
+
+void     ConnectionToUser:: SendListOfProductsToClientAndAsset( U32 connectionId )
+{
+   // Also, we must send before because the client is likely to begin requesting assets immediately and we 
+   // will hand back the wrong assts in that case.
+   userManager->SendListOfUserProductsToAssetServer( connectionId );
+
+   SendListOfOwnedProductsToClient( connectionId );
 }
 
 //---------------------------------------------------------------
@@ -625,7 +636,6 @@ bool     ConnectionToUser:: AddPurchase( const PacketAddPurchaseEntry* purchase 
       }
 
       
-
       if( purchase->userUuid == this->m_userUuid ||
           purchase->userEmail == this->m_email ||
           purchase->userName == this->m_userName
@@ -635,7 +645,8 @@ bool     ConnectionToUser:: AddPurchase( const PacketAddPurchaseEntry* purchase 
          float numToGive = static_cast<float>( purchase->quantity );
          WriteProductToUserRecord( m_userUuid, productUuid, price, numToGive, m_userUuid, "add purchase entry to self by admin" );
          AddToProductsOwned( productInfo.productId, productInfo.lookupName, productUuid, numToGive );
-         SendListOfOwnedProductsToClient( connectionId );
+         
+         SendListOfProductsToClientAndAsset( connectionId );
          return true;
       }
 
@@ -843,6 +854,7 @@ void     ConnectionToUser:: StoreListOfUsersProductsFromDB( PacketDbQueryResult*
       string lookupName =                             row[ TableUserOwnedProductSimple::Column_product_name_string ];
       string productUuid =                            row[ TableUserOwnedProductSimple::Column_product_uuid ];
       float  quantity = boost::lexical_cast< float> ( row[ TableUserOwnedProductSimple::Column_quantity ] );
+      string filterName =                            row[ TableUserOwnedProductSimple::Column_filter_name ];
 
       if( gameProductId == productId )
       {
@@ -861,7 +873,7 @@ void     ConnectionToUser:: StoreListOfUsersProductsFromDB( PacketDbQueryResult*
       AddCurrentlyLoggedInProductToUserPurchases();
    }
 
-   userWhoGetsProducts->SendListOfOwnedProductsToClient( connectionId );
+   userWhoGetsProducts->SendListOfProductsToClientAndAsset( connectionId );
 
    if( loadedForSelf == false )
    {
@@ -959,7 +971,7 @@ bool     ConnectionToUser:: HandleCheat_AddProduct( const string& productName )
       if( loadedConnection )
       {
          loadedConnection->AddToProductsOwned( productInfo.productId, productInfo.lookupName, productInfo.uuid, 1 );
-         loadedConnection->SendListOfOwnedProductsToClient( connectionId );
+         loadedConnection->SendListOfProductsToClientAndAsset( connectionId );
       }
    }
 
@@ -1196,6 +1208,7 @@ bool     ConnectionToUser:: UpdateProfile( const PacketUpdateUserProfile* update
 bool     ConnectionToUser:: UpdateProfile( const PacketUpdateSelfProfile* updateProfileRequest )
 {
    PacketUpdateSelfProfileResponse* response = new PacketUpdateSelfProfileResponse;
+   response->avatarIconId = 0;
 
    if( ( updateProfileRequest->userName == m_userName &&
       updateProfileRequest->avatarIconId == avatarIcon ) ||
@@ -1222,6 +1235,7 @@ bool     ConnectionToUser:: UpdateProfile( const PacketUpdateSelfProfile* update
       userManager->AddQueryToOutput( dbQuery );
 
       response->success = true;
+      response->avatarIconId = avatarIcon;
    }
 
    userManager->SendPacketToGateway( response, connectionId );

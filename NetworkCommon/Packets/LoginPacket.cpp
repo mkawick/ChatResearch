@@ -585,6 +585,7 @@ bool  PacketUpdateSelfProfile::SerializeOut( U8* data, int& bufferOffset ) const
 bool  PacketUpdateSelfProfileResponse::SerializeIn( const U8* data, int& bufferOffset )
 { 
    BasePacket::SerializeIn( data, bufferOffset );
+   Serialize::In( data, bufferOffset, avatarIconId );
    Serialize::In( data, bufferOffset, success );
 
    return true; 
@@ -593,6 +594,7 @@ bool  PacketUpdateSelfProfileResponse::SerializeIn( const U8* data, int& bufferO
 bool  PacketUpdateSelfProfileResponse::SerializeOut( U8* data, int& bufferOffset ) const 
 { 
    BasePacket::SerializeOut( data, bufferOffset );
+   Serialize::Out( data, bufferOffset, avatarIconId );
    Serialize::Out( data, bufferOffset, success );
 
    return true; 
