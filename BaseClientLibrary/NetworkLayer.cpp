@@ -2521,10 +2521,7 @@ void     NetworkLayer::HandleAssetData( PacketGameplayRawData* data )
             BoostThreadPerformance();
             wasBoosted = true;
          }
-      }
-      
-      RestoreNormalThreadPerformance();
-      
+      }      
    }
    else
    {
