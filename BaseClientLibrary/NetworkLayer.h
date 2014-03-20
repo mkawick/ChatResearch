@@ -110,10 +110,39 @@ class Group
 
 //-------------------------------------------
 
+///////////////////////////////////////////////////////
+struct AssetInfoExtended;
+
+class RawDataAccumulator
+{
+public:
+   RawDataAccumulator() : numBytes( 0 ) {}
+
+   void  AddPacket( PacketGameplayRawData * );
+   bool  IsDone() const;
+   void  PrepPackage( U8* & data, int& size );
+   void  PrepPackage( AssetInfoExtended& asset );
+
+   int   GetRemainingSize() const
+   { 
+      if( packetsOfData.size() > 1 )
+      {
+         return (*packetsOfData.begin())->index * PacketGameplayRawData::MaxBufferSize;// only an estimate
+      }
+      return 0;
+   }
+
+   int   numBytes;
+   deque< PacketGameplayRawData* > packetsOfData;
+};
+
+///////////////////////////////////////////////////////
+
 struct AssetInfoExtended : public AssetInfo
 {
-   U8*   data;
-   int   size;
+   U8*                     data;
+   int                     size;
+   RawDataAccumulator      rawDataBuffer;
 
    AssetInfoExtended();
    AssetInfoExtended( const AssetInfo& asset );
@@ -130,6 +159,11 @@ struct AssetInfoExtended : public AssetInfo
 
    bool  SerializeIn( const U8* data, int& bufferOffset ) { return false; } // do not serialize
    bool  SerializeOut( U8* data, int& bufferOffset ) const { return false; }
+
+   // loading from the network
+   void  AddAssetData( PacketGameplayRawData* data );
+   bool  IsAssetFullyLoaded() const;
+   int   GetRemainingSize() const;
 };
 
 ///////////////////////////////////////////////////////
@@ -281,29 +315,6 @@ typedef pair< string, AssetCollection > AssetMapPair;
 typedef AssetMap::iterator AssetMapIter;
 typedef AssetMap::const_iterator AssetMapConstIter;
 
-///////////////////////////////////////////////////////
-
-class RawDataAccumulator
-{
-public:
-   RawDataAccumulator() : numBytes( 0 ) {}
-
-   void  AddPacket( PacketGameplayRawData * );
-   bool  IsDone();
-   void  PrepPackage( U8* & data, int& size );
-   void  PrepPackage( AssetInfoExtended& asset );
-
-   int   GetRemainingSize() { 
-      if( packetsOfData.size() > 1 )
-      {
-         return (*packetsOfData.begin())->index * PacketGameplayRawData::MaxBufferSize;// only an estimate
-      }
-      return 0;
-   }
-
-   int   numBytes;
-   deque< PacketGameplayRawData* > packetsOfData;
-};
 
 ///////////////////////////////////////////////////////
 
@@ -501,7 +512,7 @@ protected:
    time_t                                    m_timeWhenThreadPerformanceBoosted;
 
    MBerNotifierList                          m_callbacks;
-   RawDataAccumulator                        m_rawDataBuffer[ PacketGameplayRawData::NumDataTypes ];
+   RawDataAccumulator                        m_rawDataBuffer;
 
    AssetMap                                  m_assets;
    vector< TournamentInfo >                  m_availableTournaments;
@@ -543,6 +554,7 @@ protected:
    void     InheritedUpdate();
 
    int      ProcessInputFunction();
+   void     HandleAssetData( PacketGameplayRawData* data );
    void     HandleData( PacketGameplayRawData* );
 
    bool     AddChatChannel( const ChatChannel& channel );

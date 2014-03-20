@@ -76,12 +76,8 @@ private:
    bool           PushPacketToProperOutput( BasePacket* packet );
 
    void           HandlePacketToKhaan( KhaanGateway* khaan, BasePacket* packet );
-   
-   void           MoveClientBoundPacketsFromTempToKhaan();
 
    void           HandleReroutRequest( U32 connectionId );
-   void           UpdateAllClientConnections();
-   void           AddClientConnectionNeedingUpdate( U32 id );
 
    int            ProcessInputFunction();
    int            ProcessOutputFunction();
@@ -111,7 +107,7 @@ private:
 
 
    U32                        m_connectionIdTracker;   
-   std::deque< BasePacket* >  m_clientBoundTempStorage;
+   std::deque< BasePacket* >  m_outputTempStorage;
 
    SocketToConnectionMap      m_socketToConnectionMap;
    SocketToConnectionMap      m_connectionToSocketMap;

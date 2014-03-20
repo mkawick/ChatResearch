@@ -23,9 +23,7 @@ KhaanGateway::KhaanGateway( int id, bufferevent* be ):
       m_gateway( NULL )
 {
    m_randomNumberOfPacketsBeforeLogin = 30 + rand() % 20;
-   SendThroughLibEvent( false );
-
-   //SetOutboudBufferSize( 1600 ); /// slower outbound buffer sending
+   SendThroughLibEvent( true );
 }
 
 //-----------------------------------------------------------------------------------------

@@ -393,6 +393,8 @@ bool  ConnectionToUser::FinalizeLogout()
    isLoggingOut = false;
    isReadyToBeCleanedUp = true;
 
+   cout << "User logout at " << GetDateInUTC() << endl;
+
    //userManager->SendPacketToGateway( logout, connectionId );
    return userManager->AddQueryToOutput( dbQuery );
 }
@@ -521,11 +523,11 @@ bool    ConnectionToUser:: SuccessfulLogin( U32 connectId, bool isReloggedIn )
 
    if( success == true )
    {
-      cout << "User successfully logged in" << endl;
+      cout << "User successfull login at " << GetDateInUTC() << endl;
    }
    else
    {
-      cout << "User not successfully logged in" << endl;
+      cout << "User unsuccessfull login at " << GetDateInUTC() << endl;
    }
    return success;//SendLoginStatusToOtherServers( userName, userUuid, connectionId, gameProductId, lastLoginTime, active, email, passwordHash, userId, loginKey, true, false );
 }

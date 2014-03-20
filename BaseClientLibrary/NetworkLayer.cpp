@@ -96,6 +96,28 @@ void  AssetInfoExtended:: MoveData( AssetInfoExtended& source )
    size = source.size; source.size = 0;
 }
 
+
+void  AssetInfoExtended::AddAssetData( PacketGameplayRawData* data )
+{
+   rawDataBuffer.AddPacket( data );
+   if( rawDataBuffer.IsDone() )
+   {
+      rawDataBuffer.PrepPackage( *this );
+   }
+}
+
+bool  AssetInfoExtended::IsAssetFullyLoaded() const
+{
+   if( size > 0 && data != NULL )
+      return true;
+   return false;
+}
+
+int   AssetInfoExtended::GetRemainingSize() const
+{
+   return rawDataBuffer.GetRemainingSize();
+}
+
 ///////////////////////////////////////////////////////////////////////////////////
 //------------------------------------------------------------
 
@@ -2475,17 +2497,52 @@ bool  NetworkLayer::HandlePacketReceived( BasePacket* packetIn )
 
 //------------------------------------------------------------------------
 
+void     NetworkLayer::HandleAssetData( PacketGameplayRawData* data )
+{
+   const string hash = data->identifier;
+   AssetInfoExtended asset;
+   bool  wasBoosted = false;
+   if( GetAsset( hash, asset ) )
+   {
+      asset.AddAssetData( data );
+      if( asset.IsAssetFullyLoaded() )
+      {
+         UpdateAssetData( hash, asset );
+         SerializedKeyValueVector< string > strings;
+         strings.insert( "hash", hash );
+         strings.insert( "category", asset.category );
+
+         Notification( UserNetworkEventNotifier::NotificationType_AssetDataAvailable, strings );
+      }
+      else
+      {
+         if( asset.GetRemainingSize() > 10*1024 )
+         {
+            BoostThreadPerformance();
+            wasBoosted = true;
+         }
+      }
+      
+      RestoreNormalThreadPerformance();
+      
+   }
+   else
+   {
+      cout << " unknown asset has arrived " << hash << endl;
+   }
+
+   if( wasBoosted == false )
+   {
+      RestoreNormalThreadPerformance();
+   }
+}
+
+//------------------------------------------------------------------------
+
 void     NetworkLayer::HandleData( PacketGameplayRawData* data )
 {
+   //const string& hash = data->identifier;
    int dataType = data->dataType;
-   RawDataAccumulator& rawDataBuffer = m_rawDataBuffer[ dataType ];
-   rawDataBuffer.AddPacket( data );
-   string hash = data->identifier;
-   if( rawDataBuffer.GetRemainingSize() > 10*1024 )
-   {
-      BoostThreadPerformance();
-   }
-   
    cout << "packet type: " << dataType << ", index: " << (int) data->index << ", size:" << (int) data->size;
    if( m_lastRawDataIndex - data->index > 1 )
    {
@@ -2494,40 +2551,30 @@ void     NetworkLayer::HandleData( PacketGameplayRawData* data )
    m_lastRawDataIndex = data->index;
    cout << endl;
 
-   if( rawDataBuffer.IsDone() )
+   if( dataType == PacketGameplayRawData::Asset )
    {
-      if( dataType == PacketGameplayRawData::Game )
-      {
-         GameData* store = new GameData();
-         rawDataBuffer.PrepPackage( store->data, store->size );         
+      HandleAssetData( data );
+   }
 
-         Notification( UserNetworkEventNotifier::NotificationType_GameData, store );
-      }
-      else
-      {
-         AssetInfoExtended asset;
-         if( GetAsset( hash, asset ) )
-         {
-            rawDataBuffer.PrepPackage( asset );
-            UpdateAssetData( hash, asset );
-
-            SerializedKeyValueVector< string > strings;
-            strings.insert( "hash", hash );
-            strings.insert( "category", asset.category );
-
-            Notification( UserNetworkEventNotifier::NotificationType_AssetDataAvailable, strings );
-         }
-         else
-         {
-            cout << " unknown asset has arrived " << hash << endl;
-         }
-         //keyValueIt->key
-      }
-      
-      RestoreNormalThreadPerformance();
+   //RawDataAccumulator& rawDataBuffer = m_rawDataBuffer;
+   m_rawDataBuffer.AddPacket( data );
+   if( m_rawDataBuffer.GetRemainingSize() > 10*1024 )
+   {
+      BoostThreadPerformance();
    }
    
+
+   if( m_rawDataBuffer.IsDone() )
+   {
+      GameData* store = new GameData();
+      m_rawDataBuffer.PrepPackage( store->data, store->size );         
+
+      Notification( UserNetworkEventNotifier::NotificationType_GameData, store );
+
+      RestoreNormalThreadPerformance();
+   }
 }
+
 
 //------------------------------------------------------------------------
 //------------------------------------------------------------------------
@@ -4720,7 +4767,7 @@ void  RawDataAccumulator:: AddPacket( PacketGameplayRawData * ptr )
    packetsOfData.push_back( ptr );
 }
 
-bool  RawDataAccumulator:: IsDone()
+bool  RawDataAccumulator:: IsDone() const
 {
    if( packetsOfData.size() < 1 )
       return false;
@@ -4784,6 +4831,7 @@ void  RawDataAccumulator:: PrepPackage( AssetInfoExtended& asset )
 
    numBytes = 0;
 }
+
 
 //-----------------------------------------------------------------------------
 
