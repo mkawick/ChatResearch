@@ -56,7 +56,7 @@ void   DiplodocusGateway::NotifyFinishedAdding( IChainedInterface* obj )
 
 U32      DiplodocusGateway::GetNextConnectionId()
 {
-   m_inputChainListMutex.lock();
+   Threading::MutexLock locker( m_inputChainListMutex );
    m_connectionIdTracker ++;
    if( m_connectionIdTracker >= ConnectionIdExclusion.low &&  m_connectionIdTracker <= ConnectionIdExclusion.high )
    {
@@ -64,7 +64,6 @@ U32      DiplodocusGateway::GetNextConnectionId()
    }
    U32 returnValue = m_connectionIdTracker;
 
-   m_inputChainListMutex.unlock();
    return returnValue;
 }
 
@@ -93,14 +92,14 @@ bool  DiplodocusGateway::AddInputChainData( BasePacket* packet, U32 connectionId
          cout << "Packet to servers: " << (int)packet->packetType << ":" << (int)packet->packetSubType << endl;
       }
 
-      m_inputChainListMutex.lock();
+      Threading::MutexLock locker( m_inputChainListMutex );
       m_packetsToBeSentInternally.push_back( wrapper );
-      m_inputChainListMutex.unlock();
       return true;
    }
    else
    {
-      delete packet;// it dies here. we should log this and try to disconnect the user
+      PacketFactory factory;
+      factory.CleanupPacket( packet );// it dies here. we should log this and try to disconnect the user
       return false;
    }
 }
@@ -146,11 +145,8 @@ void     DiplodocusGateway::InputConnected( IChainedInterface * chainedInput )
    khaan->SetGateway( this );
    //khaan->SendThroughLibEvent( true );
 
-   Threading::MutexLock locker( m_outputChainListMutex );
-   //m_connectionsNeedingUpdate.push_back( newId );
-   m_inputChainListMutex.lock();
+   Threading::MutexLock locker( m_inputChainListMutex );
    AddClientConnectionNeedingUpdate( newId );
-   m_inputChainListMutex.unlock();
 }
 
 //-----------------------------------------------------------------------------------------
@@ -497,10 +493,11 @@ bool  DiplodocusGateway::AddOutputChainData( BasePacket* packet, U32 serverType 
    {
       PacketGatewayWrapper* wrapper = static_cast< PacketGatewayWrapper* >( packet );
       U32 id = wrapper->connectionId;
-      m_inputChainListMutex.lock();
+
+      //cout << "packet to client stored" << endl;
+      Threading::MutexLock locker( m_inputChainListMutex );
       m_clientBoundTempStorage.push_back( packet );
       AddClientConnectionNeedingUpdate( id );
-      m_inputChainListMutex.unlock();
       
    }
    else
@@ -563,11 +560,8 @@ void  DiplodocusGateway::HandlePacketToKhaan( KhaanGateway* khaan, BasePacket* p
    }
    khaan->AddOutputChainData( packet );
 
-   // this is a performance improvement to prevent duplicate entries in this deque.
-   //Threading::MutexLock locker( m_mutex );
-   m_inputChainListMutex.lock();
+   Threading::MutexLock locker( m_inputChainListMutex );
    AddClientConnectionNeedingUpdate( connectionId );
-   m_inputChainListMutex.unlock();
 }
 
 
@@ -647,7 +641,7 @@ void  DiplodocusGateway::MoveClientBoundPacketsFromTempToKhaan()
 
 void  DiplodocusGateway::UpdateAllClientConnections()
 {
-   ConnectionIdQueue moreTimeNeededQueue;
+   /*ConnectionIdQueue moreTimeNeededQueue;
    while( m_connectionsNeedingUpdate.size() > 0 )// this has the m_outputChainListMutex protection
    {
       int connectionId = m_connectionsNeedingUpdate.front();
@@ -655,6 +649,7 @@ void  DiplodocusGateway::UpdateAllClientConnections()
       ConnectionMapIterator connIt = m_connectionMap.find( connectionId );
       if( connIt != m_connectionMap.end() )
       {
+         cout << "client updated" << endl;
          KhaanGateway* khaan = connIt->second.m_connector;
          if( khaan )
          {
@@ -663,11 +658,31 @@ void  DiplodocusGateway::UpdateAllClientConnections()
             {
                moreTimeNeededQueue.push_back( connectionId );
             }
+            khaan->
          }
       }
    }
    //
-   m_connectionsNeedingUpdate = moreTimeNeededQueue; // copy 
+   m_connectionsNeedingUpdate = moreTimeNeededQueue; // copy */
+
+   if( m_connectionsNeedingUpdate.size() != 0 )
+   {
+      m_connectionsNeedingUpdate.clear();
+   }
+
+   ConnectionMapIterator connIt = m_connectionMap.begin();
+   while( connIt != m_connectionMap.end() )
+   {
+      KhaanGateway* khaan = connIt->second.m_connector;
+      if( khaan )
+      {
+         if( khaan->NeedsUpdate() == true )
+         {
+            bool didFinish = khaan->Update();
+         }
+      }
+      connIt++;
+   }
 }
 
 //-----------------------------------------------------------------------------------------

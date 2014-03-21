@@ -537,7 +537,7 @@ bool  PacketGameplayRawData::SerializeIn( const U8* buffer, int& bufferOffset )
 
 bool  PacketGameplayRawData::SerializeOut( U8* buffer, int& bufferOffset ) const
 { 
-   assert( size > 0 && size <= MaxBufferSize );
+   //assert( size > 0 && size <= MaxBufferSize );// can sometime be used for testing
 
    PacketGameToServer::SerializeOut( buffer, bufferOffset );
    Serialize::Out( buffer, bufferOffset, identifier );

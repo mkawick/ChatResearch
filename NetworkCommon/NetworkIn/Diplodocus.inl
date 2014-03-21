@@ -732,6 +732,8 @@ bool  SendRawData( const U8* data, int size, int dataType, int maxPacketSize, U3
       remainingSize -= sizeToSend;
       workingData += sizeToSend;// offset the pointer
       numSends --;
+      if( remainingSize <= 0 )
+         break;
    }
    return true;
 }

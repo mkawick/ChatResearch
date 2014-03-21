@@ -228,6 +228,7 @@ bool  PacketUserStateChange::SerializeOut( U8* data, int& bufferOffset ) const
 ///////////////////////////////////////////////////////////////
 
 U8 PacketGatewayWrapper::SerializeBuffer[ PacketGatewayWrapper::BufferSize ];
+
 void  PacketGatewayWrapper::SetupPacket( BasePacket* packet, U32 connId )
 {
    size = 0;
@@ -239,7 +240,6 @@ void  PacketGatewayWrapper::SetupPacket( BasePacket* packet, U32 connId )
 
    gameInstanceId = packet->gameInstanceId;
    gameProductId = packet->gameProductId;
-   //packet->
 }
 
 ///////////////////////////////////////////////////////////////

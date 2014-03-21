@@ -76,6 +76,7 @@ public:
 	//-----------------------------------------------
 
    bool           Update();
+   bool           NeedsUpdate() const { return m_packetsOut.size() != 0; }
 
    void           SendThroughLibEvent( bool useLibeventToSend = true ) { m_useLibeventToSend = useLibeventToSend; }
    void           SetOutboudBufferSize( U32 size );
