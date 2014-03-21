@@ -116,12 +116,15 @@ struct AssetInfoExtended;
 class RawDataAccumulator
 {
 public:
-   RawDataAccumulator() : numBytes( 0 ) {}
+   RawDataAccumulator() : numBytes( 0 ), isReadyToBeCleared( false ) {}
 
    void  AddPacket( PacketGameplayRawData * );
    bool  IsDone() const;
    void  PrepPackage( U8* & data, int& size );
    void  PrepPackage( AssetInfoExtended& asset );
+
+   void  ClearData();
+   bool  NeedsClearing() const;
 
    int   GetRemainingSize() const
    { 
@@ -133,6 +136,7 @@ public:
    }
 
    int   numBytes;
+   bool  isReadyToBeCleared;
    deque< PacketGameplayRawData* > packetsOfData;
 };
 
@@ -164,6 +168,8 @@ struct AssetInfoExtended : public AssetInfo
    void  AddAssetData( PacketGameplayRawData* data );
    bool  IsAssetFullyLoaded() const;
    int   GetRemainingSize() const;
+   bool  NeedsClearing() const;
+   void  ClearTempData();
 };
 
 ///////////////////////////////////////////////////////
@@ -547,7 +553,7 @@ protected:
 
 protected:
    
-
+   void     CleanupLingeringMemory();
    bool     SerializePacketOut( BasePacket* packet ) const;// helper
 
    bool     HandlePacketReceived( BasePacket* packetIn );
@@ -567,6 +573,7 @@ protected:
 
    bool     GetAsset( const string& category, const string& hash, AssetInfoExtended& asset );
    bool     GetAsset( const string& hash, AssetInfoExtended& asset );
+   AssetInfoExtended*   GetAsset( const string& hash );
    bool     UpdateAssetData( const string& hash, AssetInfoExtended& asset );
 
    void     NotifyClientLoginStatus( bool isLoggedIn );

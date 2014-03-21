@@ -118,6 +118,16 @@ int   AssetInfoExtended::GetRemainingSize() const
    return rawDataBuffer.GetRemainingSize();
 }
 
+bool   AssetInfoExtended::NeedsClearing() const
+{
+   return rawDataBuffer.NeedsClearing();
+}
+
+void   AssetInfoExtended::ClearTempData()
+{
+   rawDataBuffer.ClearData();
+}
+
 ///////////////////////////////////////////////////////////////////////////////////
 //------------------------------------------------------------
 
@@ -510,6 +520,56 @@ void     NetworkLayer::UpdateNotifications()
       delete packetChatMissedHistoryResult;
                   
    }
+
+   CleanupLingeringMemory();
+}
+
+void     NetworkLayer::CleanupLingeringMemory()
+{
+   vector< string > categories;
+   GetAssetCategories( categories );
+  /* vector< string > ::iterator itCategory = categories.begin();
+   while( itCategory != categories.end() )
+   {
+      const string& categoryName = *itCategory++;
+      int numInCategory = GetNumAssets( categoryName );
+      for( int i=0; i< numInCategory; i++ )
+      {
+         AssetInfoExtended asset;
+         
+         GetAssetInfo( categoryName, i, asset );
+         if( asset.NeedsClearing() == true )
+         {
+            cout << "memory cleanup for name: " << asset.assetName << endl;
+            asset.ClearTempData();
+         }
+      }
+   }*/
+
+   AssetMapIter it = m_assets.begin();
+   while( it != m_assets.end() )
+   {
+      AssetCollection& collection = it->second;
+      it++;
+      AssetCollection::iterator itCollection = collection.begin();
+      while ( itCollection != collection.end() )
+      {
+         AssetInfoExtended& asset = *itCollection++;
+         if( asset.NeedsClearing() == true )
+         {
+            cout << "memory cleanup for name: " << asset.assetName << endl;
+            asset.ClearTempData();
+         }
+      }
+
+   }
+
+    /*  return false;
+   
+   if( index < 0 || index >= static_cast< int >( it->second.size() ) )
+      return false;
+   assetInfo = it->second[ index ];
+   return true;*/
 }
 
 //------------------------------------------------------------
@@ -2500,23 +2560,23 @@ bool  NetworkLayer::HandlePacketReceived( BasePacket* packetIn )
 void     NetworkLayer::HandleAssetData( PacketGameplayRawData* data )
 {
    const string hash = data->identifier;
-   AssetInfoExtended asset;
+   AssetInfoExtended* asset = GetAsset( hash );
    bool  wasBoosted = false;
-   if( GetAsset( hash, asset ) )
+   if( asset )
    {
-      asset.AddAssetData( data );
-      if( asset.IsAssetFullyLoaded() )
+      asset->AddAssetData( data );
+      if( asset->IsAssetFullyLoaded() )
       {
-         UpdateAssetData( hash, asset );
+         //UpdateAssetData( hash, asset );
          SerializedKeyValueVector< string > strings;
          strings.insert( "hash", hash );
-         strings.insert( "category", asset.category );
+         strings.insert( "category", asset->category );
 
          Notification( UserNetworkEventNotifier::NotificationType_AssetDataAvailable, strings );
       }
       else
       {
-         if( asset.GetRemainingSize() > 10*1024 )
+         if( asset->GetRemainingSize() > 10*1024 )
          {
             BoostThreadPerformance();
             wasBoosted = true;
@@ -2551,6 +2611,7 @@ void     NetworkLayer::HandleData( PacketGameplayRawData* data )
    if( dataType == PacketGameplayRawData::Asset )
    {
       HandleAssetData( data );
+      return;
    }
 
    //RawDataAccumulator& rawDataBuffer = m_rawDataBuffer;
@@ -2692,6 +2753,31 @@ bool     NetworkLayer::GetAsset( const string& hash, AssetInfoExtended& asset )
    }
 
    return false;
+}
+
+//------------------------------------------------------------------------
+
+AssetInfoExtended* NetworkLayer::GetAsset( const string& hash )
+{
+   AssetMapIter it = m_assets.begin();//find( category );
+   while( it != m_assets.end() )
+   {
+      vector< AssetInfoExtended >& arrayOfAssets = it->second;
+      it++;
+
+      vector< AssetInfoExtended >::iterator itAssets = arrayOfAssets.begin();
+      while( itAssets != arrayOfAssets.end() )
+      {
+         if( itAssets->assetHash == hash )
+         {
+            return &(*itAssets);
+            
+         }
+         itAssets++;
+      }
+   }
+
+   return NULL;
 }
 
 //------------------------------------------------------------------------
@@ -4804,7 +4890,6 @@ void  RawDataAccumulator:: PrepPackage( U8* & data, int& size )
 
 void  RawDataAccumulator:: PrepPackage( AssetInfoExtended& asset )
 {
-   PacketFactory factory;
    assert( IsDone() );
    asset.ClearData();
 
@@ -4812,21 +4897,36 @@ void  RawDataAccumulator:: PrepPackage( AssetInfoExtended& asset )
    asset.data = new U8[ asset.size + 1];
    U8* workingPointer = asset.data;
 
-   PacketGameplayRawData* packet = NULL;
-   while( packetsOfData.size() )
+   deque< PacketGameplayRawData* >::iterator it = packetsOfData.begin();
+   while( it != packetsOfData.end() )
    {
-      packet = packetsOfData.front();
-      packetsOfData.pop_front();
+      PacketGameplayRawData* packet = *it++;
       memcpy( workingPointer, packet->data, packet->size );
       workingPointer += packet->size;
+   }
+   asset.data[ asset.size ] = 0;
+
+   numBytes = 0;
+   isReadyToBeCleared = true;
+}
+
+void  RawDataAccumulator:: ClearData()
+{
+   PacketFactory factory;
+   while( packetsOfData.size() )
+   {
+      PacketGameplayRawData* packet = packetsOfData.front();
+      packetsOfData.pop_front();
 
       BasePacket* temp = static_cast< BasePacket* >( packet );
       factory.CleanupPacket( temp );
    }
-   asset.data[ asset.size ] = 0;
+   isReadyToBeCleared = false;
+}
 
-
-   numBytes = 0;
+bool  RawDataAccumulator:: NeedsClearing() const
+{
+   return isReadyToBeCleared && IsDone();
 }
 
 
