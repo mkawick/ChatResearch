@@ -143,7 +143,14 @@ NetworkLayer::NetworkLayer( U8 gameProductId, bool processOnlyOneIncommingPacket
       m_lastRawDataIndex( 0 ),
       m_connectionPort( 9600 ),
       m_enabledMultithreadedProtections( false ),
-      m_savedLoginInfo( NULL )
+      m_savedLoginInfo( NULL ),
+      m_languageId( LanguageList_english ),
+      m_showWinLossRecord( false ),
+      m_marketingOptOut( false ),
+      m_showGenderProfile( false ),
+      m_displayOnlineStatusToOtherUsers( false ),
+      m_blockContactInvitations( false ),
+      m_blockGroupInvitations( false )
 {
    SetSleepTime( m_normalSleepTime );
    //m_serverDns = "chat.mickey.playdekgames.com";
@@ -240,15 +247,17 @@ void     NetworkLayer::UpdateNotifications()
    
    while( localCopy.size() )
    {
+      PacketFactory factory;
       GameData* store = NULL;
-      PacketChatMissedHistoryResult* packetChatMissedHistoryResult = NULL;
-      PacketChatHistoryResult* packetChatHistoryResult = NULL;
+      //PacketChatMissedHistoryResult* // = NULL;
+//      PacketChatHistoryResult* packetChatHistoryResult = NULL;
 
       const QueuedNotification& qn = localCopy.front();
       SerializedKeyValueVector< string >::const_KVIterator keyValueIt = qn.genericKeyValuePairs.begin();
       
       for( list< UserNetworkEventNotifier* >::iterator it = m_callbacks.begin(); it != m_callbacks.end(); ++it )
       {
+         UserNetworkEventNotifier* notify = (*it);
          keyValueIt = qn.genericKeyValuePairs.begin(); // in case we have multiple interfaces
 
          switch( qn.eventId )
@@ -256,27 +265,27 @@ void     NetworkLayer::UpdateNotifications()
          case UserNetworkEventNotifier::NotificationType_AreWeUsingCorrectNetworkVersion:
             {
                U32 serverVersion = boost::lexical_cast< U32 >( qn.intValue );
-               (*it)->AreWeUsingCorrectNetworkVersion( GlobalNetworkProtocolVersion == serverVersion );
+               notify->AreWeUsingCorrectNetworkVersion( GlobalNetworkProtocolVersion == serverVersion );
             }
             break;
          case UserNetworkEventNotifier::NotificationType_FriendsUpdate:
             {
-               (*it)->FriendsUpdate();
+               notify->FriendsUpdate();
             }
             break;
          case UserNetworkEventNotifier::NotificationType_FriendOnlineStatusChanged:
             {
-               (*it)->FriendOnlineStatusChanged( keyValueIt->key );
+               notify->FriendOnlineStatusChanged( keyValueIt->key );
             }
             break;
          case UserNetworkEventNotifier::NotificationType_InvitationsReceivedUpdate:
             {
-               (*it)->InvitationsReceivedUpdate();
+               notify->InvitationsReceivedUpdate();
             }
             break;
          case UserNetworkEventNotifier::NotificationType_InvitationsSentUpdate:  
             {
-               (*it)->InvitationsSentUpdate();
+               notify->InvitationsSentUpdate();
             }
             break;
          case UserNetworkEventNotifier::NotificationType_InvitationAccepted:
@@ -285,52 +294,57 @@ void     NetworkLayer::UpdateNotifications()
                string to = keyValueIt->value; ++keyValueIt;
                string accepted = keyValueIt->value; ++keyValueIt;
 
-               (*it)->InvitationAccepted( from, to, accepted == "1" );
+               notify->InvitationAccepted( from, to, accepted == "1" );
             }
             break;
          case UserNetworkEventNotifier::NotificationType_SearchResults:
             {
-               (*it)->SearchForUserResultsAvailable();
+               notify->SearchForUserResultsAvailable();
             }
             break;
          case UserNetworkEventNotifier::NotificationType_OnError:
             {
                U32 code = qn.intValue; 
                U16 status = boost::lexical_cast< U16 >( qn.intValue2 ); 
-               (*it)->OnError( code, status );
+               notify->OnError( code, status );
             }
             break;
          case UserNetworkEventNotifier::NotificationType_UserLogin:
             {
                bool isLoggedIn = qn.intValue ? true: false; 
-               (*it)->UserLogin( isLoggedIn );
+               notify->UserLogin( isLoggedIn );
 
                NotifyClientToBeginSendingRequests(); 
             }
             break;
          case UserNetworkEventNotifier::NotificationType_UserLogout:
             {
-               (*it)->UserLogout();
+               notify->UserLogout();
             }
             break;
          case UserNetworkEventNotifier::NotificationType_ServerRequestsListOfUserPurchases:
             {
-               (*it)->ServerRequestsListOfUserPurchases();
+               notify->ServerRequestsListOfUserPurchases();
             }
             break;
          case UserNetworkEventNotifier::NotificationType_ListOfAggregateUserPurchases:
             {
-               (*it)->ListOfAggregateUserPurchases();
+               notify->ListOfAggregateUserPurchases();
             }
             break;
          case UserNetworkEventNotifier::NotificationType_UserProfileResponse:
             {
-               (*it)->UserProfileResponse();
+               bool notifyThatSelfUpdated = qn.intValue ? true: false; 
+               PacketRequestUserProfileResponse* profile = static_cast<PacketRequestUserProfileResponse*>( qn.meta );
+               
+               notify->UserProfileResponse();
+               if( notifyThatSelfUpdated )
+                  notify->SelfProfileUpdate( true );
             }
             break;
          case UserNetworkEventNotifier::NotificationType_ListOfAvailableProducts:
             {
-               (*it)->ListOfAvailableProducts();
+               notify->ListOfAvailableProducts();
             }
             break;
          case UserNetworkEventNotifier::NotificationType_OtherUsersProfile:
@@ -341,24 +355,24 @@ void     NetworkLayer::UpdateNotifications()
                   profileKeyValues.insert( pair< string, string >( keyValueIt->key, keyValueIt->value ) );
                   keyValueIt++;
                }
-               (*it)->OtherUsersProfile( profileKeyValues );
+               notify->OtherUsersProfile( profileKeyValues );
             }
             break;
          case UserNetworkEventNotifier::NotificationType_SelfProfileUpdate:
             {
                bool success = qn.intValue ? true: false; 
-               (*it)->SelfProfileUpdate( success );
+               notify->SelfProfileUpdate( success );
             }
             break;
             
          case UserNetworkEventNotifier::NotificationType_ChatListUpdate:
             {
-               (*it)->ChatListUpdate();
+               notify->ChatListUpdate();
             }
             break;
          case UserNetworkEventNotifier::NotificationType_ChatChannelUpdate:
             {
-               (*it)->ChatChannelUpdate( keyValueIt->key );
+               notify->ChatChannelUpdate( keyValueIt->key );
             }
             break;
 
@@ -368,14 +382,14 @@ void     NetworkLayer::UpdateNotifications()
                string channelUuid = qn.genericKeyValuePairs.find( "channelUuid" );
                string userUuid = qn.genericKeyValuePairs.find( "userUuid" );
                string timeStamp = qn.genericKeyValuePairs.find( "timeStamp" );
-               (*it)->ChatReceived( message, channelUuid, userUuid, timeStamp );
+               notify->ChatReceived( message, channelUuid, userUuid, timeStamp );
             }
             break;
          case UserNetworkEventNotifier::NotificationType_ChatChannelHistory:
          case UserNetworkEventNotifier::NotificationType_ChatP2PHistory:
             {
-               packetChatHistoryResult = static_cast<PacketChatHistoryResult*>( qn.meta );
-               (*it)->ServerRequestsListOfUserPurchases();
+               PacketChatHistoryResult* packetChatHistoryResult = static_cast<PacketChatHistoryResult*>( qn.meta );
+               notify->ServerRequestsListOfUserPurchases();
                list< ChatEntry > listOfChats;
                int num = packetChatHistoryResult->chat.size();
                for( int i=0; i<num; i++ )
@@ -386,12 +400,14 @@ void     NetworkLayer::UpdateNotifications()
 
                if( packetChatHistoryResult->chatChannelUuid.size() )
                {
-                  (*it)->ChatChannelHistory( packetChatHistoryResult->chatChannelUuid, listOfChats );
+                  notify->ChatChannelHistory( packetChatHistoryResult->chatChannelUuid, listOfChats );
                }
                else
                {
-                  (*it)->ChatP2PHistory( packetChatHistoryResult->userUuid, listOfChats );
+                  notify->ChatP2PHistory( packetChatHistoryResult->userUuid, listOfChats );
                }
+               BasePacket* deleted = static_cast<BasePacket*>( qn.meta );
+               factory.CleanupPacket( deleted );
             }
             break;
          case UserNetworkEventNotifier::NotificationType_ChatHistoryMissedSinceLastLoginComposite:
@@ -407,14 +423,16 @@ void     NetworkLayer::UpdateNotifications()
                }
                for( list< UserNetworkEventNotifier* >::iterator it = m_callbacks.begin(); it != m_callbacks.end(); ++it )
                {
-                  (*it)->ChatHistoryMissedSinceLastLoginComposite( listOfChats );
+                  notify->ChatHistoryMissedSinceLastLoginComposite( listOfChats );
                }
+               BasePacket* deleted = static_cast<BasePacket*>( qn.meta );
+               factory.CleanupPacket( deleted );
             }
             break;
 
          case UserNetworkEventNotifier::NotificationType_ReadyToStartSendingRequestsToGame:
             {
-               (*it)->ReadyToStartSendingRequestsToGame();
+               notify->ReadyToStartSendingRequestsToGame();
             }
             break;
 
@@ -427,7 +445,7 @@ void     NetworkLayer::UpdateNotifications()
                bool success = false;
                if( successString == "1" )
                   success = true;
-               (*it)->NewChatChannelAdded( name, uuid, success );
+               notify->NewChatChannelAdded( name, uuid, success );
             }
             break;
    
@@ -439,7 +457,7 @@ void     NetworkLayer::UpdateNotifications()
                bool success = false;
                if( successString == "1" )
                   success = true;
-               (*it)->ChatChannelDeleted( uuid, success );
+               notify->ChatChannelDeleted( uuid, success );
             }
             break;
          case UserNetworkEventNotifier::NotificationType_ChatChannel_UserAdded:
@@ -449,7 +467,7 @@ void     NetworkLayer::UpdateNotifications()
                string userName = qn.genericKeyValuePairs.find( "userName" );
                string userUuid = qn.genericKeyValuePairs.find( "userUuid" );
 
-               (*it)->ChatChannel_UserAdded( channelName, channelUuid, userName, userUuid );
+               notify->ChatChannel_UserAdded( channelName, channelUuid, userName, userUuid );
             }
             break;
 
@@ -462,18 +480,18 @@ void     NetworkLayer::UpdateNotifications()
                bool success = false;
                if( successString == "1" )
                   success = true;
-               (*it)->ChatChannel_UserRemoved( channelUuid, userUuid, success );
+               notify->ChatChannel_UserRemoved( channelUuid, userUuid, success );
             }
             break;
                
          case UserNetworkEventNotifier::NotificationType_AssetCategoriesLoaded:
             {
-               (*it)->AssetCategoriesLoaded();
+               notify->AssetCategoriesLoaded();
             }
             break;
          case UserNetworkEventNotifier::NotificationType_AssetManifestAvailable:
             {
-               (*it)->AssetManifestAvailable( keyValueIt->key );
+               notify->AssetManifestAvailable( keyValueIt->key );
             }
             break;
          case UserNetworkEventNotifier::NotificationType_GameData:
@@ -481,7 +499,7 @@ void     NetworkLayer::UpdateNotifications()
                store = static_cast< GameData* >( qn.meta );
                if( store && store->data )
                {
-                  (*it)->GameData( store->size, store->data );
+                  notify->GameData( store->size, store->data );
                }
             }
             break;
@@ -490,18 +508,18 @@ void     NetworkLayer::UpdateNotifications()
                string hash = qn.genericKeyValuePairs.find( "hash" );
                string category = qn.genericKeyValuePairs.find( "category" );
 
-               (*it)->AssetDataAvailable( category, hash );
+               notify->AssetDataAvailable( category, hash );
             }
             break;
 
             /*   case UserNetworkEventNotifier::NotificationType_ServerRequestsListOfUserPurchases:
             {
-               (*it)->ServerRequestsListOfUserPurchases();
+               notify->ServerRequestsListOfUserPurchases();
             }
             break;*/
             /*   case UserNetworkEventNotifier::NotificationType_ServerRequestsListOfUserPurchases:
             {
-               (*it)->ServerRequestsListOfUserPurchases();
+               notify->ServerRequestsListOfUserPurchases();
             }
             break;*/
 
@@ -516,8 +534,8 @@ void     NetworkLayer::UpdateNotifications()
          delete [] store->data;
          delete store;
       }
-      delete packetChatHistoryResult;// old style cleanup, 
-      delete packetChatMissedHistoryResult;
+      //delete packetChatHistoryResult;// old style cleanup, 
+      //delete packetChatMissedHistoryResult;
                   
    }
 
@@ -758,6 +776,25 @@ bool  NetworkLayer::RequestProfile( const string userName )//if empty, profile f
 
 //-----------------------------------------------------------------------------
 
+void  NetworkLayer::FillProfileChangeRequest( PacketUpdateSelfProfile& profile ) const 
+{
+   profile.userName = m_userName;
+   profile.email = m_email;
+   //profile.
+
+   profile.languageId = m_languageId;
+   profile.avatarIconId = m_avatarId;
+   profile.motto = m_motto;
+   profile.showWinLossRecord = m_showWinLossRecord;
+   profile.marketingOptOut = m_marketingOptOut;
+   profile.showGenderProfile = m_showGenderProfile;
+   profile.displayOnlineStatusToOtherUsers = m_displayOnlineStatusToOtherUsers;
+   profile.blockContactInvitations = m_blockContactInvitations;
+   profile.blockGroupInvitations = m_blockGroupInvitations;
+}
+
+//-----------------------------------------------------------------------------
+
 bool  NetworkLayer::RequestChangeAvatarId( int newId ) const
 {
    if( m_isConnected == false )
@@ -765,10 +802,9 @@ bool  NetworkLayer::RequestChangeAvatarId( int newId ) const
       return false;
    }
    PacketUpdateSelfProfile profile;
+   FillProfileChangeRequest( profile );
+
    profile.avatarIconId = newId;
-   profile.userName = m_userName;
-   
-   //profile.email = m_email;
 
    SerializePacketOut( &profile );
 
@@ -806,7 +842,7 @@ bool  NetworkLayer::RequestChatChannelList( )
 
 //-----------------------------------------------------------------------------
 
-bool  NetworkLayer::UpdateUserProfile( const string userName, const string& email, const string& userUuid, int adminLevel, int languageId, bool isActive, bool showWinLossRecord, bool marketingOptOut, bool showGenderProfile )
+bool  NetworkLayer::AdminUpdateUserProfile( const string userName, const string& email, const string& userUuid, int adminLevel, int languageId, bool isActive, bool showWinLossRecord, bool marketingOptOut, bool showGenderProfile )
 {
    if( m_isConnected == false )
    {
@@ -820,10 +856,136 @@ bool  NetworkLayer::UpdateUserProfile( const string userName, const string& emai
    update.adminLevel =           adminLevel;
    update.languageId =           languageId;
    update.isActive =             isActive;
-   update.showWinLossRecord =    showWinLossRecord;
+   /*update.showWinLossRecord =    showWinLossRecord;
    update.marketingOptOut =      marketingOptOut;
-   update.showGenderProfile =    showGenderProfile;
+   update.showGenderProfile =    showGenderProfile;*/
 
+   SerializePacketOut( &update );
+
+   return true;
+}
+
+//-----------------------------------------------------------------------------
+
+bool     NetworkLayer::UpdateOwnProfile( const string& userName, const string& email, const string& motto )
+{
+   if( m_isConnected == false )
+   {
+      return false;
+   }
+
+   PacketUpdateSelfProfile update;
+   FillProfileChangeRequest( update );
+   update.userName =             userName;
+   update.email =                email;
+   update.motto =                motto;
+
+   SerializePacketOut( &update );
+
+   return true;
+}
+
+bool     NetworkLayer::SetLanguage( int languageId )
+{
+   if( m_isConnected == false )
+   {
+      return false;
+   }
+   if( languageId < LanguageList_english || languageId >= LanguageList_count )
+      return false;
+
+   PacketUpdateSelfProfile update;
+   FillProfileChangeRequest( update );
+   update.languageId =           languageId;
+   SerializePacketOut( &update );
+
+   return true;
+}
+bool     NetworkLayer::SetMarketingOptOut ( bool marketingOptOut )
+{
+   if( m_isConnected == false )
+   {
+      return false;
+   }
+
+   PacketUpdateSelfProfile update;
+   FillProfileChangeRequest( update );
+   update.marketingOptOut =           marketingOptOut;
+   SerializePacketOut( &update );
+
+   return true;
+}
+
+bool     NetworkLayer::SetShowWinLossRecord( bool winLossShow )
+{
+   if( m_isConnected == false )
+   {
+      return false;
+   }
+
+   PacketUpdateSelfProfile update;
+   FillProfileChangeRequest( update );
+   update.showWinLossRecord =           winLossShow;
+   SerializePacketOut( &update );
+
+   return true;
+}
+
+bool     NetworkLayer::SetShowGenderProfile( bool showGenderProfile )
+{
+   if( m_isConnected == false )
+   {
+      return false;
+   }
+
+   PacketUpdateSelfProfile update;
+   FillProfileChangeRequest( update );
+   update.showGenderProfile =           showGenderProfile;
+   SerializePacketOut( &update );
+
+   return true;
+}
+
+bool     NetworkLayer::SetDisplayOnlineStatusToOtherUsers( bool display )
+{
+   if( m_isConnected == false )
+   {
+      return false;
+   }
+
+   PacketUpdateSelfProfile update;
+   FillProfileChangeRequest( update );
+   update.displayOnlineStatusToOtherUsers =           display;
+   SerializePacketOut( &update );
+
+   return true;
+}
+
+bool     NetworkLayer::SetBlockContactInvitations( bool block )
+{
+   if( m_isConnected == false )
+   {
+      return false;
+   }
+
+   PacketUpdateSelfProfile update;
+   FillProfileChangeRequest( update );
+   update.blockContactInvitations =           block;
+   SerializePacketOut( &update );
+
+   return true;
+}
+
+bool     NetworkLayer::SetBlockGroupInvitations( bool block )
+{
+   if( m_isConnected == false )
+   {
+      return false;
+   }
+
+   PacketUpdateSelfProfile update;
+   FillProfileChangeRequest( update );
+   update.blockGroupInvitations =           block;
    SerializePacketOut( &update );
 
    return true;
@@ -1357,22 +1519,22 @@ bool    NetworkLayer::GetTournamentInfo( int index, TournamentInfo& tournamentIn
 
 
 //-----------------------------------------------------------------------------
-
+/*
 bool     NetworkLayer::RequestListOfGames() const
 {
    PacketRequestListOfGames listOfGames;
    SerializePacketOut( &listOfGames );
 
    return true;
-}
+}*/
 
 //-----------------------------------------------------------------------------
-
+/*
 bool     NetworkLayer::RequestListOfUsersLoggedIntoGame( ) const
 {
    assert( 0 );// not finished
    return true;
-}
+}*/
 
 //-----------------------------------------------------------------------------
 
@@ -1818,10 +1980,10 @@ bool     NetworkLayer::SerializePacketOut( BasePacket* packet ) const
 
 //-----------------------------------------------------------------------------
 
-int      NetworkLayer::ProcessInputFunction()
+int      NetworkLayer::MainLoop_InputProcessing()
 {
    ExpireThreadPerformanceBoost();
-   return Fruitadens::ProcessInputFunction();
+   return Fruitadens::MainLoop_InputProcessing();
 }
 
 void     NetworkLayer::BoostThreadPerformance()
@@ -2149,9 +2311,25 @@ bool  NetworkLayer::HandlePacketReceived( BasePacket* packetIn )
             case PacketLogin::LoginType_RequestUserProfileResponse:
                {
                   PacketRequestUserProfileResponse* profile = static_cast<PacketRequestUserProfileResponse*>( packetIn );
-                  m_avatarId = profile->iconId;
+                  bool notifyThatSelfUpdated = false;
 
-                  Notification( UserNetworkEventNotifier::NotificationType_UserProfileResponse, profile );
+                  if( profile->userUuid == m_uuid )
+                  {
+                     notifyThatSelfUpdated = true;
+                     m_userName = profile->userName;
+
+                     m_languageId = profile->languageId;
+                     m_avatarId = profile->iconId;
+                     m_motto = profile->motto;
+                     m_showWinLossRecord = profile->showWinLossRecord;
+                     m_marketingOptOut = profile->marketingOptOut;
+                     m_showGenderProfile = profile->showGenderProfile;
+                     m_displayOnlineStatusToOtherUsers = profile->displayOnlineStatusToOtherUsers;
+                     m_blockContactInvitations = profile->blockContactInvitations;
+                     m_blockGroupInvitations = profile->blockGroupInvitations;
+                  }
+
+                  Notification( UserNetworkEventNotifier::NotificationType_UserProfileResponse, notifyThatSelfUpdated );
                }
                break;
             case PacketLogin::LoginType_RequestListOfProductsResponse:

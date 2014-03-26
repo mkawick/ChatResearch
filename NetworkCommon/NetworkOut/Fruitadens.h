@@ -60,8 +60,8 @@ protected:
    bool           SetupConnection( const char* serverName, int port );
    bool           CreateSocket();
 
-   int            ProcessInputFunction();
-   int            ProcessOutputFunction();
+   int            MainLoop_InputProcessing();
+   int            MainLoop_OutputProcessing();
 
    virtual void   PostProcessInputPackets( int bytesRead );
 

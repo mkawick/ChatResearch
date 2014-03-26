@@ -230,7 +230,7 @@ void  Fruitadens :: AttemptConnection()
 
 //-----------------------------------------------------------------------------
 
-int   Fruitadens :: ProcessInputFunction()
+int   Fruitadens :: MainLoop_InputProcessing()
 {
    if( m_isConnected == false )
    {
@@ -338,7 +338,7 @@ void  Fruitadens::PostProcessInputPackets( int bytesRead )
 
 //-----------------------------------------------------------------------------------------
 
-int  Fruitadens::ProcessOutputFunction()
+int  Fruitadens::MainLoop_OutputProcessing()
 {
    if( m_isConnected == false )
    {

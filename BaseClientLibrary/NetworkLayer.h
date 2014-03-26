@@ -349,23 +349,41 @@ public:
    bool     IsLoggingIn() const { return m_isLoggingIn; }
    bool     IsLoggedIn() const { return m_isLoggedIn; }   
    string   GetUsername() const { return m_userName; }
+   string   GetEmail() const { return m_email; }
    int      GetAvatarId() const { return m_avatarId; }
-   bool     RequestChangeAvatarId( int newId ) const;
+   string   GetMotto() const { return m_motto; }
+   int      GetLanguage() const { return m_languageId; }
+   bool     GetShowWinLossRecord() const { return m_showWinLossRecord; }
+   bool     GetMarketingOptOut() const { return m_marketingOptOut; }
+   bool     GetShowGenderProfile() const { return m_showGenderProfile; }
+   bool     GetDisplayOnlineStatusToOtherUsers() const { return m_displayOnlineStatusToOtherUsers; }
+   bool     GetBlockContactInvitations() const { return m_blockContactInvitations; }
+   bool     GetBlockGroupInvitations() const { return m_blockGroupInvitations; }      
 
    bool     RequestProfile( const string userName ); //if empty, profile for currently logged in user is used. For other users, you must have admin
    bool     RequestOtherUserInGameProfile( const string& userName ); // friends, games list, etc
    bool     RequestChatChannelList();
 
+   bool     RequestChangeAvatarId( int newId ) const;
+   // for things that don't change, send blank strings and 0s.
+   bool     UpdateOwnProfile( const string& userName, const string& email, const string& motto );
+   bool     SetLanguage( int languageId );
+   bool     SetMarketingOptOut ( bool marketingOptOut = true );
+   bool     SetShowWinLossRecord( bool winLossShow = true );
+   bool     SetShowGenderProfile( bool showGenderProfile = true );
+   bool     SetDisplayOnlineStatusToOtherUsers( bool display = true );
+   bool     SetBlockContactInvitations( bool block = true );
+   bool     SetBlockGroupInvitations( bool block = true );
+
    // note that changing a username, email, or uuid is not possible. This is for lookup only.
-   bool     UpdateUserProfile( const string userName, const string& email, const string& userUuid, int adminLevel, int languageId, bool isActive, bool showWinLossRecord, bool marketingOptOut, bool showGenderProfile );
+   // this is meant for other users and only an admin may use it.
+   bool     AdminUpdateUserProfile( const string userName, const string& email, const string& userUuid, int adminLevel, int languageId, bool isActive, bool showWinLossRecord, bool marketingOptOut, bool showGenderProfile );
 
    //--------------------------------------------------------------
 
    //--------------------------------------------------------------
    // ********************   Friends/Chat     *******************
    bool     RequestListOfFriends() const;
-   bool     RequestListOfGames() const;
-   bool     RequestListOfUsersLoggedIntoGame( ) const;
    bool     RequestFriendDemographics( const string& username ) const;
    bool     RequestUserWinLossRecord( const string& username ) const;
 
@@ -467,6 +485,7 @@ public:
    string   GetLocalUUID() { return m_uuid; }
 
    string   GenerateHash( const string& stringThatIWantHashed );
+   void     FillProfileChangeRequest( PacketUpdateSelfProfile& profile ) const;
 
    void     SendNotifications();
    
@@ -486,11 +505,21 @@ protected:
 
 
    string                                    m_userName, m_attemptedUsername;
+   string                                    m_email;
    string                                    m_uuid;
    string                                    m_serverDns;
    string                                    m_loginKey;
+   string                                    m_motto;
    U32                                       m_selectedGame;
    int                                       m_avatarId;
+   int                                       m_languageId;
+
+   bool                                      m_showWinLossRecord;
+   bool                                      m_marketingOptOut;
+   bool                                      m_showGenderProfile;
+   bool                                      m_displayOnlineStatusToOtherUsers;
+   bool                                      m_blockContactInvitations;
+   bool                                      m_blockGroupInvitations;
 
    SerializedKeyValueVector< InvitationInfo > m_invitationsReceived;
    SerializedKeyValueVector< InvitationInfo > m_invitationsSent;
@@ -559,7 +588,7 @@ protected:
    bool     HandlePacketReceived( BasePacket* packetIn );
    void     InheritedUpdate();
 
-   int      ProcessInputFunction();
+   int      MainLoop_InputProcessing();
    void     HandleAssetData( PacketGameplayRawData* data );
    void     HandleData( PacketGameplayRawData* );
 
@@ -652,8 +681,7 @@ public:
    //--------------------------------------------------------------
    // ********************   Friends/Chat     *******************
    bool     RequestListOfFriends() const;
-   bool     RequestListOfGames() const;
-   bool     RequestListOfUsersLoggedIntoGame( ) const;
+   //bool     RequestListOfGames() const;
    bool     RequestFriendDemographics( const string& username ) const;
    bool     RequestUserWinLossRecord( const string& username ) const;
 

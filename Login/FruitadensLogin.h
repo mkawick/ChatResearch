@@ -12,7 +12,7 @@ private:
 
    //void     InitalConnectionCallback();
    bool     FilterOutwardPacket( BasePacket* packet ) const;
-   int      ProcessOutputFunction();
+   int      MainLoop_OutputProcessing();
 };
 
 ///////////////////////////////////////////////////////////////////////////////

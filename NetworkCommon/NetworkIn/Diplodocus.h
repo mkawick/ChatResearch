@@ -41,7 +41,7 @@ struct DelayedPacket
 
 
 //-----------------------------------------------------------------------------
-// this intermediate class exiists solely to share a common lib and simplify inheritance.
+// this intermediate class exists solely to share a common lib and simplify inheritance.
 class BasePacketChainHandler : public Threading::CChainedThread < BasePacket* >
 {
 protected:
@@ -161,8 +161,8 @@ protected:
    void	         AddClientConnection( InputChainType* khaan );
    bool	         FindKhaan( const string& connectionName, InputChainType** connection );
 
-   int            ProcessInputFunction();
-   int            ProcessOutputFunction();
+   int            MainLoop_InputProcessing();
+   int            MainLoop_OutputProcessing();
    int            CommonUpdate();
 
    void           SendServerIdentification();

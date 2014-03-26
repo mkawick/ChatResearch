@@ -68,8 +68,8 @@ private:
    void     HandlePacketToKhaan( KhaanConnector* khaan, BasePacket* packet );
    U32      GetNextConnectionId();
 
-   int      ProcessInputFunction();
-   int      ProcessOutputFunction();
+   int      MainLoop_InputProcessing();
+   int      MainLoop_OutputProcessing();
    void     OutputCurrentStats();
    void     SelectPreferredGateways();
 

@@ -246,13 +246,13 @@ bool FruitadensGateway::FilterOutwardPacket( BasePacket* packet ) const
 
 //-----------------------------------------------------------------------------------------
 
-int   FruitadensGateway::ProcessInputFunction()
+int   FruitadensGateway::MainLoop_InputProcessing()
 {
    // take any overflow data and save it.
    //memcpy( m_receiveBuffer, m_overflowBuffer, m_bytesInOverflow );
    //m_receiveBufferOffset = m_bytesInOverflow;// save the offset
 
-   int returnVal = Fruitadens :: ProcessInputFunction();
+   int returnVal = Fruitadens :: MainLoop_InputProcessing();
 
    FindGateway();
 
@@ -262,7 +262,7 @@ int   FruitadensGateway::ProcessInputFunction()
 
 //-----------------------------------------------------------------------------------------
 
-int  FruitadensGateway::ProcessOutputFunction()
+int  FruitadensGateway::MainLoop_OutputProcessing()
 {
    if( m_isConnected == false )
    {

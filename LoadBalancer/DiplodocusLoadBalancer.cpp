@@ -62,7 +62,7 @@ U32      DiplodocusLoadBalancer::GetNextConnectionId()
 
 //-----------------------------------------------------------------------------------------
 
-int   DiplodocusLoadBalancer::ProcessInputFunction()
+int   DiplodocusLoadBalancer::MainLoop_InputProcessing()
 {
    // m_inputChainListMutex.lock   // see CChainedThread<Type>::CallbackFunction()
    CommonUpdate();
@@ -142,7 +142,7 @@ void     DiplodocusLoadBalancer::SelectPreferredGateways()
          return;
       }
 
-      // gateways do not come and go, so threaded protections are not needed, plus this is invoked from ProcessInputFunction  which has its own
+      // gateways do not come and go, so threaded protections are not needed, plus this is invoked from MainLoop_InputProcessing  which has its own
       vector< GatewayInfo* > sortedRoutes;
       list< GatewayInfo >::iterator it = m_gatewayRoutes.begin();
       while( it != m_gatewayRoutes.end() )
@@ -341,14 +341,14 @@ void     DiplodocusLoadBalancer::HandlePacketToKhaan( KhaanConnector* khaan, Bas
 
 //-----------------------------------------------------------------------------------------
 
-int   DiplodocusLoadBalancer::ProcessOutputFunction()
+int   DiplodocusLoadBalancer::MainLoop_OutputProcessing()
 {
    // mutex is locked already
 
    // lookup packet info and pass it back to the proper socket if we can find it.
    if( m_connectionsNeedingUpdate.size() )
    {
-      //PrintText( "ProcessOutputFunction" );
+      //PrintText( "MainLoop_OutputProcessing" );
 
       while( m_connectionsNeedingUpdate.size() > 0 )// this has the m_outputChainListMutex protection
       {

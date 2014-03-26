@@ -18,10 +18,10 @@ public:
 private:
 
    bool     FilterOutwardPacket( BasePacket* packet ) const;
-   int      ProcessOutputFunction();
+   int      MainLoop_OutputProcessing();
    void     PostProcessInputPackets( int bytesRead );
 
-   int      ProcessInputFunction();
+   int      MainLoop_InputProcessing();
    void     FindGateway();
 
    DiplodocusGateway* m_gateway;

@@ -670,7 +670,7 @@ int      Diplodocus< InputChain, OutputChain >::CommonUpdate()
 //------------------------------------------------------------------------------------------
 
 template< typename InputChain, typename OutputChain >
-int      Diplodocus< InputChain, OutputChain >::ProcessInputFunction()
+int      Diplodocus< InputChain, OutputChain >::MainLoop_InputProcessing()
 {
    return CommonUpdate();
 }
@@ -678,7 +678,7 @@ int      Diplodocus< InputChain, OutputChain >::ProcessInputFunction()
 //------------------------------------------------------------------------------------------
 
 template< typename InputChain, typename OutputChain >
-int      Diplodocus< InputChain, OutputChain >::ProcessOutputFunction()
+int      Diplodocus< InputChain, OutputChain >::MainLoop_OutputProcessing()
 {
    CommonUpdate();
 

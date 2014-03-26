@@ -30,13 +30,13 @@ int       CChainedThread<Type>::CallbackFunction()
    ChainedInterface< Type >::ProcessEvents();
 
    ChainedInterface< Type >::m_inputChainListMutex.lock();
-   ProcessInputFunction();
+   MainLoop_InputProcessing();
    ChainedInterface< Type >::m_inputChainListMutex.unlock();
 
    //-------------------------------
 
    ChainedInterface< Type >::m_outputChainListMutex.lock();
-   ProcessOutputFunction();
+   MainLoop_OutputProcessing();
    ChainedInterface< Type >::m_outputChainListMutex.unlock();
 
    return 0;

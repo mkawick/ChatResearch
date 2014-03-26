@@ -49,7 +49,7 @@ bool  FruitadensServerToServer::FilterOutwardPacket( BasePacket* packet ) const
 
 //-----------------------------------------------------------------------------------------
 
-int  FruitadensServerToServer::ProcessOutputFunction()
+int  FruitadensServerToServer::MainLoop_OutputProcessing()
 {
    if( m_isConnected == false )
    {

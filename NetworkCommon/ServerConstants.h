@@ -53,3 +53,18 @@ int   FindProductId( const char* value );
 int   FindPlatformId( const char* value );
 const char*   FindProductName( int productId );
 const char*   FindPlatformName( int platformId );
+
+
+enum LanguageList // corresponds to the db-language table
+{
+   LanguageList_english = 1,
+   LanguageList_spanish,
+   LanguageList_french,
+   LanguageList_german,
+   LanguageList_italian,
+   LanguageList_portuguese,
+   LanguageList_russian,
+   LanguageList_japanese,
+   LanguageList_chinese,
+   LanguageList_count
+};

@@ -19,7 +19,7 @@ public:
 protected:
 
    bool FilterOutwardPacket( BasePacket* packet ) const;
-   int  ProcessOutputFunction();
+   int  MainLoop_OutputProcessing();
 
    U32      m_serverId;
    U8       m_gameProductId;

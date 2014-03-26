@@ -83,7 +83,7 @@ bool FruitadensLogin::FilterOutwardPacket( BasePacket* packet ) const
 
 //-----------------------------------------------------------------------------------------
 
-int  FruitadensLogin::ProcessOutputFunction()
+int  FruitadensLogin::MainLoop_OutputProcessing()
 {
    if( m_isConnected == false )
    {

@@ -267,9 +267,9 @@ bool     DiplodocusLogin:: LogUserIn( const string& userName, const string& pass
                                              connection->lastLoginTime, 
                                              connection->isActive, 
                                              connection->m_email, 
-                                             connection->passwordHash, 
+                                             connection->m_passwordHash, 
                                              connection->id, 
-                                             connection->loginKey, 
+                                             connection->m_loginKey, 
                                              connection->m_languageId, 
                                              isLoggedIn, 
                                              wasDisconnectedByError );
@@ -357,9 +357,9 @@ bool     DiplodocusLogin:: HandleLoginResultFromDb( U32 connectionId, PacketDbQu
                                        connection->lastLoginTime, 
                                        connection->isActive, 
                                        connection->m_email, 
-                                       connection->passwordHash, 
+                                       connection->m_passwordHash, 
                                        connection->id,
-                                       connection->loginKey, 
+                                       connection->m_loginKey, 
                                        connection->m_languageId, 
                                        isLoggedIn, 
                                        wasDisconnectedByError);
@@ -435,9 +435,9 @@ void     DiplodocusLogin:: FinalizeLogout( U32 connectionId, bool wasDisconnecte
                                     connection->lastLoginTime, 
                                     connection->isActive, 
                                     connection->m_email, 
-                                    connection->passwordHash, 
+                                    connection->m_passwordHash, 
                                     connection->id, 
-                                    connection->loginKey,
+                                    connection->m_loginKey,
                                     connection->m_languageId, 
                                     isLoggedIn, 
                                     wasDisconnectedByError );
@@ -1161,11 +1161,11 @@ bool  DiplodocusLogin:: ForceUserLogoutAndBlock( U32 connectionId )
       lastLoginTime =         connection->lastLoginTime;
       connection->status =    ConnectionToUser::LoginStatus_Invalid;
       active =                connection->isActive;
-      passwordHash =          connection->passwordHash;
+      passwordHash =          connection->m_passwordHash;
       userId =                connection->id;
       email =                 connection->m_email;
       gameProductId =         connection->gameProductId;
-      loginKey =              connection->loginKey;
+      loginKey =              connection->m_loginKey;
       languageId =            connection->m_languageId;
    }
 

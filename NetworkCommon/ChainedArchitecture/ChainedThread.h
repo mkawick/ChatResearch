@@ -15,8 +15,8 @@ public:
 
 
    // inherited classes must provide ths function. Mutexes will be locked
-   virtual int       ProcessInputFunction() { return 0; };
-   virtual int       ProcessOutputFunction() { return 0; };
+   virtual int       MainLoop_InputProcessing() { return 0; };
+   virtual int       MainLoop_OutputProcessing() { return 0; };
 
    //------------------------------------------------------
 
@@ -25,7 +25,7 @@ protected:
    virtual void      CallbackOnCleanup();
 
    // consider not overriding this function. You should achieve the results you need by 
-   // overriding the ProcessInputFunction and ProcessOutputFunction functions
+   // overriding the MainLoop_InputProcessing and MainLoop_OutputProcessing functions
    virtual int       CallbackFunction();
    
 };
@@ -38,7 +38,7 @@ protected:
 /*
 class MyHandler::CChainedThread< BasePacket* >
 {
-   int       ProcessInputFunction() 
+   int       MainLoop_InputProcessing() 
    { 
       // look at queue of data
    };
@@ -47,7 +47,7 @@ class MyHandler::CChainedThread< BasePacket* >
 
 class MyHandler2::CChainedThread< BasePacket* >
 {
-   int       ProcessInputFunction() 
+   int       MainLoop_InputProcessing() 
    { 
       // look at queue of data
    };

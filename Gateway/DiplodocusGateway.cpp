@@ -346,7 +346,7 @@ bool     DiplodocusGateway::PushPacketToProperOutput( BasePacket* packet )
 
 //-----------------------------------------------------------------------------------------
 
-int  DiplodocusGateway::ProcessInputFunction()
+int  DiplodocusGateway::MainLoop_InputProcessing()
 {
    // m_inputChainListMutex.lock   // see CChainedThread<Type>::CallbackFunction()
    CommonUpdate();
@@ -364,7 +364,7 @@ int  DiplodocusGateway::ProcessInputFunction()
    if( m_packetsToBeSentInternally.size() == 0 )
       return 0;
 
-   PrintDebugText( "ProcessInputFunction" );
+   PrintDebugText( "MainLoop_InputProcessing" );
 
    PacketFactory factory;
    while( m_packetsToBeSentInternally.size() )
@@ -584,7 +584,7 @@ void  DiplodocusGateway::MoveClientBoundPacketsFromTempToKhaan()
 {
    if( m_clientBoundTempStorage.size() )
    {
-      PrintDebugText( "ProcessOutputFunction" );
+      PrintDebugText( "MainLoop_OutputProcessing" );
 
       PacketFactory factory;
       while( m_clientBoundTempStorage.size() )
@@ -687,7 +687,7 @@ void  DiplodocusGateway::UpdateAllClientConnections()
 
 //-----------------------------------------------------------------------------------------
 
-int   DiplodocusGateway::ProcessOutputFunction()
+int   DiplodocusGateway::MainLoop_OutputProcessing()
 {
    // mutex is locked already
 

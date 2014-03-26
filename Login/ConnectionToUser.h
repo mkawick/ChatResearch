@@ -83,13 +83,14 @@ struct ConnectionToUser
 
    string                  id;
    string                  m_userName;
-   string                  passwordHash;
+   string                  m_passwordHash;
    string                  m_email;
    string                  m_userUuid;
-   string                  loginKey;
+   string                  m_loginKey;
    string                  lastLoginTime;
    string                  lastLogoutTime;
-   int                     avatarIcon;
+   string                  m_userMotto;
+   int                     m_avatarIcon;
 
    LoginStatus             status;
    U8                      gameProductId;
@@ -104,9 +105,13 @@ struct ConnectionToUser
    int                     m_languageId;
    int                     adminLevel;
    bool                    isActive;
-   bool                    showWinLossRecord;
-   bool                    marketingOptOut;
-   bool                    showGenderProfile;
+   bool                    m_showWinLossRecord;
+   bool                    m_marketingOptOut;
+   bool                    m_showGenderProfile;
+   bool                    m_displayOnlineStatusToOtherUsers;
+   bool                    m_blockContactInvitations;
+   bool                    m_blockGroupInvitations;
+
    bool                    m_isSavingUserProfile;
    /*
    address1
@@ -146,8 +151,11 @@ protected:
 
    bool     StoreUserInfo( PacketDbQueryResult* dbResult );
 
-   void     SaveUserSettings( UserPlusProfileTable& enigma, U8 gameProductId );
+   void     CopyUserSettings( UserPlusProfileTable& enigma, U8 gameProductId );
    void     SaveUpdatedProfile( const PacketUpdateUserProfile* profileUpdate, int adminLevelOfCaller, bool writeToDB );
+
+   void     WriteUserBasicsToAccount();
+   void     WriteUserProfile();
    void     PackUserProfileRequestAndSendToClient( U32 connectionId );
    void     PackOtherUserProfileRequestAndSendToClient( U32 connectionId );
 

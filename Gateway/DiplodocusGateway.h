@@ -83,8 +83,8 @@ private:
    void           UpdateAllClientConnections();
    void           AddClientConnectionNeedingUpdate( U32 id );
 
-   int            ProcessInputFunction();
-   int            ProcessOutputFunction();
+   int            MainLoop_InputProcessing();
+   int            MainLoop_OutputProcessing();
 
    void           CleanupOldConnections();
    void           SendStatsToLoadBalancer();

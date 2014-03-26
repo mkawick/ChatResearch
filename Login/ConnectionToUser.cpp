@@ -36,8 +36,8 @@ string CreateLookupKey( const string& email, const string& userUuid, const strin
 
 ConnectionToUser:: ConnectionToUser( const string& name, const string& pword, const string& key ) : 
                      m_userName( name ), 
-                     passwordHash( pword ), 
-                     loginKey( key ), 
+                     m_passwordHash( pword ), 
+                     m_loginKey( key ), 
                      status( LoginStatus_Pending ), 
                      gameProductId( 0 ),
                      connectionId( 0 ),
@@ -49,10 +49,13 @@ ConnectionToUser:: ConnectionToUser( const string& name, const string& pword, co
                      m_languageId( 1 ),
                      adminLevel( 0 ),
                      isActive( true ), 
-                     showWinLossRecord( true ),
-                     marketingOptOut( false ),
-                     showGenderProfile( false ),
-                     m_isSavingUserProfile( false )
+                     m_showWinLossRecord( true ),
+                     m_marketingOptOut( false ),
+                     m_showGenderProfile( false ),
+                     m_isSavingUserProfile( false ),
+                     m_displayOnlineStatusToOtherUsers( false ),
+                     m_blockContactInvitations( false ),
+                     m_blockGroupInvitations( false )
                      {}
 
 //-----------------------------------------------------------------
@@ -77,7 +80,7 @@ bool  ConnectionToUser::HandleAdminRequestUserProfile( PacketDbQueryResult* dbRe
       {
          UserPlusProfileTable             enigma( dbResult->bucket );
          ConnectionToUser& conn = it->second;
-         conn.SaveUserSettings( enigma, 0 );
+         conn.CopyUserSettings( enigma, 0 );
          if( dbResult->serverLookup != 0 )
          {
             conn.PackUserProfileRequestAndSendToClient( connectionId );
@@ -128,12 +131,12 @@ bool  ConnectionToUser::StoreUserInfo( PacketDbQueryResult* dbResult )
       lookup_email = row[ TableUserPlusProfile::Column_email ];
    }
 
-   SaveUserSettings( enigma, dbResult->serverLookup );
+   CopyUserSettings( enigma, dbResult->serverLookup );
    connectionId =                   dbResult->id;
-   if( loginKey.size() == 0 )
+   if( m_loginKey.size() == 0 )
    {
       U32 hash = static_cast<U32>( GenerateUniqueHash( boost::lexical_cast< string >( dbResult->id ) + m_email ) );
-      loginKey = GenerateUUID( GetCurrentMilliseconds() + hash );
+      m_loginKey = GenerateUUID( GetCurrentMilliseconds() + hash );
    }
 
    return true;
@@ -193,7 +196,7 @@ bool  ConnectionToUser::StoreProductInfo( PacketDbQueryResult* dbResult )
 
 //-----------------------------------------------------------------
 
-void  ConnectionToUser::SaveUserSettings( UserPlusProfileTable& enigma, U8 productId )
+void  ConnectionToUser::CopyUserSettings( UserPlusProfileTable& enigma, U8 productId )
 {
    UserPlusProfileTable::row row = *enigma.begin();
 
@@ -201,7 +204,7 @@ void  ConnectionToUser::SaveUserSettings( UserPlusProfileTable& enigma, U8 produ
    m_userName =                     row[ TableUserPlusProfile::Column_name ];
    m_userUuid =                     row[ TableUserPlusProfile::Column_uuid ];
    m_email =                        row[ TableUserPlusProfile::Column_email ];
-   passwordHash =                   row[ TableUserPlusProfile::Column_password_hash ];
+   m_passwordHash =                 row[ TableUserPlusProfile::Column_password_hash ];
    
    lastLoginTime =                  row[ TableUserPlusProfile::Column_last_login_time ];
    loggedOutTime = 0;
@@ -218,11 +221,16 @@ void  ConnectionToUser::SaveUserSettings( UserPlusProfileTable& enigma, U8 produ
 
    string avatar = row[ TableUserPlusProfile::Column_mber_avatar];
    if( avatar.size() != 0 )
-   avatarIcon =                     boost::lexical_cast< int > ( avatar );
-   adminLevel =                     boost::lexical_cast< int > ( row[ TableUserPlusProfile::Column_admin_level] );
-   marketingOptOut =                boost::lexical_cast< bool >( row[ TableUserPlusProfile::Column_marketing_opt_out] );
-   showWinLossRecord =              boost::lexical_cast< bool >( row[ TableUserPlusProfile::Column_show_win_loss_record] );
-   showGenderProfile =              boost::lexical_cast< bool >( row[ TableUserPlusProfile::Column_show_gender_profile] );
+   m_avatarIcon =                      boost::lexical_cast< int > ( avatar );
+   adminLevel =                        boost::lexical_cast< int > ( row[ TableUserPlusProfile::Column_admin_level] );
+   m_marketingOptOut =                 boost::lexical_cast< bool >( row[ TableUserPlusProfile::Column_marketing_opt_out] );
+   m_showWinLossRecord =               boost::lexical_cast< bool >( row[ TableUserPlusProfile::Column_show_win_loss_record] );
+   m_showGenderProfile =               boost::lexical_cast< bool >( row[ TableUserPlusProfile::Column_show_gender_profile] );
+   m_userMotto =                       boost::lexical_cast< string >( row[ TableUserPlusProfile::Column_user_motto] );
+   m_displayOnlineStatusToOtherUsers = boost::lexical_cast< bool >( row[ TableUserPlusProfile::Column_display_online_status_to_other_users] );
+   m_blockContactInvitations =         boost::lexical_cast< bool >( row[ TableUserPlusProfile::Column_block_contact_invitations] );
+   m_blockGroupInvitations =           boost::lexical_cast< bool >( row[ TableUserPlusProfile::Column_block_group_invitations] );
+
 
    string tz = row[ TableUserPlusProfile::Column_time_zone];
    if( tz.size() != 0 )
@@ -260,25 +268,25 @@ void  ConnectionToUser::SaveUpdatedProfile( const PacketUpdateUserProfile* profi
 
       if( profileUpdate->passwordHash.size() > 0 )
       {
-         passwordHash =                   profileUpdate->passwordHash;
+         m_passwordHash =                 profileUpdate->passwordHash;
       }
    }
    
    //lastLoginTime =                  profileUpdate->lastLoginTime;
    //loggedOutTime =                  GetDateFromString( profileUpdate->loggedOutTime.c_str() );
 
-   isActive =                       profileUpdate->isActive;
-   m_languageId =                     profileUpdate->languageId;
+   isActive =                             profileUpdate->isActive;
+   m_languageId =                         profileUpdate->languageId;
    if( m_languageId < 1 || m_languageId > 12 )// limits on languages
       m_languageId = 1;
 
-   adminLevel =                     profileUpdate->adminLevel;
+   adminLevel =                           profileUpdate->adminLevel;
    if( adminLevel > 2 )
       adminLevel = 2;
 
-   marketingOptOut =                profileUpdate->marketingOptOut ? true:false;// accounting for non-boolean values
-   showWinLossRecord =              profileUpdate->showWinLossRecord ? true:false;// accounting for non-boolean values
-   showGenderProfile =              profileUpdate->showGenderProfile ? true:false;// accounting for non-boolean values
+   //m_marketingOptOut =                    profileUpdate->marketingOptOut ? true:false;// accounting for non-boolean values
+   //m_showWinLossRecord =                  profileUpdate->showWinLossRecord ? true:false;// accounting for non-boolean values
+   //m_showGenderProfile =                  profileUpdate->showGenderProfile ? true:false;// accounting for non-boolean values
 
    ConnectionToUser* loadedConnection = userManager->GetLoadedUserConnectionByUuid( m_userUuid );
    if( loadedConnection != NULL && loadedConnection != this )
@@ -288,52 +296,87 @@ void  ConnectionToUser::SaveUpdatedProfile( const PacketUpdateUserProfile* profi
 
    if( writeToDB )
    {
-      PacketDbQuery* dbQuery = new PacketDbQuery;
-      dbQuery->id =           connectionId;
-      dbQuery->lookup =       DiplodocusLogin::QueryType_UpdateUsers; 
-      dbQuery->meta =         "";
-      dbQuery->serverLookup = gameProductId;
-      dbQuery->isFireAndForget = true;
-
-      string query = "UPDATE playdek.users SET user_name='%s',user_email='%s',user_pw_hash='%s',active=";
-      query += boost::lexical_cast<string>( isActive?1:0 );
-      query += ",language_id=";
-      query += boost::lexical_cast<string>( m_languageId );
-      query += "  WHERE user_id=";
-      query += boost::lexical_cast<string>( id );
-      dbQuery->query = query;
-      dbQuery->escapedStrings.insert( m_userName );
-      dbQuery->escapedStrings.insert( m_email );
-      dbQuery->escapedStrings.insert( passwordHash );
-
-      userManager->AddQueryToOutput( dbQuery );
+      
+      WriteUserBasicsToAccount();
 
       //---------------------------------------
-      dbQuery = new PacketDbQuery;
-      dbQuery->id =           connectionId;
-      dbQuery->lookup =       DiplodocusLogin::QueryType_UpdateUserProfile;
-      dbQuery->meta =         "";
-      dbQuery->serverLookup = gameProductId;
-      dbQuery->isFireAndForget = true;
 
-      query = "UPDATE playdek.user_profile SET admin_level=";
-      query += boost::lexical_cast<string>( adminLevel );
-      query += ",marketing_opt_out=";
-      query += boost::lexical_cast<string>( marketingOptOut?1:0 );
-      query += ",show_win_loss_record=";
-      query += boost::lexical_cast<string>( showWinLossRecord?1:0 );
-      query += ",show_profile_gender=";
-      query += boost::lexical_cast<string>( showGenderProfile?1:0 );
-      query += ",mber_avatar=";
-      query += boost::lexical_cast<string>( avatarIcon );
+      WriteUserProfile();
       
-      dbQuery->query = query;
-
-      userManager->AddQueryToOutput( dbQuery );
    }
    PackUserProfileRequestAndSendToClient( connectionId );
 
    m_isSavingUserProfile = false;
+}
+
+//-----------------------------------------------------------------
+
+void  ConnectionToUser::WriteUserBasicsToAccount()
+{
+   PacketDbQuery* dbQuery = new PacketDbQuery;
+   dbQuery->id =           connectionId;
+   dbQuery->lookup =       DiplodocusLogin::QueryType_UpdateUsers; 
+   dbQuery->meta =         "";
+   dbQuery->serverLookup = gameProductId;
+   dbQuery->isFireAndForget = true;
+
+   string query = "UPDATE playdek.users SET user_name='%s',user_email='%s',user_pw_hash='%s',active=";
+   query += boost::lexical_cast<string>( isActive?1:0 );
+   query += ",language_id=";
+   query += boost::lexical_cast<string>( m_languageId );
+   query += "  WHERE user_id=";
+   query += boost::lexical_cast<string>( id );
+   dbQuery->query = query;
+   dbQuery->escapedStrings.insert( m_userName );
+   dbQuery->escapedStrings.insert( m_email );
+   dbQuery->escapedStrings.insert( m_passwordHash );
+
+   userManager->AddQueryToOutput( dbQuery );
+}
+
+//-----------------------------------------------------------------
+
+void  ConnectionToUser::WriteUserProfile()
+{
+   PacketDbQuery* dbQuery = new PacketDbQuery;
+   dbQuery->id =           connectionId;
+   dbQuery->lookup =       DiplodocusLogin::QueryType_UpdateUserProfile;
+   dbQuery->meta =         "";
+   dbQuery->serverLookup = gameProductId;
+   dbQuery->isFireAndForget = true;
+
+   string query = "UPDATE playdek.user_profile SET admin_level=";
+   query += boost::lexical_cast<string>( adminLevel );
+   query += ",marketing_opt_out=";
+   query += boost::lexical_cast<string>( m_marketingOptOut?1:0 );
+   query += ",show_win_loss_record=";
+   query += boost::lexical_cast<string>( m_showWinLossRecord?1:0 );
+   query += ",show_profile_gender=";
+   query += boost::lexical_cast<string>( m_showGenderProfile?1:0 );
+   query += ",mber_avatar=";
+   query += boost::lexical_cast<string>( m_avatarIcon );
+   if( m_userMotto.size() == NULL )
+   {
+      query += ",motto=NULL,";
+   }
+   else
+   {
+      query += ",motto='";
+      query += m_userMotto;
+      query += "',";
+   }
+   query += "display_online_status_to_others=";
+   query += boost::lexical_cast<string>( m_displayOnlineStatusToOtherUsers?1:0 );
+   query += ",block_contact_invitations=";
+   query += boost::lexical_cast<string>( m_blockContactInvitations?1:0 );
+   query += ",block_group_invitations=";
+   query += boost::lexical_cast<string>( m_blockGroupInvitations?1:0 );
+   query += " WHERE user_id=";
+   query += boost::lexical_cast<string>( id );
+   
+   dbQuery->query = query;
+
+   userManager->AddQueryToOutput( dbQuery );
 }
 
 //-----------------------------------------------------------------
@@ -495,7 +538,7 @@ bool    ConnectionToUser:: SuccessfulLogin( U32 connectId, bool isReloggedIn )
       loginStatus->userName = m_userName;
       loginStatus->uuid = m_userUuid;
       loginStatus->lastLogoutTime = lastLogoutTime;
-      loginStatus->loginKey = loginKey;
+      loginStatus->loginKey = m_loginKey;
    }
    loginStatus->wasLoginSuccessful = success;
    loginStatus->adminLevel = adminLevel;
@@ -993,11 +1036,16 @@ void     ConnectionToUser:: PackUserProfileRequestAndSendToClient( U32 connectio
    response->loggedOutTime =     lastLogoutTime;
 
    response->adminLevel =        adminLevel;
-   response->iconId =            avatarIcon;
+   response->iconId =            m_avatarIcon;
    response->isActive =          isActive;
-   response->showWinLossRecord = showWinLossRecord;
-   response->marketingOptOut =   marketingOptOut;
-   response->showGenderProfile = showGenderProfile;
+   response->showWinLossRecord = m_showWinLossRecord;
+   response->marketingOptOut =   m_marketingOptOut;
+   response->showGenderProfile = m_showGenderProfile;
+   response->motto =             m_userMotto;
+
+   response->displayOnlineStatusToOtherUsers = m_displayOnlineStatusToOtherUsers;
+   response->blockContactInvitations =   m_blockContactInvitations;
+   response->blockGroupInvitations = m_blockGroupInvitations;
 
    /*response->profileKeyValues.insert( "name", m_userName );
    response->profileKeyValues.insert( "uuid", m_userUuid );
@@ -1022,11 +1070,10 @@ void     ConnectionToUser:: PackOtherUserProfileRequestAndSendToClient( U32 conn
 
    response->basicProfile.insert( "name", m_userName );
    response->basicProfile.insert( "uuid", m_userUuid );
-   response->basicProfile.insert( "show_win_loss_record", boost::lexical_cast< string >( showWinLossRecord  ? 1:0 ) );
+   response->basicProfile.insert( "show_win_loss_record", boost::lexical_cast< string >( m_showWinLossRecord  ? 1:0 ) );
    response->basicProfile.insert( "time_zone", boost::lexical_cast< string >( timeZone ) );
 
-   response->basicProfile.insert( "avatar_icon", boost::lexical_cast< string >( avatarIcon ) );
-   //this->productsOwned
+   response->basicProfile.insert( "avatar_icon", boost::lexical_cast< string >( m_avatarIcon ) );
 
    map< U32, ProductBrief >::iterator it = productsOwned.begin();
    while( it != productsOwned.end() )
@@ -1212,35 +1259,80 @@ bool     ConnectionToUser:: UpdateProfile( const PacketUpdateSelfProfile* update
    PacketUpdateSelfProfileResponse* response = new PacketUpdateSelfProfileResponse;
    response->avatarIconId = 0;
 
-   if( ( updateProfileRequest->userName == m_userName &&
-      updateProfileRequest->avatarIconId == avatarIcon ) ||
-      updateProfileRequest->avatarIconId < 0 )
+   // we can choose to add more over time
+   bool isTheSame = (
+                     updateProfileRequest->userName == m_userName &&
+                     updateProfileRequest->email == m_email &&
+                     updateProfileRequest->motto == m_userMotto && 
+                     updateProfileRequest->avatarIconId == m_avatarIcon &&
+                     updateProfileRequest->languageId == m_languageId &&
+                     updateProfileRequest->showWinLossRecord == m_showWinLossRecord &&
+                     updateProfileRequest->marketingOptOut == m_marketingOptOut &&
+                     updateProfileRequest->showGenderProfile == m_showGenderProfile &&
+                     updateProfileRequest->displayOnlineStatusToOtherUsers == m_displayOnlineStatusToOtherUsers &&
+                     updateProfileRequest->blockContactInvitations == m_blockContactInvitations &&
+                     updateProfileRequest->blockGroupInvitations == m_blockGroupInvitations
+                     );
+
+  /* bool isValid = ( updateProfileRequest->avatarIconId > 0 ) && 
+      ( updateProfileRequest->languageId >= LanguageList_english && updateProfileRequest->languageId < LanguageList_count );*/
+
+   if( isTheSame )//|| isValid == false )   
    {
       response->success = false;
    }
    else
    {
-      PacketDbQuery* dbQuery = new PacketDbQuery;
-      dbQuery->id =           connectionId;
-      dbQuery->lookup =       DiplodocusLogin::QueryType_UpdateSelfProfile;
-      dbQuery->isFireAndForget = true;
+      if( updateProfileRequest->avatarIconId > 0 )
+         m_avatarIcon = updateProfileRequest->avatarIconId;
 
-      //  only username and avatar for right now
-      string temp = "UPDATE playdek.user_profile SET mber_avatar='";
-      temp += boost::lexical_cast< string >( updateProfileRequest->avatarIconId );
-      temp += "' WHERE user_id=";
-      temp += boost::lexical_cast< string >( id );
+      if ( updateProfileRequest->languageId >= LanguageList_english && updateProfileRequest->languageId < LanguageList_count )
+         m_languageId = updateProfileRequest->languageId;
 
-      //dbQuery->escapedStrings.insert( updateProfileRequest->userName );
-      dbQuery->query = temp;
+      if( updateProfileRequest->motto.size() && updateProfileRequest->motto != m_userMotto )
+         m_userMotto = updateProfileRequest->motto;
+      if( updateProfileRequest->userName.size() && updateProfileRequest->userName != m_userName )
+         m_userName = updateProfileRequest->userName;
 
-      userManager->AddQueryToOutput( dbQuery );
+      if( updateProfileRequest->email.size() && updateProfileRequest->email != m_email )
+         m_email = updateProfileRequest->email;
+
+      if( updateProfileRequest->showWinLossRecord == false ||
+            updateProfileRequest->showWinLossRecord == true )
+         m_showWinLossRecord = updateProfileRequest->showWinLossRecord;
+
+      if( updateProfileRequest->marketingOptOut == false  ||
+            updateProfileRequest->marketingOptOut == true )
+         m_marketingOptOut = updateProfileRequest->marketingOptOut;
+
+      if( updateProfileRequest->showGenderProfile == false  ||
+            updateProfileRequest->showGenderProfile == true )
+         m_showGenderProfile = updateProfileRequest->showGenderProfile;
+
+      if( updateProfileRequest->displayOnlineStatusToOtherUsers == false  ||
+            updateProfileRequest->displayOnlineStatusToOtherUsers == true )
+         m_displayOnlineStatusToOtherUsers = updateProfileRequest->displayOnlineStatusToOtherUsers;
+
+      if( updateProfileRequest->blockContactInvitations == false  ||
+            updateProfileRequest->blockContactInvitations == true )
+         m_blockContactInvitations = updateProfileRequest->blockContactInvitations;
+
+      if( updateProfileRequest->blockGroupInvitations == false  ||
+            updateProfileRequest->blockGroupInvitations == true )
+         m_blockGroupInvitations = updateProfileRequest->blockGroupInvitations;
+
+      WriteUserBasicsToAccount();
+      WriteUserProfile();
 
       response->success = true;
-      response->avatarIconId = avatarIcon;
+      response->avatarIconId = m_avatarIcon;
    }
 
+   
+   PackUserProfileRequestAndSendToClient( connectionId );
+
    userManager->SendPacketToGateway( response, connectionId );
+
 
    return true;
 }

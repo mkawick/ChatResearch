@@ -313,7 +313,12 @@ public:
                               isActive( true ),  
                               showWinLossRecord( false ),
                               marketingOptOut( false ), 
-                              showGenderProfile( false ){}
+                              showGenderProfile( false ),
+                              displayOnlineStatusToOtherUsers( false ),
+                              blockContactInvitations( false ),
+                              blockGroupInvitations( false )
+
+   {}
 
    bool  SerializeIn( const U8* data, int& bufferOffset );
    bool  SerializeOut( U8* data, int& bufferOffset ) const;
@@ -324,6 +329,7 @@ public:
    string   userUuid;
    string   lastLoginTime;
    string   loggedOutTime;
+   string   motto;
    int      adminLevel;
    int      iconId;
    int      languageId;
@@ -332,6 +338,14 @@ public:
    bool     showWinLossRecord;
    bool     marketingOptOut;
    bool     showGenderProfile;
+
+   bool     displayOnlineStatusToOtherUsers;
+   bool     blockContactInvitations;
+   bool     blockGroupInvitations;
+
+   int      wins;
+   int      losses;
+   int      ties;
 
    //SerializedKeyValueVector< string > profileKeyValues;
 };
@@ -342,10 +356,7 @@ class PacketUpdateUserProfile : public BasePacket // limited to admin priveledge
 {
 public:
    PacketUpdateUserProfile() : BasePacket( PacketType_Login, PacketLogin::LoginType_UpdateUserProfile ), 
-                              isActive( false ), 
-                              showWinLossRecord( false ),
-                              marketingOptOut( false ), 
-                              showGenderProfile( false ){}
+      isActive( false ){}
 
    bool  SerializeIn( const U8* data, int& bufferOffset );
    bool  SerializeOut( U8* data, int& bufferOffset ) const;
@@ -358,9 +369,7 @@ public:
    int      languageId;
 
    bool     isActive;
-   bool     showWinLossRecord;
-   bool     marketingOptOut;
-   bool     showGenderProfile;
+   
 };
 
 ///////////////////////////////////////////////////////////////
@@ -443,7 +452,11 @@ public:
                               avatarIconId( false ), 
                               showWinLossRecord( false ),
                               marketingOptOut( false ), 
-                              showGenderProfile( false )   {}
+                              showGenderProfile( false ),
+                              displayOnlineStatusToOtherUsers( false ),
+                              blockContactInvitations( false ),
+                              blockGroupInvitations( false )
+   {}
 
    bool  SerializeIn( const U8* data, int& bufferOffset );
    bool  SerializeOut( U8* data, int& bufferOffset ) const;
@@ -451,13 +464,18 @@ public:
    string   userName;
    string   passwordHash;
    string   email;
+   string   motto;
    int      languageId;
    int      avatarIconId;
 
    bool     showWinLossRecord;
    bool     marketingOptOut;
    bool     showGenderProfile;
+   bool     displayOnlineStatusToOtherUsers;
+   bool     blockContactInvitations;
+   bool     blockGroupInvitations;
 };
+
 
 ///////////////////////////////////////////////////////////////
 
