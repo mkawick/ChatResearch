@@ -8,6 +8,7 @@ using boost::format;
 
 #include "../NetworkCommon/Utils/CommandLineParser.h"
 #include "../NetworkCommon/Packets/BasePacket.h"
+#include "../NetworkCommon/Packets/LoginPacket.h"
 #include "UserContact.h"
 #include "DiplodocusContact.h"
 
@@ -148,6 +149,29 @@ void  UserContact::Update()
    m_requiresUpdate =  false;
 }
 
+
+bool  UserContact::UpdateProfile( const PacketUserUpdateProfile* profile )
+{
+   // update the real profile
+   if( m_displayOnlineStatusToOtherUsers != profile->displayOnlineStatusToOtherUsers )
+   {
+      m_displayOnlineStatusToOtherUsers = profile->displayOnlineStatusToOtherUsers;
+      InformFriendsOfOnlineStatus( true );
+   }
+
+   // to be done.. what do I do here?
+   if( m_blockContactInvitations != profile->blockContactInvitations )
+   {
+      m_blockContactInvitations = profile->blockContactInvitations;
+   }
+   if( m_blockGroupInvitations != profile->blockGroupInvitations )
+   {
+      m_blockGroupInvitations = profile->blockGroupInvitations;
+   }
+   ;
+   return true;
+}
+
 //------------------------------------------------------------------------------------------------
 
 void  UserContact::UserLoggedOut() 
@@ -181,6 +205,9 @@ bool  UserContact::HandleDbQueryResult( const PacketDbQueryResult* dbResult )
          if( it != enigma.end() )
          {
             UserProfileTable::row       row = *it++;
+            m_displayOnlineStatusToOtherUsers =    boost::lexical_cast< bool >( row[ TableUserProfile::Column_display_online_status_to_other_users ] );
+            m_blockContactInvitations =            boost::lexical_cast< bool >( row[ TableUserProfile::Column_block_contact_invitations ] );
+            m_blockGroupInvitations =              boost::lexical_cast< bool >( row[ TableUserProfile::Column_block_group_invitations ] );
          }
       }
       return true;
@@ -407,6 +434,9 @@ bool     UserContact::InformFriendsOfOnlineStatus( bool isOnline )
    if( m_friends.size() == 0 )
       return false;
 
+   if( m_displayOnlineStatusToOtherUsers == false )
+      isOnline = false;
+
    vector< UserInfo >::iterator  it = m_friends.begin();
    while ( it != m_friends.end() )
    {
@@ -430,9 +460,9 @@ void     UserContact::FinishLoginBySendingUserFriendsAndInvitations()
    if( m_friendListFilled == true && m_friendRequestSentListFilled == true && m_friendRequestReceivedListFilled == true )
    {
       InformFriendsOfOnlineStatus( true );
-      GetListOfContacts();
-      GetListOfInvitationsReceived();
-      GetListOfInvitationsSent();
+      //GetListOfContacts();
+      //GetListOfInvitationsReceived();
+      //GetListOfInvitationsSent();
    }
 }
 

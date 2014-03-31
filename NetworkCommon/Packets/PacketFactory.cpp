@@ -318,6 +318,12 @@ bool  PacketFactory::ParseLogin( const U8* bufferIn, int& bufferOffset, const Ba
             *packetOut = SerializeIn< PacketUpdateSelfProfileResponse >( bufferIn, bufferOffset );
          }
          return true;
+
+      case PacketLogin::LoginType_UserUpdateProfile:
+         {
+            *packetOut = SerializeIn< PacketUserUpdateProfile >( bufferIn, bufferOffset );
+         }
+         return true;
    }
 
    return false;

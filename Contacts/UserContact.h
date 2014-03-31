@@ -6,6 +6,7 @@
 class PacketDbQueryResult;
 class DiplodocusContact;
 class PacketContact;
+class PacketUserUpdateProfile;
 
 struct Invitation
 {
@@ -55,6 +56,7 @@ public:
    int   SecondsExpiredSinceLoggedOut();
 
    void  Update();
+   bool  UpdateProfile( const PacketUserUpdateProfile* profile );
 
 private:
 
@@ -115,6 +117,10 @@ private:
    bool                 m_friendListFilled;
    bool                 m_friendRequestSentListFilled;
    bool                 m_friendRequestReceivedListFilled;
+
+   bool                 m_displayOnlineStatusToOtherUsers;
+   bool                 m_blockContactInvitations;
+   bool                 m_blockGroupInvitations;
 
    DiplodocusContact*   m_contactServer;
 

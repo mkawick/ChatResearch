@@ -195,9 +195,13 @@ bool  DiplodocusContact::HandlePacketFromOtherServer( BasePacket* packet, U32 co
       case PacketLogin::LoginType_PrepareForUserLogout:
          DisconnectUser( static_cast< PacketPrepareForUserLogout* >( unwrappedPacket ) );
          return true;
+
+      case PacketLogin::LoginType_UserUpdateProfile:
+         UpdateUserProfile( static_cast< PacketUserUpdateProfile* >( unwrappedPacket ) );
+         return true;
       }
    }
-   else if( unwrappedPacket->packetType == PacketType_Contact)
+   else if( unwrappedPacket->packetType == PacketType_Contact )
    {
       return HandlePacketRequests( static_cast< PacketContact* >( packet ), connectionId );
    }
@@ -467,7 +471,21 @@ bool     DiplodocusContact::DisconnectUser( PacketPrepareForUserLogout* loginPac
 
    it->second.NeedsUpdate();
    it->second.UserLoggedOut();
-   // we need to send notifications
+
+   return true;
+}
+
+//---------------------------------------------------------------
+
+bool     DiplodocusContact::UpdateUserProfile( const PacketUserUpdateProfile* profile )
+{
+   U32 connectionId = profile->connectionId;
+
+   UserContactMapIterator it = m_users.find( connectionId );
+   if( it == m_users.end() )
+      return false;
+
+   it->second.UpdateProfile( profile );
 
    return true;
 }

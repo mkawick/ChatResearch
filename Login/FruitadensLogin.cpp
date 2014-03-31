@@ -61,6 +61,13 @@ bool FruitadensLogin::FilterOutwardPacket( BasePacket* packet ) const
             return true;
          return false;
       }
+
+      if( packetSubType == PacketLogin::LoginType_UserUpdateProfile )
+      {
+         if( m_serverType == ServerType_Contact )
+            return true;
+         return false;
+      }
    }
 
    if( packetType == PacketType_Gameplay ) 

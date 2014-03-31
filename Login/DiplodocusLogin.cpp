@@ -1341,12 +1341,15 @@ bool  DiplodocusLogin:: SendLoginStatusToOtherServers( const string& userName,
 }
 
 //---------------------------------------------------------------
-
+/*
 bool     DiplodocusLogin:: SendListOfUserProductsToOtherServers( const string& userUuid, U32 connectionId, const vector< string >& productNames )
 {
    ConnectionToUser* connection = GetUserConnection( connectionId );
    if( connection )
    {
+      ////--------------
+      fix me
+//------------------------
       PacketListOfUserProductsS2S* packet = new PacketListOfUserProductsS2S;
 
       vector< string >::const_iterator it = productNames.begin();
@@ -1372,7 +1375,35 @@ bool     DiplodocusLogin:: SendListOfUserProductsToOtherServers( const string& u
    }
 
    return false;
+}*/
+
+
+//---------------------------------------------------------------
+
+bool     DiplodocusLogin:: SendPacketToOtherServer( BasePacket* packet, U32 connectionId )
+{
+   ConnectionToUser* connection = GetUserConnection( connectionId );
+   if( connection )
+   {
+      BaseOutputContainer::iterator itOutputs = m_listOfOutputs.begin();
+      while( itOutputs != m_listOfOutputs.end() )
+      {
+         ChainType*  outputPtr = static_cast< ChainType*> ( (*itOutputs).m_interface );
+
+         if( outputPtr->AddOutputChainData( packet, m_chainId ) == true )
+         {
+            // this will be cleaned up much later
+            //PacketFactory factory;
+            //factory.CleanupPacket( packet );  
+            return true;
+         }
+         itOutputs++;
+      }
+   }
+
+   return false;
 }
+
 
 //---------------------------------------------------------------
 

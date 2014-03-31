@@ -811,11 +811,13 @@ bool     ChatUser::SendMessageToClient( BasePacket* packet ) const
 
 void     ChatUser::RequestChatChannels()
 {
-   ChannelKeyValue            availableChannels;
-   m_chatChannelManager->GetChatChannels( m_uuid, availableChannels );
+   //ChannelFullKeyValue    availableChannels;
+   //m_chatChannelManager->GetChatChannels( m_uuid, availableChannels );
 
    PacketChatChannelList* packetChannels = new PacketChatChannelList;// this may need to be moved into a separate function
-   packetChannels->channelList = availableChannels;
+   //packetChannels->channelList = availableChannels;
+
+   m_chatChannelManager->GetChatChannels( m_uuid, packetChannels->channelList );
 
    SendMessageToClient( packetChannels );
 }

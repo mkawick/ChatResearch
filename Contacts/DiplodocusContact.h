@@ -11,6 +11,7 @@
 using namespace std;
 class PacketPrepareForUserLogin;
 class PacketPrepareForUserLogout;
+class PacketUserUpdateProfile;
 
 ///////////////////////////////////////////////////////////////////
 
@@ -29,11 +30,6 @@ public:
    UserContact* GetUser( U32 userId );
    UserContact* GetUserByUuid( const string& uuid );
    UserContact* GetUserByUsername( const string& username );
-
-   // tables:
-   // friends
-   // user_profile
-   // friend_pending
 
    bool     AddOutputChainData( BasePacket* packet, U32 connectionId );
    bool     AddQueryToOutput( PacketDbQuery* query );
@@ -60,6 +56,8 @@ private:
 
    bool     ConnectUser( PacketPrepareForUserLogin* login );
    bool     DisconnectUser( PacketPrepareForUserLogout* login );
+
+   bool     UpdateUserProfile( const PacketUserUpdateProfile* profile );
 
    void     TrackCountStats( StatTracking stat, float value, int sub_category );
    void     RunHourlyStats();

@@ -374,6 +374,7 @@ bool  PacketRequestUserProfileResponse::SerializeIn( const U8* data, int& buffer
    Serialize::In( data, bufferOffset, userUuid );
    Serialize::In( data, bufferOffset, lastLoginTime );
    Serialize::In( data, bufferOffset, loggedOutTime );   
+   Serialize::In( data, bufferOffset, motto ); 
    Serialize::In( data, bufferOffset, adminLevel );
    Serialize::In( data, bufferOffset, iconId );  
    Serialize::In( data, bufferOffset, languageId ); 
@@ -399,7 +400,8 @@ bool  PacketRequestUserProfileResponse::SerializeOut( U8* data, int& bufferOffse
    Serialize::Out( data, bufferOffset, email );
    Serialize::Out( data, bufferOffset, userUuid );
    Serialize::Out( data, bufferOffset, lastLoginTime );
-   Serialize::Out( data, bufferOffset, loggedOutTime );   
+   Serialize::Out( data, bufferOffset, loggedOutTime );
+   Serialize::Out( data, bufferOffset, motto );
    Serialize::Out( data, bufferOffset, adminLevel );   
    Serialize::Out( data, bufferOffset, iconId );  
    Serialize::Out( data, bufferOffset, languageId );  
@@ -609,6 +611,23 @@ bool  PacketUpdateSelfProfile::SerializeOut( U8* data, int& bufferOffset ) const
 
 ///////////////////////////////////////////////////////////////
 
+bool  PacketUserUpdateProfile::SerializeIn( const U8* data, int& bufferOffset )
+{ 
+   PacketRequestUserProfileResponse::SerializeIn( data, bufferOffset );
+   Serialize::In( data, bufferOffset, connectionId );
+
+   return true; 
+}
+
+bool  PacketUserUpdateProfile::SerializeOut( U8* data, int& bufferOffset ) const 
+{ 
+   PacketRequestUserProfileResponse::SerializeOut( data, bufferOffset );
+   Serialize::Out( data, bufferOffset, connectionId );
+
+   return true; 
+}
+
+///////////////////////////////////////////////////////////////
 bool  PacketUpdateSelfProfileResponse::SerializeIn( const U8* data, int& bufferOffset )
 { 
    BasePacket::SerializeIn( data, bufferOffset );

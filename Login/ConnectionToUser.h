@@ -157,12 +157,15 @@ protected:
    void     WriteUserBasicsToAccount();
    void     WriteUserProfile();
    void     PackUserProfileRequestAndSendToClient( U32 connectionId );
+   template < typename type >
+   void     PackUserSettings( type* response );
    void     PackOtherUserProfileRequestAndSendToClient( U32 connectionId );
 
    void     ClearAllProductsOwned();
    void     AddToProductsOwned( int productDbId, const string& productName, const string& productUuid, float quantity );
    void     SendListOfProductsToClientAndAsset( U32 connectionId );
    void     SendListOfOwnedProductsToClient( U32 connectionId );
+   void     TellContactServerToReloadUserProfile();
 
    UserConnectionMapIterator FindUser( const string& email, const string& userUuid, const string& userName );
    

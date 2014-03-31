@@ -19,6 +19,7 @@ enum  ServerType
    ServerType_LoadBalancer,
    ServerType_Stat,
    ServerType_Test,
+   ServerType_Starter,
    ServerType_Count // << end of list
 };
 

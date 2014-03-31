@@ -302,6 +302,7 @@ void  ConnectionToUser::SaveUpdatedProfile( const PacketUpdateUserProfile* profi
       //---------------------------------------
 
       WriteUserProfile();
+      TellContactServerToReloadUserProfile();
       
    }
    PackUserProfileRequestAndSendToClient( connectionId );
@@ -665,6 +666,22 @@ void     ConnectionToUser:: SendListOfOwnedProductsToClient( U32 connectionId )
    userManager->SendPacketToGateway( purchases, connectionId );
 }
 
+
+//---------------------------------------------------------------
+
+void     ConnectionToUser:: TellContactServerToReloadUserProfile()
+{
+   PacketUserUpdateProfile* profile = new PacketUserUpdateProfile;
+   PackUserSettings( profile );
+   profile->connectionId = connectionId;
+   if( userManager->SendPacketToOtherServer( profile, connectionId ) == false )
+   {
+      PacketFactory factory;
+      BasePacket* packet = static_cast< BasePacket* >( profile );
+      factory.CleanupPacket( packet ); 
+   }
+}
+
 //---------------------------------------------------------------
 
 bool     ConnectionToUser:: AddPurchase( const PacketAddPurchaseEntry* purchase )
@@ -1025,10 +1042,9 @@ bool     ConnectionToUser:: HandleCheat_AddProduct( const string& productName )
 
 //-----------------------------------------------------------------
 
-void     ConnectionToUser:: PackUserProfileRequestAndSendToClient( U32 connectionId )
+template < typename type >
+void  ConnectionToUser:: PackUserSettings( type* response )
 {
-   PacketRequestUserProfileResponse* response = new PacketRequestUserProfileResponse;
-   // string userName, string email, string userUuid, string lastLoginTime, string loggedOutTime, int adminLevel, bool isActive, bool showWinLossRecord, bool marketingOptOut, bool showGenderProfile
    response->userName =          m_userName;
    response->userUuid =          m_userUuid;
    response->email =             m_email;
@@ -1046,6 +1062,14 @@ void     ConnectionToUser:: PackUserProfileRequestAndSendToClient( U32 connectio
    response->displayOnlineStatusToOtherUsers = m_displayOnlineStatusToOtherUsers;
    response->blockContactInvitations =   m_blockContactInvitations;
    response->blockGroupInvitations = m_blockGroupInvitations;
+}
+
+
+void     ConnectionToUser:: PackUserProfileRequestAndSendToClient( U32 connectionId )
+{
+   PacketRequestUserProfileResponse* response = new PacketRequestUserProfileResponse;
+   // string userName, string email, string userUuid, string lastLoginTime, string loggedOutTime, int adminLevel, bool isActive, bool showWinLossRecord, bool marketingOptOut, bool showGenderProfile
+   PackUserSettings( response );
 
    /*response->profileKeyValues.insert( "name", m_userName );
    response->profileKeyValues.insert( "uuid", m_userUuid );
@@ -1333,6 +1357,10 @@ bool     ConnectionToUser:: UpdateProfile( const PacketUpdateSelfProfile* update
 
    userManager->SendPacketToGateway( response, connectionId );
 
+   if( response->success )
+   {
+      TellContactServerToReloadUserProfile();
+   }
 
    return true;
 }

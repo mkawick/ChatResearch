@@ -315,6 +315,10 @@ public:
       Column_show_win_loss_record,
       Column_time_zone,
       Column_account_create_product_id,
+      Column_user_motto,
+      Column_display_online_status_to_other_users,
+      Column_block_contact_invitations,
+      Column_block_group_invitations,
       Column_end
    };
    static const char* const column_names[];

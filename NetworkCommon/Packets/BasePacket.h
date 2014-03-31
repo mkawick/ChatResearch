@@ -10,7 +10,7 @@
 
 //#define _MEMLEAK_TESTING_
 
-static const U8   GlobalNetworkProtocolVersion = 8;
+static const U8   GlobalNetworkProtocolVersion = 11;
 
 ///////////////////////////////////////////////////////////////
 
@@ -159,28 +159,7 @@ public:
 
 
 ///////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////
 
-
-class ChannelInfo
-{
-public:
-   ChannelInfo() {}
-   ChannelInfo( const string& name, const string& uuid, int gameProductId, int _gameId, int _numNewChats, bool active) : 
-               channelName( name ), channelUuid( uuid ), gameProduct( gameProductId ), gameId( _gameId ), numNewChats( _numNewChats ), isActive( active ) {}
-
-   bool  SerializeIn( const U8* data, int& bufferOffset );
-   bool  SerializeOut( U8* data, int& bufferOffset ) const;
-
-   string   channelName;
-   string   channelUuid;
-   int      gameProduct;
-   int      gameId;
-   int      numNewChats;
-   bool     isActive;
-};
-
-typedef SerializedKeyValueVector< ChannelInfo > ChannelKeyValue;
 
 ///////////////////////////////////////////////////////////////////
 
@@ -243,7 +222,7 @@ public:
    bool  SerializeIn( const U8* data, int& bufferOffset );
    bool  SerializeOut( U8* data, int& bufferOffset ) const;
 
-   SerializedKeyValueVector< ChannelInfo >  groupList;
+   //SerializedKeyValueVector< ChannelInfo >  groupList;
 };
 
 
@@ -256,19 +235,6 @@ public:
 };
 
 
-///////////////////////////////////////////////////////////////
-
-class PacketChatChannelList : public PacketUserInfo
-{
-public:
-   PacketChatChannelList( int packet_type = PacketType_UserInfo, int packet_sub_type = InfoType_ChatChannelList ) : PacketUserInfo( packet_type, packet_sub_type ){  }
-   ~PacketChatChannelList();
-
-   bool  SerializeIn( const U8* data, int& bufferOffset );
-   bool  SerializeOut( U8* data, int& bufferOffset ) const;
-
-   SerializedKeyValueVector< ChannelInfo >  channelList;
-};
 
 ///////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////

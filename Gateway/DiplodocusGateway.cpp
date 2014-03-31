@@ -426,9 +426,13 @@ void  DiplodocusGateway::RunHourlyAverages()
       {
          ConnectionMapIterator oldConnIt = nextIt++;
          KhaanGatewayWrapper& khaanWrapper = oldConnIt->second;
-         time_t connectionTime = khaanWrapper.m_connector->GetConnectionTime();
+         if( khaanWrapper.m_connector )
+         {
+            time_t connectionTime = khaanWrapper.m_connector->GetConnectionTime();
+            totalNumSeconds += static_cast<float>( difftime( currentTime, connectionTime ) );
+         }
 
-         totalNumSeconds += static_cast<float>( difftime( currentTime, connectionTime ) );
+         
       }
 
       float averageNumSeconds = totalNumSeconds / numConnections;

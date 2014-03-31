@@ -116,34 +116,6 @@ bool  PacketRerouteRequestResponse::Address::SerializeOut( U8* data, int& buffer
 ///////////////////////////////////////////////////////////////
 
 
-bool  ChannelInfo::SerializeIn( const U8* data, int& bufferOffset )
-{
-   Serialize::In( data, bufferOffset, channelName );
-   Serialize::In( data, bufferOffset, channelUuid );
-   Serialize::In( data, bufferOffset, gameProduct );
-   Serialize::In( data, bufferOffset, gameId );
-   Serialize::In( data, bufferOffset, numNewChats );
-   Serialize::In( data, bufferOffset, isActive );
-
-   return true;
-}
-
-bool  ChannelInfo::SerializeOut( U8* data, int& bufferOffset ) const
-{
-   Serialize::Out( data, bufferOffset, channelName );
-   Serialize::Out( data, bufferOffset, channelUuid );
-   Serialize::Out( data, bufferOffset, gameProduct );
-   Serialize::Out( data, bufferOffset, gameId );
-   Serialize::Out( data, bufferOffset, numNewChats );
-   Serialize::Out( data, bufferOffset, isActive );
-
-   return true;
-}
-
-
-///////////////////////////////////////////////////////////////
-
-
 bool  PacketFriendsList::SerializeIn( const U8* data, int& bufferOffset )
 {
    BasePacket::SerializeIn( data, bufferOffset );
@@ -166,7 +138,7 @@ bool  PacketFriendsList::SerializeOut( U8* data, int& bufferOffset ) const
 bool  PacketGroupsList::SerializeIn( const U8* data, int& bufferOffset )
 {
    BasePacket::SerializeIn( data, bufferOffset );
-   groupList.SerializeIn( data, bufferOffset );
+   //groupList.SerializeIn( data, bufferOffset );
 
    return true;
 }
@@ -174,30 +146,7 @@ bool  PacketGroupsList::SerializeIn( const U8* data, int& bufferOffset )
 bool  PacketGroupsList::SerializeOut( U8* data, int& bufferOffset ) const
 {
    BasePacket::SerializeOut( data, bufferOffset );
-   groupList.SerializeOut( data, bufferOffset );
-
-   return true;
-}
-
-///////////////////////////////////////////////////////////////
-
-PacketChatChannelList::~PacketChatChannelList()
-{
-   channelList.clear();
-}
-
-bool  PacketChatChannelList::SerializeIn( const U8* data, int& bufferOffset )
-{
-   BasePacket::SerializeIn( data, bufferOffset );
-   channelList.SerializeIn( data, bufferOffset );
-
-   return true;
-}
-
-bool  PacketChatChannelList::SerializeOut( U8* data, int& bufferOffset ) const
-{
-   BasePacket::SerializeOut( data, bufferOffset );
-   channelList.SerializeOut( data, bufferOffset );
+   //groupList.SerializeOut( data, bufferOffset );
 
    return true;
 }

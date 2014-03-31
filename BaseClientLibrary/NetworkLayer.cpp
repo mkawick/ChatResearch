@@ -247,13 +247,9 @@ void     NetworkLayer::UpdateNotifications()
    
    while( localCopy.size() )
    {
-      PacketFactory factory;
-      GameData* store = NULL;
-      //PacketChatMissedHistoryResult* // = NULL;
-//      PacketChatHistoryResult* packetChatHistoryResult = NULL;
-
       const QueuedNotification& qn = localCopy.front();
       SerializedKeyValueVector< string >::const_KVIterator keyValueIt = qn.genericKeyValuePairs.begin();
+      PacketCleaner cleaner( qn.packet );
       
       for( list< UserNetworkEventNotifier* >::iterator it = m_callbacks.begin(); it != m_callbacks.end(); ++it )
       {
@@ -335,7 +331,7 @@ void     NetworkLayer::UpdateNotifications()
          case UserNetworkEventNotifier::NotificationType_UserProfileResponse:
             {
                bool notifyThatSelfUpdated = qn.intValue ? true: false; 
-               PacketRequestUserProfileResponse* profile = static_cast<PacketRequestUserProfileResponse*>( qn.meta );
+               PacketRequestUserProfileResponse* profile = static_cast<PacketRequestUserProfileResponse*>( qn.packet );
                
                notify->UserProfileResponse();
                if( notifyThatSelfUpdated )
@@ -388,7 +384,8 @@ void     NetworkLayer::UpdateNotifications()
          case UserNetworkEventNotifier::NotificationType_ChatChannelHistory:
          case UserNetworkEventNotifier::NotificationType_ChatP2PHistory:
             {
-               PacketChatHistoryResult* packetChatHistoryResult = static_cast<PacketChatHistoryResult*>( qn.meta );
+               PacketChatHistoryResult* packetChatHistoryResult = 
+                  static_cast<PacketChatHistoryResult*>( qn.packet );
                notify->ServerRequestsListOfUserPurchases();
                list< ChatEntry > listOfChats;
                int num = packetChatHistoryResult->chat.size();
@@ -406,15 +403,14 @@ void     NetworkLayer::UpdateNotifications()
                {
                   notify->ChatP2PHistory( packetChatHistoryResult->userUuid, listOfChats );
                }
-               BasePacket* deleted = static_cast<BasePacket*>( qn.meta );
-               factory.CleanupPacket( deleted );
             }
             break;
          case UserNetworkEventNotifier::NotificationType_ChatHistoryMissedSinceLastLoginComposite:
             {
-               PacketChatMissedHistoryResult* history = static_cast< PacketChatMissedHistoryResult* >( qn.meta );
-               SerializedVector< MissedChatChannelEntry >& optimizedDataAccessHistory = history->history;
-               int num = history->history.size();
+               PacketChatMissedHistoryResult* packetChatMissedHistoryResult = 
+                  static_cast< PacketChatMissedHistoryResult* >( qn.packet );
+               SerializedVector< MissedChatChannelEntry >& optimizedDataAccessHistory = packetChatMissedHistoryResult->history;
+               int num = packetChatMissedHistoryResult->history.size();
 
                list< MissedChatChannelEntry > listOfChats;
                for( int i=0; i<num; i++ )
@@ -425,8 +421,6 @@ void     NetworkLayer::UpdateNotifications()
                {
                   notify->ChatHistoryMissedSinceLastLoginComposite( listOfChats );
                }
-               BasePacket* deleted = static_cast<BasePacket*>( qn.meta );
-               factory.CleanupPacket( deleted );
             }
             break;
 
@@ -496,10 +490,9 @@ void     NetworkLayer::UpdateNotifications()
             break;
          case UserNetworkEventNotifier::NotificationType_GameData:
             {
-               store = static_cast< GameData* >( qn.meta );
-               if( store && store->data )
+               if( qn.genericData )
                {
-                  notify->GameData( store->size, store->data );
+                  notify->GameData( qn.intValue, qn.genericData );
                }
             }
             break;
@@ -522,20 +515,11 @@ void     NetworkLayer::UpdateNotifications()
                notify->ServerRequestsListOfUserPurchases();
             }
             break;*/
-
-         //delete buffer;
          }
       }
 
+      delete [] qn.genericData;
       localCopy.pop();
-
-      if( store )
-      {
-         delete [] store->data;
-         delete store;
-      }
-      //delete packetChatHistoryResult;// old style cleanup, 
-      //delete packetChatMissedHistoryResult;
                   
    }
 
@@ -617,8 +601,22 @@ void     NetworkLayer::Notification( int type )
    Threading::MutexLock    locker( m_notificationMutex );
    m_notifications.push( QueuedNotification( type ) );
 }
-
+/*
 void     NetworkLayer::Notification( int type, void* meta )
+{
+   Threading::MutexLock    locker( m_notificationMutex );
+   m_notifications.push( QueuedNotification( type, meta ) );
+}*/
+
+void     NetworkLayer::Notification( int type, U8* genericData, int size )
+{
+   QueuedNotification temp( type );
+   temp.genericData = genericData;
+   temp.intValue = size;
+   m_notifications.push( temp );
+}
+
+void     NetworkLayer::Notification( int type, BasePacket* meta )
 {
    Threading::MutexLock    locker( m_notificationMutex );
    m_notifications.push( QueuedNotification( type, meta ) );
@@ -2368,8 +2366,8 @@ bool  NetworkLayer::HandlePacketReceived( BasePacket* packetIn )
                PacketChatChannelList* channelList = static_cast<PacketChatChannelList*>( packetIn );
 
                cout << " chat channel list received " << channelList->channelList.size() << endl;
-               const SerializedKeyValueVector< ChannelInfo >& kvVector = channelList->channelList;
-               SerializedKeyValueVector< ChannelInfo >::const_KVIterator channelIt = kvVector.begin();
+               const SerializedKeyValueVector< ChannelInfoFullList >& kvVector = channelList->channelList;
+               SerializedKeyValueVector< ChannelInfoFullList >::const_KVIterator channelIt = kvVector.begin();
                while( channelIt != kvVector.end() )
                {
                   ChatChannel newChannel;
@@ -2378,8 +2376,7 @@ bool  NetworkLayer::HandlePacketReceived( BasePacket* packetIn )
                   newChannel.gameProductId = channelIt->value.gameProduct;
                   newChannel.gameInstanceId = channelIt->value.gameId;
                   newChannel.channelDetails= channelIt->value.channelName;
-                  //newChannel.userList = channelIt->value.userList;
-                  //channelIt->value.
+                  newChannel.userList = channelIt->value.userList;
                   AddChatChannel( newChannel );
                   channelIt++;
                }
@@ -2802,10 +2799,12 @@ void     NetworkLayer::HandleData( PacketGameplayRawData* data )
 
    if( m_rawDataBuffer.IsDone() )
    {
-      GameData* store = new GameData();
-      m_rawDataBuffer.PrepPackage( store->data, store->size );         
+      //GameData* store = new GameData();
+      U8* ptr;
+      int size;
+      m_rawDataBuffer.PrepPackage( ptr, size );         
 
-      Notification( UserNetworkEventNotifier::NotificationType_GameData, store );
+      Notification( UserNetworkEventNotifier::NotificationType_GameData, ptr, size );
 
       RestoreNormalThreadPerformance();
    }

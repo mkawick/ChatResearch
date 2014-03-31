@@ -2,6 +2,7 @@
 #pragma once 
 
 #include "BasePacket.h"
+#include "ChatPacket.h"
 
 class PacketGameToServer : public BasePacket 
 {

@@ -36,6 +36,7 @@ public:
       LoginType_RequestOtherUserProfileResponse,
       LoginType_UpdateSelfProfile,
       LoginType_UpdateSelfProfileResponse,
+      LoginType_UserUpdateProfile
    };
 public:
    PacketLogin( int packet_type = PacketType_Login, int packet_sub_type = LoginType_Login ): BasePacket( packet_type, packet_sub_type ) {}
@@ -444,7 +445,7 @@ public:
 
 ///////////////////////////////////////////////////////////////
 
-class    PacketUpdateSelfProfile : public BasePacket // limited to admin priveledges only
+class    PacketUpdateSelfProfile : public BasePacket 
 {
 public:
    PacketUpdateSelfProfile() : BasePacket( PacketType_Login, PacketLogin::LoginType_UpdateSelfProfile ), 
@@ -476,6 +477,21 @@ public:
    bool     blockGroupInvitations;
 };
 
+///////////////////////////////////////////////////////////////
+
+class    PacketUserUpdateProfile : public PacketRequestUserProfileResponse 
+{
+public:
+   PacketUserUpdateProfile() : PacketRequestUserProfileResponse(),
+                              connectionId( 0 )
+   {
+      packetSubType = PacketLogin::LoginType_UserUpdateProfile;
+   }
+
+   bool  SerializeIn( const U8* data, int& bufferOffset );
+   bool  SerializeOut( U8* data, int& bufferOffset ) const;
+   U32      connectionId;
+};
 
 ///////////////////////////////////////////////////////////////
 

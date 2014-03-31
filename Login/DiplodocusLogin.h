@@ -122,6 +122,7 @@ public:
    bool           GetProductByProductId( int productId, ProductInfo& returnPi );
 
    StringLookup*  GetStringLookup() { return m_stringLookup; }
+   bool           SendPacketToOtherServer( BasePacket* packet, U32 connectionId );
 
    //--------------------------------------
 
@@ -178,7 +179,7 @@ private:
                                              int langaugeId, 
                                              bool isLoggedIn, 
                                              bool wasDisconnectedByError );
-   bool     SendListOfUserProductsToOtherServers( const string& userUuid, U32 connectionId, const vector< string >& productNames );
+   //bool     SendListOfUserProductsToOtherServers( const string& userUuid, U32 connectionId, const vector< string >& productNames );
 
    bool     StoreUserPurchases( U32 connectionId, const PacketListOfUserAggregatePurchases* purchase );
    bool     RequestListOfPurchases( U32 connectionId, const PacketListOfUserPurchasesRequest* purchase );

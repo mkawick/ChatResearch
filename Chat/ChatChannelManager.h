@@ -9,6 +9,7 @@ using namespace std;
 #include "ChatChannelDbJob.h"
 #include "UsersChatChannelList.h"
 
+#include "../NetworkCommon/Packets/ChatPacket.h"
 #include "../NetworkCommon/Utils/TableWrapper.h"
 
 //------------------------------------------------------
@@ -65,7 +66,7 @@ public:
    bool           HandleDbResult( PacketDbQueryResult* packet );
 
    bool           CreateNewChannel( const string& channelName, const string& userUuid );
-   bool           GetChatChannels( const string& userUuid, ChannelKeyValue& availableChannels );
+   bool           GetChatChannels( const string& userUuid, ChannelFullKeyValue& availableChannels );
 
 
    bool           CreateNewChannel( const PacketChatCreateChatChannelFromGameServer* pPacket );

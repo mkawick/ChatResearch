@@ -102,7 +102,7 @@ CAbstractThread::CAbstractThread( bool needsThreadProtections, int sleepTime, bo
                   m_markedForCleanup( false ),
                   m_needsThreadProtection( needsThreadProtections ), 
                   m_sleepTime( sleepTime ),
-                  m_thread( (int)InvalidThread )
+                  m_thread( (ThreadId)InvalidThread )
 {
 #if PLATFORM == PLATFORM_WINDOWS
    m_threadId = 0;
@@ -121,7 +121,7 @@ void  CAbstractThread::Cleanup()
    DestroyThread();
    
 #ifndef WIN32
-   if( m_thread != (int)InvalidThread )
+   if( m_thread != (ThreadId)InvalidThread )
    {
       void* result;
       pthread_join( m_thread, &result );
@@ -180,7 +180,7 @@ void  CAbstractThread::SetPriority( ePriority priority )
 void CAbstractThread::Resume() 
 { 
    m_isPaused = false; 
-   if( m_thread == (int) InvalidThread ) 
+   if( m_thread == (ThreadId) InvalidThread ) 
    {
       CreateThread(); 
    }

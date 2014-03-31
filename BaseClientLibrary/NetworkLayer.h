@@ -333,7 +333,7 @@ public:
    void     EnableMultithreadedCallbackSystem();
    void     CheckForReroutes( bool checkForRerouts );
    void     OverrideSocketPort( int port ) { m_connectionPort = port; }
-   void     Init( const char* serverDNS = "gateway.internal.playdekgames.com" );
+   void     Init( const char* serverDNS = "mber.pub.playdekgames.com" );
    bool     RegisterCallbackInterface( UserNetworkEventNotifier* _callbacks );
 
    void     Exit();
@@ -556,19 +556,21 @@ protected:
    bool                                      m_enabledMultithreadedProtections;
    struct QueuedNotification
    {
-      QueuedNotification() : eventId( 0 ), meta( NULL ) {}
-      QueuedNotification( int eid, void* data = NULL ) : eventId( eid ), meta( data ) {}
+      QueuedNotification() : eventId( 0 ),  intValue( 0 ), intValue2( 0 ), packet( NULL ), genericData( NULL )  {}
+      QueuedNotification( int eid, BasePacket* data = NULL ) : eventId( eid ), intValue( 0 ), intValue2( 0 ), packet( data ), genericData( NULL ) {}
       int                                 eventId;
       int                                 intValue;
       int                                 intValue2;
-      void*                               meta;
+      BasePacket*                         packet;
+      U8*                                 genericData;
       SerializedKeyValueVector< string >  genericKeyValuePairs;
    };
    Threading::Mutex                          m_notificationMutex;
    std::queue< QueuedNotification >          m_notifications;
 
    void     Notification( int type );
-   void     Notification( int type, void* genericData );// try to not use this much
+   void     Notification( int type, U8* genericData, int size );
+   void     Notification( int type, BasePacket* packet );
    void     Notification( int type, int data, int meta = 0 );
    void     Notification( int type, const string& data );
    void     Notification( int type, const string& data, const string& data2 );

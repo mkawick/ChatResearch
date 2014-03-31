@@ -368,7 +368,7 @@ void     ChatChannelManager::PackageAndSendToOtherServer( BasePacket* packet, U3
 
 //---------------------------------------------------------------
 
-bool     ChatChannelManager::GetChatChannels( const string& userUuid, ChannelKeyValue& availableChannels )
+bool     ChatChannelManager::GetChatChannels( const string& userUuid, ChannelFullKeyValue& availableChannels )
 {
    availableChannels.clear();
 
@@ -385,7 +385,16 @@ bool     ChatChannelManager::GetChatChannels( const string& userUuid, ChannelKey
          if( channelIter != m_channelMap.end() )
          {
             const ChatChannel& channel = channelIter->second;
-            availableChannels.insert( channel.uuid, ChannelInfo( channel.name, channel.uuid, channel.gameType, channel.gameInstanceId, 0, channel.isActive ) );
+            //channel.userBasics
+            // ChannelInfo( channel.name, channel.uuid, channel.gameType, channel.gameInstanceId, 0, channel.isActive )
+            ChannelInfoFullList temp( channel.name, channel.uuid, channel.gameType, channel.gameInstanceId, 0, channel.isActive );
+            list< UserBasics >::const_iterator ub = channel.userBasics.begin();
+            while( ub != channel.userBasics.end() )
+            {
+               temp.userList.insert( ub->userUuid, ub->userName );
+               ub++;
+            }
+            availableChannels.insert( channel.uuid, temp );
          }
       }
       return true;
