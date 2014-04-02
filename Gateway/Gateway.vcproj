@@ -234,14 +234,6 @@
 				>
 			</File>
 			<File
-				RelativePath="..\NetworkCommon\Serialize.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\NetworkCommon\Serialize.h"
-				>
-			</File>
-			<File
 				RelativePath="..\NetworkCommon\ServerConstants.cpp"
 				>
 			</File>
@@ -393,10 +385,6 @@
 					>
 				</File>
 			</Filter>
-		</Filter>
-		<Filter
-			Name="LibEvent"
-			>
 		</Filter>
 		<File
 			RelativePath=".\ReadMe.txt"

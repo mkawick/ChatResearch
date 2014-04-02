@@ -25,7 +25,6 @@ using namespace std;
 class DiplodocusStat : public Queryer, public Diplodocus< KhaanStat > 
 {
 public:
-   public: 
    typedef Diplodocus< KhaanStat > ChainedType;
 
 public:

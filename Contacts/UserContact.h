@@ -58,6 +58,8 @@ public:
    void  Update();
    bool  UpdateProfile( const PacketUserUpdateProfile* profile );
 
+   bool  IsBlockingFriendInvites() const { return m_blockContactInvitations; }
+
 private:
 
    void  InitContactsAndInvitations();

@@ -26,7 +26,7 @@
 
 
 #include "DataTypes.h"
-#include "Serialize.h"
+#include "Packets/Serialize.h"
 using namespace std;
 
 // prototypes

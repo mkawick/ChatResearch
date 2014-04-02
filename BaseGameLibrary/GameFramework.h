@@ -52,6 +52,7 @@ public:
 
    void  SetupDefaultStatConnection( const string& address, U16 port );
    void  SetupDefaultChatConnection( const string& address, U16 port );
+   void  SetupDefaultNotificationConnection( const string& address, U16 port );
    void  SetupDefaultS2S( const string& address, U16 port );
    void  SetupConnectionToAnotherServer( const string& address, const string& serverName, U16 port, ServerType serverType, PacketType packetType );
    void  AddPacketTypeToServer( const string& serverName, PacketType packetType );
@@ -112,6 +113,10 @@ private:
    U16            m_chatServerPort;
    string         m_chatServerAddress;
    FruitadensServerToServer*  m_chatServer;
+
+   U16            m_notificationServerPort;
+   string         m_notificationServerAddress;
+   FruitadensServerToServer*  m_notificationServer;
 
    vector< S2SConnectionSetupData > m_serverConnections;
 

@@ -2,7 +2,7 @@
 
 #pragma once
 
-#include "DataBucket.h"
+#include "CommonTypes.h"
 #include <string>
 #include <vector>
 #include <list>
@@ -10,7 +10,7 @@
 
 //#define _MEMLEAK_TESTING_
 
-static const U8   GlobalNetworkProtocolVersion = 11;
+static const U8   GlobalNetworkProtocolVersion = 12;
 
 ///////////////////////////////////////////////////////////////
 
@@ -36,6 +36,7 @@ enum PacketType
    PacketType_Purchase,
    PacketType_Tournament,
    PacketType_Stat,
+   PacketType_Notification,
    PacketType_Num
 };
 
@@ -347,6 +348,7 @@ public:
       ErrorType_ChatChannelCannotBeCreated =                   310,
       ErrorType_ChatChannelCannotBeDeleted =                   311,
       ErrorType_UserUnknown =                                  312,
+      ErrorType_UserIsBlockingFriendInvites =                  313,
 
       ErrorType_CreateFailed_BadPassword =                     410,
       ErrorType_CreateFailed_DisallowedUsername =              411,

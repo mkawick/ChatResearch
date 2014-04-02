@@ -1,4 +1,7 @@
 #pragma once
+
+#include "../NetworkCommon/ServerConstants.h" // defines game product ids
+
 #include "../NetworkCommon/NetworkOut/Fruitadens.h"
 #include "../NetworkCommon/Packets/BasePacket.h"
 #include "../NetworkCommon/Packets/GamePacket.h"
@@ -254,8 +257,8 @@ public:
       NotificationType_ListOfAvailableProducts,
       NotificationType_ListOfAggregateUserPurchases,
 
-      NotificationType_UserDemographics,
-      NotificationType_UserWinLoss,
+      //NotificationType_UserDemographics,
+      //NotificationType_UserWinLoss,
 
       NotificationType_GameData,
       NotificationType_AssetDataAvailable,
@@ -264,7 +267,7 @@ public:
       NotificationType_FriendOnlineStatusChanged,
       NotificationType_ChatChannelUpdate,
       NotificationType_ChatListUpdate,
-      NotificationType_ListOfFriendUpdate,
+      //NotificationType_ListOfFriendUpdate,
 
       NotificationType_SearchResults,
 

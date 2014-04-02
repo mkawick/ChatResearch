@@ -2,7 +2,7 @@
 // ChatPacket.cpp
 
 #include "../ServerConstants.h"
-#include "../Serialize.h"
+#include "Serialize.h"
 #include "BasePacket.h"
 #include "ChatPacket.h"
 

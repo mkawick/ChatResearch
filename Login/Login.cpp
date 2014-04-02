@@ -96,6 +96,9 @@ void  PrintInstructions()
    cout << "    stat.address      - stat server ipaddress" << endl;
    cout << "    stat.port         - stat server port" << endl;
 
+   cout << "    notification.address - when a user registers a device..." << endl;
+   cout << "    notification.port - when a user registers a device..." << endl;
+
    cout << "    print.packets     - print each packet for debugging" << endl;
 
    cout << "    autoAddLoginProduct - automatically add the product from which you login" << endl;
@@ -133,8 +136,8 @@ int main( int argc, const char* argv[] )
    string statPortString = "7802";
    string statIpAddressString = "localhost";
 
- /*  string gamePortString = "21002";
-   string gameIpAddressString = "localhost";*/
+   string notificationPortString = "7902";
+   string notificationIpAddressString = "localhost";
 
    string autoAddLoginProductString = "true";
 
@@ -167,6 +170,9 @@ int main( int argc, const char* argv[] )
    parser.FindValue( "stat.port", statPortString );
    parser.FindValue( "stat.address", statIpAddressString );
 
+   parser.FindValue( "notification.port", notificationPortString );
+   parser.FindValue( "notification.address", notificationIpAddressString );
+
    parser.FindValue( "autoAddLoginProduct", autoAddLoginProductString );
 
    string dbPortString = "16384";
@@ -182,7 +188,14 @@ int main( int argc, const char* argv[] )
    parser.FindValue( "db.schema", dbSchema );
 
 
-   int listenPort = 7600, dbPortAddress = 3306, chatPort = 7402, contactPort=7502, assetPort=7302, purchasePort=7702, statPort = 7802 ;
+   int   listenPort = 7600, 
+         dbPortAddress = 3306, 
+         chatPort = 7402, 
+         contactPort=7502, 
+         assetPort=7302, 
+         purchasePort=7702, 
+         statPort = 7802, 
+         notificationPort = 7902;
    bool autoAddLoginProduct = true;
 
    try 
@@ -194,6 +207,7 @@ int main( int argc, const char* argv[] )
        chatPort = boost::lexical_cast<int>( chatPortString );
        contactPort = boost::lexical_cast<int>( contactPortString );
        statPort = boost::lexical_cast<int>( statPortString );
+       notificationPort = boost::lexical_cast<int>( notificationPortString );
 
        std::transform( autoAddLoginProductString.begin(), autoAddLoginProductString.end(), autoAddLoginProductString.begin(), ::tolower );
        if( autoAddLoginProductString == "1" || autoAddLoginProductString == "true" )
@@ -248,6 +262,7 @@ int main( int argc, const char* argv[] )
    PrepConnection< FruitadensLogin, DiplodocusLogin > ( assetIpAddressString, assetPort, "asset", loginServer, ServerType_Asset, true );
    PrepConnection< FruitadensLogin, DiplodocusLogin > ( purchaseIpAddressString, purchasePort, "purchase", loginServer, ServerType_Purchase, true );
    PrepConnection< FruitadensLogin, DiplodocusLogin > ( statIpAddressString, statPort, "stat", loginServer, ServerType_Stat, true );
+   PrepConnection< FruitadensLogin, DiplodocusLogin > ( notificationIpAddressString, notificationPort, "notification", loginServer, ServerType_Notification, true );
    
    ConnectToMultipleGames< FruitadensLogin, DiplodocusLogin > ( parser, loginServer, true );
 

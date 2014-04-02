@@ -16,6 +16,7 @@
 #include "DbPacket.h"
 #include "GamePacket.h"
 #include "LoginPacket.h"
+#include "NotificationPacket.h"
 #include "PurchasePacket.h"
 #include "ServerToServerPacket.h"
 #include "StatPacket.h"
@@ -112,6 +113,10 @@ bool	PacketFactory::Parse( const U8* bufferIn, int& bufferOffset, BasePacket** p
    case PacketType_Tournament:
       {
          return ParseTournament( bufferIn, bufferOffset, &firstPassParse, packetOut );
+      }
+   case PacketType_Notification:
+      {
+         return ParseNotification( bufferIn, bufferOffset, &firstPassParse, packetOut );
       }
    }
 
@@ -1115,6 +1120,46 @@ bool     PacketFactory::ParseTournament( const U8* bufferIn, int& bufferOffset, 
       return true;
    default:
       assert( 0 );
+   }
+   return false;
+}
+
+//-----------------------------------------------------------------------------------------
+
+bool     PacketFactory::ParseNotification( const U8* bufferIn, int& bufferOffset, const BasePacket* firstPassParse, BasePacket** packetOut ) const
+{
+   switch( firstPassParse->packetSubType ) //PacketType_Cheat
+   {
+   case NotificationPacket::NotificationType_Base:
+      {
+         *packetOut = SerializeIn< NotificationPacket >( bufferIn, bufferOffset );
+      }
+      return true;
+   case NotificationPacket::NotificationType_TestNotification:
+      {
+         *packetOut = SerializeIn< NotificationPacket_TestNotification >( bufferIn, bufferOffset );
+      }
+      return true;
+   case NotificationPacket::NotificationType_EchoToServer:
+      {
+         *packetOut = SerializeIn< NotificationPacket_EchoToServer >( bufferIn, bufferOffset );
+      }
+      return true;
+   case NotificationPacket::NotificationType_EchoToClient:
+      {
+         *packetOut = SerializeIn< NotificationPacket_EchoToClient >( bufferIn, bufferOffset );
+      }
+      return true;
+   case NotificationPacket::NotificationType_RegisterDevice:
+      {
+         *packetOut = SerializeIn< NotificationPacket_RegisterDevice >( bufferIn, bufferOffset );
+      }
+      return true;
+   case NotificationPacket::NotificationType_SendNotification:
+      {
+         *packetOut = SerializeIn< NotificationPacket_SendNotification >( bufferIn, bufferOffset );
+      }
+      return true;
    }
    return false;
 }

@@ -14,7 +14,7 @@
 #include <memory>
 
 #include "../NetworkCommon/Platform.h"
-#include "../NetworkCommon/Serialize.h"
+#include "../NetworkCommon/Packets/Serialize.h"
 #include "../NetworkCommon/Utils/Utils.h"
 
 #if PLATFORM == PLATFORM_WINDOWS

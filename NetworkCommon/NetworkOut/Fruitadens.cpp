@@ -1,7 +1,7 @@
 // Fruitadens.cpp
 
 #include "../ServerConstants.h"
-#include "../Serialize.h"
+#include "../Packets/Serialize.h"
 #include "../Utils/Utils.h"
 
 #include <iostream>

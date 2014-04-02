@@ -2,7 +2,7 @@
 
 #include "../ServerConstants.h"
 #include "ServerToServerPacket.h"
-#include "../Serialize.h"
+#include "Serialize.h"
 #include "PacketFactory.h"
 #include <assert.h>
 

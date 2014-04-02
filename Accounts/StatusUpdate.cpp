@@ -528,6 +528,8 @@ void     StatusUpdate::HandleAutoCreateAccounts( const PacketDbQueryResult* dbRe
       string userId =            row[ TableUserTempNewUser::Column_user_id ];
       string timeCreated =       row[ TableUserTempNewUser::Column_time_created ];
       string productId =         row[ TableUserTempNewUser::Column_game_id ];
+      if( productId == "null" ) // only corrects for bad data.
+         productId = "1";
 
       //string uuid =              row[ TableUserTempNewUser::Column_uuid ]; //<< must be created
       if( uuid == "" || uuid.size() == 0 )

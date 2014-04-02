@@ -84,6 +84,13 @@ bool FruitadensLogin::FilterOutwardPacket( BasePacket* packet ) const
          return true;
       }
    }
+   if( m_serverType == ServerType_Notification )
+   {
+      if( packetType == PacketType_Notification )
+      {
+         return true;
+      }
+   }
 
    return false;
 }

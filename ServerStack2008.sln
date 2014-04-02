@@ -74,6 +74,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Stat", "Stat\Stat.vcproj", 
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Starter", "Starter\Starter.vcproj", "{650BFF66-EB3C-4B9C-84B4-CBBAEFC9FE79}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Notification", "Notification\Notification.vcproj", "{575C100C-4718-4B0B-937A-2BBD2435BD1D}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Win32 = Debug|Win32
@@ -171,6 +173,12 @@ Global
 		{650BFF66-EB3C-4B9C-84B4-CBBAEFC9FE79}.DebugForCLR|Win32.Build.0 = Debug|Win32
 		{650BFF66-EB3C-4B9C-84B4-CBBAEFC9FE79}.Release|Win32.ActiveCfg = Release|Win32
 		{650BFF66-EB3C-4B9C-84B4-CBBAEFC9FE79}.Release|Win32.Build.0 = Release|Win32
+		{575C100C-4718-4B0B-937A-2BBD2435BD1D}.Debug|Win32.ActiveCfg = Debug|Win32
+		{575C100C-4718-4B0B-937A-2BBD2435BD1D}.Debug|Win32.Build.0 = Debug|Win32
+		{575C100C-4718-4B0B-937A-2BBD2435BD1D}.DebugForCLR|Win32.ActiveCfg = Debug|Win32
+		{575C100C-4718-4B0B-937A-2BBD2435BD1D}.DebugForCLR|Win32.Build.0 = Debug|Win32
+		{575C100C-4718-4B0B-937A-2BBD2435BD1D}.Release|Win32.ActiveCfg = Release|Win32
+		{575C100C-4718-4B0B-937A-2BBD2435BD1D}.Release|Win32.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

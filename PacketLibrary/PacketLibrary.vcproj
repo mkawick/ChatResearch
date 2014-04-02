@@ -228,11 +228,11 @@
 				>
 			</File>
 			<File
-				RelativePath="..\NetworkCommon\Packets\ContactPacket.cpp"
+				RelativePath="..\NetworkCommon\Packets\CommonTypes.cpp"
 				>
 			</File>
 			<File
-				RelativePath="..\NetworkCommon\Packets\DataBucket.cpp"
+				RelativePath="..\NetworkCommon\Packets\ContactPacket.cpp"
 				>
 			</File>
 			<File
@@ -248,11 +248,19 @@
 				>
 			</File>
 			<File
+				RelativePath="..\NetworkCommon\Packets\NotificationPacket.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\NetworkCommon\Packets\PacketFactory.cpp"
 				>
 			</File>
 			<File
 				RelativePath="..\NetworkCommon\Packets\PurchasePacket.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\NetworkCommon\Packets\Serialize.cpp"
 				>
 			</File>
 			<File
@@ -294,11 +302,15 @@
 				>
 			</File>
 			<File
-				RelativePath="..\NetworkCommon\Packets\ContactPacket.h"
+				RelativePath="..\NetworkCommon\Packets\CommonTypes.h"
 				>
 			</File>
 			<File
-				RelativePath="..\NetworkCommon\Packets\DataBucket.h"
+				RelativePath="..\NetworkCommon\Packets\CommonTypes.inl"
+				>
+			</File>
+			<File
+				RelativePath="..\NetworkCommon\Packets\ContactPacket.h"
 				>
 			</File>
 			<File
@@ -314,11 +326,19 @@
 				>
 			</File>
 			<File
+				RelativePath="..\NetworkCommon\Packets\NotificationPacket.h"
+				>
+			</File>
+			<File
 				RelativePath="..\NetworkCommon\Packets\PacketFactory.h"
 				>
 			</File>
 			<File
 				RelativePath="..\NetworkCommon\Packets\PurchasePacket.h"
+				>
+			</File>
+			<File
+				RelativePath="..\NetworkCommon\Packets\Serialize.h"
 				>
 			</File>
 			<File

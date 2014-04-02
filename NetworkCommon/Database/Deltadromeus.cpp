@@ -15,16 +15,16 @@
 #include <boost/algorithm/string/replace.hpp>
 #include <boost/lexical_cast.hpp>
 #include <iostream>
+#include <memory.h>
 
-
-#include "../Platform.h"
-#include "../Logging/server_log.h"
 #if PLATFORM == PLATFORM_WINDOWS
+
 #pragma warning( disable:4996)
 #pragma comment( lib, "libmysql.lib" )
 #endif
 
-#include <memory.h>
+#include "../Platform.h"
+#include "../Logging/server_log.h"
 #include "../DataTypes.h"
 #include "../Packets/DbPacket.h"
 #include "Deltadromeus.h"

@@ -694,8 +694,16 @@ bool     UserContact::InviteUser( const PacketContact_InviteContact* packet )
    }
    if( contact )
    {
-      // we still need to write this to the db
-      FinishInvitation( contact->GetUserInfo().id, message, contact );
+      if( contact->IsBlockingFriendInvites() == true )
+      {
+         m_contactServer->SendErrorToClient( m_connectionId, PacketErrorReport::ErrorType_UserIsBlockingFriendInvites );
+         return false;
+      }
+      else
+      {
+         // we still need to write this to the db
+         FinishInvitation( contact->GetUserInfo().id, message, contact );
+      }
    }
    else
    {

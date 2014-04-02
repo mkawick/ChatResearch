@@ -270,14 +270,6 @@
 				>
 			</File>
 			<File
-				RelativePath="..\NetworkCommon\Serialize.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\NetworkCommon\Serialize.h"
-				>
-			</File>
-			<File
 				RelativePath="..\NetworkCommon\ServerConstants.cpp"
 				>
 			</File>

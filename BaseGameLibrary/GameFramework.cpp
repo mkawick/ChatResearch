@@ -46,6 +46,9 @@ GameFramework::GameFramework( const char* name, const char* shortName, U8 gamePr
    m_statServerPort = 7802;
    m_statServerAddress = "localhost";
 
+   m_notificationServerPort = 7902;
+   m_notificationServerAddress = "localhost";
+
    m_listenForS2SPort = 21002;
    m_listenForS2SAddress = "localHost";
 
@@ -105,6 +108,14 @@ void  GameFramework::SetupDefaultChatConnection( const string& address, U16 port
 
 //-----------------------------------------------------
 
+void  GameFramework::SetupDefaultNotificationConnection( const string& address, U16 port )
+{
+   m_notificationServerPort = port;
+   m_notificationServerAddress = address;
+}
+
+//-----------------------------------------------------
+
 void  GameFramework::SetupDefaultS2S( const string& address, U16 port )
 {
    m_listenForS2SPort = port;
@@ -148,6 +159,7 @@ void  GameFramework::UseCommandlineOverrides( int argc, const char* argv[] )
    string   gatewayListenPort;
    string   statPort;
    string   chatPort;
+   string   notificationPort;
    string   listenForS2SPort;
    string   dbPort;
 
@@ -157,6 +169,7 @@ void  GameFramework::UseCommandlineOverrides( int argc, const char* argv[] )
       gatewayListenPort = boost::lexical_cast<string>( m_listenPort );
       statPort = boost::lexical_cast<string>( m_statServerPort );
       chatPort = boost::lexical_cast<string>( m_chatServerPort );
+      notificationPort = boost::lexical_cast<string>( m_notificationServerPort );
       listenForS2SPort = boost::lexical_cast<string>( m_listenForS2SPort );
       dbPort = boost::lexical_cast<string>( m_dbPort );
    }
@@ -179,6 +192,9 @@ void  GameFramework::UseCommandlineOverrides( int argc, const char* argv[] )
    parser.FindValue( "chat.port", chatPort );
    parser.FindValue( "chat.address", m_chatServerAddress );
 
+   parser.FindValue( "notification.port", notificationPort );
+   parser.FindValue( "notification.address", m_notificationServerAddress );
+
    parser.FindValue( "s2s.port", listenForS2SPort );
    parser.FindValue( "s2s.address", m_listenForS2SAddress );
 
@@ -193,6 +209,7 @@ void  GameFramework::UseCommandlineOverrides( int argc, const char* argv[] )
       m_listenPort = boost::lexical_cast<int>( gatewayListenPort );
       m_statServerPort = boost::lexical_cast<int>( statPort );
       m_chatServerPort = boost::lexical_cast<int>( chatPort );
+      m_notificationServerPort = boost::lexical_cast<int>( notificationPort );
       m_listenForS2SPort = boost::lexical_cast<int>( listenForS2SPort );
       
       m_dbPort = boost::lexical_cast<int>( dbPort );
@@ -371,6 +388,9 @@ bool  GameFramework::Run()
 
    m_chatServer = PrepConnection< FruitadensServerToServer, DiplodocusGame > ( m_chatServerAddress, m_chatServerPort, "chat", m_connectionManager, ServerType_Chat, true );
    m_chatServer->AddToOutwardFilters( PacketType_Chat );
+
+   m_notificationServer = PrepConnection< FruitadensServerToServer, DiplodocusGame > ( m_notificationServerAddress, m_notificationServerPort, "notification", m_connectionManager, ServerType_Notification, true );
+   m_notificationServer->AddToOutwardFilters( PacketType_Notification );
 
    //----------------------------------------------------------------
    
