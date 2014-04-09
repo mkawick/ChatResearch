@@ -1638,7 +1638,10 @@ bool     NetworkLayer::AcceptInvitation( const string& uuid ) const
          PacketContact_AcceptInvite invitationAccepted;
          invitationAccepted.invitationUuid = uuid;
         
-         return SerializePacketOut( &invitationAccepted );
+         //return SerializePacketOut( &invitationAccepted );
+         bool  result = SerializePacketOut( &invitationAccepted );
+//         RequestListOfInvitationsReceived();
+         return result;
       }
       it++;
    }
@@ -1673,7 +1676,9 @@ bool     NetworkLayer::DeclineInvitation( const string& uuid, string message ) c
    invitationDeclined.invitationUuid = uuid;
    invitationDeclined.message = message;
 
-   return SerializePacketOut( &invitationDeclined );
+   bool  result = SerializePacketOut( &invitationDeclined );
+//   RequestListOfInvitationsReceived();
+   return result;
 }
 
 //-----------------------------------------------------------------------------
@@ -1699,7 +1704,9 @@ bool     NetworkLayer::RemoveSentInvitation( const string& uuid ) const
    PacketContact_RemoveInvitation invitation;
    invitation.invitationUuid = uuid;
 
-   return SerializePacketOut( &invitation );
+   bool  result = SerializePacketOut( &invitation );
+//   RequestListOfInvitationsSent();
+   return result;
 }
 
 //-----------------------------------------------------------------------------
@@ -1790,7 +1797,9 @@ bool     NetworkLayer::InviteUserToBeFriend( const string& uuid, const string& u
    invitation.uuid = uuid;
    invitation.message = message;
 
-   return SerializePacketOut( &invitation );
+   bool result = SerializePacketOut( &invitation );
+//   RequestListOfInvitationsSent();
+   return result;
 }
 
 //-----------------------------------------------------------------------------
@@ -2209,6 +2218,7 @@ bool  NetworkLayer::HandlePacketReceived( BasePacket* packetIn )
                }
 
                Notification( UserNetworkEventNotifier::NotificationType_InvitationsReceivedUpdate );
+               // RequestListOfInvitationsReceived();
             }
             break;
          case PacketContact::ContactType_GetListOfInvitationsSentResponse:
@@ -2232,9 +2242,10 @@ bool  NetworkLayer::HandlePacketReceived( BasePacket* packetIn )
                }
 
                Notification( UserNetworkEventNotifier::NotificationType_InvitationsSentUpdate );
+               //RequestListOfInvitationsSent();
             }
             break;
-       /*  case PacketContact::ContactType_InviteSentNotification:
+         case PacketContact::ContactType_InviteSentNotification:
             {
                cout << "new invite received" << endl;
                PacketContact_InviteSentNotification* packet = static_cast< PacketContact_InviteSentNotification* >( packetIn );
@@ -2246,11 +2257,11 @@ bool  NetworkLayer::HandlePacketReceived( BasePacket* packetIn )
                      (*it)->InvitationReceived( packet->info );
                   }
                }
-               //m_invitationsReceived.insert( packet->info.uuid, packet->info );
+               m_invitationsReceived.insert( packet->info.uuid, packet->info );
                Notification( UserNetworkEventNotifier::NotificationType_InvitationsSentUpdate );
-               NotificationType_InvitationReceived
+               //NotificationType_InvitationReceived
             }
-            break;*/
+            break;
          case PacketContact::ContactType_InvitationAccepted:
             {
                cout << "invite accepted" << endl;
@@ -2269,15 +2280,12 @@ bool  NetworkLayer::HandlePacketReceived( BasePacket* packetIn )
 
                if( packet->fromUsername == m_userName )
                {
-                  
+                  RemoveInvitationFromSent( packet->invitationUuid );
                }
                else
                {
-                  //RemoveInvitationFromReceived
+                  RemoveInvitationFromReceived( packet->invitationUuid );
                }
-
-               // m_invitationsReceived;
-               // m_invitationsSent;
 
                Notification( UserNetworkEventNotifier::NotificationType_InvitationAccepted, strings );
             }

@@ -66,6 +66,7 @@ private:
 
    void              QueryChatP2PHistory( const string& userUuid, int numRecords, int startingIndex );
    void              SendChatp2pHistoryToClient( PacketDbQueryResult * dbResult );
+   void              SendChatHistoryToClientCommon ( DynamicDataBucket& bucket, const string& userUuid, const string& chatChannelUuid );
 
    void              GetAllChatHistroySinceLastLogin();
    void              SendChatHistorySinceLastLogin( const vector< MissedChatChannelEntry >& );

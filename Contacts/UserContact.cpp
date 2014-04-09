@@ -249,22 +249,23 @@ bool  UserContact::HandleDbQueryResult( const PacketDbQueryResult* dbResult )
          {
             UserJoinPendingTable::row row = *it++;
             Invitation invite;
-            invite.invitationNumber =  boost::lexical_cast< U32 >( row[ TableUserJoinPending::Column_pending_id ] );
-            invite.inviteeId =         boost::lexical_cast< U32 >( row[ TableUserJoinPending::Column_invitee_id ] );
-            invite.inviterId =         boost::lexical_cast< U32 >( row[ TableUserJoinPending::Column_inviter_id ] );
+            //invite.invitationNumber =  boost::lexical_cast< U32 >( row[ TableUserJoinPending::Column_pending_id ] );
+            U32 inviteeId =         boost::lexical_cast< U32 >( row[ TableUserJoinPending::Column_invitee_id ] );
+            U32 inviterId =         boost::lexical_cast< U32 >( row[ TableUserJoinPending::Column_inviter_id ] );
 
             string notified = row[ TableUserJoinPending::Column_was_notified ];
-            if( notified == "NULL" )
-               invite.wasNotified = false;
+            bool wasNotified = false;
+            if( notified.size() == 0 || notified == "NULL" )
+               wasNotified = false;
             else 
-               invite.wasNotified =       boost::lexical_cast< bool >( notified );
+               wasNotified =       boost::lexical_cast< bool >( notified );
 
-            invite.userName =          row[ TableUserJoinPending::Column_name ];
-            invite.userUuid =          row[ TableUserJoinPending::Column_uuid ];
-            invite.message  =          row[ TableUserJoinPending::Column_message ];
-            invite.uuid  =             row[ TableUserJoinPending::Column_pending_uuid ];
-            invite.date  =             row[ TableUserJoinPending::Column_sent_date ];
-            m_invitationsOut.push_back( invite );
+            string userName =          row[ TableUserJoinPending::Column_name ];
+            string userUuid =          row[ TableUserJoinPending::Column_uuid ];
+            string message  =          row[ TableUserJoinPending::Column_message ];
+            string invitationUuid  =   row[ TableUserJoinPending::Column_pending_uuid ];
+            string date  =             row[ TableUserJoinPending::Column_sent_date ];
+            InsertInvitationSent( inviteeId, inviterId, wasNotified, userName, userUuid, message, invitationUuid, date );
          }
 
          m_friendRequestSentListFilled = true;
@@ -280,23 +281,24 @@ bool  UserContact::HandleDbQueryResult( const PacketDbQueryResult* dbResult )
          {
             UserJoinPendingTable::row row = *it++;
             Invitation invite;
-            invite.invitationNumber =  boost::lexical_cast< U32 >( row[ TableUserJoinPending::Column_pending_id ] );
-            invite.inviteeId =         boost::lexical_cast< U32 >( row[ TableUserJoinPending::Column_invitee_id ] );
-            invite.inviterId =         boost::lexical_cast< U32 >( row[ TableUserJoinPending::Column_inviter_id ] );
+            //invite.invitationNumber =  boost::lexical_cast< U32 >( row[ TableUserJoinPending::Column_pending_id ] );
+            U32 inviteeId =         boost::lexical_cast< U32 >( row[ TableUserJoinPending::Column_invitee_id ] );
+            U32 inviterId =         boost::lexical_cast< U32 >( row[ TableUserJoinPending::Column_inviter_id ] );
 
             string notified = row[ TableUserJoinPending::Column_was_notified ];
-            if( notified == "NULL" )
-               invite.wasNotified = false;
+            bool wasNotified = false;
+            if( notified.size() == 0 || notified == "NULL" )
+               wasNotified = false;
             else 
-               invite.wasNotified =       boost::lexical_cast< bool >( notified );
+               wasNotified =       boost::lexical_cast< bool >( notified );
             //invite.wasNotified =       boost::lexical_cast< bool >( row[ TableUserJoinPending::Column_was_notified ] );
 
-            invite.userName =          row[ TableUserJoinPending::Column_name ];
-            invite.userUuid =          row[ TableUserJoinPending::Column_uuid ];
-            invite.message  =          row[ TableUserJoinPending::Column_message ];
-            invite.uuid  =             row[ TableUserJoinPending::Column_pending_uuid ];
-            invite.date  =             row[ TableUserJoinPending::Column_sent_date ];
-            m_invitationsIn.push_back( invite );
+            string userName =          row[ TableUserJoinPending::Column_name ];
+            string userUuid =          row[ TableUserJoinPending::Column_uuid ];
+            string message  =          row[ TableUserJoinPending::Column_message ];
+            string invitationUuid  =   row[ TableUserJoinPending::Column_pending_uuid ];
+            string date  =             row[ TableUserJoinPending::Column_sent_date ];
+            InsertInvitationReceived( inviteeId, inviterId, wasNotified, userName, userUuid, message, invitationUuid, date );
          }
 
          m_friendRequestReceivedListFilled = true;
@@ -327,7 +329,7 @@ bool  UserContact::HandleDbQueryResult( const PacketDbQueryResult* dbResult )
                U32 id = boost::lexical_cast< U32 >( row[ TableUser::Column_id ] );
                if( id > 0 )
                {
-                  FinishInvitation( id, it->message );
+                  FinishInvitation( id, it->message, m_contactServer->GetUser( id ) );
                }
                m_invitationQueryLookup.erase( it );
                break;
@@ -621,6 +623,36 @@ bool  UserContact::HaveIAlreadyBeenInvited( const string& userUuid )
 
 //------------------------------------------------------------------------------------------------
 
+void  UserContact::InsertInvitationReceived( U32 inviteeId, U32 inviterId, bool wasNotified, const string& userName, const string& userUuid, const string& message, const string& invitationUuid, const string& date )
+{
+   Invitation invite;
+   invite.inviteeId = inviteeId;
+   invite.inviterId = inviterId;
+   invite.wasNotified = wasNotified;
+   invite.userName = userName;
+   invite.userUuid = userUuid;
+   invite.message = message;
+   invite.uuid = invitationUuid;
+   invite.date = date;
+
+    m_invitationsIn.push_back( invite );
+
+}
+void  UserContact::InsertInvitationSent( U32 inviteeId, U32 inviterId, bool wasNotified, const string& userName, const string& userUuid, const string& message, const string& invitationUuid, const string& date )
+{
+   Invitation invite;
+   invite.inviteeId = inviteeId;
+   invite.inviterId = inviterId;
+   invite.wasNotified = wasNotified;
+   invite.userName = userName;
+   invite.userUuid = userUuid;
+   invite.message = message;
+   invite.uuid = invitationUuid;
+   invite.date = date;
+
+   m_invitationsOut.push_back( invite );
+}
+
 void  UserContact::RemoveInvitationReceived( const string& invitationUuid )
 {
    vector< Invitation >::iterator  it = m_invitationsIn.begin();
@@ -635,6 +667,23 @@ void  UserContact::RemoveInvitationReceived( const string& invitationUuid )
       it++;
    }
 }
+
+void  UserContact::RemoveInvitationSent( const string& invitationUuid )
+{
+  vector< Invitation >::iterator  it = m_invitationsOut.begin();
+   while ( it != m_invitationsOut.end() )
+   {
+      const Invitation& invite = *it; 
+      if( invite.uuid == invitationUuid )
+      {
+         m_invitationsOut.erase( it );
+         break;
+      }
+      it++;
+   }
+}
+
+
 
 //------------------------------------------------------------------------------------------------
 
@@ -805,14 +854,15 @@ bool  UserContact::RemoveSentInvitation( const PacketContact_RemoveInvitation* p
       it++;
    }
 
-   if( found == false )
+   if( found == false || 
+      invitationUuid.size() == 0 )
    {
       m_contactServer->SendErrorToClient( m_connectionId, PacketErrorReport::ErrorType_Contact_Invitation_BadInvitation );
       return false;
    }
 
    // 'it' now contains the pointer to the right item
-   U32 invitationNumber = it->invitationNumber;
+   //U32 invitationNumber = it->invitationNumber;
    PacketDbQuery* dbQuery = new PacketDbQuery;
    dbQuery->id =           m_connectionId;
    dbQuery->meta =         invitationUuid;
@@ -820,8 +870,9 @@ bool  UserContact::RemoveSentInvitation( const PacketContact_RemoveInvitation* p
    dbQuery->serverLookup = m_userInfo.id;
    dbQuery->isFireAndForget = true;
 
-   string query = "DELETE FROM friend_pending WHERE id=";
-   query += boost::lexical_cast< string >( invitationNumber );
+   string query = "DELETE FROM friend_pending WHERE uuid='";
+   query += invitationUuid;
+   query += "'";
    dbQuery->query = query;
    m_contactServer->AddQueryToOutput( dbQuery );
 
@@ -833,7 +884,8 @@ bool  UserContact::RemoveSentInvitation( const PacketContact_RemoveInvitation* p
       invitee->GetListOfInvitationsReceived();
    }
 
-   m_invitationsOut.erase( it );// remove this entry
+   //m_invitationsOut.erase( it );// remove this entry
+   RemoveInvitationSent( invitationUuid );
    GetListOfInvitationsSent();
    return true;
 }
@@ -991,7 +1043,7 @@ void  UserContact::FinishAcceptingInvitation( const PacketDbQueryResult* dbResul
       invitationId = boost::lexical_cast< U32 >( row[ TableUserJoinPending::Column_pending_id ] );
       inviterId = boost::lexical_cast< U32 >( row[ TableUserJoinPending::Column_inviter_id ] );
       inviteeId = boost::lexical_cast< U32 >( row[ TableUserJoinPending::Column_invitee_id ] );
-      invitationUuid = row[ TableUserJoinPending::Column_uuid ];
+      invitationUuid = row[ TableUserJoinPending::Column_pending_uuid ];
       inviterUsername = row[ TableUserJoinPending::Column_name ];
    }
 
@@ -1049,9 +1101,13 @@ void  UserContact::FinishAcceptingInvitation( const PacketDbQueryResult* dbResul
    UserContact* contact = m_contactServer->GetUser( inviteeId );// this user needs to know that he's been invited.
    if( contact )
    {
+      contact->RemoveInvitationReceived( invitationUuid );
       contact->InvitationAccepted( inviterUsername, m_userInfo.userName, invitationUuid, "", true );// this seems backwards, but its not
    }
+
+   RemoveInvitationSent( invitationUuid );
    InvitationAccepted( inviterUsername, m_userInfo.userName, invitationUuid, "", true );
+   PrepInvitationsQueries();
 }
 
 //------------------------------------------------------------------------------------------------
@@ -1071,7 +1127,7 @@ void  UserContact::FinishDecliningingInvitation( const PacketDbQueryResult* dbRe
       invitationId = boost::lexical_cast< U32 >( row[ TableUserJoinPending::Column_pending_id ] );
       inviterId = boost::lexical_cast< U32 >( row[ TableUserJoinPending::Column_inviter_id ] );
       inviteeId = boost::lexical_cast< U32 >( row[ TableUserJoinPending::Column_invitee_id ] );
-      invitationUuid = row[ TableUserJoinPending::Column_uuid ];
+      invitationUuid = row[ TableUserJoinPending::Column_pending_uuid ];
       inviterUsername = row[ TableUserJoinPending::Column_name ];
    }
 
@@ -1093,6 +1149,7 @@ void  UserContact::FinishDecliningingInvitation( const PacketDbQueryResult* dbRe
    m_contactServer->AddQueryToOutput( dbQuery );
 
    // do not notify sender for now
+   RemoveInvitationReceived( invitationUuid );
    InvitationAccepted( inviterUsername, m_userInfo.userName, invitationUuid, userMessage, false );
    PrepInvitationsQueries();
 }
@@ -1152,10 +1209,13 @@ void  UserContact::FinishInvitation( U32 inviteeId, const string& message, UserC
    dbQuery->query = query;
    dbQuery->escapedStrings.insert( message );
 
+   InsertInvitationSent( m_userInfo.id, inviteeId, false, m_userInfo.userName, m_userInfo.uuid, message, invitationUuid, currentTimeInUTC );
+
    m_contactServer->AddQueryToOutput( dbQuery );
 
    if( contact )
    {
+      contact->InsertInvitationReceived( m_userInfo.id, inviteeId, false, m_userInfo.userName, m_userInfo.uuid, message, invitationUuid, currentTimeInUTC );
       contact->YouHaveBeenInvitedToBeAFriend( m_userInfo.userName, invitationUuid, message, currentTimeInUTC );
    }
    PrepInvitationsQueries();// reload all invitations... there should not be many

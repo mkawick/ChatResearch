@@ -535,52 +535,7 @@ void     ChatUser::SendChatChannelHistoryToClient( PacketDbQueryResult * dbResul
       m_chatServer->SendErrorToClient( m_connectionId, PacketErrorReport::ErrorType_NoChatHistoryExistsOnSelectedChannel );
       return;
    }
-   const int maxNumMessagesPerPacket = 20;
-
-   PacketChatHistoryResult* result = new PacketChatHistoryResult;
-   result->chatChannelUuid = dbResult->meta;
-
-   SimpleChatTable              enigma( dbResult->bucket );
-   SimpleChatTable::iterator    it = enigma.begin();
-   while( it != enigma.end() )
-   {
-      ChatTable::row       row = *it++;
-      ChatEntry            entry;
-      entry.message =      row[ SimpleChat::Column_text ];
-      entry.userName =     row[ SimpleChat::Column_user_name ];
-      entry.useruuid =     row[ SimpleChat::Column_user_uuid ];
-      entry.timestamp =    row[ SimpleChat::Column_timestamp ];
-
-      if( row[ SimpleChat::Column_game_turn ] != "NULL" )
-      {
-         entry.gameTurn =  boost::lexical_cast< int >( row[ SimpleChat::Column_game_turn ] );
-      }
-      else
-      {
-         entry.gameTurn  = 0;
-      }
-     
-      result->chat.push_back( entry );
-      // send once we have so many items
-      if( ( result->chat.size() % maxNumMessagesPerPacket) == 0 )
-      {
-         SendMessageToClient( result );
-         if( it != enigma.end() )
-         {
-            result = new PacketChatHistoryResult;
-            result->chatChannelUuid = dbResult->meta;
-         }
-         else 
-         {
-            result = NULL;
-         }
-      }
-   }
-   // send the 'residual'
-   if( result && result->chat.size() )
-   {
-      SendMessageToClient( result );
-   }
+   SendChatHistoryToClientCommon( dbResult->bucket, "" , dbResult->meta );
 }
 
 //---------------------------------------------------------------
@@ -592,11 +547,20 @@ void     ChatUser::SendChatp2pHistoryToClient( PacketDbQueryResult * dbResult )
       m_chatServer->SendErrorToClient( m_connectionId, PacketErrorReport::ErrorType_NoChatHistoryExistsForThisUser );
       return;
    }
+
+   SendChatHistoryToClientCommon( dbResult->bucket, dbResult->meta, "" );
+}
+
+//---------------------------------------------------------------
+
+void     ChatUser::SendChatHistoryToClientCommon( DynamicDataBucket& bucket, const string& userUuid, const string& chatChannelUuid )
+{
+   SimpleChatTable              enigma( bucket );
    const int maxNumMessagesPerPacket = 20;
    PacketChatHistoryResult* result = new PacketChatHistoryResult;
-   result->userUuid = dbResult->meta;
+   result->userUuid = userUuid;
+   result->chatChannelUuid = chatChannelUuid;
 
-   SimpleChatTable              enigma( dbResult->bucket );
    SimpleChatTable::iterator    it = enigma.begin();
    while( it != enigma.end() )
    {
@@ -607,9 +571,11 @@ void     ChatUser::SendChatp2pHistoryToClient( PacketDbQueryResult * dbResult )
       entry.useruuid =     row[ SimpleChat::Column_user_uuid ];
       entry.timestamp =    row[ SimpleChat::Column_timestamp ];
 
-      if( row[ SimpleChat::Column_game_turn ] != "NULL" )
+      const string& gameTurn = row[ SimpleChat::Column_game_turn ];
+
+      if( gameTurn.size() && gameTurn != "NULL" ) // can be ""
       {
-         entry.gameTurn =  boost::lexical_cast< int >( row[ SimpleChat::Column_game_turn ] );
+         entry.gameTurn =  boost::lexical_cast< int >( gameTurn );
       }
       else
       {
@@ -624,7 +590,8 @@ void     ChatUser::SendChatp2pHistoryToClient( PacketDbQueryResult * dbResult )
          if( it != enigma.end() )
          {
             result = new PacketChatHistoryResult;
-            result->userUuid = dbResult->meta;
+            result->userUuid = userUuid;
+            result->chatChannelUuid = chatChannelUuid;
          }
          else 
          {
@@ -638,6 +605,7 @@ void     ChatUser::SendChatp2pHistoryToClient( PacketDbQueryResult * dbResult )
       SendMessageToClient( result );
    }
 }
+
 //---------------------------------------------------------------
 
 void     ChatUser::SendChatHistorySinceLastLogin( const vector< MissedChatChannelEntry >& history )

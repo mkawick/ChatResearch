@@ -12,7 +12,7 @@ struct Invitation
 {
    int   inviterId;
    int   inviteeId;
-   int   invitationNumber;
+   //int   invitationNumber;
    bool  wasNotified;
 
    string userName;
@@ -90,7 +90,11 @@ private:
 
    bool  DoesPendingInvitationExist( const string& inviteeUuid, const string& inviteeName );
    bool  HaveIAlreadyBeenInvited( const string& userUuid );
+
+   void  InsertInvitationReceived( U32 inviteeId, U32 inviterId, bool wasNotified, const string& userName, const string& userUuid, const string& message, const string& invitationUuid, const string& date );
+   void  InsertInvitationSent( U32 inviteeId, U32 inviterId, bool wasNotified, const string& userName, const string& userUuid, const string& message, const string& invitationUuid, const string& date );
    void  RemoveInvitationReceived( const string& uuid );
+   void  RemoveInvitationSent( const string& invitationUuid );
 
    enum 
    {
