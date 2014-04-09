@@ -70,6 +70,7 @@ bool  PacketDbQueryResult::SerializeIn( const U8* data, int& bufferOffset )
    BasePacketDbQuery::SerializeIn( data, bufferOffset );
 
    Serialize::In( data, bufferOffset, successfulQuery );
+   Serialize::In( data, bufferOffset, insertId );
    bucket.SerializeIn( data, bufferOffset );
 
    return true;
@@ -80,6 +81,7 @@ bool  PacketDbQueryResult::SerializeOut( U8* data, int& bufferOffset ) const
    BasePacketDbQuery::SerializeOut( data, bufferOffset );
    
    Serialize::Out( data, bufferOffset, successfulQuery );
+   Serialize::Out( data, bufferOffset, insertId );
    bucket.SerializeOut( data, bufferOffset );
 
    return true;

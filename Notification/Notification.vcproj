@@ -41,7 +41,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="C:\projects\Mber\ServerStack\w32libs\include"
+				AdditionalIncludeDirectories="..\w32libs\include"
 				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
@@ -183,6 +183,10 @@
 				RelativePath=".\NotificationMainThread.cpp"
 				>
 			</File>
+			<File
+				RelativePath=".\UserConnection.cpp"
+				>
+			</File>
 		</Filter>
 		<Filter
 			Name="Header Files"
@@ -190,7 +194,15 @@
 			UniqueIdentifier="{93995380-89BD-4b04-88EB-625FBE52EBFB}"
 			>
 			<File
+				RelativePath=".\NotificationCommon.h"
+				>
+			</File>
+			<File
 				RelativePath=".\NotificationMainThread.h"
+				>
+			</File>
+			<File
+				RelativePath=".\UserConnection.h"
 				>
 			</File>
 		</Filter>
@@ -262,14 +274,6 @@
 				</File>
 				<File
 					RelativePath="..\NetworkCommon\Database\Deltadromeus.h"
-					>
-				</File>
-				<File
-					RelativePath="..\NetworkCommon\Database\Scleromochlus.cpp"
-					>
-				</File>
-				<File
-					RelativePath="..\NetworkCommon\Database\Scleromochlus.h"
 					>
 				</File>
 				<File
@@ -434,6 +438,14 @@
 				>
 			</File>
 			<File
+				RelativePath=".\server_log.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\server_log.h"
+				>
+			</File>
+			<File
 				RelativePath=".\server_notify.h"
 				>
 			</File>
@@ -443,6 +455,14 @@
 			</File>
 			<File
 				RelativePath=".\server_notify_ios.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\string_funcs.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\string_funcs.h"
 				>
 			</File>
 		</Filter>

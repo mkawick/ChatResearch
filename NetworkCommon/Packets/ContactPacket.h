@@ -48,6 +48,7 @@ public:
    string   inviteeName;
    string   uuid;
    string   date;
+   string   userUuid; // the non-current user... could be invitee or inviter... just not you
 };
 
 ///////////////////////////////////////////////////////////////////
@@ -288,6 +289,7 @@ public:
 
    string   fromUsername;
    string   toUsername;
+   string   invitationUuid;
    string   message;
    bool     wasAccepted;
 };

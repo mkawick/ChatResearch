@@ -127,6 +127,14 @@ bool     FruitadensGateway::AcceptsPacketType( U32 packetType ) const
          }
       }
       break;
+   case ServerType_Notification:
+      {
+         if( packetType == PacketType_Notification )
+         {
+            return true;
+         }
+      }
+      break;
    }
 
    return false;
@@ -229,6 +237,14 @@ bool FruitadensGateway::FilterOutwardPacket( BasePacket* packet ) const
       case ServerType_Stat:
          {
             if( packetType == PacketType_Stat )
+            {
+               return true;
+            }
+         }
+         break;
+      case ServerType_Notification:
+         {
+            if( packetType == PacketType_Notification )
             {
                return true;
             }

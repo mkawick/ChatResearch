@@ -517,7 +517,7 @@ public:
    bool  SerializeIn( const U8* data, int& bufferOffset );
    bool  SerializeOut( U8* data, int& bufferOffset ) const;
 
-   string   channelName;
+   string   channelName; // only valuable sometimes.
    string   channelUuid;
    string   userUuid;
    string   userName;

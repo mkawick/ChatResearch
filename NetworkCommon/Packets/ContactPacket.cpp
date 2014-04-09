@@ -49,6 +49,7 @@ bool  InvitationInfo::SerializeIn( const U8* data, int& bufferOffset )
    Serialize::In( data, bufferOffset, inviteeName );
    Serialize::In( data, bufferOffset, uuid );
    Serialize::In( data, bufferOffset, date );
+   Serialize::In( data, bufferOffset, userUuid );
 
    return true;
 }
@@ -60,6 +61,7 @@ bool  InvitationInfo::SerializeOut( U8* data, int& bufferOffset ) const
    Serialize::Out( data, bufferOffset, inviteeName );
    Serialize::Out( data, bufferOffset, uuid );
    Serialize::Out( data, bufferOffset, date );
+   Serialize::Out( data, bufferOffset, userUuid );
 
    return true;
 }
@@ -313,6 +315,7 @@ bool  PacketContact_InvitationAccepted::SerializeIn( const U8* data, int& buffer
    PacketContact::SerializeIn( data, bufferOffset );
    Serialize::In( data, bufferOffset, fromUsername );
    Serialize::In( data, bufferOffset, toUsername );
+   Serialize::In( data, bufferOffset, invitationUuid );
    Serialize::In( data, bufferOffset, message );
    Serialize::In( data, bufferOffset, wasAccepted );
 
@@ -324,6 +327,7 @@ bool  PacketContact_InvitationAccepted::SerializeOut( U8* data, int& bufferOffse
    PacketContact::SerializeOut( data, bufferOffset );
    Serialize::Out( data, bufferOffset, fromUsername );
    Serialize::Out( data, bufferOffset, toUsername );
+   Serialize::Out( data, bufferOffset, invitationUuid );
    Serialize::Out( data, bufferOffset, message );
    Serialize::Out( data, bufferOffset, wasAccepted );
 

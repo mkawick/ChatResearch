@@ -33,8 +33,7 @@
 #undef closesocket
 #endif
 
-#include <my_global.h> // Include this file first to avoid problems
-#include <mysql.h> // MySQL Include File
+#include <mysql/mysql.h> // MySQL Include File
 #include <errmsg.h> // MySQL Include File
 
 using namespace Database;
@@ -56,6 +55,7 @@ DbJobBase :: DbJobBase( Database::JobId id, const std::string& query, U32 sender
       m_senderKey( senderKey ),
       m_senderLookup( 0 ),
       m_serverId( 0 ),
+      m_insertId( 0 ),
       m_numAttemptsToResend( 0 ),
       m_customData( NULL ),
       m_hasStarted( false ),
@@ -144,6 +144,7 @@ bool  DbJob::SubmitQuery( MYSQL* connection, const string& dbName )
    else
    {
       MYSQL_RES* res_set = mysql_store_result( connection ); // Receive the result and store it in res_set
+      m_insertId = static_cast<U32> ( mysql_insert_id( connection ) );// just grab it, even if not an insert
       if( res_set )
       {
          //unsigned long long numrows = mysql_num_rows( res_set ); // Create the count to print all rows
@@ -586,6 +587,7 @@ bool     Deltadromeus::PutQueryResultInProperChain( DbJobBase* testJob )
             resultPacket->meta =                testJob->GetSenderMeta();
             resultPacket->successfulQuery =     ( testJob->GetErrorCondition() == false );
             resultPacket->customData =          testJob->GetCustomData();
+            resultPacket->insertId =            testJob->GetInsertId();
 
             if( resultPacket->successfulQuery == true )
             {

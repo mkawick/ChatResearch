@@ -195,13 +195,33 @@ bool     ChatUser::HandleClientRequest( BasePacket* packet )
          case PacketChatToServer::ChatType_AddUserToChatChannel:
             {
                PacketChatAddUserToChatChannel* request = static_cast< PacketChatAddUserToChatChannel* > ( packet );
-               m_chatChannelManager->AddUserToChannel( request->chatChannelUuid, request->userUuid, m_uuid );
+               bool success = m_chatChannelManager->AddUserToChannel( request->chatChannelUuid, request->userUuid, m_uuid );
+
+               /*PacketChatAddUserToChatChannelResponse* response = new PacketChatAddUserToChatChannelResponse;
+               response->channelUuid = request->chatChannelUuid;
+               response->userUuid = request->userUuid;
+               response->success = success;
+               SendMessageToClient( response );*/
+
+               if( success == false )
+               {
+                  SendErrorMessage( PacketErrorReport::ErrorType_CannotAddUserToChannel_AlreadyExists );
+               }
+
             }
             break;
          case PacketChatToServer::ChatType_RemoveUserFromChatChannel:
             {
                PacketChatRemoveUserFromChatChannel* request = static_cast< PacketChatRemoveUserFromChatChannel* > ( packet );
-               if(m_chatChannelManager->RemoveUserFromChannel( request->chatChannelUuid, request->userUuid ) == false )// usually self
+               bool success = m_chatChannelManager->RemoveUserFromChannel( request->chatChannelUuid, request->userUuid );
+
+              /* PacketChatRemoveUserFromChatChannelResponse* response = new PacketChatRemoveUserFromChatChannelResponse;
+               response->chatChannelUuid = request->chatChannelUuid;
+               response->userUuid = request->userUuid;
+               response->success = success;
+               SendMessageToClient( response );*/
+
+               if( success == false )// usually self
                {
                   SendErrorMessage( PacketErrorReport::ErrorType_BadChatChannel );
                }
@@ -210,9 +230,24 @@ bool     ChatUser::HandleClientRequest( BasePacket* packet )
          case PacketChatToServer::ChatType_RenameChatChannel:
             {
                PacketChatRenameChannel* request = static_cast< PacketChatRenameChannel* > ( packet );
-               m_chatChannelManager->RenameChatChannel( request->channelUuid, request->newName, m_uuid );
-            }
-            break;
+               string oldName;
+               bool success = m_chatChannelManager->RenameChatChannel( request->channelUuid, request->newName, m_uuid, oldName );
+
+               PacketChatRenameChannelResponse* response = new PacketChatRenameChannelResponse;
+               response->success = success;
+               response->channelUuid = request->channelUuid;
+               if( success == true )
+               {
+                  response->newName = request->newName;
+               }
+               else
+               {
+                  response->newName = oldName;
+                  SendErrorMessage( PacketErrorReport::ErrorType_BadChatChannel );
+               }
+               SendMessageToClient( response );
+            }             
+            break;        
       /*   case PacketChatToServer::ChatType_RequestChatters:
             {
                PacketChatRequestChatters* request = static_cast< PacketChatRequestChatters* > ( packet );
@@ -467,7 +502,8 @@ void     ChatUser::StoreChatHistoryMissedSinceLastLogin( PacketDbQueryResult * d
       MissedChatChannelEntry  entry;
       entry.senderUuid =      row[ TableChat::Column_user_id_sender ];
       entry.chatChannelUuid = row[ TableChat::Column_chat_channel_id ];
-      if( row[ TableChat::Column_game_turn ] != "NULL" )
+      string gameTurn = row[ TableChat::Column_game_turn ];
+      if( entry.chatChannelUuid.size() && gameTurn.size() )
       {
          entry.isGamechannel =  true;
       }
@@ -609,7 +645,7 @@ void     ChatUser::SendChatHistorySinceLastLogin( const vector< MissedChatChanne
    const int maxNumMessagesPerPacket = 20;
    if( history.size() == 0 )
    {
-      m_chatServer->SendErrorToClient( m_connectionId, PacketErrorReport::ErrorType_NoChatHistoryExistsForThisUser );
+      //m_chatServer->SendErrorToClient( m_connectionId, PacketErrorReport::ErrorType_NoChatHistoryExistsForThisUser );
       return;
    }
 

@@ -994,6 +994,12 @@ bool     PacketFactory::ParseGame( const U8* bufferIn, int& bufferOffset, const 
          *packetOut = SerializeIn< PacketGame_EchoToClient >( bufferIn, bufferOffset );
       }
       return true;
+
+   case PacketGameToServer::GamePacketType_Notification:
+      {
+         *packetOut = SerializeIn< PacketGame_Notification >( bufferIn, bufferOffset );
+      }
+      return true;
    }
 
    return false;
@@ -1130,34 +1136,55 @@ bool     PacketFactory::ParseNotification( const U8* bufferIn, int& bufferOffset
 {
    switch( firstPassParse->packetSubType ) //PacketType_Cheat
    {
-   case NotificationPacket::NotificationType_Base:
+   case PacketNotification::NotificationType_Base:
       {
-         *packetOut = SerializeIn< NotificationPacket >( bufferIn, bufferOffset );
+         *packetOut = SerializeIn< PacketNotification >( bufferIn, bufferOffset );
       }
       return true;
-   case NotificationPacket::NotificationType_TestNotification:
+   case PacketNotification::NotificationType_TestNotification:
       {
-         *packetOut = SerializeIn< NotificationPacket_TestNotification >( bufferIn, bufferOffset );
+         *packetOut = SerializeIn< PacketNotification_TestNotification >( bufferIn, bufferOffset );
       }
       return true;
-   case NotificationPacket::NotificationType_EchoToServer:
+   case PacketNotification::NotificationType_EchoToServer:
       {
-         *packetOut = SerializeIn< NotificationPacket_EchoToServer >( bufferIn, bufferOffset );
+         *packetOut = SerializeIn< PacketNotification_EchoToServer >( bufferIn, bufferOffset );
       }
       return true;
-   case NotificationPacket::NotificationType_EchoToClient:
+   case PacketNotification::NotificationType_EchoToClient:
       {
-         *packetOut = SerializeIn< NotificationPacket_EchoToClient >( bufferIn, bufferOffset );
+         *packetOut = SerializeIn< PacketNotification_EchoToClient >( bufferIn, bufferOffset );
       }
       return true;
-   case NotificationPacket::NotificationType_RegisterDevice:
+   case PacketNotification::NotificationType_RegisterDevice:
       {
-         *packetOut = SerializeIn< NotificationPacket_RegisterDevice >( bufferIn, bufferOffset );
+         *packetOut = SerializeIn< PacketNotification_RegisterDevice >( bufferIn, bufferOffset );
       }
       return true;
-   case NotificationPacket::NotificationType_SendNotification:
+   case PacketNotification::NotificationType_RegisterDeviceResponse:
       {
-         *packetOut = SerializeIn< NotificationPacket_SendNotification >( bufferIn, bufferOffset );
+         *packetOut = SerializeIn< PacketNotification_RegisterDeviceResponse >( bufferIn, bufferOffset );
+      }
+      return true;
+   case PacketNotification::NotificationType_UpdateDevice:
+      {
+         *packetOut = SerializeIn< PacketNotification_UpdateDevice >( bufferIn, bufferOffset );
+      }
+      return true;
+      
+   case PacketNotification::NotificationType_SendNotification:
+      {
+         *packetOut = SerializeIn< PacketNotification_SendNotification >( bufferIn, bufferOffset );
+      }
+      return true;
+   case PacketNotification::NotificationType_RequestListOfDevices:
+      {
+         *packetOut = SerializeIn< PacketNotification_RequestListOfDevices >( bufferIn, bufferOffset );
+      }
+      return true;
+   case PacketNotification::NotificationType_RequestListOfDevicesResponse:
+      {
+         *packetOut = SerializeIn< PacketNotification_RequestListOfDevicesResponse >( bufferIn, bufferOffset );
       }
       return true;
    }

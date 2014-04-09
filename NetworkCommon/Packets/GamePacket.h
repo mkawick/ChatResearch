@@ -49,6 +49,7 @@ public:
       GamePacketType_RawGameData,
       GamePacketType_EchoToServer,
       GamePacketType_EchoToClient,
+      GamePacketType_Notification
    };
 public:
    PacketGameToServer( int packet_type = PacketType_Gameplay, int packet_sub_type = GamePacketType_LoginToServer ) : BasePacket( packet_type, packet_sub_type ) {}
@@ -430,6 +431,22 @@ class PacketGame_EchoToClient : public BasePacket
 {
 public:
    PacketGame_EchoToClient(): BasePacket( PacketType_Gameplay, PacketGameToServer::GamePacketType_EchoToClient ) {}
+};
+
+///////////////////////////////////////////////////////////////
+
+class PacketGame_Notification : public PacketGameToServer
+{
+public:
+   PacketGame_Notification(): PacketGameToServer( PacketType_Gameplay, PacketGameToServer::GamePacketType_Notification ) {}
+
+   bool  SerializeIn( const U8* data, int& bufferOffset ); // allocates memory
+   bool  SerializeOut( U8* data, int& bufferOffset ) const;
+
+   string   userUuid;
+   U8       notificationType;
+   string   additionalText;
+
 };
 
 

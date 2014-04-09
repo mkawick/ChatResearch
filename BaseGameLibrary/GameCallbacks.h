@@ -35,6 +35,7 @@ public:
    virtual bool   DataFromChat( U32 connectionId, const MarshalledData* packet ) { return false; }
 
    virtual bool   HandlePacketFromOtherServer( BasePacket* packet ){ return false; }
+   virtual bool   UserWantsNotifiction( U32 connectionId, U8 type, const string& additionalText ){ return false; }
 
    // tournament stuff
    // the following may only remain as a testing interfaces

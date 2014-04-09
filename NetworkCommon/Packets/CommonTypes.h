@@ -117,6 +117,7 @@ public:
    //KVIterator           rbegin() { return dataList.rbegin(); }
    type&                lastValue() { return (dataList.rbegin()->value); }
    type                 find( const string& key ) const;
+   bool                 erase( const string& key );
 
    bool operator = (const KeyValueSerializer< type >& src );
    bool operator = (const KeyValueVector& src );

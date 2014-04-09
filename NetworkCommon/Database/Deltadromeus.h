@@ -69,6 +69,7 @@ namespace Database
       bool        IsComplete() const { return m_isComplete; }
       //U32         NumSecondsSinceFirstSubmitted() const {}
       bool        HasResultSet() const { return m_hasResultSet; }
+      U32         GetInsertId() const { return m_insertId; }
       int         GetNumRows() const { return static_cast<int>( m_results.size() ); }
 
       Database::ResultSet& 
@@ -81,6 +82,7 @@ namespace Database
       U32                     m_senderKey;
       U32                     m_senderLookup;
       U32                     m_serverId;
+      U32                     m_insertId;
       U16                     m_numAttemptsToResend;
       void*                   m_customData;
       string                  m_senderMeta;
@@ -131,6 +133,7 @@ namespace Database
       bool     HasJobsInProgress() const { return m_jobsInProgress.size() > 0; }
 
       bool     Log( const char* text, int priority = 1 );
+      DbHandle*   GetDbHandle() { return m_DbConnection; }
 
       //------------------------------------------------------------
 

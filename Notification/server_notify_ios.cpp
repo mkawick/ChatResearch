@@ -305,6 +305,13 @@ static bool apnConnect()
       // Some versions of OpenSSL want this arg to be non-const
       s_GameInfos[i].ctx = SSL_CTX_new(const_cast<SSL_METHOD *>(s_GameInfos[i].method));
 
+      if( s_GameInfos[i].ctx == NULL )// this fails in new notification server
+      {
+         closesocket(s);
+         LogMessage(LOG_PRIO_ERR, "Can't create open ssl certificate\n" );
+         err = true;
+         break;
+      }
       SSL_CTX_set_default_passwd_cb(s_GameInfos[i].ctx, pem_passwd_cb);
 
       if (!SSL_CTX_use_certificate_file(s_GameInfos[i].ctx, s_GameInfos[i].cert, SSL_FILETYPE_PEM))

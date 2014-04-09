@@ -11,6 +11,7 @@
 #include "../NetworkCommon/Packets/ChatPacket.h"
 #include "../NetworkCommon/Packets/LoginPacket.h"
 #include "../NetworkCommon/Packets/PurchasePacket.h"
+#include "../NetworkCommon/Packets/NotificationPacket.h"
 #include "../NetworkCommon/Packets/TournamentPacket.h"
 
 
@@ -241,6 +242,8 @@ public:
    virtual void  PurchaseSuccess( const string& purchaseUuid, bool success ){}
    virtual void  ProductsForSale( const SerializedKeyValueVector< PurchaseInfo >& thingsToBuy ) {}
 
+   virtual void  ListOfDevicesUpdated() const {}
+
    UserNetworkEventNotifier(): network( NULL ){}
 
    enum NotificationType
@@ -301,6 +304,7 @@ public:
 
       NotificationType_PurchaseSuccess,
       NotificationType_ProductsForSale,
+      NotificationType_ListOfDevicesUpdated,
       NotificationType_Num
    };
    NetworkLayer* network;
@@ -336,7 +340,7 @@ public:
    void     EnableMultithreadedCallbackSystem();
    void     CheckForReroutes( bool checkForRerouts );
    void     OverrideSocketPort( int port ) { m_connectionPort = port; }
-   void     Init( const char* serverDNS = "mber.pub.playdekgames.com" );
+   void     Init( const char* serverDNS = "mber.pub.playdekgames.com" /*"64.183.9.93"*/ );
    bool     RegisterCallbackInterface( UserNetworkEventNotifier* _callbacks );
 
    void     Exit();
@@ -347,6 +351,7 @@ public:
    bool     RequestLogin( const string& username, const string& password, const string& languageCode );
    bool     RequestAccountCreate( const string& username, const string& useremail, const string& password, int languageId, const string& deviceId, const string& gkHash ); // deviceId could be NULL except in andriod world
    bool     RequestLogout() const;
+   bool     ForceLogout();
 
    bool     IsReadyToLogin() const { return !m_isLoggingIn & !m_isLoggedIn; }
    bool     IsLoggingIn() const { return m_isLoggingIn; }
@@ -355,6 +360,7 @@ public:
    string   GetEmail() const { return m_email; }
    int      GetAvatarId() const { return m_avatarId; }
    string   GetMotto() const { return m_motto; }
+   string   GetDeviceUuid() const { return m_thisDeviceUuid; }
    int      GetLanguage() const { return m_languageId; }
    bool     GetShowWinLossRecord() const { return m_showWinLossRecord; }
    bool     GetMarketingOptOut() const { return m_marketingOptOut; }
@@ -443,7 +449,13 @@ public:
    bool     RequestAssetByName( const string& assetName );
    bool     RequestAvatarById( U32 id );
 
-   bool     SendPurchases( const vector< RegisteredProduct >& purchases, int platformId = Platform_ios );
+   bool     RegisterDevice( const string& deviceId, const string& deviceName, int platformId = Platform_ios ); // int gameProductId = GameProductId_SUMMONWAR, 
+   bool     RequestListOfDevicesForThisGame( int platformId = Platform_ios );
+   bool     ChangeDevice( const string& deviceUuid, const string& deviceNewName, bool isEnabled, int iconId );
+   int      GetNumDevices() const { return m_devices.size(); }
+   bool     GetDevice( int index, RegisteredDevice& device ) const;
+
+   bool     SendPurchases( const vector< RegisteredProduct >& purchases, int platformId = Platform_ios ); 
    bool     GiveProduct( const string& userName, const string& productUuid, int quantity, const string& notes, int platformId = Platform_ios );
    bool     SendCheat( const string& cheat );
 
@@ -470,9 +482,8 @@ public:
    int      GetNumChannels() const { return static_cast<int>( m_channels.size() ); }
    bool     GetChannel( const string& uuid, ChatChannel& channel ) const;
    bool     GetChannel( int index, ChatChannel& channel ) const;
+   bool     RemoveChannel( const string& uuid );
    bool     IsGameChannel( const string& channelUuid ) const;
-   // bool     GetChannel( int index, ChatChannel& channel );
-   //bool     FindChannel( const string& channelUuid, ChatChannel& channel );
 
    int      GetAssetCategories( vector< string >& categories ) const;
    int      GetNumAssets( const string& category );
@@ -513,6 +524,7 @@ protected:
    string                                    m_serverDns;
    string                                    m_loginKey;
    string                                    m_motto;
+   string                                    m_thisDeviceUuid;
    U32                                       m_selectedGame;
    int                                       m_avatarId;
    int                                       m_languageId;
@@ -524,15 +536,16 @@ protected:
    bool                                      m_blockContactInvitations;
    bool                                      m_blockGroupInvitations;
 
-   SerializedKeyValueVector< InvitationInfo > m_invitationsReceived;
-   SerializedKeyValueVector< InvitationInfo > m_invitationsSent;
-   SerializedVector< ProductBriefPacketed >   m_products;
-   UserNameKeyValue                          m_friends;
-   UserNameKeyValue                          m_lastUserSearch;
-   ChatChannelVector                         m_channels;
-   GameList                                  m_gameList;
+   SerializedKeyValueVector< InvitationInfo >   m_invitationsReceived;
+   SerializedKeyValueVector< InvitationInfo >   m_invitationsSent;
+   SerializedVector< ProductBriefPacketed >     m_products;
+   SerializedVector< RegisteredDevice >         m_devices;
+   UserNameKeyValue                             m_friends;
+   UserNameKeyValue                             m_lastUserSearch;
+   ChatChannelVector                            m_channels;
+   GameList                                     m_gameList;
 
-   SerializedVector< PurchaseEntry >         m_purchases;
+   SerializedVector< PurchaseEntry >            m_purchases;
 
    U8                                        m_gameProductId;
    bool                                      m_isLoggingIn;
@@ -587,6 +600,7 @@ protected:
 
 protected:
    
+   vector< ChatChannel >::iterator    GetChannel( const string& channelUuid );
    void     CleanupLingeringMemory();
    bool     SerializePacketOut( BasePacket* packet ) const;// helper
 
@@ -599,7 +613,11 @@ protected:
 
    bool     AddChatChannel( const ChatChannel& channel );
    bool     RemoveChatChannel( const string& channelUuid );
+   bool     AddUserToChatChannel( const string& channelUuid, const string& userUuid, const string& userName );
    bool     RemoveUserfromChatChannel( const string& channelUuid, const string& userUuid );
+
+   bool     RemoveInvitationFromSent( const string& uuid );
+   bool     RemoveInvitationFromReceived( const string& uuid );
 
    void     BoostThreadPerformance();
    void     RestoreNormalThreadPerformance();
@@ -645,6 +663,7 @@ public:
    void  SendLoginEcho();
    void  SendGameEcho();
    void  SendPurchaseEcho();
+   void  SendNotification( U8 type, string additionalText = "" );
 
 protected:
    void  StartTime();

@@ -1044,9 +1044,93 @@ bool     ChatChannelManager::UserSendsChatToChannel( const string& senderUuid, c
 //---------------------------------------------------------------------
 //---------------------------------------------------------------------
 
-bool     ChatChannelManager::RenameChatChannel( const string& chanelUuid, const string& newName, const string& userUuid )
+bool     ChatChannelManager::RenameChatChannel( const string& channelUuid, const string& newName, const string& userUuid, string& oldName )
 {
-   // TODO
+   // I can totally see users renaming this channel repeatedly over each other...
+   string errorText = " RenameChatChannel: User ";
+   errorText += userUuid;
+   errorText += " renamed channel ";
+   errorText += channelUuid;
+
+   stringhash requesterHash = GenerateUniqueHash( userUuid );
+   UserMapIterator requesterIter = m_userMap.find( requesterHash );
+   if( requesterIter == m_userMap.end() )
+   {
+      errorText += " but the user does not exist in ChatChannelManager";
+      m_chatServer->Log( errorText, 1 );
+      return false;
+   }
+
+   ChatUser* userRequester = m_chatServer->GetUserByUuid( requesterIter->second.userUuid );
+   if( userRequester == NULL )
+   {
+      errorText += " but the user does not exist in ChatChannelManager";
+      m_chatServer->Log( errorText, 1 );
+      return false;
+   }
+
+   U32 connectionId = userRequester->GetConnectionId();
+
+   stringhash channelHash = GenerateUniqueHash( channelUuid );   
+   ChannelMapIterator channelIter = m_channelMap.find( channelHash );
+   if( channelIter == m_channelMap.end() )
+   {
+      errorText += " but that channel does not exist in ChatChannelManager";
+      m_chatServer->Log( errorText, 1 );
+      m_chatServer->SendErrorToClient( connectionId, PacketErrorReport::ErrorType_NoChatChannel );
+      return false;
+   }
+
+   oldName = channelIter->second.name;
+
+   // verify that we don't have a duplicate name
+
+   // inform all members that a rename has taken place.
+
+   /*
+
+   U32 connectionId = userRequester->GetConnectionId();
+
+   stringhash addedUserHash = GenerateUniqueHash( addedUserUuid );
+   UserMapIterator addedUserIter = m_userMap.find( addedUserHash );
+   if( addedUserIter == m_userMap.end() )
+   {
+      errorText += " but the added user does not exist in ChatChannelManager";
+      m_chatServer->Log( errorText, 1 );
+      m_chatServer->SendErrorToClient( connectionId, PacketErrorReport::ErrorType_UserUnknown );
+      return false;
+   }
+
+
+
+   ChatChannel& channelInfo = channelIter->second;
+   list< UserBasics >   ::iterator it = channelInfo.userBasics.begin();
+   while( it != channelInfo.userBasics.end() )
+   {
+      if( it->userUuid == addedUserUuid )
+      {
+         errorText += " but that added user is already in that channel";
+         m_chatServer->Log( errorText, 1 );
+         m_chatServer->SendErrorToClient( connectionId, PacketErrorReport::ErrorType_CannotAddUserToChannel_AlreadyExists );
+         return false;
+      }
+      it++;
+   }
+
+   AddUserToChannelAndWriteToDB( channelUuid, addedUserUuid, addedUserIter->second.userName );
+
+   // inform users of success
+   list< UserBasics >::iterator userIt = channelInfo.userBasics.begin();
+   while( userIt != channelInfo.userBasics.end() )
+   {
+      UserBasics& ub = *userIt++;
+      ChatUser* user = m_chatServer->GetUserByUuid( ub.userUuid );
+      if( user )
+      {
+         user->NotifyAddedToChannel( channelInfo.name, channelUuid, addedUserIter->second.userName, addedUserUuid );
+      }
+   }
+   */
    return true;
 }
 
@@ -1147,7 +1231,15 @@ bool     ChatChannelManager::AddUserToChannel( const string& channelUuid, const 
       return false;
    }
 
+   
    ChatUser* userRequester = m_chatServer->GetUserByUuid( requesterIter->second.userUuid );
+   if( userRequester == NULL )
+   {
+      errorText += " but the requester does not exist in ChatChannelManager";
+      m_chatServer->Log( errorText, 1 );
+      return false;
+   }
+
    U32 connectionId = userRequester->GetConnectionId();
 
    stringhash addedUserHash = GenerateUniqueHash( addedUserUuid );
@@ -1349,7 +1441,7 @@ bool     ChatChannelManager::RemoveUserFromChannel( const PacketChatRemoveUserFr
    response->success = false;
    PackageAndSendToOtherServer( response, request->gameInstanceId );
   
-   // tell all clients that a user was added to the chat channel   
+   // tell all clients that a user was removed from the chat channel   
    userIt = channelMapData.userBasics.begin();
    while( userIt != channelMapData.userBasics.end() )
    {
@@ -1709,6 +1801,19 @@ void     ChatChannelManager::SaveUserLoadResult( SimpleUserTable::row row )
 
 void     ChatChannelManager::WriteChatToDb( const string& message, const string& senderUuid, const string& friendUuid, const string& channelUuid, U16 gameTurn, U32 connectionId )
 {
+   bool isGameChannel = false;
+   if( channelUuid.size() )
+   {
+      stringhash  keyLookup = GenerateUniqueHash( channelUuid );
+      ChannelMapIterator iter = m_channelMap.find( keyLookup );      
+      if( iter != m_channelMap.end() )
+      {
+         ChatChannel& channel = iter->second;
+         if( channel.gameType && channel.gameInstanceId )
+            isGameChannel = true;
+      }
+   }
+   
    string queryString = "INSERT INTO chat_message VALUES( null, _utf8'%s', '%s', ";
    if( friendUuid.size() > 0 )
    {
@@ -1719,7 +1824,14 @@ void     ChatChannelManager::WriteChatToDb( const string& message, const string&
       queryString += "null";
    }
    queryString += ", '%s', CURRENT_TIMESTAMP, ";
-   queryString += boost::lexical_cast< string >( gameTurn );
+   if( isGameChannel == true )
+   {
+      queryString += boost::lexical_cast< string >( gameTurn );
+   }
+   else
+   {
+      queryString += "null";
+   }
    queryString += ")";
 
    PacketDbQuery* dbQuery = DbQueryFactory( queryString, true );

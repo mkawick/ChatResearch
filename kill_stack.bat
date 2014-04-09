@@ -22,4 +22,6 @@ taskkill /f /im LoadBalancer.exe
 
 taskkill /f /im StatServer.exe
 
+taskkill /f /im NotificationServer.exe
+
 REM exit

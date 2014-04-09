@@ -520,6 +520,7 @@ bool  UserContact::GetListOfInvitationsReceived()
       ii.inviteeName = m_userInfo.userName;
       ii.uuid = invite.uuid;
       ii.date = invite.date;
+      ii.userUuid = invite.userUuid;
 
       packet->invitations.insert( invite.uuid, ii );
    }
@@ -545,6 +546,7 @@ bool  UserContact::GetListOfInvitationsSent()
       ii.inviteeName = invite.userName;
       ii.uuid = invite.uuid;
       ii.date = invite.date;
+      ii.userUuid = invite.userUuid;
 
       packet->invitations.insert( invite.uuid, ii );
    }
@@ -980,7 +982,7 @@ void  UserContact::FinishAcceptingInvitation( const PacketDbQueryResult* dbResul
    U32 inviterId = 0;
    U32 inviteeId = 0;
    string inviterUsername;
-   string inviterUuid;
+   string invitationUuid;
    UserJoinPendingTable            enigma( dbResult->bucket );
    UserJoinPendingTable::iterator  it = enigma.begin();
    if( it != enigma.end() )
@@ -989,7 +991,7 @@ void  UserContact::FinishAcceptingInvitation( const PacketDbQueryResult* dbResul
       invitationId = boost::lexical_cast< U32 >( row[ TableUserJoinPending::Column_pending_id ] );
       inviterId = boost::lexical_cast< U32 >( row[ TableUserJoinPending::Column_inviter_id ] );
       inviteeId = boost::lexical_cast< U32 >( row[ TableUserJoinPending::Column_invitee_id ] );
-      inviterUuid = row[ TableUserJoinPending::Column_uuid ];
+      invitationUuid = row[ TableUserJoinPending::Column_uuid ];
       inviterUsername = row[ TableUserJoinPending::Column_name ];
    }
 
@@ -1029,7 +1031,7 @@ void  UserContact::FinishAcceptingInvitation( const PacketDbQueryResult* dbResul
    // the following is tricky. Once this returns, I need to tell both the accepter and the inviter to reload their contacts.
    dbQuery = new PacketDbQuery;
    dbQuery->id =           m_connectionId;
-   dbQuery->meta =         inviterUuid; // << store off some lookup info
+   dbQuery->meta =         inviterId; // << store off some lookup info
    dbQuery->lookup =       QueryType_InsertNewFriend;
    dbQuery->serverLookup = m_userInfo.id;
    dbQuery->isFireAndForget = false;
@@ -1044,12 +1046,12 @@ void  UserContact::FinishAcceptingInvitation( const PacketDbQueryResult* dbResul
    m_contactServer->AddQueryToOutput( dbQuery );
 
    // send notification to both people if online.
-   UserContact* contact = m_contactServer->GetUserByUuid( inviterUuid );// this user needs to know that he's been invited.
+   UserContact* contact = m_contactServer->GetUser( inviteeId );// this user needs to know that he's been invited.
    if( contact )
    {
-      contact->InvitationAccepted( inviterUsername, m_userInfo.userName, "", true );// this seems backwards, but its not
+      contact->InvitationAccepted( inviterUsername, m_userInfo.userName, invitationUuid, "", true );// this seems backwards, but its not
    }
-   InvitationAccepted( inviterUsername, m_userInfo.userName, "", true );
+   InvitationAccepted( inviterUsername, m_userInfo.userName, invitationUuid, "", true );
 }
 
 //------------------------------------------------------------------------------------------------
@@ -1060,7 +1062,7 @@ void  UserContact::FinishDecliningingInvitation( const PacketDbQueryResult* dbRe
    U32 inviterId = 0;
    U32 inviteeId = 0;
    string inviterUsername;
-   string inviterUuid;
+   string invitationUuid;
    UserJoinPendingTable            enigma( dbResult->bucket );
    UserJoinPendingTable::iterator  it = enigma.begin();
    if( it != enigma.end() )
@@ -1069,7 +1071,7 @@ void  UserContact::FinishDecliningingInvitation( const PacketDbQueryResult* dbRe
       invitationId = boost::lexical_cast< U32 >( row[ TableUserJoinPending::Column_pending_id ] );
       inviterId = boost::lexical_cast< U32 >( row[ TableUserJoinPending::Column_inviter_id ] );
       inviteeId = boost::lexical_cast< U32 >( row[ TableUserJoinPending::Column_invitee_id ] );
-      inviterUuid = row[ TableUserJoinPending::Column_uuid ];
+      invitationUuid = row[ TableUserJoinPending::Column_uuid ];
       inviterUsername = row[ TableUserJoinPending::Column_name ];
    }
 
@@ -1091,7 +1093,7 @@ void  UserContact::FinishDecliningingInvitation( const PacketDbQueryResult* dbRe
    m_contactServer->AddQueryToOutput( dbQuery );
 
    // do not notify sender for now
-   InvitationAccepted( inviterUsername, m_userInfo.userName, userMessage, false );
+   InvitationAccepted( inviterUsername, m_userInfo.userName, invitationUuid, userMessage, false );
    PrepInvitationsQueries();
 }
 
@@ -1156,6 +1158,7 @@ void  UserContact::FinishInvitation( U32 inviteeId, const string& message, UserC
    {
       contact->YouHaveBeenInvitedToBeAFriend( m_userInfo.userName, invitationUuid, message, currentTimeInUTC );
    }
+   PrepInvitationsQueries();// reload all invitations... there should not be many
 }
 
 //------------------------------------------------------------------------------------------------
@@ -1176,11 +1179,12 @@ void     UserContact::YouHaveBeenInvitedToBeAFriend( const string& userName, con
 
 //------------------------------------------------------------------------------------------------
 
-void     UserContact::InvitationAccepted( const string& sentFromuserName, const string& sentToUserName, const string& message, bool accepted )
+void     UserContact::InvitationAccepted( const string& sentFromuserName, const string& sentToUserName, const string& invitationUuid, const string& message, bool accepted )
 {
    PacketContact_InvitationAccepted* packet = new PacketContact_InvitationAccepted;
    packet->wasAccepted = accepted;
    packet->fromUsername = sentFromuserName;
+   packet->invitationUuid = invitationUuid;
    packet->toUsername = sentToUserName;
    packet->message = message;
 

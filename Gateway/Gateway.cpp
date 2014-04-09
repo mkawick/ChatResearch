@@ -110,7 +110,9 @@ int main( int argc, const char* argv[] )
 
    string statPortString = "7802";
    string statIpAddressString = "localhost";
-   
+
+   string notificationPortString = "7900";
+   string notificationIpAddressString = "localhost";
 
    //--------------------------------------------------------------
 
@@ -151,6 +153,9 @@ int main( int argc, const char* argv[] )
    parser.FindValue( "stat.port", statPortString );
    parser.FindValue( "stat.address", statIpAddressString );
 
+   parser.FindValue( "notification.port", notificationPortString );
+   parser.FindValue( "notification.address", notificationIpAddressString );
+
    vector< string > params;
   /* if( parser.FindValue( "games", params ) )
    {
@@ -163,6 +168,7 @@ int main( int argc, const char* argv[] )
          contactPort = 7500, 
          loginPort = 7600,
          purchasePort = 7700,
+         notificationPort = 7900,
          statPort = 7802,
          listenPort = 9600;
 
@@ -170,18 +176,19 @@ int main( int argc, const char* argv[] )
    bool printPackets = false;
    try 
    {
-      assetPort = boost::lexical_cast<int>( assetDeliveryPortString );
-      balancerPort = boost::lexical_cast<U16>( loadBalancerPortString );
-      chatPort = boost::lexical_cast<int>( chatPortString );
-      contactPort = boost::lexical_cast<int>( contactPortString );
+      assetPort =          boost::lexical_cast<int>( assetDeliveryPortString );
+      balancerPort =       boost::lexical_cast<U16>( loadBalancerPortString );
+      chatPort =           boost::lexical_cast<int>( chatPortString );
+      contactPort =        boost::lexical_cast<int>( contactPortString );
 
-      loginPort = boost::lexical_cast<int>( loginPortString );
+      loginPort =          boost::lexical_cast<int>( loginPortString );
 
-      statPort = boost::lexical_cast<int>( statPortString );
+      statPort =           boost::lexical_cast<int>( statPortString );
 
-      purchasePort = boost::lexical_cast<int>( purchasePortString );
-      reroutePort = boost::lexical_cast<U16>( reroutePortString );
-      listenPort = boost::lexical_cast<int>( listenPortString );
+      purchasePort =       boost::lexical_cast<int>( purchasePortString );
+      notificationPort =   boost::lexical_cast<U16>( notificationPort );
+      reroutePort =        boost::lexical_cast<U16>( reroutePortString );
+      listenPort =         boost::lexical_cast<int>( listenPortString );
    } 
    catch( boost::bad_lexical_cast const& ) 
    {
@@ -226,6 +233,8 @@ int main( int argc, const char* argv[] )
    PrepConnection< FruitadensGateway, DiplodocusGateway > ( purchaseIpAddressString, purchasePort, "purchase", gatewayServer, ServerType_Purchase, true );
 
    PrepConnection< FruitadensGateway, DiplodocusGateway > ( statIpAddressString, statPort, "stat", gatewayServer, ServerType_Stat, true );
+
+   PrepConnection< FruitadensGateway, DiplodocusGateway > ( notificationIpAddressString, notificationPort, "notification", gatewayServer, ServerType_Notification, true );
    
    cout << "---------------------------- finished connecting ----------------------------" << endl;
 

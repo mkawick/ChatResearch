@@ -10,6 +10,7 @@
 #include "../NetworkCommon/Utils/Utils.h"
 
 #include "../NetworkCommon/Packets/GamePacket.h"
+#include "../NetworkCommon/Packets/NotificationPacket.h"
 #include "../NetworkCommon/Packets/ServerToServerPacket.h"
 #include "../NetworkCommon/Packets/PacketFactory.h"
 
@@ -311,6 +312,28 @@ bool  GameFramework::SendPacketToGateway( BasePacket* packet, U32 connectionId )
 void  GameFramework::SendStat( const string& statName, U16 integerIdentifier, float value, PacketStat::StatType type )
 {
    GetGame()->TrackStats( m_serverName, m_serverId, statName, integerIdentifier, value, type );
+}
+
+//-----------------------------------------------------
+
+void  GameFramework::SendNotification( const string& userUuid, U32 userId, int notificationType, const string& additionalText  )
+{
+   if( m_notificationServer )
+   {
+      PacketNotification_SendNotification* packet = new PacketNotification_SendNotification;
+      packet->userId = userId;
+      packet->userUuid = userUuid;
+      packet->notificationType = notificationType;
+      packet->additionalText = additionalText;
+
+      PacketServerToServerWrapper* wrapper = new PacketServerToServerWrapper;
+      wrapper->gameInstanceId = m_serverId;
+      wrapper->gameProductId = m_gameProductId;
+      wrapper->serverId = m_serverId;
+      wrapper->pPacket = packet;
+
+      m_notificationServer->AddOutputChainData( wrapper, -1 );
+   }
 }
 
 //-----------------------------------------------------

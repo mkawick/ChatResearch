@@ -1,5 +1,6 @@
 #pragma once
 
+#include <deque>
 #include <map>
 using namespace std;
 
@@ -13,6 +14,12 @@ using namespace std;
 #include "../NetworkCommon/Database/QueryHandler.h"
 #include "../NetworkCommon/NetworkIn/KhaanServerToServer.h"
 
+#include "UserConnection.h"
+
+namespace Database
+{
+   class Deltadromeus;
+}
 
 ///////////////////////////////////////////////////////////////////
 
@@ -35,13 +42,36 @@ public:
 private:
 
    bool     HandlePacketFromOtherServer( BasePacket* packet, U32 connectionId );
+   bool     HandlePacketFromGateway( BasePacket* packet, U32 connectionId );
+   bool     ConnectUser( const PacketPrepareForUserLogin* loginPacket );
+   bool     DisconnectUser( const PacketPrepareForUserLogout* unwrappedPacket );
+   bool     HandleNotification( const PacketNotification_SendNotification* unwrappedPacket );
+   
    void     PeriodicCheckForNewNotifications();
+
+   void     RemoveExpiredConnections();
 
    int      MainLoop_InputProcessing();
    int      MainLoop_OutputProcessing();
 
+
+   typedef  map< U32, UserConnection >    UserConnectionMap;
+   typedef  pair< U32, UserConnection >   UserConnectionPair;
+   typedef  UserConnectionMap::iterator   UserConnectionIterator;
+
+   typedef  deque< PacketDbQueryResult* > QueryResultDeque;
+   typedef  QueryResultDeque::iterator    QueryResultDequeIterator;
+
+   UserConnectionMap       m_userConnectionMap;
+   QueryResultDeque        m_dbQueries;
+
+   Database::Deltadromeus* m_database; // only one for now
+
    time_t                  m_lastNotificationCheck_TimeStamp;
-   static const int        timeoutDBWriteStatisics = 60 * 60;// one hour
+   static const int        timeoutNotificationSend = 60 * 60;// one hour
+   static const int        SecondsBeforeRemovingLoggedOutUser = 3;
+
+   
 };
 
 ///////////////////////////////////////////////////////////////////

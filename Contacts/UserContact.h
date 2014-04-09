@@ -83,7 +83,7 @@ private:
    void  FinishSearchResult( const PacketDbQueryResult* dbResult );
    void  FinishInvitation( U32 inviteeId, const string& message, UserContact* contact = NULL );
    void  YouHaveBeenInvitedToBeAFriend( const string& userName, const string& uuid, const string& message, const string& curentTime );
-   void  InvitationAccepted( const string& sentFromuserName, const string& sentToUserName, const string& message, bool accepted );
+   void  InvitationAccepted( const string& sentFromuserName, const string& sentToUserName, const string& invitationUuid, const string& message, bool accepted );
    bool  InformFriendsOfOnlineStatus( bool isOnline );
 
    bool  YourFriendsOnlineStatusChange( U32 connectionId, const string& userName, const string& UUID, bool isOnline );

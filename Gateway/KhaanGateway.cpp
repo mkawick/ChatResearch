@@ -168,7 +168,10 @@ bool	KhaanGateway::OnDataReceived( unsigned char* data, int length )
       try 
       {
          result = parser.Parse( data, offset, &packetIn );
-         TrackInwardPacketType( packetIn );
+         if( packetIn != NULL )
+         {
+            TrackInwardPacketType( packetIn );
+         }
       }
       catch( ... )
       {
@@ -256,7 +259,9 @@ bool  KhaanGateway::IsWhiteListedIn( const BasePacket* packet ) const
       return false;
    case PacketType_Purchase:
       return true;
-   case PacketType_Tournament:
+  /* case PacketType_Tournament:
+      return true;*/
+   case PacketType_Notification:
       return true;
    }
 

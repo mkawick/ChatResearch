@@ -44,7 +44,14 @@ bool	KhaanServerToServer :: OnDataReceived( unsigned char* data, int length )
          Threading::MutexLock  locker( m_inputChainListMutex );
          m_packetsIn.push_back( packetIn );
          RequestUpdate();
-      }         
+      } 
+      else
+      {
+         char temp[21];
+         memcpy( temp, data, 20 );
+         temp[20] = 0;
+         cout << "Cannot parse packet: " << temp << " len=" << length << endl;
+      }
    }
 
    return true;

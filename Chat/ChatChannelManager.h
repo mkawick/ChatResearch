@@ -73,7 +73,7 @@ public:
    bool           DeleteChannel( const PacketChatDeleteChatChannelFromGameServer* request );
    bool           DeleteChannel( const string& chanelUuid, const string& userUuid );
 
-   bool           RenameChatChannel( const string& chanelUuid, const string& newName, const string& userUuid );
+   bool           RenameChatChannel( const string& channelUuid, const string& newName, const string& userUuid, string& oldName );// returns old name
 
    bool           AddUserToChannel( const PacketChatAddUserToChatChannelGameServer* packet );
    bool           AddUserToChannel( const string& channelUuid, const string& userUuid, const string& requesterUuid );

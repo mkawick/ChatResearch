@@ -31,11 +31,13 @@
 		34EA68A117611DD400F07E19 /* GamePacket.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 34EA687E17611DD400F07E19 /* GamePacket.cpp */; };
 		34EA68A217611DD400F07E19 /* PacketFactory.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 34EA688017611DD400F07E19 /* PacketFactory.cpp */; };
 		34EA68A317611DD400F07E19 /* ServerToServerPacket.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 34EA688217611DD400F07E19 /* ServerToServerPacket.cpp */; };
-		34EA68A417611DD400F07E19 /* Serialize.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 34EA688517611DD400F07E19 /* Serialize.cpp */; };
 		34EA68A617611DD400F07E19 /* CommandLineParser.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 34EA688C17611DD400F07E19 /* CommandLineParser.cpp */; };
 		34EA68A917611DD400F07E19 /* Utils.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 34EA689317611DD400F07E19 /* Utils.cpp */; };
 		34EA68AF17612DF500F07E19 /* NetworkUtils.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 34EA68AE17612DF500F07E19 /* NetworkUtils.cpp */; };
+		4C6C019F18F3425E004B0BF6 /* NotificationPacket.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 4C6C019D18F3425E004B0BF6 /* NotificationPacket.cpp */; };
 		7031249817A8404C00A83FA5 /* ContactPacket.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 7031249617A8404C00A83FA5 /* ContactPacket.cpp */; };
+		705282C318EB71B000169F69 /* CommonTypes.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 705282BE18EB71B000169F69 /* CommonTypes.cpp */; };
+		705282C418EB71B000169F69 /* Serialize.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 705282C118EB71B000169F69 /* Serialize.cpp */; };
 		705B338A17FE29AA00CCDDE3 /* AssetPacket.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 705B338417FE29AA00CCDDE3 /* AssetPacket.cpp */; };
 		705B338B17FE29AA00CCDDE3 /* CheatPacket.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 705B338617FE29AA00CCDDE3 /* CheatPacket.cpp */; };
 		705B338C17FE29AA00CCDDE3 /* LoginPacket.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 705B338817FE29AA00CCDDE3 /* LoginPacket.cpp */; };
@@ -43,7 +45,6 @@
 		707B53F41794C1A6001D9BA1 /* DbPacket.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 707B53F21794C1A6001D9BA1 /* DbPacket.cpp */; };
 		707B53F71794C1BC001D9BA1 /* NetworkLayer.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 707B53F51794C1BC001D9BA1 /* NetworkLayer.cpp */; };
 		FAA2B309182B16E200A563B9 /* TournamentPacket.cpp in Sources */ = {isa = PBXBuildFile; fileRef = FAA2B307182B16E200A563B9 /* TournamentPacket.cpp */; };
-		FAA6764F181F192A00D9FF01 /* DataBucket.cpp in Sources */ = {isa = PBXBuildFile; fileRef = FAA6764B181F192A00D9FF01 /* DataBucket.cpp */; };
 		FAA67650181F192A00D9FF01 /* PurchasePacket.cpp in Sources */ = {isa = PBXBuildFile; fileRef = FAA6764D181F192A00D9FF01 /* PurchasePacket.cpp */; };
 /* End PBXBuildFile section */
 
@@ -86,8 +87,6 @@
 		34EA688217611DD400F07E19 /* ServerToServerPacket.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = ServerToServerPacket.cpp; sourceTree = "<group>"; };
 		34EA688317611DD400F07E19 /* ServerToServerPacket.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ServerToServerPacket.h; sourceTree = "<group>"; };
 		34EA688417611DD400F07E19 /* Platform.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Platform.h; sourceTree = "<group>"; };
-		34EA688517611DD400F07E19 /* Serialize.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Serialize.cpp; sourceTree = "<group>"; };
-		34EA688617611DD400F07E19 /* Serialize.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Serialize.h; sourceTree = "<group>"; };
 		34EA688717611DD400F07E19 /* ServerConstants.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ServerConstants.h; sourceTree = "<group>"; };
 		34EA688817611DD400F07E19 /* ServerType.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ServerType.h; sourceTree = "<group>"; };
 		34EA688C17611DD400F07E19 /* CommandLineParser.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = CommandLineParser.cpp; sourceTree = "<group>"; };
@@ -95,8 +94,15 @@
 		34EA689317611DD400F07E19 /* Utils.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Utils.cpp; sourceTree = "<group>"; };
 		34EA689417611DD400F07E19 /* Utils.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Utils.h; sourceTree = "<group>"; };
 		34EA68AE17612DF500F07E19 /* NetworkUtils.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = NetworkUtils.cpp; path = ../NetworkUtils.cpp; sourceTree = "<group>"; };
+		4C6C019D18F3425E004B0BF6 /* NotificationPacket.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = NotificationPacket.cpp; sourceTree = "<group>"; };
+		4C6C019E18F3425E004B0BF6 /* NotificationPacket.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = NotificationPacket.h; sourceTree = "<group>"; };
 		7031249617A8404C00A83FA5 /* ContactPacket.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = ContactPacket.cpp; sourceTree = "<group>"; };
 		7031249717A8404C00A83FA5 /* ContactPacket.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ContactPacket.h; sourceTree = "<group>"; };
+		705282BE18EB71B000169F69 /* CommonTypes.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = CommonTypes.cpp; sourceTree = "<group>"; };
+		705282BF18EB71B000169F69 /* CommonTypes.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = CommonTypes.h; sourceTree = "<group>"; };
+		705282C018EB71B000169F69 /* CommonTypes.inl */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = CommonTypes.inl; sourceTree = "<group>"; };
+		705282C118EB71B000169F69 /* Serialize.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Serialize.cpp; sourceTree = "<group>"; };
+		705282C218EB71B000169F69 /* Serialize.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Serialize.h; sourceTree = "<group>"; };
 		705B338417FE29AA00CCDDE3 /* AssetPacket.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = AssetPacket.cpp; sourceTree = "<group>"; };
 		705B338517FE29AA00CCDDE3 /* AssetPacket.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = AssetPacket.h; sourceTree = "<group>"; };
 		705B338617FE29AA00CCDDE3 /* CheatPacket.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = CheatPacket.cpp; sourceTree = "<group>"; };
@@ -111,8 +117,6 @@
 		707B53F61794C1BC001D9BA1 /* NetworkLayer.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = NetworkLayer.h; path = ../BaseClientLibrary/NetworkLayer.h; sourceTree = "<group>"; };
 		FAA2B307182B16E200A563B9 /* TournamentPacket.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = TournamentPacket.cpp; sourceTree = "<group>"; };
 		FAA2B308182B16E200A563B9 /* TournamentPacket.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = TournamentPacket.h; sourceTree = "<group>"; };
-		FAA6764B181F192A00D9FF01 /* DataBucket.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = DataBucket.cpp; sourceTree = "<group>"; };
-		FAA6764C181F192A00D9FF01 /* DataBucket.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = DataBucket.h; sourceTree = "<group>"; };
 		FAA6764D181F192A00D9FF01 /* PurchasePacket.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = PurchasePacket.cpp; sourceTree = "<group>"; };
 		FAA6764E181F192A00D9FF01 /* PurchasePacket.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = PurchasePacket.h; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -184,8 +188,6 @@
 				34EA688917611DD400F07E19 /* Utils */,
 				34EA686417611DD400F07E19 /* DataTypes.h */,
 				34EA688417611DD400F07E19 /* Platform.h */,
-				34EA688517611DD400F07E19 /* Serialize.cpp */,
-				34EA688617611DD400F07E19 /* Serialize.h */,
 				34EA688717611DD400F07E19 /* ServerConstants.h */,
 				34EA688817611DD400F07E19 /* ServerType.h */,
 			);
@@ -218,12 +220,17 @@
 		34EA687817611DD400F07E19 /* Packets */ = {
 			isa = PBXGroup;
 			children = (
+				4C6C019D18F3425E004B0BF6 /* NotificationPacket.cpp */,
+				4C6C019E18F3425E004B0BF6 /* NotificationPacket.h */,
+				705282BE18EB71B000169F69 /* CommonTypes.cpp */,
+				705282BF18EB71B000169F69 /* CommonTypes.h */,
+				705282C018EB71B000169F69 /* CommonTypes.inl */,
+				705282C118EB71B000169F69 /* Serialize.cpp */,
+				705282C218EB71B000169F69 /* Serialize.h */,
 				705B338D1885F20B00CCDDE3 /* StatPacket.cpp */,
 				705B338E1885F20B00CCDDE3 /* StatPacket.h */,
 				FAA2B307182B16E200A563B9 /* TournamentPacket.cpp */,
 				FAA2B308182B16E200A563B9 /* TournamentPacket.h */,
-				FAA6764B181F192A00D9FF01 /* DataBucket.cpp */,
-				FAA6764C181F192A00D9FF01 /* DataBucket.h */,
 				FAA6764D181F192A00D9FF01 /* PurchasePacket.cpp */,
 				FAA6764E181F192A00D9FF01 /* PurchasePacket.h */,
 				705B338417FE29AA00CCDDE3 /* AssetPacket.cpp */,
@@ -338,7 +345,7 @@
 				34EA68A117611DD400F07E19 /* GamePacket.cpp in Sources */,
 				34EA68A217611DD400F07E19 /* PacketFactory.cpp in Sources */,
 				34EA68A317611DD400F07E19 /* ServerToServerPacket.cpp in Sources */,
-				34EA68A417611DD400F07E19 /* Serialize.cpp in Sources */,
+				4C6C019F18F3425E004B0BF6 /* NotificationPacket.cpp in Sources */,
 				34EA68A617611DD400F07E19 /* CommandLineParser.cpp in Sources */,
 				34EA68A917611DD400F07E19 /* Utils.cpp in Sources */,
 				34EA68AF17612DF500F07E19 /* NetworkUtils.cpp in Sources */,
@@ -348,10 +355,11 @@
 				705B338A17FE29AA00CCDDE3 /* AssetPacket.cpp in Sources */,
 				705B338B17FE29AA00CCDDE3 /* CheatPacket.cpp in Sources */,
 				705B338C17FE29AA00CCDDE3 /* LoginPacket.cpp in Sources */,
-				FAA6764F181F192A00D9FF01 /* DataBucket.cpp in Sources */,
 				FAA67650181F192A00D9FF01 /* PurchasePacket.cpp in Sources */,
 				FAA2B309182B16E200A563B9 /* TournamentPacket.cpp in Sources */,
 				705B338F1885F20B00CCDDE3 /* StatPacket.cpp in Sources */,
+				705282C318EB71B000169F69 /* CommonTypes.cpp in Sources */,
+				705282C418EB71B000169F69 /* Serialize.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

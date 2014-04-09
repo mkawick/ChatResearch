@@ -77,6 +77,7 @@ public:
    bool     SendPacketToGateway( BasePacket* packet, U32 connectionId );
 
    void     SendStat( const string& statName, U16 integerIdentifier, float value, PacketStat::StatType type );
+   void     SendNotification( const string& userUuid, U32 userId, int notificationType, const string& additionalText );
 
 
    DiplodocusGame*   GetGame() { return m_connectionManager; }

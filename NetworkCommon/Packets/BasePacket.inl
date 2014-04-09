@@ -100,6 +100,23 @@ type  SerializedKeyValueVector< type > ::find( const string& key ) const
 }
 
 template < typename type >
+bool  SerializedKeyValueVector< type > ::erase( const string& key )
+{
+   typename KeyValueVector::const_iterator it = dataList.begin();
+   while( it != dataList.end() )
+   {
+      const KeyValueSerializer<type>& kvs = *it;
+      if( kvs.key == key )
+      {
+         dataList.erase( it );
+         return true;
+      }
+      it++;
+   }
+   return false;
+}
+
+template < typename type >
 bool SerializedKeyValueVector< type > ::operator = (const KeyValueSerializer< type >& src )
 {
    dataList.clear();

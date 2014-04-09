@@ -474,6 +474,7 @@ void     NetworkLayer::UpdateNotifications()
                bool success = false;
                if( successString == "1" )
                   success = true;
+               
                notify->ChatChannel_UserRemoved( channelUuid, userUuid, success );
             }
             break;
@@ -504,6 +505,12 @@ void     NetworkLayer::UpdateNotifications()
                notify->AssetDataAvailable( category, hash );
             }
             break;
+         case UserNetworkEventNotifier::NotificationType_ListOfDevicesUpdated:
+            {
+               notify->ListOfDevicesUpdated();
+            }
+            break;
+            
 
             /*   case UserNetworkEventNotifier::NotificationType_ServerRequestsListOfUserPurchases:
             {
@@ -752,6 +759,23 @@ bool  NetworkLayer::RequestLogout() const
    PacketLogout logout;
    SerializePacketOut( &logout );
 
+   return true;
+}
+
+bool NetworkLayer::ForceLogout()
+{
+   m_isLoggingIn = false;
+   m_isLoggedIn = false;
+   
+   if( m_isConnected == false )
+   {
+      return false;
+   }
+   PacketLogout logout;
+   SerializePacketOut( &logout );
+   
+   Disconnect();
+   
    return true;
 }
 
@@ -1387,6 +1411,38 @@ bool    NetworkLayer::GetChannel( int index, ChatChannel& channel ) const
    return false;
 }
 
+vector< ChatChannel >::iterator    NetworkLayer::GetChannel( const string& channelUuid )
+{
+   vector< ChatChannel >::iterator itChannels = m_channels.begin();
+   while( itChannels != m_channels.end() )
+   {
+      if( channelUuid == itChannels->uuid )
+      {
+         return itChannels;
+      }
+      itChannels++;
+   }
+
+   return m_channels.end();
+}
+
+bool     NetworkLayer::RemoveChannel( const string& channelUuid )
+{
+   vector< ChatChannel >::iterator itChannels = m_channels.begin();
+   while( itChannels != m_channels.end() )
+   {
+      if( channelUuid == itChannels->uuid )
+      {
+         m_channels.erase (itChannels);
+         return true;
+      }
+
+      itChannels++;
+   }
+
+   return false;
+}
+
 //-----------------------------------------------------------------------------
 
 bool     NetworkLayer::IsGameChannel( const string& channelUuid ) const
@@ -1911,6 +1967,52 @@ bool     NetworkLayer::RequestAvatarById( U32 id )
 
 //-----------------------------------------------------------------------------
 
+bool     NetworkLayer::RegisterDevice( const string& deviceId, const string& deviceName, int platformId )
+{
+   PacketNotification_RegisterDevice registration;
+   registration.deviceName = deviceName;
+   registration.deviceId = deviceId;
+   registration.platformId = platformId;
+
+   return SerializePacketOut( &registration );
+}
+
+//-----------------------------------------------------------------------------
+
+bool     NetworkLayer::RequestListOfDevicesForThisGame( int platformId )
+{
+   PacketNotification_RequestListOfDevices request;
+   request.platformId = platformId;
+
+   return SerializePacketOut( &request );
+}
+
+//-----------------------------------------------------------------------------
+
+bool     NetworkLayer::ChangeDevice( const string& deviceUuid, const string& deviceNewName, bool isEnabled, int iconId )
+{
+   PacketNotification_UpdateDevice update;
+   update.deviceUuid = deviceUuid;//m_thisDeviceUuid;
+   update.deviceName = deviceNewName;
+   update.isEnabled = isEnabled;
+   update.iconId = iconId;
+   update.gameId = m_gameProductId;
+
+   return SerializePacketOut( &update );
+}
+
+//-----------------------------------------------------------------------------
+
+bool    NetworkLayer::GetDevice( int index, RegisteredDevice& device ) const
+{   
+   if( index < 0 || index >= static_cast< int >( m_devices.size() ) )
+      return false;
+   device = m_devices[ index ];
+   return true;
+}
+
+//-----------------------------------------------------------------------------
+
 bool     NetworkLayer::SendPurchases( const vector< RegisteredProduct >& purchases, int platformId )
 {
    PacketListOfUserAggregatePurchases packet;
@@ -2164,10 +2266,20 @@ bool  NetworkLayer::HandlePacketReceived( BasePacket* packetIn )
                if( packet->wasAccepted )
                   accepted = "1";
                strings.insert( "accepted", accepted );
-               Notification( UserNetworkEventNotifier::NotificationType_InvitationAccepted, strings );
-               
 
-               //cout << "request a new list of friends" << endl;
+               if( packet->fromUsername == m_userName )
+               {
+                  
+               }
+               else
+               {
+                  //RemoveInvitationFromReceived
+               }
+
+               // m_invitationsReceived;
+               // m_invitationsSent;
+
+               Notification( UserNetworkEventNotifier::NotificationType_InvitationAccepted, strings );
             }
             break;
          case PacketContact::ContactType_SearchResults:
@@ -2554,6 +2666,11 @@ bool  NetworkLayer::HandlePacketReceived( BasePacket* packetIn )
                strings.insert( "channelUuid", chat->channelUuid );
                strings.insert( "userName", chat->userName );
                strings.insert( "userUuid", chat->userUuid );
+               //ChatChannel channel;
+               if( chat->success == true &&
+                  AddUserToChatChannel( chat->channelUuid, chat->userUuid, chat->userName ) == true )
+               {
+               }
 
                Notification( UserNetworkEventNotifier::NotificationType_ChatChannel_UserAdded, strings );
              }
@@ -2570,12 +2687,15 @@ bool  NetworkLayer::HandlePacketReceived( BasePacket* packetIn )
                   success = "1";
                strings.insert( "success", success );
 
+               if( chat->success == true && 
+                  RemoveUserfromChatChannel( chat->chatChannelUuid, chat->userUuid ) == true )
+               {
+                  //success = channel.userList.erase( chat->userUuid );
+                  
+               }
+
                Notification( UserNetworkEventNotifier::NotificationType_ChatChannel_UserRemoved, strings );
 
-               if( chat->success )
-               {
-                  RemoveUserfromChatChannel( chat->chatChannelUuid, chat->userUuid );// do this last because we may want to display something about the channel
-               }
             }
             break;
          }
@@ -2679,6 +2799,31 @@ bool  NetworkLayer::HandlePacketReceived( BasePacket* packetIn )
             }
             break;
           }
+      }
+      break;
+      case PacketType_Notification:
+      {
+         switch( packetIn->packetSubType )
+         {
+            case PacketNotification::NotificationType_RegisterDeviceResponse:
+            {
+               PacketNotification_RegisterDeviceResponse* response = 
+                  static_cast<PacketNotification_RegisterDeviceResponse*>( packetIn );
+               m_thisDeviceUuid = response->deviceUuid;
+            }
+            break;
+            case PacketNotification::NotificationType_RequestListOfDevicesResponse:
+            {
+               PacketNotification_RequestListOfDevicesResponse* response = 
+                  static_cast<PacketNotification_RequestListOfDevicesResponse*>( packetIn );
+
+               m_devices = response->devices;
+
+               Notification( UserNetworkEventNotifier::NotificationType_ListOfDevicesUpdated );
+            }
+            break;
+            
+         }
       }
       break;
      /* case PacketType_Tournament:
@@ -2886,12 +3031,44 @@ bool     NetworkLayer::RemoveChatChannel( const string& channelUuid )
    return false;;
 }
 
+bool     NetworkLayer::AddUserToChatChannel( const string& channelUuid, const string& userUuid, const string& userName )
+{
+   vector< ChatChannel >::iterator channelIt = GetChannel( channelUuid );
+   if( channelIt == m_channels.end() )
+      return false;
+
+   string name = userName;
+   if( userName.length() == 0 )
+   {
+      name = FindFriendFromUuid( userUuid );
+   }
+   if( name.length() == 0 )
+   {
+      return false;
+   }
+
+   ChatChannel& channel = *channelIt;
+   SerializedKeyValueVector< string >::KVIterator it = channel.userList.begin();
+   while( it != channel.userList.end() )
+   {
+      if( it->key == userUuid )
+      {
+         return false;
+      }
+      it++;
+   }
+
+   channel.userList.insert( userUuid, name );
+   return true;
+}
+
 bool     NetworkLayer::RemoveUserfromChatChannel( const string& channelUuid, const string& userUuid )
 {
-   ChatChannel channel;
-   bool isFound = GetChannel( channelUuid, channel );
-   if( isFound == false )
+   vector< ChatChannel >::iterator channelIt = GetChannel( channelUuid );
+   if( channelIt == m_channels.end() )
       return false;
+
+   ChatChannel& channel = *channelIt;
 
    SerializedKeyValueVector< string >::KVIterator it = channel.userList.begin();
    while( it != channel.userList.end() )
@@ -2899,6 +3076,10 @@ bool     NetworkLayer::RemoveUserfromChatChannel( const string& channelUuid, con
       if( it->key == userUuid )
       {
          channel.userList.erase( it );
+         if( userUuid == m_uuid )// we removed ourselves
+         {
+            RemoveChannel( channelUuid );
+         }
          return true;
       }
       it++;
@@ -2906,6 +3087,37 @@ bool     NetworkLayer::RemoveUserfromChatChannel( const string& channelUuid, con
    return false;
 }
 
+bool     NetworkLayer::RemoveInvitationFromSent( const string& uuid )
+{
+   SerializedKeyValueVector< InvitationInfo >& kvVector = m_invitationsSent;
+   SerializedKeyValueVector< InvitationInfo >::KVIterator it = kvVector.begin();
+   while (it != kvVector.end() )
+   {
+      if( it->key == uuid )
+      {
+         kvVector.erase( it );
+         return true;
+      }
+      it++;
+   }
+   return false;
+}
+
+bool     NetworkLayer::RemoveInvitationFromReceived( const string& uuid )
+{
+   SerializedKeyValueVector< InvitationInfo >& kvVector = m_invitationsReceived;
+   SerializedKeyValueVector< InvitationInfo >::KVIterator it = kvVector.begin();
+   while (it != kvVector.end() )
+   {
+      if( it->key == uuid )
+      {
+         kvVector.erase( it );
+         return true;
+      }
+      it++;
+   }
+   return false;
+}
 
 //------------------------------------------------------------------------
 
@@ -3165,6 +3377,15 @@ void  NetworkLayerExtended::SendPurchaseEcho()
    PacketPurchase_EchoToServer packet;
    SerializePacketOut( &packet );
    StartTime();
+}
+
+void  NetworkLayerExtended::SendNotification( U8 type, string additionalText )
+{
+   PacketGame_Notification packet;
+   packet.userUuid = m_uuid;
+   packet.notificationType = type;
+   packet.additionalText = additionalText;
+   SerializePacketOut( &packet );
 }
 
 //------------------------------------------------------------

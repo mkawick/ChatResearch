@@ -62,14 +62,13 @@ private:
 class PacketDbQueryResult : public BasePacketDbQuery
 {
 public:
-   PacketDbQueryResult( int packet_type = PacketType_DbQuery, int packet_sub_type = QueryType_Result  ): BasePacketDbQuery( packet_type, packet_sub_type ), successfulQuery( false ) {}
-   //PacketDbQueryResult( const PacketDbQueryResult& query ) : BasePacketDbQuery( query ), successfulQuery( query.successfulQuery ), bucket( query.bucket ){}
-   //~PacketDbQueryResult();
+   PacketDbQueryResult( int packet_type = PacketType_DbQuery, int packet_sub_type = QueryType_Result  ): BasePacketDbQuery( packet_type, packet_sub_type ), successfulQuery( false ), insertId( 0 ) {}
 
    bool  SerializeIn( const U8* data, int& bufferOffset );
    bool  SerializeOut( U8* data, int& bufferOffset ) const;
 
    bool                 successfulQuery;
+   int                  insertId; // rarely correct.. only for inserts
    DynamicDataBucket    bucket;// this could be slow with large datasets.. look into optimizations here
 
 private: 

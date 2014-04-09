@@ -128,11 +128,13 @@ bool   DiplodocusGame::AddInputChainData( BasePacket* packet, U32 connectionId )
       PacketGatewayWrapper* wrapper = static_cast< PacketGatewayWrapper* >( packet );
       BasePacket* unwrappedPacket = wrapper->pPacket;
       U32 connectionIdToUse = wrapper->connectionId;
+      U8 packetType = unwrappedPacket->packetType;
+      U8 packetSubType = unwrappedPacket->packetSubType;
 
-      if( unwrappedPacket->packetType == PacketType_Gameplay )
+      if( packetType == PacketType_Gameplay )
       {
          // we validate the raw data format...
-         if( unwrappedPacket->packetSubType == PacketGameToServer::GamePacketType_RawGameData )
+         if( packetSubType == PacketGameToServer::GamePacketType_RawGameData )
          {
             PacketGameplayRawData* rawData = static_cast< PacketGameplayRawData* > ( unwrappedPacket );
             if( m_callbacks )
@@ -144,7 +146,7 @@ bool   DiplodocusGame::AddInputChainData( BasePacket* packet, U32 connectionId )
             }
             return true;
          }
-         else if( unwrappedPacket->packetSubType == PacketGameToServer::GamePacketType_ListOfGames )
+         else if( packetSubType == PacketGameToServer::GamePacketType_ListOfGames )
          {
             PacketListOfGames* packet = static_cast< PacketListOfGames* > ( unwrappedPacket );
             bool  isUserValidForThisGame = false;
@@ -163,13 +165,20 @@ bool   DiplodocusGame::AddInputChainData( BasePacket* packet, U32 connectionId )
             }
             return true;
          }
-         if( unwrappedPacket->packetSubType == PacketGameToServer::GamePacketType_EchoToServer )
+         else if( packetSubType == PacketGameToServer::GamePacketType_EchoToServer )
          {
             EchoHandler( connectionId );
             return true;
          }
+         else if( packetSubType == PacketGameToServer::GamePacketType_Notification )
+         {
+            PacketGame_Notification* notification = static_cast< PacketGame_Notification* > ( unwrappedPacket );
+            SendNotification( notification, connectionId );
+            return true;
+         }
+         return true;
       }
-      else if( unwrappedPacket->packetType == PacketType_Tournament )
+      else if( packetType == PacketType_Tournament )
       {
          HandleUserRequestedTournamentInfo( unwrappedPacket, connectionIdToUse );
       }
@@ -192,6 +201,16 @@ void  DiplodocusGame::EchoHandler( U32 connectionId )
    wrapper->SetupPacket( echo, connectionId );
 
    AddOutputChainData( wrapper, connectionId );
+}
+
+//---------------------------------------------------------------
+
+void  DiplodocusGame::SendNotification( const PacketGame_Notification* notification, U32 connectionId )
+{
+   if( m_callbacks )
+   {
+      m_callbacks->UserWantsNotifiction( connectionId, notification->notificationType, notification->additionalText );
+   }
 }
 
 //---------------------------------------------------------------

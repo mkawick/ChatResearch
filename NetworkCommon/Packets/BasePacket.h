@@ -10,7 +10,7 @@
 
 //#define _MEMLEAK_TESTING_
 
-static const U8   GlobalNetworkProtocolVersion = 12;
+static const U8   GlobalNetworkProtocolVersion = 15;
 
 ///////////////////////////////////////////////////////////////
 
@@ -349,6 +349,7 @@ public:
       ErrorType_ChatChannelCannotBeDeleted =                   311,
       ErrorType_UserUnknown =                                  312,
       ErrorType_UserIsBlockingFriendInvites =                  313,
+      ErrorType_CannotAddUserToChannel =                       314,
 
       ErrorType_CreateFailed_BadPassword =                     410,
       ErrorType_CreateFailed_DisallowedUsername =              411,
@@ -404,6 +405,16 @@ public:
       ErrorType_TournamentPurchase_Result_RequirementsNotMet = 902,
       ErrorType_TournamentPurchase_Result_TournamentClosed =   903,
       ErrorType_TournamentPurchase_Result_UnknownUuid =        904,
+
+      ErrorType_Notification_DeviceAlreadyRegistered =        1000,
+      ErrorType_Notification_TooManyDevices =                 1001,
+      ErrorType_Notification_DeviceIdIncorrect =              1002,
+      ErrorType_Notification_NoDevicesListed =                1003,
+      ErrorType_Notification_NoDevicesEnabledForThisGame =    1004,
+      ErrorType_Notification_CannotInsertNewDevice =          1005,
+    /*  ErrorType_TournamentPurchase_Result_RequirementsNotMet = 902,
+      ErrorType_TournamentPurchase_Result_TournamentClosed =   903,
+      ErrorType_TournamentPurchase_Result_UnknownUuid =        904,*/
 
       ErrorType_Limit =                                      10000
    };

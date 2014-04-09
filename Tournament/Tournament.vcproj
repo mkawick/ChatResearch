@@ -41,6 +41,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
+				AdditionalIncludeDirectories="..\w32libs\include"
 				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
@@ -199,14 +200,6 @@
 			</File>
 			<File
 				RelativePath="..\NetworkCommon\Platform.h"
-				>
-			</File>
-			<File
-				RelativePath="..\NetworkCommon\Serialize.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\NetworkCommon\Serialize.h"
 				>
 			</File>
 			<File

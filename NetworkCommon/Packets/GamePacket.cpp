@@ -565,3 +565,24 @@ void  PacketGameplayRawData::Prep( U16 numBytes, const U8* ptr, int packetIndex 
 ///////////////////////////////////////////////////////////////
 
 
+bool  PacketGame_Notification::SerializeIn( const U8* data, int& bufferOffset )
+{
+   PacketGameToServer::SerializeIn( data, bufferOffset );
+   Serialize::In( data, bufferOffset, userUuid );
+   Serialize::In( data, bufferOffset, notificationType );
+   Serialize::In( data, bufferOffset, additionalText );
+
+   return true;
+}
+
+bool  PacketGame_Notification::SerializeOut( U8* data, int& bufferOffset ) const
+{
+   PacketGameToServer::SerializeOut( data, bufferOffset );
+   Serialize::Out( data, bufferOffset, userUuid );
+   Serialize::Out( data, bufferOffset, notificationType );
+   Serialize::Out( data, bufferOffset, additionalText );
+
+   return true;
+}
+
+///////////////////////////////////////////////////////////////

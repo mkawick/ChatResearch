@@ -22,6 +22,7 @@ class UserSession;
 class PacketPrepareForUserLogin;
 class PacketPrepareForUserLogout;
 class PacketTournament_PurchaseTournamentEntryResponse;
+class PacketGame_Notification;
 
 ////////////////////////////////////////////////////////////////////////////////////////
 
@@ -87,6 +88,7 @@ private:
    void     IsUserAllowedToUseThisProduct( const PacketListOfGames* packet );
 
    void     EchoHandler( U32 connectionId );
+   void     SendNotification( const PacketGame_Notification* notification, U32 connectionId );
    void     HandleUserRequestedTournamentInfo( BasePacket* packet, U32 connectionId );
 
    //U32                                    m_connectionIdGateway;
