@@ -184,6 +184,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\ErrorCodeLookup.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\FruitadensGateway.cpp"
 				>
 			</File>
@@ -203,6 +207,10 @@
 			>
 			<File
 				RelativePath=".\DiplodocusGateway.h"
+				>
+			</File>
+			<File
+				RelativePath=".\ErrorCodeLookup.h"
 				>
 			</File>
 			<File

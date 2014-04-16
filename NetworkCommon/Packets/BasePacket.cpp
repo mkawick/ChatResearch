@@ -247,6 +247,7 @@ bool  PacketErrorReport::SerializeIn( const U8* data, int& bufferOffset )
    BasePacket::SerializeIn( data, bufferOffset );
    Serialize::In( data, bufferOffset, errorCode );
    Serialize::In( data, bufferOffset, statusInfo );
+   Serialize::In( data, bufferOffset, text );
 
    return true;
 }
@@ -256,6 +257,7 @@ bool  PacketErrorReport::SerializeOut( U8* data, int& bufferOffset ) const
    BasePacket::SerializeOut( data, bufferOffset );
    Serialize::Out( data, bufferOffset, errorCode );
    Serialize::Out( data, bufferOffset, statusInfo );
+   Serialize::Out( data, bufferOffset, text );
 
    return true;
 }

@@ -14,6 +14,28 @@ using boost::format;
 
 using namespace std;
 
+
+//////////////////////////////////////////////////////////////
+
+class TableUser_PlusAvatarIconId
+{
+public:
+   enum Columns
+   {
+      Column_id,
+      Column_name,
+      Column_uuid,
+      Column_email,
+      Column_language_id,
+      Column_active,
+      Column_avatar_id,
+      Column_end
+   };
+   static const char* const column_names[];
+};
+
+typedef Enigmosaurus <TableUser_PlusAvatarIconId> UserPlusAvatarTable;
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
@@ -27,7 +49,8 @@ UserContact::UserContact( const UserInfo& info, U32 connectionId ):
                m_friendRequestSentListFilled( false ),
                m_friendRequestReceivedListFilled( false ),
                m_contactServer( NULL ),
-               m_invitationQueryIndex( 0 )
+               m_invitationQueryIndex( 0 ),
+               m_afterFriendQuery_SendListToClient( false )
 {
    m_timeLoggedOut = 0;
 }
@@ -88,9 +111,16 @@ void  UserContact::PrepFriendQuery()
    dbQuery->meta =         "";
    dbQuery->lookup =       QueryType_Friends;
    dbQuery->serverLookup = m_userInfo.id;
-   dbQuery->query = "SELECT * FROM users INNER JOIN friends ON users.user_id=friends.userid2 WHERE friends.userId1='";
+   string query = "SELECT users.user_id, users.user_name, users.uuid, users.user_email, users.language_id, users.active, profile.mber_avatar ";
+   query += "FROM users INNER JOIN user_profile AS profile ON users.user_id=profile.user_id ";
+   query += "INNER JOIN friends ON users.user_id=friends.userid2 ";
+   query += "WHERE friends.userId1=";
+   query += idString;
+
+   dbQuery->query = query;
+ /*  dbQuery->query = "SELECT * FROM users INNER JOIN friends ON users.user_id=friends.userid2 WHERE friends.userId1='";
    dbQuery->query += idString;
-   dbQuery->query += "'";
+   dbQuery->query += "'";*/
 
    m_contactServer->AddQueryToOutput( dbQuery );
 }
@@ -152,13 +182,6 @@ void  UserContact::Update()
 
 bool  UserContact::UpdateProfile( const PacketUserUpdateProfile* profile )
 {
-   // update the real profile
-   if( m_displayOnlineStatusToOtherUsers != profile->displayOnlineStatusToOtherUsers )
-   {
-      m_displayOnlineStatusToOtherUsers = profile->displayOnlineStatusToOtherUsers;
-      InformFriendsOfOnlineStatus( true );
-   }
-
    // to be done.. what do I do here?
    if( m_blockContactInvitations != profile->blockContactInvitations )
    {
@@ -168,9 +191,39 @@ bool  UserContact::UpdateProfile( const PacketUserUpdateProfile* profile )
    {
       m_blockGroupInvitations = profile->blockGroupInvitations;
    }
-   ;
+
+   m_userInfo.avatarId = profile->iconId;
+   
+
+   //bool isOnline = false;
+   // update the real profile
+   if( m_displayOnlineStatusToOtherUsers != profile->displayOnlineStatusToOtherUsers )
+   {
+      m_displayOnlineStatusToOtherUsers = profile->displayOnlineStatusToOtherUsers;
+      //InformFriendsOfOnlineStatus(  );
+      //isOnline = true;
+   }
+
+   InformFriendsOfOnlineStatus( true );
+
+   
+
+   
+ /*  vector< UserInfo >::iterator  it = m_friends.begin();
+   while ( it != m_friends.end() )
+   {
+      const UserInfo& ui = *it++; 
+      UserContact* contact = m_contactServer->GetUser( ui.id );
+      if( contact )
+      {
+         contact->YourFriendsOnlineStatusChange( m_connectionId, m_userInfo.userName, m_userInfo.uuid, m_userInfo.avatarId, this->isOnl );
+         YourFriendsOnlineStatusChange( ui.connectionId, ui.userName, ui.uuid, ui.avatarId, isOnline );
+      }
+   }*/
+
    return true;
 }
+
 
 //------------------------------------------------------------------------------------------------
 
@@ -191,6 +244,7 @@ int   UserContact::SecondsExpiredSinceLoggedOut()
 
    return  static_cast<int> ( difftime( currentTime, m_timeLoggedOut ) );
 }
+
 
 //------------------------------------------------------------------------------------------------
 
@@ -214,26 +268,33 @@ bool  UserContact::HandleDbQueryResult( const PacketDbQueryResult* dbResult )
    case QueryType_Friends:
       {
          m_friends.clear();
-         UserTable            enigma( dbResult->bucket );
-         UserTable::iterator  it = enigma.begin();
+         UserPlusAvatarTable            enigma( dbResult->bucket );
+         UserPlusAvatarTable::iterator  it = enigma.begin();
          while( it != enigma.end() )
          {
-            UserTable::row row = *it++;
+            UserPlusAvatarTable::row row = *it++;
             UserInfo ui;
 
-            ui.id =               boost::lexical_cast< U32 >( row[ TableUser::Column_id ] );
-            ui.userName =         row[ TableUser::Column_name ];
-            ui.uuid =             row[ TableUser::Column_uuid ];
-            ui.email =            row[ TableUser::Column_email ];
-            ui.passwordHash =     row[ TableUser::Column_password_hash ];
+            ui.id =               boost::lexical_cast< U32 >( row[ TableUser_PlusAvatarIconId::Column_id ] );
+            ui.userName =         row[ TableUser_PlusAvatarIconId::Column_name ];
+            ui.uuid =             row[ TableUser_PlusAvatarIconId::Column_uuid ];
+            ui.email =            row[ TableUser_PlusAvatarIconId::Column_email ];
+            ui.avatarId =         boost::lexical_cast< U32 >( row[ TableUser_PlusAvatarIconId::Column_avatar_id ] );
+           /* string languageNameId = row[ TableUser_PlusAvatarIconId::Column_language_id ];
+            U32 languageId =       0; 
+            if( languageNameId.size() && 
+               languageNameId != "NULL" )
+            {
+               languageId = boost::lexical_cast< U32 >( languageNameId );
+            }*/
+
             ui.connectionId = 0;
-            string active = row[ TableUser::Column_active];
+            string active = row[ TableUser_PlusAvatarIconId::Column_active];
             if( active == "NULL" )
                ui.active = false;
             else
                ui.active =           boost::lexical_cast< bool >( active );
-            // note that we are using logout for our last login time.
-            m_friends.push_back( ui );
+            InsertFriend( ui.id, ui.userName, ui.uuid, ui.email, ui.avatarId, ui.active );
          }
 
          m_friendListFilled = true;
@@ -327,9 +388,11 @@ bool  UserContact::HandleDbQueryResult( const PacketDbQueryResult* dbResult )
                UserTable            enigma( dbResult->bucket );
                UserTable::row  row = *enigma.begin();
                U32 id = boost::lexical_cast< U32 >( row[ TableUser::Column_id ] );
+               string uuid = row[ TableUser::Column_uuid ];
+               string name = row[ TableUser::Column_name ];
                if( id > 0 )
                {
-                  FinishInvitation( id, it->message, m_contactServer->GetUser( id ) );
+                  FinishInvitation( id, it->message, name, uuid, m_contactServer->GetUser( id ) );
                }
                m_invitationQueryLookup.erase( it );
                break;
@@ -339,8 +402,8 @@ bool  UserContact::HandleDbQueryResult( const PacketDbQueryResult* dbResult )
                it++;
             }
          }
-         GetListOfInvitationsReceived();
-         GetListOfInvitationsSent();
+         ListOfInvitationsReceived_SendToClient();
+         ListOfInvitationsSent_SendToClient();
       }
       return true;
    case QueryType_AddInvitationToUser:
@@ -399,10 +462,10 @@ bool     UserContact::HandleRequestFromClient( const PacketContact* packet )
       return GetListOfContacts();
 
    case PacketContact::ContactType_GetListOfInvitations:
-      return GetListOfInvitationsReceived();
+      return ListOfInvitationsReceived_SendToClient();
 
    case PacketContact::ContactType_GetListOfInvitationsSent:
-      return GetListOfInvitationsSent();
+      return ListOfInvitationsSent_SendToClient();
 
    case PacketContact::ContactType_InviteContact:
       return InviteUser( static_cast< const PacketContact_InviteContact* >( packet ) );
@@ -446,8 +509,8 @@ bool     UserContact::InformFriendsOfOnlineStatus( bool isOnline )
       UserContact* contact = m_contactServer->GetUser( ui.id );
       if( contact )
       {
-         contact->YourFriendsOnlineStatusChange( m_connectionId, m_userInfo.userName, m_userInfo.uuid, isOnline );
-         YourFriendsOnlineStatusChange( ui.connectionId, ui.userName, ui.uuid, isOnline );
+         contact->YourFriendsOnlineStatusChange( m_connectionId, m_userInfo.userName, m_userInfo.uuid, m_userInfo.avatarId, isOnline );
+         YourFriendsOnlineStatusChange( ui.connectionId, ui.userName, ui.uuid, ui.avatarId, isOnline );
       }
    }
 
@@ -463,14 +526,20 @@ void     UserContact::FinishLoginBySendingUserFriendsAndInvitations()
    {
       InformFriendsOfOnlineStatus( true );
       //GetListOfContacts();
-      //GetListOfInvitationsReceived();
-      //GetListOfInvitationsSent();
+      //ListOfInvitationsReceived_SendToClient();
+      //ListOfInvitationsSent_SendToClient();
+   }
+
+   if( m_afterFriendQuery_SendListToClient )
+   {
+      GetListOfContacts();
+      m_afterFriendQuery_SendListToClient = false;
    }
 }
 
 //------------------------------------------------------------------------------------------------
 
-bool     UserContact::YourFriendsOnlineStatusChange( U32 connectionId, const string& userName, const string& UUID, bool isOnline )
+bool     UserContact::YourFriendsOnlineStatusChange( U32 connectionId, const string& userName, const string& UUID, int avatarId, bool isOnline )
 {
    if( m_friends.size() == 0 )
       return false;
@@ -479,6 +548,7 @@ bool     UserContact::YourFriendsOnlineStatusChange( U32 connectionId, const str
    packet->friendInfo.userName = userName;
    packet->uuid = UUID;
    packet->friendInfo.isOnline = isOnline;
+   packet->friendInfo.avatarId = avatarId;
    // PacketContact_FriendOnlineStatusChange
     m_contactServer->SendPacketToGateway( packet, m_connectionId );
 
@@ -508,7 +578,7 @@ bool     UserContact::GetListOfContacts()
 
 //------------------------------------------------------------------------------------------------
 
-bool  UserContact::GetListOfInvitationsReceived()
+bool  UserContact::ListOfInvitationsReceived_SendToClient()
 {
    PacketContact_GetListOfInvitationsResponse* packet = new PacketContact_GetListOfInvitationsResponse;
    
@@ -534,7 +604,7 @@ bool  UserContact::GetListOfInvitationsReceived()
 
 //------------------------------------------------------------------------------------------------
 
-bool  UserContact::GetListOfInvitationsSent()
+bool  UserContact::ListOfInvitationsSent_SendToClient()
 {
    PacketContact_GetListOfInvitationsSentResponse* packet = new PacketContact_GetListOfInvitationsSentResponse;
    
@@ -622,6 +692,20 @@ bool  UserContact::HaveIAlreadyBeenInvited( const string& userUuid )
 }
 
 //------------------------------------------------------------------------------------------------
+
+void  UserContact::InsertFriend( U32 id, const string& userName, const string& uuid, const string& email, U32 avatarId, bool isActive )
+{
+   UserInfo ui;
+
+   ui.id =              id;
+   ui.userName =        userName;
+   ui.uuid =            uuid;
+   ui.email =           email;
+   ui.avatarId =        avatarId;
+   ui.connectionId =    0;
+   ui.active =          isActive;
+   m_friends.push_back( ui );
+}
 
 void  UserContact::InsertInvitationReceived( U32 inviteeId, U32 inviterId, bool wasNotified, const string& userName, const string& userUuid, const string& message, const string& invitationUuid, const string& date )
 {
@@ -753,7 +837,7 @@ bool     UserContact::InviteUser( const PacketContact_InviteContact* packet )
       else
       {
          // we still need to write this to the db
-         FinishInvitation( contact->GetUserInfo().id, message, contact );
+         FinishInvitation( contact->GetUserInfo().id, message, inviteeName, inviteeUuid, contact );
       }
    }
    else
@@ -881,12 +965,12 @@ bool  UserContact::RemoveSentInvitation( const PacketContact_RemoveInvitation* p
    if( invitee )
    {
       invitee->RemoveInvitationReceived( invitationUuid );
-      invitee->GetListOfInvitationsReceived();
+      invitee->ListOfInvitationsReceived_SendToClient();
    }
 
    //m_invitationsOut.erase( it );// remove this entry
    RemoveInvitationSent( invitationUuid );
-   GetListOfInvitationsSent();
+   ListOfInvitationsSent_SendToClient();
    return true;
 }
 
@@ -1008,9 +1092,11 @@ bool  UserContact::RemoveContact( const PacketContact_ContactRemove* packet )
    UserContact* contact = m_contactServer->GetUserByUuid( contactUuid );
    if( contact )
    {
+      contact->AfterFriendQuery_SendListToClient();
       contact->PrepFriendQuery();
    }
 
+   AfterFriendQuery_SendListToClient();
    PrepFriendQuery();
 
    return true;
@@ -1098,16 +1184,26 @@ void  UserContact::FinishAcceptingInvitation( const PacketDbQueryResult* dbResul
    m_contactServer->AddQueryToOutput( dbQuery );
 
    // send notification to both people if online.
-   UserContact* contact = m_contactServer->GetUser( inviteeId );// this user needs to know that he's been invited.
+   UserContact* contact = m_contactServer->GetUser( inviterId );// this user needs to know that they are friends now.
    if( contact )
    {
-      contact->RemoveInvitationReceived( invitationUuid );
+      contact->RemoveInvitationSent( invitationUuid );
       contact->InvitationAccepted( inviterUsername, m_userInfo.userName, invitationUuid, "", true );// this seems backwards, but its not
+      contact->ListOfInvitationsSent_SendToClient();
+      //InsertFriend( inviteeId, m_userInfo.userName, m_userInfo.uuid, m_userInfo.email, m_userInfo.avatarId, true );
+      contact->AfterFriendQuery_SendListToClient();
+      contact->PrepFriendQuery();
    }
 
-   RemoveInvitationSent( invitationUuid );
+   RemoveInvitationReceived( invitationUuid );
    InvitationAccepted( inviterUsername, m_userInfo.userName, invitationUuid, "", true );
-   PrepInvitationsQueries();
+   ListOfInvitationsReceived_SendToClient();
+   //InsertFriend( inviterId, inviterUsername, m_userInfo.uuid, m_userInfo.email, m_userInfo.avatarId, true );
+
+   AfterFriendQuery_SendListToClient();
+   //m_friendListFilled = false;
+   PrepFriendQuery();
+   // contact->GetListOfContacts();
 }
 
 //------------------------------------------------------------------------------------------------
@@ -1151,7 +1247,16 @@ void  UserContact::FinishDecliningingInvitation( const PacketDbQueryResult* dbRe
    // do not notify sender for now
    RemoveInvitationReceived( invitationUuid );
    InvitationAccepted( inviterUsername, m_userInfo.userName, invitationUuid, userMessage, false );
-   PrepInvitationsQueries();
+   //PrepInvitationsQueries();
+   ListOfInvitationsSent_SendToClient();
+
+   UserContact* contact = m_contactServer->GetUser( inviterId );// this user needs to know that he's been invited.
+   if( contact )
+   {
+      contact->RemoveInvitationSent( invitationUuid );
+      contact->InvitationAccepted( inviterUsername, m_userInfo.userName, invitationUuid, "", false );// this seems backwards, but its not
+      contact->ListOfInvitationsSent_SendToClient();
+   }
 }
 
 //------------------------------------------------------------------------------------------------
@@ -1183,7 +1288,7 @@ void  UserContact::FinishSearchResult( const PacketDbQueryResult* dbResult )
 
 //------------------------------------------------------------------------------------------------
 
-void  UserContact::FinishInvitation( U32 inviteeId, const string& message, UserContact* contact )
+void  UserContact::FinishInvitation( U32 inviteeId, const string& message, const string& inviteeName, const string& inviteeUuid, UserContact* contact )
 {
    PacketDbQuery* dbQuery = new PacketDbQuery;
    dbQuery->id =           m_connectionId;
@@ -1209,7 +1314,7 @@ void  UserContact::FinishInvitation( U32 inviteeId, const string& message, UserC
    dbQuery->query = query;
    dbQuery->escapedStrings.insert( message );
 
-   InsertInvitationSent( m_userInfo.id, inviteeId, false, m_userInfo.userName, m_userInfo.uuid, message, invitationUuid, currentTimeInUTC );
+   InsertInvitationSent( m_userInfo.id, inviteeId, false, inviteeName, inviteeUuid, message, invitationUuid, currentTimeInUTC );
 
    m_contactServer->AddQueryToOutput( dbQuery );
 
@@ -1218,7 +1323,8 @@ void  UserContact::FinishInvitation( U32 inviteeId, const string& message, UserC
       contact->InsertInvitationReceived( m_userInfo.id, inviteeId, false, m_userInfo.userName, m_userInfo.uuid, message, invitationUuid, currentTimeInUTC );
       contact->YouHaveBeenInvitedToBeAFriend( m_userInfo.userName, invitationUuid, message, currentTimeInUTC );
    }
-   PrepInvitationsQueries();// reload all invitations... there should not be many
+   //PrepInvitationsQueries();// reload all invitations... there should not be many
+   ListOfInvitationsSent_SendToClient();
 }
 
 //------------------------------------------------------------------------------------------------

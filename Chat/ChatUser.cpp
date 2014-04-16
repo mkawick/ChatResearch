@@ -37,10 +37,11 @@ void ChatUser::Set( ChatChannelManager* mgr )
 ///////////////////////////////////////////////////////////////////
 
 ChatUser::ChatUser( U32 connectionId ) : m_userId ( 0 ), 
-                                          m_connectionId( connectionId ), 
-                                          m_pendingQueries( QueryType_All ),
+                                          m_connectionId( connectionId ),
                                           m_isLoggedIn( false ),
-                                          m_initialRequestForInfoSent( false )
+                                          m_initialRequestForInfoSent( false ),
+                                          m_blockContactInvitations( false ),
+                                          m_blockGroupInvitations ( false )
 {
 }
 
@@ -87,6 +88,7 @@ bool     ChatUser::Update()
    {
       m_initialRequestForInfoSent = true;
       RequestAllBasicChatInfo();
+      RequestUserProfileInfo();
    }
    return true;
 }
@@ -247,7 +249,14 @@ bool     ChatUser::HandleClientRequest( BasePacket* packet )
                }
                SendMessageToClient( response );
             }             
-            break;        
+            break;
+         case PacketChatToServer::ChatType_UpdateProfile:
+            {
+               PacketChat_UserProfileChange* request = static_cast< PacketChat_UserProfileChange* > ( packet );
+               m_blockGroupInvitations = request->blockChannelInvites;
+               m_chatChannelManager->SetUserPreferences( m_uuid, m_blockContactInvitations, m_blockGroupInvitations );
+            }             
+            break; 
       /*   case PacketChatToServer::ChatType_RequestChatters:
             {
                PacketChatRequestChatters* request = static_cast< PacketChatRequestChatters* > ( packet );
@@ -395,6 +404,26 @@ void     ChatUser::QueryChatP2PHistory( const string& userUuid, int numRecords, 
 
 //------------------------------------------------------------------------------------------------
 
+bool  ChatUser:: RequestUserProfileInfo()
+{
+   string idString = boost::lexical_cast< string >( m_userId );
+
+   PacketDbQuery* dbQuery = new PacketDbQuery;
+   dbQuery->id =           m_connectionId;
+   dbQuery->meta =         "";
+   dbQuery->lookup =       QueryType_UserProfile;
+   dbQuery->serverLookup = m_userId;
+   dbQuery->query = "SELECT * FROM user_profile WHERE user_id='";
+   dbQuery->query += idString;
+   dbQuery->query += "'";
+
+   bool success = m_chatServer->AddQueryToOutput( dbQuery, m_connectionId, false);
+
+   return true;
+}
+
+//------------------------------------------------------------------------------------------------
+
 void     ChatUser::GetAllChatHistroySinceLastLogin()
 {
  /*  SELECT * FROM chat_message AS chat WHERE 
@@ -435,23 +464,27 @@ bool     ChatUser::HandleDbResult( PacketDbQueryResult * dbResult )
 
    switch( dbResult->lookup )
    {
-      case QueryType_ChatChannelHistory:
-         {
-            SendChatChannelHistoryToClient( dbResult );
-         }
-         break;
-      case QueryType_ChatP2PHistory:
-         {
-            SendChatp2pHistoryToClient( dbResult );
-         }
-         break;
-      case QueryType_ChatHistoryMissedSinceLastLogin:
-         {
-            StoreChatHistoryMissedSinceLastLogin( dbResult );
+   case QueryType_UserProfile:
+      {
+         LoadUserProfile( dbResult );
+      }
+   case QueryType_ChatChannelHistory:
+      {
+         SendChatChannelHistoryToClient( dbResult );
+      }
+      break;
+   case QueryType_ChatP2PHistory:
+      {
+         SendChatp2pHistoryToClient( dbResult );
+      }
+      break;
+   case QueryType_ChatHistoryMissedSinceLastLogin:
+      {
+         StoreChatHistoryMissedSinceLastLogin( dbResult );
 
-            //SendChatHistorySinceLastLogin();
-         }
-         break;
+         //SendChatHistorySinceLastLogin();
+      }
+      break;
    }
 
    return true;
@@ -528,7 +561,27 @@ void     ChatUser::StoreChatHistoryMissedSinceLastLogin( PacketDbQueryResult * d
 
 //---------------------------------------------------------------
 
-void     ChatUser::SendChatChannelHistoryToClient( PacketDbQueryResult * dbResult )
+void     ChatUser::LoadUserProfile( const PacketDbQueryResult * dbResult )
+{
+   if( dbResult->bucket.bucket.size() == 0 )
+   {
+      m_chatServer->SendErrorToClient( m_connectionId, PacketErrorReport::ErrorType_UserUnknown );
+      return;
+   }
+   UserProfileTable            enigma( dbResult->bucket );
+   UserProfileTable::iterator  it = enigma.begin();
+   if( it != enigma.end() )
+   {
+      UserProfileTable::row       row = *it++;
+      //m_displayOnlineStatusToOtherUsers =    boost::lexical_cast< bool >( row[ TableUserProfile::Column_display_online_status_to_other_users ] );
+      m_blockContactInvitations =            boost::lexical_cast< bool >( row[ TableUserProfile::Column_block_contact_invitations ] );
+      m_blockGroupInvitations =              boost::lexical_cast< bool >( row[ TableUserProfile::Column_block_group_invitations ] );
+
+      m_chatChannelManager->SetUserPreferences( m_uuid, m_blockContactInvitations, m_blockGroupInvitations );
+   }
+}
+
+void     ChatUser::SendChatChannelHistoryToClient( const PacketDbQueryResult * dbResult )
 {
    if( dbResult->bucket.bucket.size() == 0 )
    {
@@ -553,7 +606,7 @@ void     ChatUser::SendChatp2pHistoryToClient( PacketDbQueryResult * dbResult )
 
 //---------------------------------------------------------------
 
-void     ChatUser::SendChatHistoryToClientCommon( DynamicDataBucket& bucket, const string& userUuid, const string& chatChannelUuid )
+void     ChatUser::SendChatHistoryToClientCommon( const DynamicDataBucket& bucket, const string& userUuid, const string& chatChannelUuid )
 {
    SimpleChatTable              enigma( bucket );
    const int maxNumMessagesPerPacket = 20;

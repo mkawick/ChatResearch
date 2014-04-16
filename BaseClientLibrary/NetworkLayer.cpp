@@ -24,6 +24,22 @@ struct GameData
 
 ///////////////////////////////////////////////////////////////////////////////////
 
+void  ChatChannel::Print()
+{
+   U8 productId = gameProductId;
+   int numUsers = userList.size();
+   cout << "** channel name= " << channelName << endl;
+   cout << "   num users " << numUsers << endl;
+   SerializedKeyValueVector< string >::const_KVIterator it = userList.begin();
+   while( it != userList.end() )
+   {
+      cout << "    User: " << it->value << endl;
+      it++;
+   }
+}
+
+///////////////////////////////////////////////////////////////////////////////////
+
 AssetInfoExtended:: AssetInfoExtended() : data(NULL), size( NULL ), AssetInfo() 
 {
 }
@@ -300,9 +316,10 @@ void     NetworkLayer::UpdateNotifications()
             break;
          case UserNetworkEventNotifier::NotificationType_OnError:
             {
-               U32 code = qn.intValue; 
-               U16 status = boost::lexical_cast< U16 >( qn.intValue2 ); 
-               notify->OnError( code, status );
+               U32 code = boost::lexical_cast< U16>( qn.genericKeyValuePairs.find( "code" ) );
+               U16 status = boost::lexical_cast< U16>( qn.genericKeyValuePairs.find( "status" ) );
+               string text = qn.genericKeyValuePairs.find( "text" );
+               notify->OnError( code, status, text.c_str() );
             }
             break;
          case UserNetworkEventNotifier::NotificationType_UserLogin:
@@ -724,7 +741,7 @@ bool  NetworkLayer::RequestLogin( const string& userName, const string& password
 
 //-----------------------------------------------------------------------------
 
-bool     NetworkLayer::RequestAccountCreate( const string& userName, const string& useremail, const string& password, int languageId, const string& deviceId, const string& gkHash )
+bool     NetworkLayer::RequestAccountCreate( const string& userName, const string& userEmail, const string& password, int languageId, const string& deviceId, const string& gkHash )
 {
    if( m_isConnected == false )
    {
@@ -734,7 +751,7 @@ bool     NetworkLayer::RequestAccountCreate( const string& userName, const strin
 
    PacketCreateAccount createAccount;
    createAccount.userName = userName;
-   createAccount.useremail = useremail;
+   createAccount.userEmail = userEmail;
    createAccount.password = boost::lexical_cast< string >( CreatePasswordHash( password.c_str() ) );
    createAccount.deviceId = deviceId;
    createAccount.deviceAccountId = boost::lexical_cast< string >( CreatePasswordHash( gkHash.c_str() ) );
@@ -1009,6 +1026,10 @@ bool     NetworkLayer::SetBlockGroupInvitations( bool block )
    FillProfileChangeRequest( update );
    update.blockGroupInvitations =           block;
    SerializePacketOut( &update );
+
+   PacketChat_UserProfileChange chatProfile;
+   chatProfile.blockChannelInvites = block;
+   SerializePacketOut( &chatProfile );
 
    return true;
 }
@@ -2166,6 +2187,7 @@ bool  NetworkLayer::HandlePacketReceived( BasePacket* packetIn )
                      bu.isOnline = it->value.isOnline;
                      bu.userName = it->value.userName;
                      bu.UUID = it->key;
+                     bu.avatarId = it->value.avatarId;
 
                      m_friends.insert( it->key, bu );
                      it++;
@@ -2322,59 +2344,12 @@ bool  NetworkLayer::HandlePacketReceived( BasePacket* packetIn )
       case PacketType_ErrorReport:
       {
          PacketErrorReport* errorReport = static_cast<PacketErrorReport*>( packetIn );
-         switch( errorReport->errorCode )
-         {
-         case PacketErrorReport::ErrorType_CreateFailed_BadPassword:
-            cout << "Bad password" << endl;
-            break;
-         case PacketErrorReport::ErrorType_CreateFailed_DisallowedUsername:
-            cout << "Bad username" << endl;
-            break;
-         case PacketErrorReport::ErrorType_CreateFailed_DuplicateUsername:
-            cout << "Duplicate username" << endl;
-            break;
-         case PacketErrorReport::ErrorType_CreateFailed_DuplicateEmail:
-            cout << "Duplicate email" << endl;
-            break;
-         case PacketErrorReport::ErrorType_CreateAccount_Success:
-            cout << "Account created" << endl;
-            break;
-         case PacketErrorReport::ErrorType_CreateAccount_AccountUpdated:
-            cout << "Account update" << endl;
-            break;
-         case PacketErrorReport::ErrorType_CreateFailed_UserCreateAccountPending:
-            cout << "Account creation pending. Check your email." << endl;
-            break;
-
-         case PacketErrorReport::ErrorType_UserBadLogin:
-            cout << "Login not valid... either user email is wrong or the password." << endl;
-            break;
-
-         case PacketErrorReport::ErrorType_Contact_Invitation_success:
-         case PacketErrorReport::ErrorType_Contact_Invitation_ProblemFindingUser:
-         case PacketErrorReport::ErrorType_Contact_Invitation_InviteeAlreadyInvited:
-         case PacketErrorReport::ErrorType_Contact_Invitation_InviteeAlreadyFriend:
-         case PacketErrorReport::ErrorType_Contact_Invitation_InvalidUser:
-         case PacketErrorReport::ErrorType_Contact_Invitation_CannotInviteSelf:
-         case PacketErrorReport::ErrorType_Contact_Invitation_Accepted:
-         case PacketErrorReport::ErrorType_Contact_Invitation_BadInvitation:
-            cout << "Contacts code: " << (int)errorReport->packetSubType  << endl;
-            break;
-
-         case PacketErrorReport::ErrorType_ChatNotCurrentlyAvailable:// reported at the gateway
-         case PacketErrorReport::ErrorType_BadChatChannel:
-         case PacketErrorReport::ErrorType_NoChatChannel:
-         case PacketErrorReport::ErrorType_UserNotOnline:
-         case PacketErrorReport::ErrorType_NotAMemberOfThatChatChannel:
-         case PacketErrorReport::ErrorType_YouAreTheOnlyPersonInThatChatChannel:
-         case PacketErrorReport::ErrorType_CannotAddUserToChannel_AlreadyExists:
-         case PacketErrorReport::ErrorType_NoChatHistoryExistsOnSelectedChannel:
-         case PacketErrorReport::ErrorType_NoChatHistoryExistsForThisUser:
-            cout << "Chat code: " << (int)errorReport->packetSubType  << endl;
-            break;
-         }
          m_isCreatingAccount = false;
-         Notification( UserNetworkEventNotifier::NotificationType_OnError, errorReport->errorCode, errorReport->statusInfo );
+         SerializedKeyValueVector< string > strings;
+         strings.insert( "code", boost::lexical_cast<string>( errorReport->errorCode ) );
+         strings.insert( "status", boost::lexical_cast<string>( errorReport->statusInfo ) );
+         strings.insert( "text", errorReport->text );
+         Notification( UserNetworkEventNotifier::NotificationType_OnError, strings );
          
       }
       break;
@@ -2389,6 +2364,7 @@ bool  NetworkLayer::HandlePacketReceived( BasePacket* packetIn )
                   {
                      m_userName = login->userName;
                      m_uuid = login->uuid;
+                     //m_email = login->email;
                      m_connectionId = login->connectionId;
                      m_lastLoggedOutTime = login->lastLogoutTime;
                      m_loginKey = login->loginKey;
@@ -2398,7 +2374,7 @@ bool  NetworkLayer::HandlePacketReceived( BasePacket* packetIn )
                   {
                      Disconnect();// server forces a logout.
                   }
-                  NotifyClientLoginStatus( m_isLoggedIn );
+                  Notification( UserNetworkEventNotifier::NotificationType_UserLogin, m_isLoggedIn );
                   
                   m_isLoggingIn = false;
                }
@@ -2435,6 +2411,7 @@ bool  NetworkLayer::HandlePacketReceived( BasePacket* packetIn )
                   {
                      notifyThatSelfUpdated = true;
                      m_userName = profile->userName;
+                     m_email = profile->email;
 
                      m_languageId = profile->languageId;
                      m_avatarId = profile->iconId;
@@ -2966,15 +2943,6 @@ void     NetworkLayer::HandleData( PacketGameplayRawData* data )
 
 //------------------------------------------------------------------------
 //------------------------------------------------------------------------
-
-void     NetworkLayer::NotifyClientLoginStatus( bool isLoggedIn )
-{
-   /*for( list< UserNetworkEventNotifier* >::iterator it = m_callbacks.begin(); it != m_callbacks.end(); ++it )
-   {
-      (*it)->UserLogin( isLoggedIn );
-   }*/
-   Notification( UserNetworkEventNotifier::NotificationType_UserLogin, (int)isLoggedIn, (int)isLoggedIn );
-}
 
 //------------------------------------------------------------------------
 

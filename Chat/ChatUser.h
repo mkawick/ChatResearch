@@ -59,42 +59,41 @@ private:
    bool              EchoHandler();
 
    bool              SendMessageToClient( BasePacket* packet ) const;
+   bool              RequestUserProfileInfo();
    void              RequestChatChannels();
    void              RequestAllBasicChatInfo();
    void              QueryChatChannelHistory( const string& channelUuid, int numRecords, int startingIndex );
-   void              SendChatChannelHistoryToClient( PacketDbQueryResult * dbResult );
+   void              LoadUserProfile( const PacketDbQueryResult * dbResult );
+   void              SendChatChannelHistoryToClient( const PacketDbQueryResult * dbResult );
 
    void              QueryChatP2PHistory( const string& userUuid, int numRecords, int startingIndex );
    void              SendChatp2pHistoryToClient( PacketDbQueryResult * dbResult );
-   void              SendChatHistoryToClientCommon ( DynamicDataBucket& bucket, const string& userUuid, const string& chatChannelUuid );
+   void              SendChatHistoryToClientCommon ( const DynamicDataBucket& bucket, const string& userUuid, const string& chatChannelUuid );
 
+   void              RequestProfileInfo();
    void              GetAllChatHistroySinceLastLogin();
    void              SendChatHistorySinceLastLogin( const vector< MissedChatChannelEntry >& );
    void              StoreChatHistoryMissedSinceLastLogin( PacketDbQueryResult * dbResult );
    
    enum QueryType
    {
-      QueryType_ChatChannelHistory =               1<<0,
-      QueryType_ChatP2PHistory =                   1<<1,
-      QueryType_ChatHistoryMissedSinceLastLogin =  1<<2,
-      QueryType_Last =                             1<<3,
-      QueryType_All =               QueryType_Last - 1 // tricky math here.. pay attention
+      QueryType_ChatChannelHistory,
+      QueryType_ChatP2PHistory,
+      QueryType_ChatHistoryMissedSinceLastLogin,
+      QueryType_UserProfile
    };
 
 private:
 
    int                        m_userId; // the db identity
    U32                        m_connectionId;
-   U32                        m_pendingQueries;
 
    bool                       m_isLoggedIn;
    time_t                     m_loggedOutTime;
    bool                       m_initialRequestForInfoSent;
 
-  /* bool                       m_isUserDbLookupPending;
-   bool                       m_userFriendsComplete;
-   bool                       m_userChannelsComplete;
-   bool                       m_badConnection;*/
+   bool                       m_blockContactInvitations;
+   bool                       m_blockGroupInvitations;
 
 
    string                     m_userName;

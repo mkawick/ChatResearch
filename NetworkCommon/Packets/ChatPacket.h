@@ -67,6 +67,8 @@ public:
       ChatType_RenameChatChannel,
       ChatType_RenameChatChannelResponse,
 
+      ChatType_UpdateProfile,
+
       ChatType_Friend
    };
 public:
@@ -803,6 +805,18 @@ public:
    string   newName;
 };
 
+///////////////////////////////////////////////////////////////
+
+class PacketChat_UserProfileChange : public BasePacket
+{
+public:
+   PacketChat_UserProfileChange( int packet_type = PacketType_Chat, int packet_sub_type = PacketChatToServer::ChatType_UpdateProfile ) : BasePacket( packet_type, packet_sub_type ){  }
+
+   bool  SerializeIn( const U8* data, int& bufferOffset );
+   bool  SerializeOut( U8* data, int& bufferOffset ) const;
+
+   bool     blockChannelInvites;
+};
 
 ///////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////

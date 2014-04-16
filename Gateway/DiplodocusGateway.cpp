@@ -15,6 +15,7 @@ using boost::format;
 
 #include "FruitadensGateway.h"
 #include "DiplodocusGateway.h"
+#include "ErrorCodeLookup.h"
 
 //#define VERBOSE
 
@@ -527,6 +528,7 @@ void  DiplodocusGateway::HandlePacketToKhaan( KhaanGateway* khaan, BasePacket* p
       {
          khaan->AuthorizeConnection();
          khaan->SetAdminLevelOperations( finishedLogin->adminLevel );
+         khaan->SetLanguageId( finishedLogin->languageId );
       }
       else
       {
@@ -561,6 +563,11 @@ void  DiplodocusGateway::HandlePacketToKhaan( KhaanGateway* khaan, BasePacket* p
    if( m_printPacketTypes )
    {
       cout << "Packet to client: " << (int)packet->packetType << ":" << (int)packet->packetSubType << endl;
+   }
+   if( packet->packetType == PacketType_ErrorReport )
+   {
+      PacketErrorReport* error = static_cast< PacketErrorReport* >( packet );
+      error->text = ErrorCodeLookup::GetString( error->errorCode );
    }
    khaan->AddOutputChainData( packet );
 

@@ -121,6 +121,7 @@ public:
    string   lastLogoutTime;
    bool     wasLoginSuccessful;
    U8       adminLevel;
+   U8       languageId;
 };
 
 ///////////////////////////////////////////////////////////////
@@ -133,12 +134,12 @@ public:
    bool  SerializeIn( const U8* data, int& bufferOffset );
    bool  SerializeOut( U8* data, int& bufferOffset ) const;
    
-   string userName;
-   string useremail;
-   string password;
-   string deviceId;
-   string deviceAccountId;
-   U8     languageId;
+   string    userName;
+   string    userEmail;
+   string    password;
+   string    deviceId;
+   string    deviceAccountId;
+   U8        languageId;
 };
 
 ///////////////////////////////////////////////////////////////
@@ -152,7 +153,7 @@ public:
    bool  SerializeOut( U8* data, int& bufferOffset ) const;
    
    string   userName;
-   string   useremail;
+   string   userEmail;
    bool     wasSuccessful;
 };
 

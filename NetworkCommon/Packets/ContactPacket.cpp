@@ -1,6 +1,8 @@
 // ContactPacket.cpp
 
 #include <string>
+#include <iostream>
+#include <iomanip>
 
 #include "ContactPacket.h"
 using namespace std;
@@ -41,6 +43,7 @@ bool  FriendInfo::SerializeOut( U8* data, int& bufferOffset ) const
    return true;
 }
 
+///////////////////////////////////////////////////////////////
 
 bool  InvitationInfo::SerializeIn( const U8* data, int& bufferOffset )
 {
@@ -64,6 +67,16 @@ bool  InvitationInfo::SerializeOut( U8* data, int& bufferOffset ) const
    Serialize::Out( data, bufferOffset, userUuid );
 
    return true;
+}
+
+void  InvitationInfo::Print( int tab )
+{
+   cout << setw( tab ) << "from:        " << setw(tab) << inviterName << endl;
+   cout << setw( tab ) << "to:          " << setw(tab) << inviteeName << endl;
+   cout << setw( tab ) << "date:        " << setw(tab) << date << endl;
+   cout << setw( tab ) << "user-uuid:   " << setw(tab) << userUuid << endl;
+   cout << setw( tab ) << "invite-uuid: " << setw(tab) << uuid << endl;
+   cout << setw( tab ) << "message:     " << setw(tab) << message << endl;
 }
 
 

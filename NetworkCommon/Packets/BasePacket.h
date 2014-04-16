@@ -10,7 +10,7 @@
 
 //#define _MEMLEAK_TESTING_
 
-static const U8   GlobalNetworkProtocolVersion = 15;
+static const U8   GlobalNetworkProtocolVersion = 17;
 
 ///////////////////////////////////////////////////////////////
 
@@ -335,6 +335,8 @@ public:
       ErrorType_UserBlocked =                                  205,
       ErrorType_UserLoggedOut =                                206,
       ErrorType_UserNotFinishedWithLogin =                     207, 
+      ErrorType_Login_unknown1 =                               208,
+      ErrorType_Login_unknown2 =                               209,
 
       ErrorType_ChatNotCurrentlyAvailable =                    301,// reported at the gateway
       ErrorType_BadChatChannel =                               302,
@@ -350,6 +352,8 @@ public:
       ErrorType_UserUnknown =                                  312,
       ErrorType_UserIsBlockingFriendInvites =                  313,
       ErrorType_CannotAddUserToChannel =                       314,
+      ErrorType_ChatChannel_UserNotAcceptingInvites =          315 ,
+      ErrorType_Chat_unknown2,
 
       ErrorType_CreateFailed_BadPassword =                     410,
       ErrorType_CreateFailed_DisallowedUsername =              411,
@@ -358,6 +362,8 @@ public:
       ErrorType_CreateFailed_UserCreateAccountPending =        414,
       ErrorType_CreateAccount_Success =                        415,
       ErrorType_CreateAccount_AccountUpdated =                 416,
+      ErrorType_CreateAccount_unknown1,
+      ErrorType_CreateAccount_unknown2,
 
       ErrorType_Contact_Invitation_success =                   500,
       ErrorType_Contact_Invitation_ProblemFindingUser =        501,
@@ -373,12 +379,16 @@ public:
       ErrorType_Contact_SearchRequestHasTooMany =              511,
       ErrorType_Contact_NotAUserContact =                      512,
       ErrorType_Contact_Invitation_InviteeSentYouInvitation =  513,
+      ErrorType_Contact_unknown1,
+      ErrorType_Contact_unknown2,
 
       ErrorType_Asset_BadLoginKey =                            600,
       ErrorType_Asset_UnknownAsset =                           601,
       ErrorType_Asset_UserDisconnected =                       602,
       ErrorType_Asset_UnknownAssetCategory =                   603,
       ErrorType_Asset_NoCategoriesAvailable =                  604,
+      ErrorType_Asset_unknown1,
+      ErrorType_Asset_unknown2,
       
       ErrorType_Cheat_BadPermissions =                         700,
       ErrorType_Cheat_BadUserLookup =                          701,
@@ -388,6 +398,8 @@ public:
       ErrorType_Cheat_ProductUnknown =                         705,
       ErrorType_Login_CannotAddCurrentProductToUser =          706,
       ErrorType_Login_ProfileIsAlreadyBeingUpdated =           707,
+      ErrorType_Cheat_unknown1,
+      ErrorType_Cheat_unknown2,
 
       ErrorType_Purchase_BadPurchaseId =                       800,
       ErrorType_Purchase_StoreBusy =                           801,
@@ -399,12 +411,16 @@ public:
       ErrorType_Purchase_UserCannotPurchaseAnyMoreOfThese =    807,
       ErrorType_Purchase_AllPurchasingIsClosedRightNow =       808,
       ErrorType_Purchase_Success =                             809,
+      ErrorType_Purchase_unknown1,
+      ErrorType_Purchase_unknown2,
 
       ErrorType_TournamentPurchase_Result_PurchasePending =    900,// you are already waiting for a purchase to complete.
       ErrorType_TournamentPurchase_Result_TooManyPlayers =     901,
       ErrorType_TournamentPurchase_Result_RequirementsNotMet = 902,
       ErrorType_TournamentPurchase_Result_TournamentClosed =   903,
       ErrorType_TournamentPurchase_Result_UnknownUuid =        904,
+      ErrorType_TournamentPurchase_unknown1,
+      ErrorType_TournamentPurchase_unknown2,
 
       ErrorType_Notification_DeviceAlreadyRegistered =        1000,
       ErrorType_Notification_TooManyDevices =                 1001,
@@ -412,6 +428,8 @@ public:
       ErrorType_Notification_NoDevicesListed =                1003,
       ErrorType_Notification_NoDevicesEnabledForThisGame =    1004,
       ErrorType_Notification_CannotInsertNewDevice =          1005,
+      ErrorType_Notification_unknown1,
+      ErrorType_Notification_unknown2,
     /*  ErrorType_TournamentPurchase_Result_RequirementsNotMet = 902,
       ErrorType_TournamentPurchase_Result_TournamentClosed =   903,
       ErrorType_TournamentPurchase_Result_UnknownUuid =        904,*/
@@ -434,8 +452,9 @@ public:
    bool  SerializeIn( const U8* data, int& bufferOffset );
    bool  SerializeOut( U8* data, int& bufferOffset ) const;
 
-   U16   errorCode;
-   U16   statusInfo;
+   U16      errorCode;
+   U16      statusInfo;
+   string   text;
 };
 
 ///////////////////////////////////////////////////////////////

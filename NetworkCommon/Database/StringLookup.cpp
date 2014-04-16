@@ -155,3 +155,10 @@ string   StringLookup::GetString( const string& stringName, int languageId ) con
 }
 
 //---------------------------------------------------------------
+
+string   StringLookup::GetString( U32 lookupValue, int languageId ) const
+{
+   return string();
+}
+
+//---------------------------------------------------------------

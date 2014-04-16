@@ -20,7 +20,6 @@ using boost::format;
 DiplodocusChat*        ChatChannelManager::m_chatServer;
 const int maxNumPlayersInChatChannel = 32;
 
-// ChatChannelManagerNeedsUpdate
 
 ///////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////
@@ -55,7 +54,7 @@ void     ChatChannelManager::Init()
    SaveQueryDetails( dbQuery, "", "", 0, ChatChannelDbJob::JobType_LoadAllChannels );
    Send( dbQuery );
 
-    queryString = "SELECT user_name, uuid, users.user_id, user_profile.block_contact_invitations, user_profile.block_group_invitations ";
+   queryString = "SELECT user_name, uuid, users.user_id, user_profile.block_contact_invitations, user_profile.block_group_invitations ";
    queryString += "FROM users INNER JOIN user_profile ON users.user_id=user_profile.user_id ";
    queryString += "WHERE user_email IS NOT NULL";
    PacketDbQuery* dbQuery2 = DbQueryFactory( queryString, false );
@@ -232,20 +231,27 @@ bool     ChatChannelManager::ProcessDbResult( PacketDbQueryResult* dbResult, Cha
       {
          if( dbResult->successfulQuery == true && dbResult->bucket.bucket.size() )
          {
-            SerializedKeyValueVector< string > usersAndIds;
+            SerializedKeyValueVector< UserBasics > usersAndIds;
 
-            SimpleUserTable            enigma( dbResult->bucket );
-            SimpleUserTable::iterator  it = enigma.begin();
+            UserWithChatPreferencesTable            enigma( dbResult->bucket );
+            UserWithChatPreferencesTable::iterator  it = enigma.begin();
             while( it != enigma.end() )
             {
-               UserTable::row    row = *it++;
-               string   name = row[ TableSimpleUser::Column_name ];
-               string   uuid = row[ TableSimpleUser::Column_uuid ];
-               string   id =  row[ TableSimpleUser::Column_id ];
+               UserBasics bu;
+               UserWithChatPreferencesTable::row    row = *it++;
+               bu.userName =                        row[ TableUserWithChatPreferences::Column_name ];
+               bu.userUuid =                        row[ TableUserWithChatPreferences::Column_uuid ];
+               string   blockContactInvitesString =   row[ TableUserWithChatPreferences::Column_block_contact_invites ];
+               string   blockGroupInvitesString =     row[ TableUserWithChatPreferences::Column_block_group_invites ];
+               bu.blockContactInvites = false;
+               if( blockContactInvitesString == "true" )
+                  bu.blockContactInvites = true;
+               bu.blockGroupInvites = false;
+               if( blockGroupInvitesString == "true" )
+                  bu.blockGroupInvites = true;
 
-               //StoreUserInChannel( channelUuid, UserBasics& ub )
-
-               usersAndIds.insert( uuid, name );
+               
+               usersAndIds.insert( bu.userUuid, bu );
             }
 
             StoreAllUsersInChannel( job.lookupString, usersAndIds );
@@ -489,22 +495,6 @@ void     ChatChannelManager::AddChatchannel( int id, const string& channelName, 
 
 //---------------------------------------------------------------------
 
-void     ChatChannelManager::StoreUser( const string& userUuid, const string& userName )
-{
-   stringhash  userKeyLookup = GenerateUniqueHash( userUuid );
-   UserMapIterator userIter = m_userMap.find( userKeyLookup );
-   if( userIter == m_userMap.end() )
-   {
-      assert( 0 );// this needs to be rewritten.. depricated iow
-
-      pair< UserMapIterator,bool > newNode = m_userMap.insert( UserPair( userKeyLookup, UsersChatChannelList( userUuid ) ) );
-      userIter = newNode.first;
-      UsersChatChannelList& userInstance = userIter->second;
-      userInstance.userName = userName;
-      userInstance.isOnline = false;
-   }
-}
-
 void     ChatChannelManager::StoreUser( const string& userUuid, const string& userName, bool blockContactInvites, bool blockGroupInvites )
 {
    stringhash  userKeyLookup = GenerateUniqueHash( userUuid );
@@ -682,7 +672,7 @@ bool   ChatChannelManager::CreateNewChannel( const PacketChatCreateChatChannelFr
          const string& userUuid = *it++;
          string userName = GetUserInfo( userUuid ).userName;
 
-         AddUserToChannelAndWriteToDB( channelUuid, userUuid, userName );
+         AddUserToChannelAndWriteToDB( channelUuid, userUuid, userName, false, false );// we don't care about preferences in this case
          NotifyUserThatHeWasAddedToChannel( userUuid, channelName, channelUuid );
       }
 
@@ -702,7 +692,7 @@ bool ChatChannelManager::CreateNewChannel( const string& channelName, const stri
    {
       if( channelUuid.size() )
       {
-         AddUserToChannelAndWriteToDB( channelUuid, userUuid, userName );
+         AddUserToChannelAndWriteToDB( channelUuid, userUuid, userName, false, false );
          NotifyUserThatHeWasAddedToChannel( userUuid, channelName, channelUuid );
          return true;
       }
@@ -1157,21 +1147,6 @@ bool     ChatChannelManager::RenameChatChannel( const string& channelUuid, const
 //---------------------------------------------------------------------
 //---------------------------------------------------------------------
 
-bool     ChatChannelManager::SetUserPreferences( const string& userUuid, bool blockContactInvitations, bool blockGroupInvitations )
-{
-   stringhash userHash = GenerateUniqueHash( userUuid );
-   UserMapIterator userIter = m_userMap.find( userHash );
-   if( userIter != m_userMap.end() )
-   {
-      userIter->second.blockContactInvites = blockContactInvitations;
-      userIter->second.blockGroupInvites = blockGroupInvitations;
-      return true;
-   }
-   return false;
-}
-
-//---------------------------------------------------------------------
-
 bool     ChatChannelManager::AddUserToChannel( const PacketChatAddUserToChatChannelGameServer* request )
 {
    U32 gameInstanceId = request->gameInstanceId;
@@ -1225,7 +1200,7 @@ bool     ChatChannelManager::AddUserToChannel( const PacketChatAddUserToChatChan
    const string& channelName = channelMapData.name;
    const string& channelUuid = channelMapData.uuid;
    const string& userName = addedUserIter->second.userName;
-   AddUserToChannelAndWriteToDB( channelUuid, addedUserUuid, userName );
+   AddUserToChannelAndWriteToDB( channelUuid, addedUserUuid, userName, false, false );
 
    response->success = true;
    PackageAndSendToOtherServer( response, request->gameInstanceId );
@@ -1287,9 +1262,8 @@ bool     ChatChannelManager::AddUserToChannel( const string& channelUuid, const 
       return false;
    }
 
-   const UsersChatChannelList& recipient = addedUserIter->second;
-   // NOTE: This code is only used in P2P inites...
-   if( recipient.blockGroupInvites == true )
+   // NOTE: This cde is only used in P2P inites...
+   if( addedUserIter->second.blockGroupInvites )
    {
       errorText += " but the added user is blocking group invites";
       m_chatServer->Log( errorText, 1 );
@@ -1340,10 +1314,10 @@ bool     ChatChannelManager::AddUserToChannel( const string& channelUuid, const 
 
 //---------------------------------------------------------------------
 
-bool     ChatChannelManager::AddUserToChannelAndWriteToDB( const string& channelUuid, const string& addedUserUuid, const string& addedUserName )
+bool     ChatChannelManager::AddUserToChannelAndWriteToDB( const string& channelUuid, const string& addedUserUuid, const string& addedUserName, bool blockContactInvites, bool blockGroupInvites )
 {
 // insert into the list of users for that channel
-   StoreUserInChannel( channelUuid, addedUserUuid, addedUserName );
+   StoreUserInChannel( channelUuid, addedUserUuid, addedUserName, blockContactInvites, blockGroupInvites );
 
    string createDate = GetDateInUTC();
    // add single entry to db for that chat channel
@@ -1635,7 +1609,7 @@ bool     ChatChannelManager::DeleteUserFromChannel( const string& channelUuid, c
 
 //---------------------------------------------------------------------
 
-void     ChatChannelManager::StoreAllUsersInChannel( const string& channelUuid, const SerializedKeyValueVector< string >& usersAndIds, bool sendNotification )
+void     ChatChannelManager::StoreAllUsersInChannel( const string& channelUuid, const SerializedKeyValueVector< UserBasics >& usersAndIds, bool sendNotification )
 {
    stringhash  channelKeyLookup = GenerateUniqueHash( channelUuid );
    ChannelMapIterator channelIter = m_channelMap.find( channelKeyLookup );
@@ -1646,15 +1620,15 @@ void     ChatChannelManager::StoreAllUsersInChannel( const string& channelUuid, 
 
    ChatChannel& channelMapData = channelIter->second;
 
-   SerializedKeyValueVector< string >::const_KVIterator userIt = usersAndIds.begin();
+   SerializedKeyValueVector< UserBasics >::const_KVIterator userIt = usersAndIds.begin();
    while( userIt != usersAndIds.end() )
    {
       // first add the user to the channel info
-      const string& userName = userIt->value;
       const string& userUuid = userIt->key;
-      StoreUserInChannel( channelUuid, userUuid, userName );
+      const UserBasics& ub = userIt->value;
+      StoreUserInChannel( channelUuid, userUuid, ub.userName, bool blockContactInvites, bool blockGroupInvites );
       
-      StoreUser( userUuid, userName );
+      StoreUser( userUuid, ub.userName, ub.blockContactInvites, ub.blockGroupInvites );
       AddChannelToUser( userUuid, channelKeyLookup );
 
       //userInstance.userUuid = userUuid;// happens in c'tor
@@ -1690,13 +1664,15 @@ bool     ChatChannelManager::QueryAllUsersInChatChannel( const string& channelUu
    assert( channelUuid.size() != 0 );
    //-----------------------------------------
 
-   // SELECT DISTINCT user.name, user.uuid FROM user
+   // SELECT user.user_name, user.uuid, user.user_id , user_profile.block_contact_invitations, user_profile.block_group_invitations 
+   // FROM users AS user INNER JOIN user_profile ON user.user_id=user_profile.user_id 
    // join user_join_chat_channel as joiner on joiner.user_uuid=user.uuid 
    // join chat_channel as channel on joiner.channel_uuid=channel.uuid 
-   // where channel.uuid='abcdefghijklmnop'
+   // where channel.uuid='63c897db7ad9e510'
 
    string 
-   queryString =  "SELECT user.user_name, user.uuid, user.user_id FROM users AS user ";
+   queryString =  "SELECT user.user_name, user.uuid, user.user_id , user_profile.block_contact_invitations, user_profile.block_group_invitations ";
+   queryString =  "FROM users AS user INNER JOIN user_profile ON user.user_id=user_profile.user_id ";
    queryString += "join user_join_chat_channel as joiner on joiner.user_uuid=user.uuid ";
    queryString += "join chat_channel as channel on joiner.channel_uuid=channel.uuid ";
    queryString += "where channel.uuid='%s'";
@@ -1716,8 +1692,15 @@ bool     ChatChannelManager::QueryAllUsersInChatChannel( const string& channelUu
 
 U32     ChatChannelManager::QueryAllUsersInAllChatChannels()
 {
+   /*
+   SELECT distinct user.user_name, user.uuid, user.user_id , user_profile.block_contact_invitations, user_profile.block_group_invitations 
+FROM users AS user INNER JOIN user_profile ON user.user_id=user_profile.user_id
+join user_join_chat_channel as joiner on joiner.user_uuid=user.uuid
+join chat_channel as channel on joiner.channel_uuid=channel.uuid 
+   */
    string 
-   queryString =  "SELECT user.user_name, user.uuid, user.user_id, joiner.channel_uuid  FROM users AS user ";
+   queryString =  "SELECT distinct user.user_name, user.uuid, user.user_id , user_profile.block_contact_invitations, user_profile.block_group_invitations, joiner.channel_uuid ";
+   queryString += "FROM users AS user INNER JOIN user_profile ON user.user_id=user_profile.user_id ";
    queryString += "join user_join_chat_channel as joiner on joiner.user_uuid=user.uuid ";
    queryString += "join chat_channel as channel on joiner.channel_uuid=channel.uuid ";
 
@@ -1791,34 +1774,9 @@ bool     ChatChannelManager::HandleLoadAllUsersResult( PacketDbQueryResult* dbRe
       UserWithChatPreferencesTable::iterator    it = enigma.begin();
       while( it != enigma.end() )
       {
-         //SaveUserLoadResult( *it++ );
-         UserWithChatPreferencesTable::row row = *it++;
-         string   userName =         row[ TableUserWithChatPreferences::Column_name ];
-         string   userUuid =         row[ TableUserWithChatPreferences::Column_uuid ];
-         string   blockContactInvitesString =   row[ TableUserWithChatPreferences::Column_block_contact_invites ];
-         string   blockGroupInvitesString =     row[ TableUserWithChatPreferences::Column_block_group_invites ];
-
-         bool blockContactInvites = false;
-         if( blockContactInvitesString == "1" )
-            blockContactInvites = true;
-         bool blockGroupInvites = false;
-         if( blockGroupInvitesString == "1" )
-            blockGroupInvites = true;
-
-         StoreUser( userUuid, userName, blockContactInvites, blockGroupInvites );
-        /* stringhash  userKeyLookup = GenerateUniqueHash( userUuid );
-         UserMapIterator userIter = m_userMap.find( userKeyLookup );
-         if( userIter == m_userMap.end() )
-         {
-            pair< UserMapIterator,bool > newNode = m_userMap.insert( UserPair( userKeyLookup, UsersChatChannelList( userUuid ) ) );
-            userIter = newNode.first;
-            UsersChatChannelList& userInstance = userIter->second;
-            userInstance.userName = userName;
-            userInstance.isOnline = false;
-            userInstance.blockContactInvites = blockContactInvites;
-            userInstance.blockGroupInvites = blockGroupInvites;
-         }*/
+         SaveUserLoadResult( *it++ );
       }
+      //<TableUserWithChatPreferences> UserWithChatPreferencesTable;
 
       QueryAllUsersInAllChatChannels();
    }
@@ -1863,15 +1821,23 @@ void     ChatChannelManager::SaveChatChannelLoadResult( ChatChannelTable::row ro
 }
 
 //---------------------------------------------------------------------
-/*
-void     ChatChannelManager::SaveUserLoadResult( SimpleUserTable::row row )
+
+void     ChatChannelManager::SaveUserLoadResult( UserWithChatPreferencesTable::row row )
 {
    //int      id =    boost::lexical_cast< int >( row[ TableSimpleUser::Column_id ] );
-   string   name =         row[ TableSimpleUser::Column_name ];
-   string   uuid =         row[ TableSimpleUser::Column_uuid ];
+   string   name =                        row[ TableUserWithChatPreferences::Column_name ];
+   string   uuid =                        row[ TableUserWithChatPreferences::Column_uuid ];
+   string   blockContactInvitesString =   row[ TableUserWithChatPreferences::Column_block_contact_invites ];
+   string   blockGroupInvitesString =     row[ TableUserWithChatPreferences::Column_block_group_invites ];
+   bool blockContactInvites = false;
+   if( blockContactInvitesString == "true" )
+      blockContactInvites = true;
+   bool blockGroupInvites = false;
+   if( blockGroupInvitesString == "true" )
+      blockGroupInvites = true;
    
-   StoreUser( uuid,  name );
-}*/
+   StoreUser( uuid, name, blockContactInvites, blockGroupInvites );
+}
 
 
 //---------------------------------------------------------------------

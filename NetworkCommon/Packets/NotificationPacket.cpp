@@ -155,7 +155,7 @@ bool  PacketNotification_UpdateDevice::SerializeIn( const U8* data, int& bufferO
    Serialize::In( data, bufferOffset, deviceName );
    Serialize::In( data, bufferOffset, isEnabled );
    Serialize::In( data, bufferOffset, iconId );
-   Serialize::In( data, bufferOffset, gameId );
+   Serialize::In( data, bufferOffset, gameType );
 
    return true;
 }
@@ -167,7 +167,7 @@ bool  PacketNotification_UpdateDevice::SerializeOut( U8* data, int& bufferOffset
    Serialize::Out( data, bufferOffset, deviceName );
    Serialize::Out( data, bufferOffset, isEnabled );
    Serialize::Out( data, bufferOffset, iconId );
-   Serialize::Out( data, bufferOffset, gameId );
+   Serialize::Out( data, bufferOffset, gameType );
 
    return true;
 }
@@ -179,6 +179,8 @@ bool  PacketNotification_SendNotification::SerializeIn( const U8* data, int& buf
    PacketNotification::SerializeIn( data, bufferOffset );
    Serialize::In( data, bufferOffset, userUuid );
    Serialize::In( data, bufferOffset, userId );
+   Serialize::In( data, bufferOffset, gameType );
+   Serialize::In( data, bufferOffset, gameId );
    Serialize::In( data, bufferOffset, notificationType );
    Serialize::In( data, bufferOffset, additionalText );
 
@@ -190,8 +192,32 @@ bool  PacketNotification_SendNotification::SerializeOut( U8* data, int& bufferOf
    PacketNotification::SerializeOut( data, bufferOffset );
    Serialize::Out( data, bufferOffset, userUuid );
    Serialize::Out( data, bufferOffset, userId );
+   Serialize::Out( data, bufferOffset, gameType );
+   Serialize::Out( data, bufferOffset, gameId );
    Serialize::Out( data, bufferOffset, notificationType );
    Serialize::Out( data, bufferOffset, additionalText );
+
+   return true;
+}
+
+///////////////////////////////////////////////////////////////
+
+bool  PacketNotification_UpdateNotificationCount::SerializeIn( const U8* data, int& bufferOffset )
+{
+   PacketNotification::SerializeIn( data, bufferOffset );
+   Serialize::In( data, bufferOffset, userId );
+   Serialize::In( data, bufferOffset, gameType );
+   Serialize::In( data, bufferOffset, notificationCount );
+
+   return true;
+}
+
+bool  PacketNotification_UpdateNotificationCount::SerializeOut( U8* data, int& bufferOffset ) const
+{
+   PacketNotification::SerializeOut( data, bufferOffset );
+   Serialize::Out( data, bufferOffset, userId );
+   Serialize::Out( data, bufferOffset, gameType );
+   Serialize::Out( data, bufferOffset, notificationCount );
 
    return true;
 }

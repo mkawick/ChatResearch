@@ -16,6 +16,8 @@ public:
    string               userUuid;
    list< stringhash >   channels;
    bool                 isOnline;
+   bool                 blockContactInvites;
+   bool                 blockGroupInvites;
 
    string               userName;
    //UserConnection*   connection;

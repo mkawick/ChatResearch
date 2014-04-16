@@ -16,6 +16,7 @@ public:
       Column_name,
       Column_icon_id,
       Column_platformId,
+      Column_userId,
       Column_is_enabled,
       Column_registered_date,
       Column_end

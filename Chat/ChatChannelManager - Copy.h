@@ -26,7 +26,6 @@ class PacketChatAddUserToChatChannelGameServer;
 class PacketChatRemoveUserFromChatChannelGameServer;
 
 
-
 //////////////////////////////////////////////////////////////
 
 class TableUserWithChatPreferences
@@ -63,6 +62,7 @@ public:
 };
 
 typedef Enigmosaurus <TableUserWithChatPreferencesJoinChatChannel> UserWithPreferencesJoinChatChannelTable;
+
 
 // The chat channel manager maintains a list of all chat channels, adds new ones, and removes old ones
 // if a user sends a chat to a channel, the ChatUser simply passes the request straight onto the chat channel manager.
@@ -113,7 +113,6 @@ public:
 
    bool           RenameChatChannel( const string& channelUuid, const string& newName, const string& userUuid, string& oldName );// returns old name
 
-   bool           SetUserPreferences( const string& userUuid, bool blockContactInvitations, bool blockGroupInvitations );
    bool           AddUserToChannel( const PacketChatAddUserToChatChannelGameServer* packet );
    bool           AddUserToChannel( const string& channelUuid, const string& userUuid, const string& requesterUuid );
 
@@ -162,9 +161,9 @@ private:
    ChannelMapIterator   FindChatChannel( U32 gameInstanceId, U8 gameType );
    string         FindChannelByGameId( U32 gameInstanceId );
 
-   void           StoreUserInChannel( const string& channelUuid, const string& userUuid, const string username );
+   void           StoreUserInChannel( const string& channelUuid, const string& userUuid, const string username, bool blockContactInvites, bool blockGroupInvites );
    bool           DeleteUserFromChannel( const string& channelUuid, const string& userUuid );
-   void           StoreAllUsersInChannel( const string& channelUuid, const SerializedKeyValueVector< string >& usersAndIds, bool sendNotification = false );
+   void           StoreAllUsersInChannel( const string& channelUuid, const SerializedKeyValueVector< UserBasics >& usersAndIds, bool sendNotification = false );
    bool           NotifyUserThatHeWasAddedToChannel( const string& userUuid, const string& channelName, const string& channelUuid ); 
    U32            QueryAllUsersInAllChatChannels();
 
@@ -178,15 +177,14 @@ private:
    bool           HandleLoadAllUsersResult( PacketDbQueryResult* dbResult, ChatChannelDbJob& job );
    bool           HandleSingleChannelLoad( PacketDbQueryResult* dbResult, ChatChannelDbJob& job );
    void           SaveChatChannelLoadResult( ChatChannelTable::row row );
-   void           SaveUserLoadResult( SimpleUserTable::row row );
+   void           SaveUserLoadResult( UserWithChatPreferencesTable::row row );
    bool           HandleAllUsersInAllChannelsResult( PacketDbQueryResult* dbResult, ChatChannelDbJob& job );
 
-   void           StoreUser( const string& userUuid, const string& userName );
    void           StoreUser( const string& userUuid, const string& userName, bool blockContactInvites, bool blockGroupInvites );
    UsersChatChannelList&   GetUserInfo( const string& userUuid );
    void           AddChannelToUser( const string& userUuid, stringhash channelHash );
    void           DeleteChannelFromUser( const string& userUuid, stringhash channelHash );
-   bool           AddUserToChannelAndWriteToDB( const string& channelUuid, const string& addedUserUuid, const string& addedUserName );
+   bool           AddUserToChannelAndWriteToDB( const string& channelUuid, const string& addedUserUuid, const string& addedUserName, bool blockContactInvites, bool blockGroupInvites );
    bool           RemoveUserFromChannelAndWriteToDB( const string& channelUuid, const string& removedUserUuid );
    bool           RemoveChannelAndMarkChannelInDB( const string& channelUuid );
    //-----------------------------------------------------

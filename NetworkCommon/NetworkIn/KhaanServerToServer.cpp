@@ -47,10 +47,36 @@ bool	KhaanServerToServer :: OnDataReceived( unsigned char* data, int length )
       } 
       else
       {
-         char temp[21];
-         memcpy( temp, data, 20 );
-         temp[20] = 0;
+         const int maxStrLen = 200;
+         char temp[ maxStrLen+1 ];
+         int strLength = length;
+         if( strLength > maxStrLen )
+            strLength = maxStrLen;
+
+         memcpy( temp, data, strLength );
+         temp[ maxStrLen ] = 0;
+
+         cout << "**************************************************" << endl;
+         cout << "*************** critical failure *****************" << endl;
          cout << "Cannot parse packet: " << temp << " len=" << length << endl;
+         cout << hex << "[" << endl;
+
+         for(int i=0; i< strLength; i += 20 )
+         {
+            int remaining = strLength - i;
+            if ( remaining > 10 )
+               remaining = 10;
+
+            for( int j=0; j<remaining; j++ )
+            {
+               cout << temp[ i+j ] << " ";
+            }
+            cout << endl;
+         }
+         cout << "]" << dec << endl;
+         cout << "**************************************************" << endl;
+         cout << "**************************************************" << endl;
+         offset = length;// break out of loop.
       }
    }
 

@@ -260,10 +260,14 @@ bool     DiplodocusContact::AddOutputChainData( BasePacket* packet, U32 connecti
 void  DiplodocusContact::UpdateDbResults()
 {   
    PacketFactory factory;
-   Threading::MutexLock locker( m_mutex );
 
-   deque< PacketDbQueryResult* >::iterator it = m_dbQueries.begin();
-   while( it != m_dbQueries.end() )
+   m_mutex.lock();
+   deque< PacketDbQueryResult* > tempQueue = m_dbQueries;
+   m_dbQueries.clear();
+   m_mutex.unlock();
+
+   deque< PacketDbQueryResult* >::iterator it = tempQueue.begin();
+   while( it != tempQueue.end() )
    {
       PacketDbQueryResult* dbResult = *it++;
       if( dbResult->customData != NULL )
@@ -287,7 +291,6 @@ void  DiplodocusContact::UpdateDbResults()
       BasePacket* packet = static_cast<BasePacket*>( dbResult );
       PacketCleaner cleaner( packet );
    }
-   m_dbQueries.clear();
 }
 
 //-----------------------------------------------------------------------------------------

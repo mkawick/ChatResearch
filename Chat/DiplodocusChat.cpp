@@ -393,10 +393,14 @@ bool     DiplodocusChat::SendMessageToClient( BasePacket* packet, U32 connection
 void  DiplodocusChat::UpdateDbResults()
 {
    PacketFactory factory;
-   Threading::MutexLock locker( m_mutex );
 
-   deque< PacketDbQueryResult* >::iterator it = m_dbQueries.begin();
-   while( it != m_dbQueries.end() )
+   m_mutex.lock();
+   deque< PacketDbQueryResult* > tempQueue = m_dbQueries;
+   m_dbQueries.clear();
+   m_mutex.unlock();
+
+   deque< PacketDbQueryResult* >::iterator it = tempQueue.begin();
+   while( it != tempQueue.end() )
    {
       PacketDbQueryResult* result = *it++;
       if( result->customData != NULL )
@@ -427,7 +431,6 @@ void  DiplodocusChat::UpdateDbResults()
          }
       }
    }
-   m_dbQueries.clear();
 }
 
 //---------------------------------------------------------------

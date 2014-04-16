@@ -581,6 +581,11 @@ bool  PacketFactory::ParseChat( const U8* bufferIn, int& bufferOffset, const Bas
          *packetOut = SerializeIn< PacketChatRenameChannelResponse >( bufferIn, bufferOffset );
       }
       return true;
+   case PacketChatToServer::ChatType_UpdateProfile:
+      {
+         *packetOut = SerializeIn< PacketChat_UserProfileChange >( bufferIn, bufferOffset );
+      }
+      return true;
    }
 
    return false;
@@ -1177,6 +1182,13 @@ bool     PacketFactory::ParseNotification( const U8* bufferIn, int& bufferOffset
          *packetOut = SerializeIn< PacketNotification_SendNotification >( bufferIn, bufferOffset );
       }
       return true;
+
+   case PacketNotification::NotificationType_UpdateNotificationCount:
+      {
+         *packetOut = SerializeIn< PacketNotification_UpdateNotificationCount >( bufferIn, bufferOffset );
+      }
+      return true;
+      
    case PacketNotification::NotificationType_RequestListOfDevices:
       {
          *packetOut = SerializeIn< PacketNotification_RequestListOfDevices >( bufferIn, bufferOffset );

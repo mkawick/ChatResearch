@@ -1035,3 +1035,22 @@ bool  PacketChatRenameChannelResponse::SerializeOut( U8* data, int& bufferOffset
 }
 
 ///////////////////////////////////////////////////////////////
+
+
+bool  PacketChat_UserProfileChange::SerializeIn( const U8* data, int& bufferOffset )
+{
+   BasePacket::SerializeIn( data, bufferOffset );
+   Serialize::In( data, bufferOffset, blockChannelInvites );
+
+   return true;
+}
+
+bool  PacketChat_UserProfileChange::SerializeOut( U8* data, int& bufferOffset ) const
+{
+   BasePacket::SerializeOut( data, bufferOffset );
+   Serialize::Out( data, bufferOffset, blockChannelInvites );
+
+   return true;
+}
+
+///////////////////////////////////////////////////////////////

@@ -9,10 +9,7 @@
 #include <map>
 using namespace std;
 
-class DiplodocusPurchase;
-
 ///////////////////////////////////////////////////////////////////////////////////////////
-
 
 enum 
 {
@@ -31,6 +28,7 @@ public:
    bool     IsReady() const { return m_hasLoadedStringTable; }
    
    string   GetString( const string& stringName, int languageId ) const;
+   string   GetString( U32 lookupValue, int languageId ) const;
 
    //void  Init();
 

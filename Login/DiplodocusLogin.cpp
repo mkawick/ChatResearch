@@ -118,7 +118,7 @@ bool     DiplodocusLogin:: AddInputChainData( BasePacket* packet, U32 connection
          case PacketLogin::LoginType_CreateAccount:
             {
                PacketCreateAccount* createAccount = static_cast<PacketCreateAccount*>( actualPacket );
-               CreateUserAccount( userConnectionId, createAccount->useremail, createAccount->password, createAccount->userName, createAccount->deviceAccountId, createAccount->deviceId, createAccount->languageId, createAccount->gameProductId );
+               CreateUserAccount( userConnectionId, createAccount->userEmail, createAccount->password, createAccount->userName, createAccount->deviceAccountId, createAccount->deviceId, createAccount->languageId, createAccount->gameProductId );
             }
             break;
          case PacketLogin::LoginType_ListOfAggregatePurchases:
@@ -264,11 +264,11 @@ bool     DiplodocusLogin:: LogUserIn( const string& userName, const string& pass
                                              connection->m_userUuid, 
                                              connectionId, 
                                              gameProductId, 
-                                             connection->lastLoginTime, 
-                                             connection->isActive, 
+                                             connection->m_lastLoginTime, 
+                                             connection->m_isActive, 
                                              connection->m_email, 
                                              connection->m_passwordHash, 
-                                             connection->id, 
+                                             connection->m_id, 
                                              connection->m_loginKey, 
                                              connection->m_languageId, 
                                              isLoggedIn, 
@@ -307,8 +307,8 @@ bool     DiplodocusLogin:: LogUserIn( const string& userName, const string& pass
 bool  DiplodocusLogin:: LoadUserAccount( const string& userName, const string& password, const string& loginKey, U8 gameProductId, U32 connectionId )
 {
    ConnectionToUser conn( userName, password, loginKey );
-   conn.gameProductId = gameProductId;
-   conn.connectionId = connectionId;
+   conn.m_gameProductId = gameProductId;
+   conn.m_connectionId = connectionId;
    AddUserConnection( UserConnectionPair( connectionId, conn ) );
 
    //*********************************************************************************
@@ -353,12 +353,12 @@ bool     DiplodocusLogin:: HandleLoginResultFromDb( U32 connectionId, PacketDbQu
          SendLoginStatusToOtherServers( connection->m_userName, 
                                        connection->m_userUuid, 
                                        connectionId, 
-                                       connection->gameProductId, 
-                                       connection->lastLoginTime, 
-                                       connection->isActive, 
+                                       connection->m_gameProductId, 
+                                       connection->m_lastLoginTime, 
+                                       connection->m_isActive, 
                                        connection->m_email, 
                                        connection->m_passwordHash, 
-                                       connection->id,
+                                       connection->m_id,
                                        connection->m_loginKey, 
                                        connection->m_languageId, 
                                        isLoggedIn, 
@@ -431,12 +431,12 @@ void     DiplodocusLogin:: FinalizeLogout( U32 connectionId, bool wasDisconnecte
       SendLoginStatusToOtherServers( connection->m_userName, 
                                     connection->m_userUuid, 
                                     connectionId, 
-                                    connection->gameProductId, 
-                                    connection->lastLoginTime, 
-                                    connection->isActive, 
+                                    connection->m_gameProductId, 
+                                    connection->m_lastLoginTime, 
+                                    connection->m_isActive, 
                                     connection->m_email, 
                                     connection->m_passwordHash, 
-                                    connection->id, 
+                                    connection->m_id, 
                                     connection->m_loginKey,
                                     connection->m_languageId, 
                                     isLoggedIn, 
@@ -512,10 +512,10 @@ void     DiplodocusLogin:: RemoveOldConnections()
    {
       UserConnectionMapIterator temp = it++;
       if( temp->second.IsReadyToBeCleanedUp() == true && // do not remove in the middle of logging out
-         temp->second.loggedOutTime != 0 )
+         temp->second.m_loggedOutTime != 0 )
       {
          const int normalExpireTime = 3; // seconds
-         if( difftime( testTimer, temp->second.loggedOutTime ) >= normalExpireTime )
+         if( difftime( testTimer, temp->second.m_loggedOutTime ) >= normalExpireTime )
          {
             FinalizeLogout( temp->first, false );
             m_userConnectionMap.erase( temp );
@@ -535,7 +535,7 @@ U32     DiplodocusLogin:: FindUserAlreadyInGame( const string& userName, U8 game
    {
       UserConnectionPair pairObj = *it++;
       ConnectionToUser& conn = pairObj.second;
-      if( conn.gameProductId == gameProductId && // optimized for simplest test first
+      if( conn.m_gameProductId == gameProductId && // optimized for simplest test first
          
          ( conn.m_email == userName || conn.m_userName == userName ) )// we use these interchangably right now.
       {
@@ -1158,13 +1158,13 @@ bool  DiplodocusLogin:: ForceUserLogoutAndBlock( U32 connectionId )
    {
       userName =              connection->m_userName;
       uuid =                  connection->m_userUuid;
-      lastLoginTime =         connection->lastLoginTime;
+      lastLoginTime =         connection->m_lastLoginTime;
       connection->status =    ConnectionToUser::LoginStatus_Invalid;
-      active =                connection->isActive;
+      active =                connection->m_isActive;
       passwordHash =          connection->m_passwordHash;
-      userId =                connection->id;
+      userId =                connection->m_id;
       email =                 connection->m_email;
-      gameProductId =         connection->gameProductId;
+      gameProductId =         connection->m_gameProductId;
       loginKey =              connection->m_loginKey;
       languageId =            connection->m_languageId;
    }
@@ -1175,6 +1175,7 @@ bool  DiplodocusLogin:: ForceUserLogoutAndBlock( U32 connectionId )
    loginStatus->uuid = uuid;
    loginStatus->lastLogoutTime = GetDateInUTC();
    loginStatus->loginKey = loginKey;
+   loginStatus->languageId = connection->m_languageId;
 
    loginStatus->wasLoginSuccessful = false;
    loginStatus->adminLevel = 0;

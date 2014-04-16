@@ -146,13 +146,13 @@ p
                 <td width=400 style='background-position:initial initial;background-repeat:no-repeat'><p  align=right style='text-align:right'><span style='font-family:"Georgia","serif";color:white'><span class="style6">FOLLOW PLAYDEK:</span> &nbsp; &nbsp;
 
                 </span></p></td>
-                <td width=40 ><p ><span style='font-family:"Georgia","serif";color:white'><a href="https://www.facebook.com/Playdek" target="_blank"><b><span style='color:#242e38;text-decoration:none'><img src="http://accounts.playdekgames.com/images/icon_facebook.png"  width="33" height="32" border=0 ></span></b></a>
+                <td width=40 ><p ><span style='font-family:"Georgia","serif";color:white'><a href="http://www.playdekgames.com" target="_blank"><b><span style='color:#242e38;text-decoration:none'><img src="images/icon_facebook.png"  width="33" height="32" border=0 ></span></b></a>
 
                 </span></p></td>
-                <td width=40 ><p ><span style='font-family:"Georgia","serif";color:white'><a href="https://twitter.com/playdek" target="_blank"><b><span style='color:#242e38;text-decoration:none'><img src="http://accounts.playdekgames.com/images/icon_twitter.png"  width="33" height="32" border=0 ></span></b></a>
+                <td width=40 ><p ><span style='font-family:"Georgia","serif";color:white'><a href="http://www.playdekgames.com" target="_blank"><b><span style='color:#242e38;text-decoration:none'><img src="images/icon_twitter.png"  width="33" height="32" border=0 ></span></b></a>
 
                 </span></p></td>
-                <td width=200 ><p ><span style='font-family:"Georgia","serif";color:white'><a href="https://www.youtube.com/user/IncineratorStudios?feature=mhee" target="_blank"><b><span style='color:#242e38;text-decoration:none'><img src="http://accounts.playdekgames.com/images/icon_youtube.png"  width="33" height="32" border=0 ></span></b></a>
+                <td width=200 ><p ><span style='font-family:"Georgia","serif";color:white'><a href="http://www.playdekgames.com" target="_blank"><b><span style='color:#242e38;text-decoration:none'><img src="images/icon_youtube.png"  width="33" height="32" border=0 ></span></b></a>
 
                 </span></p></td>
               </tr>
@@ -189,12 +189,12 @@ p
 
           </p></td>
           <td colspan=2 class="style7" ><div align="center">
-				<img src="http://accounts.playdekgames.com/images/icon_gg_2011.png" width="72" height="72">
-				<img src="http://accounts.playdekgames.com/images/icon_gg_2012.png" width="72" height="72">
-				<img src="http://accounts.playdekgames.com/images/icon_gg_2013.png" width="72" height="72">
-				<img src="http://accounts.playdekgames.com/images/icon_PGaward_gold.png" width="72" height="72">
-				<img src="http://accounts.playdekgames.com/images/icon_PGaward_silver.png" width="72" height="72">
-				<img src="http://accounts.playdekgames.com/images/icon_PGaward_bronze.png" width="72" height="72">
+				<img src="images/icon_gg_2011.png" width="72" height="72">
+				<img src="images/icon_gg_2012.png" width="72" height="72">
+				<img src="images/icon_gg_2013.png" width="72" height="72">
+				<img src="images/icon_PGaward_gold.png" width="72" height="72">
+				<img src="images/icon_PGaward_silver.png" width="72" height="72">
+				<img src="images/icon_PGaward_bronze.png" width="72" height="72">
 			  </div>
             <table width=250 border=0 align="center" cellpadding=0 cellspacing=0 id=social>
           </table></td>

@@ -18,6 +18,8 @@ public:
    void     AuthorizeConnection();
    void     DenyAllFutureData();
    void     SetAdminLevelOperations( int level ) { m_adminLevel = level; }
+   U8       GetLanguageId() const { return m_languageId; }
+   void     SetLanguageId( U8 languageId );
 
    void     SetGateway( DiplodocusGateway* gateway ) { m_gateway = gateway; }
 
@@ -37,6 +39,7 @@ private:
    bool                 m_denyAllFutureData;
    bool                 m_logoutPacketSent;
    int                  m_adminLevel;
+   U8                   m_languageId;
    DiplodocusGateway*   m_gateway;
 
    void  PreCleanup();

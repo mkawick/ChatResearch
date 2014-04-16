@@ -20,6 +20,7 @@ KhaanGateway::KhaanGateway( int id, bufferevent* be ):
       m_denyAllFutureData( false ),
       m_logoutPacketSent( false ),
       m_adminLevel( 0 ),
+      m_languageId( 0 ),
       m_gateway( NULL )
 {
    m_randomNumberOfPacketsBeforeLogin = 30 + rand() % 20;
@@ -40,6 +41,11 @@ void     KhaanGateway::AuthorizeConnection()
 { 
    m_authorizedConnection = true; 
    m_gateway->TrackCountStats( StatTrackingConnections::StatTracking_UserLoginSuccess, 1, 0 );
+}
+
+void     KhaanGateway::SetLanguageId( U8 languageId ) 
+{ 
+   m_languageId = languageId;
 }
 
 //-----------------------------------------------------------------------------------------
@@ -261,6 +267,7 @@ bool  KhaanGateway::IsWhiteListedIn( const BasePacket* packet ) const
       return true;
   /* case PacketType_Tournament:
       return true;*/
+      //return true;
    case PacketType_Notification:
       return true;
    }

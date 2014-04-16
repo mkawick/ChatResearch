@@ -49,6 +49,8 @@ public:
    string   uuid;
    string   date;
    string   userUuid; // the non-current user... could be invitee or inviter... just not you
+
+   void     Print( int tab = 0 );
 };
 
 ///////////////////////////////////////////////////////////////////

@@ -35,6 +35,7 @@ public:
       NotificationType_RegisterDeviceResponse,
       NotificationType_UpdateDevice,
       NotificationType_SendNotification,
+      NotificationType_UpdateNotificationCount,
 
       NotificationType_RequestListOfDevices,  // based on product.. 0 means all devices
       NotificationType_RequestListOfDevicesResponse,
@@ -125,7 +126,7 @@ public:
    string   deviceName;
    bool     isEnabled;
    int      iconId;
-   int      gameId;
+   int      gameType;
 };
 
 ///////////////////////////////////////////////////////////////
@@ -138,12 +139,29 @@ public:
    bool  SerializeIn( const U8* data, int& bufferOffset );
    bool  SerializeOut( U8* data, int& bufferOffset ) const;
 
-   string   userUuid;
-   U32      userId;
-   int      notificationType; // see the enum in server_notify.h
-   string   additionalText;
-   //bool     success;
+   string         userUuid;
+   U32            userId;
+   int            gameType;
+   unsigned int   gameId;
+   int            notificationType; // see the enum in server_notify.h
+   string         additionalText;
 };
+
+///////////////////////////////////////////////////////////////
+
+class PacketNotification_UpdateNotificationCount: public PacketNotification
+{
+public:
+   PacketNotification_UpdateNotificationCount() : PacketNotification( PacketType_Notification, NotificationType_UpdateNotificationCount ) {  }
+
+   bool  SerializeIn( const U8* data, int& bufferOffset );
+   bool  SerializeOut( U8* data, int& bufferOffset ) const;
+
+   U32            userId;
+   int            gameType;
+   int            notificationCount;
+};
+
 
 ///////////////////////////////////////////////////////////////
 

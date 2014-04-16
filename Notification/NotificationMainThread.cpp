@@ -342,12 +342,16 @@ void     NotificationMainThread::RemoveExpiredConnections()
 int     NotificationMainThread::MainLoop_InputProcessing()
 {
    PacketFactory factory;
-   Threading::MutexLock locker( m_mutex );
 
-   while( m_dbQueries.size() )
+   m_mutex.lock();
+   deque< PacketDbQueryResult* > tempQueue = m_dbQueries;
+   m_dbQueries.clear();
+   m_mutex.unlock();
+
+   deque< PacketDbQueryResult* >::iterator it = tempQueue.begin();
+   while( it != tempQueue.end() )
    {
-      PacketDbQueryResult* dbResult = m_dbQueries.front();
-      m_dbQueries.pop_front();
+      PacketDbQueryResult* dbResult = *it++;
 
       U32 connectionId = dbResult->id;
       if( connectionId != 0 )
@@ -369,8 +373,6 @@ int     NotificationMainThread::MainLoop_InputProcessing()
          // LOOK HERE GARY FOR async queries
       }
    }
-
-   m_dbQueries.clear();
    return 1;
 }
 

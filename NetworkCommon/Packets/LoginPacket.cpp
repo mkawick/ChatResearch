@@ -81,6 +81,7 @@ bool  PacketLoginToGateway::SerializeIn( const U8* data, int& bufferOffset )
    Serialize::In( data, bufferOffset, lastLogoutTime );
    Serialize::In( data, bufferOffset, wasLoginSuccessful ); 
    Serialize::In( data, bufferOffset, adminLevel );
+   Serialize::In( data, bufferOffset, languageId );
 
    return true;
 }
@@ -91,6 +92,7 @@ bool  PacketLoginToGateway::SerializeOut( U8* data, int& bufferOffset ) const
    Serialize::Out( data, bufferOffset, lastLogoutTime );
    Serialize::Out( data, bufferOffset, wasLoginSuccessful );
    Serialize::Out( data, bufferOffset, adminLevel );
+   Serialize::Out( data, bufferOffset, languageId );
 
    return true;
 }
@@ -101,7 +103,7 @@ bool  PacketCreateAccount::SerializeIn( const U8* data, int& bufferOffset )
 {
    BasePacket::SerializeIn( data, bufferOffset );
    Serialize::In( data, bufferOffset, userName );
-   Serialize::In( data, bufferOffset, useremail );
+   Serialize::In( data, bufferOffset, userEmail );
    Serialize::In( data, bufferOffset, password );
    Serialize::In( data, bufferOffset, deviceId );
    Serialize::In( data, bufferOffset, deviceAccountId );
@@ -114,7 +116,7 @@ bool  PacketCreateAccount::SerializeOut( U8* data, int& bufferOffset ) const
 {
    BasePacket::SerializeOut( data, bufferOffset );
    Serialize::Out( data, bufferOffset, userName );
-   Serialize::Out( data, bufferOffset, useremail );
+   Serialize::Out( data, bufferOffset, userEmail );
    Serialize::Out( data, bufferOffset, password );
    Serialize::Out( data, bufferOffset, deviceId );
    Serialize::Out( data, bufferOffset, deviceAccountId );
@@ -129,7 +131,7 @@ bool  PacketCreateAccountResponse::SerializeIn( const U8* data, int& bufferOffse
 {
    BasePacket::SerializeIn( data, bufferOffset );
    Serialize::In( data, bufferOffset, userName );
-   Serialize::In( data, bufferOffset, useremail );
+   Serialize::In( data, bufferOffset, userEmail );
    Serialize::In( data, bufferOffset, wasSuccessful );
 
    return true;
@@ -139,7 +141,7 @@ bool  PacketCreateAccountResponse::SerializeOut( U8* data, int& bufferOffset ) c
 {
    BasePacket::SerializeOut( data, bufferOffset );
    Serialize::Out( data, bufferOffset, userName );
-   Serialize::Out( data, bufferOffset, useremail );
+   Serialize::Out( data, bufferOffset, userEmail );
    Serialize::Out( data, bufferOffset, wasSuccessful );
 
    return true;

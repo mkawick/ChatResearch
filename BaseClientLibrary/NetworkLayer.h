@@ -63,10 +63,10 @@ struct RegisteredProduct
 class BasicUser
 {
 public:
-   string    userName;
-   //tring    userEmail;
-   string    UUID;
-   bool      isOnline;
+   string   userName;
+   string   UUID;
+   U32      avatarId; 
+   bool     isOnline;
 };
 
 //-------------------------------------------
@@ -93,6 +93,7 @@ public:
       gameInstanceId = 0;
       userList.clear();
    }
+   void  Print();
 };
 
 //-------------------------------------------
@@ -237,7 +238,7 @@ public:
    virtual void  TournamentListAvalable() const {}
    virtual void  TournamentPurchaseResult( const string& tournamentUuid, int result ) const {}
 
-   virtual void  OnError( int code, int subCode ){}
+   virtual void  OnError( int code, int subCode, const char* text = NULL ){}
 
    virtual void  PurchaseSuccess( const string& purchaseUuid, bool success ){}
    virtual void  ProductsForSale( const SerializedKeyValueVector< PurchaseInfo >& thingsToBuy ) {}
@@ -253,7 +254,6 @@ public:
       NotificationType_AreWeUsingCorrectNetworkVersion,
       NotificationType_ServerRequestsListOfUserPurchases,
       NotificationType_UserProfileResponse,
-      //NotificationType_UserProfileResponse2,
       NotificationType_OtherUsersProfile,
       NotificationType_SelfProfileUpdate,
 
@@ -270,7 +270,6 @@ public:
       NotificationType_FriendOnlineStatusChanged,
       NotificationType_ChatChannelUpdate,
       NotificationType_ChatListUpdate,
-      //NotificationType_ListOfFriendUpdate,
 
       NotificationType_SearchResults,
 
@@ -628,7 +627,6 @@ protected:
    AssetInfoExtended*   GetAsset( const string& hash );
    bool     UpdateAssetData( const string& hash, AssetInfoExtended& asset );
 
-   void     NotifyClientLoginStatus( bool isLoggedIn );
    void     NotifyClientToBeginSendingRequests();
    void     InitalConnectionCallback();
 };

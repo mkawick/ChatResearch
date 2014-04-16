@@ -60,6 +60,8 @@ public:
 
    bool  IsBlockingFriendInvites() const { return m_blockContactInvitations; }
 
+   void  AfterFriendQuery_SendListToClient() { m_afterFriendQuery_SendListToClient = true; }
+
 private:
 
    void  InitContactsAndInvitations();
@@ -67,8 +69,8 @@ private:
    void  PrepInvitationsQueries();
 
    bool  GetListOfContacts();
-   bool  GetListOfInvitationsReceived();
-   bool  GetListOfInvitationsSent();
+   bool  ListOfInvitationsReceived_SendToClient();
+   bool  ListOfInvitationsSent_SendToClient();
 
    bool  InviteUser( const PacketContact_InviteContact* packet );
    bool  AcceptInvitation( const PacketContact_AcceptInvite* packet );
@@ -81,18 +83,19 @@ private:
    void  FinishAcceptingInvitation( const PacketDbQueryResult* result ); 
    void  FinishDecliningingInvitation(  const PacketDbQueryResult* dbResult );
    void  FinishSearchResult( const PacketDbQueryResult* dbResult );
-   void  FinishInvitation( U32 inviteeId, const string& message, UserContact* contact = NULL );
+   void  FinishInvitation( U32 inviteeId, const string& message, const string& inviteeName, const string& inviteeUuid, UserContact* contact = NULL );
    void  YouHaveBeenInvitedToBeAFriend( const string& userName, const string& uuid, const string& message, const string& curentTime );
    void  InvitationAccepted( const string& sentFromuserName, const string& sentToUserName, const string& invitationUuid, const string& message, bool accepted );
    bool  InformFriendsOfOnlineStatus( bool isOnline );
 
-   bool  YourFriendsOnlineStatusChange( U32 connectionId, const string& userName, const string& UUID, bool isOnline );
+   bool  YourFriendsOnlineStatusChange( U32 connectionId, const string& userName, const string& UUID, int avatarId, bool isOnline );
 
    bool  DoesPendingInvitationExist( const string& inviteeUuid, const string& inviteeName );
    bool  HaveIAlreadyBeenInvited( const string& userUuid );
 
    void  InsertInvitationReceived( U32 inviteeId, U32 inviterId, bool wasNotified, const string& userName, const string& userUuid, const string& message, const string& invitationUuid, const string& date );
    void  InsertInvitationSent( U32 inviteeId, U32 inviterId, bool wasNotified, const string& userName, const string& userUuid, const string& message, const string& invitationUuid, const string& date );
+   void  InsertFriend( U32 id, const string& userName, const string& uuid, const string& email, U32 avatarId, bool isActive );
    void  RemoveInvitationReceived( const string& uuid );
    void  RemoveInvitationSent( const string& invitationUuid );
 
@@ -127,6 +130,7 @@ private:
    bool                 m_displayOnlineStatusToOtherUsers;
    bool                 m_blockContactInvitations;
    bool                 m_blockGroupInvitations;
+   bool                 m_afterFriendQuery_SendListToClient;
 
    DiplodocusContact*   m_contactServer;
 

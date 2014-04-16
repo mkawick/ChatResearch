@@ -29,8 +29,8 @@ struct ConnectionToUser
 
    ConnectionToUser( const string& name, const string& pword, const string& key );
    void     SetManager( DiplodocusLogin* manager )  { userManager = manager; }
-   void     ClearLoggingOutStatus() { loggedOutTime = 0; }
-   bool     CanContinueLogginIn() const { return isActive; }
+   void     ClearLoggingOutStatus() { m_loggedOutTime = 0; }
+   bool     CanContinueLogginIn() const { return m_isActive; }
 
    time_t   GetLoginTime() const { return m_loginTime; }
 
@@ -41,7 +41,7 @@ struct ConnectionToUser
    bool     FinalizeLogout();
    
    bool     StoreProductInfo( PacketDbQueryResult* dbResult );
-   bool     IsReadyToBeCleanedUp() const { return isReadyToBeCleanedUp; }
+   bool     IsReadyToBeCleanedUp() const { return m_isReadyToBeCleanedUp; }
 
    //------------------------------------------------
    
@@ -81,30 +81,30 @@ struct ConnectionToUser
 
    //----------------------------------
 
-   string                  id;
+   string                  m_id;
    string                  m_userName;
    string                  m_passwordHash;
    string                  m_email;
    string                  m_userUuid;
    string                  m_loginKey;
-   string                  lastLoginTime;
-   string                  lastLogoutTime;
+   string                  m_lastLoginTime;
+   string                  m_lastLogoutTime;
    string                  m_userMotto;
    int                     m_avatarIcon;
 
    LoginStatus             status;
-   U8                      gameProductId;
-   U32                     connectionId;
+   U8                      m_gameProductId;
+   U32                     m_connectionId;
    
    time_t                  m_loginTime;
-   time_t                  loggedOutTime;
-   bool                    isLoggingOut;
-   bool                    isReadyToBeCleanedUp;
+   time_t                  m_loggedOutTime;
+   bool                    m_isLoggingOut;
+   bool                    m_isReadyToBeCleanedUp;
 
-   int                     timeZone;
+   int                     m_timeZone;
    int                     m_languageId;
-   int                     adminLevel;
-   bool                    isActive;
+   int                     m_adminLevel;
+   bool                    m_isActive;
    bool                    m_showWinLossRecord;
    bool                    m_marketingOptOut;
    bool                    m_showGenderProfile;

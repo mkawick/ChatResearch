@@ -13,11 +13,19 @@ using namespace std;
 
 struct UserBasics
 {
-   UserBasics( const string& name, const string& uuid ) : userName( name ), userUuid( uuid ) {}
+   UserBasics() : 
+         blockContactInvites( false ),
+         blockGroupInvites( false )
+         {}
+   UserBasics( const string& name, const string& uuid ) : 
+         userName( name ), 
+         userUuid( uuid ), 
+         blockContactInvites( false ),
+         blockGroupInvites( false ){}
    string            userName;
    string            userUuid;
-   /*UserBasics( const string& uuid ) : userUuid( uuid ) {}
-   string            userUuid;*/
+   bool              blockContactInvites;
+   bool              blockGroupInvites;
 };
 
 //---------------------------------------------------------------
