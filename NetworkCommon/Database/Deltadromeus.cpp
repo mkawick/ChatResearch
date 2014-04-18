@@ -34,7 +34,7 @@
 #endif
 
 #include <mysql/mysql.h> // MySQL Include File
-#include <errmsg.h> // MySQL Include File
+#include <mysql/errmsg.h> // MySQL Include File
 
 using namespace Database;
 using namespace std;

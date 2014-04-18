@@ -242,10 +242,11 @@ bool     DiplodocusLogin:: LogUserIn( const string& userName, const string& pass
    if( oldConnectionId != 0 )
    {
       // should we boot this user for hacking? Or is it bad code?
-      /*Log( "Second login from the same product attempt was made", 4 );
+      Log( "Second login from the same product attempt was made", 4 );
       Log( userName.c_str(), 4 );
-      ForceUserLogoutAndBlock( connectionId );
-      return false;*/
+      ForceUserLogoutAndBlock( oldConnectionId );// force disconnect
+      //return false;
+
       Log( "Reconnect user", 1 );
 
       ReinsertUserConnection( oldConnectionId, connectionId );// and we remove the old connection

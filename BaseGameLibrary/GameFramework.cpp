@@ -336,6 +336,47 @@ void  GameFramework::SendNotification( const string& userUuid, U32 userId, int n
    }
 }
 
+
+void GameFramework::SendPushNotification( U32 userId, int gameType, unsigned int gameId, int notificationType, const string& additionalText  )
+{
+   if( m_notificationServer )
+   {
+      PacketNotification_SendNotification* packet = new PacketNotification_SendNotification;
+      packet->userUuid.clear();
+      packet->userId = userId;
+      packet->gameType = gameType;
+      packet->gameId = gameId;
+      packet->notificationType = notificationType;
+      packet->additionalText = additionalText;
+
+      PacketServerToServerWrapper* wrapper = new PacketServerToServerWrapper;
+      wrapper->gameInstanceId = m_serverId;
+      wrapper->gameProductId = m_gameProductId;
+      wrapper->serverId = m_serverId;
+      wrapper->pPacket = packet;
+
+      m_notificationServer->AddOutputChainData( wrapper, -1 );
+   }
+}
+
+void GameFramework::UpdatePushNotificationCount( U32 userId, int gameType, int notificationCount )
+{
+   if( m_notificationServer )
+   {
+      PacketNotification_UpdateNotificationCount* packet = new PacketNotification_UpdateNotificationCount;
+      packet->userId = userId;
+      packet->gameType = gameType;
+      packet->notificationCount = notificationCount;
+
+      PacketServerToServerWrapper* wrapper = new PacketServerToServerWrapper;
+      wrapper->gameInstanceId = m_serverId;
+      wrapper->gameProductId = m_gameProductId;
+      wrapper->serverId = m_serverId;
+      wrapper->pPacket = packet;
+
+      m_notificationServer->AddOutputChainData( wrapper, -1 );
+   }
+}
 //-----------------------------------------------------
 
 void     GameFramework::AddTimer( U32 timerId, U32 callbackTimeMs ) // timers must be unique

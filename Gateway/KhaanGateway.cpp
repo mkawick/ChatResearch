@@ -50,6 +50,13 @@ void     KhaanGateway::SetLanguageId( U8 languageId )
 
 //-----------------------------------------------------------------------------------------
 
+void     KhaanGateway::ForceShutdown() 
+{ 
+   CloseConnection(); 
+}
+
+//-----------------------------------------------------------------------------------------
+
 void     KhaanGateway::DenyAllFutureData() 
 { 
    m_denyAllFutureData = true; 

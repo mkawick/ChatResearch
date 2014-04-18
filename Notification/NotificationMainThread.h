@@ -54,6 +54,11 @@ private:
    int      MainLoop_InputProcessing();
    int      MainLoop_OutputProcessing();
 
+   bool     HandleUpdateNotificationCount( const PacketNotification_UpdateNotificationCount* unwrappedPacket );
+   int      CalculateBadgeNumberFromPendingNotifications( unsigned int userId, unsigned int gameType, int gameId );
+   bool     StoreLastUserNotification( unsigned int userId, unsigned int gameType, int gameId,
+                                       unsigned int notificationType, string additionalText );
+   bool     SetupUserNotificationResend( unsigned int userId, unsigned int gameType, unsigned int deviceId, unsigned delayTime );
 
    typedef  map< U32, UserConnection >    UserConnectionMap;
    typedef  pair< U32, UserConnection >   UserConnectionPair;
@@ -68,10 +73,50 @@ private:
    Database::Deltadromeus* m_database; // only one for now
 
    time_t                  m_lastNotificationCheck_TimeStamp;
-   static const int        timeoutNotificationSend = 60 * 60;// one hour
+   //static const int        timeoutNotificationSend = 2 * 60;// two minutes
+   static const int        timeoutNotificationSend = 10; // ten seconds
    static const int        SecondsBeforeRemovingLoggedOutUser = 3;
 
    
+   struct UserNotificationKey
+   {
+      unsigned int userId;
+      unsigned int gameType;
+
+      inline bool operator<(const UserNotificationKey &rhs) const
+      {
+         if( rhs.userId >= userId ) 
+         {
+            return gameType < rhs.gameType;
+         }
+         return userId < rhs.userId;
+      }
+
+      inline bool operator==(const UserNotificationKey &rhs) const
+      {
+         return userId == rhs.userId && gameType == rhs.gameType;
+      }
+
+      inline bool operator!=(const UserNotificationKey &rhs) const
+      {
+         return userId != rhs.userId || gameType != rhs.gameType;
+      }
+   };
+
+   struct UserNotificationRecord
+   {
+      unsigned int   notificationCount;
+
+      unsigned int   lastNotificationGameId;
+      unsigned int   lastNotificationType;
+      string         lastNotificationText;
+
+      unsigned int   resendNotificationDelay;
+      time_t         lastNotificationTime;
+   };
+
+   // keeps a count of how many notifications are outstanding for a given player
+   std::map<UserNotificationKey, UserNotificationRecord> m_PendingNotifications;
 };
 
 ///////////////////////////////////////////////////////////////////

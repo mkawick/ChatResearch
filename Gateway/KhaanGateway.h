@@ -16,6 +16,7 @@ public:
    ~KhaanGateway();
 
    void     AuthorizeConnection();
+   void     ForceShutdown();
    void     DenyAllFutureData();
    void     SetAdminLevelOperations( int level ) { m_adminLevel = level; }
    U8       GetLanguageId() const { return m_languageId; }

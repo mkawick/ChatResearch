@@ -1331,7 +1331,7 @@ void  UserContact::FinishInvitation( U32 inviteeId, const string& message, const
 
 void     UserContact::YouHaveBeenInvitedToBeAFriend( const string& userName, const string& uuid, const string& message, const string& currentTime )
 {
-   PacketContact_InviteSentNotification* packet = new PacketContact_InviteSentNotification;
+   PacketContact_InviteReceivedNotification* packet = new PacketContact_InviteReceivedNotification;
    packet->info.date = currentTime;
    packet->info.inviterName = userName;
    packet->info.uuid = uuid;

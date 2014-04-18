@@ -78,6 +78,8 @@ public:
 
    void     SendStat( const string& statName, U16 integerIdentifier, float value, PacketStat::StatType type );
    void     SendNotification( const string& userUuid, U32 userId, int notificationType, const string& additionalText );
+   void     SendPushNotification( U32 userId, int gameType, unsigned int gameId, int notificationType, const string& additionalText );
+   void     UpdatePushNotificationCount( U32 userId, int gameType, int notificationCount );
 
 
    DiplodocusGame*   GetGame() { return m_connectionManager; }

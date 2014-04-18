@@ -17,6 +17,9 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "AssetDelivery2005", "AssetD
 	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "BaseClientLibrary2005", "BaseClientLibrary\BaseClientLibrary2005.vcproj", "{DAE4EB69-E3BE-4205-8BF1-A9CECA1F8199}"
+	ProjectSection(ProjectDependencies) = postProject
+		{5AD214C1-AB13-4D0E-99B8-7D471C7E4F8A} = {5AD214C1-AB13-4D0E-99B8-7D471C7E4F8A}
+	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Chat2005", "Chat\Chat2005.vcproj", "{FBEF15DF-7A5D-4CB3-B5A6-F039EAC2E87A}"
 	ProjectSection(ProjectDependencies) = postProject
@@ -24,6 +27,14 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Chat2005", "Chat\Chat2005.v
 	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "BaseGameLibrary2005", "BaseGameLibrary\BaseGameLibrary2005.vcproj", "{8CA2E87A-A7A5-4108-B2D1-5896179DE751}"
+	ProjectSection(ProjectDependencies) = postProject
+		{5AD214C1-AB13-4D0E-99B8-7D471C7E4F8A} = {5AD214C1-AB13-4D0E-99B8-7D471C7E4F8A}
+	EndProjectSection
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ClientFramework2005", "ClientFramework\ClientFramework2005.vcproj", "{0A5F23FB-19C8-4035-B40D-2DF0D20CDC3E}"
+	ProjectSection(ProjectDependencies) = postProject
+		{5AD214C1-AB13-4D0E-99B8-7D471C7E4F8A} = {5AD214C1-AB13-4D0E-99B8-7D471C7E4F8A}
+	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Contacts2005", "Contacts\Contacts2005.vcproj", "{C7AD0C30-7554-4A91-A5C6-3D9A9AF7CD9E}"
 	ProjectSection(ProjectDependencies) = postProject
@@ -36,12 +47,21 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Gateway2005", "Gateway\Gate
 	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "LoadBalancer2005", "LoadBalancer\LoadBalancer2005.vcproj", "{3329601D-D821-49E2-88D2-6AE0F0113E4E}"
+	ProjectSection(ProjectDependencies) = postProject
+		{5AD214C1-AB13-4D0E-99B8-7D471C7E4F8A} = {5AD214C1-AB13-4D0E-99B8-7D471C7E4F8A}
+	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "PacketLibrary2005", "PacketLibrary\PacketLibrary2005.vcproj", "{5AD214C1-AB13-4D0E-99B8-7D471C7E4F8A}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Purchase2005", "Purchase\Purchase2005.vcproj", "{DA3C2D07-E894-45A7-96C3-362D64FC89BE}"
+	ProjectSection(ProjectDependencies) = postProject
+		{5AD214C1-AB13-4D0E-99B8-7D471C7E4F8A} = {5AD214C1-AB13-4D0E-99B8-7D471C7E4F8A}
+	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Tournament2005", "Tournament\Tournament2005.vcproj", "{C64E2D2C-71C2-4738-96D8-E057C2B05AB8}"
+	ProjectSection(ProjectDependencies) = postProject
+		{5AD214C1-AB13-4D0E-99B8-7D471C7E4F8A} = {5AD214C1-AB13-4D0E-99B8-7D471C7E4F8A}
+	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Login2005", "Login\Login2005.vcproj", "{4EA7BD02-1AD5-4BAF-81AA-EACCBFB3F738}"
 EndProject

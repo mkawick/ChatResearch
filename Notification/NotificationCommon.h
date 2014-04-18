@@ -16,7 +16,7 @@ public:
       Column_name,
       Column_icon_id,
       Column_platformId,
-      Column_userId,
+      Column_user_id,
       Column_is_enabled,
       Column_registered_date,
       Column_end
@@ -35,7 +35,7 @@ public:
    {
       Column_id,
       Column_device_id,
-      Column_game_id,
+      Column_game_type,
       Column_is_enabled,
       Column_time_last_changed,
       Column_end

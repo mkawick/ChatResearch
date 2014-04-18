@@ -1,11 +1,10 @@
 #include <map>
 // MYSQL on Win32 requires winsock to be included first
-//#include "server_comms.h"
+#include "server_comms.h"
 
 #include "server_notify.h"
 
-#include <my_global.h> // Include this file first to avoid problems
-#include <mysql.h> // MySQL Include File
+#include <mysql/mysql.h> // MySQL Include File
 
 //#include <openssl/ssl.h>
 //#include <openssl/err.h>

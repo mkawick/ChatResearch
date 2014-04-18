@@ -1,8 +1,10 @@
+
 #include <map>
+
 // MYSQL on Win32 requires winsock to be included first
 #include "server_comms.h"
 #include "server_notify.h"
-#include <mysql.h>
+#include <mysql/mysql.h>
 
 #include <openssl/ssl.h>
 #include <openssl/err.h>
@@ -22,7 +24,12 @@ using namespace std;
 // GameInfo flags
 #define GAME_INFO_SANDBOX  (0x01)      // Use sandbox notification server
 
+#define SSL_CERTIFICATE_PATH "Notification/certificates/"
+
 #define NOTIFY_ALERT_SOUND "PN3.caf"
+
+
+//MYSQL *g_NotificationMYSQL = NULL;
 
 struct GameInfo
 {
@@ -34,10 +41,10 @@ struct GameInfo
    int flags;
 };
 
-struct DeviceId
-{
-   unsigned char id[DEVICE_TOKEN_LEN];
-};
+//struct DeviceId
+//{
+//   unsigned char id[DEVICE_TOKEN_LEN];
+//};
 
 struct ApnError
 {
@@ -46,10 +53,10 @@ struct ApnError
    unsigned int id;        // notification id
 };
 
-std::map<unsigned int, DeviceId> s_Devices;
+//std::map<unsigned int, DeviceId> s_Devices;
  
 // keeps a count of how many notifications are outstanding for a given player
-std::map<UserNotifyKey, unsigned int> s_PendingNotifications;
+//std::map<UserNotifyKey, unsigned int> s_PendingNotifications;
 
 static GameInfo s_GameInfos[] =
 {
@@ -60,7 +67,7 @@ static GameInfo s_GameInfos[] =
    { NULL, NULL, 0, 0, 0, GAME_INFO_SANDBOX },  // GAME_SELECT_THUNDERSTONE
    { NULL, NULL, 0, 0, 0, GAME_INFO_SANDBOX },  // GAME_SELECT_WOWCMG
    //{ "SummonWarCert.pem", "SummonWarKey.pem", 0, 0, 0, 0 },  // GAME_SELECT_SUMMONWAR
-   { "SummonWarPTCert.pem", "SummonWarPTKey.pem", 0, 0, 0, 0 },  // GAME_SELECT_SUMMONWAR
+   { SSL_CERTIFICATE_PATH "SummonWarPTCert.pem", SSL_CERTIFICATE_PATH "SummonWarPTKey.pem", 0, 0, 0, 0 },  // GAME_SELECT_SUMMONWAR
    { NULL, NULL, 0, 0, 0, GAME_INFO_SANDBOX },  // GAME_SELECT_FOODFIGHT
    { NULL, NULL, 0, 0, 0, GAME_INFO_SANDBOX },  // GAME_SELECT_NIGHTFALL
    { NULL, NULL, 0, 0, 0, GAME_INFO_SANDBOX },  // GAME_SELECT_PENNYARCADE
@@ -149,7 +156,7 @@ static bool sendNotification(SSL *ssl, const unsigned char *device,
    memcpy(msgPtr, payload, payloadLen);
    msgPtr += payloadLen;
 
-   //logNotification(id, msgBuf, binaryLen, payloadLen);
+   logNotification(id, msgBuf, binaryLen, payloadLen);
 
    int bytesOut = SSL_write(ssl, msgBuf, msgPtr - msgBuf);
    if (bytesOut != msgPtr - msgBuf)
@@ -162,7 +169,7 @@ static bool sendNotification(SSL *ssl, const unsigned char *device,
 
 static bool checkConnection(int gameType)
 {
-   if (!s_ApnIsConnected)
+   if( !s_ApnIsConnected || gameType < 0 || gameType >= s_GameInfoCount )
    {
       return false;
    }
@@ -233,10 +240,10 @@ static void apnDisconnect()
          SSL_free(s_GameInfos[i].ssl);
          s_GameInfos[i].ssl = 0;
 
-         SSL_CTX_free(s_GameInfos[i].ctx);
-         s_GameInfos[i].ctx = 0;
+         //SSL_CTX_free(s_GameInfos[i].ctx);
+         //s_GameInfos[i].ctx = 0;
 
-         s_GameInfos[i].method = 0;
+         //s_GameInfos[i].method = 0;
 
          closesocket(s);
       }
@@ -300,36 +307,42 @@ static bool apnConnect()
       }
 
       // open SSL connection
-      s_GameInfos[i].method = SSLv23_method();
+      if( s_GameInfos[i].method == NULL )
+      {
+         s_GameInfos[i].method = SSLv23_method();
+      }
 
       // Some versions of OpenSSL want this arg to be non-const
-      s_GameInfos[i].ctx = SSL_CTX_new(const_cast<SSL_METHOD *>(s_GameInfos[i].method));
-
-      if( s_GameInfos[i].ctx == NULL )// this fails in new notification server
+      if( s_GameInfos[i].ctx == NULL )
       {
-         closesocket(s);
-         LogMessage(LOG_PRIO_ERR, "Can't create open ssl certificate\n" );
-         err = true;
-         break;
-      }
-      SSL_CTX_set_default_passwd_cb(s_GameInfos[i].ctx, pem_passwd_cb);
+         s_GameInfos[i].ctx = SSL_CTX_new(const_cast<SSL_METHOD *>(s_GameInfos[i].method));
 
-      if (!SSL_CTX_use_certificate_file(s_GameInfos[i].ctx, s_GameInfos[i].cert, SSL_FILETYPE_PEM))
-      {
-         closesocket(s);
-         LogMessage(LOG_PRIO_ERR, "Can't load certificate file %d (%s)\n", i, s_GameInfos[i].cert);
-         //ERR_print_errors_fp(stderr);
-         err = true;
-         break;
-      }
+         if( s_GameInfos[i].ctx == NULL )// this fails in new notification server
+         {
+            closesocket(s);
+            LogMessage(LOG_PRIO_ERR, "Can't create open ssl certificate\n" );
+            err = true;
+            break;
+         }
+         SSL_CTX_set_default_passwd_cb(s_GameInfos[i].ctx, pem_passwd_cb);
 
-      if (!SSL_CTX_use_PrivateKey_file(s_GameInfos[i].ctx, s_GameInfos[i].key, SSL_FILETYPE_PEM))
-      {
-         closesocket(s);
-         LogMessage(LOG_PRIO_ERR, "Can't load private key file %d (%s)\n", i, s_GameInfos[i].key);
-         //ERR_print_errors_fp(stderr);
-         err = true;
-         break;
+         if (!SSL_CTX_use_certificate_file(s_GameInfos[i].ctx, s_GameInfos[i].cert, SSL_FILETYPE_PEM))
+         {
+            closesocket(s);
+            LogMessage(LOG_PRIO_ERR, "Can't load certificate file %d (%s)\n", i, s_GameInfos[i].cert);
+            //ERR_print_errors_fp(stderr);
+            err = true;
+            break;
+         }
+
+         if (!SSL_CTX_use_PrivateKey_file(s_GameInfos[i].ctx, s_GameInfos[i].key, SSL_FILETYPE_PEM))
+         {
+            closesocket(s);
+            LogMessage(LOG_PRIO_ERR, "Can't load private key file %d (%s)\n", i, s_GameInfos[i].key);
+            //ERR_print_errors_fp(stderr);
+            err = true;
+            break;
+         }
       }
 
       s_GameInfos[i].ssl = SSL_new(s_GameInfos[i].ctx);
@@ -455,6 +468,7 @@ static bool sendGameEndedNotification(const unsigned char *deviceId, unsigned in
 
 // ------
 
+/*
 // returns the device ID of the given user, or NULL if it cannot be found.
 // the pointer returned is valid until the next call to getUserDevice.
 bool  getUserDeviceIos( unsigned int userId, int gameType, unsigned char* buffer, int buffersize )
@@ -462,12 +476,19 @@ bool  getUserDeviceIos( unsigned int userId, int gameType, unsigned char* buffer
    bool found = false;
    buffer[0] = 0;
 
-#if USE_MYSQL_DATABASE
+#if 1
+//#if USE_MYSQL_DATABASE
 
-   const char *gameName = GameDatabaseName(gameType);
+   //const char *gameName = GameDatabaseName(gameType);
+   const char *gameName = "summonwar";
 
    char query[256];
-   MYSQL *sql = GetMysqlConnection();
+   //MYSQL *sql = GetMysqlConnection();
+   MYSQL *sql = g_NotificationMYSQL;
+   if( sql == NULL )
+   {
+      return false;
+   }
 
    STRPRINTF(query, sizeof(query), "SELECT device_id FROM devices_ios_%s WHERE user_id = \'%u\'", gameName, userId);
    mysql_query(sql, query);
@@ -476,9 +497,19 @@ bool  getUserDeviceIos( unsigned int userId, int gameType, unsigned char* buffer
    MYSQL_ROW row;
    if ((row = mysql_fetch_row(res)))
    {
-      //strlen( row[0] );
-      //memcpy( buffer, row[0], DEVICE_TOKEN_LEN);
-      strncpy( (char*)buffer, row[0], buffersize);
+      unsigned long *lengths = mysql_fetch_lengths(res);
+
+      int device_length = lengths[0];
+      if( device_length >= buffersize )
+      {
+          memcpy( buffer, row[0], buffersize );
+      }
+      else
+      {
+         memcpy( buffer, row[0], device_length );
+         memset( &buffer[device_length], 0, buffersize-device_length );
+      }
+
       found = true;
 
       //LogMessage(LOG_PRIO_ERR, "    getUserDevice(userId=%d,gameType=%s) = %s\n", userId, gameName, devicetoa(deviceId) );
@@ -491,10 +522,46 @@ bool  getUserDeviceIos( unsigned int userId, int gameType, unsigned char* buffer
 #endif
    return found;
 }
+*/
 
 bool NotifyIosInit()
 {
    s_ApnIsInitialized = true;
+
+   for (int i = 0; i < s_GameInfoCount; ++i)
+   {
+      if (!s_GameInfos[i].cert)
+      {
+         continue;
+      }
+
+      // open SSL connection
+      s_GameInfos[i].method = SSLv23_method();
+
+      // Some versions of OpenSSL want this arg to be non-const
+      s_GameInfos[i].ctx = SSL_CTX_new(const_cast<SSL_METHOD *>(s_GameInfos[i].method));
+
+      if( s_GameInfos[i].ctx == NULL )// this fails in new notification server
+      {
+         LogMessage(LOG_PRIO_ERR, "Can't create open ssl certificate\n" );
+         continue;
+      }
+      SSL_CTX_set_default_passwd_cb(s_GameInfos[i].ctx, pem_passwd_cb);
+
+      if (!SSL_CTX_use_certificate_file(s_GameInfos[i].ctx, s_GameInfos[i].cert, SSL_FILETYPE_PEM))
+      {
+         LogMessage(LOG_PRIO_ERR, "Can't load certificate file %d (%s)\n", i, s_GameInfos[i].cert);
+         //ERR_print_errors_fp(stderr);
+         continue;
+      }
+
+      if (!SSL_CTX_use_PrivateKey_file(s_GameInfos[i].ctx, s_GameInfos[i].key, SSL_FILETYPE_PEM))
+      {
+         LogMessage(LOG_PRIO_ERR, "Can't load private key file %d (%s)\n", i, s_GameInfos[i].key);
+         //ERR_print_errors_fp(stderr);
+         continue;
+      }
+   }
 
    apnConnect();
 
@@ -504,33 +571,24 @@ bool NotifyIosInit()
 void NotifyIosUninit()
 {
    apnDisconnect();
+
+   for (int i = 0; i < s_GameInfoCount; ++i)
+   {
+      if (!s_GameInfos[i].cert)
+      {
+         continue;
+      }
+
+      SSL_CTX_free(s_GameInfos[i].ctx);
+      s_GameInfos[i].ctx = 0;
+
+      s_GameInfos[i].method = 0;
+   }
+
    s_ApnIsInitialized = false;
 
-   s_Devices.clear();
-   s_PendingNotifications.clear();
-}
-
-bool NotifyIosSetUserDevice(unsigned int userId, int gameType, const unsigned char *deviceId)
-{
-#if USE_MYSQL_DATABASE
-   MYSQL *sql = GetMysqlConnection();
-
-   const char *gameName = GameDatabaseName(gameType);
-   
-   char query[256];
-   STRPRINTF(query, sizeof(query), "REPLACE INTO devices_ios_%s VALUES (%d, x\'%s\')",
-      gameName, userId, devicetoa(deviceId));
-   //LogMessage(LOG_PRIO_ERR, "    NotifyIosSetUserDevice: %s\n", query );
-   
-   int ret = mysql_query(sql, query);
-   if (ret != 0)
-   {
-      //LogMessage(LOG_PRIO_ERR, "Error %s (code %d) executing DB query: \"%s\"\n", mysql_error(sql), ret, query);
-      return false;
-   }
-#endif
-
-   return true;
+   //s_Devices.clear();
+   //s_PendingNotifications.clear();
 }
 
 bool notifyUserIos( const unsigned char* deviceId, unsigned int userId, int gameType, unsigned int gameId, int badgeId, GameNotification notification, va_list args)
@@ -565,32 +623,34 @@ bool notifyUserIos( const unsigned char* deviceId, unsigned int userId, int game
    return false;
 }
 
-int CalculateBadgeNumberFromPendingNotifications( unsigned int userId, unsigned int gameId )
-{
-   // how many notifications are outstanding for this user?
-   int badgeId = 1;
-   UserNotifyKey key;
-   key.userId = userId;
-   key.gameId = gameId;
-
-   std::map<UserNotifyKey, unsigned int>::iterator i = s_PendingNotifications.lower_bound(key);
-   if (i == s_PendingNotifications.end() || i->first != key)
-   {
-      s_PendingNotifications.insert(i, std::pair<UserNotifyKey, unsigned int>(key, 1));
-   }
-   else
-   {
-      badgeId = ++i->second;
-   }
-
-   return badgeId;
-}
+//int CalculateBadgeNumberFromPendingNotifications( unsigned int userId, unsigned int gameType )
+//{
+//   // how many notifications are outstanding for this user?
+//   int badgeId = 1;
+//   UserNotifyKey key;
+//   key.userId = userId;
+//   key.gameType = gameType;
+//
+//   std::map<UserNotifyKey, unsigned int>::iterator i = s_PendingNotifications.lower_bound(key);
+//   if (i == s_PendingNotifications.end() || i->first != key)
+//   {
+//      s_PendingNotifications.insert(i, std::pair<UserNotifyKey, unsigned int>(key, 1));
+//   }
+//   else
+//   {
+//      badgeId = ++i->second;
+//   }
+//
+//   return badgeId;
+//}
 
 ////////////////////////////////////////////////////////////
 
+/*
 bool NotifyUser( unsigned int userId, int gameType, unsigned int gameId, GameNotification notification, ...)
 {
-#if USE_MYSQL_DATABASE
+#if 1
+//#if USE_MYSQL_DATABASE
 
    if (!s_ApnIsInitialized)
    {
@@ -611,8 +671,27 @@ bool NotifyUser( unsigned int userId, int gameType, unsigned int gameId, GameNot
       }
       isAndroid = true;
    }
+   //else
+   //{
+   //    LogMessage(LOG_PRIO_INFO, "NotifyUser: %s\n", devicetoa(deviceId));
+   //   
+   //   MYSQL *sql = g_NotificationMYSQL;
+   //   
+   //   char query[256];
+   //   STRPRINTF(query, sizeof(query), "UPDATE user_device SET device_id=x\'%s\' WHERE user_id=\'%u\'",
+   //      devicetoa(deviceId), userId );
+   //   LogMessage(LOG_PRIO_ERR, "    NotifyUser: %s\n", query );
+   //   
+   //   int ret = mysql_query(sql, query);
+   //   if (ret != 0)
+   //   {
+   //      LogMessage(LOG_PRIO_ERR, "Error %s (code %d) executing DB query: \"%s\"\n", mysql_error(sql), ret, query);
+   //      return false;
+   //   }
+   //}
 
-   int badgeId = CalculateBadgeNumberFromPendingNotifications( userId, gameId );
+   //int badgeId = CalculateBadgeNumberFromPendingNotifications( userId, gameType );
+   int badgeId = 1;
 
    //-----------------------
    va_list args;
@@ -641,46 +720,65 @@ bool NotifyUser( unsigned int userId, int gameType, unsigned int gameId, GameNot
 
 #endif
 }
+*/
+
+bool NotifyUserDirect_iOS( unsigned int userId, const unsigned char *deviceId, int gameType,
+                          unsigned int gameId, int badge_count, GameNotification notification, ... )
+{
+   //LogMessage(LOG_PRIO_INFO, "NotifyUserDirect_iOS: %s\n", devicetoa(deviceId));
+
+   //int badge_count = CalculateBadgeNumberFromPendingNotifications( userId, gameType );
+
+   va_list args;
+   va_start(args, notification);
+
+   bool ret = notifyUserIos( deviceId, userId, gameType, gameId, badge_count, notification, args);
+
+   va_end(args);
+
+   return ret;
+}
+
 
 ////////////////////////////////////////////////////////////
 
-void NotifyUserSetPendingCount(unsigned int userId, int gameType, int count)
-{
-   if (!s_ApnIsInitialized)
-   {
-      return;
-   }
+//void NotifyUserSetPendingCount(unsigned int userId, int gameType, int count)
+//{
+//   if (!s_ApnIsInitialized)
+//   {
+//      return;
+//   }
+//
+//   UserNotifyKey key;
+//   key.userId = userId;
+//   key.gameType = gameType;
+//
+//   std::map<UserNotifyKey, unsigned int>::iterator i = s_PendingNotifications.lower_bound(key);
+//   if (i == s_PendingNotifications.end() || i->first != key)
+//   {
+//      s_PendingNotifications.insert(i, std::pair<UserNotifyKey, unsigned int>(key, count));
+//   }
+//   else
+//   {
+//      i->second = count;
+//   }
+//}
 
-   UserNotifyKey key;
-   key.userId = userId;
-   key.gameId = gameType;
-
-   std::map<UserNotifyKey, unsigned int>::iterator i = s_PendingNotifications.lower_bound(key);
-   if (i == s_PendingNotifications.end() || i->first != key)
-   {
-      s_PendingNotifications.insert(i, std::pair<UserNotifyKey, unsigned int>(key, count));
-   }
-   else
-   {
-      i->second = count;
-   }
-}
-
-void NotifyUserClear(unsigned int userId, int gameType)
-{
-   if (!s_ApnIsInitialized)
-   {
-      return;
-   }
-
-   UserNotifyKey key;
-   key.userId = userId;
-   key.gameId = gameType;
-
-   std::map<UserNotifyKey, unsigned int>::iterator i = s_PendingNotifications.lower_bound(key);
-   if (i != s_PendingNotifications.end() && i->first == key)
-   {
-      s_PendingNotifications.erase(i);
-   }
-}
+//void NotifyUserClear(unsigned int userId, int gameType)
+//{
+//   if (!s_ApnIsInitialized)
+//   {
+//      return;
+//   }
+//
+//   UserNotifyKey key;
+//   key.userId = userId;
+//   key.gameType = gameType;
+//
+//   std::map<UserNotifyKey, unsigned int>::iterator i = s_PendingNotifications.lower_bound(key);
+//   if (i != s_PendingNotifications.end() && i->first == key)
+//   {
+//      s_PendingNotifications.erase(i);
+//   }
+//}
  

@@ -192,6 +192,9 @@ public:
    virtual void  OtherUsersProfile( const map< string, string >& profileKeyValues ){} // items are also available
    virtual void  SelfProfileUpdate( bool success ) {}
 
+   virtual void  HasBeenConnectedToGateway() {}
+   virtual void  HasBeenDisconnectedFromGateway() {}
+
    virtual void  ListOfAvailableProducts() {}
    // this list of purchases will not have localized names for products, especially on other players' products. 
    // make sure to request the list of available products first.
@@ -256,6 +259,9 @@ public:
       NotificationType_UserProfileResponse,
       NotificationType_OtherUsersProfile,
       NotificationType_SelfProfileUpdate,
+
+      NotificationType_HasBeenConnectedToGateway,
+      NotificationType_HasBeenDisconnectedFromGateway,
 
       NotificationType_ListOfAvailableProducts,
       NotificationType_ListOfAggregateUserPurchases,
@@ -341,7 +347,8 @@ public:
    void     OverrideSocketPort( int port ) { m_connectionPort = port; }
    void     Init( const char* serverDNS = "mber.pub.playdekgames.com" /*"64.183.9.93"*/ );
    bool     RegisterCallbackInterface( UserNetworkEventNotifier* _callbacks );
-
+   bool     NeedsProcessingTime() const;
+   
    void     Exit();
    void     UpdateNotifications();
 
@@ -602,6 +609,9 @@ protected:
    vector< ChatChannel >::iterator    GetChannel( const string& channelUuid );
    void     CleanupLingeringMemory();
    bool     SerializePacketOut( BasePacket* packet ) const;// helper
+   
+   void     HasBeenConnectedCallback();
+   void     HasBeenDisconnectedCallback();
 
    bool     HandlePacketReceived( BasePacket* packetIn );
    void     InheritedUpdate();

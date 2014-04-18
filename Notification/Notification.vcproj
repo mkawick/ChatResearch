@@ -64,7 +64,7 @@
 				AdditionalDependencies="../Debug/PacketLibrary.lib ws2_32.lib Secur32.lib ssleay32MTd.lib libeay32MTd.lib curllib.lib"
 				OutputFile="$(OutDir)\$(ProjectName)Server.exe"
 				LinkIncremental="2"
-				AdditionalLibraryDirectories="C:\projects\Mber\ServerStack\w32libs\lib"
+				AdditionalLibraryDirectories="..\w32libs\lib"
 				IgnoreDefaultLibraryNames="libcmt.lib"
 				GenerateDebugInformation="true"
 				SubSystem="1"

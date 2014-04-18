@@ -225,6 +225,7 @@ void  Fruitadens :: AttemptConnection()
 
    m_isConnected = true;
 
+   HasBeenConnectedCallback();
    InitalConnectionCallback();
 }
 
@@ -279,6 +280,7 @@ int   Fruitadens :: MainLoop_InputProcessing()
          cout << "attempting a reconnect" << endl;
          cout << "***********************************************************" << endl;
          closesocket( m_clientSocket );
+         HasBeenDisconnectedCallback();
          m_clientSocket = SOCKET_ERROR;
          CreateSocket();
       }

@@ -25,6 +25,10 @@ using namespace std;
 
 #include "server_notify.h"
 
+#include <openssl/ssl.h>
+#include <openssl/err.h>
+
+//extern MYSQL *g_NotificationMYSQL;
 
 ///////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////
@@ -35,8 +39,15 @@ NotificationMainThread::NotificationMainThread( const string& serverName, U32 se
    m_lastNotificationCheck_TimeStamp = ZeroOutMinutes( m_lastNotificationCheck_TimeStamp );
    SetSleepTime( 100 );
 
+   SSL_library_init();
+   SSL_load_error_strings();
+   OpenSSL_add_all_algorithms();
+
    NotifyIosInit(); // this does not work. I discovered a failure.. 
    NotifyAndroidInit(); 
+
+
+
 }
 
 NotificationMainThread :: ~NotificationMainThread()
@@ -160,6 +171,10 @@ bool  NotificationMainThread::HandlePacketFromOtherServer( BasePacket* packet, U
       {
          HandleNotification( static_cast< PacketNotification_SendNotification* >( unwrappedPacket ) );
       }
+      else if( unwrappedPacket->packetSubType == PacketNotification::NotificationType_UpdateNotificationCount )
+      {
+         HandleUpdateNotificationCount( static_cast< PacketNotification_UpdateNotificationCount* >( unwrappedPacket ) );
+      }
    }
 
    return false;
@@ -263,10 +278,93 @@ bool     NotificationMainThread::HandleNotification( const PacketNotification_Se
 {
    // it's very unlikely that this user is loaded already. It's probably best to just look up the user's devices and send notifications.
 
-   if( m_database )
+   unsigned int user_id = unwrappedPacket->userId;
+   unsigned int game_type = unwrappedPacket->gameType;
+   unsigned int game_id = unwrappedPacket->gameId;
+
+   int badge_count = CalculateBadgeNumberFromPendingNotifications( user_id, game_type, game_id );
+
+   StoreLastUserNotification( user_id, game_type, game_id, unwrappedPacket->notificationType, unwrappedPacket->additionalText );
+
+   if( m_database != NULL )
    {
-      st_mysql* dbHandle = m_database->GetDbHandle();
+      string query( "SELECT user_device.device_id, user_device.platformId, user_device.id FROM user_device JOIN user_device_notification "
+                     "ON user_device.id=user_device_notification.user_device_id WHERE user_device.user_id='");
+      query += boost::lexical_cast< string  >( user_id );
+      query += "' AND user_device_notification.game_type='";
+      query += boost::lexical_cast< string  >( game_type );
+      query += "' AND user_device_notification.is_enabled='1' ";
+      query += "AND user_device.is_enabled='1'";
+
+      //cout << query << endl;
+
+      /*
+      // we're going to assume that this new entry works fine. There is the potential for a uuid conflict, so we'll need to build that later.
+      ExtendedRegisteredDevice* rd = new ExtendedRegisteredDevice;
+         rd->userDeviceId =  0;// we need to look this up
+         rd->name =      registerDevice->deviceName;
+         rd->uuid =      newDeviceUuid;
+         rd->iconId =    1;
+         rd->deviceId =  registerDevice->deviceId;
+         rd->platformId = registerDevice->platformId;
+         rd->isEnabled =  true;
+
+      PacketDbQuery* dbQuery = new PacketDbQuery;
+      dbQuery->id =           m_userInfo.connectionId;
+      dbQuery->meta =         newDeviceUuid;
+      dbQuery->lookup =       QueryType_InsertDevice;
+      dbQuery->serverLookup = registerDevice->platformId;
+      dbQuery->query =        query;
+      dbQuery->customData  = rd;
+
+      m_mainThread->AddQueryToOutput( dbQuery );
+      */
+
+      //g_NotificationMYSQL = m_database->GetDbHandle();
+
+      MYSQL *mysql = m_database->GetDbHandle();
+
+      int ret = mysql_query( mysql, query.c_str() );
+      if (ret != 0)
+      {
+         cout << "Error " << mysql_error(mysql)
+              << " (code " << ret << ") executing DB query: \""
+              << query << "\"" << endl;
+         cout << "        error: " << mysql_error(mysql) << endl;
+         return false;
+      }
+
+      MYSQL_RES *res = mysql_store_result(mysql);
+      if( res != NULL )
+      {
+         MYSQL_ROW row;
+         for( row = mysql_fetch_row(res); row; row = mysql_fetch_row(res) )
+         {
+            if( row[0] == NULL )
+            {
+               continue;
+            }
+
+            unsigned int device_platform;
+            sscanf( row[1], "%u", &device_platform );
+
+            unsigned int device_id;
+            sscanf( row[2], "%u", &device_id );
+
+            if( device_platform == 1 ) // iOS
+            {
+               NotifyUserDirect_iOS( user_id, (const unsigned char*)row[0], game_type, game_id, badge_count,
+                  (GameNotification)unwrappedPacket->notificationType, unwrappedPacket->additionalText.c_str() );
+               SetupUserNotificationResend( user_id, game_type, device_id, 60 );
+            }
+         }
+         mysql_free_result(res);
+      }
+
+      //NotifyUser(unwrappedPacket->userId, unwrappedPacket->gameType, unwrappedPacket->gameId,
+      //            (GameNotification)unwrappedPacket->notificationType, unwrappedPacket->additionalText.c_str());
    }
+
    //
    return false;
 }
@@ -279,11 +377,112 @@ void     NotificationMainThread::PeriodicCheckForNewNotifications()
    time_t currentTime;
    time( &currentTime );
 
-   if( difftime( currentTime, m_lastNotificationCheck_TimeStamp ) >= timeoutNotificationSend ) 
+   double elapsed = difftime( currentTime, m_lastNotificationCheck_TimeStamp );
+   if( elapsed >= timeoutNotificationSend ) 
    {
-      m_lastNotificationCheck_TimeStamp = ZeroOutMinutes( currentTime );// advance the hour.
+      //m_lastNotificationCheck_TimeStamp = ZeroOutMinutes( currentTime );// advance the hour.
+      m_lastNotificationCheck_TimeStamp = currentTime;
    
       // hooks for sending notifications
+
+      std::map<UserNotificationKey,UserNotificationRecord>::iterator itt = m_PendingNotifications.begin();
+      for( ; itt != m_PendingNotifications.end(); ++itt )
+      {
+         if( itt->second.resendNotificationDelay == 0 )
+         {
+            continue;
+         }
+
+         if( (unsigned int)(itt->second.lastNotificationTime-currentTime) < itt->second.resendNotificationDelay )
+         {
+            continue;
+         }
+
+         itt->second.lastNotificationTime = currentTime;
+         itt->second.resendNotificationDelay = 0;
+
+         unsigned int user_id = itt->first.userId;
+         unsigned int game_type = itt->first.gameType;
+         unsigned int game_id = itt->second.lastNotificationGameId;
+
+         int badge_count = itt->second.notificationCount;
+
+         if( m_database != NULL )
+         {
+            string query( "SELECT user_device.device_id, user_device.platformId, user_device.id FROM user_device JOIN user_device_notification "
+                           "ON user_device.id=user_device_notification.user_device_id WHERE user_device.user_id='");
+            query += boost::lexical_cast< string  >( user_id );
+            query += "' AND user_device_notification.game_type='";
+            query += boost::lexical_cast< string  >( game_type );
+            query += "' AND user_device_notification.is_enabled='1' ";
+            query += "AND user_device.is_enabled='1'";
+
+            //cout << query << endl;
+
+            /*
+            // we're going to assume that this new entry works fine. There is the potential for a uuid conflict, so we'll need to build that later.
+            ExtendedRegisteredDevice* rd = new ExtendedRegisteredDevice;
+               rd->userDeviceId =  0;// we need to look this up
+               rd->name =      registerDevice->deviceName;
+               rd->uuid =      newDeviceUuid;
+               rd->iconId =    1;
+               rd->deviceId =  registerDevice->deviceId;
+               rd->platformId = registerDevice->platformId;
+               rd->isEnabled =  true;
+
+            PacketDbQuery* dbQuery = new PacketDbQuery;
+            dbQuery->id =           m_userInfo.connectionId;
+            dbQuery->meta =         newDeviceUuid;
+            dbQuery->lookup =       QueryType_InsertDevice;
+            dbQuery->serverLookup = registerDevice->platformId;
+            dbQuery->query =        query;
+            dbQuery->customData  = rd;
+
+            m_mainThread->AddQueryToOutput( dbQuery );
+            */
+
+            //g_NotificationMYSQL = m_database->GetDbHandle();
+
+            MYSQL *mysql = m_database->GetDbHandle();
+
+            int ret = mysql_query( mysql, query.c_str() );
+            if (ret != 0)
+            {
+               cout << "Error " << mysql_error(mysql)
+                    << " (code " << ret << ") executing DB query: \""
+                    << query << "\"" << endl;
+               cout << "        error: " << mysql_error(mysql) << endl;
+               break;
+            }
+
+            MYSQL_RES *res = mysql_store_result(mysql);
+            if( res != NULL )
+            {
+               MYSQL_ROW row;
+               for( row = mysql_fetch_row(res); row; row = mysql_fetch_row(res) )
+               {
+                  if( row[0] == NULL )
+                  {
+                     continue;
+                  }
+
+                  unsigned int device_platform;
+                  sscanf( row[1], "%u", &device_platform );
+
+                  unsigned int device_id;
+                  sscanf( row[2], "%u", &device_id );
+
+                  if( device_platform == 1 ) // iOS
+                  {
+                     NotifyUserDirect_iOS( user_id, (const unsigned char*)row[0], game_type, game_id, badge_count,
+                        (GameNotification)itt->second.lastNotificationType, itt->second.lastNotificationText );
+                  }
+               }
+               mysql_free_result(res);
+            }
+         }
+      }
+
    }
 }
 
@@ -410,6 +609,138 @@ int      NotificationMainThread::MainLoop_OutputProcessing()
    return 1;
 }
 
+//---------------------------------------------------------------
+
+bool NotificationMainThread::HandleUpdateNotificationCount( const PacketNotification_UpdateNotificationCount* unwrappedPacket )
+{
+   UserNotificationKey key;
+   key.userId = unwrappedPacket->userId;
+   key.gameType = unwrappedPacket->gameType;
+
+   int notification_count = unwrappedPacket->notificationCount;
+
+
+   std::map<UserNotificationKey, UserNotificationRecord>::iterator i = m_PendingNotifications.lower_bound(key);
+   if( i == m_PendingNotifications.end() || i->first != key )
+   {
+      if( notification_count > 0 )
+      {
+         UserNotificationRecord record;
+         record.notificationCount = notification_count;
+         record.lastNotificationGameId = 0;
+         record.lastNotificationType = 0;
+         record.lastNotificationText.clear();
+         record.resendNotificationDelay = 0;
+         record.lastNotificationTime = 0;
+
+         m_PendingNotifications.insert(i, std::pair<UserNotificationKey,UserNotificationRecord>(key,record) );
+      }
+   }
+   else
+   {
+      if( notification_count > 0 )
+      {
+         i->second.notificationCount = notification_count;
+
+         i->second.lastNotificationGameId = 0;
+         i->second.lastNotificationType = 0;
+         i->second.lastNotificationText.clear();
+         i->second.resendNotificationDelay = 0;
+         i->second.lastNotificationTime = 0;
+      }
+      else
+      {
+         m_PendingNotifications.erase(i);
+      }
+   }
+
+   return true;
+}
+
+//---------------------------------------------------------------
+
+int NotificationMainThread::CalculateBadgeNumberFromPendingNotifications( unsigned int userId, unsigned int gameType, int gameId )
+{
+   // how many notifications are outstanding for this user?
+   int notification_count = 1;
+   UserNotificationKey key;
+   key.userId = userId;
+   key.gameType = gameType;
+
+   std::map<UserNotificationKey,UserNotificationRecord>::iterator i = m_PendingNotifications.lower_bound(key);
+   if (i == m_PendingNotifications.end() || i->first != key)
+   {
+      UserNotificationRecord record;
+      record.notificationCount = notification_count;
+      record.lastNotificationGameId = 0;
+      record.lastNotificationType = 0;
+      record.lastNotificationText.clear();
+      record.resendNotificationDelay = 0;
+      record.lastNotificationTime = 0;
+
+      m_PendingNotifications.insert(i, std::pair<UserNotificationKey,UserNotificationRecord>(key,record));
+   }
+   else
+   {
+      notification_count = ++i->second.notificationCount;
+   }
+
+   return notification_count;
+}
+
+
+bool NotificationMainThread::StoreLastUserNotification( unsigned int userId, unsigned int gameType, int gameId,
+                                                      unsigned int notificationType, string additionalText )
+{
+   UserNotificationKey key;
+   key.userId = userId;
+   key.gameType = gameType;
+
+   std::map<UserNotificationKey,UserNotificationRecord>::iterator i = m_PendingNotifications.lower_bound(key);
+   if (i == m_PendingNotifications.end() || i->first != key)
+   {
+      UserNotificationRecord record;
+      record.notificationCount = 1;
+      record.lastNotificationGameId = gameId;
+      record.lastNotificationType = notificationType;
+      record.lastNotificationText = additionalText;
+      record.resendNotificationDelay = 0;
+      record.lastNotificationTime = 0;
+
+      m_PendingNotifications.insert(i, std::pair<UserNotificationKey,UserNotificationRecord>(key,record));
+   }
+   else
+   {
+      i->second.lastNotificationGameId = gameId;
+      i->second.lastNotificationType = notificationType;
+      i->second.lastNotificationText = additionalText;
+      i->second.resendNotificationDelay = 0;
+      i->second.lastNotificationTime = 0;
+   }
+
+   return true;
+}
+
+ bool NotificationMainThread::SetupUserNotificationResend( unsigned int userId, unsigned int gameType,
+                                                         unsigned int deviceId, unsigned delayTime )
+ {
+   UserNotificationKey key;
+   key.userId = userId;
+   key.gameType = gameType;
+
+   std::map<UserNotificationKey,UserNotificationRecord>::iterator i = m_PendingNotifications.lower_bound(key);
+   if (i == m_PendingNotifications.end() || i->first != key)
+   {
+      return false;
+   }
+   else
+   {
+      i->second.resendNotificationDelay = delayTime;
+      time( &i->second.lastNotificationTime );
+   }
+
+   return true;
+ }
 
 //---------------------------------------------------------------
 //---------------------------------------------------------------

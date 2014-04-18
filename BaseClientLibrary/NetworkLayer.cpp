@@ -392,6 +392,16 @@ void     NetworkLayer::UpdateNotifications()
                notify->SelfProfileUpdate( success );
             }
             break;
+         case UserNetworkEventNotifier::NotificationType_HasBeenConnectedToGateway:
+            { 
+               notify->HasBeenConnectedToGateway();
+            }
+            break;
+         case UserNetworkEventNotifier::NotificationType_HasBeenDisconnectedFromGateway:
+            {
+               notify->HasBeenDisconnectedFromGateway();
+            }
+            break;
             
          case UserNetworkEventNotifier::NotificationType_ChatListUpdate:
             {
@@ -1789,6 +1799,15 @@ bool     NetworkLayer::RegisterCallbackInterface( UserNetworkEventNotifier* _cal
 
 //-----------------------------------------------------------------------------
 
+bool     NetworkLayer::NeedsProcessingTime() const 
+{ 
+   if( m_isConnected == true || m_notifications.size() > 0 ) 
+      return true; 
+   return false; 
+}
+
+//-----------------------------------------------------------------------------
+
 bool     NetworkLayer::SendRawPacket( const char* buffer, int length ) const
 {
    PacketGameplayRawData raw;
@@ -2155,9 +2174,24 @@ void     NetworkLayer::ExpireThreadPerformanceBoost()
       }
    }
 }
+
 //-----------------------------------------------------------------------------
 
-bool  NetworkLayer::HandlePacketReceived( BasePacket* packetIn )
+void     NetworkLayer::HasBeenConnectedCallback()
+{
+   Notification( UserNetworkEventNotifier::NotificationType_HasBeenConnectedToGateway );
+}
+
+//-----------------------------------------------------------------------------
+
+void     NetworkLayer::HasBeenDisconnectedCallback()
+{
+   Notification( UserNetworkEventNotifier::NotificationType_HasBeenDisconnectedFromGateway );
+}
+
+//-----------------------------------------------------------------------------
+
+bool     NetworkLayer::HandlePacketReceived( BasePacket* packetIn )
 {
    PacketCleaner cleaner( packetIn );
 
@@ -2279,12 +2313,11 @@ bool  NetworkLayer::HandlePacketReceived( BasePacket* packetIn )
                //RequestListOfInvitationsSent();
             }
             break;
-         case PacketContact::ContactType_InviteSentNotification:
+         case PacketContact::ContactType_InviteReceived:
             {
-               cout << "new invite sent" << endl;
-               PacketContact_InviteSentNotification* packet = static_cast< PacketContact_InviteSentNotification* >( packetIn );
+               cout << "new invite received" << endl;
+               PacketContact_InviteReceivedNotification* packet = static_cast< PacketContact_InviteReceivedNotification* >( packetIn );
                cout << "   From " << packet->info.inviterName << endl;
-               //cout << "   invite to: " << invite.inviteeName << endl;
                cout << "   message: " << packet->info.message << endl;
                m_invitationsReceived.insert( packet->info.uuid, packet->info );
                Notification( UserNetworkEventNotifier::NotificationType_InvitationReceived, packet->info.uuid );
@@ -2379,6 +2412,7 @@ bool  NetworkLayer::HandlePacketReceived( BasePacket* packetIn )
                   else
                   {
                      Disconnect();// server forces a logout.
+                     m_isLoggedIn = false;
                   }
                   Notification( UserNetworkEventNotifier::NotificationType_UserLogin, m_isLoggedIn );
                   

@@ -398,6 +398,8 @@ void  DiplodocusGateway::CleanupOldConnections()
       {
          if( khaanWrapper.HasDeleteTimeElapsed( currentTime ) == true )
          {
+            if( khaanWrapper.m_connector )
+               khaanWrapper.m_connector->ForceShutdown();
             m_connectionMap.erase( oldConnIt );
          }
       }
@@ -523,12 +525,22 @@ void  DiplodocusGateway::HandlePacketToKhaan( KhaanGateway* khaan, BasePacket* p
    if( packet->packetType == PacketType_Login && 
        packet->packetSubType == PacketLogin::LoginType_InformGatewayOfLoginStatus )
    {
+      PacketCleaner cleaner( packet );
       PacketLoginToGateway* finishedLogin = static_cast< PacketLoginToGateway* >( packet );
       if( finishedLogin->wasLoginSuccessful )
       {
          khaan->AuthorizeConnection();
          khaan->SetAdminLevelOperations( finishedLogin->adminLevel );
          khaan->SetLanguageId( finishedLogin->languageId );
+
+         PacketLoginToClient* clientNotify = new PacketLoginToClient;
+         clientNotify->wasLoginSuccessful = finishedLogin->wasLoginSuccessful;
+         clientNotify->uuid = finishedLogin->uuid;
+         clientNotify->userName = finishedLogin->userName;
+         clientNotify->lastLogoutTime = finishedLogin->lastLogoutTime;
+         clientNotify->connectionId = connectionId;
+         clientNotify->loginKey = finishedLogin->loginKey;
+         packet = clientNotify;
       }
       else
       {
@@ -539,6 +551,10 @@ void  DiplodocusGateway::HandlePacketToKhaan( KhaanGateway* khaan, BasePacket* p
          ConnectionMapIterator it = m_connectionMap.find( connectionId );
          if( it != m_connectionMap.end() )
          {
+            PacketLogoutToClient* logoutPacket = new PacketLogoutToClient;
+            //logoutPacket->wasDisconnectedByError = true;
+            packet = logoutPacket;
+
             KhaanGatewayWrapper& khaanWrapper = it->second;
             time_t currentTime;
             time( &currentTime );
@@ -547,17 +563,6 @@ void  DiplodocusGateway::HandlePacketToKhaan( KhaanGateway* khaan, BasePacket* p
          
          connectionId = 0;
       }
-
-      PacketLoginToClient* clientNotify = new PacketLoginToClient;
-      clientNotify->wasLoginSuccessful = finishedLogin->wasLoginSuccessful;
-      clientNotify->uuid = finishedLogin->uuid;
-      clientNotify->userName = finishedLogin->userName;
-      clientNotify->lastLogoutTime = finishedLogin->lastLogoutTime;
-      clientNotify->connectionId = connectionId;
-      clientNotify->loginKey = finishedLogin->loginKey;
-
-      delete finishedLogin;
-      packet = clientNotify;
    }
 
    if( m_printPacketTypes )

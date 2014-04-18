@@ -63,6 +63,7 @@
 				Name="VCLinkerTool"
 				AdditionalDependencies="../Debug/PacketLibrary.lib"
 				LinkIncremental="2"
+				AdditionalLibraryDirectories="..\w32libs\lib"
 				GenerateDebugInformation="true"
 				SubSystem="1"
 				TargetMachine="1"

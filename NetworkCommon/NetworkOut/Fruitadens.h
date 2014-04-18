@@ -55,6 +55,10 @@ public:
    bool        IsConnected() const { return m_isConnected; }
    void        SetServerUniqueId( U32 id ) { m_serverId = id; }
 
+   virtual bool   NeedsProcessingTime() const { return true; }
+   virtual void   HasBeenConnectedCallback() {}
+   virtual void   HasBeenDisconnectedCallback() {}
+
 protected:
 
    bool           SetupConnection( const char* serverName, int port );

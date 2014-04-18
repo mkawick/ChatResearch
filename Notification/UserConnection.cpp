@@ -62,6 +62,8 @@ void  UserConnection::RequestAllDevicesForUser()
    dbQuery->query += m_userInfo.uuid;
    dbQuery->query += "'";
 
+   //cout << dbQuery->query << endl;
+
    m_mainThread->AddQueryToOutput( dbQuery );
 }
 
@@ -74,9 +76,11 @@ void  UserConnection::RequestAllDeviceNotification()
    dbQuery->meta =         "";
    dbQuery->lookup =       QueryType_DevicePerGameList;
    dbQuery->serverLookup = m_userInfo.userId;
-   dbQuery->query = "SELECT * FROM user_device_notification WHERE id IN ( select id from user_device where user_uuid='";
+   dbQuery->query = "SELECT * FROM user_device_notification WHERE user_device_id IN ( select id from user_device where user_uuid='";
    dbQuery->query += m_userInfo.uuid;
    dbQuery->query += "')";
+
+   //cout << dbQuery->query << endl;
 
    m_mainThread->AddQueryToOutput( dbQuery );
 }
@@ -177,7 +181,7 @@ void  UserConnection::StoreDevicesPerGameList( const PacketDbQueryResult* dbResu
       UserDeviceNotifications dn;
       dn.id =                                boost::lexical_cast< int  >( row[ TableUserDeviceNotifications::Column_id ] );
       dn.deviceId =                          boost::lexical_cast< int  >( row[ TableUserDeviceNotifications::Column_device_id ] );
-      dn.gameType =                          boost::lexical_cast< int  >( row[ TableUserDeviceNotifications::Column_game_id ] );
+      dn.gameType =                          boost::lexical_cast< int  >( row[ TableUserDeviceNotifications::Column_game_type ] );
       dn.isEnabled=                          boost::lexical_cast< bool  >( row[ TableUserDeviceNotifications::Column_is_enabled ] );
 
       m_deviceEnabledList.push_back( dn );
@@ -233,6 +237,22 @@ bool  UserConnection::HandleRequestFromClient( const BasePacket* packet )
 }
 
 //------------------------------------------------------------
+#define DEVICE_TOKEN_LEN   1024
+
+static const char *devicetoa(const unsigned char *device, int device_len)
+{
+   static char devstr[DEVICE_TOKEN_LEN * 2 + 1];
+
+   for (int i = 0; i < device_len; ++i)
+   {
+      devstr[i * 2] = "0123456789abcdef"[device[i] >> 4];
+      devstr[i * 2 + 1] = "0123456789abcdef"[device[i] & 0xf];
+   }
+
+   devstr[device_len * 2] = '\0';
+
+   return devstr;
+}
 
 void     UserConnection::RegisterNewDevice( const PacketNotification_RegisterDevice* registerDevice )
 {
@@ -276,13 +296,17 @@ void     UserConnection::RegisterNewDevice( const PacketNotification_RegisterDev
    query += m_userInfo.uuid;
    query += "', '";
    query += newDeviceUuid;
-   query += "', '";
-   query += boost::lexical_cast< string  >( registerDevice->deviceId );
+   query += "', x'";
+   query += devicetoa( (const unsigned char*)registerDevice->deviceId.c_str(), registerDevice->deviceId.size() );
    query += "', '";
    query += registerDevice->deviceName;
-   query += "', 1, "; // icon id
+   query += "', '1', '"; // icon id
    query += boost::lexical_cast< string  >( (int) registerDevice->platformId );
-   query += ", 1, DEFAULT )";// is_enabled, date
+   query += "', '";
+   query += boost::lexical_cast< string  >( m_userInfo.userId );
+   query += "', '1', DEFAULT )";// is_enabled, date
+
+   //cout << query << endl;
 
    // we're going to assume that this new entry works fine. There is the potential for a uuid conflict, so we'll need to build that later.
    ExtendedRegisteredDevice* rd = new ExtendedRegisteredDevice;
@@ -298,7 +322,7 @@ void     UserConnection::RegisterNewDevice( const PacketNotification_RegisterDev
    dbQuery->id =           m_userInfo.connectionId;
    dbQuery->meta =         newDeviceUuid;
    dbQuery->lookup =       QueryType_InsertDevice;
-   dbQuery->serverLookup = registerDevice->platformId;
+   dbQuery->serverLookup = m_userInfo.gameProductId;
    dbQuery->query =        query;
    dbQuery->customData  = rd;
 
@@ -351,6 +375,8 @@ void  UserConnection::CreateNewDeviceNotificationEntry( U32 userDeviceId, U32 ga
    query += ", ";
    query += boost::lexical_cast< string  >( gameType );
    query += ", 1, DEFAULT )";// is enabled, timestamp
+
+   //cout << query << endl;
 
    PacketDbQuery* dbQuery = new PacketDbQuery;
    dbQuery->id =           m_userInfo.connectionId;
