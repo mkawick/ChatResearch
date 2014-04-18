@@ -41,6 +41,7 @@ public:
    void     TrackInviteRejected() { m_numInvitesRejected++; }
    void     ClearStats();
 
+   U32      GetInvitationExpryTime() const { return m_secondsBetweenSendingInvitationAndExpiration; }
 
 private:
 
@@ -62,6 +63,11 @@ private:
    void     TrackCountStats( StatTracking stat, float value, int sub_category );
    void     RunHourlyStats();
    void     RunDailyStats();
+   void     ExpireOldInvitations();
+
+   void     RequestAdminSettings();
+   void     HandleAdminSettings( const PacketDbQueryResult* dbResult );
+   void     HandleExipiredInvitations( const PacketDbQueryResult* dbResult );
 
    //bool     DiplodocusContact::InviteUser( const string& inviterUuid, const string& inviteeUuid, const string& message );
 
@@ -87,10 +93,23 @@ private:
    int                              m_numInvitesAccepted;
    int                              m_numInvitesRejected;
 
+   bool                             m_hasRequestedAdminSettings;
+   bool                             m_isWaitingForAdminSettings;
+
    time_t                           m_timestampHourlyStatServerStatisics;
    static const U32                 timeoutHourlyStatisics = 60*60;
    time_t                           m_timestampDailyStatServerStatisics;
    static const U32                 timeoutDailyStatisics = timeoutHourlyStatisics*24;
+
+   time_t                           m_timestampExpireOldInvitations;
+   U32                              m_secondsBetweenSendingInvitationAndExpiration;
+
+   enum QueryType 
+   {
+      QueryType_AccountAdminSettings = 1,
+      QueryType_SelectExpiredInvitations,
+      QueryType_DeleteExpiredInvitations
+   };
 };
 
 ///////////////////////////////////////////////////////////////////

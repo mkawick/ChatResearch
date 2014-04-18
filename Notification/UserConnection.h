@@ -17,7 +17,7 @@ struct UserDeviceNotifications
 {
    int      id;
    int      deviceId; // refers to the user_device table 
-   int      gameId;
+   int      gameType;
    bool     isEnabled;
 };
 
@@ -65,7 +65,7 @@ private:
    void        UpdateDevice( const PacketNotification_UpdateDevice* device );
    void        RequestDevicesList( const PacketNotification_RequestListOfDevices* device );
    void        UpdateDbRecordForDevice( U32 id );
-   void        CreateNewDeviceNotificationEntry( U32 userDeviceId, U32 gameId );
+   void        CreateNewDeviceNotificationEntry( U32 userDeviceId, U32 gameType );
    bool        SendMessageToClient( BasePacket* packet ) const;
 
    typedef  list< ExtendedRegisteredDevice >    RegisteredDeviceList;

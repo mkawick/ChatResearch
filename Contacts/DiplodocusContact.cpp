@@ -24,13 +24,19 @@ DiplodocusContact::DiplodocusContact( const string& serverName, U32 serverId ): 
                         m_numSearches( 0 ),
                         m_numInvitesSent( 0 ),
                         m_numInvitesAccepted( 0 ),
-                        m_numInvitesRejected( 0 )
+                        m_numInvitesRejected( 0 ),
+                        m_hasRequestedAdminSettings( false ),
+                        m_timestampExpireOldInvitations( false )
 {
    SetSleepTime( 45 );
    time_t currentTime;
    time( &currentTime );
    m_timestampDailyStatServerStatisics = ZeroOutHours( currentTime );
    m_timestampHourlyStatServerStatisics = ZeroOutMinutes( currentTime );
+
+   m_timestampExpireOldInvitations = 0;
+
+   m_secondsBetweenSendingInvitationAndExpiration = 60*60 * 24 * 7;// 7 days;
 }
 
 //---------------------------------------------------------------
@@ -39,13 +45,97 @@ void     DiplodocusContact::ServerWasIdentified( IChainedInterface* khaan )
 {
    BasePacket* packet = NULL;
    PackageForServerIdentification( m_serverName, m_localIpAddress, m_serverId, m_listeningPort, m_gameProductId, m_isGame, m_isControllerApp, true, m_isGateway, &packet );
-   //khaan->AddOutputChainData( packet, 0 );
-   
 
    InputChainType* localKhaan = static_cast< InputChainType* >( khaan );
    localKhaan->AddOutputChainData( packet, 0 );
-   //m_clientsNeedingUpdate.push_back( localKhaan->GetChainedId() );
    m_serversNeedingUpdate.push_back( localKhaan->GetServerId() );
+}
+
+
+//---------------------------------------------------------------
+
+void     DiplodocusContact::RequestAdminSettings()
+{
+   PacketDbQuery* dbQuery = new PacketDbQuery;
+   dbQuery->id = 0;
+   dbQuery->lookup = QueryType_AccountAdminSettings;
+   dbQuery->query = "SELECT * FROM admin_contact";
+
+   m_isWaitingForAdminSettings = true;
+
+   AddQueryToOutput( dbQuery );
+}
+
+//---------------------------------------------------------------
+
+void     DiplodocusContact::HandleAdminSettings( const PacketDbQueryResult* dbResult )
+{
+   KeyValueParser              enigma( dbResult->bucket );
+   KeyValueParser::iterator    it = enigma.begin();
+
+   U32 basicTimeUnit = 60 * 60;// one hour default value
+   U32 numUnits = 1;
+
+   const U32 oneMinute = 60;
+   const U32 oneHour = oneMinute * 60;
+   const U32 oneDay = oneHour * 24;   
+   const U32 oneWeek = oneDay * 7;
+   const U32 oneMonth = oneDay * 30;// one month +/-;
+   
+   while( it != enigma.end() )
+   {
+      KeyValueParser::row      row = *it++;
+      string setting =         row[ TableKeyValue::Column_key ];
+      string value =           row[ TableKeyValue::Column_value ];
+
+      if( setting == "invitation.expry.num_units" )
+      {
+         if( value.size() && value != "NULL" )
+         {
+            numUnits = boost::lexical_cast< U32 >( value );
+         }
+      }
+      else if ( setting == "invitation.expry.unit" )
+      {
+         if( value == "hour" )
+         {
+            basicTimeUnit = oneHour;
+         }
+         else if ( value == "minute" )
+         {
+            basicTimeUnit = oneMinute;
+         }
+         else if ( value == "day" )
+         {
+            basicTimeUnit = oneDay;// one day
+         }
+         else if ( value == "week" )
+         {
+            basicTimeUnit = oneWeek;// one week
+         }
+         else if ( value == "month" )
+         {
+            basicTimeUnit = oneMonth;
+         }
+      }
+   }
+   
+   m_secondsBetweenSendingInvitationAndExpiration = basicTimeUnit * numUnits;   
+
+   // time clamping
+   if( m_secondsBetweenSendingInvitationAndExpiration < oneMinute )
+      m_secondsBetweenSendingInvitationAndExpiration = 0;
+   else if( m_secondsBetweenSendingInvitationAndExpiration > oneMonth )
+      m_secondsBetweenSendingInvitationAndExpiration = oneMonth;
+
+   m_isWaitingForAdminSettings = false;
+}
+
+//---------------------------------------------------------------
+
+void     DiplodocusContact::HandleExipiredInvitations( const PacketDbQueryResult* dbResult )
+{
+   // tbd ?
 }
 
 //---------------------------------------------------------------
@@ -287,6 +377,23 @@ void  DiplodocusContact::UpdateDbResults()
             cout << "ERROR: DB Result has user that cannot be found" << endl;
          }
       }
+      else
+      {
+         // local packet handling
+         switch( dbResult->lookup )
+         {
+            case QueryType_AccountAdminSettings:
+            {
+               HandleAdminSettings( dbResult );
+            }
+            break;
+            case QueryType_SelectExpiredInvitations:
+            {
+               HandleExipiredInvitations( dbResult );
+            }
+            break;
+         }
+      }
 
       BasePacket* packet = static_cast<BasePacket*>( dbResult );
       PacketCleaner cleaner( packet );
@@ -333,6 +440,64 @@ void     DiplodocusContact::RunDailyStats()
 
 //---------------------------------------------------------------
 
+void     DiplodocusContact::ExpireOldInvitations()
+{
+   if( m_hasRequestedAdminSettings == false )
+   {
+      RequestAdminSettings();
+      m_hasRequestedAdminSettings = true;
+      return;
+   }
+   else if( m_isWaitingForAdminSettings == true )
+   {
+      return;
+   }
+
+   // disabled
+   if( m_secondsBetweenSendingInvitationAndExpiration == 0 )
+      return;
+
+   time_t currentTime;
+   time( &currentTime );
+   double pastSeconds = difftime( currentTime, m_timestampExpireOldInvitations );
+   if( pastSeconds >= m_secondsBetweenSendingInvitationAndExpiration ) 
+   {
+      m_timestampExpireOldInvitations = currentTime;
+
+      U32 seconds = static_cast< U32 >( pastSeconds );
+
+      //SELECT * FROM playdek.friend_pending where sent_date < ( NOW() - interval 1000000 second );
+
+      string whereClause = "FROM playdek.friend_pending WHERE sent_date < ( NOW() - interval ";
+      whereClause += boost::lexical_cast< string >( seconds );
+      whereClause += " second )";
+
+      string selectQuery = "SELECT * " + whereClause; // we can grab these and possibly inform connected users.
+      string deleteQuery = "DELETE " + whereClause;
+
+      //------------------------------
+
+      PacketDbQuery* dbQuery = new PacketDbQuery;
+      dbQuery->id = 0;
+      dbQuery->lookup = QueryType_SelectExpiredInvitations;
+      dbQuery->query = selectQuery;
+      dbQuery->isFireAndForget = false;
+
+      AddQueryToOutput( dbQuery );
+      
+
+      dbQuery = new PacketDbQuery;
+      dbQuery->id = 0;
+      dbQuery->lookup = QueryType_DeleteExpiredInvitations;
+      dbQuery->query = deleteQuery;
+      dbQuery->isFireAndForget = true;
+
+      AddQueryToOutput( dbQuery );
+   }
+}
+
+//---------------------------------------------------------------
+
 int      DiplodocusContact::CallbackFunction()
 {
    UpdateDbResults();
@@ -366,8 +531,8 @@ int      DiplodocusContact::CallbackFunction()
    RunHourlyStats();
    RunDailyStats();
    StatTrackingConnections::SendStatsToStatServer( m_listOfOutputs, m_serverName, m_serverId, m_serverType );
-   /*ContinueInitialization();*/
-   // check for new friend requests and send a small list of notifications
+
+   ExpireOldInvitations();   
 
    return 1;
 }

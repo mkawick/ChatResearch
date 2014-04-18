@@ -177,7 +177,7 @@ void  UserConnection::StoreDevicesPerGameList( const PacketDbQueryResult* dbResu
       UserDeviceNotifications dn;
       dn.id =                                boost::lexical_cast< int  >( row[ TableUserDeviceNotifications::Column_id ] );
       dn.deviceId =                          boost::lexical_cast< int  >( row[ TableUserDeviceNotifications::Column_device_id ] );
-      dn.gameId =                            boost::lexical_cast< int  >( row[ TableUserDeviceNotifications::Column_game_id ] );
+      dn.gameType =                          boost::lexical_cast< int  >( row[ TableUserDeviceNotifications::Column_game_id ] );
       dn.isEnabled=                          boost::lexical_cast< bool  >( row[ TableUserDeviceNotifications::Column_is_enabled ] );
 
       m_deviceEnabledList.push_back( dn );
@@ -330,7 +330,7 @@ void  UserConnection::CreateEnabledNotificationEntry( const PacketDbQueryResult*
    }
 
    U32 userDeviceId = dbResult->insertId;
-   U32 gameId = static_cast< U32>( dbResult->serverLookup );
+   U32 gameType = static_cast< U32>( dbResult->serverLookup );
 
    //----------------------------
    rd->deviceId = userDeviceId;
@@ -338,25 +338,25 @@ void  UserConnection::CreateEnabledNotificationEntry( const PacketDbQueryResult*
    delete rd;
    //----------------------------
 
-   CreateNewDeviceNotificationEntry( userDeviceId, gameId );   
+   CreateNewDeviceNotificationEntry( userDeviceId, gameType );   
 }
 
 //------------------------------------------------------------
 
 // we do not make all of the same error checks here... it's too costly and assumed to have already have been performed
-void  UserConnection::CreateNewDeviceNotificationEntry( U32 userDeviceId, U32 gameId )
+void  UserConnection::CreateNewDeviceNotificationEntry( U32 userDeviceId, U32 gameType )
 {
    string query( "INSERT INTO user_device_notification VALUES( DEFAULT, ");
    query += boost::lexical_cast< string  >( userDeviceId );
    query += ", ";
-   query += boost::lexical_cast< string  >( gameId );
+   query += boost::lexical_cast< string  >( gameType );
    query += ", 1, DEFAULT )";// is enabled, timestamp
 
    PacketDbQuery* dbQuery = new PacketDbQuery;
    dbQuery->id =           m_userInfo.connectionId;
    dbQuery->meta =         "";
    dbQuery->lookup =       QueryType_InsertDeviceNotification;
-   dbQuery->serverLookup = gameId;
+   dbQuery->serverLookup = gameType;
    dbQuery->query =        query;
    dbQuery->isFireAndForget = true;  // MAJOR importance... we are requesting an update of all the data below
 
@@ -438,7 +438,7 @@ void  UserConnection::UpdateDevice( const PacketNotification_UpdateDevice* updat
    
    //deviceIt->isEnabled = updateDevicePacket->isEnabled; << this is the "general" isEnabled.
 
-   deviceEnabledIt->gameId = updateDevicePacket->gameId;
+   deviceEnabledIt->gameType = updateDevicePacket->gameType;
    deviceEnabledIt->isEnabled = updateDevicePacket->isEnabled;
 
    UpdateDbRecordForDevice( userDeviceId );
@@ -523,7 +523,7 @@ void        UserConnection::RequestDevicesList( const PacketNotification_Request
          rd.isEnabled = deviceNotificationIter->isEnabled;
          rd.name = deviceIt->name;
          rd.platformId = deviceIt->platformId;
-         rd.productId = deviceNotificationIter->gameId;
+         rd.productId = deviceNotificationIter->gameType;
          rd.uuid = deviceIt->uuid;
          response->devices.push_back( rd );
       }
@@ -577,7 +577,7 @@ UserConnection::DeviceNotificationsIterator
    DeviceNotificationsIterator  deviceEnabledIt = m_deviceEnabledList.begin();
    while( deviceEnabledIt != m_deviceEnabledList.end() )
    {
-      if( m_userInfo.gameProductId == deviceEnabledIt->gameId )// got to match both fields.
+      if( m_userInfo.gameProductId == deviceEnabledIt->gameType )// got to match both fields.
       {
          if( deviceEnabledIt->deviceId == id )
          {

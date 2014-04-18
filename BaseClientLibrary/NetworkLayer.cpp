@@ -300,6 +300,21 @@ void     NetworkLayer::UpdateNotifications()
                notify->InvitationsSentUpdate();
             }
             break;
+         case UserNetworkEventNotifier::NotificationType_InvitationReceived:
+            {
+               string uuid = keyValueIt->value; ++keyValueIt;
+               const SerializedKeyValueVector< InvitationInfo >& kvVector = m_invitationsReceived;
+               SerializedKeyValueVector< InvitationInfo >::const_KVIterator it = kvVector.begin();
+               while (it != kvVector.end() )
+               {
+                  if( it->key == uuid )
+                  {
+                     notify->InvitationReceived( it->value );
+                  }
+                  it ++;
+               }
+            }
+            break;
          case UserNetworkEventNotifier::NotificationType_InvitationAccepted:
             {
                string from = keyValueIt->value; ++keyValueIt;
@@ -434,10 +449,7 @@ void     NetworkLayer::UpdateNotifications()
                {
                   listOfChats.push_back( optimizedDataAccessHistory[i] );
                }
-               for( list< UserNetworkEventNotifier* >::iterator it = m_callbacks.begin(); it != m_callbacks.end(); ++it )
-               {
-                  notify->ChatHistoryMissedSinceLastLoginComposite( listOfChats );
-               }
+               notify->ChatHistoryMissedSinceLastLoginComposite( listOfChats );
             }
             break;
 
@@ -2026,7 +2038,7 @@ bool     NetworkLayer::ChangeDevice( const string& deviceUuid, const string& dev
    update.deviceName = deviceNewName;
    update.isEnabled = isEnabled;
    update.iconId = iconId;
-   update.gameId = m_gameProductId;
+   update.gameType = m_gameProductId;
 
    return SerializePacketOut( &update );
 }
@@ -2221,7 +2233,7 @@ bool  NetworkLayer::HandlePacketReceived( BasePacket* packetIn )
             break;
          case PacketContact::ContactType_GetListOfInvitationsResponse:
             {
-               cout << "contacts received" << endl;
+               cout << "invitations received" << endl;
                PacketContact_GetListOfInvitationsResponse* packet = static_cast< PacketContact_GetListOfInvitationsResponse* >( packetIn );
                cout << "Num invites received: " << packet->invitations.size() << endl;
 
@@ -2269,19 +2281,13 @@ bool  NetworkLayer::HandlePacketReceived( BasePacket* packetIn )
             break;
          case PacketContact::ContactType_InviteSentNotification:
             {
-               cout << "new invite received" << endl;
+               cout << "new invite sent" << endl;
                PacketContact_InviteSentNotification* packet = static_cast< PacketContact_InviteSentNotification* >( packetIn );
-               cout << "From " << packet->info.inviterName << endl;
-               if( m_callbacks.size() )
-               {
-                  for( list< UserNetworkEventNotifier* >::iterator it = m_callbacks.begin(); it != m_callbacks.end(); ++it )
-                  {
-                     (*it)->InvitationReceived( packet->info );
-                  }
-               }
+               cout << "   From " << packet->info.inviterName << endl;
+               //cout << "   invite to: " << invite.inviteeName << endl;
+               cout << "   message: " << packet->info.message << endl;
                m_invitationsReceived.insert( packet->info.uuid, packet->info );
-               Notification( UserNetworkEventNotifier::NotificationType_InvitationsSentUpdate );
-               //NotificationType_InvitationReceived
+               Notification( UserNetworkEventNotifier::NotificationType_InvitationReceived, packet->info.uuid );
             }
             break;
          case PacketContact::ContactType_InvitationAccepted:
