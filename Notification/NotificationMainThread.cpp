@@ -1,4 +1,4 @@
-#include "NotificationMainThread.h"
+// NotificationMainThread.cpp
 
 #include <iostream>
 #include <time.h>
@@ -8,6 +8,8 @@ using namespace std;
 #include <boost/format.hpp>
 #include <boost/lexical_cast.hpp>
 #include <boost/algorithm/string/replace.hpp>
+
+#include "NotificationMainThread.h"
 
 #include "../NetworkCommon/Utils/CommandLineParser.h"
 

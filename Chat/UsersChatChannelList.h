@@ -14,6 +14,7 @@ public:
 
    
    string               userUuid;
+   U32                  userId;
    list< stringhash >   channels;
    bool                 isOnline;
    bool                 blockContactInvites;

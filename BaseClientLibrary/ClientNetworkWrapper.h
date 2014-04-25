@@ -1,4 +1,5 @@
 #pragma once
+// ClientNetworkWrapper.h
 
 #include "../NetworkCommon/ServerConstants.h" // defines game product ids
 
@@ -14,7 +15,6 @@
 #include "../NetworkCommon/Packets/NotificationPacket.h"
 #include "../NetworkCommon/Packets/TournamentPacket.h"
 
-
 #if defined(ANDROID)
 #define __stdcall 
 #endif
@@ -23,330 +23,28 @@
 #include <map>
 using namespace std;
 
+#include "ClientSideNetworkCallback.h"
+#include "NetworkWrapper_SupportClasses.h"
+
+
 namespace Mber
 {
 
-   //typedef void (__stdcall * SignalReady)(int);
-///////////////////////////////////////////////////////
-
-struct Demographics
-{
-   bool     isPrivate;// if true, most of the rest of this info is invalid.
-   string   username;
-   string   email;
-   time_t   lastLoginTime;
-   // ...
-   list< string > listOfGamesOwned;
-   int      gender;
-   int      avatar;
-   string   location;
-   int      timeZoneGmt;
-
-};
-
-//-------------------------------------------
-
-struct RegisteredProduct
-{
-   string   id; 
-   string   title; 
-   string   description; 
-   string   price; 
-   string   localized_price; 
-   double   number_price;
-   float    quantity;
-};
-
-//-------------------------------------------
-//-------------------------------------------
-
-class BasicUser
-{
-public:
-   string   userName;
-   string   UUID;
-   U32      avatarId; 
-   bool     isOnline;
-};
-
-//-------------------------------------------
-//-------------------------------------------
-
-class ChatChannel
-{
-public:
-   ChatChannel(): gameInstanceId( 0 ) {}
-   string   channelName;
-   string   channelDetails;
-   string   uuid;
-   U8       gameProductId;
-   U32      gameInstanceId;
-
-   SerializedKeyValueVector< string >   userList; // not necessarily friends
-
-   void  Clear()
-   {
-      channelName.clear();
-      channelDetails.clear();
-      uuid.clear();
-      gameProductId = 0;
-      gameInstanceId = 0;
-      userList.clear();
-   }
-   void  Print();
-};
-
-//-------------------------------------------
-
-typedef vector< ChatChannel >    ChatChannelVector;
-
-
-//-------------------------------------------
-//-------------------------------------------
-
-class Group
-{
-   string groupName;
-   string groupMotto;
-   int    avatarId;
-   string chatChannel; // the venn diagrap for groups and channels may not be 1-1
-   vector< BasicUser > usersInGroup;
-};
-
-//-------------------------------------------
-
-///////////////////////////////////////////////////////
-struct AssetInfoExtended;
-
-class RawDataAccumulator
-{
-public:
-   RawDataAccumulator() : numBytes( 0 ), isReadyToBeCleared( false ) {}
-
-   void  AddPacket( PacketGameplayRawData * );
-   bool  IsDone() const;
-   void  PrepPackage( U8* & data, int& size );
-   void  PrepPackage( AssetInfoExtended& asset );
-
-   void  ClearData();
-   bool  NeedsClearing() const;
-
-   int   GetRemainingSize() const
-   { 
-      if( packetsOfData.size() > 1 )
-      {
-         return (*packetsOfData.begin())->index * PacketGameplayRawData::MaxBufferSize;// only an estimate
-      }
-      return 0;
-   }
-
-   int   numBytes;
-   bool  isReadyToBeCleared;
-   deque< PacketGameplayRawData* > packetsOfData;
-};
-
-///////////////////////////////////////////////////////
-
-struct AssetInfoExtended : public AssetInfo
-{
-   U8*                     data;
-   int                     size;
-   RawDataAccumulator      rawDataBuffer;
-
-   AssetInfoExtended();
-   AssetInfoExtended( const AssetInfo& asset );
-   AssetInfoExtended( const AssetInfoExtended& asset );
-   ~AssetInfoExtended();
-
-   const AssetInfo&  operator = ( const AssetInfo& asset );
-   const AssetInfoExtended&  operator = ( const AssetInfoExtended& asset );
-
-   void  SetData( const U8* data, int size );
-   void  ClearData();
-   bool  IsDataValid() const { if( data && size ) return true; return false; }
-   void  MoveData( AssetInfoExtended& source );
-
-   bool  SerializeIn( const U8* data, int& bufferOffset ) { return false; } // do not serialize
-   bool  SerializeOut( U8* data, int& bufferOffset ) const { return false; }
-
-   // loading from the network
-   void  AddAssetData( PacketGameplayRawData* data );
-   bool  IsAssetFullyLoaded() const;
-   int   GetRemainingSize() const;
-   bool  NeedsClearing() const;
-   void  ClearTempData();
-};
-
-///////////////////////////////////////////////////////
-
-class NetworkLayer;
-class NetworkLayer2;
-class UserNetworkEventNotifier
-{
-public:
-   virtual void  UserLogin( bool success ) {}
-   virtual void  UserLogout() {}
-   virtual void  AreWeUsingCorrectNetworkVersion( bool isCorrect ){}
-   virtual void  ServerRequestsListOfUserPurchases() {}
-   virtual void  UserProfileResponse() {}
-   virtual void  OtherUsersProfile( const map< string, string >& profileKeyValues ){} // items are also available
-   virtual void  SelfProfileUpdate( bool success ) {}
-
-   virtual void  HasBeenConnectedToGateway() {}
-   virtual void  HasBeenDisconnectedFromGateway() {}
-
-   virtual void  ListOfAvailableProducts() {}
-   // this list of purchases will not have localized names for products, especially on other players' products. 
-   // make sure to request the list of available products first.
-   virtual void  ListOfAggregateUserPurchases() {}
-
-   virtual void  UserDemographics( const string& username, const Demographics& userDemographics ) {}
-   virtual void  UserWinLoss( const string& username, const WinLoss& userWinLoss ) {}
-
-   virtual void  GameData( U16 length, const U8* rawdata ) {}
-   virtual void  AssetDataAvailable( const string& category, const string& assetHash ) {}
-
-   virtual void  FriendsUpdate() {}
-   virtual void  FriendOnlineStatusChanged( const string& uuid ) {}
-   virtual void  ChatChannelUpdate( const string& channelUuid ) {}
-   virtual void  ChatListUpdate() {}
-   virtual void  ListOfFriendUpdate() {}
-
-   virtual void  SearchResults( vector< string >& values ) {}
-
-   virtual void  ReadyToStartSendingRequestsToGame() {}
-
-   virtual void  ChatReceived( const string& message, const string& channelUUID, const string& userUUID, const string& timeStamp ){}
-
-   virtual void  InvitationReceived( const InvitationInfo& newInvitation ){}
-   virtual void  InvitationsReceivedUpdate() {}
-   virtual void  InvitationsSentUpdate() {}
-   virtual void  InvitationAccepted( const string& sender, const string& receiver, bool wasAccepted ){}
-   virtual void  SearchForUserResultsAvailable() {}
-
-   virtual void  ChatChannelHistory( const string& channelUuid, const list< ChatEntry >& listOfChats ) {  }
-   virtual void  ChatP2PHistory( const string& userUuid, const list< ChatEntry >& listOfChats ) { }
-   virtual void  ChatHistoryMissedSinceLastLoginComposite( const list< MissedChatChannelEntry >& listOfChats ) { }
-   
-   virtual void  NewChatChannelAdded( const string& channelName, const string& channelUuid, bool success ) { }
-   virtual void  ChatChannelDeleted( const string& channelUuid, bool success ) { }
-
-   virtual void  ChatChannel_UserAdded( const string& channelName, const string& channelUuid, const string userName, const string userUuid ) { }
-   virtual void  ChatChannel_UserRemoved( const string& channelUuid, const string& userUuid, bool success ) { }
-   //virtual void  NewChatChannelAdded( const string& channelName, const string& channelUuid, bool success ) { }
-
-   virtual void  AssetCategoriesLoaded() {}
-   virtual void  AssetManifestAvailable( const string& category ) {}
-   virtual bool  AssetLoaded( const string& name, const U8* buffer, int size ) { return true; }
-   virtual void  TournamentListAvalable() const {}
-   virtual void  TournamentPurchaseResult( const string& tournamentUuid, int result ) const {}
-
-   virtual void  OnError( int code, int subCode, const char* text = NULL ){}
-
-   virtual void  PurchaseSuccess( const string& purchaseUuid, bool success ){}
-   virtual void  ProductsForSale( const SerializedKeyValueVector< PurchaseInfo >& thingsToBuy ) {}
-
-   virtual void  ListOfDevicesUpdated() const {}
-
-   UserNetworkEventNotifier(): network( NULL ){}
-
-   enum NotificationType
-   {
-      NotificationType_UserLogin,
-      NotificationType_UserLogout,
-      NotificationType_AreWeUsingCorrectNetworkVersion,
-      NotificationType_ServerRequestsListOfUserPurchases,
-      NotificationType_UserProfileResponse,
-      NotificationType_OtherUsersProfile,
-      NotificationType_SelfProfileUpdate,
-
-      NotificationType_HasBeenConnectedToGateway,
-      NotificationType_HasBeenDisconnectedFromGateway,
-
-      NotificationType_ListOfAvailableProducts,
-      NotificationType_ListOfAggregateUserPurchases,
-
-      //NotificationType_UserDemographics,
-      //NotificationType_UserWinLoss,
-
-      NotificationType_GameData,
-      NotificationType_AssetDataAvailable,
-
-      NotificationType_FriendsUpdate,
-      NotificationType_FriendOnlineStatusChanged,
-      NotificationType_ChatChannelUpdate,
-      NotificationType_ChatListUpdate,
-
-      NotificationType_SearchResults,
-
-      NotificationType_ReadyToStartSendingRequestsToGame,
-
-      NotificationType_ChatReceived,
-
-      NotificationType_InvitationReceived,
-      NotificationType_InvitationsReceivedUpdate,
-      NotificationType_InvitationsSentUpdate,
-      NotificationType_InvitationAccepted,
-      NotificationType_SearchForUserResultsAvailable,
-
-      NotificationType_ChatChannelHistory,
-      NotificationType_ChatP2PHistory,
-      NotificationType_ChatHistoryMissedSinceLastLoginComposite,
-      
-      NotificationType_NewChatChannelAdded,
-      NotificationType_ChatChannelDeleted,
-
-      NotificationType_ChatChannel_UserAdded,
-      NotificationType_ChatChannel_UserRemoved,
-
-      NotificationType_AssetCategoriesLoaded,
-      NotificationType_AssetManifestAvailable,
-      NotificationType_AssetLoaded,
-      NotificationType_TournamentListAvalable,
-      NotificationType_TournamentPurchaseResult,
-
-      NotificationType_OnError,
-
-      NotificationType_PurchaseSuccess,
-      NotificationType_ProductsForSale,
-      NotificationType_ListOfDevicesUpdated,
-      NotificationType_Num
-   };
-   NetworkLayer* network;
-};
-
-class UserNetworkEventNotifier2 : public UserNetworkEventNotifier
-{
-public:
-   UserNetworkEventNotifier2() : UserNetworkEventNotifier(), network2( NULL ) {}
-   NetworkLayer2* network2;
-};
-
-///////////////////////////////////////////////////////
-
-typedef list< UserNetworkEventNotifier* > MBerNotifierList;
-typedef list< UserNetworkEventNotifier2* > MBerNotifierList2;
-
-typedef vector< AssetInfoExtended > AssetCollection;
-typedef map< string, AssetCollection > AssetMap;
-typedef pair< string, AssetCollection > AssetMapPair;
-typedef AssetMap::iterator AssetMapIter;
-typedef AssetMap::const_iterator AssetMapConstIter;
 
 
 ///////////////////////////////////////////////////////
 
-class NetworkLayer :  public Fruitadens
+class ClientNetworkWrapper :  public Fruitadens
 {
 public:
-   NetworkLayer( U8 gameProductId, bool processOnlyOneIncommingPacketPerLoop = false );
-   ~NetworkLayer();
+   ClientNetworkWrapper( U8 gameProductId, bool processOnlyOneIncommingPacketPerLoop = false );
+   ~ClientNetworkWrapper();
 
    void     EnableMultithreadedCallbackSystem();
    void     CheckForReroutes( bool checkForRerouts );
    void     OverrideSocketPort( int port ) { m_connectionPort = port; }
    void     Init( const char* serverDNS = "mber.pub.playdekgames.com" /*"64.183.9.93"*/ );
-   bool     RegisterCallbackInterface( UserNetworkEventNotifier* _callbacks );
+   bool     RegisterCallbackInterface( ClientSideNetworkCallback* _callbacks );
    bool     NeedsProcessingTime() const;
    
    void     Exit();
@@ -615,6 +313,7 @@ protected:
 
    bool     HandlePacketReceived( BasePacket* packetIn );
    void     InheritedUpdate();
+   void     HandleChatChannelUpdate( BasePacket* packetIn );
 
    int      MainLoop_InputProcessing();
    void     HandleAssetData( PacketGameplayRawData* data );
@@ -643,7 +342,7 @@ protected:
 
 ///////////////////////////////////////////////////////
 
-class UserNetworkEventNotifierExtended: public UserNetworkEventNotifier
+class ClientSideNetworkCallbackExtended: public ClientSideNetworkCallback
 {
 public:
    void  SetStartTime();
@@ -659,10 +358,10 @@ public:
    unsigned long   m_timeTaken;
 };
 
-class NetworkLayerExtended: public NetworkLayer
+class NetworkLayerExtended: public ClientNetworkWrapper
 {
 public:
-   NetworkLayerExtended( U8 gameProductId, bool processOnlyOneIncommingPacketPerLoop = false ) : NetworkLayer( gameProductId, processOnlyOneIncommingPacketPerLoop ){}
+   NetworkLayerExtended( U8 gameProductId, bool processOnlyOneIncommingPacketPerLoop = false ) : ClientNetworkWrapper( gameProductId, processOnlyOneIncommingPacketPerLoop ){}
    
    bool  HandlePacketReceived( BasePacket* packetIn );
    void  SendAssetEcho();
@@ -686,7 +385,7 @@ public:
    ~NetworkLayer2();
 
    //void     CheckForReroutes( bool checkForRerouts );
-   bool     RegisterCallbackInterface( UserNetworkEventNotifier2* _callbacks );
+   bool     RegisterCallbackInterface( ClientSideNetworkCallback2* _callbacks );
 
    void     Exit();
 

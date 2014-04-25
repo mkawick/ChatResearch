@@ -40,7 +40,6 @@ KhaanGateway::~KhaanGateway()
 void     KhaanGateway::AuthorizeConnection() 
 { 
    m_authorizedConnection = true; 
-   m_gateway->TrackCountStats( StatTrackingConnections::StatTracking_UserLoginSuccess, 1, 0 );
 }
 
 void     KhaanGateway::SetLanguageId( U8 languageId ) 

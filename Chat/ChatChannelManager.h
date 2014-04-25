@@ -105,6 +105,7 @@ public:
 
    bool           CreateNewChannel( const string& channelName, const string& userUuid );
    bool           GetChatChannels( const string& userUuid, ChannelFullKeyValue& availableChannels );
+   U32            GetUserId( const string& userUuid ) const;
 
 
    bool           CreateNewChannel( const PacketChatCreateChatChannelFromGameServer* pPacket );
@@ -137,6 +138,7 @@ private:
 
    typedef map< stringhash, UsersChatChannelList >    UserMap;
    typedef UserMap::iterator                          UserMapIterator;
+   typedef UserMap::const_iterator                    UserMapConstIterator;
    typedef pair< stringhash, UsersChatChannelList >   UserPair;
    //---------------------------------------------------
 
@@ -164,6 +166,7 @@ private:
 
    void           StoreUserInChannel( const string& channelUuid, const string& userUuid, const string username );
    bool           DeleteUserFromChannel( const string& channelUuid, const string& userUuid );
+   void           QueryAllChatUsers( int startIndex, int numToFetch );
    void           StoreAllUsersInChannel( const string& channelUuid, const SerializedKeyValueVector< string >& usersAndIds, bool sendNotification = false );
    bool           NotifyUserThatHeWasAddedToChannel( const string& userUuid, const string& channelName, const string& channelUuid ); 
    U32            QueryAllUsersInAllChatChannels();
@@ -182,8 +185,10 @@ private:
    bool           HandleAllUsersInAllChannelsResult( PacketDbQueryResult* dbResult, ChatChannelDbJob& job );
 
    void           StoreUser( const string& userUuid, const string& userName );
-   void           StoreUser( const string& userUuid, const string& userName, bool blockContactInvites, bool blockGroupInvites );
-   UsersChatChannelList&   GetUserInfo( const string& userUuid );
+   void           StoreUser( const string& userUuid, U32 userId, const string& userName, bool blockContactInvites, bool blockGroupInvites );
+   const UsersChatChannelList&   
+                  GetUserInfo( const string& userUuid ) const;
+
    void           AddChannelToUser( const string& userUuid, stringhash channelHash );
    void           DeleteChannelFromUser( const string& userUuid, stringhash channelHash );
    bool           AddUserToChannelAndWriteToDB( const string& channelUuid, const string& addedUserUuid, const string& addedUserName );
@@ -215,6 +220,8 @@ private:
    int                           m_dbIdTracker;
    time_t                        m_initializationTimeStamp;
    int                           m_numChannelsToLoad;
+   int                           m_numUsersToLoadPerQueryForInitialLoad;
+   int                           m_offsetIndex_QueryForInitialLoad;
    bool                          m_isPullingAllUsersAndChannels;
    
    int                           m_numChannelChatsSent;

@@ -249,13 +249,10 @@ bool     DiplodocusChat::HandleLoginPacket( BasePacket* packet, U32 connectionId
             //ChatUser* user = GetUserByUsername( pPacket->userName );
             if( user == NULL )
             {
-               user = CreateNewUser( userConnectionId );              
-               user->Init( pPacket->userId, pPacket->userName, pPacket->uuid, pPacket->lastLoginTime );
+               user = CreateNewUser( userConnectionId );
             }
-            
+            user->Init( pPacket->userId, pPacket->userName, pPacket->uuid, pPacket->lastLoginTime );            
             user->LoggedIn();
-
-            
          }
          return true;
       case PacketLogin::LoginType_PrepareForUserLogout:

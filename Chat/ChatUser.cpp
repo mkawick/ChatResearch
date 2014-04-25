@@ -58,6 +58,12 @@ void  ChatUser::Init( U32 userId, const string& name, const string& uuid, const 
    m_userName =      name;
    m_uuid =          uuid;
    m_lastLoginTime = lastLoginTime;
+
+   cout << "--------------------------------------------" << endl;
+   cout << "User login: " << name << endl;
+   cout << "User uuid: " << uuid << endl;
+   cout << "lastLoginTime = " << lastLoginTime << endl;
+   cout << "--------------------------------------------" << endl;
    m_userId =      userId;
 }
 
@@ -98,7 +104,7 @@ bool     ChatUser::Update()
 void     ChatUser::RequestAllBasicChatInfo()
 {
    GetAllChatHistroySinceLastLogin();
-   RequestChatChannels();
+   //RequestChatChannels();
 }
 
 bool     ChatUser::HandleClientRequest( BasePacket* packet )
@@ -492,7 +498,7 @@ bool     ChatUser::HandleDbResult( PacketDbQueryResult * dbResult )
 
 //---------------------------------------------------------------
 
-void     ChatUser::ChatReceived( const string& message, const string& senderUuid, const string& senderDisplayName, string channelUuid, string timeStamp )
+void     ChatUser::ChatReceived( const string& message, const string& senderUuid, const string& senderDisplayName, string channelUuid, string timeStamp, U32 userId )
 {
    PacketChatToClient* packet = new PacketChatToClient;
    packet->message = message;
@@ -500,6 +506,7 @@ void     ChatUser::ChatReceived( const string& message, const string& senderUuid
    packet->userName = senderDisplayName;
    packet->channelUuid = channelUuid;
    packet->timeStamp = timeStamp;
+   packet->userTempId = userId;// naming for obfuscation
 
    SendMessageToClient( packet );
 }
@@ -533,28 +540,31 @@ void     ChatUser::StoreChatHistoryMissedSinceLastLogin( PacketDbQueryResult * d
    {
       ChatTable::row       row = *it++;
       MissedChatChannelEntry  entry;
+      entry.message =         row[ TableChat::Column_text ];
       entry.senderUuid =      row[ TableChat::Column_user_id_sender ];
       entry.chatChannelUuid = row[ TableChat::Column_chat_channel_id ];
-      string gameTurn = row[ TableChat::Column_game_turn ];
+      string gameTurn =       row[ TableChat::Column_game_turn ];
       if( entry.chatChannelUuid.size() && gameTurn.size() )
       {
          entry.isGamechannel =  true;
+         entry.senderTempId = m_chatChannelManager->GetUserId( entry.senderUuid );
       }
       else
       {
          entry.isGamechannel = false;
+         entry.senderTempId = 0;
       }
-      entry.numMessages = 1;
+      //entry.numMessages = 1;
 
       vector< MissedChatChannelEntry > ::iterator it = Find( entry, history );
       if( it == history.end() )
       {
          history.push_back( entry );
       }
-      else
+     /* else
       {
          ++(it->numMessages);
-      }
+      }*/
    }
    SendChatHistorySinceLastLogin( history );
 }
@@ -623,6 +633,7 @@ void     ChatUser::SendChatHistoryToClientCommon( const DynamicDataBucket& bucke
       entry.userName =     row[ SimpleChat::Column_user_name ];
       entry.useruuid =     row[ SimpleChat::Column_user_uuid ];
       entry.timestamp =    row[ SimpleChat::Column_timestamp ];
+      entry.userTempId = m_chatChannelManager->GetUserId( entry.useruuid );
 
       const string& gameTurn = row[ SimpleChat::Column_game_turn ];
 
@@ -663,13 +674,16 @@ void     ChatUser::SendChatHistoryToClientCommon( const DynamicDataBucket& bucke
 
 void     ChatUser::SendChatHistorySinceLastLogin( const vector< MissedChatChannelEntry >& history )
 {
+   cout << "SendChatHistorySinceLastLogin for user " << m_userName << endl;
+   cout << " history size = " << history.size() << endl;
+
    const int maxNumMessagesPerPacket = 20;
    if( history.size() == 0 )
    {
       //m_chatServer->SendErrorToClient( m_connectionId, PacketErrorReport::ErrorType_NoChatHistoryExistsForThisUser );
       return;
    }
-
+   
    U32 startingIndex = 0;
 
    while( history.size() - startingIndex > maxNumMessagesPerPacket )
@@ -868,15 +882,48 @@ bool     ChatUser::SendMessageToClient( BasePacket* packet ) const
 
 void     ChatUser::RequestChatChannels()
 {
-   //ChannelFullKeyValue    availableChannels;
-   //m_chatChannelManager->GetChatChannels( m_uuid, availableChannels );
+   const int maxChannelsToSend = 15; // given the roughly 130 bytes just for the structure of the chat channel, 
+   // we need to be sure that we don't overflow the buffer.
+   SerializedKeyValueVector< ChannelInfoFullList >  channelList;
+   m_chatChannelManager->GetChatChannels( m_uuid, channelList );
 
-   PacketChatChannelList* packetChannels = new PacketChatChannelList;// this may need to be moved into a separate function
-   //packetChannels->channelList = availableChannels;
+   if( channelList.size() == 0 )
+      return;
+
+   int currentOffset = 0;
+   int totalCount = channelList.size();
+
+   while( currentOffset + maxChannelsToSend < totalCount )
+   {
+      PacketChatChannelList* packetChannels = new PacketChatChannelList;
+      packetChannels->channelList.SetIndexParams( currentOffset, totalCount );
+
+      int destinationOffset = currentOffset + maxChannelsToSend;
+      for( int i=currentOffset; i<destinationOffset; i++ )
+      {
+         packetChannels->channelList.insert( channelList[i].key, channelList[i].value );
+      }
+      SendMessageToClient( packetChannels );
+      currentOffset += maxChannelsToSend;
+   }
+
+   if( currentOffset < totalCount )
+   {
+      PacketChatChannelList* packetChannels = new PacketChatChannelList;
+      packetChannels->channelList.SetIndexParams( currentOffset, totalCount );
+
+      for( int i=currentOffset; i< totalCount; i++ )
+      {
+         packetChannels->channelList.insert( channelList[i].key, channelList[i].value );
+      }
+      SendMessageToClient( packetChannels );
+   }
+
+  /* PacketChatChannelList* packetChannels = new PacketChatChannelList;// this may need to be moved into a separate function
 
    m_chatChannelManager->GetChatChannels( m_uuid, packetChannels->channelList );
 
-   SendMessageToClient( packetChannels );
+   SendMessageToClient( packetChannels );*/
 }
 
 //------------------------------------------------------------------------------------------------

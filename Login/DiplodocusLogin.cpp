@@ -261,7 +261,7 @@ bool     DiplodocusLogin:: LogUserIn( const string& userName, const string& pass
             const bool isLoggedIn = true; 
             const bool wasDisconnectedByError = false;
 
-            SendLoginStatusToOtherServers( connection->m_userName, 
+            SendLoginStatusTo_Non_GameServers( connection->m_userName, 
                                              connection->m_userUuid, 
                                              connectionId, 
                                              gameProductId, 
@@ -275,11 +275,25 @@ bool     DiplodocusLogin:: LogUserIn( const string& userName, const string& pass
                                              isLoggedIn, 
                                              wasDisconnectedByError );
 
-            if( connection->SuccessfulLogin( connectionId, true ) == true )
+            if( connection->SuccessfulLoginFinished( connectionId, true ) == true )
             {
                m_uniqueUsers.insert( connection->m_userUuid );
                UpdateLastLoggedInTime( connectionId ); // update the user logged in time
             }
+            SendLoginStatusTo_GameServers( connection->m_userName, 
+                                             connection->m_userUuid, 
+                                             connectionId, 
+                                             gameProductId, 
+                                             connection->m_lastLoginTime, 
+                                             connection->m_isActive, 
+                                             connection->m_email, 
+                                             connection->m_passwordHash, 
+                                             connection->m_id, 
+                                             connection->m_loginKey, 
+                                             connection->m_languageId, 
+                                             isLoggedIn, 
+                                             wasDisconnectedByError );
+            m_numSuccessfulLogins++;
             m_numRelogins ++;
          }
          else
@@ -331,12 +345,16 @@ bool  DiplodocusLogin:: LoadUserAccount( const string& userName, const string& p
 
 //---------------------------------------------------------------
 
-bool     DiplodocusLogin:: HandleLoginResultFromDb( U32 connectionId, PacketDbQueryResult* dbResult )
+bool     DiplodocusLogin:: HandleUserLoginResult( U32 connectionId, PacketDbQueryResult* dbResult )
 {
    ConnectionToUser* connection = GetUserConnection( connectionId );
    if( connection )
    {
+      // ---------------------------------
+      // lots happening here
       connection->LoginResult( dbResult );
+      // ---------------------------------
+
       if( connection->CanContinueLogginIn() == false )
       {
          connection->ClearLoggingOutStatus();
@@ -351,7 +369,7 @@ bool     DiplodocusLogin:: HandleLoginResultFromDb( U32 connectionId, PacketDbQu
          const bool isLoggedIn = true; 
          const bool wasDisconnectedByError = false;
 
-         SendLoginStatusToOtherServers( connection->m_userName, 
+        /* SendLoginStatusToOtherServers( connection->m_userName, 
                                        connection->m_userUuid, 
                                        connectionId, 
                                        connection->m_gameProductId, 
@@ -363,19 +381,87 @@ bool     DiplodocusLogin:: HandleLoginResultFromDb( U32 connectionId, PacketDbQu
                                        connection->m_loginKey, 
                                        connection->m_languageId, 
                                        isLoggedIn, 
-                                       wasDisconnectedByError);
-         if( connection->SuccessfulLogin( connectionId, false ) == true )
+                                       wasDisconnectedByError);*/
+
+         SendLoginStatusTo_Non_GameServers( connection->m_userName, 
+                                             connection->m_userUuid, 
+                                             connectionId, 
+                                             connection->m_gameProductId, 
+                                             connection->m_lastLoginTime, 
+                                             connection->m_isActive, 
+                                             connection->m_email, 
+                                             connection->m_passwordHash, 
+                                             connection->m_id, 
+                                             connection->m_loginKey, 
+                                             connection->m_languageId, 
+                                             isLoggedIn, 
+                                             wasDisconnectedByError );
+
+         cout << "--------------------------------------------" << endl;
+         cout << "User login: " << connection->m_userName << endl;
+         cout << "User uuid: " << connection->m_userUuid << endl;
+         cout << "lastLoginTime = " << connection->m_lastLoginTime << endl;
+         cout << "--------------------------------------------" << endl;
+         if( connection->SuccessfulLoginFinished( connectionId, false ) == true )
          {
             Log( "User connection success", 1 );
             m_uniqueUsers.insert( connection->m_userUuid );
 
             UpdateLastLoggedInTime( dbResult->id ); // update the user logged in time
+            SendLoginStatusTo_GameServers( connection->m_userName, 
+                                             connection->m_userUuid, 
+                                             connectionId, 
+                                             connection->m_gameProductId, 
+                                             connection->m_lastLoginTime, 
+                                             connection->m_isActive, 
+                                             connection->m_email, 
+                                             connection->m_passwordHash, 
+                                             connection->m_id, 
+                                             connection->m_loginKey, 
+                                             connection->m_languageId, 
+                                             isLoggedIn, 
+                                             wasDisconnectedByError );
             return true;
          }
          else
          {
             Log( "User connection failure", 1 );
          }
+         
+         /*
+         SendLoginStatusTo_Non_GameServers( connection->m_userName, 
+                                             connection->m_userUuid, 
+                                             connectionId, 
+                                             gameProductId, 
+                                             connection->m_lastLoginTime, 
+                                             connection->m_isActive, 
+                                             connection->m_email, 
+                                             connection->m_passwordHash, 
+                                             connection->m_id, 
+                                             connection->m_loginKey, 
+                                             connection->m_languageId, 
+                                             isLoggedIn, 
+                                             wasDisconnectedByError );
+
+            if( connection->SuccessfulLoginFinished( connectionId, true ) == true )
+            {
+               m_uniqueUsers.insert( connection->m_userUuid );
+               UpdateLastLoggedInTime( connectionId ); // update the user logged in time
+            }
+            SendLoginStatusTo_GameServers( connection->m_userName, 
+                                             connection->m_userUuid, 
+                                             connectionId, 
+                                             gameProductId, 
+                                             connection->m_lastLoginTime, 
+                                             connection->m_isActive, 
+                                             connection->m_email, 
+                                             connection->m_passwordHash, 
+                                             connection->m_id, 
+                                             connection->m_loginKey, 
+                                             connection->m_languageId, 
+                                             isLoggedIn, 
+                                             wasDisconnectedByError );
+         */
          
       }
    }
@@ -1275,6 +1361,62 @@ bool     DiplodocusLogin:: HandleUserProfileFromDb( U32 connectionId, PacketDbQu
 
 //------------------------------------------------------------------------------------------------
 //------------------------------------------------------------------------------------------------
+bool  DiplodocusLogin:: SendLoginStatus(  ChainType*  destinationServerPtr,
+                                          const string& userName, 
+                                          const string& userUuid, 
+                                          U32 connectionId, 
+                                          U8 gameProductId, 
+                                          const string& lastLoginTime, 
+                                          bool isActive, 
+                                          const string& email, 
+                                          const string& passwordHash, 
+                                          const string& userId, 
+                                          const string& loginKey,
+                                          int languageId, 
+                                          bool isLoggedIn, 
+                                          bool wasDisconnectedByError )
+{
+   if( destinationServerPtr == NULL )
+      return false;
+
+   BasePacket* packetToSend = NULL;
+   if( isLoggedIn )
+   {
+      PacketPrepareForUserLogin* prepareForUser = new PacketPrepareForUserLogin;
+      prepareForUser->connectionId = connectionId;
+      prepareForUser->userName = userName;
+      prepareForUser->uuid = userUuid;
+      prepareForUser->lastLoginTime = lastLoginTime;
+      prepareForUser->gameProductId = gameProductId;
+
+      prepareForUser->active = isActive;
+      prepareForUser->email= email;
+      prepareForUser->userId = boost::lexical_cast<U32>( userId );
+      prepareForUser->password = passwordHash;
+      prepareForUser->loginKey = loginKey;
+      prepareForUser->languageId = languageId;
+
+      packetToSend = prepareForUser;
+      
+   }
+   else
+   {
+      PacketPrepareForUserLogout* logout = new PacketPrepareForUserLogout;
+      logout->uuid = userUuid;
+      logout->connectionId = connectionId;
+      logout->wasDisconnectedByError = wasDisconnectedByError;
+
+      packetToSend = logout;
+   }
+
+   if( destinationServerPtr->AddOutputChainData( packetToSend, m_chainId ) == false )
+   {
+      delete packetToSend;
+   }
+
+   return true;
+}
+
 //---------------------------------------------------------------
 
 bool  DiplodocusLogin:: SendLoginStatusToOtherServers( const string& userName, 
@@ -1293,45 +1435,27 @@ bool  DiplodocusLogin:: SendLoginStatusToOtherServers( const string& userName,
 {
    // send this to every other listening server
    BaseOutputContainer::iterator itOutputs = m_listOfOutputs.begin();
+   //cout << "SendLoginStatusToOtherServers" << endl;
    while( itOutputs != m_listOfOutputs.end() )
    {
       ChainType*  outputPtr = static_cast< ChainType*> ( (*itOutputs).m_interface );
-
-      BasePacket* packetToSend = NULL;
-      if( isLoggedIn )
-      {
-         PacketPrepareForUserLogin* prepareForUser = new PacketPrepareForUserLogin;
-         prepareForUser->connectionId = connectionId;
-         prepareForUser->userName = userName;
-         prepareForUser->uuid = userUuid;
-         prepareForUser->lastLoginTime = lastLoginTime;
-         prepareForUser->gameProductId = gameProductId;
-
-         prepareForUser->active = isActive;
-         prepareForUser->email= email;
-         prepareForUser->userId = boost::lexical_cast<U32>( userId );
-         prepareForUser->password = passwordHash;
-         prepareForUser->loginKey = loginKey;
-         prepareForUser->languageId = languageId;
-
-         packetToSend = prepareForUser;
-         
-      }
-      else
-      {
-         PacketPrepareForUserLogout* logout = new PacketPrepareForUserLogout;
-         logout->uuid = userUuid;
-         logout->connectionId = connectionId;
-         logout->wasDisconnectedByError = wasDisconnectedByError;
-
-         packetToSend = logout;
-      }
-
-      if( outputPtr->AddOutputChainData( packetToSend, m_chainId ) == false )
-      {
-         delete packetToSend;
-      }
       itOutputs++;
+
+      FruitadensLogin* login = static_cast< FruitadensLogin* >( outputPtr ); 
+      SendLoginStatus( outputPtr, 
+                        userName, 
+                       userUuid, 
+                       connectionId, 
+                       gameProductId, 
+                       lastLoginTime, 
+                       isActive, 
+                       email, 
+                       passwordHash, 
+                       userId, 
+                       loginKey,
+                       languageId, 
+                       isLoggedIn, 
+                       wasDisconnectedByError );
    }
 
    if( isLoggedIn )
@@ -1341,6 +1465,101 @@ bool  DiplodocusLogin:: SendLoginStatusToOtherServers( const string& userName,
 
    return true;
 }
+
+//---------------------------------------------------------------
+
+bool  DiplodocusLogin:: SendLoginStatusTo_Non_GameServers( const string& userName, 
+                                                     const string& userUuid, 
+                                                     U32 connectionId, 
+                                                     U8 gameProductId, 
+                                                     const string& lastLoginTime, 
+                                                     bool isActive, 
+                                                     const string& email, 
+                                                     const string& passwordHash, 
+                                                     const string& userId, 
+                                                     const string& loginKey,
+                                                     int languageId, 
+                                                     bool isLoggedIn, 
+                                                     bool wasDisconnectedByError )
+{
+   // send this to every other listening server
+   BaseOutputContainer::iterator itOutputs = m_listOfOutputs.begin();
+   cout << "SendLoginStatusTo_Non_GameServers for user: " << userName << endl;
+   while( itOutputs != m_listOfOutputs.end() )
+   {
+      ChainType*  outputPtr = static_cast< ChainType*> ( (*itOutputs).m_interface );
+      itOutputs++;
+
+      FruitadensLogin* login = static_cast< FruitadensLogin* >( outputPtr );      
+      if( login->IsGameServer() == true )
+      {
+         continue;
+      }
+      SendLoginStatus( outputPtr, 
+                        userName, 
+                       userUuid, 
+                       connectionId, 
+                       gameProductId, 
+                       lastLoginTime, 
+                       isActive, 
+                       email, 
+                       passwordHash, 
+                       userId, 
+                       loginKey,
+                       languageId, 
+                       isLoggedIn, 
+                       wasDisconnectedByError );
+   }
+
+   return true;
+}
+
+bool  DiplodocusLogin:: SendLoginStatusTo_GameServers( const string& userName, 
+                                                     const string& userUuid, 
+                                                     U32 connectionId, 
+                                                     U8 gameProductId, 
+                                                     const string& lastLoginTime, 
+                                                     bool isActive, 
+                                                     const string& email, 
+                                                     const string& passwordHash, 
+                                                     const string& userId, 
+                                                     const string& loginKey,
+                                                     int languageId, 
+                                                     bool isLoggedIn, 
+                                                     bool wasDisconnectedByError )
+{
+   // send this to every other listening server
+   BaseOutputContainer::iterator itOutputs = m_listOfOutputs.begin();
+   cout << "SendLoginStatusTo_GameServers for user: " << userName << endl;
+   while( itOutputs != m_listOfOutputs.end() )
+   {
+      ChainType*  outputPtr = static_cast< ChainType*> ( (*itOutputs).m_interface );
+      itOutputs++;
+
+      FruitadensLogin* login = static_cast< FruitadensLogin* >( outputPtr );      
+      if( login->IsGameServer() == false )
+      {
+         continue;
+      }
+      SendLoginStatus( outputPtr, 
+                        userName, 
+                       userUuid, 
+                       connectionId, 
+                       gameProductId, 
+                       lastLoginTime, 
+                       isActive, 
+                       email, 
+                       passwordHash, 
+                       userId, 
+                       loginKey,
+                       languageId, 
+                       isLoggedIn, 
+                       wasDisconnectedByError );
+   }
+
+   return true;
+}
+
 
 //---------------------------------------------------------------
 /*
@@ -1495,7 +1714,7 @@ bool     DiplodocusLogin:: AddOutputChainData( BasePacket* packet, U32 chainId )
 
                case QueryType_UserLoginInfo:
                   {
-                     if( HandleLoginResultFromDb( connectionId, dbResult ) == false )
+                     if( HandleUserLoginResult( connectionId, dbResult ) == false )
                      {
                         SendErrorToClient( connectionId, PacketErrorReport::ErrorType_UserBadLogin );  
                         string str = "User not valid and db query failed, userName: ";
@@ -1616,7 +1835,8 @@ bool     DiplodocusLogin:: AddOutputChainData( BasePacket* packet, U32 chainId )
                   break;
                case QueryType_GetSingleProductInfo:
                   {
-                     if( dbResult->successfulQuery == false )
+                     if( dbResult->successfulQuery == false ||
+                        dbResult->bucket.bucket.size() == 0 )
                      {
                         string str = "Product not found ";
                         str += dbResult->meta;
@@ -1687,6 +1907,10 @@ void     DiplodocusLogin:: StoreAllProducts( PacketDbQueryResult* dbResult )
 
 void     DiplodocusLogin:: StoreSingleProduct( PacketDbQueryResult* dbResult )
 {
+   if( dbResult->successfulQuery== false ||
+      dbResult->bucket.bucket.size() == 0 )
+      return;
+
    ProductTable            enigma( dbResult->bucket );
 
    string filterName;
@@ -1792,9 +2016,9 @@ void     DiplodocusLogin:: AddNewProductToDb( const PurchaseEntry& product )
    std::string lowercase_username = product.name; 
    std::transform( lowercase_username.begin(), lowercase_username.end(), lowercase_username.begin(), ::tolower );
 
-   dbQuery->query = "INSERT INTO product VALUES( NULL, 0, '";// new products haven an id of 0
+   dbQuery->query = "INSERT INTO product VALUES( DEFAULT, 0, '";// new products haven an id of 0
    dbQuery->query += newUuid;
-   dbQuery->query += "', '%s', '%s', NULL, 0, NULL)";
+   dbQuery->query += "', '%s', '%s', NOW(), 0, DEFAULT, DEFAULT, DEFAULT)";
 
    dbQuery->escapedStrings.insert( product.productStoreId );
    dbQuery->escapedStrings.insert( product.name );

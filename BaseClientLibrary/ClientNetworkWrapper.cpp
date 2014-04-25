@@ -1,4 +1,4 @@
-#include "NetworkLayer.h"
+#include "ClientNetworkWrapper.h"
 
 #include "../ServerStack/NetworkCommon/Utils/Utils.h"
 #include "../ServerStack/NetworkCommon/Packets/CheatPacket.h"
@@ -23,131 +23,9 @@ struct GameData
 };
 
 ///////////////////////////////////////////////////////////////////////////////////
-
-void  ChatChannel::Print()
-{
-   U8 productId = gameProductId;
-   int numUsers = userList.size();
-   cout << "** channel name= " << channelName << endl;
-   cout << "   num users " << numUsers << endl;
-   SerializedKeyValueVector< string >::const_KVIterator it = userList.begin();
-   while( it != userList.end() )
-   {
-      cout << "    User: " << it->value << endl;
-      it++;
-   }
-}
-
-///////////////////////////////////////////////////////////////////////////////////
-
-AssetInfoExtended:: AssetInfoExtended() : data(NULL), size( NULL ), AssetInfo() 
-{
-}
-
-AssetInfoExtended:: AssetInfoExtended( const AssetInfo& asset ) : data(NULL), size( NULL ), AssetInfo( asset ) 
-{
-}
-
-AssetInfoExtended:: AssetInfoExtended( const AssetInfoExtended& asset ) : data(NULL), size( NULL ), AssetInfo( asset ) 
-{
-}
-
-AssetInfoExtended:: ~AssetInfoExtended()
-{
-   ClearData();
-}
-
-void  AssetInfoExtended:: SetData( const U8* _data, int _size )
-{
-   ClearData();
-
-   if( _size == 0 || _data == NULL )
-      return;
-
-   size = _size;
-   data = new U8[ size ];
-   memcpy( data, _data, size );
-}
-
-void  AssetInfoExtended:: ClearData()
-{
-   if( data )
-      delete [] data;
-   data = NULL;
-   size = 0;
-}
-
-const AssetInfo&  AssetInfoExtended:: operator = ( const AssetInfo& asset )
-{
-   productId = asset.productId;
-   assetHash = asset.assetHash;
-   assetName = asset.assetName;
-   version = asset.version;
-   beginDate = asset.beginDate;
-   endDate = asset.endDate;
-   isOptional = asset.isOptional;
-   category = asset.category;
-
-   return *this;
-}
-
-const AssetInfoExtended&  AssetInfoExtended:: operator = ( const AssetInfoExtended& asset )
-{
-   productId = asset.productId;
-   assetHash = asset.assetHash;
-   assetName = asset.assetName;
-   version = asset.version;
-   beginDate = asset.beginDate;
-   endDate = asset.endDate;
-   isOptional = asset.isOptional;
-   category = asset.category;
-
-   SetData( asset.data, asset.size );
-   return *this;
-}
-
-void  AssetInfoExtended:: MoveData( AssetInfoExtended& source )
-{
-   data = source.data; source.data = NULL;
-   size = source.size; source.size = 0;
-}
-
-
-void  AssetInfoExtended::AddAssetData( PacketGameplayRawData* data )
-{
-   rawDataBuffer.AddPacket( data );
-   if( rawDataBuffer.IsDone() )
-   {
-      rawDataBuffer.PrepPackage( *this );
-   }
-}
-
-bool  AssetInfoExtended::IsAssetFullyLoaded() const
-{
-   if( size > 0 && data != NULL )
-      return true;
-   return false;
-}
-
-int   AssetInfoExtended::GetRemainingSize() const
-{
-   return rawDataBuffer.GetRemainingSize();
-}
-
-bool   AssetInfoExtended::NeedsClearing() const
-{
-   return rawDataBuffer.NeedsClearing();
-}
-
-void   AssetInfoExtended::ClearTempData()
-{
-   rawDataBuffer.ClearData();
-}
-
-///////////////////////////////////////////////////////////////////////////////////
 //------------------------------------------------------------
 
-NetworkLayer::NetworkLayer( U8 gameProductId, bool processOnlyOneIncommingPacketPerLoop  ) : Fruitadens( "Networking Layer", processOnlyOneIncommingPacketPerLoop ),
+ClientNetworkWrapper::ClientNetworkWrapper( U8 gameProductId, bool processOnlyOneIncommingPacketPerLoop  ) : Fruitadens( "Networking Layer", processOnlyOneIncommingPacketPerLoop ),
       m_gameProductId( gameProductId ), 
       m_isLoggingIn( false ),
       m_isLoggedIn( false ),
@@ -174,7 +52,7 @@ NetworkLayer::NetworkLayer( U8 gameProductId, bool processOnlyOneIncommingPacket
    InitializeSockets();
 }
 
-NetworkLayer::~NetworkLayer()
+ClientNetworkWrapper::~ClientNetworkWrapper()
 {
    Exit();
    ShutdownSockets();
@@ -189,17 +67,17 @@ NetworkLayer::~NetworkLayer()
 //------------------------------------------------------------
 //------------------------------------------------------------
 
-void  NetworkLayer::EnableMultithreadedCallbackSystem()
+void  ClientNetworkWrapper::EnableMultithreadedCallbackSystem()
 {
    m_enabledMultithreadedProtections = true;
 }
 
-void  NetworkLayer::CheckForReroutes( bool checkForReroutes )
+void  ClientNetworkWrapper::CheckForReroutes( bool checkForReroutes )
 {
    m_checkForReroute = checkForReroutes;
 }
 
-void  NetworkLayer::Init( const char* serverDNS )
+void  ClientNetworkWrapper::Init( const char* serverDNS )
 {
    if( m_clientSocket != SOCKET_ERROR || m_isConnected == true )
    {
@@ -215,7 +93,7 @@ void  NetworkLayer::Init( const char* serverDNS )
    Connect( m_serverDns.c_str(), m_connectionPort );
 }
 
-void  NetworkLayer::Exit()
+void  ClientNetworkWrapper::Exit()
 {
    Disconnect();
    m_isLoggingIn = false;
@@ -232,7 +110,7 @@ void  NetworkLayer::Exit()
    }
 }
 
-string   NetworkLayer::GenerateHash( const string& stringThatIWantHashed )
+string   ClientNetworkWrapper::GenerateHash( const string& stringThatIWantHashed )
 {
    string value;
    string lowerCaseString = ConvertStringToLower( stringThatIWantHashed );
@@ -246,7 +124,7 @@ string   NetworkLayer::GenerateHash( const string& stringThatIWantHashed )
 
 //------------------------------------------------------------
 
-void     NetworkLayer::UpdateNotifications()
+void     ClientNetworkWrapper::UpdateNotifications()
 {
    if( m_callbacks.size() == 0 )
    {
@@ -267,40 +145,40 @@ void     NetworkLayer::UpdateNotifications()
       SerializedKeyValueVector< string >::const_KVIterator keyValueIt = qn.genericKeyValuePairs.begin();
       PacketCleaner cleaner( qn.packet );
       
-      for( list< UserNetworkEventNotifier* >::iterator it = m_callbacks.begin(); it != m_callbacks.end(); ++it )
+      for( list< ClientSideNetworkCallback* >::iterator it = m_callbacks.begin(); it != m_callbacks.end(); ++it )
       {
-         UserNetworkEventNotifier* notify = (*it);
+         ClientSideNetworkCallback* notify = (*it);
          keyValueIt = qn.genericKeyValuePairs.begin(); // in case we have multiple interfaces
 
          switch( qn.eventId )
          {
-         case UserNetworkEventNotifier::NotificationType_AreWeUsingCorrectNetworkVersion:
+         case ClientSideNetworkCallback::NotificationType_AreWeUsingCorrectNetworkVersion:
             {
                U32 serverVersion = boost::lexical_cast< U32 >( qn.intValue );
                notify->AreWeUsingCorrectNetworkVersion( GlobalNetworkProtocolVersion == serverVersion );
             }
             break;
-         case UserNetworkEventNotifier::NotificationType_FriendsUpdate:
+         case ClientSideNetworkCallback::NotificationType_FriendsUpdate:
             {
                notify->FriendsUpdate();
             }
             break;
-         case UserNetworkEventNotifier::NotificationType_FriendOnlineStatusChanged:
+         case ClientSideNetworkCallback::NotificationType_FriendOnlineStatusChanged:
             {
                notify->FriendOnlineStatusChanged( keyValueIt->key );
             }
             break;
-         case UserNetworkEventNotifier::NotificationType_InvitationsReceivedUpdate:
+         case ClientSideNetworkCallback::NotificationType_InvitationsReceivedUpdate:
             {
                notify->InvitationsReceivedUpdate();
             }
             break;
-         case UserNetworkEventNotifier::NotificationType_InvitationsSentUpdate:  
+         case ClientSideNetworkCallback::NotificationType_InvitationsSentUpdate:  
             {
                notify->InvitationsSentUpdate();
             }
             break;
-         case UserNetworkEventNotifier::NotificationType_InvitationReceived:
+         case ClientSideNetworkCallback::NotificationType_InvitationReceived:
             {
                string uuid = keyValueIt->value; ++keyValueIt;
                const SerializedKeyValueVector< InvitationInfo >& kvVector = m_invitationsReceived;
@@ -315,7 +193,7 @@ void     NetworkLayer::UpdateNotifications()
                }
             }
             break;
-         case UserNetworkEventNotifier::NotificationType_InvitationAccepted:
+         case ClientSideNetworkCallback::NotificationType_InvitationAccepted:
             {
                string from = keyValueIt->value; ++keyValueIt;
                string to = keyValueIt->value; ++keyValueIt;
@@ -324,12 +202,12 @@ void     NetworkLayer::UpdateNotifications()
                notify->InvitationAccepted( from, to, accepted == "1" );
             }
             break;
-         case UserNetworkEventNotifier::NotificationType_SearchResults:
+         case ClientSideNetworkCallback::NotificationType_SearchResults:
             {
                notify->SearchForUserResultsAvailable();
             }
             break;
-         case UserNetworkEventNotifier::NotificationType_OnError:
+         case ClientSideNetworkCallback::NotificationType_OnError:
             {
                U32 code = boost::lexical_cast< U16>( qn.genericKeyValuePairs.find( "code" ) );
                U16 status = boost::lexical_cast< U16>( qn.genericKeyValuePairs.find( "status" ) );
@@ -337,7 +215,7 @@ void     NetworkLayer::UpdateNotifications()
                notify->OnError( code, status, text.c_str() );
             }
             break;
-         case UserNetworkEventNotifier::NotificationType_UserLogin:
+         case ClientSideNetworkCallback::NotificationType_UserLogin:
             {
                bool isLoggedIn = qn.intValue ? true: false; 
                notify->UserLogin( isLoggedIn );
@@ -345,22 +223,22 @@ void     NetworkLayer::UpdateNotifications()
                NotifyClientToBeginSendingRequests(); 
             }
             break;
-         case UserNetworkEventNotifier::NotificationType_UserLogout:
+         case ClientSideNetworkCallback::NotificationType_UserLogout:
             {
                notify->UserLogout();
             }
             break;
-         case UserNetworkEventNotifier::NotificationType_ServerRequestsListOfUserPurchases:
+         case ClientSideNetworkCallback::NotificationType_ServerRequestsListOfUserPurchases:
             {
                notify->ServerRequestsListOfUserPurchases();
             }
             break;
-         case UserNetworkEventNotifier::NotificationType_ListOfAggregateUserPurchases:
+         case ClientSideNetworkCallback::NotificationType_ListOfAggregateUserPurchases:
             {
                notify->ListOfAggregateUserPurchases();
             }
             break;
-         case UserNetworkEventNotifier::NotificationType_UserProfileResponse:
+         case ClientSideNetworkCallback::NotificationType_UserProfileResponse:
             {
                bool notifyThatSelfUpdated = qn.intValue ? true: false; 
                PacketRequestUserProfileResponse* profile = static_cast<PacketRequestUserProfileResponse*>( qn.packet );
@@ -370,12 +248,12 @@ void     NetworkLayer::UpdateNotifications()
                   notify->SelfProfileUpdate( true );
             }
             break;
-         case UserNetworkEventNotifier::NotificationType_ListOfAvailableProducts:
+         case ClientSideNetworkCallback::NotificationType_ListOfAvailableProducts:
             {
                notify->ListOfAvailableProducts();
             }
             break;
-         case UserNetworkEventNotifier::NotificationType_OtherUsersProfile:
+         case ClientSideNetworkCallback::NotificationType_OtherUsersProfile:
             {
                map< string, string > profileKeyValues;
                while( keyValueIt != qn.genericKeyValuePairs.end() )
@@ -386,45 +264,46 @@ void     NetworkLayer::UpdateNotifications()
                notify->OtherUsersProfile( profileKeyValues );
             }
             break;
-         case UserNetworkEventNotifier::NotificationType_SelfProfileUpdate:
+         case ClientSideNetworkCallback::NotificationType_SelfProfileUpdate:
             {
                bool success = qn.intValue ? true: false; 
                notify->SelfProfileUpdate( success );
             }
             break;
-         case UserNetworkEventNotifier::NotificationType_HasBeenConnectedToGateway:
+         case ClientSideNetworkCallback::NotificationType_HasBeenConnectedToGateway:
             { 
                notify->HasBeenConnectedToGateway();
             }
             break;
-         case UserNetworkEventNotifier::NotificationType_HasBeenDisconnectedFromGateway:
+         case ClientSideNetworkCallback::NotificationType_HasBeenDisconnectedFromGateway:
             {
                notify->HasBeenDisconnectedFromGateway();
             }
             break;
             
-         case UserNetworkEventNotifier::NotificationType_ChatListUpdate:
+         case ClientSideNetworkCallback::NotificationType_ChatListUpdate:
             {
                notify->ChatListUpdate();
             }
             break;
-         case UserNetworkEventNotifier::NotificationType_ChatChannelUpdate:
+         case ClientSideNetworkCallback::NotificationType_ChatChannelUpdate:
             {
                notify->ChatChannelUpdate( keyValueIt->key );
             }
             break;
 
-         case UserNetworkEventNotifier::NotificationType_ChatReceived:
+         case ClientSideNetworkCallback::NotificationType_ChatReceived:
             {
                string message = qn.genericKeyValuePairs.find( "message" );
                string channelUuid = qn.genericKeyValuePairs.find( "channelUuid" );
                string userUuid = qn.genericKeyValuePairs.find( "userUuid" );
                string timeStamp = qn.genericKeyValuePairs.find( "timeStamp" );
-               notify->ChatReceived( message, channelUuid, userUuid, timeStamp );
+               U32 id = boost::lexical_cast< U32 >( qn.genericKeyValuePairs.find( "tempId" ) );
+               notify->ChatReceived( message, channelUuid, userUuid, timeStamp, id );
             }
             break;
-         case UserNetworkEventNotifier::NotificationType_ChatChannelHistory:
-         case UserNetworkEventNotifier::NotificationType_ChatP2PHistory:
+         case ClientSideNetworkCallback::NotificationType_ChatChannelHistory:
+         case ClientSideNetworkCallback::NotificationType_ChatP2PHistory:
             {
                PacketChatHistoryResult* packetChatHistoryResult = 
                   static_cast<PacketChatHistoryResult*>( qn.packet );
@@ -447,7 +326,7 @@ void     NetworkLayer::UpdateNotifications()
                }
             }
             break;
-         case UserNetworkEventNotifier::NotificationType_ChatHistoryMissedSinceLastLoginComposite:
+         case ClientSideNetworkCallback::NotificationType_ChatHistoryMissedSinceLastLoginComposite:
             {
                PacketChatMissedHistoryResult* packetChatMissedHistoryResult = 
                   static_cast< PacketChatMissedHistoryResult* >( qn.packet );
@@ -463,13 +342,13 @@ void     NetworkLayer::UpdateNotifications()
             }
             break;
 
-         case UserNetworkEventNotifier::NotificationType_ReadyToStartSendingRequestsToGame:
+         case ClientSideNetworkCallback::NotificationType_ReadyToStartSendingRequestsToGame:
             {
                notify->ReadyToStartSendingRequestsToGame();
             }
             break;
 
-         case UserNetworkEventNotifier::NotificationType_NewChatChannelAdded:
+         case ClientSideNetworkCallback::NotificationType_NewChatChannelAdded:
             {
                string name = qn.genericKeyValuePairs.find( "name" );
                string uuid = qn.genericKeyValuePairs.find( "uuid" );
@@ -482,7 +361,7 @@ void     NetworkLayer::UpdateNotifications()
             }
             break;
    
-         case UserNetworkEventNotifier::NotificationType_ChatChannelDeleted:
+         case ClientSideNetworkCallback::NotificationType_ChatChannelDeleted:
             {
                string uuid = qn.genericKeyValuePairs.find( "uuid" );
                string successString = qn.genericKeyValuePairs.find( "success" );
@@ -493,7 +372,7 @@ void     NetworkLayer::UpdateNotifications()
                notify->ChatChannelDeleted( uuid, success );
             }
             break;
-         case UserNetworkEventNotifier::NotificationType_ChatChannel_UserAdded:
+         case ClientSideNetworkCallback::NotificationType_ChatChannel_UserAdded:
             {
                string channelName = qn.genericKeyValuePairs.find( "channelName" );
                string channelUuid = qn.genericKeyValuePairs.find( "channelUuid" );
@@ -504,7 +383,7 @@ void     NetworkLayer::UpdateNotifications()
             }
             break;
 
-         case UserNetworkEventNotifier::NotificationType_ChatChannel_UserRemoved:
+         case ClientSideNetworkCallback::NotificationType_ChatChannel_UserRemoved:
             {
                string channelUuid = qn.genericKeyValuePairs.find( "channelUuid" );
                string userUuid = qn.genericKeyValuePairs.find( "userUuid" );
@@ -518,17 +397,17 @@ void     NetworkLayer::UpdateNotifications()
             }
             break;
                
-         case UserNetworkEventNotifier::NotificationType_AssetCategoriesLoaded:
+         case ClientSideNetworkCallback::NotificationType_AssetCategoriesLoaded:
             {
                notify->AssetCategoriesLoaded();
             }
             break;
-         case UserNetworkEventNotifier::NotificationType_AssetManifestAvailable:
+         case ClientSideNetworkCallback::NotificationType_AssetManifestAvailable:
             {
                notify->AssetManifestAvailable( keyValueIt->key );
             }
             break;
-         case UserNetworkEventNotifier::NotificationType_GameData:
+         case ClientSideNetworkCallback::NotificationType_GameData:
             {
                if( qn.genericData )
                {
@@ -536,7 +415,7 @@ void     NetworkLayer::UpdateNotifications()
                }
             }
             break;
-         case UserNetworkEventNotifier::NotificationType_AssetDataAvailable:
+         case ClientSideNetworkCallback::NotificationType_AssetDataAvailable:
             {
                string hash = qn.genericKeyValuePairs.find( "hash" );
                string category = qn.genericKeyValuePairs.find( "category" );
@@ -544,19 +423,19 @@ void     NetworkLayer::UpdateNotifications()
                notify->AssetDataAvailable( category, hash );
             }
             break;
-         case UserNetworkEventNotifier::NotificationType_ListOfDevicesUpdated:
+         case ClientSideNetworkCallback::NotificationType_ListOfDevicesUpdated:
             {
                notify->ListOfDevicesUpdated();
             }
             break;
             
 
-            /*   case UserNetworkEventNotifier::NotificationType_ServerRequestsListOfUserPurchases:
+            /*   case ClientSideNetworkCallback::NotificationType_ServerRequestsListOfUserPurchases:
             {
                notify->ServerRequestsListOfUserPurchases();
             }
             break;*/
-            /*   case UserNetworkEventNotifier::NotificationType_ServerRequestsListOfUserPurchases:
+            /*   case ClientSideNetworkCallback::NotificationType_ServerRequestsListOfUserPurchases:
             {
                notify->ServerRequestsListOfUserPurchases();
             }
@@ -572,7 +451,7 @@ void     NetworkLayer::UpdateNotifications()
    CleanupLingeringMemory();
 }
 
-void     NetworkLayer::CleanupLingeringMemory()
+void     ClientNetworkWrapper::CleanupLingeringMemory()
 {
    vector< string > categories;
    GetAssetCategories( categories );
@@ -622,14 +501,14 @@ void     NetworkLayer::CleanupLingeringMemory()
 
 //------------------------------------------------------------
 
-void     NetworkLayer::InheritedUpdate()
+void     ClientNetworkWrapper::InheritedUpdate()
 {
    SendNotifications();
 }
 
 //------------------------------------------------------------
 
-void     NetworkLayer::SendNotifications()
+void     ClientNetworkWrapper::SendNotifications()
 {
    if( m_enabledMultithreadedProtections == true )
    {
@@ -642,19 +521,19 @@ void     NetworkLayer::SendNotifications()
 //------------------------------------------------------------
 
 
-void     NetworkLayer::Notification( int type )
+void     ClientNetworkWrapper::Notification( int type )
 {
    Threading::MutexLock    locker( m_notificationMutex );
    m_notifications.push( QueuedNotification( type ) );
 }
 /*
-void     NetworkLayer::Notification( int type, void* meta )
+void     ClientNetworkWrapper::Notification( int type, void* meta )
 {
    Threading::MutexLock    locker( m_notificationMutex );
    m_notifications.push( QueuedNotification( type, meta ) );
 }*/
 
-void     NetworkLayer::Notification( int type, U8* genericData, int size )
+void     ClientNetworkWrapper::Notification( int type, U8* genericData, int size )
 {
    QueuedNotification temp( type );
    temp.genericData = genericData;
@@ -662,13 +541,13 @@ void     NetworkLayer::Notification( int type, U8* genericData, int size )
    m_notifications.push( temp );
 }
 
-void     NetworkLayer::Notification( int type, BasePacket* meta )
+void     ClientNetworkWrapper::Notification( int type, BasePacket* meta )
 {
    Threading::MutexLock    locker( m_notificationMutex );
    m_notifications.push( QueuedNotification( type, meta ) );
 }
 
-void     NetworkLayer::Notification( int type, int data, int meta )
+void     ClientNetworkWrapper::Notification( int type, int data, int meta )
 {
    QueuedNotification qn( type );
    //qn.genericKeyValuePairs.insert( boost::lexical_cast<string>( data ), boost::lexical_cast<string>( meta ) );
@@ -679,7 +558,7 @@ void     NetworkLayer::Notification( int type, int data, int meta )
    m_notifications.push( qn );
 }
 
-void     NetworkLayer::Notification( int type, const string& data )
+void     ClientNetworkWrapper::Notification( int type, const string& data )
 {
    QueuedNotification qn( type );
    qn.genericKeyValuePairs.insert( data, data );
@@ -688,7 +567,7 @@ void     NetworkLayer::Notification( int type, const string& data )
    m_notifications.push( qn );
 }
    
-void     NetworkLayer::Notification( int type, const string& data, const string& data2 )
+void     ClientNetworkWrapper::Notification( int type, const string& data, const string& data2 )
 {
    QueuedNotification qn( type );
    qn.genericKeyValuePairs.insert( data, data2 );
@@ -697,7 +576,7 @@ void     NetworkLayer::Notification( int type, const string& data, const string&
    m_notifications.push( qn );
 }
 
-void     NetworkLayer::Notification( int type, SerializedKeyValueVector< string >& strings )
+void     ClientNetworkWrapper::Notification( int type, SerializedKeyValueVector< string >& strings )
 {
    QueuedNotification qn( type );
    qn.genericKeyValuePairs = strings;
@@ -728,7 +607,7 @@ static inline U64 CreatePasswordHash( const char *pPassword )
 
 //-----------------------------------------------------------------------------
 
-bool  NetworkLayer::RequestLogin( const string& userName, const string& password, const string& languageCode )
+bool  ClientNetworkWrapper::RequestLogin( const string& userName, const string& password, const string& languageCode )
 {
    if( m_isConnected == false )
    {
@@ -763,7 +642,7 @@ bool  NetworkLayer::RequestLogin( const string& userName, const string& password
 
 //-----------------------------------------------------------------------------
 
-bool     NetworkLayer::RequestAccountCreate( const string& userName, const string& userEmail, const string& password, int languageId, const string& deviceId, const string& gkHash )
+bool     ClientNetworkWrapper::RequestAccountCreate( const string& userName, const string& userEmail, const string& password, int languageId, const string& deviceId, const string& gkHash )
 {
    if( m_isConnected == false )
    {
@@ -789,7 +668,7 @@ bool     NetworkLayer::RequestAccountCreate( const string& userName, const strin
 
 //-----------------------------------------------------------------------------
 
-bool  NetworkLayer::RequestLogout() const
+bool  ClientNetworkWrapper::RequestLogout() const
 {
    if( m_isConnected == false )
    {
@@ -801,7 +680,7 @@ bool  NetworkLayer::RequestLogout() const
    return true;
 }
 
-bool NetworkLayer::ForceLogout()
+bool ClientNetworkWrapper::ForceLogout()
 {
    m_isLoggingIn = false;
    m_isLoggedIn = false;
@@ -820,7 +699,7 @@ bool NetworkLayer::ForceLogout()
 
 //-----------------------------------------------------------------------------
 
-bool  NetworkLayer::RequestProfile( const string userName )//if empty, profile for currently logged in user is used
+bool  ClientNetworkWrapper::RequestProfile( const string userName )//if empty, profile for currently logged in user is used
 {
    if( m_isConnected == false )
    {
@@ -837,7 +716,7 @@ bool  NetworkLayer::RequestProfile( const string userName )//if empty, profile f
 
 //-----------------------------------------------------------------------------
 
-void  NetworkLayer::FillProfileChangeRequest( PacketUpdateSelfProfile& profile ) const 
+void  ClientNetworkWrapper::FillProfileChangeRequest( PacketUpdateSelfProfile& profile ) const 
 {
    profile.userName = m_userName;
    profile.email = m_email;
@@ -856,7 +735,7 @@ void  NetworkLayer::FillProfileChangeRequest( PacketUpdateSelfProfile& profile )
 
 //-----------------------------------------------------------------------------
 
-bool  NetworkLayer::RequestChangeAvatarId( int newId ) const
+bool  ClientNetworkWrapper::RequestChangeAvatarId( int newId ) const
 {
    if( m_isConnected == false )
    {
@@ -874,7 +753,7 @@ bool  NetworkLayer::RequestChangeAvatarId( int newId ) const
 
 //-----------------------------------------------------------------------------
 
-bool  NetworkLayer::RequestOtherUserInGameProfile( const string& userName ) // friends, games list, etc
+bool  ClientNetworkWrapper::RequestOtherUserInGameProfile( const string& userName ) // friends, games list, etc
 {
    if( m_isConnected == false || userName.size() == 0 )
    {
@@ -890,7 +769,7 @@ bool  NetworkLayer::RequestOtherUserInGameProfile( const string& userName ) // f
 
 //-----------------------------------------------------------------------------
 
-bool  NetworkLayer::RequestChatChannelList( )
+bool  ClientNetworkWrapper::RequestChatChannelList( )
 {
    if( m_isConnected == false )
    {
@@ -903,7 +782,7 @@ bool  NetworkLayer::RequestChatChannelList( )
 
 //-----------------------------------------------------------------------------
 
-bool  NetworkLayer::AdminUpdateUserProfile( const string userName, const string& email, const string& userUuid, int adminLevel, int languageId, bool isActive, bool showWinLossRecord, bool marketingOptOut, bool showGenderProfile )
+bool  ClientNetworkWrapper::AdminUpdateUserProfile( const string userName, const string& email, const string& userUuid, int adminLevel, int languageId, bool isActive, bool showWinLossRecord, bool marketingOptOut, bool showGenderProfile )
 {
    if( m_isConnected == false )
    {
@@ -928,7 +807,7 @@ bool  NetworkLayer::AdminUpdateUserProfile( const string userName, const string&
 
 //-----------------------------------------------------------------------------
 
-bool     NetworkLayer::UpdateOwnProfile( const string& userName, const string& email, const string& motto )
+bool     ClientNetworkWrapper::UpdateOwnProfile( const string& userName, const string& email, const string& motto )
 {
    if( m_isConnected == false )
    {
@@ -946,7 +825,7 @@ bool     NetworkLayer::UpdateOwnProfile( const string& userName, const string& e
    return true;
 }
 
-bool     NetworkLayer::SetLanguage( int languageId )
+bool     ClientNetworkWrapper::SetLanguage( int languageId )
 {
    if( m_isConnected == false )
    {
@@ -962,7 +841,7 @@ bool     NetworkLayer::SetLanguage( int languageId )
 
    return true;
 }
-bool     NetworkLayer::SetMarketingOptOut ( bool marketingOptOut )
+bool     ClientNetworkWrapper::SetMarketingOptOut ( bool marketingOptOut )
 {
    if( m_isConnected == false )
    {
@@ -977,7 +856,7 @@ bool     NetworkLayer::SetMarketingOptOut ( bool marketingOptOut )
    return true;
 }
 
-bool     NetworkLayer::SetShowWinLossRecord( bool winLossShow )
+bool     ClientNetworkWrapper::SetShowWinLossRecord( bool winLossShow )
 {
    if( m_isConnected == false )
    {
@@ -992,7 +871,7 @@ bool     NetworkLayer::SetShowWinLossRecord( bool winLossShow )
    return true;
 }
 
-bool     NetworkLayer::SetShowGenderProfile( bool showGenderProfile )
+bool     ClientNetworkWrapper::SetShowGenderProfile( bool showGenderProfile )
 {
    if( m_isConnected == false )
    {
@@ -1007,7 +886,7 @@ bool     NetworkLayer::SetShowGenderProfile( bool showGenderProfile )
    return true;
 }
 
-bool     NetworkLayer::SetDisplayOnlineStatusToOtherUsers( bool display )
+bool     ClientNetworkWrapper::SetDisplayOnlineStatusToOtherUsers( bool display )
 {
    if( m_isConnected == false )
    {
@@ -1022,7 +901,7 @@ bool     NetworkLayer::SetDisplayOnlineStatusToOtherUsers( bool display )
    return true;
 }
 
-bool     NetworkLayer::SetBlockContactInvitations( bool block )
+bool     ClientNetworkWrapper::SetBlockContactInvitations( bool block )
 {
    if( m_isConnected == false )
    {
@@ -1037,7 +916,7 @@ bool     NetworkLayer::SetBlockContactInvitations( bool block )
    return true;
 }
 
-bool     NetworkLayer::SetBlockGroupInvitations( bool block )
+bool     ClientNetworkWrapper::SetBlockGroupInvitations( bool block )
 {
    if( m_isConnected == false )
    {
@@ -1058,7 +937,7 @@ bool     NetworkLayer::SetBlockGroupInvitations( bool block )
 
 //-----------------------------------------------------------------------------
 
-bool  NetworkLayer::RequestListOfFriends() const
+bool  ClientNetworkWrapper::RequestListOfFriends() const
 {
    if( m_isConnected == false )
    {
@@ -1072,7 +951,7 @@ bool  NetworkLayer::RequestListOfFriends() const
 
 //-----------------------------------------------------------------------------
 
-bool  NetworkLayer::RequestListOfProducts() const
+bool  ClientNetworkWrapper::RequestListOfProducts() const
 {
    if( m_isConnected == false )
    {
@@ -1086,7 +965,7 @@ bool  NetworkLayer::RequestListOfProducts() const
 
 //-----------------------------------------------------------------------------
 
-bool  NetworkLayer::RequestListOfProductsInStore() const
+bool  ClientNetworkWrapper::RequestListOfProductsInStore() const
 {
    if( m_isConnected == false )
    {
@@ -1100,7 +979,7 @@ bool  NetworkLayer::RequestListOfProductsInStore() const
 
 //-----------------------------------------------------------------------------
 
-bool  NetworkLayer::RequestListOfPurchases( const string userUuid ) const
+bool  ClientNetworkWrapper::RequestListOfPurchases( const string userUuid ) const
 {
    if( m_isConnected == false )
    {
@@ -1122,7 +1001,7 @@ bool  NetworkLayer::RequestListOfPurchases( const string userUuid ) const
 
 //-----------------------------------------------------------------------------
 
-bool  NetworkLayer::MakePurchase( const string& exchangeUuid ) const
+bool  ClientNetworkWrapper::MakePurchase( const string& exchangeUuid ) const
 {
    if( m_isConnected == false )
    {
@@ -1137,7 +1016,7 @@ bool  NetworkLayer::MakePurchase( const string& exchangeUuid ) const
 
 //-----------------------------------------------------------------------------
 
-bool  NetworkLayer::RequestListOfTournaments()
+bool  ClientNetworkWrapper::RequestListOfTournaments()
 {
    if( m_isConnected == false )
    {
@@ -1151,7 +1030,7 @@ bool  NetworkLayer::RequestListOfTournaments()
 
 //-----------------------------------------------------------------------------
 
-bool  NetworkLayer::GetPurchase( int index, PurchaseEntry& purchase ) const
+bool  ClientNetworkWrapper::GetPurchase( int index, PurchaseEntry& purchase ) const
 {
    if( index < 0 || index >= m_purchases.size() )
    {
@@ -1167,7 +1046,7 @@ bool  NetworkLayer::GetPurchase( int index, PurchaseEntry& purchase ) const
 
 //-----------------------------------------------------------------------------
 
-bool  NetworkLayer::PurchaseEntryIntoTournament( const string& tournamentUuid )
+bool  ClientNetworkWrapper::PurchaseEntryIntoTournament( const string& tournamentUuid )
 {
    if( m_isConnected == false )
    {
@@ -1184,7 +1063,7 @@ bool  NetworkLayer::PurchaseEntryIntoTournament( const string& tournamentUuid )
 
 //-----------------------------------------------------------------------------
   
-bool  NetworkLayer::RequestChatChannelHistory( const string& channelUuid, int numRecords, int startingIndex ) const
+bool  ClientNetworkWrapper::RequestChatChannelHistory( const string& channelUuid, int numRecords, int startingIndex ) const
 {
    if( m_isConnected == false )
    {
@@ -1200,7 +1079,7 @@ bool  NetworkLayer::RequestChatChannelHistory( const string& channelUuid, int nu
 
 //-----------------------------------------------------------------------------
   
-bool  NetworkLayer::RequestChatP2PHistory( const string& userUuid, int numRecords, int startingIndex ) const
+bool  ClientNetworkWrapper::RequestChatP2PHistory( const string& userUuid, int numRecords, int startingIndex ) const
 {
    if( m_isConnected == false )
    {
@@ -1218,7 +1097,7 @@ bool  NetworkLayer::RequestChatP2PHistory( const string& userUuid, int numRecord
 
 //-----------------------------------------------------------------------------
 /*
-bool  NetworkLayer::ChangeGame( const string& gameName )// either name or shortname
+bool  ClientNetworkWrapper::ChangeGame( const string& gameName )// either name or shortname
 {
    U32 id = FindGame( gameName );
    if( id == 0 )
@@ -1234,7 +1113,7 @@ bool  NetworkLayer::ChangeGame( const string& gameName )// either name or shortn
 
 //-----------------------------------------------------------------------------
 
-U32   NetworkLayer::FindGame( const string& name ) const
+U32   ClientNetworkWrapper::FindGame( const string& name ) const
 {
    GameList::const_iterator it = m_gameList.begin();
    while( it != m_gameList.end() )
@@ -1250,7 +1129,7 @@ U32   NetworkLayer::FindGame( const string& name ) const
 
 //-----------------------------------------------------------------------------
 
-string   NetworkLayer::FindGameNameFromGameId( U32 id ) const
+string   ClientNetworkWrapper::FindGameNameFromGameId( U32 id ) const
 {
    GameList::const_iterator it = m_gameList.begin();
    while( it != m_gameList.end() )
@@ -1266,7 +1145,7 @@ string   NetworkLayer::FindGameNameFromGameId( U32 id ) const
 */
 //-----------------------------------------------------------------------------
 
-string   NetworkLayer::FindFriend( const string& name ) const 
+string   ClientNetworkWrapper::FindFriend( const string& name ) const 
 {
    UserNameKeyValue::const_KVIterator  itFriends = m_friends.begin();
    while( itFriends != m_friends.end() )
@@ -1287,7 +1166,7 @@ string   NetworkLayer::FindFriend( const string& name ) const
 
 //-----------------------------------------------------------------------------
 
-string   NetworkLayer::FindFriendFromUuid( const string& uuid ) const 
+string   ClientNetworkWrapper::FindFriendFromUuid( const string& uuid ) const 
 {
    UserNameKeyValue::const_KVIterator  itFriends = m_friends.begin();
    while( itFriends != m_friends.end() )
@@ -1305,7 +1184,7 @@ string   NetworkLayer::FindFriendFromUuid( const string& uuid ) const
 
 //-----------------------------------------------------------------------------
 
-bool     NetworkLayer::GetFriend( int index, BasicUser& user )
+bool     ClientNetworkWrapper::GetFriend( int index, BasicUser& user )
 {
    if( index < 0 || index >= m_friends.size() )
    {
@@ -1332,7 +1211,7 @@ bool     NetworkLayer::GetFriend( int index, BasicUser& user )
 
 //-----------------------------------------------------------------------------
 
-bool     NetworkLayer::IsFriend( const string& userUuid )
+bool     ClientNetworkWrapper::IsFriend( const string& userUuid )
 {
    if( userUuid.size() < 2 )
    {
@@ -1352,7 +1231,7 @@ bool     NetworkLayer::IsFriend( const string& userUuid )
 
 //-----------------------------------------------------------------------------
 
-bool     NetworkLayer::IsFriendByName( const string& userName )
+bool     ClientNetworkWrapper::IsFriendByName( const string& userName )
 {
    if( userName.size() < 2 )
    {
@@ -1373,7 +1252,7 @@ bool     NetworkLayer::IsFriendByName( const string& userName )
 
 //-----------------------------------------------------------------------------
 
-bool     NetworkLayer::GetUserSearchResult( int index, BasicUser& user )
+bool     ClientNetworkWrapper::GetUserSearchResult( int index, BasicUser& user )
 {
    if( index < 0 || index >= m_lastUserSearch.size() )
    {
@@ -1400,7 +1279,7 @@ bool     NetworkLayer::GetUserSearchResult( int index, BasicUser& user )
 
 //-----------------------------------------------------------------------------
 
-bool     NetworkLayer::GetChannel( const string& channelUuid, ChatChannel& channel ) const
+bool     ClientNetworkWrapper::GetChannel( const string& channelUuid, ChatChannel& channel ) const
 {
    /*ChatChannel tempChannel;
    bool    result = FindChannel( channelUuid, tempChannel );
@@ -1430,7 +1309,7 @@ bool     NetworkLayer::GetChannel( const string& channelUuid, ChatChannel& chann
 //-----------------------------------------------------------------------------
 //-----------------------------------------------------------------------------
 
-bool    NetworkLayer::GetChannel( int index, ChatChannel& channel ) const
+bool    ClientNetworkWrapper::GetChannel( int index, ChatChannel& channel ) const
 {
    if( index < 0 || index >= (int) m_channels.size() )
    {
@@ -1454,7 +1333,7 @@ bool    NetworkLayer::GetChannel( int index, ChatChannel& channel ) const
    return false;
 }
 
-vector< ChatChannel >::iterator    NetworkLayer::GetChannel( const string& channelUuid )
+vector< ChatChannel >::iterator    ClientNetworkWrapper::GetChannel( const string& channelUuid )
 {
    vector< ChatChannel >::iterator itChannels = m_channels.begin();
    while( itChannels != m_channels.end() )
@@ -1469,7 +1348,7 @@ vector< ChatChannel >::iterator    NetworkLayer::GetChannel( const string& chann
    return m_channels.end();
 }
 
-bool     NetworkLayer::RemoveChannel( const string& channelUuid )
+bool     ClientNetworkWrapper::RemoveChannel( const string& channelUuid )
 {
    vector< ChatChannel >::iterator itChannels = m_channels.begin();
    while( itChannels != m_channels.end() )
@@ -1488,7 +1367,7 @@ bool     NetworkLayer::RemoveChannel( const string& channelUuid )
 
 //-----------------------------------------------------------------------------
 
-bool     NetworkLayer::IsGameChannel( const string& channelUuid ) const
+bool     ClientNetworkWrapper::IsGameChannel( const string& channelUuid ) const
 {
    ChatChannel channel;
    if( GetChannel( channelUuid, channel ) == false )
@@ -1502,7 +1381,7 @@ bool     NetworkLayer::IsGameChannel( const string& channelUuid ) const
 
 //-----------------------------------------------------------------------------
 
-int      NetworkLayer::GetAssetCategories( vector< string >& categories ) const
+int      ClientNetworkWrapper::GetAssetCategories( vector< string >& categories ) const
 {
    AssetMapConstIter it = m_assets.begin();
    while( it != m_assets.end() )
@@ -1516,7 +1395,7 @@ int      NetworkLayer::GetAssetCategories( vector< string >& categories ) const
 
 //-----------------------------------------------------------------------------
 
-int      NetworkLayer::GetNumAssets( const string& category )
+int      ClientNetworkWrapper::GetNumAssets( const string& category )
 {
    AssetMapConstIter it = m_assets.find( category );
    if( it == m_assets.end() )
@@ -1526,7 +1405,7 @@ int      NetworkLayer::GetNumAssets( const string& category )
 
 //-----------------------------------------------------------------------------
 
-bool     NetworkLayer::GetAssetInfo( const string& category, int index, AssetInfoExtended& assetInfo )
+bool     ClientNetworkWrapper::GetAssetInfo( const string& category, int index, AssetInfoExtended& assetInfo )
 {
    AssetMapConstIter it = m_assets.find( category );
    if( it == m_assets.end() )
@@ -1540,7 +1419,7 @@ bool     NetworkLayer::GetAssetInfo( const string& category, int index, AssetInf
 
 //-----------------------------------------------------------------------------
 
-bool     NetworkLayer::GetAvatarAsset( U32 index, AssetInfoExtended& assetInfo )
+bool     ClientNetworkWrapper::GetAvatarAsset( U32 index, AssetInfoExtended& assetInfo )
 {
    AssetMapConstIter it = m_assets.find( "avatar" );
    if( it == m_assets.end() )
@@ -1567,7 +1446,7 @@ bool     NetworkLayer::GetAvatarAsset( U32 index, AssetInfoExtended& assetInfo )
 
 //-----------------------------------------------------------------------------
 
-bool     NetworkLayer:: ClearAssetInfo( const string& category, const string& hash )
+bool     ClientNetworkWrapper:: ClearAssetInfo( const string& category, const string& hash )
 {
    AssetMapIter it = m_assets.find( category );
    if( it == m_assets.end() )
@@ -1590,7 +1469,7 @@ bool     NetworkLayer:: ClearAssetInfo( const string& category, const string& ha
 
 //-----------------------------------------------------------------------------
 
-bool    NetworkLayer::GetTournamentInfo( int index, TournamentInfo& tournamentInfo )
+bool    ClientNetworkWrapper::GetTournamentInfo( int index, TournamentInfo& tournamentInfo )
 {
    if( index < 0 || index >= (int) m_availableTournaments.size() )
    {
@@ -1617,7 +1496,7 @@ bool    NetworkLayer::GetTournamentInfo( int index, TournamentInfo& tournamentIn
 
 //-----------------------------------------------------------------------------
 /*
-bool     NetworkLayer::RequestListOfGames() const
+bool     ClientNetworkWrapper::RequestListOfGames() const
 {
    PacketRequestListOfGames listOfGames;
    SerializePacketOut( &listOfGames );
@@ -1627,7 +1506,7 @@ bool     NetworkLayer::RequestListOfGames() const
 
 //-----------------------------------------------------------------------------
 /*
-bool     NetworkLayer::RequestListOfUsersLoggedIntoGame( ) const
+bool     ClientNetworkWrapper::RequestListOfUsersLoggedIntoGame( ) const
 {
    assert( 0 );// not finished
    return true;
@@ -1635,7 +1514,7 @@ bool     NetworkLayer::RequestListOfUsersLoggedIntoGame( ) const
 
 //-----------------------------------------------------------------------------
 
-bool     NetworkLayer::RequestFriendDemographics( const string& userName ) const
+bool     ClientNetworkWrapper::RequestFriendDemographics( const string& userName ) const
 {
    assert( 0 );// not finished
    return true;
@@ -1643,7 +1522,7 @@ bool     NetworkLayer::RequestFriendDemographics( const string& userName ) const
 
 //-----------------------------------------------------------------------------
 
-bool     NetworkLayer::RequestUserWinLossRecord( const string& userName ) const
+bool     ClientNetworkWrapper::RequestUserWinLossRecord( const string& userName ) const
 {
    PacketRequestUserWinLoss packet;
    packet.userUuid;
@@ -1654,7 +1533,7 @@ bool     NetworkLayer::RequestUserWinLossRecord( const string& userName ) const
 
 //-----------------------------------------------------------------------------
 
-bool     NetworkLayer::RequestListOfInvitationsSent() const
+bool     ClientNetworkWrapper::RequestListOfInvitationsSent() const
 {
    PacketContact_GetListOfInvitationsSent    invitationRequest;
    return SerializePacketOut( &invitationRequest );
@@ -1662,7 +1541,7 @@ bool     NetworkLayer::RequestListOfInvitationsSent() const
 
 //-----------------------------------------------------------------------------
 
-bool     NetworkLayer::RequestListOfInvitationsReceived() const
+bool     ClientNetworkWrapper::RequestListOfInvitationsReceived() const
 {
    PacketContact_GetListOfInvitations    invitationRequest;
    return SerializePacketOut( &invitationRequest );
@@ -1670,7 +1549,7 @@ bool     NetworkLayer::RequestListOfInvitationsReceived() const
 
 //-----------------------------------------------------------------------------
 
-bool     NetworkLayer::AcceptInvitation( const string& uuid ) const
+bool     ClientNetworkWrapper::AcceptInvitation( const string& uuid ) const
 {
    const SerializedKeyValueVector< InvitationInfo >& kvVector = m_invitationsReceived;
    SerializedKeyValueVector< InvitationInfo >::const_KVIterator it = kvVector.begin();
@@ -1693,7 +1572,7 @@ bool     NetworkLayer::AcceptInvitation( const string& uuid ) const
 
 //-----------------------------------------------------------------------------
 
-bool     NetworkLayer::AcceptInvitationFromUsername( const string& userName ) const
+bool     ClientNetworkWrapper::AcceptInvitationFromUsername( const string& userName ) const
 {
    const SerializedKeyValueVector< InvitationInfo >& kvVector = m_invitationsReceived;
    SerializedKeyValueVector< InvitationInfo >::const_KVIterator it = kvVector.begin();
@@ -1713,7 +1592,7 @@ bool     NetworkLayer::AcceptInvitationFromUsername( const string& userName ) co
 
 //-----------------------------------------------------------------------------
 
-bool     NetworkLayer::DeclineInvitation( const string& uuid, string message ) const
+bool     ClientNetworkWrapper::DeclineInvitation( const string& uuid, string message ) const
 {
    PacketContact_DeclineInvitation invitationDeclined;
    invitationDeclined.invitationUuid = uuid;
@@ -1726,7 +1605,7 @@ bool     NetworkLayer::DeclineInvitation( const string& uuid, string message ) c
 
 //-----------------------------------------------------------------------------
 
-bool     NetworkLayer::RemoveSentInvitation( const string& uuid ) const
+bool     ClientNetworkWrapper::RemoveSentInvitation( const string& uuid ) const
 {
    bool found = false;
    const SerializedKeyValueVector< InvitationInfo >& kvVector = m_invitationsSent;
@@ -1754,7 +1633,7 @@ bool     NetworkLayer::RemoveSentInvitation( const string& uuid ) const
 
 //-----------------------------------------------------------------------------
 
-bool     NetworkLayer::GetListOfInvitationsSent( list< InvitationInfo >& listOfInvites )
+bool     ClientNetworkWrapper::GetListOfInvitationsSent( list< InvitationInfo >& listOfInvites )
 {
    listOfInvites.clear();
    const SerializedKeyValueVector< InvitationInfo >& kvVector = m_invitationsSent;
@@ -1768,7 +1647,7 @@ bool     NetworkLayer::GetListOfInvitationsSent( list< InvitationInfo >& listOfI
 }
 //-----------------------------------------------------------------------------
 
-bool     NetworkLayer::GetListOfInvitationsReceived( list< InvitationInfo >& listOfInvites )
+bool     ClientNetworkWrapper::GetListOfInvitationsReceived( list< InvitationInfo >& listOfInvites )
 {
    listOfInvites.clear();
    const SerializedKeyValueVector< InvitationInfo >& kvVector = m_invitationsReceived;
@@ -1783,9 +1662,9 @@ bool     NetworkLayer::GetListOfInvitationsReceived( list< InvitationInfo >& lis
 
 //-----------------------------------------------------------------------------
 
-bool     NetworkLayer::RegisterCallbackInterface( UserNetworkEventNotifier* _callbacks ) 
+bool     ClientNetworkWrapper::RegisterCallbackInterface( ClientSideNetworkCallback* _callbacks ) 
 {
-   for( list< UserNetworkEventNotifier* >::iterator it = m_callbacks.begin(); it != m_callbacks.end(); ++it )
+   for( list< ClientSideNetworkCallback* >::iterator it = m_callbacks.begin(); it != m_callbacks.end(); ++it )
    {
       if( *it == _callbacks )
          return false;
@@ -1799,7 +1678,7 @@ bool     NetworkLayer::RegisterCallbackInterface( UserNetworkEventNotifier* _cal
 
 //-----------------------------------------------------------------------------
 
-bool     NetworkLayer::NeedsProcessingTime() const 
+bool     ClientNetworkWrapper::NeedsProcessingTime() const 
 { 
    if( m_isConnected == true || m_notifications.size() > 0 ) 
       return true; 
@@ -1808,7 +1687,7 @@ bool     NetworkLayer::NeedsProcessingTime() const
 
 //-----------------------------------------------------------------------------
 
-bool     NetworkLayer::SendRawPacket( const char* buffer, int length ) const
+bool     ClientNetworkWrapper::SendRawPacket( const char* buffer, int length ) const
 {
    PacketGameplayRawData raw;
    memcpy( raw.data, buffer, length );
@@ -1819,7 +1698,7 @@ bool     NetworkLayer::SendRawPacket( const char* buffer, int length ) const
 
 //-----------------------------------------------------------------------------
 
-bool     NetworkLayer::SendSearchForUsers( const string& searchString, int numRequested, int offset ) const // min 2 char
+bool     ClientNetworkWrapper::SendSearchForUsers( const string& searchString, int numRequested, int offset ) const // min 2 char
 {
    if( searchString.size() < 2 )
       return false;
@@ -1839,7 +1718,7 @@ bool     NetworkLayer::SendSearchForUsers( const string& searchString, int numRe
 
 //-----------------------------------------------------------------------------
 
-bool     NetworkLayer::InviteUserToBeFriend( const string& uuid, const string& userName, const string& message )
+bool     ClientNetworkWrapper::InviteUserToBeFriend( const string& uuid, const string& userName, const string& message )
 {
    if( uuid.size() < 2 && userName.size() < 2 )
       return false;
@@ -1856,7 +1735,7 @@ bool     NetworkLayer::InviteUserToBeFriend( const string& uuid, const string& u
 
 //-----------------------------------------------------------------------------
 
-bool     NetworkLayer::RemoveContact( const string& contactUuid, const string message )
+bool     ClientNetworkWrapper::RemoveContact( const string& contactUuid, const string message )
 {
    if( IsFriend( contactUuid ) == false )
       return false;
@@ -1870,7 +1749,7 @@ bool     NetworkLayer::RemoveContact( const string& contactUuid, const string me
 
 //-----------------------------------------------------------------------------
 
-bool	   NetworkLayer::SendP2PTextMessage( const string& message, const string& destinationUserUuid )
+bool	   ClientNetworkWrapper::SendP2PTextMessage( const string& message, const string& destinationUserUuid )
 {
    PacketChatToServer chat;
    chat.message = message;
@@ -1881,7 +1760,7 @@ bool	   NetworkLayer::SendP2PTextMessage( const string& message, const string& d
 
 //-----------------------------------------------------------------------------
 
-bool	   NetworkLayer::SendChannelTextMessage( const string& message, const string& chatChannelUuid, U32 gameTurn )
+bool	   ClientNetworkWrapper::SendChannelTextMessage( const string& message, const string& chatChannelUuid, U32 gameTurn )
 {
    PacketChatToServer chat;
    chat.message = message;
@@ -1892,7 +1771,7 @@ bool	   NetworkLayer::SendChannelTextMessage( const string& message, const strin
 }
 //-----------------------------------------------------------------------------
 
-bool	   NetworkLayer::CreateNewChatChannel( const string& channelName )
+bool	   ClientNetworkWrapper::CreateNewChatChannel( const string& channelName )
 {
    PacketChatCreateChatChannel chat;
    chat.name = channelName;
@@ -1901,7 +1780,7 @@ bool	   NetworkLayer::CreateNewChatChannel( const string& channelName )
 
 //-----------------------------------------------------------------------------
 
-bool	   NetworkLayer::RenameChannel( const string& channelUuid, const string& newName )
+bool	   ClientNetworkWrapper::RenameChannel( const string& channelUuid, const string& newName )
 {
    ChatChannel channel;
    if( GetChannel( channelUuid, channel ) == false )
@@ -1916,7 +1795,7 @@ bool	   NetworkLayer::RenameChannel( const string& channelUuid, const string& ne
 
 //-----------------------------------------------------------------------------
 
-bool	   NetworkLayer::AddUserToChannel( const string& userUuid, const string& channelUuid ) // PacketChatAddUserToChatChannel
+bool	   ClientNetworkWrapper::AddUserToChannel( const string& userUuid, const string& channelUuid ) // PacketChatAddUserToChatChannel
 {
    ChatChannel channel;
    if( GetChannel( channelUuid, channel ) == false )
@@ -1931,13 +1810,13 @@ bool	   NetworkLayer::AddUserToChannel( const string& userUuid, const string& ch
 
 //-----------------------------------------------------------------------------
 /*
-bool	   NetworkLayer::DeleteChannel( const string& channelUuid ) // PacketChatDeleteChatChannel
+bool	   ClientNetworkWrapper::DeleteChannel( const string& channelUuid ) // PacketChatDeleteChatChannel
 {
 }*/
 
 //-----------------------------------------------------------------------------
 
-bool	   NetworkLayer::LeaveChannel( const string& channelUuid )
+bool	   ClientNetworkWrapper::LeaveChannel( const string& channelUuid )
 {
    ChatChannel channel;
    if( GetChannel( channelUuid, channel ) == false )
@@ -1952,7 +1831,7 @@ bool	   NetworkLayer::LeaveChannel( const string& channelUuid )
 
 //-----------------------------------------------------------------------------
 
-bool     NetworkLayer::RequestListOfAssetCategories()
+bool     ClientNetworkWrapper::RequestListOfAssetCategories()
 {
    PacketAsset_GetListOfAssetCategories assetCategoryRequest;
    assetCategoryRequest.uuid = m_uuid;
@@ -1962,7 +1841,7 @@ bool     NetworkLayer::RequestListOfAssetCategories()
 
 //-----------------------------------------------------------------------------
 
-bool     NetworkLayer::RequestListOfAssets( const string& category, int platformId )
+bool     ClientNetworkWrapper::RequestListOfAssets( const string& category, int platformId )
 {
    PacketAsset_GetListOfAssets assetRequest;
    assetRequest.uuid = m_uuid;
@@ -1975,7 +1854,7 @@ bool     NetworkLayer::RequestListOfAssets( const string& category, int platform
 
 //-----------------------------------------------------------------------------
 
-bool     NetworkLayer::RequestAssetByHash( const string& assetHash )
+bool     ClientNetworkWrapper::RequestAssetByHash( const string& assetHash )
 {
    AssetInfoExtended asset;
    if( GetAsset( assetHash, asset ) == false )
@@ -1991,7 +1870,7 @@ bool     NetworkLayer::RequestAssetByHash( const string& assetHash )
 
 //-----------------------------------------------------------------------------
 
-bool     NetworkLayer::RequestAssetByName( const string& assetName )
+bool     ClientNetworkWrapper::RequestAssetByName( const string& assetName )
 {
    AssetInfoExtended asset;
    const string assetHash = GenerateHash( assetName );
@@ -2008,7 +1887,7 @@ bool     NetworkLayer::RequestAssetByName( const string& assetName )
 
 //-----------------------------------------------------------------------------
 
-bool     NetworkLayer::RequestAvatarById( U32 id )
+bool     ClientNetworkWrapper::RequestAvatarById( U32 id )
 {
    AssetInfoExtended asset;
    const string assetHash = GenerateHash( boost::lexical_cast< string >( id ) );
@@ -2028,7 +1907,7 @@ bool     NetworkLayer::RequestAvatarById( U32 id )
 
 //-----------------------------------------------------------------------------
 
-bool     NetworkLayer::RegisterDevice( const string& deviceId, const string& deviceName, int platformId )
+bool     ClientNetworkWrapper::RegisterDevice( const string& deviceId, const string& deviceName, int platformId )
 {
    PacketNotification_RegisterDevice registration;
    registration.deviceName = deviceName;
@@ -2040,7 +1919,7 @@ bool     NetworkLayer::RegisterDevice( const string& deviceId, const string& dev
 
 //-----------------------------------------------------------------------------
 
-bool     NetworkLayer::RequestListOfDevicesForThisGame( int platformId )
+bool     ClientNetworkWrapper::RequestListOfDevicesForThisGame( int platformId )
 {
    PacketNotification_RequestListOfDevices request;
    request.platformId = platformId;
@@ -2050,7 +1929,7 @@ bool     NetworkLayer::RequestListOfDevicesForThisGame( int platformId )
 
 //-----------------------------------------------------------------------------
 
-bool     NetworkLayer::ChangeDevice( const string& deviceUuid, const string& deviceNewName, bool isEnabled, int iconId )
+bool     ClientNetworkWrapper::ChangeDevice( const string& deviceUuid, const string& deviceNewName, bool isEnabled, int iconId )
 {
    PacketNotification_UpdateDevice update;
    update.deviceUuid = deviceUuid;//m_thisDeviceUuid;
@@ -2064,7 +1943,7 @@ bool     NetworkLayer::ChangeDevice( const string& deviceUuid, const string& dev
 
 //-----------------------------------------------------------------------------
 
-bool    NetworkLayer::GetDevice( int index, RegisteredDevice& device ) const
+bool    ClientNetworkWrapper::GetDevice( int index, RegisteredDevice& device ) const
 {   
    if( index < 0 || index >= static_cast< int >( m_devices.size() ) )
       return false;
@@ -2074,7 +1953,7 @@ bool    NetworkLayer::GetDevice( int index, RegisteredDevice& device ) const
 
 //-----------------------------------------------------------------------------
 
-bool     NetworkLayer::SendPurchases( const vector< RegisteredProduct >& purchases, int platformId )
+bool     ClientNetworkWrapper::SendPurchases( const vector< RegisteredProduct >& purchases, int platformId )
 {
    PacketListOfUserAggregatePurchases packet;
    packet.platformId = platformId;
@@ -2099,7 +1978,7 @@ bool     NetworkLayer::SendPurchases( const vector< RegisteredProduct >& purchas
 
 //-----------------------------------------------------------------------------
 
-bool     NetworkLayer::GiveProduct( const string& userUuid, const string& productUuid, int quantity, const string& notes, int platformId )
+bool     ClientNetworkWrapper::GiveProduct( const string& userUuid, const string& productUuid, int quantity, const string& notes, int platformId )
 {
    PacketAddPurchaseEntry purchaseEntry;
    purchaseEntry.userName = userUuid;
@@ -2116,7 +1995,7 @@ bool     NetworkLayer::GiveProduct( const string& userUuid, const string& produc
 
 //-----------------------------------------------------------------------------
 
-bool     NetworkLayer::SendCheat( const string& cheatText )
+bool     ClientNetworkWrapper::SendCheat( const string& cheatText )
 {
    PacketCheat cheat;
    cheat.cheat = cheatText;
@@ -2126,7 +2005,7 @@ bool     NetworkLayer::SendCheat( const string& cheatText )
 
 //-----------------------------------------------------------------------------
 
-bool     NetworkLayer::SerializePacketOut( BasePacket* packet ) const 
+bool     ClientNetworkWrapper::SerializePacketOut( BasePacket* packet ) const 
 {
    U8 buffer[ MaxBufferSize ];
    int offset = 0;
@@ -2141,13 +2020,13 @@ bool     NetworkLayer::SerializePacketOut( BasePacket* packet ) const
 
 //-----------------------------------------------------------------------------
 
-int      NetworkLayer::MainLoop_InputProcessing()
+int      ClientNetworkWrapper::MainLoop_InputProcessing()
 {
    ExpireThreadPerformanceBoost();
    return Fruitadens::MainLoop_InputProcessing();
 }
 
-void     NetworkLayer::BoostThreadPerformance()
+void     ClientNetworkWrapper::BoostThreadPerformance()
 {
    SetSleepTime( m_boostedSleepTime );
    SetPriority( ePriorityHigh );
@@ -2155,14 +2034,14 @@ void     NetworkLayer::BoostThreadPerformance()
    time( &m_timeWhenThreadPerformanceBoosted );
 }
 
-void     NetworkLayer::RestoreNormalThreadPerformance()
+void     ClientNetworkWrapper::RestoreNormalThreadPerformance()
 {
    SetSleepTime( m_normalSleepTime );
    m_isThreadPerformanceBoosted = false;
    SetPriority( ePriorityNormal );
 }
 
-void     NetworkLayer::ExpireThreadPerformanceBoost()
+void     ClientNetworkWrapper::ExpireThreadPerformanceBoost()
 {
    if( m_isThreadPerformanceBoosted )
    {
@@ -2177,21 +2056,21 @@ void     NetworkLayer::ExpireThreadPerformanceBoost()
 
 //-----------------------------------------------------------------------------
 
-void     NetworkLayer::HasBeenConnectedCallback()
+void     ClientNetworkWrapper::HasBeenConnectedCallback()
 {
-   Notification( UserNetworkEventNotifier::NotificationType_HasBeenConnectedToGateway );
+   Notification( ClientSideNetworkCallback::NotificationType_HasBeenConnectedToGateway );
 }
 
 //-----------------------------------------------------------------------------
 
-void     NetworkLayer::HasBeenDisconnectedCallback()
+void     ClientNetworkWrapper::HasBeenDisconnectedCallback()
 {
-   Notification( UserNetworkEventNotifier::NotificationType_HasBeenDisconnectedFromGateway );
+   Notification( ClientSideNetworkCallback::NotificationType_HasBeenDisconnectedFromGateway );
 }
 
 //-----------------------------------------------------------------------------
 
-bool     NetworkLayer::HandlePacketReceived( BasePacket* packetIn )
+bool     ClientNetworkWrapper::HandlePacketReceived( BasePacket* packetIn )
 {
    PacketCleaner cleaner( packetIn );
 
@@ -2207,7 +2086,7 @@ bool     NetworkLayer::HandlePacketReceived( BasePacket* packetIn )
                cout << "Server protocol version: " << (int)(packet->versionNumber) << endl;
                cout << "Client protocol version: " << (int)(GlobalNetworkProtocolVersion) << endl;
 
-               Notification( UserNetworkEventNotifier::NotificationType_AreWeUsingCorrectNetworkVersion, (int)packet->versionNumber );
+               Notification( ClientSideNetworkCallback::NotificationType_AreWeUsingCorrectNetworkVersion, (int)packet->versionNumber );
             }
          }
          break;
@@ -2238,7 +2117,7 @@ bool     NetworkLayer::HandlePacketReceived( BasePacket* packetIn )
                      m_friends.insert( it->key, bu );
                      it++;
                   }
-                  Notification( UserNetworkEventNotifier::NotificationType_FriendsUpdate );
+                  Notification( ClientSideNetworkCallback::NotificationType_FriendsUpdate );
                }
             }
             break;
@@ -2261,7 +2140,7 @@ bool     NetworkLayer::HandlePacketReceived( BasePacket* packetIn )
                      }
                      itFriends++;
                   }
-                  Notification( UserNetworkEventNotifier::NotificationType_FriendOnlineStatusChanged, packet->uuid );
+                  Notification( ClientSideNetworkCallback::NotificationType_FriendOnlineStatusChanged, packet->uuid );
                }
             }
             break;
@@ -2285,7 +2164,7 @@ bool     NetworkLayer::HandlePacketReceived( BasePacket* packetIn )
                   it++;
                }
 
-               Notification( UserNetworkEventNotifier::NotificationType_InvitationsReceivedUpdate );
+               Notification( ClientSideNetworkCallback::NotificationType_InvitationsReceivedUpdate );
                // RequestListOfInvitationsReceived();
             }
             break;
@@ -2309,7 +2188,7 @@ bool     NetworkLayer::HandlePacketReceived( BasePacket* packetIn )
                   it++;
                }
 
-               Notification( UserNetworkEventNotifier::NotificationType_InvitationsSentUpdate );
+               Notification( ClientSideNetworkCallback::NotificationType_InvitationsSentUpdate );
                //RequestListOfInvitationsSent();
             }
             break;
@@ -2320,7 +2199,7 @@ bool     NetworkLayer::HandlePacketReceived( BasePacket* packetIn )
                cout << "   From " << packet->info.inviterName << endl;
                cout << "   message: " << packet->info.message << endl;
                m_invitationsReceived.insert( packet->info.uuid, packet->info );
-               Notification( UserNetworkEventNotifier::NotificationType_InvitationReceived, packet->info.uuid );
+               Notification( ClientSideNetworkCallback::NotificationType_InvitationReceived, packet->info.uuid );
             }
             break;
          case PacketContact::ContactType_InvitationAccepted:
@@ -2348,7 +2227,7 @@ bool     NetworkLayer::HandlePacketReceived( BasePacket* packetIn )
                   RemoveInvitationFromReceived( packet->invitationUuid );
                }
 
-               Notification( UserNetworkEventNotifier::NotificationType_InvitationAccepted, strings );
+               Notification( ClientSideNetworkCallback::NotificationType_InvitationAccepted, strings );
             }
             break;
          case PacketContact::ContactType_SearchResults:
@@ -2373,7 +2252,7 @@ bool     NetworkLayer::HandlePacketReceived( BasePacket* packetIn )
                   cout << "   uuid: " << bu.UUID << endl;
                   it++;
                }
-               Notification( UserNetworkEventNotifier::NotificationType_SearchResults );
+               Notification( ClientSideNetworkCallback::NotificationType_SearchResults );
             }
             break;
          }
@@ -2388,7 +2267,7 @@ bool     NetworkLayer::HandlePacketReceived( BasePacket* packetIn )
          strings.insert( "code", boost::lexical_cast<string>( errorReport->errorCode ) );
          strings.insert( "status", boost::lexical_cast<string>( errorReport->statusInfo ) );
          strings.insert( "text", errorReport->text );
-         Notification( UserNetworkEventNotifier::NotificationType_OnError, strings );
+         Notification( ClientSideNetworkCallback::NotificationType_OnError, strings );
          
       }
       break;
@@ -2414,7 +2293,7 @@ bool     NetworkLayer::HandlePacketReceived( BasePacket* packetIn )
                      Disconnect();// server forces a logout.
                      m_isLoggedIn = false;
                   }
-                  Notification( UserNetworkEventNotifier::NotificationType_UserLogin, m_isLoggedIn );
+                  Notification( ClientSideNetworkCallback::NotificationType_UserLogin, m_isLoggedIn );
                   
                   m_isLoggingIn = false;
                }
@@ -2422,7 +2301,7 @@ bool     NetworkLayer::HandlePacketReceived( BasePacket* packetIn )
             case PacketLogin::LoginType_PacketLogoutToClient:
                {
                   PacketLogout* logout = static_cast<PacketLogout*>( packetIn );
-                  Notification( UserNetworkEventNotifier::NotificationType_UserLogout );
+                  Notification( ClientSideNetworkCallback::NotificationType_UserLogout );
                  
                   Disconnect();
                   m_isLoggingIn = false;
@@ -2431,7 +2310,7 @@ bool     NetworkLayer::HandlePacketReceived( BasePacket* packetIn )
                break;
             case PacketLogin::LoginType_RequestListOfPurchases:
                {
-                  Notification( UserNetworkEventNotifier::NotificationType_ServerRequestsListOfUserPurchases );
+                  Notification( ClientSideNetworkCallback::NotificationType_ServerRequestsListOfUserPurchases );
                }
                break;
             case PacketLogin::LoginType_ListOfAggregatePurchases:
@@ -2439,7 +2318,7 @@ bool     NetworkLayer::HandlePacketReceived( BasePacket* packetIn )
                   PacketListOfUserAggregatePurchases* purchases = static_cast<PacketListOfUserAggregatePurchases*>( packetIn );
                   m_purchases = purchases->purchases;
 
-                  Notification( UserNetworkEventNotifier::NotificationType_ListOfAggregateUserPurchases );
+                  Notification( ClientSideNetworkCallback::NotificationType_ListOfAggregateUserPurchases );
                }
                break;
             case PacketLogin::LoginType_RequestUserProfileResponse:
@@ -2464,20 +2343,20 @@ bool     NetworkLayer::HandlePacketReceived( BasePacket* packetIn )
                      m_blockGroupInvitations = profile->blockGroupInvitations;
                   }
 
-                  Notification( UserNetworkEventNotifier::NotificationType_UserProfileResponse, notifyThatSelfUpdated );
+                  Notification( ClientSideNetworkCallback::NotificationType_UserProfileResponse, notifyThatSelfUpdated );
                }
                break;
             case PacketLogin::LoginType_RequestListOfProductsResponse:
                {
                   PacketRequestListOfProductsResponse* products = static_cast<PacketRequestListOfProductsResponse*>( packetIn );
                   m_products = products->products;
-                  Notification( UserNetworkEventNotifier::NotificationType_ListOfAvailableProducts );
+                  Notification( ClientSideNetworkCallback::NotificationType_ListOfAvailableProducts );
                }
                break;
             case PacketLogin::LoginType_RequestOtherUserProfileResponse:
                {
                   PacketRequestOtherUserProfileResponse* profile = static_cast<PacketRequestOtherUserProfileResponse*>( packetIn );
-                  Notification( UserNetworkEventNotifier::NotificationType_OtherUsersProfile, profile->basicProfile );
+                  Notification( ClientSideNetworkCallback::NotificationType_OtherUsersProfile, profile->basicProfile );
                }
                break;
             case PacketLogin::LoginType_UpdateSelfProfileResponse:
@@ -2487,7 +2366,7 @@ bool     NetworkLayer::HandlePacketReceived( BasePacket* packetIn )
                   {
                      m_avatarId = profile->avatarIconId;
                   }
-                  Notification( UserNetworkEventNotifier::NotificationType_SelfProfileUpdate, profile->success );
+                  Notification( ClientSideNetworkCallback::NotificationType_SelfProfileUpdate, profile->success );
                }
                break;
          }
@@ -2500,24 +2379,7 @@ bool     NetworkLayer::HandlePacketReceived( BasePacket* packetIn )
          {
          case PacketUserInfo::InfoType_ChatChannelList:
             {
-               PacketChatChannelList* channelList = static_cast<PacketChatChannelList*>( packetIn );
-
-               cout << " chat channel list received " << channelList->channelList.size() << endl;
-               const SerializedKeyValueVector< ChannelInfoFullList >& kvVector = channelList->channelList;
-               SerializedKeyValueVector< ChannelInfoFullList >::const_KVIterator channelIt = kvVector.begin();
-               while( channelIt != kvVector.end() )
-               {
-                  ChatChannel newChannel;
-                  newChannel.uuid = channelIt->value.channelUuid;
-                  newChannel.channelName = channelIt->value.channelName;
-                  newChannel.gameProductId = channelIt->value.gameProduct;
-                  newChannel.gameInstanceId = channelIt->value.gameId;
-                  newChannel.channelDetails= channelIt->value.channelName;
-                  newChannel.userList = channelIt->value.userList;
-                  AddChatChannel( newChannel );
-                  channelIt++;
-               }
-               Notification( UserNetworkEventNotifier::NotificationType_ChatListUpdate );
+               HandleChatChannelUpdate( packetIn );
             }
             break;
             // demographics, winloss, etc.
@@ -2533,7 +2395,7 @@ bool     NetworkLayer::HandlePacketReceived( BasePacket* packetIn )
             /*case PacketPurchase::PurchaseType_BuyResponse:
                {
                   PacketPurchase_BuyResponse* purchase = static_cast<PacketPurchase_BuyResponse*>( packetIn );
-                  for( list< UserNetworkEventNotifier* >::iterator it = m_callbacks.begin(); it != m_callbacks.end(); ++it )
+                  for( list< ClientSideNetworkCallback* >::iterator it = m_callbacks.begin(); it != m_callbacks.end(); ++it )
                   {
                      (*it)->PurchaseSuccess( purchase->purchaseUuid, purchase->success );
                   }
@@ -2542,7 +2404,7 @@ bool     NetworkLayer::HandlePacketReceived( BasePacket* packetIn )
             case PacketPurchase::PurchaseType_RequestListOfSalesResponse:
                {
                   PacketPurchase_RequestListOfSalesResponse* purchase = static_cast<PacketPurchase_RequestListOfSalesResponse*>( packetIn );
-                  for( list< UserNetworkEventNotifier* >::iterator it = m_callbacks.begin(); it != m_callbacks.end(); ++it )
+                  for( list< ClientSideNetworkCallback* >::iterator it = m_callbacks.begin(); it != m_callbacks.end(); ++it )
                   {
                      (*it)->ProductsForSale( purchase->thingsForSale );
                   }
@@ -2568,12 +2430,8 @@ bool     NetworkLayer::HandlePacketReceived( BasePacket* packetIn )
                strings.insert( "channelUuid", chat->channelUuid );
                strings.insert( "userUuid", chat->userUuid );
                strings.insert( "timeStamp", chat->timeStamp );
-               Notification( UserNetworkEventNotifier::NotificationType_ChatReceived, strings );
-
-               // add to some form of history?
-
-               //m_friends = login->friendList.GetData();
-               //DumpFriends();
+               strings.insert( "tempId", boost::lexical_cast< string >( chat->userTempId ) );
+               Notification( ClientSideNetworkCallback::NotificationType_ChatReceived, strings );
             }
             break;
           case PacketChatToServer::ChatType_UserAddedToChatChannelFromGameServer:
@@ -2603,8 +2461,8 @@ bool     NetworkLayer::HandlePacketReceived( BasePacket* packetIn )
                      newChannel.userList = chat->userList;
                      AddChatChannel( newChannel );
                   }
-                  Notification( UserNetworkEventNotifier::NotificationType_ChatChannelUpdate, chat->channelUuid );
-                  Notification( UserNetworkEventNotifier::NotificationType_ChatListUpdate );
+                  Notification( ClientSideNetworkCallback::NotificationType_ChatChannelUpdate, chat->channelUuid );
+                  Notification( ClientSideNetworkCallback::NotificationType_ChatListUpdate );
                }
              }
              break;          
@@ -2613,11 +2471,11 @@ bool     NetworkLayer::HandlePacketReceived( BasePacket* packetIn )
                PacketChatHistoryResult* history = static_cast<PacketChatHistoryResult*>( packetIn );
                if( history->chatChannelUuid.size() )
                {
-                  Notification( UserNetworkEventNotifier::NotificationType_ChatChannelHistory, history );
+                  Notification( ClientSideNetworkCallback::NotificationType_ChatChannelHistory, history );
                }
                else
                {
-                  Notification( UserNetworkEventNotifier::NotificationType_ChatP2PHistory, history );
+                  Notification( ClientSideNetworkCallback::NotificationType_ChatP2PHistory, history );
                }
                cleaner.Clear();// do not cleanup this packet
             }
@@ -2625,7 +2483,7 @@ bool     NetworkLayer::HandlePacketReceived( BasePacket* packetIn )
          case PacketChatToServer:: ChatType_RequestHistorySinceLastLoginResponse:
             {
                PacketChatMissedHistoryResult* history = static_cast< PacketChatMissedHistoryResult* >( packetIn );
-               Notification( UserNetworkEventNotifier::NotificationType_ChatHistoryMissedSinceLastLoginComposite, history );
+               Notification( ClientSideNetworkCallback::NotificationType_ChatHistoryMissedSinceLastLoginComposite, history );
                cleaner.Clear();// do not cleanup this packet
             }
             break;
@@ -2649,7 +2507,7 @@ bool     NetworkLayer::HandlePacketReceived( BasePacket* packetIn )
                      }
                      itFriends++;
                   }
-                  Notification( UserNetworkEventNotifier::NotificationType_FriendOnlineStatusChanged, packet->uuid );
+                  Notification( ClientSideNetworkCallback::NotificationType_FriendOnlineStatusChanged, packet->uuid );
                }
              }
             break;
@@ -2665,7 +2523,7 @@ bool     NetworkLayer::HandlePacketReceived( BasePacket* packetIn )
                   success = "1";
                strings.insert( "success", success );
 
-               Notification( UserNetworkEventNotifier::NotificationType_NewChatChannelAdded, strings );
+               Notification( ClientSideNetworkCallback::NotificationType_NewChatChannelAdded, strings );
             }
             break;
          case PacketChatToServer::ChatType_DeleteChatChannelResponse:
@@ -2678,7 +2536,7 @@ bool     NetworkLayer::HandlePacketReceived( BasePacket* packetIn )
                   success = "1";
                strings.insert( "success", success );
 
-               Notification( UserNetworkEventNotifier::NotificationType_ChatChannelDeleted, strings );
+               Notification( ClientSideNetworkCallback::NotificationType_ChatChannelDeleted, strings );
             }
             break;
          case PacketChatToServer::ChatType_AddUserToChatChannelResponse:
@@ -2697,7 +2555,7 @@ bool     NetworkLayer::HandlePacketReceived( BasePacket* packetIn )
                {
                }
 
-               Notification( UserNetworkEventNotifier::NotificationType_ChatChannel_UserAdded, strings );
+               Notification( ClientSideNetworkCallback::NotificationType_ChatChannel_UserAdded, strings );
              }
             break;
          case PacketChatToServer::ChatType_RemoveUserFromChatChannelResponse:
@@ -2719,7 +2577,7 @@ bool     NetworkLayer::HandlePacketReceived( BasePacket* packetIn )
                   
                }
 
-               Notification( UserNetworkEventNotifier::NotificationType_ChatChannel_UserRemoved, strings );
+               Notification( ClientSideNetworkCallback::NotificationType_ChatChannel_UserRemoved, strings );
 
             }
             break;
@@ -2757,7 +2615,7 @@ bool     NetworkLayer::HandlePacketReceived( BasePacket* packetIn )
             {
               /* PacketRequestUserWinLossResponse* response = 
                      static_cast<PacketRequestUserWinLossResponse*>( packetIn );
-               for( list< UserNetworkEventNotifier* >::iterator it = m_callbacks.begin(); it != m_callbacks.end(); ++it )
+               for( list< ClientSideNetworkCallback* >::iterator it = m_callbacks.begin(); it != m_callbacks.end(); ++it )
                {
                   (*it)->UserWinLoss( response->userUuid, response->winLoss );
                }*/
@@ -2789,7 +2647,7 @@ bool     NetworkLayer::HandlePacketReceived( BasePacket* packetIn )
                      m_assets.insert( AssetMapPair( name, AssetCollection () ) );
                   }
                }
-               Notification( UserNetworkEventNotifier::NotificationType_AssetCategoriesLoaded );
+               Notification( ClientSideNetworkCallback::NotificationType_AssetCategoriesLoaded );
             }
             break;
 
@@ -2820,7 +2678,7 @@ bool     NetworkLayer::HandlePacketReceived( BasePacket* packetIn )
                   updatedAssetIt ++;
                }
 
-               Notification( UserNetworkEventNotifier::NotificationType_AssetManifestAvailable, category );
+               Notification( ClientSideNetworkCallback::NotificationType_AssetManifestAvailable, category );
             }
             break;
           }
@@ -2844,7 +2702,7 @@ bool     NetworkLayer::HandlePacketReceived( BasePacket* packetIn )
 
                m_devices = response->devices;
 
-               Notification( UserNetworkEventNotifier::NotificationType_ListOfDevicesUpdated );
+               Notification( ClientSideNetworkCallback::NotificationType_ListOfDevicesUpdated );
             }
             break;
             
@@ -2870,7 +2728,7 @@ bool     NetworkLayer::HandlePacketReceived( BasePacket* packetIn )
                }
                if( m_availableTournaments.size() )
                {
-                  for( list< UserNetworkEventNotifier* >::iterator it = m_callbacks.begin(); it != m_callbacks.end(); ++it )
+                  for( list< ClientSideNetworkCallback* >::iterator it = m_callbacks.begin(); it != m_callbacks.end(); ++it )
                   {
                      (*it)->TournamentListAvalable();
                   }
@@ -2886,7 +2744,7 @@ bool     NetworkLayer::HandlePacketReceived( BasePacket* packetIn )
                PacketTournament_UserRequestsEntryInTournamentResponse* response = 
                   static_cast<PacketTournament_UserRequestsEntryInTournamentResponse*>( packetIn );
               
-               for( list< UserNetworkEventNotifier* >::iterator it = m_callbacks.begin(); it != m_callbacks.end(); ++it )
+               for( list< ClientSideNetworkCallback* >::iterator it = m_callbacks.begin(); it != m_callbacks.end(); ++it )
                {
                   (*it)->TournamentPurchaseResult( response->tournamentUuid, response->result );
                }
@@ -2900,9 +2758,10 @@ bool     NetworkLayer::HandlePacketReceived( BasePacket* packetIn )
    return true;
 }
 
-//------------------------------------------------------------------------
+//////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////
 
-void     NetworkLayer::HandleAssetData( PacketGameplayRawData* data )
+void     ClientNetworkWrapper::HandleAssetData( PacketGameplayRawData* data )
 {
    const string hash = data->identifier;
    AssetInfoExtended* asset = GetAsset( hash );
@@ -2917,7 +2776,7 @@ void     NetworkLayer::HandleAssetData( PacketGameplayRawData* data )
          strings.insert( "hash", hash );
          strings.insert( "category", asset->category );
 
-         Notification( UserNetworkEventNotifier::NotificationType_AssetDataAvailable, strings );
+         Notification( ClientSideNetworkCallback::NotificationType_AssetDataAvailable, strings );
       }
       else
       {
@@ -2941,7 +2800,7 @@ void     NetworkLayer::HandleAssetData( PacketGameplayRawData* data )
 
 //------------------------------------------------------------------------
 
-void     NetworkLayer::HandleData( PacketGameplayRawData* data )
+void     ClientNetworkWrapper::HandleData( PacketGameplayRawData* data )
 {
    //const string& hash = data->identifier;
    int dataType = data->dataType;
@@ -2974,33 +2833,69 @@ void     NetworkLayer::HandleData( PacketGameplayRawData* data )
       int size;
       m_rawDataBuffer.PrepPackage( ptr, size );         
 
-      Notification( UserNetworkEventNotifier::NotificationType_GameData, ptr, size );
+      Notification( ClientSideNetworkCallback::NotificationType_GameData, ptr, size );
 
       RestoreNormalThreadPerformance();
    }
 }
 
+void     ClientNetworkWrapper::HandleChatChannelUpdate( BasePacket* packetIn )
+{
+   PacketChatChannelList* packetChannels = static_cast<PacketChatChannelList*>( packetIn );
+
+   cout << " chat channel list received " << packetChannels->channelList.size() << endl;
+   const SerializedKeyValueVector< ChannelInfoFullList >& channels = packetChannels->channelList;
+
+   U16 firstIndex = channels.GetFirstIndex();
+   U16 totalCount = channels.GetTotalCount();
+   U16 numChannelsInCurrentList = channels.size();
+
+   if( firstIndex == 0 )
+   {
+      m_channels.clear();
+   }
+
+   SerializedKeyValueVector< ChannelInfoFullList >::const_KVIterator channelIt = channels.begin();
+   while( channelIt != channels.end() )
+   {
+      ChatChannel newChannel;
+      newChannel.uuid = channelIt->value.channelUuid;
+      newChannel.channelName = channelIt->value.channelName;
+      newChannel.gameProductId = channelIt->value.gameProduct;
+      newChannel.gameInstanceId = channelIt->value.gameId;
+      newChannel.channelDetails = channelIt->value.channelName;
+      newChannel.userList = channelIt->value.userList;// super expensive
+      AddChatChannel( newChannel );
+      channelIt++;
+   }
+
+   if( firstIndex + numChannelsInCurrentList >= totalCount) // We are at the end of the list
+   {
+      Notification( ClientSideNetworkCallback::NotificationType_ChatListUpdate );
+   }
+}
+
+//////////////////////////////////////////////////////////////////////////
 
 //------------------------------------------------------------------------
-//------------------------------------------------------------------------
 
 //------------------------------------------------------------------------
 
-void     NetworkLayer::NotifyClientToBeginSendingRequests()
+void     ClientNetworkWrapper::NotifyClientToBeginSendingRequests()
 {
    if( m_isLoggedIn == false )
       return;
 
    if( m_selectedGame )
    {
-      Notification( UserNetworkEventNotifier::NotificationType_ReadyToStartSendingRequestsToGame );
+      Notification( ClientSideNetworkCallback::NotificationType_ReadyToStartSendingRequestsToGame );
    }
 }
 
 
 //------------------------------------------------------------------------
 
-void     NetworkLayer::InitalConnectionCallback()
+void     ClientNetworkWrapper::InitalConnectionCallback()
 {
    PacketHello          hello;
    SerializePacketOut( &hello );
@@ -3015,7 +2910,7 @@ void     NetworkLayer::InitalConnectionCallback()
 
 //------------------------------------------------------------------------
 
-bool     NetworkLayer::AddChatChannel( const ChatChannel& channel )
+bool     ClientNetworkWrapper::AddChatChannel( const ChatChannel& channel )
 {
    vector< ChatChannel >::iterator it =  m_channels.begin();
    while( it != m_channels.end() )
@@ -3032,7 +2927,7 @@ bool     NetworkLayer::AddChatChannel( const ChatChannel& channel )
 
 //------------------------------------------------------------------------
 
-bool     NetworkLayer::RemoveChatChannel( const string& channelUuid )
+bool     ClientNetworkWrapper::RemoveChatChannel( const string& channelUuid )
 {
    vector< ChatChannel >::iterator it =  m_channels.begin();
    while( it != m_channels.end() )
@@ -3047,7 +2942,7 @@ bool     NetworkLayer::RemoveChatChannel( const string& channelUuid )
    return false;;
 }
 
-bool     NetworkLayer::AddUserToChatChannel( const string& channelUuid, const string& userUuid, const string& userName )
+bool     ClientNetworkWrapper::AddUserToChatChannel( const string& channelUuid, const string& userUuid, const string& userName )
 {
    vector< ChatChannel >::iterator channelIt = GetChannel( channelUuid );
    if( channelIt == m_channels.end() )
@@ -3078,7 +2973,7 @@ bool     NetworkLayer::AddUserToChatChannel( const string& channelUuid, const st
    return true;
 }
 
-bool     NetworkLayer::RemoveUserfromChatChannel( const string& channelUuid, const string& userUuid )
+bool     ClientNetworkWrapper::RemoveUserfromChatChannel( const string& channelUuid, const string& userUuid )
 {
    vector< ChatChannel >::iterator channelIt = GetChannel( channelUuid );
    if( channelIt == m_channels.end() )
@@ -3103,7 +2998,7 @@ bool     NetworkLayer::RemoveUserfromChatChannel( const string& channelUuid, con
    return false;
 }
 
-bool     NetworkLayer::RemoveInvitationFromSent( const string& uuid )
+bool     ClientNetworkWrapper::RemoveInvitationFromSent( const string& uuid )
 {
    SerializedKeyValueVector< InvitationInfo >& kvVector = m_invitationsSent;
    SerializedKeyValueVector< InvitationInfo >::KVIterator it = kvVector.begin();
@@ -3119,7 +3014,7 @@ bool     NetworkLayer::RemoveInvitationFromSent( const string& uuid )
    return false;
 }
 
-bool     NetworkLayer::RemoveInvitationFromReceived( const string& uuid )
+bool     ClientNetworkWrapper::RemoveInvitationFromReceived( const string& uuid )
 {
    SerializedKeyValueVector< InvitationInfo >& kvVector = m_invitationsReceived;
    SerializedKeyValueVector< InvitationInfo >::KVIterator it = kvVector.begin();
@@ -3137,7 +3032,7 @@ bool     NetworkLayer::RemoveInvitationFromReceived( const string& uuid )
 
 //------------------------------------------------------------------------
 
-bool     NetworkLayer::GetAsset( const string& hash, AssetInfoExtended& asset )
+bool     ClientNetworkWrapper::GetAsset( const string& hash, AssetInfoExtended& asset )
 {
    AssetMapConstIter it = m_assets.begin();//find( category );
    while( it != m_assets.end() )
@@ -3162,7 +3057,7 @@ bool     NetworkLayer::GetAsset( const string& hash, AssetInfoExtended& asset )
 
 //------------------------------------------------------------------------
 
-AssetInfoExtended* NetworkLayer::GetAsset( const string& hash )
+AssetInfoExtended* ClientNetworkWrapper::GetAsset( const string& hash )
 {
    AssetMapIter it = m_assets.begin();//find( category );
    while( it != m_assets.end() )
@@ -3187,7 +3082,7 @@ AssetInfoExtended* NetworkLayer::GetAsset( const string& hash )
 
 //------------------------------------------------------------------------
 
-bool     NetworkLayer::GetAsset( const string& category, const string& hash, AssetInfoExtended& asset )
+bool     ClientNetworkWrapper::GetAsset( const string& category, const string& hash, AssetInfoExtended& asset )
 {
    AssetMapConstIter it = m_assets.find( category );
    if( it != m_assets.end() )
@@ -3210,7 +3105,7 @@ bool     NetworkLayer::GetAsset( const string& category, const string& hash, Ass
 
 //------------------------------------------------------------------------
 
-bool     NetworkLayer::UpdateAssetData( const string& hash, AssetInfoExtended& asset )
+bool     ClientNetworkWrapper::UpdateAssetData( const string& hash, AssetInfoExtended& asset )
 {
    AssetMapIter it = m_assets.begin();
    while( it != m_assets.end() )
@@ -3245,9 +3140,9 @@ bool  NetworkLayerExtended::HandlePacketReceived( BasePacket* packetIn )
          switch( packetIn->packetSubType )
          {
          case PacketAsset::AssetType_EchoToClient:
-            for( list< UserNetworkEventNotifier* >::iterator it = m_callbacks.begin(); it != m_callbacks.end(); ++it )
+            for( list< ClientSideNetworkCallback* >::iterator it = m_callbacks.begin(); it != m_callbacks.end(); ++it )
             {
-               UserNetworkEventNotifierExtended* ptr = static_cast<UserNetworkEventNotifierExtended*>( *it );
+               ClientSideNetworkCallbackExtended* ptr = static_cast<ClientSideNetworkCallbackExtended*>( *it );
                ptr->AssetEcho();
             }
             wasHandled = true;
@@ -3260,9 +3155,9 @@ bool  NetworkLayerExtended::HandlePacketReceived( BasePacket* packetIn )
          switch( packetIn->packetSubType )
          {
          case PacketChatToServer::ChatType_EchoToClient:
-            for( list< UserNetworkEventNotifier* >::iterator it = m_callbacks.begin(); it != m_callbacks.end(); ++it )
+            for( list< ClientSideNetworkCallback* >::iterator it = m_callbacks.begin(); it != m_callbacks.end(); ++it )
             {
-               UserNetworkEventNotifierExtended* ptr = static_cast<UserNetworkEventNotifierExtended*>( *it );
+               ClientSideNetworkCallbackExtended* ptr = static_cast<ClientSideNetworkCallbackExtended*>( *it );
                ptr->ChatEcho();
             }
             wasHandled = true;
@@ -3275,9 +3170,9 @@ bool  NetworkLayerExtended::HandlePacketReceived( BasePacket* packetIn )
          switch( packetIn->packetSubType )
          {
          case PacketContact::ContactType_EchoToClient:
-            for( list< UserNetworkEventNotifier* >::iterator it = m_callbacks.begin(); it != m_callbacks.end(); ++it )
+            for( list< ClientSideNetworkCallback* >::iterator it = m_callbacks.begin(); it != m_callbacks.end(); ++it )
             {
-               UserNetworkEventNotifierExtended* ptr = static_cast<UserNetworkEventNotifierExtended*>( *it );
+               ClientSideNetworkCallbackExtended* ptr = static_cast<ClientSideNetworkCallbackExtended*>( *it );
                ptr->ContactEcho();
             }
             wasHandled = true;
@@ -3290,9 +3185,9 @@ bool  NetworkLayerExtended::HandlePacketReceived( BasePacket* packetIn )
          switch( packetIn->packetSubType )
          {
          case PacketLogin::LoginType_EchoToClient:
-            for( list< UserNetworkEventNotifier* >::iterator it = m_callbacks.begin(); it != m_callbacks.end(); ++it )
+            for( list< ClientSideNetworkCallback* >::iterator it = m_callbacks.begin(); it != m_callbacks.end(); ++it )
             {
-               UserNetworkEventNotifierExtended* ptr = static_cast<UserNetworkEventNotifierExtended*>( *it );
+               ClientSideNetworkCallbackExtended* ptr = static_cast<ClientSideNetworkCallbackExtended*>( *it );
                ptr->LoginEcho();
             }
             wasHandled = true;
@@ -3305,9 +3200,9 @@ bool  NetworkLayerExtended::HandlePacketReceived( BasePacket* packetIn )
          switch( packetIn->packetSubType )
          {
          case PacketGameToServer::GamePacketType_EchoToServer:
-            for( list< UserNetworkEventNotifier* >::iterator it = m_callbacks.begin(); it != m_callbacks.end(); ++it )
+            for( list< ClientSideNetworkCallback* >::iterator it = m_callbacks.begin(); it != m_callbacks.end(); ++it )
             {
-               UserNetworkEventNotifierExtended* ptr = static_cast<UserNetworkEventNotifierExtended*>( *it );
+               ClientSideNetworkCallbackExtended* ptr = static_cast<ClientSideNetworkCallbackExtended*>( *it );
                ptr->GameEcho();
             }
             wasHandled = true;
@@ -3320,9 +3215,9 @@ bool  NetworkLayerExtended::HandlePacketReceived( BasePacket* packetIn )
          switch( packetIn->packetSubType )
          {
          case PacketPurchase::PurchaseType_EchoToClient:
-            for( list< UserNetworkEventNotifier* >::iterator it = m_callbacks.begin(); it != m_callbacks.end(); ++it )
+            for( list< ClientSideNetworkCallback* >::iterator it = m_callbacks.begin(); it != m_callbacks.end(); ++it )
             {
-               UserNetworkEventNotifierExtended* ptr = static_cast<UserNetworkEventNotifierExtended*>( *it );
+               ClientSideNetworkCallbackExtended* ptr = static_cast<ClientSideNetworkCallbackExtended*>( *it );
                ptr->PurchaseEcho();
             }
             wasHandled = true;
@@ -3337,16 +3232,16 @@ bool  NetworkLayerExtended::HandlePacketReceived( BasePacket* packetIn )
       return true;
    }
 
-   return NetworkLayer::HandlePacketReceived( packetIn );
+   return ClientNetworkWrapper::HandlePacketReceived( packetIn );
 }
 
 //------------------------------------------------------------
 
 void  NetworkLayerExtended::StartTime()
 {
-   for( list< UserNetworkEventNotifier* >::iterator it = m_callbacks.begin(); it != m_callbacks.end(); ++it )
+   for( list< ClientSideNetworkCallback* >::iterator it = m_callbacks.begin(); it != m_callbacks.end(); ++it )
    {
-      UserNetworkEventNotifierExtended* ptr = static_cast<UserNetworkEventNotifierExtended*>( *it );
+      ClientSideNetworkCallbackExtended* ptr = static_cast<ClientSideNetworkCallbackExtended*>( *it );
       ptr->SetStartTime();
    }
 }
@@ -3407,7 +3302,7 @@ void  NetworkLayerExtended::SendNotification( U8 type, string additionalText )
 //------------------------------------------------------------
 
 
-void     UserNetworkEventNotifierExtended::SetStartTime()
+void     ClientSideNetworkCallbackExtended::SetStartTime()
 {
    m_timeSent = GetCurrentMilliseconds();
 }
@@ -5347,7 +5242,7 @@ bool  RawDataAccumulator:: NeedsClearing() const
 //-----------------------------------------------------------------------------
 
 // here for reference only
-/*void     NetworkLayer::DumpFriends()
+/*void     ClientNetworkWrapper::DumpFriends()
 {
    m_pyro->SetConsoleColor( Pyroraptor::ColorsNormal );
    
@@ -5372,7 +5267,7 @@ bool  RawDataAccumulator:: NeedsClearing() const
 }
 //-----------------------------------------------------------------------------
 
-void     NetworkLayer::DumpListOfGames( const GameList& gameList )
+void     ClientNetworkWrapper::DumpListOfGames( const GameList& gameList )
 {
    m_pyro->SetConsoleColor( Pyroraptor::ColorsNormal );
    

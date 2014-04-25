@@ -40,7 +40,7 @@ private:
    KhaanGatewayWrapper(){}
 };
 
-//-----------------------------------------------------------------------------
+////////////////////////////////////////////////////////////////////////////////////
 
 class DiplodocusGateway : public Diplodocus< KhaanGateway >, public StatTrackingConnections
 {
@@ -49,14 +49,12 @@ public:
 
    //-----------------------------------------
 
-
-   //-----------------------------------------
-
 public:
    DiplodocusGateway( const string& serverName, U32 serverId );
    ~DiplodocusGateway();
    void           Init();
 
+   void           AllowUnauthenticatedConnections() { m_connectionsRequireAuthentication = false; }
    bool           AddInputChainData( BasePacket* packet, U32 socketId );
    bool           AddOutputChainData( BasePacket* packet, U32 serverType );
    void           NotifyFinishedAdding( IChainedInterface* obj );
@@ -70,6 +68,7 @@ public:
 
    void           TrackCountStats( StatTracking stat, float value, int sub_category );
 
+   //-----------------------------------------------------
 private:
    
    void           InputConnected( IChainedInterface * );
@@ -122,6 +121,7 @@ private:
    PacketQueue                m_packetsToBeSentInternally;
 
    bool                       m_printPacketTypes;
+   bool                       m_connectionsRequireAuthentication;
 
    string                     m_rerouteAddress;
    U16                        m_reroutePort;

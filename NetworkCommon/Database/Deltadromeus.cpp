@@ -11,6 +11,8 @@
 // http://www.nitecon.com/tutorials-articles/develop/cpp/c-mysql-beginner-tutorial/
 
 
+#include "../Platform.h"
+
 #include <boost/type_traits.hpp>
 #include <boost/algorithm/string/replace.hpp>
 #include <boost/lexical_cast.hpp>
@@ -23,7 +25,7 @@
 #pragma comment( lib, "libmysql.lib" )
 #endif
 
-#include "../Platform.h"
+
 #include "../Logging/server_log.h"
 #include "../DataTypes.h"
 #include "../Packets/DbPacket.h"

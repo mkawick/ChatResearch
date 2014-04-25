@@ -144,6 +144,12 @@ void     DiplodocusGateway::InputConnected( IChainedInterface * chainedInput )
    khaan->SetConnectionId( newId );
 
    khaan->SetGateway( this );
+
+   if( m_connectionsRequireAuthentication == false )
+   {
+      khaan->AuthorizeConnection();
+   }
+
    //khaan->SendThroughLibEvent( true );
 
    Threading::MutexLock locker( m_inputChainListMutex );
@@ -541,6 +547,8 @@ void  DiplodocusGateway::HandlePacketToKhaan( KhaanGateway* khaan, BasePacket* p
          clientNotify->connectionId = connectionId;
          clientNotify->loginKey = finishedLogin->loginKey;
          packet = clientNotify;
+
+         TrackCountStats( StatTrackingConnections::StatTracking_UserLoginSuccess, 1, 0 );
       }
       else
       {

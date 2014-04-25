@@ -1,5 +1,6 @@
 // BasePacket.inl
 
+#include <assert.h>
 
 template < typename type >
 bool  SerializedVector< type >::SerializeIn( const U8* data, int& bufferOffset )
@@ -58,6 +59,8 @@ bool  SerializedKeyValueVector< type > ::SerializeIn( const U8* data, int& buffe
 {
    int num = 0;
    Serialize::In( data, bufferOffset, num );
+   Serialize::In( data, bufferOffset, listIndex );
+   Serialize::In( data, bufferOffset, listCount );
 
    for( int i=0; i< num; i++ )
    {
@@ -73,6 +76,8 @@ bool  SerializedKeyValueVector< type > ::SerializeOut( U8* data, int& bufferOffs
 {
    int num = static_cast< int >( dataList.size() );
    Serialize::Out( data, bufferOffset, num );
+   Serialize::Out( data, bufferOffset, listIndex );
+   Serialize::Out( data, bufferOffset, listCount );
 
    typename KeyValueVector::const_iterator it = dataList.begin();
    while( it != dataList.end() )
@@ -117,6 +122,14 @@ bool  SerializedKeyValueVector< type > ::erase( const string& key )
 }
 
 template < typename type >
+void  SerializedKeyValueVector< type > ::reserve( int num )
+{
+   if( dataList.size() )
+      assert( 0 );// disaster
+   dataList.reserve( num );
+}
+
+template < typename type >
 bool SerializedKeyValueVector< type > ::operator = (const KeyValueSerializer< type >& src )
 {
    dataList.clear();
@@ -142,6 +155,14 @@ bool SerializedKeyValueVector< type > ::operator = (const vector< KeyValueSerial
    }
 
    return true;
+}
+
+template < typename type >
+const KeyValueSerializer<type>&   SerializedKeyValueVector< type > ::operator[] ( const int index )
+{
+   assert( index >= 0 && index < (int) dataList.size() );
+
+   return dataList[ index ];
 }
 
 ///////////////////////////////////////////////////////////////

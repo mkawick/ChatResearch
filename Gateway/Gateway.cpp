@@ -65,6 +65,12 @@ void  PrintInstructions()
    cout << "    stat.address      - stat server ipaddress" << endl;
    cout << "    stat.port         - stat server port" << endl;
 
+   cout << "    notification.address- notification server ipaddress" << endl;
+   cout << "    notification.port - notification server port" << endl;
+
+   cout << "    asset.only        - connect to only the asset server" << endl;
+   cout << "    asset.block       - do not connect to the asset server" << endl;
+
    cout << "    print.packets     - print each packet for debugging" << endl;
 
    cout << "    games = [192.168.1.0:21000:MFM,localhost:21100:game1]     - game list" << endl;
@@ -103,16 +109,19 @@ int main( int argc, const char* argv[] )
    string purchasePortString = "7700";
    string purchaseIpAddressString = "localhost";
 
-   string printPacketTypes = "false";
-
-   string rerouteAddressString = "";
-   string reroutePortString = "";
+   //string rerouteAddressString = "";
+   //string reroutePortString = "";
 
    string statPortString = "7802";
    string statIpAddressString = "localhost";
 
    string notificationPortString = "7900";
    string notificationIpAddressString = "localhost";
+
+   string printPacketTypes = "false";
+
+   string assetOnlyString = "false";
+   string assetBlockString = "false";
 
    //--------------------------------------------------------------
 
@@ -145,16 +154,19 @@ int main( int argc, const char* argv[] )
    parser.FindValue( "purchase.port", purchasePortString );
    parser.FindValue( "purchase.address", purchaseIpAddressString );
 
-   parser.FindValue( "print.packets", printPacketTypes );
+   parser.FindValue( "notification.port", notificationPortString );
+   parser.FindValue( "notification.address", notificationIpAddressString );
 
-   parser.FindValue( "reroute.port", reroutePortString );
-   parser.FindValue( "reroute.address", rerouteAddressString );
+   //parser.FindValue( "reroute.port", reroutePortString );
+   //parser.FindValue( "reroute.address", rerouteAddressString );
 
    parser.FindValue( "stat.port", statPortString );
    parser.FindValue( "stat.address", statIpAddressString );
 
-   parser.FindValue( "notification.port", notificationPortString );
-   parser.FindValue( "notification.address", notificationIpAddressString );
+   parser.FindValue( "print.packets", printPacketTypes );
+
+   parser.FindValue( "asset.only", assetOnlyString );
+   parser.FindValue( "asset.block", assetBlockString );
 
    vector< string > params;
   /* if( parser.FindValue( "games", params ) )
@@ -173,22 +185,21 @@ int main( int argc, const char* argv[] )
          listenPort = 9600;
 
    U16 reroutePort = 0;
-   bool printPackets = false;
+   bool printPackets = false, assetOnly = false, assetBlock = false; 
+
    try 
    {
       assetPort =          boost::lexical_cast<int>( assetDeliveryPortString );
       balancerPort =       boost::lexical_cast<U16>( loadBalancerPortString );
       chatPort =           boost::lexical_cast<int>( chatPortString );
       contactPort =        boost::lexical_cast<int>( contactPortString );
-
       loginPort =          boost::lexical_cast<int>( loginPortString );
-
       statPort =           boost::lexical_cast<int>( statPortString );
-
       purchasePort =       boost::lexical_cast<int>( purchasePortString );
-      notificationPort =   boost::lexical_cast<U16>( notificationPort );
-      reroutePort =        boost::lexical_cast<U16>( reroutePortString );
+      notificationPort =   boost::lexical_cast<U16>( notificationPort );      
       listenPort =         boost::lexical_cast<int>( listenPortString );
+      ///reroutePort =        boost::lexical_cast<U16>( reroutePortString );
+
    } 
    catch( boost::bad_lexical_cast const& ) 
    {
@@ -200,6 +211,27 @@ int main( int argc, const char* argv[] )
    {
       printPackets = true;
    }
+   if( assetOnlyString == "1" || assetOnlyString == "true" || assetOnlyString == "TRUE" )
+   {
+      cout << " ----------------------------------------------- " << endl;
+      cout << " Asset only server" << endl;
+      
+      assetOnly = true;
+   }
+   if( assetBlockString == "1" || assetBlockString == "true" || assetBlockString == "TRUE" )
+   {
+      cout << " ----------------------------------------------- " << endl;
+      cout << " prevents talking to asset server" << endl;
+      assetBlock = true;
+   }
+
+   if( assetOnly && assetBlock )
+   {
+      cout << " ----------------------------------------------- " << endl;
+      cout << " CONFIGURATION PROBLEM: you cannot have both asset.only and asset.block flags set" << endl;
+      return 1;
+   }
+
    //--------------------------------------------------------------
 
    U64 serverUniqueHashValue = GenerateUniqueHash( serverName );
@@ -215,30 +247,37 @@ int main( int argc, const char* argv[] )
    gatewayServer->SetAsGame( false );
    gatewayServer->PrintPacketTypes( printPackets );
    gatewayServer->SetupListening( listenPort );
-   gatewayServer->SetupReroute( rerouteAddressString, reroutePort );
+
+   if( assetOnly == true )
+   {
+      gatewayServer->AllowUnauthenticatedConnections();
+      cout << " Asset only server does not require authentication " << endl;
+   }
+   //gatewayServer->SetupReroute( rerouteAddressString, reroutePort );
    
    
    //--------------------------------------------------------------
 
-   ConnectToMultipleGames< FruitadensGateway, DiplodocusGateway > ( parser, gatewayServer, true );
+   if( assetOnly == false )
+   {
+      ConnectToMultipleGames< FruitadensGateway, DiplodocusGateway > ( parser, gatewayServer, true );
 
-   PrepConnection< FruitadensGateway, DiplodocusGateway > ( chatIpAddressString, chatPort, "chat", gatewayServer, ServerType_Chat, true );
-
-   PrepConnection< FruitadensGateway, DiplodocusGateway > ( assetDeliveryIpAddressString, assetPort, "asset", gatewayServer, ServerType_Asset, true );
-
-   PrepConnection< FruitadensGateway, DiplodocusGateway > ( loginIpAddressString, loginPort, "logon", gatewayServer, ServerType_Login, true );
-
-   PrepConnection< FruitadensGateway, DiplodocusGateway > ( contactIpAddressString, contactPort, "contact", gatewayServer, ServerType_Contact, true );
+      PrepConnection< FruitadensGateway, DiplodocusGateway > ( chatIpAddressString,          chatPort,         "chat",           gatewayServer, ServerType_Chat, true );
+      PrepConnection< FruitadensGateway, DiplodocusGateway > ( loginIpAddressString,         loginPort,        "logon",          gatewayServer, ServerType_Login, true );
+      PrepConnection< FruitadensGateway, DiplodocusGateway > ( contactIpAddressString,       contactPort,      "contact",        gatewayServer, ServerType_Contact, true );
+      PrepConnection< FruitadensGateway, DiplodocusGateway > ( purchaseIpAddressString,      purchasePort,     "purchase",       gatewayServer, ServerType_Purchase, true );
+      PrepConnection< FruitadensGateway, DiplodocusGateway > ( statIpAddressString,          statPort,         "stat",           gatewayServer, ServerType_Stat, true );
+      PrepConnection< FruitadensGateway, DiplodocusGateway > ( notificationIpAddressString,  notificationPort, "notification",   gatewayServer, ServerType_Notification, true );
    
-   PrepConnection< FruitadensGateway, DiplodocusGateway > ( purchaseIpAddressString, purchasePort, "purchase", gatewayServer, ServerType_Purchase, true );
+   }
+   if( assetBlock == false )
+   {
+      PrepConnection< FruitadensGateway, DiplodocusGateway > ( assetDeliveryIpAddressString, assetPort,        "asset",          gatewayServer, ServerType_Asset, true );
+   }
 
-   PrepConnection< FruitadensGateway, DiplodocusGateway > ( statIpAddressString, statPort, "stat", gatewayServer, ServerType_Stat, true );
-
-   PrepConnection< FruitadensGateway, DiplodocusGateway > ( notificationIpAddressString, notificationPort, "notification", gatewayServer, ServerType_Notification, true );
-   
    cout << "---------------------------- finished connecting ----------------------------" << endl;
 
-   PrepConnection< FruitadensServerToServer, DiplodocusGateway > ( loadBalancerAddressString, balancerPort, "balancer", gatewayServer, ServerType_LoadBalancer, false );
+   PrepConnection< FruitadensServerToServer, DiplodocusGateway > ( loadBalancerAddressString, balancerPort,    "balancer",       gatewayServer, ServerType_LoadBalancer, false );
 
    gatewayServer->Init();
    gatewayServer->Resume();   

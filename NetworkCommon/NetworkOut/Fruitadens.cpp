@@ -267,22 +267,21 @@ int   Fruitadens :: MainLoop_InputProcessing()
 
    // error checking
 #if PLATFORM == PLATFORM_WINDOWS
-   U32 error = WSAGetLastError();
-   if( error != WSAEWOULDBLOCK )
+   int error_number = WSAGetLastError();
+   if( error_number != WSAEWOULDBLOCK )
    {
-      if( error == WSAECONNRESET )
+      if( error_number == WSAECONNRESET )
       {
-         m_isConnected = false;
-         //m_hasFailedCritically = true;
-         cout << "***********************************************************" << endl;
-         cout << "Socket error was: " << hex << error << dec << endl;
-         cout << "Socket has been reset" << endl;
-         cout << "attempting a reconnect" << endl;
-         cout << "***********************************************************" << endl;
-         closesocket( m_clientSocket );
-         HasBeenDisconnectedCallback();
-         m_clientSocket = SOCKET_ERROR;
-         CreateSocket();
+         SocketHasDisconnectedDuringRecv( error_number );
+      }
+   }
+#else
+   if( numBytesReceived == -1 )
+   {
+      int error_number = errno;
+      if( error_number != EINTR && errno != EWOULDBLOCK ) // common recv error which is commonly ignored
+      {
+         SocketHasDisconnectedDuringRecv( error_number );
       }
    }
 #endif
@@ -292,6 +291,23 @@ int   Fruitadens :: MainLoop_InputProcessing()
    PostProcessInputPackets( m_receiveBufferSize - remainingBufferSize );
 
    return 1;
+}
+
+//-----------------------------------------------------------------------------------------
+
+void  Fruitadens::SocketHasDisconnectedDuringRecv( int error_number )
+{
+   m_isConnected = false;
+   //m_hasFailedCritically = true;
+   cout << "***********************************************************" << endl;
+   cout << "Socket has been reset" << endl;
+   cout << "Socket error was: " << hex << error_number << dec << endl;   
+   cout << "attempting a reconnect" << endl;
+   cout << "***********************************************************" << endl;
+   closesocket( m_clientSocket );
+   HasBeenDisconnectedCallback(); // tell higher layers
+   m_clientSocket = SOCKET_ERROR;
+   CreateSocket();
 }
 
 //-----------------------------------------------------------------------------------------

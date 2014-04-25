@@ -7,7 +7,7 @@ start ./debug/AssetDeliveryServer.exe listen.port=7300 s2s.port=7302 game.port=2
 
 ping -n 1 -w 1000 127.0.0.1 > nul
 
-start ./debug/GatewayServer.exe listen.port=9600 chat.address=localhost chat.port=7400 asset.port=7300 print.packets=true login.port=7600 
+start ./debug/GatewayServer.exe listen.port=9600 chat.address=localhost chat.port=7400 asset.port=7300 login.port=7600 
 
 exit
 

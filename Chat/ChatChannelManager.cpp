@@ -28,6 +28,8 @@ const int maxNumPlayersInChatChannel = 32;
 ChatChannelManager::ChatChannelManager(): m_dbIdTracker( 0 ),
                                           m_isInitialized( false ),
                                           m_numChannelsToLoad( 0 ),
+                                          m_numUsersToLoadPerQueryForInitialLoad( 1000 ),
+                                          m_offsetIndex_QueryForInitialLoad( 0 ),
                                           m_isPullingAllUsersAndChannels( false ),
                                           m_numChannelChatsSent( 0 ),
                                           m_numP2PChatsSent( 0 ),
@@ -48,19 +50,20 @@ ChatChannelManager::~ChatChannelManager()
 void     ChatChannelManager::Init()
 {
    string queryString = "SELECT * FROM chat_channel WHERE is_active=1";
-   U32 serverId = 0;
 
    cout << "Chat channel manager initializing" << endl;
    PacketDbQuery* dbQuery = DbQueryFactory( queryString, false );
    SaveQueryDetails( dbQuery, "", "", 0, ChatChannelDbJob::JobType_LoadAllChannels );
    Send( dbQuery );
 
-    queryString = "SELECT user_name, uuid, users.user_id, user_profile.block_contact_invitations, user_profile.block_group_invitations ";
+  /* queryString = "SELECT user_name, uuid, users.user_id, user_profile.block_contact_invitations, user_profile.block_group_invitations ";
    queryString += "FROM users INNER JOIN user_profile ON users.user_id=user_profile.user_id ";
    queryString += "WHERE user_email IS NOT NULL";
    PacketDbQuery* dbQuery2 = DbQueryFactory( queryString, false );
    SaveQueryDetails( dbQuery2, "", "", 0, ChatChannelDbJob::JobType_LoadAllUsers );
-   Send( dbQuery2 );
+   Send( dbQuery2 );*/
+
+   QueryAllChatUsers( m_offsetIndex_QueryForInitialLoad, m_numUsersToLoadPerQueryForInitialLoad );
 
    m_isInitialized = true;
    m_isPullingAllUsersAndChannels = true;
@@ -379,6 +382,9 @@ bool     ChatChannelManager::GetChatChannels( const string& userUuid, ChannelFul
    if( userIter != m_userMap.end() )
    {
       const list< stringhash >& listOfChannels = userIter->second.channels;// cache this pointer (optimization)
+      int numChannels = listOfChannels.size();
+      availableChannels.reserve( numChannels );
+
       list< stringhash >::const_iterator it = listOfChannels.begin();
       while( it != listOfChannels.end() )
       {
@@ -402,6 +408,14 @@ bool     ChatChannelManager::GetChatChannels( const string& userUuid, ChannelFul
       return true;
    }
    return false;
+}
+
+//---------------------------------------------------------------------
+
+U32      ChatChannelManager::GetUserId( const string& userUuid ) const
+{
+   const UsersChatChannelList& user = GetUserInfo( userUuid );
+   return user.userId;
 }
 
 //---------------------------------------------------------------------
@@ -496,6 +510,7 @@ void     ChatChannelManager::StoreUser( const string& userUuid, const string& us
    if( userIter == m_userMap.end() )
    {
       assert( 0 );// this needs to be rewritten.. depricated iow
+      // we need to load this user from the db
 
       pair< UserMapIterator,bool > newNode = m_userMap.insert( UserPair( userKeyLookup, UsersChatChannelList( userUuid ) ) );
       userIter = newNode.first;
@@ -505,7 +520,7 @@ void     ChatChannelManager::StoreUser( const string& userUuid, const string& us
    }
 }
 
-void     ChatChannelManager::StoreUser( const string& userUuid, const string& userName, bool blockContactInvites, bool blockGroupInvites )
+void     ChatChannelManager::StoreUser( const string& userUuid, U32 userId, const string& userName, bool blockContactInvites, bool blockGroupInvites )
 {
    stringhash  userKeyLookup = GenerateUniqueHash( userUuid );
    UserMapIterator userIter = m_userMap.find( userKeyLookup );
@@ -514,6 +529,7 @@ void     ChatChannelManager::StoreUser( const string& userUuid, const string& us
       pair< UserMapIterator,bool > newNode = m_userMap.insert( UserPair( userKeyLookup, UsersChatChannelList( userUuid ) ) );
       userIter = newNode.first;
       UsersChatChannelList& userInstance = userIter->second;
+      userInstance.userId = userId;
       userInstance.userName = userName;
       userInstance.isOnline = false;
       userInstance.blockContactInvites = blockContactInvites;
@@ -521,10 +537,10 @@ void     ChatChannelManager::StoreUser( const string& userUuid, const string& us
    }
 }
 
-UsersChatChannelList&        ChatChannelManager::GetUserInfo( const string& userUuid )
+const UsersChatChannelList&        ChatChannelManager::GetUserInfo( const string& userUuid ) const
 {
    stringhash  userKeyLookup = GenerateUniqueHash( userUuid );
-   UserMapIterator userIter = m_userMap.find( userKeyLookup );
+   UserMapConstIterator userIter = m_userMap.find( userKeyLookup );
    if( userIter != m_userMap.end() )
    {
       return userIter->second;
@@ -967,7 +983,7 @@ bool     ChatChannelManager::UserSendP2PChat( const string& senderUuid, const st
       ChatUser* userReceiver = m_chatServer->GetUserByUuid( receiverIter->second.userUuid );
       if( userReceiver )
       {
-         userReceiver->ChatReceived( message, senderUuid, userSender->GetUserName(), "", GetDateInUTC() );
+         userReceiver->ChatReceived( message, senderUuid, userSender->GetUserName(), "", GetDateInUTC(), 0 );
       }
    }
 
@@ -1052,7 +1068,7 @@ bool     ChatChannelManager::UserSendsChatToChannel( const string& senderUuid, c
       ChatUser* user = m_chatServer->GetUserByUuid( ub.userUuid );
       if( user )
       {
-         user->ChatReceived( message, senderUuid, userSender->GetUserName(), channelUuid, GetDateInUTC() );
+         user->ChatReceived( message, senderUuid, userSender->GetUserName(), channelUuid, GetDateInUTC(), userSender->GetUserId() );
       }
    }
 
@@ -1344,7 +1360,7 @@ bool     ChatChannelManager::AddUserToChannelAndWriteToDB( const string& channel
 {
 // insert into the list of users for that channel
    StoreUserInChannel( channelUuid, addedUserUuid, addedUserName );
-
+   
    string createDate = GetDateInUTC();
    // add single entry to db for that chat channel
    string queryString = "INSERT INTO user_join_chat_channel VALUES ('%s','%s', null, '";
@@ -1635,6 +1651,28 @@ bool     ChatChannelManager::DeleteUserFromChannel( const string& channelUuid, c
 
 //---------------------------------------------------------------------
 
+void     ChatChannelManager::QueryAllChatUsers( int startIndex, int numToFetch )
+{
+   assert( numToFetch > 0 );
+   assert( startIndex >= 0 );
+
+   string 
+   queryString = "SELECT user_name, uuid, users.user_id, user_profile.block_contact_invitations, user_profile.block_group_invitations ";
+   queryString += "FROM users INNER JOIN user_profile ON users.user_id=user_profile.user_id ";
+   queryString += "WHERE user_email IS NOT NULL LIMIT ";
+
+   queryString += boost::lexical_cast< string >( startIndex );
+   queryString += ",";
+   queryString += boost::lexical_cast< string >( numToFetch );
+
+   PacketDbQuery* dbQuery = DbQueryFactory( queryString, false );
+   SaveQueryDetails( dbQuery, "", "", 0, ChatChannelDbJob::JobType_LoadAllUsers );
+
+   Send( dbQuery );
+}
+
+//---------------------------------------------------------------------
+
 void     ChatChannelManager::StoreAllUsersInChannel( const string& channelUuid, const SerializedKeyValueVector< string >& usersAndIds, bool sendNotification )
 {
    stringhash  channelKeyLookup = GenerateUniqueHash( channelUuid );
@@ -1781,17 +1819,15 @@ bool     ChatChannelManager::HandleLoadAllUsersResult( PacketDbQueryResult* dbRe
 {
    if( dbResult->successfulQuery == true )
    {
-     /* SimpleUserTable              enigma( dbResult->bucket );
-      SimpleUserTable::iterator    it = enigma.begin();
-      while( it != enigma.end() )
-      {
-         SaveUserLoadResult( *it++ );
-      }*/
       UserWithChatPreferencesTable  enigma( dbResult->bucket );
       UserWithChatPreferencesTable::iterator    it = enigma.begin();
+      if( it == enigma.end() ) // we are done querying piecemeal
+      {
+         QueryAllUsersInAllChatChannels();// now that we've loaded all users, load all of the chat info
+         return true;
+      }
       while( it != enigma.end() )
       {
-         //SaveUserLoadResult( *it++ );
          UserWithChatPreferencesTable::row row = *it++;
          string   userName =         row[ TableUserWithChatPreferences::Column_name ];
          string   userUuid =         row[ TableUserWithChatPreferences::Column_uuid ];
@@ -1805,22 +1841,16 @@ bool     ChatChannelManager::HandleLoadAllUsersResult( PacketDbQueryResult* dbRe
          if( blockGroupInvitesString == "1" )
             blockGroupInvites = true;
 
-         StoreUser( userUuid, userName, blockContactInvites, blockGroupInvites );
-        /* stringhash  userKeyLookup = GenerateUniqueHash( userUuid );
-         UserMapIterator userIter = m_userMap.find( userKeyLookup );
-         if( userIter == m_userMap.end() )
-         {
-            pair< UserMapIterator,bool > newNode = m_userMap.insert( UserPair( userKeyLookup, UsersChatChannelList( userUuid ) ) );
-            userIter = newNode.first;
-            UsersChatChannelList& userInstance = userIter->second;
-            userInstance.userName = userName;
-            userInstance.isOnline = false;
-            userInstance.blockContactInvites = blockContactInvites;
-            userInstance.blockGroupInvites = blockGroupInvites;
-         }*/
+         string id = row[ TableUserWithChatPreferences::Column_id ];
+         U32 userId = 0;
+         if( id.size() )
+            userId = boost::lexical_cast< U32 >( id );
+
+         StoreUser( userUuid, userId, userName, blockContactInvites, blockGroupInvites );
       }
 
-      QueryAllUsersInAllChatChannels();
+      m_offsetIndex_QueryForInitialLoad += m_numUsersToLoadPerQueryForInitialLoad;
+      QueryAllChatUsers( m_offsetIndex_QueryForInitialLoad, m_numUsersToLoadPerQueryForInitialLoad );
    }
 
    return true;

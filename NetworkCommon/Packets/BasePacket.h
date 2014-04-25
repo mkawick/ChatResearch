@@ -10,7 +10,7 @@
 
 //#define _MEMLEAK_TESTING_
 
-static const U8   GlobalNetworkProtocolVersion = 17;
+static const U8   GlobalNetworkProtocolVersion = 18;
 
 ///////////////////////////////////////////////////////////////
 

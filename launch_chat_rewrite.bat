@@ -20,6 +20,6 @@ start ./debug/StatServer.exe listen.port=7800 s2s.port=7802 db.address=10.16.4.4
 
 REM ping -n 1 -w 1000 127.0.0.1 > nul
 
-start ./debug/GatewayServer.exe listen.port=9600 chat.port=8400 login.port=7600 print.packets=true games=[localhost:21000:summon_war]
+start ./debug/GatewayServer.exe listen.port=9600 chat.port=8400 login.port=7600 games=[localhost:21000:summon_war]
 
 exit

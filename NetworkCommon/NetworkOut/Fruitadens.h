@@ -83,6 +83,7 @@ protected:
    virtual bool   FilterOutwardPacket( BasePacket* packet ) const { return true; }// true means acceptable
 
    void           AttemptConnection();
+   void           SocketHasDisconnectedDuringRecv( int error_number );
 
    SocketType           m_clientSocket;
    bool                 m_isConnected;
@@ -121,6 +122,8 @@ public:
    void        NotifyEndpointOfIdentification( const string& serverName, const string& serverAddress, U32 serverId, U16 serverPort, U8 gameProductId, bool isGameServer, bool isController, bool requiresWrapper, bool isGateway );
 
    void        InitalConnectionCallback();
+
+   bool        IsGameServer() const { return m_localIsGameServer; }
 
 protected:
 

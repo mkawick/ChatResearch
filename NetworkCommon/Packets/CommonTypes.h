@@ -90,40 +90,54 @@ template < typename type = string >
 class SerializedKeyValueVector
 {
 public:
-   typedef  KeyValueSerializer< type >           KeyValue;
-   typedef  vector< KeyValue >                   KeyValueVector;
+   typedef  KeyValueSerializer< type >                   KeyValue;
+   typedef  vector< KeyValue >                           KeyValueVector;
    typedef typename KeyValueVector::iterator             KeyValueVectorIterator;
    typedef typename KeyValueVector::iterator             KVIterator;
    typedef typename KeyValueVector::const_iterator       const_KVIterator;
 
-   SerializedKeyValueVector() {}
-   bool  SerializeIn( const U8* data, int& bufferOffset );
-   bool  SerializeOut( U8* data, int& bufferOffset ) const;
-
-   const KeyValueVector&   GetData() const { return dataList; }
-   void  clear() { dataList.clear(); }
-   bool  erase( int index );
-   bool  erase( KVIterator iter );
+   SerializedKeyValueVector() { clear(); }
    
+
+   //----------------------------
+   const KeyValueVector&   GetData() const { return dataList; }
+   void                    clear() { dataList.clear(); listIndex = 0; listCount = 0; }
+   bool                    erase( int index );
+   bool                    erase( KVIterator iter );
+
    // helper functions
-   void  insert( const string& key, const type& obj ) { dataList.push_back( KeyValue( key, obj ) ); }
+   void                    insert( const string& key, const type& obj ) { dataList.push_back( KeyValue( key, obj ) ); }
 
-   int                  size() const { return static_cast< int >( dataList.size() ); }
-   const_KVIterator     begin() const { return dataList.begin(); }
-   KVIterator           begin() { return dataList.begin(); }
-   const_KVIterator     end() const { return dataList.end(); }
-   KVIterator           end() { return dataList.end(); }
+   int                     size() const { return static_cast< int >( dataList.size() ); }
+   const_KVIterator        begin() const { return dataList.begin(); }
+   KVIterator              begin() { return dataList.begin(); }
+   const_KVIterator        end() const { return dataList.end(); }
+   KVIterator              end() { return dataList.end(); }
 
-   //KVIterator           rbegin() { return dataList.rbegin(); }
-   type&                lastValue() { return (dataList.rbegin()->value); }
-   type                 find( const string& key ) const;
-   bool                 erase( const string& key );
+   type&                   lastValue() { return (dataList.rbegin()->value); }
+   type                    find( const string& key ) const;
+   bool                    erase( const string& key );
+   void                    reserve( int num );
 
-   bool operator = (const KeyValueSerializer< type >& src );
-   bool operator = (const KeyValueVector& src );
+   bool              operator = (const KeyValueSerializer< type >& src );
+   bool              operator = (const KeyValueVector& src );
+
+   const KeyValueSerializer<type>&  operator[] (const int nIndex);
+   
+   //------------ tracking variables, mostly for packetization ------------------
+   void                    SetIndexParams( U16 firstIndex = 0, U16 totaltCount = 0 ) { listIndex = firstIndex, listCount = totaltCount; }
+   U16                     GetFirstIndex() const { return listIndex; }
+   U16                     GetTotalCount() const { return listCount; }
 
 protected:
    KeyValueVector    dataList;
+   U16   listIndex;// this list will be sent in pieces
+   U16   listCount;
+
+public: // I put these down here to stay out of the mental space of the reader. This class is becomming complex
+   // so any minor simplifications are helpful
+   bool                 SerializeIn( const U8* data, int& bufferOffset );
+   bool                 SerializeOut( U8* data, int& bufferOffset ) const;
 };
 
 ///////////////////////////////////////////////////////////////

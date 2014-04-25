@@ -169,13 +169,15 @@ public:
 class PacketChatToClient : public PacketChatToServer 
 {
 public:
-   PacketChatToClient( int packet_type = PacketType_Chat, int packet_sub_type = ChatType_ChatToClient ) : PacketChatToServer( packet_type, packet_sub_type ) {}
+   PacketChatToClient( int packet_type = PacketType_Chat, int packet_sub_type = ChatType_ChatToClient ) : 
+      PacketChatToServer( packet_type, packet_sub_type ), userTempId( 0 ) {}
 
    bool  SerializeIn( const U8* data, int& bufferOffset );
    bool  SerializeOut( U8* data, int& bufferOffset ) const;
 
    string   userName;
    string   timeStamp;
+   U32      userTempId;
 };
 
 ///////////////////////////////////////////////////////////////
@@ -268,8 +270,9 @@ struct ChatEntry
 
    string   userName;
    string   useruuid;
+   U32      userTempId;
    string   message;
-   string   timestamp;
+   string   timestamp;   
    U16      gameTurn;
 };
 
@@ -331,8 +334,10 @@ struct MissedChatChannelEntry
 
    string   senderUuid;
    string   chatChannelUuid;
-   U16      numMessages;
+   string   message;
+   //U16      numMessages;
    bool     isGamechannel;
+   U32      senderTempId;
 };
 
 class PacketChatMissedHistoryResult : public BasePacket

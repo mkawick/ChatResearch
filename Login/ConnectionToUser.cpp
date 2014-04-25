@@ -206,10 +206,10 @@ void  ConnectionToUser::CopyUserSettings( UserPlusProfileTable& enigma, U8 produ
    m_email =                        row[ TableUserPlusProfile::Column_email ];
    m_passwordHash =                 row[ TableUserPlusProfile::Column_password_hash ];
    
-   m_lastLoginTime =                  row[ TableUserPlusProfile::Column_last_login_time ];
+   //m_lastLoginTime =                  row[ TableUserPlusProfile::Column_last_login_time ];
    m_loggedOutTime = 0;
    //m_loggedOutTime = GetDateFromString( m_lastLoginTime.c_str() );
-   m_lastLoginTime =                 row[ TableUserPlusProfile::Column_last_logout_time ];
+   m_lastLoginTime =                 row[ TableUserPlusProfile::Column_last_logout_time ];// last time logged in
 
    m_isActive =                       boost::lexical_cast<bool>( row[ TableUserPlusProfile::Column_active] );
 
@@ -427,10 +427,10 @@ bool  ConnectionToUser::FinalizeLogout()
 
    PacketDbQuery* dbQuery = new PacketDbQuery;
    dbQuery->id =              m_connectionId;
-   dbQuery->lookup =          DiplodocusLogin::QueryType_UserLoginInfo;
+   dbQuery->lookup =          DiplodocusLogin::QueryType_UserLogout;
    dbQuery->isFireAndForget = true;// no result is needed
    
-   string queryString = "UPDATE users AS user SET user.last_logout_timestamp=now() WHERE uuid = '";
+   string queryString = "UPDATE users AS user SET user.last_logout_timestamp=NOW() WHERE user.uuid = '";
    queryString +=             m_userUuid;
    queryString += "'";
    dbQuery->query =           queryString;
@@ -516,7 +516,7 @@ bool  ConnectionToUser::UpdateLastLoggedOutTime()
                    
 //-----------------------------------------------------------------
 
-bool    ConnectionToUser:: SuccessfulLogin( U32 connectId, bool isReloggedIn )
+bool    ConnectionToUser:: SuccessfulLoginFinished( U32 connectId, bool isReloggedIn )
 {
    m_isReadyToBeCleanedUp = false;
    m_isLoggingOut = false;// for relogin, we need this to be cleared.

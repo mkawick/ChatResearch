@@ -34,7 +34,7 @@ public:
    bool           HandleClientRequest( BasePacket* packet );
    bool           HandleDbResult( PacketDbQueryResult* packet );
 
-   void           ChatReceived( const string& message, const string& senderUuid, const string& senderDisplayName, string groupUuid, string timeStamp );
+   void           ChatReceived( const string& message, const string& senderUuid, const string& senderDisplayName, string groupUuid, string timeStamp, U32 userId );
 
    bool           Update();
 

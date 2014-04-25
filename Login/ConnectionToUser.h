@@ -52,7 +52,7 @@ struct ConnectionToUser
 
    bool     UpdateLastLoggedInTime();
    bool     UpdateLastLoggedOutTime();
-   bool     SuccessfulLogin( U32 connectionId, bool isReloggedIn );
+   bool     SuccessfulLoginFinished( U32 connectionId, bool isReloggedIn );
    void     UpdateConnectionId( U32 connectionId );
 
    bool     RequestListOfGames( const string& userUuid );

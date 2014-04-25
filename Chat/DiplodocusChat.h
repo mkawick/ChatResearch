@@ -70,6 +70,7 @@ private:
 
    typedef map< U32, ChatUser* >  UserMap;
    typedef UserMap::iterator      UserMapIterator;
+   typedef UserMap::const_iterator UserMapConstIterator;
    typedef pair< U32, ChatUser* > UserMapPair;
 
    map< U32, ChatUser* >         m_users;

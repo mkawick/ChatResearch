@@ -123,6 +123,7 @@ bool  PacketChatToClient::SerializeIn( const U8* data, int& bufferOffset )
    PacketChatToServer::SerializeIn( data, bufferOffset );
    Serialize::In( data, bufferOffset, userName );
    Serialize::In( data, bufferOffset, timeStamp );
+   Serialize::In( data, bufferOffset, userTempId );
 
    return true;
 }
@@ -132,6 +133,7 @@ bool  PacketChatToClient::SerializeOut( U8* data, int& bufferOffset ) const
    PacketChatToServer::SerializeOut( data, bufferOffset );
    Serialize::Out( data, bufferOffset, userName );
    Serialize::Out( data, bufferOffset, timeStamp );
+   Serialize::Out( data, bufferOffset, userTempId );
 
    return true;
 }
@@ -271,6 +273,7 @@ bool  ChatEntry::SerializeIn( const U8* data, int& bufferOffset )
    Serialize::In( data, bufferOffset, userName );
    Serialize::In( data, bufferOffset, useruuid );
    Serialize::In( data, bufferOffset, message );
+   Serialize::In( data, bufferOffset, userTempId );
    Serialize::In( data, bufferOffset, timestamp );
    Serialize::In( data, bufferOffset, gameTurn );
 
@@ -282,6 +285,7 @@ bool  ChatEntry::SerializeOut( U8* data, int& bufferOffset ) const
    Serialize::Out( data, bufferOffset, userName );
    Serialize::Out( data, bufferOffset, useruuid );
    Serialize::Out( data, bufferOffset, message );
+   Serialize::Out( data, bufferOffset, userTempId );
    Serialize::Out( data, bufferOffset, timestamp );
    Serialize::Out( data, bufferOffset, gameTurn );
 
@@ -317,8 +321,10 @@ bool  MissedChatChannelEntry::SerializeIn( const U8* data, int& bufferOffset )
 {
    Serialize::In( data, bufferOffset, senderUuid );
    Serialize::In( data, bufferOffset, chatChannelUuid );
-   Serialize::In( data, bufferOffset, numMessages );
+   Serialize::In( data, bufferOffset, message );
    Serialize::In( data, bufferOffset, isGamechannel );
+   Serialize::In( data, bufferOffset, senderTempId );
+
 
    return true;
 }
@@ -327,8 +333,9 @@ bool  MissedChatChannelEntry::SerializeOut( U8* data, int& bufferOffset ) const
 {
    Serialize::Out( data, bufferOffset, senderUuid );
    Serialize::Out( data, bufferOffset, chatChannelUuid );
-   Serialize::Out( data, bufferOffset, numMessages );
+   Serialize::Out( data, bufferOffset, message );
    Serialize::Out( data, bufferOffset, isGamechannel );
+   Serialize::Out( data, bufferOffset, senderTempId );
 
    return true;
 }

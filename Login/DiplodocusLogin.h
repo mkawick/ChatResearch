@@ -51,6 +51,7 @@ public:
    enum QueryType 
    {
       QueryType_UserLoginInfo = 1,
+      QueryType_UserLogout,
       QueryType_AdminRequestUserProfile,
       QueryType_UpdateUserProfile,
       QueryType_UpdateSelfProfile,
@@ -151,7 +152,7 @@ private:
    //void     UpdateUserRecordToMatchingGamekitHash( const CreateAccountResultsAggregator* aggregator );
 
    //--------------------------------------------
-   bool     HandleLoginResultFromDb( U32 connectionId, PacketDbQueryResult* dbResult );
+   bool     HandleUserLoginResult( U32 connectionId, PacketDbQueryResult* dbResult );
    bool     HandleAdminRequestUserProfile( U32 connectionId, PacketDbQueryResult* dbResult );
    //bool     HandleUserProfileFromDb( U32 connectionId, PacketDbQueryResult* dbResult );
    bool     SuccessfulLogin( U32 connectionId, bool isReloggedIn = false );
@@ -164,21 +165,7 @@ private:
    bool     UpdateLastLoggedOutTime( U32 connectionId );
    bool     UpdateLastLoggedInTime( U32 connectionId );
 
-   //--------------------------------------------
-
-   bool     SendLoginStatusToOtherServers( const string& username, 
-                                             const string& userUuid, 
-                                             U32 connectionId, 
-                                             U8 gameProductId, 
-                                             const string& lastLoginTime, 
-                                             bool isActive, 
-                                             const string& email, 
-                                             const string& passwordHash, 
-                                             const string& userId,  
-                                             const string& loginKey, 
-                                             int langaugeId, 
-                                             bool isLoggedIn, 
-                                             bool wasDisconnectedByError );
+   
    //bool     SendListOfUserProductsToOtherServers( const string& userUuid, U32 connectionId, const vector< string >& productNames );
 
    bool     StoreUserPurchases( U32 connectionId, const PacketListOfUserAggregatePurchases* purchase );
@@ -252,6 +239,63 @@ private:
    int                        m_totalUserLoginSeconds;
    int                        m_totalNumLogouts;
    set< string >              m_uniqueUsers;
+
+private:
+   //--------------------------------------------
+
+   bool     SendLoginStatusToOtherServers( const string& username, 
+                                             const string& userUuid, 
+                                             U32 connectionId, 
+                                             U8 gameProductId, 
+                                             const string& lastLoginTime, 
+                                             bool isActive, 
+                                             const string& email, 
+                                             const string& passwordHash, 
+                                             const string& userId,  
+                                             const string& loginKey, 
+                                             int langaugeId, 
+                                             bool isLoggedIn, 
+                                             bool wasDisconnectedByError );
+   bool     SendLoginStatus(  ChainType*  destinationServerPtr,
+                              const string& userName, 
+                              const string& userUuid, 
+                              U32 connectionId, 
+                              U8 gameProductId, 
+                              const string& lastLoginTime, 
+                              bool isActive, 
+                              const string& email, 
+                              const string& passwordHash, 
+                              const string& userId, 
+                              const string& loginKey,
+                              int languageId, 
+                              bool isLoggedIn, 
+                              bool wasDisconnectedByError );
+   bool     SendLoginStatusTo_Non_GameServers( const string& userName, 
+                                                     const string& userUuid, 
+                                                     U32 connectionId, 
+                                                     U8 gameProductId, 
+                                                     const string& lastLoginTime, 
+                                                     bool isActive, 
+                                                     const string& email, 
+                                                     const string& passwordHash, 
+                                                     const string& userId, 
+                                                     const string& loginKey,
+                                                     int languageId, 
+                                                     bool isLoggedIn, 
+                                                     bool wasDisconnectedByError );
+   bool     SendLoginStatusTo_GameServers( const string& userName, 
+                                            const string& userUuid, 
+                                            U32 connectionId, 
+                                            U8 gameProductId, 
+                                            const string& lastLoginTime, 
+                                            bool isActive, 
+                                            const string& email, 
+                                            const string& passwordHash, 
+                                            const string& userId, 
+                                            const string& loginKey,
+                                            int languageId, 
+                                            bool isLoggedIn, 
+                                            bool wasDisconnectedByError );
 };
 
 //-----------------------------------------------------------------------------------------

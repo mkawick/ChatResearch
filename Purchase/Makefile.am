@@ -8,7 +8,6 @@ Purchase.cpp \
 SalesManager.cpp \
 UserAccountPurchase.cpp \
 ../NetworkCommon/NetworkUtils.cpp \
-../NetworkCommon/Serialize.cpp \
 ../NetworkCommon/ServerConstants.cpp \
 ../NetworkCommon/ServerType.cpp \
 ../NetworkCommon/ChainedArchitecture/Thread.cpp \
@@ -24,13 +23,15 @@ UserAccountPurchase.cpp \
 ../NetworkCommon/Packets/BasePacket.cpp \
 ../NetworkCommon/Packets/ChatPacket.cpp \
 ../NetworkCommon/Packets/CheatPacket.cpp \
+../NetworkCommon/Packets/CommonTypes.cpp \
 ../NetworkCommon/Packets/ContactPacket.cpp \
-../NetworkCommon/Packets/DataBucket.cpp \
 ../NetworkCommon/Packets/DbPacket.cpp \
 ../NetworkCommon/Packets/GamePacket.cpp \
 ../NetworkCommon/Packets/LoginPacket.cpp \
+../NetworkCommon/Packets/NotificationPacket.cpp \
 ../NetworkCommon/Packets/PacketFactory.cpp \
 ../NetworkCommon/Packets/PurchasePacket.cpp \
+../NetworkCommon/Packets/Serialize.cpp \
 ../NetworkCommon/Packets/ServerToServerPacket.cpp \
 ../NetworkCommon/Packets/StatPacket.cpp \
 ../NetworkCommon/Packets/TournamentPacket.cpp \

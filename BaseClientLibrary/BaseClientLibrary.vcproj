@@ -211,7 +211,11 @@
 			UniqueIdentifier="{4FC737F1-C7A5-4376-A066-2A32D752A2FF}"
 			>
 			<File
-				RelativePath=".\NetworkLayer.cpp"
+				RelativePath=".\ClientNetworkWrapper.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\NetworkWrapper_SupportClasses.cpp"
 				>
 			</File>
 		</Filter>
@@ -221,7 +225,15 @@
 			UniqueIdentifier="{93995380-89BD-4b04-88EB-625FBE52EBFB}"
 			>
 			<File
-				RelativePath=".\NetworkLayer.h"
+				RelativePath=".\ClientNetworkWrapper.h"
+				>
+			</File>
+			<File
+				RelativePath=".\ClientSideNetworkCallback.h"
+				>
+			</File>
+			<File
+				RelativePath=".\NetworkWrapper_SupportClasses.h"
 				>
 			</File>
 		</Filter>
