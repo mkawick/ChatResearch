@@ -60,7 +60,7 @@ public:
 
    void  operator = ( const list< DataRow >& copyData );
    void  operator = ( const list< list<string> >& copyData );
-   DataSet  bucket;   
+   DataSet  bucket;
 };
 
 ///////////////////////////////////////////////////////////////

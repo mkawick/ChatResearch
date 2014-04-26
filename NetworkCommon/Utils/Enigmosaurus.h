@@ -32,9 +32,10 @@ public:
    Enigmosaurus( const DynamicDataBucket& bucket ) : m_bucket( bucket.bucket ) {}
    ~Enigmosaurus() {}
 
-   iterator    begin() { return m_bucket.begin(); }
+   iterator    begin() { if( m_bucket.size() ) return m_bucket.begin(); return end(); }
    iterator    end() { return m_bucket.end(); }
    iterator    operator[] ( enum TabelInterface::Columns a ) { return m_bucket.begin(); }
+   U32		   size() const { return m_bucket.size(); }
    
 public:
    const DynamicDataBucket::DataSet& m_bucket;

@@ -15,6 +15,7 @@ public:
       QueryType_Query,
       QueryType_Result
    };
+   typedef list< DataRow >  DataSet;
 public:
    BasePacketDbQuery( int packet_type = PacketType_DbQuery, int packet_sub_type = QueryType_Query ): BasePacket( packet_type, packet_sub_type ), id( 0 ), lookup( 0 ), serverLookup( 0 ), hitsTempDb( false ), customData( NULL ) {}
    //BasePacketDbQuery( const BasePacketDbQuery& query ) : BasePacket( query.packetType, query.packetSubType), id( query.id ), lookup( query.lookup ), serverLookup( query.serverLookup ), hitsTempDb( query.hitsTempDb ), customData( query.customData )  {}
@@ -71,6 +72,7 @@ public:
    int                  insertId; // rarely correct.. only for inserts
    DynamicDataBucket    bucket;// this could be slow with large datasets.. look into optimizations here
 
+   DataSet&  Bucket() { return bucket.bucket; }
 private: 
    const BasePacketDbQuery& operator = (const BasePacketDbQuery& );
 };

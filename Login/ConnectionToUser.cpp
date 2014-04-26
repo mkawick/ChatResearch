@@ -71,7 +71,7 @@ bool  ConnectionToUser::HandleAdminRequestUserProfile( PacketDbQueryResult* dbRe
    map< string, ConnectionToUser>:: iterator it = adminUserData.find( lookupKey );
    if( it != adminUserData.end() )
    {
-      if( dbResult->bucket.bucket.size() == 0 )// no records found
+      if( dbResult->bucket.size() == 0 )// no records found
       {
          userManager->SendErrorToClient( m_connectionId, PacketErrorReport::ErrorType_Cheat_BadUserLookup );
          return false;
