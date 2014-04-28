@@ -34,7 +34,7 @@ start ./debug/StatServer.exe listen.port=7800 s2s.port=7802 db.address=10.16.4.4
 
 REM start ./debug/GameServer.exe db.port=16384 listen.port=21000
 
-start ./debug/GatewayServer.exe listen.port=9600 chat.address=localhost chat.port=7400 asset.port=7300 print.packets=true login.port=7600 games=[localhost:21000:summon_war,192.168.1.1:21100:MFM]
+start ./debug/GatewayServer.exe listen.port=9600 chat.address=localhost chat.port=7400 asset.port=7300 print.packets=true login.port=7600 contact.port=7500 games=[localhost:21000:summon_war,192.168.1.1:21100:MFM]
 
 exit
 

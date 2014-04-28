@@ -133,8 +133,8 @@ private:
    void     RemoveOldConnections();
 
    void     LoadInitializationData();
-   void     StoreAllProducts( PacketDbQueryResult* dbResult );
-   void     StoreSingleProduct( PacketDbQueryResult* dbResult );
+   void     StoreAllProducts( const PacketDbQueryResult* dbResult );
+   void     StoreSingleProduct( const PacketDbQueryResult* dbResult );
 
    
    bool     LogUserIn( const string& username, const string& password, const string& loginKey, U8 gameProductId, U32 connectionId );
@@ -152,8 +152,8 @@ private:
    //void     UpdateUserRecordToMatchingGamekitHash( const CreateAccountResultsAggregator* aggregator );
 
    //--------------------------------------------
-   bool     HandleUserLoginResult( U32 connectionId, PacketDbQueryResult* dbResult );
-   bool     HandleAdminRequestUserProfile( U32 connectionId, PacketDbQueryResult* dbResult );
+   bool     HandleUserLoginResult( U32 connectionId, const PacketDbQueryResult* dbResult );
+   bool     HandleAdminRequestUserProfile( U32 connectionId, const PacketDbQueryResult* dbResult );
    //bool     HandleUserProfileFromDb( U32 connectionId, PacketDbQueryResult* dbResult );
    bool     SuccessfulLogin( U32 connectionId, bool isReloggedIn = false );
    
@@ -224,8 +224,7 @@ private:
    ProductList                m_productList;
    StringLookup*              m_stringLookup;
 
-   void                       FinalizeLogout( U32 connectionId, bool wasDisconnectedByError );
-
+   deque< PacketDbQueryResult* >    m_dbQueries;
 
    // stat tracking
    time_t                     m_timestampHourlyStatServerStatisics;
@@ -242,6 +241,10 @@ private:
 
 private:
    //--------------------------------------------
+
+   void     FinalizeLogout( U32 connectionId, bool wasDisconnectedByError );
+   void     UpdateDbResults();
+   bool     HandleDbResult( PacketDbQueryResult* dbResult );
 
    bool     SendLoginStatusToOtherServers( const string& username, 
                                              const string& userUuid, 

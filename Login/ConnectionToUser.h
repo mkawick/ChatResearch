@@ -71,7 +71,9 @@ struct ConnectionToUser
    void     RequestProfile( const string& email, const string& uuid, const string& name, bool asAdmin );
    bool     UpdateProfile( const PacketUpdateUserProfile* updateProfileRequest );
    bool     UpdateProfile( const PacketUpdateSelfProfile* updateProfileRequest );
-   bool     HandleAdminRequestUserProfile( PacketDbQueryResult* dbResult );
+   bool     HandleAdminRequestUserProfile( const PacketDbQueryResult* dbResult );
+
+   bool     LoginResult( const PacketDbQueryResult* dbResult );
 
    bool     EchoHandler();
 
@@ -148,8 +150,6 @@ protected:
 
    bool     HandleCheat_RemoveAll( const string& command );
    bool     HandleCheat_AddProduct( const string& command );
-
-   bool     StoreUserInfo( PacketDbQueryResult* dbResult );
 
    void     CopyUserSettings( UserPlusProfileTable& enigma, U8 gameProductId );
    void     SaveUpdatedProfile( const PacketUpdateUserProfile* profileUpdate, int adminLevelOfCaller, bool writeToDB );

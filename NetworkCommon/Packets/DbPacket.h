@@ -72,7 +72,7 @@ public:
    int                  insertId; // rarely correct.. only for inserts
    DynamicDataBucket    bucket;// this could be slow with large datasets.. look into optimizations here
 
-   DataSet&  Bucket() { return bucket.bucket; }
+   const DataSet&       GetBucket() const { return bucket.bucket; }
 private: 
    const BasePacketDbQuery& operator = (const BasePacketDbQuery& );
 };

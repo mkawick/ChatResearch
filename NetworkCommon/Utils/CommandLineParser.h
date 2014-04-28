@@ -33,6 +33,7 @@ public:
    bool  IsRequestingInstructions() const;
    bool  FindValue( const string& key, string& valueOut ) const;
    bool  FindValue( const string& key, int& valueOut ) const;
+   bool  FindValue( const string& key, bool& valueOut ) const;
    bool  FindValue( const string& key ) const;
    bool  FindValue( const string& key, vector< std::string >& strings ) const;
    bool  SeparateStringIntoKeyValue( const string& inString, string& key, string& value ) const;

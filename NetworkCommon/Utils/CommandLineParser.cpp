@@ -204,6 +204,31 @@ bool  CommandLineParser::FindValue( const string& key, int& valueOut ) const
    return false;
 }
 
+bool  CommandLineParser::FindValue( const string& key, bool& valueOut ) const
+{
+   string searchKey = ConvertStringToLower( key );
+
+   ValuesListConstIterator it = m_values.begin();
+   while( it != m_values.end() )
+   {
+      if( (*it).key == searchKey )
+      {
+         try
+         {
+            valueOut = boost::lexical_cast<bool>( (*it).value );
+         }
+         catch( boost::bad_lexical_cast const&  )
+         {
+            valueOut = true;// value was found, so true is the default
+         }
+         return true;
+      }
+      it++;
+   }
+
+   return false;
+}
+
 bool  CommandLineParser::FindValue( const string& key ) const
 {
    string searchKey = ConvertStringToLower( key );

@@ -345,11 +345,18 @@ bool  DiplodocusLogin:: LoadUserAccount( const string& userName, const string& p
 
 //---------------------------------------------------------------
 
-bool     DiplodocusLogin:: HandleUserLoginResult( U32 connectionId, PacketDbQueryResult* dbResult )
+bool     DiplodocusLogin:: HandleUserLoginResult( U32 connectionId, const PacketDbQueryResult* dbResult )
 {
    ConnectionToUser* connection = GetUserConnection( connectionId );
    if( connection )
    {
+      if( dbResult->successfulQuery == false || dbResult->GetBucket().size() == 0 )
+      {
+         connection->ClearLoggingOutStatus();
+         Log( "Connect user: Cannot continue logging in", 1 );
+         Log( "User record not fouond", 1 );
+         return false;
+      }
       // ---------------------------------
       // lots happening here
       connection->LoginResult( dbResult );
@@ -358,13 +365,11 @@ bool     DiplodocusLogin:: HandleUserLoginResult( U32 connectionId, PacketDbQuer
       if( connection->CanContinueLogginIn() == false )
       {
          connection->ClearLoggingOutStatus();
-         /*connection->BeginLogout( false );
-         bool result = connection->FinalizeLogout();*/
          Log( "Connect user: Cannot continue logging in", 1 );
          return false;
       }
 
-      if( dbResult->successfulQuery == true && dbResult->bucket.bucket.size() > 0 )
+      if( dbResult->successfulQuery == true && dbResult->GetBucket().size() > 0 )
       {
          const bool isLoggedIn = true; 
          const bool wasDisconnectedByError = false;
@@ -426,43 +431,7 @@ bool     DiplodocusLogin:: HandleUserLoginResult( U32 connectionId, PacketDbQuer
          else
          {
             Log( "User connection failure", 1 );
-         }
-         
-         /*
-         SendLoginStatusTo_Non_GameServers( connection->m_userName, 
-                                             connection->m_userUuid, 
-                                             connectionId, 
-                                             gameProductId, 
-                                             connection->m_lastLoginTime, 
-                                             connection->m_isActive, 
-                                             connection->m_email, 
-                                             connection->m_passwordHash, 
-                                             connection->m_id, 
-                                             connection->m_loginKey, 
-                                             connection->m_languageId, 
-                                             isLoggedIn, 
-                                             wasDisconnectedByError );
-
-            if( connection->SuccessfulLoginFinished( connectionId, true ) == true )
-            {
-               m_uniqueUsers.insert( connection->m_userUuid );
-               UpdateLastLoggedInTime( connectionId ); // update the user logged in time
-            }
-            SendLoginStatusTo_GameServers( connection->m_userName, 
-                                             connection->m_userUuid, 
-                                             connectionId, 
-                                             gameProductId, 
-                                             connection->m_lastLoginTime, 
-                                             connection->m_isActive, 
-                                             connection->m_email, 
-                                             connection->m_passwordHash, 
-                                             connection->m_id, 
-                                             connection->m_loginKey, 
-                                             connection->m_languageId, 
-                                             isLoggedIn, 
-                                             wasDisconnectedByError );
-         */
-         
+         }         
       }
    }
 
@@ -471,7 +440,7 @@ bool     DiplodocusLogin:: HandleUserLoginResult( U32 connectionId, PacketDbQuer
 
 //---------------------------------------------------------------
 
-bool     DiplodocusLogin:: HandleAdminRequestUserProfile( U32 connectionId, PacketDbQueryResult* dbResult )
+bool     DiplodocusLogin:: HandleAdminRequestUserProfile( U32 connectionId, const PacketDbQueryResult* dbResult )
 {
    ConnectionToUser* connection = GetUserConnection( connectionId );
    if( connection )
@@ -1660,218 +1629,257 @@ void     DiplodocusLogin:: UpdateUserRecord( CreateAccountResultsAggregator* agg
 
 //---------------------------------------------------------------
 
-bool     DiplodocusLogin:: AddOutputChainData( BasePacket* packet, U32 chainId )
+// data going out can go only a few directions
+// coming from the DB, we can have a result or possibly a different packet meant for a single chat UserConnection
+// otherwise, coming from a UserConnection, to go out, it will already be packaged as a Gateway Wrapper and then 
+// we simply send it on.
+bool     DiplodocusLogin::AddOutputChainData( BasePacket* packet, U32 connectionId ) 
 {
-   // this should be a DB Query Response only. Lookup the appropriate gateway connection and push the login result back out.
-   // If 
+   if( packet->packetType == PacketType_ServerJobWrapper )
+   {
+      return HandlePacketToOtherServer( packet, connectionId );
+   }
+
    if( packet->packetType == PacketType_DbQuery )
    {
+      Threading::MutexLock locker( m_mutex );
       if( packet->packetSubType == BasePacketDbQuery::QueryType_Result )
       {
-         PacketDbQueryResult* dbResult = static_cast<PacketDbQueryResult*>( packet );
-         U32 connectionId = dbResult->id;
-
-         // new user accounts are not going to be part of the normal login.
-         UserCreateAccountIterator createIt = m_userAccountCreationMap.find( connectionId );
-         if( createIt != m_userAccountCreationMap.end () )
-         {
-            CreateAccountResultsAggregator* aggregator = createIt->second;
-            aggregator->HandleResult( dbResult );
-            if( aggregator->IsComplete() )
-            {
-               UpdateUserRecord( aggregator );
-               delete aggregator;
-               Threading::MutexLock locker( m_inputChainListMutex );
-               m_userAccountCreationMap.erase( createIt );
-            }
-            return true;
-         }
-
-         ConnectionToUser* connection = NULL; 
-         if( connectionId != 0 )
-         {
-            connection = GetUserConnection( connectionId );
-            if( connection == NULL )
-            {
-               string str = "Login server: Something seriously wrong where the db query came back from the server but no record.. ";
-               Log( str, 4 );
-               str = "was apparently requested or at least it was not stored properly: userName was :";
-               str += dbResult->meta;
-               Log( str, 4 );
-               return false;
-            }
-         }
-         bool  wasHandled = false;
-         if( m_stringLookup->HandleResult( dbResult ) == true )
-         {
-            wasHandled = true;
-         }
-         else
-         {
-            switch( dbResult->lookup )
-            {
-               cout << "Db query type:"<< dbResult->lookup << ", success=" << dbResult->successfulQuery << endl;
-
-               case QueryType_UserLoginInfo:
-                  {
-                     if( HandleUserLoginResult( connectionId, dbResult ) == false )
-                     {
-                        SendErrorToClient( connectionId, PacketErrorReport::ErrorType_UserBadLogin );  
-                        string str = "User not valid and db query failed, userName: ";
-                        str += connection->m_userName;
-                        str += ", uuid: ";
-                        str += connection->m_userUuid;
-                        Log( str, 4 );
-                        ForceUserLogoutAndBlock( connectionId );
-                        wasHandled = false;
-                     }
-                     else
-                     {
-                        wasHandled = true;
-                     }
-                  }
-                  break;
-               case QueryType_AdminRequestUserProfile:
-                  {
-                     // in some weird circustance, we could end up in an infinite loop here.
-                    /* if( dbResult->successfulQuery == false || dbResult->bucket.bucket.size() == 0 )// no records found
-                     {
-                        connection->AddBlankUserProfile();
-                     }
-                     else
-                     {
-                        HandleUserProfileFromDb( connectionId, dbResult );
-                     }*/
-                     HandleAdminRequestUserProfile( connectionId, dbResult );
-                     wasHandled = true;
-                  }
-                  break;
-               case QueryType_UserListOfGame:
-                  {
-                     if( dbResult->successfulQuery == false || dbResult->bucket.size() == 0 )// no records found
-                     {
-                        string str = "List of games not valid db query failed, userName: ";
-                        str += connection->m_userName;
-                        str += ", uuid: ";
-                        str += connection->m_userUuid;
-                        Log( str, 4 );
-                        ForceUserLogoutAndBlock( connectionId );
-                        wasHandled = false;
-                     }
-                     else
-                     {
-                        wasHandled = true;
-                     
-                        KeyValueVector             key_value_array;
-
-                        SimpleGameTable            enigma( dbResult->bucket );
-                        SimpleGameTable::iterator it = enigma.begin();
-                        
-                        while( it != enigma.end() )
-                        {
-                           SimpleGameTable::row       row = *it++;
-                           string name =              row[ SimpleGame::Column_name ];
-                           string uuid =              row[ SimpleGame::Column_uuid ];
-
-                           key_value_array.push_back( KeyValueString ( uuid, name ) );
-                        }
-
-                        SendListOfGamesToGameServers( connectionId, key_value_array );
-                     }
-                  }
-                  break;
-               case QueryType_UserListOfUserProducts:
-                  {
-                     if( dbResult->successfulQuery == false )
-                     {
-                        string str = "Query failed looking up a user products ";
-                        str += connection->m_userName;
-                        str += ", uuid: ";
-                        str += connection->m_userUuid;
-                        Log( str, 4 );
-                        ForceUserLogoutAndBlock( connectionId );
-                        wasHandled = false;
-                     }
-                     else
-                     {
-                        StoreListOfUsersProductsFromDB( connectionId, dbResult );
-                        wasHandled = true;
-                     }
-                  }
-                  break;
-               case QueryType_LookupUserByUsernameOrEmail:// these should never happen since these are handled elsewhere
-               case QueryType_LookupTempUserByUsernameOrEmail:
-               case QueryType_LookupUserNameForInvalidName:
-                  {
-                     if( dbResult->successfulQuery == false )
-                     {
-                        string str = "Query failed looking up a user ";
-                        str += connection->m_userName;
-                        str += ", uuid: ";
-                        str += connection->m_userUuid;
-                        Log( str, 4 );
-                        ForceUserLogoutAndBlock( connectionId );
-                        wasHandled = false;
-                     }
-                     else
-                     {
-                        wasHandled = true;
-                     }
-                  }
-                  break;
-               case QueryType_LoadProductInfo:
-                  {
-                     if( dbResult->successfulQuery == false )
-                     {
-                        string str = "Initialization failed: table does not exist ";
-                        wasHandled = false;
-                     }
-                     else
-                     {
-                        StoreAllProducts( dbResult );
-                        wasHandled = true;
-                     }
-                  }
-                  break;
-               case QueryType_GetSingleProductInfo:
-                  {
-                     if( dbResult->successfulQuery == false ||
-                        dbResult->bucket.bucket.size() == 0 )
-                     {
-                        string str = "Product not found ";
-                        str += dbResult->meta;
-                        Log( str, 4 );
-                        wasHandled = false;
-                     }
-                     else
-                     {
-                        StoreSingleProduct( dbResult );
-                        wasHandled = true;
-                     }
-                  }
-                  break;
-               case QueryType_GetProductListForUser:
-                  {
-                     SendListOfPurchasesToUser( connectionId, dbResult );
-                     wasHandled = true;
-                  }
-                  break;
-               }
-            }
-            if( wasHandled == true )
-            {
-               PacketFactory factory;
-               factory.CleanupPacket( packet );
-            }
-            return wasHandled;
+         PacketDbQueryResult* result = static_cast<PacketDbQueryResult*>( packet );
+         m_dbQueries.push_back( result );
+         if( result->customData != NULL )
+            cout << "AddOutputChainData: Non-null custom data " << endl;
       }
+      return true;
    }
-   return true;
+   
+   return false;
+}
+
+
+//---------------------------------------------------------------
+
+void     DiplodocusLogin::UpdateDbResults()
+{
+   PacketFactory factory;
+
+   m_mutex.lock();
+   deque< PacketDbQueryResult* > tempQueue = m_dbQueries;
+   m_dbQueries.clear();
+   m_mutex.unlock();
+
+   deque< PacketDbQueryResult* >::iterator it = tempQueue.begin();
+   while( it != tempQueue.end() )
+   {
+      PacketDbQueryResult* result = *it++;
+      if( result->customData != NULL )
+            cout << "UpdateDbResults: Non-null custom data " << endl;
+      BasePacket* packet = static_cast<BasePacket*>( result );
+
+      HandleDbResult( result );
+      factory.CleanupPacket( packet );
+   }
 }
 
 //---------------------------------------------------------------
 
-void     DiplodocusLogin:: StoreAllProducts( PacketDbQueryResult* dbResult )
+bool     DiplodocusLogin:: HandleDbResult( PacketDbQueryResult* dbResult )
+{
+   U32 connectionId = dbResult->id;
+
+   // new user accounts are not going to be part of the normal login.
+   UserCreateAccountIterator createIt = m_userAccountCreationMap.find( connectionId );
+   if( createIt != m_userAccountCreationMap.end () )
+   {
+      CreateAccountResultsAggregator* aggregator = createIt->second;
+      aggregator->HandleResult( dbResult );
+      if( aggregator->IsComplete() )
+      {
+         UpdateUserRecord( aggregator );
+         delete aggregator;
+         Threading::MutexLock locker( m_inputChainListMutex );
+         m_userAccountCreationMap.erase( createIt );
+      }
+      return true;
+   }
+
+   ConnectionToUser* connection = NULL; 
+   if( connectionId != 0 )
+   {
+      connection = GetUserConnection( connectionId );
+      if( connection == NULL )
+      {
+         string str = "Login server: Something seriously wrong where the db query came back from the server but no record.. ";
+         Log( str, 4 );
+         str = "was apparently requested or at least it was not stored properly: userName was :";
+         str += dbResult->meta;
+         Log( str, 4 );
+         return false;
+      }
+   }
+   bool  wasHandled = false;
+   if( m_stringLookup->HandleResult( dbResult ) == true )
+   {
+      wasHandled = true;
+   }
+   else
+   {
+      switch( dbResult->lookup )
+      {
+         cout << "Db query type:"<< dbResult->lookup << ", success=" << dbResult->successfulQuery << endl;
+
+         case QueryType_UserLoginInfo:
+            {
+               if( HandleUserLoginResult( connectionId, dbResult ) == false )
+               {
+                  SendErrorToClient( connectionId, PacketErrorReport::ErrorType_UserBadLogin );  
+                  string str = "User not valid and db query failed, userName: ";
+                  str += connection->m_userName;
+                  str += ", uuid: ";
+                  str += connection->m_userUuid;
+                  Log( str, 4 );
+                  ForceUserLogoutAndBlock( connectionId );
+                  wasHandled = false;
+               }
+               else
+               {
+                  wasHandled = true;
+               }
+            }
+            break;
+         case QueryType_AdminRequestUserProfile:
+            {
+               // in some weird circustance, we could end up in an infinite loop here.
+              /* if( dbResult->successfulQuery == false || dbResult->GetBucket().size() == 0 )// no records found
+               {
+                  connection->AddBlankUserProfile();
+               }
+               else
+               {
+                  HandleUserProfileFromDb( connectionId, dbResult );
+               }*/
+               HandleAdminRequestUserProfile( connectionId, dbResult );
+               wasHandled = true;
+            }
+            break;
+         case QueryType_UserListOfGame:
+            {
+               if( dbResult->successfulQuery == false || dbResult->GetBucket().size() == 0 )// no records found
+               {
+                  string str = "List of games not valid db query failed, userName: ";
+                  str += connection->m_userName;
+                  str += ", uuid: ";
+                  str += connection->m_userUuid;
+                  Log( str, 4 );
+                  ForceUserLogoutAndBlock( connectionId );
+                  wasHandled = false;
+               }
+               else
+               {
+                  wasHandled = true;
+               
+                  KeyValueVector             key_value_array;
+
+                  SimpleGameTable            enigma( dbResult->bucket );
+                  SimpleGameTable::iterator it = enigma.begin();
+                  
+                  while( it != enigma.end() )
+                  {
+                     SimpleGameTable::row       row = *it++;
+                     string name =              row[ SimpleGame::Column_name ];
+                     string uuid =              row[ SimpleGame::Column_uuid ];
+
+                     key_value_array.push_back( KeyValueString ( uuid, name ) );
+                  }
+
+                  SendListOfGamesToGameServers( connectionId, key_value_array );
+               }
+            }
+            break;
+         case QueryType_UserListOfUserProducts:
+            {
+               if( dbResult->successfulQuery == false || dbResult->GetBucket().size() == 0 )
+               {
+                  string str = "Query failed looking up a user products ";
+                  str += connection->m_userName;
+                  str += ", uuid: ";
+                  str += connection->m_userUuid;
+                  Log( str, 4 );
+                  ForceUserLogoutAndBlock( connectionId );
+                  wasHandled = false;
+               }
+               else
+               {
+                  StoreListOfUsersProductsFromDB( connectionId, dbResult );
+                  wasHandled = true;
+               }
+            }
+            break;
+         case QueryType_LookupUserByUsernameOrEmail:// these should never happen since these are handled elsewhere
+         case QueryType_LookupTempUserByUsernameOrEmail:
+         case QueryType_LookupUserNameForInvalidName:
+            {
+               if( dbResult->successfulQuery == false || dbResult->GetBucket().size() == 0 )
+               {
+                  string str = "Query failed looking up a user ";
+                  str += connection->m_userName;
+                  str += ", uuid: ";
+                  str += connection->m_userUuid;
+                  Log( str, 4 );
+                  ForceUserLogoutAndBlock( connectionId );
+                  wasHandled = false;
+               }
+               else
+               {
+                  wasHandled = true;
+               }
+            }
+            break;
+         case QueryType_LoadProductInfo:
+            {
+               if( dbResult->successfulQuery == false || dbResult->GetBucket().size() == 0 )
+               {
+                  string str = "Initialization failed: table does not exist ";
+                  wasHandled = false;
+               }
+               else
+               {
+                  StoreAllProducts( dbResult );
+                  wasHandled = true;
+               }
+            }
+            break;
+         case QueryType_GetSingleProductInfo:
+            {
+               if( dbResult->successfulQuery == false ||
+                  dbResult->GetBucket().size() == 0 )
+               {
+                  string str = "Product not found ";
+                  str += dbResult->meta;
+                  Log( str, 4 );
+                  wasHandled = false;
+               }
+               else
+               {
+                  StoreSingleProduct( dbResult );
+                  wasHandled = true;
+               }
+            }
+            break;
+         case QueryType_GetProductListForUser:
+            {
+               SendListOfPurchasesToUser( connectionId, dbResult );
+               wasHandled = true;
+            }
+            break;
+         }
+      }
+      return wasHandled;
+}
+
+//---------------------------------------------------------------
+
+void     DiplodocusLogin:: StoreAllProducts( const PacketDbQueryResult* dbResult )
 {
    ProductTable            enigma( dbResult->bucket );
 
@@ -1903,12 +1911,8 @@ void     DiplodocusLogin:: StoreAllProducts( PacketDbQueryResult* dbResult )
 
 //---------------------------------------------------------------
 
-void     DiplodocusLogin:: StoreSingleProduct( PacketDbQueryResult* dbResult )
+void     DiplodocusLogin:: StoreSingleProduct( const PacketDbQueryResult* dbResult )
 {
-   if( dbResult->successfulQuery== false ||
-      dbResult->bucket.size() == 0 )
-      return;
-
    ProductTable            enigma( dbResult->bucket );
 
    string filterName;
@@ -2234,6 +2238,8 @@ int      DiplodocusLogin:: CallbackFunction()
 
    RunHourlyStats();
    RunDailyStats();
+
+   UpdateDbResults();
 
    StatTrackingConnections::SendStatsToStatServer( m_listOfOutputs, m_serverName, m_serverId, m_serverType );
 

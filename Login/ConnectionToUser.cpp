@@ -60,18 +60,13 @@ ConnectionToUser:: ConnectionToUser( const string& name, const string& pword, co
 
 //-----------------------------------------------------------------
 
-void  ConnectionToUser::LoginResult( PacketDbQueryResult* dbResult )
-{
-   StoreUserInfo( dbResult );
-}
-
-bool  ConnectionToUser::HandleAdminRequestUserProfile( PacketDbQueryResult* dbResult )
+bool  ConnectionToUser::HandleAdminRequestUserProfile( const PacketDbQueryResult* dbResult )
 {
    string lookupKey = dbResult->meta;
    map< string, ConnectionToUser>:: iterator it = adminUserData.find( lookupKey );
    if( it != adminUserData.end() )
    {
-      if( dbResult->bucket.size() == 0 )// no records found
+      if( dbResult->GetBucket().size() == 0 )// no records found
       {
          userManager->SendErrorToClient( m_connectionId, PacketErrorReport::ErrorType_Cheat_BadUserLookup );
          return false;
@@ -116,9 +111,10 @@ bool  ConnectionToUser::EchoHandler()
 
 //-----------------------------------------------------------------
 
-bool  ConnectionToUser::StoreUserInfo( PacketDbQueryResult* dbResult )
+bool  ConnectionToUser::LoginResult( const PacketDbQueryResult* dbResult )
 {
-   if( dbResult->successfulQuery == false || dbResult->bucket.bucket.size() == 0 )// no records found
+   if( dbResult->successfulQuery == false || 
+      dbResult->GetBucket().size() == 0 )// no records found
    {
       return false;
    }
@@ -890,7 +886,7 @@ void     ConnectionToUser:: StoreListOfUsersProductsFromDB( PacketDbQueryResult*
    ConnectionToUser* userWhoGetsProducts = this;
    ConnectionToUser* loadedConnection = NULL;
    bool loadedForSelf = true;
-   if( dbResult->meta.size() && dbResult->meta != m_userUuid )
+   if( dbResult->meta.size() && dbResult->meta != m_userUuid )// admin lookup
    {
       UserConnectionMapIterator  it = FindUser( "", dbResult->meta, "" );
       if( it != adminUserData.end() )
@@ -905,18 +901,18 @@ void     ConnectionToUser:: StoreListOfUsersProductsFromDB( PacketDbQueryResult*
    userWhoGetsProducts->ClearAllProductsOwned();
    UserOwnedProductSimpleTable  enigma( dbResult->bucket );
    UserOwnedProductSimpleTable::iterator      it = enigma.begin();
-   int   numProducts = dbResult->bucket.bucket.size();
+   int   numProducts = dbResult->GetBucket().size();
    numProducts = numProducts;
 
    while( it != enigma.end() )
    {
       UserOwnedProductSimpleTable::row       row = *it++;
 
-      int productId =   boost::lexical_cast< int>  (  row[ TableUserOwnedProductSimple::Column_product_id ] );
+      int productId =   boost::lexical_cast< int>   ( row[ TableUserOwnedProductSimple::Column_product_id ] );
       string lookupName =                             row[ TableUserOwnedProductSimple::Column_product_name_string ];
       string productUuid =                            row[ TableUserOwnedProductSimple::Column_product_uuid ];
       float  quantity = boost::lexical_cast< float> ( row[ TableUserOwnedProductSimple::Column_quantity ] );
-      string filterName =                            row[ TableUserOwnedProductSimple::Column_filter_name ];
+      string filterName =                             row[ TableUserOwnedProductSimple::Column_filter_name ];
 
       if( m_gameProductId == productId )
       {
