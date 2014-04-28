@@ -613,13 +613,13 @@ bool     ConnectionToUser:: RequestListOfPurchases( const string& user_uuid )
 bool     ConnectionToUser:: HandleRequestForListOfPurchases( const PacketListOfUserPurchasesRequest* purchase )
 {
    //FindUser( "", purchase->userUuid, "" );
-   UserConnectionMapIterator  it = FindUser( "", purchase->userUuid, "" );
+  /* UserConnectionMapIterator  it = FindUser( "", purchase->userUuid, "" );
    if( it == adminUserData.end() )
    {
       userManager->SendErrorToClient( m_connectionId, PacketErrorReport::ErrorType_Cheat_BadUserLookup_TryLoadingUserFirst );
          
       return false;
-   }
+   }*/
 
    if( purchase->userUuid == m_userUuid )
    {
