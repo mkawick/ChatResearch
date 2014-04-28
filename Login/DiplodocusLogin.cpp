@@ -1748,7 +1748,7 @@ bool     DiplodocusLogin:: AddOutputChainData( BasePacket* packet, U32 chainId )
                   break;
                case QueryType_UserListOfGame:
                   {
-                     if( dbResult->successfulQuery == false || dbResult->bucket.bucket.size() == 0 )// no records found
+                     if( dbResult->successfulQuery == false || dbResult->bucket.size() == 0 )// no records found
                      {
                         string str = "List of games not valid db query failed, userName: ";
                         str += connection->m_userName;
@@ -1876,9 +1876,7 @@ void     DiplodocusLogin:: StoreAllProducts( PacketDbQueryResult* dbResult )
    ProductTable            enigma( dbResult->bucket );
 
    ProductTable::iterator  it = enigma.begin();
-   int numProducts = static_cast< int >( dbResult->bucket.bucket.size() );
-   numProducts = numProducts;
-            
+  // int numProducts = static_cast< int >( dbResult->bucket.size() );          
    while( it != enigma.end() )
    {
       ProductTable::row       row = *it++;
@@ -1908,7 +1906,7 @@ void     DiplodocusLogin:: StoreAllProducts( PacketDbQueryResult* dbResult )
 void     DiplodocusLogin:: StoreSingleProduct( PacketDbQueryResult* dbResult )
 {
    if( dbResult->successfulQuery== false ||
-      dbResult->bucket.bucket.size() == 0 )
+      dbResult->bucket.size() == 0 )
       return;
 
    ProductTable            enigma( dbResult->bucket );
