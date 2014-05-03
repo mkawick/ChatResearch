@@ -264,7 +264,14 @@ bool     DiplodocusGateway::PushPacketToProperOutput( BasePacket* packet )
    assert( packetType < m_orderedOutputPacketHandlers.size() );
 
    const OutputConnectorList& listOfOutputs = m_orderedOutputPacketHandlers[ packetType ];
-   assert( listOfOutputs.size() > 0 ); // this should be where we look through our list for a match
+   //assert( listOfOutputs.size() > 0 ); // this should be where we look through our list for a match
+
+   if( listOfOutputs.size() == 0 )
+   {
+      cout << " *** packet received with which we cannot deal. ***" << endl;
+      cout << "     type: " << packetType << endl;
+      return false;
+   }
 
    OutputConnectorList::const_iterator it = listOfOutputs.begin();
    while( it != listOfOutputs.end() )
@@ -276,83 +283,13 @@ bool     DiplodocusGateway::PushPacketToProperOutput( BasePacket* packet )
          return true;
       }
    }
-   //
-
-
-
-
-
-
-
-
-/*
-
-   PrintDebugText( "PushPacketToProperOutput", 1 );
-
-   U32 packetType = packet->packetType;
-   if( packetType == PacketType_GatewayWrapper )
-   {
-      PacketGatewayWrapper* wrapper = static_cast< PacketGatewayWrapper* >( packet );
-      packetType = wrapper->pPacket->packetType;
-   }
-
-   std::vector< FruitadensGateway* > tempOutput;
-   // create new scope
-   {
-      
-      Threading::MutexLock    locker( m_outputChainListMutex );// quickly copy the list before doing more serious work
-      ChainLinkIteratorType itOutput = m_listOfOutputs.begin();
-      while( itOutput != m_listOfOutputs.end() )
-      {
-         FruitadensGateway* fg = static_cast<FruitadensGateway*>( (*itOutput).m_interface );
-         if( fg->AcceptsPacketType( packetType ) == true )
-         {
-            tempOutput.push_back( fg );
-         }
-         itOutput++;
-      }
-   }
-
-   std::vector< FruitadensGateway* >::iterator itOutput = tempOutput.begin();
-   while( itOutput != tempOutput.end() )
-   {
-      FruitadensGateway* fruity = *itOutput;
-      U32 unusedParam = -1;
-      if( fruity->AddOutputChainData( packet, unusedParam ) == true )
-      {
-         return true;
-      }
-      itOutput++;
-   }*/
-  /* BaseOutputContainer tempOutput;
-   // create new scope
-   {
-      Threading::MutexLock    locker( m_outputChainListMutex );// quickly copy the list before doing more serious work
-      ChainLinkIteratorType itOutput = m_listOfOutputs.begin();
-      while( itOutput != m_listOfOutputs.end() )
-      {
-         tempOutput.push_back( *itOutput++ );
-      }
-   }
-
-   ChainLinkIteratorType itOutput = tempOutput.begin();
-   while( itOutput != tempOutput.end() )
-   {
-      IChainedInterface* outputPtr = (*itOutput).m_interface;
-      FruitadensGateway* fruity = static_cast< FruitadensGateway* >( outputPtr );
-      U32 unusedParam = -1;
-      if( fruity->AddOutputChainData( packet, unusedParam ) == true )
-      {
-         return true;
-      }
-      itOutput++;
-   }*/
+ 
    
    return false;
 }
 
 //-----------------------------------------------------------------------------------------
-
+/*
 int  DiplodocusGateway::MainLoop_InputProcessing()
 {
    // m_inputChainListMutex.lock   // see CChainedThread<Type>::CallbackFunction()
@@ -382,6 +319,43 @@ int  DiplodocusGateway::MainLoop_InputProcessing()
          factory.CleanupPacket( packet );
       }
       m_packetsToBeSentInternally.pop_front();
+   }
+
+   return 1;
+}*/
+
+int       DiplodocusGateway::CallbackFunction()
+{
+   CommonUpdate();
+
+   SendStatsToLoadBalancer();
+   StatTrackingConnections::SendStatsToStatServer( m_listOfOutputs, m_serverName, m_serverId, m_serverType );
+
+   CleanupOldConnections();
+
+   RunHourlyAverages();
+
+   MoveClientBoundPacketsFromTempToKhaan();
+   UpdateAllClientConnections();
+
+   
+   if( m_packetsToBeSentInternally.size() == 0 )
+      return 0;
+
+   m_inputChainListMutex.lock();
+   PacketQueue localQue = m_packetsToBeSentInternally;
+   m_packetsToBeSentInternally.clear();
+   m_inputChainListMutex.unlock();
+
+   PacketFactory factory;
+   while( localQue.size() )
+   {
+      BasePacket* packet = localQue.front();
+      if( PushPacketToProperOutput( packet ) == false )
+      {
+         factory.CleanupPacket( packet );
+      }
+      localQue.pop_front();
    }
 
    return 1;
@@ -710,7 +684,7 @@ void  DiplodocusGateway::UpdateAllClientConnections()
 }
 
 //-----------------------------------------------------------------------------------------
-
+/*
 int   DiplodocusGateway::MainLoop_OutputProcessing()
 {
    // mutex is locked already
@@ -719,5 +693,5 @@ int   DiplodocusGateway::MainLoop_OutputProcessing()
    
    
    return 1;
-}
+}*/
 //-----------------------------------------------------------------------------------------

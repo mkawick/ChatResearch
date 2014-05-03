@@ -5,7 +5,7 @@
 #include "../Packets/PacketFactory.h"
 #include "../Packets/BasePacket.h"
 #include "../Packets/GamePacket.h"
-#include "../Packets/ServerToServerPacket.h"
+
 #include "../Utils/CommandLineParser.h"
 
 #include <boost/lexical_cast.hpp>
@@ -41,8 +41,9 @@ bool	KhaanServerToServer :: OnDataReceived( unsigned char* data, int length )
          cout<<  " KhaanServerToServer :: OnDataReceived( p=" << packetType << ":" << packetIn->packetSubType << ")"<< endl;
 #endif
 
-         Threading::MutexLock  locker( m_inputChainListMutex );
+         m_inputChainListMutex.lock();
          m_packetsIn.push_back( packetIn );
+         m_inputChainListMutex.unlock();
          RequestUpdate();
       } 
       else
@@ -97,11 +98,16 @@ void	KhaanServerToServer :: UpdateInwardPacketList()
       assert( 0 );// need support for multiple outputs, each packet should be copied because of the memory ownership, or use shared pointers
    }
 
+   m_inputChainListMutex.lock();
+   deque< BasePacket* > localQueue = m_packetsIn;
+   m_packetsIn.clear();
+   m_inputChainListMutex.unlock();
+
    PacketFactory factory;
 
-   while( m_packetsIn.size() > 0 )
+   while( localQueue.size() > 0 )
    {
-      BasePacket* packetIn = m_packetsIn.front();
+      BasePacket* packetIn = localQueue.front();
       int packetType = packetIn->packetType;
       
       if( packetType == PacketType_ServerToServerWrapper )
@@ -128,7 +134,10 @@ void	KhaanServerToServer :: UpdateInwardPacketList()
             }
             else
             {
-               assert( 0 );
+               // assert( 0 );
+               cout << "ERROR: S2Sconnection packet was not dealt with 'list of outputs'" << endl;
+               cout << " Type: " << (int) subPacket->packetType << endl;
+               cout << " SubType: " << (int) subPacket->packetSubType << endl;
             }
          }
       }
@@ -140,21 +149,37 @@ void	KhaanServerToServer :: UpdateInwardPacketList()
          {
             packetIn = NULL;// do not delete
          }
+         else
+         {
+            U8 type = wrapper->pPacket->packetType;
+            U8 subType = wrapper->pPacket->packetSubType;
+            cout << "ERROR: S2Sconnection gateway wrapped packet was not dealt with" << endl;
+            cout << " Type: " << (int) type << endl;
+            cout << " SubType: " << (int) subType << endl;
+         }
       }
       else if ( packetType == PacketType_GatewayInformation )
       {
          if( HandleCommandFromGateway( packetIn, m_connectionId ) == false )// needs substance
          {
-            assert( 0 );// incomplete
+            U8 type = packetIn->packetType;
+            U8 subType = packetIn->packetSubType;
+
+            cout << "ERROR: S2Sconnection packet was not dealt with as a Gateway command" << endl;
+            cout << " Type: " << (int) type << endl;
+            cout << " SubType: " << (int) subType << endl;
          }
       }
       else
       {
-         assert( 0 );
+         //assert( 0 );
+         cout << "ERROR: S2Sconnection packet was not dealt with .. no handler for type" << endl;
+         cout << " Type: " << (int) packetIn->packetType << endl;
+         cout << " SubType: " << (int) packetIn->packetSubType << endl;
       }
 
       factory.CleanupPacket( packetIn );
-      m_packetsIn.pop_front();
+      localQueue.pop_front();
    }
 }
 
@@ -231,10 +256,10 @@ void  KhaanServerToServer :: SaveOffServerIdentification( const PacketServerIden
    m_serverPort = packet->serverPort;
    m_isGameServer = packet->isGameServer;
    m_isController = packet->isController;
-   m_isGateway = packet->isGateway;
+   m_gatewayType = packet->gatewayType;
    U8 gameProductId = packet->gameProductId;
 
-   cout << "---------  Connected as server to " << m_serverName << "  ------------------" << endl;
+   cout << "---------  Connected as S2S server to " << m_serverName << "  ------------------" << endl;
    cout << "    " << m_serverAddress << " : " << static_cast<U32>( m_serverPort ) << endl;
    cout << "    Time stamp: " << GetDateInUTC() << endl;
    cout << "    type " << static_cast<U32>( gameProductId ) << " -- server ID = " << m_serverId << endl;
@@ -250,7 +275,7 @@ void  KhaanServerToServer :: SaveOffServerIdentification( const PacketServerIden
 
       middle->ServerWasIdentified( this );
 
-      if( m_isGateway )
+      if( m_gatewayType != PacketServerIdentifier::GatewayType_None )
       {
          middle->AddGatewayConnection( m_serverId );
       }

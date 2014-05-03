@@ -66,7 +66,7 @@ DiplodocusLogin:: DiplodocusLogin( const string& serverName, U32 serverId )  :
 void     DiplodocusLogin:: ServerWasIdentified( IChainedInterface* khaan )
 {
    BasePacket* packet = NULL;
-   PackageForServerIdentification( m_serverName, m_localIpAddress, m_serverId, m_listeningPort, m_gameProductId, m_isGame, m_isControllerApp, true, m_isGateway, &packet );
+   PackageForServerIdentification( m_serverName, m_localIpAddress, m_serverId, m_listeningPort, m_gameProductId, m_isGame, m_isControllerApp, true, m_gatewayType, &packet );
    ChainedType* localKhaan = static_cast< ChainedType* >( khaan );
    localKhaan->AddOutputChainData( packet, 0 );
    m_clientsNeedingUpdate.push_back( localKhaan->GetChainedId() );
@@ -1798,7 +1798,7 @@ bool     DiplodocusLogin:: HandleDbResult( PacketDbQueryResult* dbResult )
             break;
          case QueryType_UserListOfUserProducts:
             {
-               if( dbResult->successfulQuery == false || dbResult->GetBucket().size() == 0 )
+               if( dbResult->successfulQuery == false )//|| dbResult->GetBucket().size() == 0 )
                {
                   string str = "Query failed looking up a user products ";
                   str += connection->m_userName;

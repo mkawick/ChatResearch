@@ -59,6 +59,7 @@ public:
    typedef map< string, AssetOrganizer >           CategorizedAssetLists;// asset category paired with a list of assets.
    typedef pair< string, AssetOrganizer >          CategorizedAssetPair;
 
+   UserAccountAssetDelivery         m_dummyUser;
    deque< U32 >                     m_serversNeedingUpdate;
    UAADMap                          m_userTickets;
    CategorizedAssetLists            m_assetsByCategory;

@@ -21,6 +21,7 @@ typedef unsigned int SocketType;
 
 class BasePacket;
 class PacketRerouteRequestResponse;
+class Fruitadens;
 
 struct TempPacket
 {
@@ -30,6 +31,8 @@ struct TempPacket
 
 struct PacketHandlerInterface
 {
+   virtual bool  InitialConnectionCallback( const Fruitadens* ){ return false; }
+   virtual bool  InitialDisconnectionCallback( const Fruitadens* ){ return false; }
    virtual bool  HandlePacketReceived( BasePacket* packetIn ){ return false; }
 };
 
@@ -40,6 +43,9 @@ class Fruitadens : public Threading::CChainedThread <BasePacket*>
 public:
    Fruitadens( const char* name, bool processOnlyOneIncommingPacketPerLoop = false );
    ~Fruitadens();
+
+   void        SetName( std::string& name ) { m_name = name; }
+   std::string GetName() const { return m_name; }
 
    void        RegisterPacketHandlerInterface( PacketHandlerInterface* handler ) { m_packetHandlerInterface = handler; }
 
@@ -56,8 +62,8 @@ public:
    void        SetServerUniqueId( U32 id ) { m_serverId = id; }
 
    virtual bool   NeedsProcessingTime() const { return true; }
-   virtual void   HasBeenConnectedCallback() {}
-   virtual void   HasBeenDisconnectedCallback() {}
+   virtual void   HasBeenConnectedCallback();
+   virtual void   HasBeenDisconnectedCallback();
 
 protected:
 
@@ -71,7 +77,7 @@ protected:
 
    virtual bool   HandlePacketReceived( BasePacket* packetIn );
 
-   virtual void   InitalConnectionCallback() {} // this will be invoked on every reconnect 
+   virtual void   InitialConnectionCallback() {} // this will be invoked on every reconnect 
 
    virtual void   InheritedUpdate() {}
 
@@ -119,9 +125,9 @@ class FruitadensServer : public Fruitadens
 {
 public:
    FruitadensServer( const char* name, bool processOnlyOneIncommingPacketPerLoop = false );
-   void        NotifyEndpointOfIdentification( const string& serverName, const string& serverAddress, U32 serverId, U16 serverPort, U8 gameProductId, bool isGameServer, bool isController, bool requiresWrapper, bool isGateway );
+   void        NotifyEndpointOfIdentification( const string& serverName, const string& serverAddress, U32 serverId, U16 serverPort, U8 gameProductId, bool isGameServer, bool isController, bool requiresWrapper, U8 gatewayType );
 
-   void        InitalConnectionCallback();
+   void        InitialConnectionCallback();
 
    bool        IsGameServer() const { return m_localIsGameServer; }
 
@@ -138,7 +144,7 @@ protected:
    bool        m_localIsGameServer;
    bool        m_localIsController;
    bool        m_localRequiresWrapper;
-   bool        m_localIsGateway;
+   U8          m_gatewayType;
 };
 
 //-------------------------------------------------------------------------

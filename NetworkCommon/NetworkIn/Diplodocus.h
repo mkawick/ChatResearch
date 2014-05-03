@@ -76,8 +76,8 @@ public:
    bool           IsControllerApp() const { return m_isControllerApp; }
    void           SetAsGame( bool isGame = true ) { m_isGame = isGame; }
    bool           IsGameServer() const { return m_isGame; }
-   void           SetAsGateway( bool isGateway = true ) { m_isGateway = isGateway; }
-   bool           IsGateway() const { return m_isGateway; }
+   void           SetGatewayType( U8 gateway_type ) { m_gatewayType = gateway_type; }
+   U8             GetGatewayType() const { return m_gatewayType; }
 
    const string&  GetServerName() const { return m_serverName; }
    U32            GetServerId() const { return m_serverId; }
@@ -139,7 +139,7 @@ protected:
    bool                    m_isListeningWorking;
    bool                    m_hasSentServerIdentification;
    bool                    m_isControllerApp;
-   bool                    m_isGateway;
+   U8                      m_gatewayType;
    bool                    m_isGame;
    //bool                    m_updateGatewayConnections;
    bool                    m_sendHelloPacket;

@@ -243,7 +243,11 @@ int main( int argc, const char* argv[] )
    cout << "------------------------------------------------------------------" << endl << endl << endl;
 
    DiplodocusGateway* gatewayServer = new DiplodocusGateway( serverName, serverId );
-   gatewayServer->SetAsGateway( true );
+   gatewayServer->SetGatewayType( PacketServerIdentifier::GatewayType_Normal );
+   if( assetOnly == true || assetBlock == false )
+   {
+      gatewayServer->SetGatewayType( PacketServerIdentifier::GatewayType_Asset );
+   }
    gatewayServer->SetAsGame( false );
    gatewayServer->PrintPacketTypes( printPackets );
    gatewayServer->SetupListening( listenPort );
@@ -277,8 +281,8 @@ int main( int argc, const char* argv[] )
 
    cout << "---------------------------- finished connecting ----------------------------" << endl;
 
-   PrepConnection< FruitadensServerToServer, DiplodocusGateway > ( loadBalancerAddressString, balancerPort,    "balancer",       gatewayServer, ServerType_LoadBalancer, false );
-
+   FruitadensServerToServer* connection = PrepConnection< FruitadensServerToServer, DiplodocusGateway > ( loadBalancerAddressString, balancerPort,    "balancer",       gatewayServer, ServerType_LoadBalancer, false );
+   
    gatewayServer->Init();
    gatewayServer->Resume();   
    gatewayServer->Run();

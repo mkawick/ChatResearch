@@ -298,9 +298,7 @@ void     UserConnection::RegisterNewDevice( const PacketNotification_RegisterDev
    query += newDeviceUuid;
    query += "', x'";
    query += devicetoa( (const unsigned char*)registerDevice->deviceId.c_str(), registerDevice->deviceId.size() );
-   query += "', '";
-   query += registerDevice->deviceName;
-   query += "', '1', '"; // icon id
+   query += "', '%s', '1', '"; // device name, icon id
    query += boost::lexical_cast< string  >( (int) registerDevice->platformId );
    query += "', '";
    query += boost::lexical_cast< string  >( m_userInfo.userId );
@@ -324,8 +322,9 @@ void     UserConnection::RegisterNewDevice( const PacketNotification_RegisterDev
    dbQuery->lookup =       QueryType_InsertDevice;
    dbQuery->serverLookup = m_userInfo.gameProductId;
    dbQuery->query =        query;
-   dbQuery->customData  = rd;
+   dbQuery->customData  =  rd;
 
+   dbQuery->escapedStrings.insert( registerDevice->deviceName );
    m_mainThread->AddQueryToOutput( dbQuery );
 
 

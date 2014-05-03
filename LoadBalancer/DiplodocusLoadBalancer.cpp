@@ -419,6 +419,23 @@ void     DiplodocusLoadBalancer::NewServerConnection( const PacketServerIdentifi
    it->port = gatewayInfo->serverPort;
    it->isVerified = true;
    it->isConnected = true;
+   if( gatewayInfo->gatewayType == PacketServerIdentifier::GatewayType_None )
+   {
+      it->type = GatewayInfo::Type_None;
+   }
+   else if( gatewayInfo->gatewayType == PacketServerIdentifier::GatewayType_Normal )
+   {
+      it->type = GatewayInfo::Type_Normal;
+   }
+   else if( gatewayInfo->gatewayType == PacketServerIdentifier::GatewayType_Asset )
+   {
+      it->type = GatewayInfo::Type_Asset;
+   }
+   else
+   {
+      cout << "Error: gateway type unknown" << endl;
+      assert(0);
+   }
 }
 
 ///////////////////////////////////////////////////////////////////

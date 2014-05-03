@@ -215,7 +215,11 @@ bool  CommandLineParser::FindValue( const string& key, bool& valueOut ) const
       {
          try
          {
-            valueOut = boost::lexical_cast<bool>( (*it).value );
+            const string& value = (*it).value;
+            if( value == "false" || value == "0" || value == "FALSE" )
+               valueOut = false;
+            else 
+               valueOut = true;
          }
          catch( boost::bad_lexical_cast const&  )
          {

@@ -100,7 +100,7 @@ int main( int argc, const char* argv[] )
    cout << "------------------------------------------------------------------" << endl << endl << endl;
 
    DiplodocusLoadBalancer* loadBalancer = new DiplodocusLoadBalancer( serverName, serverId );
-   loadBalancer->SetAsGateway( false );
+   loadBalancer->SetGatewayType( PacketServerIdentifier::GatewayType_None );
    loadBalancer->SetAsGame( false );
 
 

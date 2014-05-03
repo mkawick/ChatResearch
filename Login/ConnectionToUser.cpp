@@ -761,8 +761,8 @@ bool     ConnectionToUser:: StoreUserPurchases( const PacketListOfUserAggregateP
       else
       {
          // the order of the next two lines matters a lot.
-         int userProductIndex = FindProductFilterName( purchaseEntry.name );
-         AddProductFilterName( purchaseEntry.name );// we're gonna save the name, regardless. The device told us about the purchase.
+         int userProductIndex = FindProductFilterName( purchaseEntry.productStoreId );
+         AddProductFilterName( purchaseEntry.productStoreId );// we're gonna save the name, regardless. The device told us about the purchase.
 
          //**  find the item in the user record and add it to the db if not **
          if( userProductIndex == -1 && originalProductNameIndex != -1 )// the user doesn't have the record, but the rest of the DB does.

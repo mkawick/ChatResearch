@@ -33,6 +33,13 @@ public:
 
 class PacketServerIdentifier : public BasePacket
 {
+public:
+   enum GatewayType
+   {
+      GatewayType_None,
+      GatewayType_Normal,
+      GatewayType_Asset
+   };
    
 public:
    PacketServerIdentifier( int packet_type = PacketType_ServerInformation, int packet_sub_type = PacketServerConnectionInfo::PacketServerIdentifier_TypicalInfo ): 
@@ -40,7 +47,7 @@ public:
                            serverId( 0 ), 
                            isGameServer( true ), 
                            isController( false ), 
-                           isGateway( false ) {}
+                           gatewayType( GatewayType_None ) {}
 
    bool  SerializeIn( const U8* data, int& bufferOffset );
    bool  SerializeOut( U8* data, int& bufferOffset ) const;
@@ -52,7 +59,7 @@ public:
    U32         gameInstanceId;// used to filter game packets
    bool        isGameServer;
    bool        isController;
-   bool        isGateway;
+   U8          gatewayType;
 };
 
 ///////////////////////////////////////////////////////////////

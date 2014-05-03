@@ -44,7 +44,7 @@ DiplodocusContact::DiplodocusContact( const string& serverName, U32 serverId ): 
 void     DiplodocusContact::ServerWasIdentified( IChainedInterface* khaan )
 {
    BasePacket* packet = NULL;
-   PackageForServerIdentification( m_serverName, m_localIpAddress, m_serverId, m_listeningPort, m_gameProductId, m_isGame, m_isControllerApp, true, m_isGateway, &packet );
+   PackageForServerIdentification( m_serverName, m_localIpAddress, m_serverId, m_listeningPort, m_gameProductId, m_isGame, m_isControllerApp, true, m_gatewayType, &packet );
 
    InputChainType* localKhaan = static_cast< InputChainType* >( khaan );
    localKhaan->AddOutputChainData( packet, 0 );

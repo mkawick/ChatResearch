@@ -26,15 +26,15 @@ using namespace std;
 #include "ClientSideNetworkCallback.h"
 #include "NetworkWrapper_SupportClasses.h"
 
+///////////////////////////////////////////////////////
+///////////////////////////////////////////////////////
 
 namespace Mber
 {
 
-
-
 ///////////////////////////////////////////////////////
 
-class ClientNetworkWrapper :  public Fruitadens
+class ClientNetworkWrapper  : public PacketHandlerInterface
 {
 public:
    ClientNetworkWrapper( U8 gameProductId, bool processOnlyOneIncommingPacketPerLoop = false );
@@ -42,7 +42,7 @@ public:
 
    void     EnableMultithreadedCallbackSystem();
    void     CheckForReroutes( bool checkForRerouts );
-   void     OverrideSocketPort( int port ) { m_connectionPort = port; }
+   void     OverrideSocketPort( int port ) { m_loadBalancerPort = port; }
    void     Init( const char* serverDNS = "mber.pub.playdekgames.com" /*"64.183.9.93"*/ );
    bool     RegisterCallbackInterface( ClientSideNetworkCallback* _callbacks );
    bool     NeedsProcessingTime() const;
@@ -60,6 +60,7 @@ public:
    bool     IsReadyToLogin() const { return !m_isLoggingIn & !m_isLoggedIn; }
    bool     IsLoggingIn() const { return m_isLoggingIn; }
    bool     IsLoggedIn() const { return m_isLoggedIn; }   
+   bool     IsConnected( bool isMainServer = true ) const;
    string   GetUsername() const { return m_userName; }
    string   GetEmail() const { return m_email; }
    int      GetAvatarId() const { return m_avatarId; }
@@ -144,7 +145,7 @@ public:
    bool     PurchaseEntryIntoTournament( const string& tournamentUuid );
 
    int      GetNumAvailableProducts() const { return m_products.size(); }
-   int      GetAvailableProduct( int index, ProductBriefPacketed& purchase ) const; // not complete
+   bool     GetAvailableProduct( int index, ProductBriefPacketed& purchase ) const; // not complete
 
    bool     RequestListOfAssetCategories();
    
@@ -186,7 +187,6 @@ public:
    int      GetNumChannels() const { return static_cast<int>( m_channels.size() ); }
    bool     GetChannel( const string& uuid, ChatChannel& channel ) const;
    bool     GetChannel( int index, ChatChannel& channel ) const;
-   bool     RemoveChannel( const string& uuid );
    bool     IsGameChannel( const string& channelUuid ) const;
 
    int      GetAssetCategories( vector< string >& categories ) const;
@@ -222,10 +222,25 @@ protected:
    typedef vector< PacketGameIdentification >      GameList;
 
 
+   //----------------------------------
+   enum     ConnectionNames
+   {
+      ConnectionNames_Main,
+      ConnectionNames_Asset,
+      ConnectionNames_Num
+   };
+   Fruitadens* m_fruitadens[ ConnectionNames_Num ];
+   int                                       m_normalSleepTime, m_boostedSleepTime;
+   bool                                      m_isThreadPerformanceBoosted[ ConnectionNames_Num ];
+   time_t                                    m_timeWhenThreadPerformanceBoosted[ ConnectionNames_Num ];
+   //----------------------------------
+
    string                                    m_userName, m_attemptedUsername;
    string                                    m_email;
    string                                    m_uuid;
-   string                                    m_serverDns;
+   string                                    m_serverIpAddress[ ConnectionNames_Num ];
+   U16                                       m_serverConnectionPort[ ConnectionNames_Num ];
+   string                                    m_loadBalancerDns;
    string                                    m_loginKey;
    string                                    m_motto;
    string                                    m_thisDeviceUuid;
@@ -258,13 +273,11 @@ protected:
    U32                                       m_connectionId;
    string                                    m_lastLoggedOutTime;
    int                                       m_lastRawDataIndex;
-   int                                       m_connectionPort;
+   int                                       m_loadBalancerPort;
 
    mutable U32                               m_beginTime, m_endTime;
-
-   int                                       m_normalSleepTime, m_boostedSleepTime;
-   bool                                      m_isThreadPerformanceBoosted;
-   time_t                                    m_timeWhenThreadPerformanceBoosted;
+   bool                                      m_wasCallbackForReadyToBeginSent;
+   bool                                      m_requiresGatewayDiscovery;
 
    MBerNotifierList                          m_callbacks;
    RawDataAccumulator                        m_rawDataBuffer;
@@ -303,33 +316,55 @@ protected:
    PacketLogin*                              m_savedLoginInfo;
 
 protected:
-   
+   void     ReconnectAfterTalkingToLoadBalancer();
+   void     Disconnect();
+
    vector< ChatChannel >::iterator    GetChannel( const string& channelUuid );
    void     CleanupLingeringMemory();
    bool     SerializePacketOut( BasePacket* packet ) const;// helper
    
-   void     HasBeenConnectedCallback();
-   void     HasBeenDisconnectedCallback();
+   //void     HasBeenConnectedCallback();
+   //void     HasBeenDisconnectedCallback();
 
    bool     HandlePacketReceived( BasePacket* packetIn );
    void     InheritedUpdate();
    void     HandleChatChannelUpdate( BasePacket* packetIn );
 
-   int      MainLoop_InputProcessing();
+   void     Update();
    void     HandleAssetData( PacketGameplayRawData* data );
    void     HandleData( PacketGameplayRawData* );
 
+   void     LoadBalancedNewAddress              ( const PacketRerouteRequestResponse* response );
+   void     HandleListOfContacts                ( const PacketContact_GetListOfContactsResponse* packet );
+   void     HandleUserOnlineStatusChange        ( const PacketContact_FriendOnlineStatusChange* packet );
+   void     HandleListOfReceivedInvitations     ( const PacketContact_GetListOfInvitationsResponse* packet );
+   void     HandleListOfSentInvitations         ( const PacketContact_GetListOfInvitationsSentResponse* packet );
+   void     HandleInvitationReceived            ( const PacketContact_InviteReceivedNotification* packet );
+   void     HandleInvitationAccepted            ( const PacketContact_InvitationAccepted* packet );
+   void     HandleSearchForUserResults          ( const PacketContact_SearchForUserResult* packet );
+   void     HandleListOfAggregatePurchases      ( const PacketListOfUserAggregatePurchases* packet );
+   void     HandleListOfProducts                ( const PacketRequestListOfProductsResponse* packet );
+   void     HandleBeingAddedByServerToChatChannel( const PacketChatUserAddedToChatChannelFromGameServer* packet );
+   void     HandleUserChatStatusChange          ( const PacketChatUserStatusChangeBase* packet );
+   void     HandleAddUserToChatChannel          ( const PacketChatAddUserToChatChannelResponse* packet );
+   void     HandleRemoveUserFromChatChannel     ( const PacketChatRemoveUserFromChatChannelResponse* packet );
+   void     HandleListOfAssetCategoriesUpdate   ( const PacketAsset_GetListOfAssetCategoriesResponse* packet );
+   void     HandleListOfAssets                  ( const PacketAsset_GetListOfAssetsResponse* packet );
+   void     HandleListOfDevices                 ( const PacketNotification_RequestListOfDevicesResponse* packet );
+
+
    bool     AddChatChannel( const ChatChannel& channel );
-   bool     RemoveChatChannel( const string& channelUuid );
+   //bool     RemoveChatChannel( const string& channelUuid );
    bool     AddUserToChatChannel( const string& channelUuid, const string& userUuid, const string& userName );
    bool     RemoveUserfromChatChannel( const string& channelUuid, const string& userUuid );
+   bool     RemoveChannel( const string& uuid );
 
    bool     RemoveInvitationFromSent( const string& uuid );
    bool     RemoveInvitationFromReceived( const string& uuid );
 
-   void     BoostThreadPerformance();
-   void     RestoreNormalThreadPerformance();
-   void     ExpireThreadPerformanceBoost();
+   void     BoostThreadPerformance( ConnectionNames whichConnection = ConnectionNames_Asset );
+   void     RestoreNormalThreadPerformance( ConnectionNames whichConnection = ConnectionNames_Asset );
+   void     ExpireThreadPerformanceBoost( ConnectionNames whichConnection = ConnectionNames_Asset );
 
    bool     GetAsset( const string& category, const string& hash, AssetInfoExtended& asset );
    bool     GetAsset( const string& hash, AssetInfoExtended& asset );
@@ -337,7 +372,10 @@ protected:
    bool     UpdateAssetData( const string& hash, AssetInfoExtended& asset );
 
    void     NotifyClientToBeginSendingRequests();
-   void     InitalConnectionCallback();
+   //void     InitalConnectionCallback();
+
+   bool     InitialConnectionCallback( const Fruitadens* connectionObject );
+   bool     InitialDisconnectionCallback( const Fruitadens* connectionObject );
 };
 
 ///////////////////////////////////////////////////////
@@ -378,194 +416,7 @@ protected:
 
 ///////////////////////////////////////////////////////
 
-class NetworkLayer2 : public PacketHandlerInterface
-{
-public:
-   NetworkLayer2( U8 gameProductId, bool isTestingOnly );
-   ~NetworkLayer2();
-
-   //void     CheckForReroutes( bool checkForRerouts );
-   bool     RegisterCallbackInterface( ClientSideNetworkCallback2* _callbacks );
-
-   void     Exit();
-
-   //--------------------------------------------------------------
-   // ********************   Login/Profile   *******************
-   bool     RequestLogin( const string& username, const string& password, const string& languageCode );
-   bool     RequestAccountCreate( const string& username, const string& useremail, const string& password, int languageId, const string& deviceId, const string& gkHash ); // deviceId could be NULL except in andriod world
-   bool     RequestLogout() const;
-
-   bool     IsReadyToLogin() const;
-   bool     IsLoggingIn() const { return m_isLoggingIn; }
-   bool     IsLoggedIn() const { return m_isLoggedIn; }   
-   string   GetUsername() const { return m_userName; }
-
-   bool     RequestProfile( const string userName ); //if empty, profile for currently logged in user is used. For other users, you must have admin
-   bool     RequestOtherUserInGameProfile( const string& userName ); // friends, games list, etc
-
-   // note that changing a username, email, or uuid is not possible. This is for lookup only.
-   bool     UpdateUserProfile( const string userName, const string& email, const string& userUuid, int adminLevel, int languageId, bool isActive, bool showWinLossRecord, bool marketingOptOut, bool showGenderProfile );
-
-   void     Update();
-   //--------------------------------------------------------------
-
-   //--------------------------------------------------------------
-   // ********************   Friends/Chat     *******************
-   bool     RequestListOfFriends() const;
-   //bool     RequestListOfGames() const;
-   bool     RequestFriendDemographics( const string& username ) const;
-   bool     RequestUserWinLossRecord( const string& username ) const;
-
-   bool     RequestListOfInvitationsSent() const;
-   bool     RequestListOfInvitationsReceived() const;
-
-   bool     RequestChatChannelHistory( const string& channelUuid, int numRecords = 20, int startingIndex = 0 ) const;
-   bool     RequestChatP2PHistory( const string& userUuid, int numRecords = 20, int startingIndex = 0 ) const;
-
-   //--------------------------------------------------------------
-
-   bool     AcceptInvitation( const string& uuid ) const;
-   bool     AcceptInvitationFromUsername( const string& userName ) const;
-   bool     DeclineInvitation( const string& uuid, string message ) const;
-   bool     GetListOfInvitationsReceived( list< InvitationInfo >& keyValues );
-   bool     GetListOfInvitationsSent( list< InvitationInfo >& keyValues );
-
-   bool     SendSearchForUsers( const string& searchString, int numRequested, int offset ) const; // min 2 char
-   bool     InviteUserToBeFriend( const string& uuid, const string& username, const string& message );
-
-   //bool     ChangeGame( const string& gameName );
-   bool	   SendP2PTextMessage( const string& message, const string& destinationUserUuid );
-   bool	   SendChannelTextMessage( const string& message, const string& chatChannelUuid, U32 gameTurn = 0 );
-
-   //--------------------------------------------------------------
-   // ********************   Purchases/Products   *******************
-   bool     RequestListOfProducts() const; // everything
-   bool     RequestListOfProductsInStore() const; // just things that you can buy in our store
-   bool     RequestListOfPurchases( const string userUuid = "" ) const;
-   bool     MakePurchase( const string& exchangeUuid ) const;
-
-   bool     RequestListOfTournaments();
-   bool     PurchaseEntryIntoTournament( const string& tournamentUuid );
-
-   bool     RequestListOfStaticAssets( int platformId = Platform_ios );
-   bool     RequestListOfDynamicAssets( int platformId = Platform_ios );
-   bool     RequestAsset( const string& assetName );
-
-   bool     SendPurchases( const vector< RegisteredProduct >& purchases, int platformId = Platform_ios );
-   bool     GiveProduct( const string& userName, const string& productUuid, int quantity, const string& notes, int platformId = Platform_ios );
-   bool     SendCheat( const string& cheat );
-
-   //--------------------------------------------------------------
-
-   bool     SendRawPacket( const char* buffer, int length ) const;
-
-   //--------------------------------------------------------------
-   // utility functions
-
-   U32      FindGame( const string& name ) const;
-   string   FindGameNameFromGameId( U32 id ) const;
-   string   FindFriend( const string& name ) const;
-   string   FindFriendFromUuid( const string& uuid ) const;
-
-   int      GetNumFriends() const { return m_friends.size(); }
-   bool     GetFriend( int index, BasicUser& user );
-
-   int      GetNumChannels() const { return static_cast<int>( m_channels.size() ); }
-   bool     GetChannel( int index, ChatChannel& channel );
-
-   int      GetNumStaticAssets() const { return static_cast<int>( m_staticAssets.size() ); }
-   bool     GetStaticAssetInfo( int index, AssetInfoExtended& assetInfo );
-
-   int      GetNumDynamicAssets() const { return static_cast<int>( m_dynamicAssets.size() ); }
-   bool     GetDynamicAssetInfo( int index, AssetInfoExtended& assetInfo );
-
-   bool     GetAssetInfo( const string& hash, AssetInfoExtended& asset ) { return GetAsset( hash, asset ); }
-   bool     ClearAssetInfo( const string& hash );
-
-   int      GetNumAvailableTournaments() const { return static_cast<int>( m_availableTournaments.size() ); }
-   bool     GetTournamentInfo( int index, TournamentInfo& tournamentInfo );
-
-   string   GetLocalUUID() { return m_uuid; }
-
-   string   GenerateHash( const string& stringThatIWantHashed );
-   
-private:
-
-   enum     ConnectionNames
-   {
-      ConnectionNames_Main,
-      //ConnectionNames_Asset,
-      ConnectionNames_Num
-   };
-   Fruitadens* m_fruitadens[ ConnectionNames_Num ];
-
-   void     ReconnectMain();
-   void     Disconnect();
-   bool     IsConnected() const;
-
-   // datatypes
-   bool     Log( const std::string& text, int priority = 1 ) const { return true; }
-   bool     Log( const char* text, int priority = 1 ) const { return true; }
-   
-   typedef SerializedKeyValueVector< BasicUser >   UserNameKeyValue;
-   typedef vector< PacketGameIdentification >      GameList;
-
-
-   string                           m_userName, m_attemptedUsername;
-   string                           m_uuid;
-   string                           m_serverDns;
-   string                           m_loginKey;
-   U32                              m_selectedGame;
-
-   SerializedKeyValueVector< InvitationInfo > m_invitationsReceived;
-   SerializedKeyValueVector< InvitationInfo > m_invitationsSent;
-   UserNameKeyValue                 m_friends;
-   ChatChannelVector                m_channels;
-   GameList                         m_gameList;
-
-   U8                               m_gameProductId;
-   bool                             m_requiresGatewayDiscovery;
-   bool                             m_isLoggingIn;
-   bool                             m_isLoggedIn;
-   bool                             m_isCreatingAccount;
-   U32                              m_connectionId;
-   string                           m_lastLoggedOutTime;
-   int                              m_lastRawDataIndex;
-   int                              m_connectionPort;
-
-   mutable U32                      m_beginTime, m_endTime;
-
-   int                              m_normalSleepTime, m_boostedSleepTime;
-   bool                             m_isThreadPerformanceBoosted;
-   time_t                           m_timeWhenThreadPerformanceBoosted;
-
-   MBerNotifierList2                m_callbacks;
-   RawDataAccumulator               m_rawDataBuffer[ PacketGameplayRawData::NumDataTypes ];
-
-   vector< AssetInfoExtended >      m_staticAssets;
-   vector< AssetInfoExtended >      m_dynamicAssets;
-   vector< TournamentInfo >         m_availableTournaments;
-
-private:
-   bool     SerializePacketOut( BasePacket* packet ) const;// helper
-
-   bool     HandlePacketReceived( BasePacket* packetIn );
-
-   bool     AddChatChannel( const ChatChannel& channel );
-
-   void     BoostThreadPerformance();
-   void     RestoreNormalThreadPerformance();
-   void     ExpireThreadPerformanceBoost();
-
-   bool     GetAsset( const string& hash, AssetInfoExtended& asset );
-   bool     UpdateAssetData( const string& hash, AssetInfoExtended& asset );
-
-   void     NotifyClientLoginStatus( bool isLoggedIn );
-   void     NotifyClientToBeginSendingRequests();
-
-   void     LoadBalancedNewAddress( const PacketRerouteRequestResponse* packet );
-};
+} // namespace Mber
 
 ///////////////////////////////////////////////////////
-
-}
+///////////////////////////////////////////////////////

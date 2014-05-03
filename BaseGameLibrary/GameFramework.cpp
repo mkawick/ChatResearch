@@ -425,7 +425,7 @@ bool  GameFramework::Run()
    //----------------------------------------------------------------
    m_connectionManager = new DiplodocusGame( GetServerName(), GetServerId(), GetGameProductId() );
    m_connectionManager->SetDatabaseIdentification( m_gameUuid );
-   m_connectionManager->SetAsGateway( false );
+   m_connectionManager->SetGatewayType( PacketServerIdentifier::GatewayType_None );
    m_connectionManager->SetAsControllerApp( false );
    m_connectionManager->SetAsGame();
 

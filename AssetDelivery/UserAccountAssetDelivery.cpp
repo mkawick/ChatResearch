@@ -1,3 +1,5 @@
+// UserAccountAssetDelivery.cpp
+
 #include "UserAccountAssetDelivery.h"
 #include "DiplodocusAsset.h"
 #include "AssetOrganizer.h"
@@ -28,7 +30,17 @@ void  Copy( const AssetDefinition* asset, AssetInfo& assetInfo )
    assetInfo.category   = asset->category;
 }
 
-UserAccountAssetDelivery::UserAccountAssetDelivery( const UserTicket& ticket ) : m_userTicket( ticket ), m_status( Status_initial_login ), m_readyForCleanup( false ), m_assetManager( NULL )
+UserAccountAssetDelivery::UserAccountAssetDelivery() : m_status( Status_initial_login ), m_readyForCleanup( false ), m_assetManager( NULL ), m_maxNumAssetReturnedByCategory( 12 )
+{
+   m_userTicket.userId = 0xFFFFFFFF;
+   m_userTicket.uuid = "generic_user";
+   m_userTicket.userName = "generic_user";
+   m_userTicket.connectionId = 0xFFFFFFFF;/// only after this person has logged in
+   m_userTicket.userTicket = "generic_user";
+   m_userTicket.gameProductId = 1;
+}
+
+UserAccountAssetDelivery::UserAccountAssetDelivery( const UserTicket& ticket ) : m_userTicket( ticket ), m_status( Status_initial_login ), m_readyForCleanup( false ), m_assetManager( NULL ), m_maxNumAssetReturnedByCategory( 250 )
 {
 }
 
@@ -100,12 +112,6 @@ bool     UserAccountAssetDelivery::HandleRequestFromClient( const PacketAsset* p
 {
    switch( packet->packetSubType )
    {
-  /* case PacketAsset::AssetType_GetListOfStaticAssets:
-      return GetListOfStaticAssets( static_cast< const PacketAsset_GetListOfStaticAssets* >( packet ) );
-
-   case PacketAsset::AssetType_GetListOfDynamicAssets:
-      return GetListOfDynamicAssets( static_cast< const PacketAsset_GetListOfDynamicAssets* >( packet ) );*/
-
    case PacketAsset::AssetType_GetListOfAssetCategories:
       return GetListOfAssetCategories( static_cast< const PacketAsset_GetListOfAssetCategories* >( packet ) );
 
@@ -125,86 +131,6 @@ bool     UserAccountAssetDelivery::HandleRequestFromClient( const PacketAsset* p
 
 
 //------------------------------------------------------------------------------------------------
-/*
-bool     UserAccountAssetDelivery::GetListOfStaticAssets( const PacketAsset_GetListOfStaticAssets* packet )
-{
-   if( m_assetManager == NULL )
-      assert( 0 );
-
-   U32 connectionId = m_userTicket.connectionId;
-
-   //PacketAsset_GetListOfStaticAssets
-   U8 gameProductId = packet->gameProductId;
-   vector< string > assetIds;
-   const AssetOrganizer* assetOrganizer = m_assetManager->GetStaticAssetOrganizer();
-   assetOrganizer->GetListOfAssets( gameProductId, packet->platformId, assetIds );
-
-   //-----------------------------
-
-   PacketAsset_GetListOfStaticAssetsResponse*    response = new PacketAsset_GetListOfStaticAssetsResponse;
-   vector< string >::iterator it = assetIds.begin();
-   while( it != assetIds.end() )
-   {
-      const AssetDefinition * asset;
-      bool  found = assetOrganizer->FindByHash( *it++ , asset );
-      if( found )
-      {
-         AssetInfo assetInfo;
-         Copy( asset, assetInfo ); // operator = is not an option in this version of VS
-
-         assetInfo.productId  = gameProductId;
-
-         response->updatedAssets.insert( assetInfo.assetHash, assetInfo );
-      }
-   }
-
-   PacketGatewayWrapper* wrapper = new PacketGatewayWrapper;
-   wrapper->SetupPacket( response, connectionId );
-   
-   m_assetManager->AddOutputChainData( wrapper, connectionId );
-   return true;
-}
-
-//------------------------------------------------------------------------------------------------
-
-bool     UserAccountAssetDelivery::GetListOfDynamicAssets( const PacketAsset_GetListOfDynamicAssets* packet )
-{
-   U32 connectionId = m_userTicket.connectionId;
-   //m_userTicket.
-
-   U8 gameProductId = packet->gameProductId;
-   vector< string > assetIds;
-   const AssetOrganizer* assetOrganizer = m_assetManager->GetDynamicAssetOrganizer();
-   assetOrganizer->GetListOfAssets( packet->platformId, m_productFilterNames, assetIds );
-   // 1) reduce the set of products by device type.
-
-   //-----------------------------
-   PacketAsset_GetListOfDynamicAssetsResponse*    response = new PacketAsset_GetListOfDynamicAssetsResponse;
-   vector< string >::iterator it = assetIds.begin();
-   while( it != assetIds.end() )
-   {
-      const AssetDefinition * asset;
-      bool  found = assetOrganizer->FindByHash( *it++ , asset );
-      if( found )
-      {
-         AssetInfo assetInfo;
-         Copy( asset, assetInfo ); // operator = is not an option in this version of VS
-
-         assetInfo.productId  = gameProductId;
-
-         response->updatedAssets.insert( assetInfo.assetHash, assetInfo );
-      }
-   }
-
-   PacketGatewayWrapper* wrapper = new PacketGatewayWrapper;
-   wrapper->SetupPacket( response, connectionId );
-   
-   m_assetManager->AddOutputChainData( wrapper, connectionId );
-
-   /// product filter
-   return true;
-}*/
-
 //------------------------------------------------------------------------------------------------
 
 bool     UserAccountAssetDelivery::GetListOfAssetCategories( const PacketAsset_GetListOfAssetCategories* packet )
@@ -245,7 +171,7 @@ bool     UserAccountAssetDelivery::GetListOfAssets( const PacketAsset_GetListOfA
       return false;
    }
 
-   assetOrganizer->GetListOfAssets( packet->platformId, m_productFilterNames, assetIds );
+   assetOrganizer->GetListOfAssets( packet->platformId, m_productFilterNames, assetIds, m_maxNumAssetReturnedByCategory );
    // 1) reduce the set of products by device type.
 
    //-----------------------------

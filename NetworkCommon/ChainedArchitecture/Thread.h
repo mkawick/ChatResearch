@@ -65,10 +65,10 @@ private:
 class MutexLock
 {
 public:
-	explicit MutexLock( Mutex& mutex ): m_mutex( mutex ) { m_mutex.lock(); }
+	MutexLock( const Mutex& mutex ): m_mutex( mutex ) { m_mutex.lock(); }
 	~MutexLock() { m_mutex.unlock(); }
 
-	Mutex& m_mutex;
+	const Mutex& m_mutex;
 };
 
 /////////////////////////////////////////////////////////////////////////////

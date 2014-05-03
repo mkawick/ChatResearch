@@ -19,6 +19,7 @@ struct GatewayInfo
 {
    enum Type
    {
+      Type_None,
       Type_Normal,
       Type_Asset,
       Type_Other

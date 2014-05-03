@@ -22,6 +22,8 @@ public:
 
    virtual void  HasBeenConnectedToGateway() {}
    virtual void  HasBeenDisconnectedFromGateway() {}
+   virtual void  HasBeenConnectedToAssetGateway() {}
+   virtual void  HasBeenDisconnectedFromAssetGateway() {}
 
    virtual void  ListOfAvailableProducts() {}
    // this list of purchases will not have localized names for products, especially on other players' products. 
@@ -90,6 +92,8 @@ public:
 
       NotificationType_HasBeenConnectedToGateway,
       NotificationType_HasBeenDisconnectedFromGateway,
+      NotificationType_AssetHasBeenConnectedToGateway,
+      NotificationType_AssetHasBeenDisconnectedToGateway,
 
       NotificationType_ListOfAvailableProducts,
       NotificationType_ListOfAggregateUserPurchases,

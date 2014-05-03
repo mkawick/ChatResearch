@@ -248,7 +248,7 @@ int main( int argc, const char* argv[] )
 
    DiplodocusLogin* loginServer = new DiplodocusLogin( serverName, serverId );
    loginServer->SetAsControllerApp( false );
-   loginServer->SetAsGateway( false );
+   loginServer->SetGatewayType( PacketServerIdentifier::GatewayType_None );
    loginServer->SetAsGame( false );
 
    loginServer->AddOutputChain( delta );

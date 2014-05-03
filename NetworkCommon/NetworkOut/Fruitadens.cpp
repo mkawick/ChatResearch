@@ -112,6 +112,24 @@ bool  Fruitadens :: Disconnect()
 
 //-----------------------------------------------------------------------------
 
+void   Fruitadens :: HasBeenConnectedCallback() 
+{
+   if( m_packetHandlerInterface )
+   {
+      m_packetHandlerInterface->InitialConnectionCallback( this );
+   }
+}
+void   Fruitadens :: HasBeenDisconnectedCallback() 
+{
+   if( m_packetHandlerInterface )
+   {
+      m_packetHandlerInterface->InitialDisconnectionCallback( this );
+   }
+}
+
+
+//-----------------------------------------------------------------------------
+
 bool  Fruitadens :: SetupConnection( const char* serverName, int port )
 {
    Pause();
@@ -226,7 +244,7 @@ void  Fruitadens :: AttemptConnection()
    m_isConnected = true;
 
    HasBeenConnectedCallback();
-   InitalConnectionCallback();
+   InitialConnectionCallback();
 }
 
 //-----------------------------------------------------------------------------
@@ -519,13 +537,13 @@ FruitadensServer :: FruitadensServer( const char* name, bool processOnlyOneIncom
                               m_localIsGameServer( false ),
                               m_localIsController( false ),
                               m_localRequiresWrapper( true ),
-                              m_localIsGateway( false )
+                              m_gatewayType( 0 )
 {
 }
 
 //-----------------------------------------------------------------------------
 
-void     FruitadensServer :: NotifyEndpointOfIdentification( const string& serverName, const string& serverAddress, U32 serverId, U16 serverPort, U8 gameProductId, bool isGameServer, bool isController, bool requiresWrapper, bool isGateway )
+void     FruitadensServer :: NotifyEndpointOfIdentification( const string& serverName, const string& serverAddress, U32 serverId, U16 serverPort, U8 gameProductId, bool isGameServer, bool isController, bool requiresWrapper, U8 gatewayType )
 {
    m_areLocalIdentifyingParamsSet = true;
    m_localServerName = serverName;
@@ -536,14 +554,14 @@ void     FruitadensServer :: NotifyEndpointOfIdentification( const string& serve
    m_localIsGameServer = isGameServer;
    m_localIsController = isController;
    m_localRequiresWrapper = requiresWrapper;
-   m_localIsGateway = isGateway;
+   m_gatewayType = gatewayType;
 
    //PackageLocalServerIdentificationToSend();
 }
 
 //-----------------------------------------------------------------------------
 
-void     FruitadensServer::InitalConnectionCallback()
+void     FruitadensServer::InitialConnectionCallback()
 {
    ChainLinkIteratorType   itInputs = m_listOfInputs.begin();
    while( itInputs != m_listOfInputs.end() )
@@ -572,7 +590,8 @@ bool     FruitadensServer::PackageLocalServerIdentificationToSend()
                                    m_localIsGameServer, 
                                    m_localIsController, 
                                    m_localRequiresWrapper, 
-                                   m_localIsGateway, &packet );
+                                   m_gatewayType, 
+                                   &packet );
    if( AddOutputChainData( packet, 0 ) == false )
    {
       PacketFactory factory;

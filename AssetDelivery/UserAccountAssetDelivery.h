@@ -32,6 +32,7 @@ public:
    
    //---------------------------------------
 
+   UserAccountAssetDelivery();// only for generic users
    UserAccountAssetDelivery( const UserTicket& ticket );
    ~UserAccountAssetDelivery();
 
@@ -50,6 +51,8 @@ public:
 
    void              SetupProductFilterNames( const StringBucket& bucket );
 
+   void              SetMaxNumerOfAssetsReturnedPerCategory( int num ) { m_maxNumAssetReturnedByCategory = num; }
+
    //---------------------------------------
 
 private:
@@ -57,8 +60,6 @@ private:
    bool              GetListOfAssetCategories( const PacketAsset_GetListOfAssetCategories* packet );
    bool              GetListOfAssets( const PacketAsset_GetListOfAssets* packet );
    bool              EchoHandler();
-   //bool              GetListOfStaticAssets( const PacketAsset_GetListOfStaticAssets* packet );
-   //bool              GetListOfDynamicAssets( const PacketAsset_GetListOfDynamicAssets* packet );
    bool              GetAsset( const PacketAsset_RequestAsset* packet );
 
    UserTicket        m_userTicket;
@@ -67,6 +68,8 @@ private:
    DiplodocusAsset*  m_assetManager;
    time_t            m_logoutTime;
    set< string >     m_productFilterNames;
+
+   int               m_maxNumAssetReturnedByCategory;
 };
 
 ///////////////////////////////////////////////////////////////////

@@ -41,7 +41,7 @@ bool  PacketServerIdentifier::SerializeIn( const U8* data, int& bufferOffset )
    Serialize::In( data, bufferOffset, gameInstanceId );   
    Serialize::In( data, bufferOffset, isGameServer );
    Serialize::In( data, bufferOffset, isController );
-   Serialize::In( data, bufferOffset, isGateway );
+   Serialize::In( data, bufferOffset, gatewayType );
 
    return true;
 }
@@ -56,7 +56,7 @@ bool  PacketServerIdentifier::SerializeOut( U8* data, int& bufferOffset ) const
    Serialize::Out( data, bufferOffset, gameInstanceId );
    Serialize::Out( data, bufferOffset, isGameServer );
    Serialize::Out( data, bufferOffset, isController );
-   Serialize::Out( data, bufferOffset, isGateway );
+   Serialize::Out( data, bufferOffset, gatewayType );
   
    return true;
 }
@@ -152,7 +152,7 @@ bool  PacketServerJobWrapper::SerializeOut( U8* data, int& bufferOffset ) const
 
 ///////////////////////////////////////////////////////////////
 
-bool  PackageForServerIdentification( const string& serverName, const string& ipAddress, U32 serverId, U16 serverPort, U8 gameProductId, bool isGameServer, bool isController, bool requiresWrapper, bool isGateway, BasePacket** packet )
+bool  PackageForServerIdentification( const string& serverName, const string& ipAddress, U32 serverId, U16 serverPort, U8 gameProductId, bool isGameServer, bool isController, bool requiresWrapper, U8 gatewayType, BasePacket** packet )
 {
    PacketServerIdentifier* serverIdPacket = new PacketServerIdentifier;
    serverIdPacket->serverName = serverName;
@@ -161,7 +161,7 @@ bool  PackageForServerIdentification( const string& serverName, const string& ip
    serverIdPacket->serverPort = serverPort;
    serverIdPacket->isGameServer = isGameServer;
    serverIdPacket->isController = isController;
-   serverIdPacket->isGateway = isGateway;
+   serverIdPacket->gatewayType = gatewayType;
    serverIdPacket->gameProductId = gameProductId;
 
    if( requiresWrapper )

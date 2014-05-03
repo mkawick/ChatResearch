@@ -66,7 +66,7 @@ public:
    bool  FindByHash( const string& hash, AssetDefinition const *& asset ) const; // returns a reference const... you cannot modify the result.
 
    bool  GetListOfAssets( U8 productId, int platformType, vector< string >& listOfAssetsByHash ) const;
-   bool  GetListOfAssets( int platformId, const set< string >& listOfFilters, vector< string >& listOfAssetsByHash ) const;
+   bool  GetListOfAssets( int platformId, const set< string >& listOfFilters, vector< string >& listOfAssetsByHash, int maxNum = 250 ) const;
 
    void  Update();
 

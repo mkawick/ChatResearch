@@ -117,6 +117,7 @@ int  FruitadensServerToServer::MainLoop_OutputProcessing()
 FruitadensServerToServer*     PrepS2SOutwardConnection( const string& ipaddress, U16 port, U32 serverId, const string& serverName, ServerType serverType, 
                                                        LinkedInterface* diplodocus, const string& localAddress, U16 localPort, U32 gameProductId )
 {
+   assert(0);;// verify that this is no longer used
    string connectionText = "fruity to ";
    if( serverName.size() )
    {
@@ -132,7 +133,7 @@ FruitadensServerToServer*     PrepS2SOutwardConnection( const string& ipaddress,
 
    remoteServer->AddInputChain( diplodocus );
 
-   remoteServer->NotifyEndpointOfIdentification( serverName, localAddress, serverId, localPort, gameProductId, false, false, true, true );
+   remoteServer->NotifyEndpointOfIdentification( serverName, localAddress, serverId, localPort, gameProductId, false, false, true, (U8)34 );
    cout << "Remote server: " << ipaddress << ":" << port << endl;
    remoteServer->Connect( ipaddress.c_str(), port );
    remoteServer->Resume();

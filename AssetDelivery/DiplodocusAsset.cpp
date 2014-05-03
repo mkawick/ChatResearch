@@ -22,6 +22,8 @@ DiplodocusAsset::DiplodocusAsset( const string& serverName, U32 serverId ): Dipl
 {
    time( &m_checkForFileChangeTimestamp );
    SetSleepTime( 45 );
+   m_dummyUser.SetMaxNumerOfAssetsReturnedPerCategory( 12 );
+   m_dummyUser.SetServer( this );
 }
 
 DiplodocusAsset :: ~DiplodocusAsset()
@@ -33,7 +35,7 @@ DiplodocusAsset :: ~DiplodocusAsset()
 void     DiplodocusAsset::ServerWasIdentified( IChainedInterface* khaan )
 {
    BasePacket* packet = NULL;
-   PackageForServerIdentification( m_serverName, m_localIpAddress, m_serverId, m_listeningPort, m_gameProductId, m_isGame, m_isControllerApp, true, m_isGateway, &packet );
+   PackageForServerIdentification( m_serverName, m_localIpAddress, m_serverId, m_listeningPort, m_gameProductId, m_isGame, m_isControllerApp, true, m_gatewayType, &packet );
   /* khaan->AddOutputChainData( packet, 0 );
    m_serversNeedingUpdate.push_back( static_cast<InputChainType*>( khaan )->GetServerId() );*/
    ChainedType* localKhaan = static_cast< ChainedType* >( khaan );
@@ -346,9 +348,16 @@ bool     DiplodocusAsset::AddInputChainData( BasePacket* packet, U32 connectionI
             {
                found->second.SetConnectionId( connectionId );
                Threading::MutexLock locker( m_mutex );
-               //bool result = 
-                  found->second.HandleRequestFromClient( static_cast< PacketAsset* >( unwrappedPacket ) );
+               found->second.HandleRequestFromClient( static_cast< PacketAsset* >( unwrappedPacket ) );
             }
+         }
+         else
+         {
+            // we have a user who has not logged in yet (or may never login)
+            // we'll use a generic user to handle all of the filtering.
+            Threading::MutexLock locker( m_mutex );
+            m_dummyUser.SetConnectionId( connectionId );
+            m_dummyUser.HandleRequestFromClient( static_cast< PacketAsset* >( unwrappedPacket ) );
          }
          
         // we will cleanup here... see cleaner

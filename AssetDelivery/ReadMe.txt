@@ -31,3 +31,6 @@ AppWizard uses "TODO:" comments to indicate parts of the source code you
 should add to or customize.
 
 /////////////////////////////////////////////////////////////////////////////
+
+
+asset.path='C:/projects/Mber/ServerStack/X_testFiles_X' listen.port=7300 listen.address=localhost asset.dictionary="assets_of_assets.ini"

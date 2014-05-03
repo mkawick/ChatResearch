@@ -293,7 +293,7 @@ Diplodocus< InputChain, OutputChain >::Diplodocus( string serverName, U32 server
                                     m_isListeningWorking( false ),
                                     m_hasSentServerIdentification( false ),
                                     m_isControllerApp( false ),
-                                    m_isGateway( false ),
+                                    m_gatewayType( 0 ),
                                     m_isGame( false ),
                                     m_sendHelloPacket( true ),
                                     m_listeningPort( 0 ),
@@ -761,7 +761,7 @@ return_type* PrepConnection( const string& remoteIpaddress, U16 remotePort, cons
 
    //bool isGame = localServer->IsGameServer();
    serverOut->NotifyEndpointOfIdentification( localServer->GetServerName(), localServer->GetIpAddress(), localServer->GetServerId(), localServer->GetPort(), 
-                                             gameProductId, localServer->IsGameServer(), localServer->IsControllerApp(), requiresS2SWrapper, localServer->IsGateway() );
+                                             gameProductId, localServer->IsGameServer(), localServer->IsControllerApp(), requiresS2SWrapper, localServer->GetGatewayType() );
    cout << "server (" << remoteServerName << "): " << remoteIpaddress << ":" << remotePort << endl;
    serverOut->Connect( remoteIpaddress.c_str(), remotePort );
    serverOut->Resume();

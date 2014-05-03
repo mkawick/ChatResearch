@@ -765,13 +765,14 @@ bool  AssetOrganizer::GetListOfAssets( U8 productId, int platformId, vector< str
 
 //////////////////////////////////////////////////////////////////////////
 
-bool  AssetOrganizer::GetListOfAssets( int platformId, const set< string >& listOfFilters, vector< string >& listOfAssetsByHash ) const
+bool  AssetOrganizer::GetListOfAssets( int platformId, const set< string >& listOfFilters, vector< string >& listOfAssetsByHash, int maxNum ) const
 {
    listOfAssetsByHash.clear();
 
+   int count = 0;
    // do we need to organize the assets by product id? There probably won't be enough but we can group them by product if we end up with a lot of assets.
    vector< AssetDefinition >::const_iterator it = m_assets.begin();
-   while( it != m_assets.end() )
+   while( it != m_assets.end() && count < maxNum )
    {
       if( it->platform == platformId )// first match product
       {
@@ -818,6 +819,7 @@ bool  AssetOrganizer::GetListOfAssets( int platformId, const set< string >& list
          }
       }
       it++;
+      count ++;// 
    }
 
    if( listOfAssetsByHash.size() > 0 )
