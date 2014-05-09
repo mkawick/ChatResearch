@@ -10,7 +10,7 @@
 
 //#define _MEMLEAK_TESTING_
 
-static const U8   GlobalNetworkProtocolVersion = 18;
+static const U8   GlobalNetworkProtocolVersion = 20;
 
 ///////////////////////////////////////////////////////////////
 
@@ -37,6 +37,7 @@ enum PacketType
    PacketType_Tournament,
    PacketType_Stat,
    PacketType_Notification,
+   PacketType_Invitation,
    PacketType_Num
 };
 
@@ -434,6 +435,12 @@ public:
       ErrorType_TournamentPurchase_Result_TournamentClosed =   903,
       ErrorType_TournamentPurchase_Result_UnknownUuid =        904,*/
 
+      
+      ErrorType_Invitation_ExistingInvitationWithThatUser =   1100,
+      ErrorType_Invitation_DoesNotExist =                     1101,
+      ErrorType_Invitation_UserIsBlockingInvites =            1102,
+
+      ErrorType_IncompleteFeature    =                        9900,
       ErrorType_Limit =                                      10000
    };
 

@@ -71,6 +71,7 @@ public:
    U32      gameInstanceId;
 
    SerializedKeyValueVector< string >   userList; // not necessarily friends
+   SerializedKeyValueVector< string >   usersInvited; 
 
    void  Clear()
    {

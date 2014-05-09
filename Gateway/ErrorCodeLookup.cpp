@@ -102,7 +102,10 @@ string  ErrorCodeLookup::GetString( int id )
       case PacketErrorReport::ErrorType_Notification_CannotInsertNewDevice:            return string( "Notification_CannotInsertNewDevice" );
       case PacketErrorReport::ErrorType_Notification_unknown1:                         return string( "Notification_unknown1" );
       case PacketErrorReport::ErrorType_Notification_unknown2:                         return string( "Notification_unknown2" );
+      case PacketErrorReport::ErrorType_Invitation_ExistingInvitationWithThatUser:     return string( "An Invitation already exists for the group with these two users" );
+      case PacketErrorReport::ErrorType_Invitation_DoesNotExist:                       return string( "Invalid invitation" );
 
+      case PacketErrorReport::ErrorType_IncompleteFeature:                             return string( "This feature is incompete" );
    };
    return string();
 }

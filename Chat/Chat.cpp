@@ -156,10 +156,10 @@ int main( int argc, const char* argv[] )
    
    //----------------------------------------------------------------
    
-   middleware->Init();
    middleware->AddOutputChain( delta );
    s2s->AddOutputChain( middleware );
 
+   middleware->Init();
    middleware->Run();
 
    getch();

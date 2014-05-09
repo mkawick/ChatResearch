@@ -54,6 +54,9 @@ public:
    virtual void  InvitationAccepted( const string& sender, const string& receiver, bool wasAccepted ){}
    virtual void  SearchForUserResultsAvailable() {}
 
+   virtual void  GenericInvitationsUpdated() {} // generic list of all invitations
+   virtual void  GenericInvitationRejected() {}
+
    virtual void  ChatChannelHistory( const string& channelUuid, const list< ChatEntry >& listOfChats ) {  }
    virtual void  ChatP2PHistory( const string& userUuid, const list< ChatEntry >& listOfChats ) { }
    virtual void  ChatHistoryMissedSinceLastLoginComposite( const list< MissedChatChannelEntry >& listOfChats ) { }
@@ -64,6 +67,8 @@ public:
    virtual void  ChatChannel_UserAdded( const string& channelName, const string& channelUuid, const string userName, const string userUuid ) { }
    virtual void  ChatChannel_UserRemoved( const string& channelUuid, const string& userUuid, bool success ) { }
    //virtual void  NewChatChannelAdded( const string& channelName, const string& channelUuid, bool success ) { }
+
+   virtual void  ChatChannelDetailsIncludingInvites( const ChatChannel& info ) {}
 
    virtual void  AssetCategoriesLoaded() {}
    virtual void  AssetManifestAvailable( const string& category ) {}
@@ -121,6 +126,9 @@ public:
       NotificationType_InvitationAccepted,
       NotificationType_SearchForUserResultsAvailable,
 
+      NotificationType_GenericInvitationsUpdated,
+      NotificationType_GenericInvitationRejected,
+
       NotificationType_ChatChannelHistory,
       NotificationType_ChatP2PHistory,
       NotificationType_ChatHistoryMissedSinceLastLoginComposite,
@@ -130,6 +138,7 @@ public:
 
       NotificationType_ChatChannel_UserAdded,
       NotificationType_ChatChannel_UserRemoved,
+      NotificationType_ChatChannelDetailsIncludingInvites,
 
       NotificationType_AssetCategoriesLoaded,
       NotificationType_AssetManifestAvailable,

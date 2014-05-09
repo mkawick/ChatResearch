@@ -351,10 +351,6 @@ int      StatusUpdate::CallbackFunction()
          
          m_newAccountHandler->Update( currentTime );
       }
-    /*  else
-      {
-         m_newAccountHandler->Update( currentTime );
-      }*/
       
       m_blankUuidHandler->Update( currentTime );
       //DuplicateUUIDSearch();// no longer needed after-the-fact.
@@ -559,9 +555,9 @@ void     StatusUpdate::HandleAutoCreateAccounts( const PacketDbQueryResult* dbRe
       query += "', ";
       query += "'1',";
       query += languageId;   
-      query += "', '";
+      query += ", '";
       query += timeCreated;
-      query += ") ON DUPLICATE KEY UPDATE user_name='";
+      query += "') ON DUPLICATE KEY UPDATE user_name='";
       query += name;
       query += "', user_name_match='";
       query += lowerCaseUserName;

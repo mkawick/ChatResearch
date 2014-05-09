@@ -3,8 +3,9 @@
 #pragma once
 
 
-class DiplodocusChat;
-class ChatChannelManager;
+class    DiplodocusChat;
+class    ChatRoomManager;
+//class    InvitationManager;
 
 ///////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////
@@ -28,7 +29,8 @@ public:
    void           LoggedOut();
 
    static void    Set( DiplodocusChat* chat );
-   static void    Set( ChatChannelManager* mgr );
+   static void    Set( ChatRoomManager* mgr );
+   //static void    Set( InvitationManager* mgr );
 
 
    bool           HandleClientRequest( BasePacket* packet );
@@ -101,7 +103,8 @@ private:
    string                     m_lastLoginTime;
 
    static DiplodocusChat*     m_chatServer;
-   static ChatChannelManager* m_chatChannelManager;
+   static ChatRoomManager*    m_chatRoomManager;
+   //static InvitationManager*  m_invitationManager;
 
 private:
    ChatUser();

@@ -30,9 +30,9 @@ struct UserBasics
 
 //---------------------------------------------------------------
 
-struct ChatChannel
+struct ChatRoom
 {
-   ChatChannel() ;
+   ChatRoom() ;
 
    int         recordId;
    string      name;
@@ -52,7 +52,7 @@ struct ChatChannel
    list< UserBasics >   userBasics;
    
 
-   static const int DefaultMaxNumPlayersInChatchannel = 32;
+   static const int DefaultMaxNumPlayersInChatRoom = 32;
 };
 
 ///////////////////////////////////////////////////////////////////

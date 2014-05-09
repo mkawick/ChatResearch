@@ -185,15 +185,15 @@
 				>
 			</File>
 			<File
-				RelativePath=".\ChatChannel.cpp"
+				RelativePath=".\ChatRoom.cpp"
 				>
 			</File>
 			<File
-				RelativePath=".\ChatChannelDbJob.cpp"
+				RelativePath=".\ChatRoomDbJob.cpp"
 				>
 			</File>
 			<File
-				RelativePath=".\ChatChannelManager.cpp"
+				RelativePath=".\ChatRoomManager.cpp"
 				>
 			</File>
 			<File
@@ -205,15 +205,19 @@
 				>
 			</File>
 			<File
+				RelativePath=".\InvitationManager.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\KhaanChat.cpp"
 				>
 			</File>
 			<File
-				RelativePath=".\UserInChatChannel.cpp"
+				RelativePath=".\UserInChatRoom.cpp"
 				>
 			</File>
 			<File
-				RelativePath=".\UsersChatChannelList.cpp"
+				RelativePath=".\UsersChatRoomList.cpp"
 				>
 			</File>
 		</Filter>
@@ -223,15 +227,15 @@
 			UniqueIdentifier="{93995380-89BD-4b04-88EB-625FBE52EBFB}"
 			>
 			<File
-				RelativePath=".\ChatChannel.h"
+				RelativePath=".\ChatRoom.h"
 				>
 			</File>
 			<File
-				RelativePath=".\ChatChannelDbJob.h"
+				RelativePath=".\ChatRoomDbJob.h"
 				>
 			</File>
 			<File
-				RelativePath=".\ChatChannelManager.h"
+				RelativePath=".\ChatRoomManager.h"
 				>
 			</File>
 			<File
@@ -243,15 +247,19 @@
 				>
 			</File>
 			<File
+				RelativePath=".\InvitationManager.h"
+				>
+			</File>
+			<File
 				RelativePath=".\KhaanChat.h"
 				>
 			</File>
 			<File
-				RelativePath=".\UserInChatChannel.h"
+				RelativePath=".\UserInChatRoom.h"
 				>
 			</File>
 			<File
-				RelativePath=".\UsersChatChannelList.h"
+				RelativePath=".\UsersChatRoomList.h"
 				>
 			</File>
 		</Filter>

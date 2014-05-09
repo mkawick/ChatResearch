@@ -13,7 +13,8 @@ using boost::format;
 #include "ChatUser.h"
 #include "DiplodocusChat.h"
 #include "../NetworkCommon/Utils/TableWrapper.h"
-#include "ChatChannelManager.h"
+#include "ChatRoomManager.h"
+//#include "InvitationManager.h"
 
 #include <boost/lexical_cast.hpp>
 
@@ -21,17 +22,23 @@ using boost::format;
 ///////////////////////////////////////////////////////////////////
 
 DiplodocusChat*      ChatUser::  m_chatServer = NULL;
-ChatChannelManager*  ChatUser::  m_chatChannelManager = NULL;
+ChatRoomManager*     ChatUser::  m_chatRoomManager = NULL;
+//InvitationManager*   ChatUser::  m_invitationManager = NULL;
 
 void ChatUser::Set( DiplodocusChat* chat )
 {
    m_chatServer = chat;
 }
 
-void ChatUser::Set( ChatChannelManager* mgr )
+void ChatUser::Set( ChatRoomManager* mgr )
 {
-   m_chatChannelManager = mgr;
+   m_chatRoomManager = mgr;
 }
+/*
+void ChatUser::Set( InvitationManager* mgr )
+{
+   m_invitationManager = mgr;
+}*/
 
 ///////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////
@@ -74,7 +81,7 @@ void     ChatUser::LoggedIn()
    m_isLoggedIn = true;
    m_loggedOutTime = 0;
    m_initialRequestForInfoSent = false;// relogging rerequests the data.
-   m_chatChannelManager->UserHasLoggedIn( m_uuid );
+   m_chatRoomManager->UserHasLoggedIn( m_uuid );
 }
 
 //---------------------------------------------------------
@@ -83,7 +90,7 @@ void     ChatUser::LoggedOut()
 { 
    m_isLoggedIn = false; 
    time( &m_loggedOutTime );
-   m_chatChannelManager->UserHasLoggedOut( m_uuid );
+   m_chatRoomManager->UserHasLoggedOut( m_uuid );
 }
 
 //---------------------------------------------------------
@@ -111,19 +118,9 @@ bool     ChatUser::HandleClientRequest( BasePacket* packet )
 {
    switch( packet->packetType )
    {
-  /* case PacketType_DbQuery:
-      {
-         switch( packet->packetSubType )
-         {
-         case BasePacketDbQuery::QueryType_Result:
-            {
-               HandleDbQueryResult( packet );
-            }
-            break;
-         }
-      }
-      break;*/
-   case PacketType_UserInfo:
+      //case PacketType_DbQuery:// not handled here
+
+      case PacketType_UserInfo:
       {
          switch( packet->packetSubType )
          {
@@ -135,6 +132,11 @@ bool     ChatUser::HandleClientRequest( BasePacket* packet )
          }
       }
       break;
+    /*  case PacketType_Invitation:
+      {
+         m_invitationManager->HandlePacketRequest( packet, m_connectionId );
+      }
+      break;*/
       case PacketType_Chat:
       {
          switch( packet->packetSubType )
@@ -185,25 +187,25 @@ bool     ChatUser::HandleClientRequest( BasePacket* packet )
          case PacketChatToServer::ChatType_CreateChatChannel:
             {
                PacketChatCreateChatChannel* request = static_cast< PacketChatCreateChatChannel* > ( packet );
-               m_chatChannelManager->CreateNewChannel( request->name, m_uuid );
+               m_chatRoomManager->CreateNewRoom( request->name, m_uuid );
             }
             break;
          case PacketChatToServer::ChatType_DeleteChatChannel:
             {
                PacketChatDeleteChatChannel* request = static_cast< PacketChatDeleteChatChannel* > ( packet );
-               m_chatChannelManager->DeleteChannel( request->uuid, m_uuid );
+               m_chatRoomManager->DeleteRoom( request->uuid, m_uuid );
             }
             break;
          /*case PacketChatToServer::ChatType_InviteUserToChatChannel:
             {
                PacketChatInviteUserToChatChannel* request = static_cast< PacketChatInviteUserToChatChannel* > ( packet );
-               m_chatChannelManager->InviteUserToChannel( request->chatChannelUuid, request->userUuid, m_uuid );
+               m_chatRoomManager->InviteUserToChannel( request->chatChannelUuid, request->userUuid, m_uuid );
             }
             break;*/
          case PacketChatToServer::ChatType_AddUserToChatChannel:
             {
                PacketChatAddUserToChatChannel* request = static_cast< PacketChatAddUserToChatChannel* > ( packet );
-               bool success = m_chatChannelManager->AddUserToChannel( request->chatChannelUuid, request->userUuid, m_uuid );
+               bool success = m_chatRoomManager->AddUserToRoom( request->chatChannelUuid, request->userUuid, m_uuid );
 
                /*PacketChatAddUserToChatChannelResponse* response = new PacketChatAddUserToChatChannelResponse;
                response->channelUuid = request->chatChannelUuid;
@@ -221,7 +223,7 @@ bool     ChatUser::HandleClientRequest( BasePacket* packet )
          case PacketChatToServer::ChatType_RemoveUserFromChatChannel:
             {
                PacketChatRemoveUserFromChatChannel* request = static_cast< PacketChatRemoveUserFromChatChannel* > ( packet );
-               bool success = m_chatChannelManager->RemoveUserFromChannel( request->chatChannelUuid, request->userUuid );
+               bool success = m_chatRoomManager->RemoveUserFromRoom( request->chatChannelUuid, request->userUuid );
 
               /* PacketChatRemoveUserFromChatChannelResponse* response = new PacketChatRemoveUserFromChatChannelResponse;
                response->chatChannelUuid = request->chatChannelUuid;
@@ -239,7 +241,7 @@ bool     ChatUser::HandleClientRequest( BasePacket* packet )
             {
                PacketChatRenameChannel* request = static_cast< PacketChatRenameChannel* > ( packet );
                string oldName;
-               bool success = m_chatChannelManager->RenameChatChannel( request->channelUuid, request->newName, m_uuid, oldName );
+               bool success = m_chatRoomManager->RenameChatRoom( request->channelUuid, request->newName, m_uuid, oldName );
 
                PacketChatRenameChannelResponse* response = new PacketChatRenameChannelResponse;
                response->success = success;
@@ -260,43 +262,43 @@ bool     ChatUser::HandleClientRequest( BasePacket* packet )
             {
                PacketChat_UserProfileChange* request = static_cast< PacketChat_UserProfileChange* > ( packet );
                m_blockGroupInvitations = request->blockChannelInvites;
-               m_chatChannelManager->SetUserPreferences( m_uuid, m_blockContactInvitations, m_blockGroupInvitations );
+               m_chatRoomManager->SetUserPreferences( m_uuid, m_blockContactInvitations, m_blockGroupInvitations );
             }             
             break; 
       /*   case PacketChatToServer::ChatType_RequestChatters:
             {
                PacketChatRequestChatters* request = static_cast< PacketChatRequestChatters* > ( packet );
-               m_chatChannelManager->RequestChatters( request->chatChannelUuid, m_uuid );
+               m_chatRoomManager->RequestChatters( request->chatChannelUuid, m_uuid );
             }
             break;
       /*   case PacketChatToServer::ChatType_EnableDisableFiltering:
             {
                //PacketChatEnableFiltering* request = static_cast< PacketChatEnableFiltering* > ( packet );
-               //m_chatChannelManager->AddUserToChannel( request->name, m_uuid );
+               //m_chatRoomManager->AddUserToChannel( request->name, m_uuid );
             }
             break;
          case PacketChatToServer::ChatType_ListAllMembersInChatChannel:
             {
                PacketChatListAllMembersInChatChannel* request = static_cast< PacketChatListAllMembersInChatChannel* > ( packet );
-               m_chatChannelManager->RequestAllUsersInChatChannel( request->chatChannelUuid, request->fullList, m_uuid );
+               m_chatRoomManager->RequestAllUsersInChatChannel( request->chatChannelUuid, request->fullList, m_uuid );
             }
             break;
          case PacketChatToServer::ChatType_AdminLoadAllChannels:
             {
                //PacketChatAdminLoadAllChannels* request = static_cast< PacketChatAdminLoadAllChannels* > ( packet );
-               m_chatChannelManager->LoadAllChannels( m_uuid );
+               m_chatRoomManager->LoadAllChannels( m_uuid );
             }
             break;
          case PacketChatToServer::ChatType_AdminRequestChatChannelList:
             {
                PacketChatAdminRequestChatChannelList* request = static_cast< PacketChatAdminRequestChatChannelList* > ( packet );
-               m_chatChannelManager->RequestChatChannelList( m_uuid, request->isFullList );
+               m_chatRoomManager->RequestChatChannelList( m_uuid, request->isFullList );
             }
             break;
          case PacketChatToServer::ChatType_AdminRequestUsersList:
             {
                PacketChatAdminRequestUsersList* request = static_cast< PacketChatAdminRequestUsersList* > ( packet );
-               m_chatChannelManager->RequestUsersList( m_uuid, request->isFullList );
+               m_chatRoomManager->RequestUsersList( m_uuid, request->isFullList );
             }
             break;*/
          }
@@ -347,7 +349,7 @@ void     ChatUser::QueryChatChannelHistory( const string& channelUuid, int numRe
    dbQuery->escapedStrings.insert( channelUuid );
    dbQuery->meta = channelUuid;
 
-   m_chatServer->AddQueryToOutput( dbQuery, m_connectionId, false );
+   m_chatServer->AddQueryToOutput( dbQuery, m_connectionId );
 }
 
 //------------------------------------------------------------------------------------------------
@@ -405,7 +407,7 @@ void     ChatUser::QueryChatP2PHistory( const string& userUuid, int numRecords, 
    dbQuery->escapedStrings.insert( userUuid );
    dbQuery->meta = userUuid;
 
-   m_chatServer->AddQueryToOutput( dbQuery, m_connectionId, false );
+   m_chatServer->AddQueryToOutput( dbQuery, m_connectionId );
 }
 
 //------------------------------------------------------------------------------------------------
@@ -423,7 +425,7 @@ bool  ChatUser:: RequestUserProfileInfo()
    dbQuery->query += idString;
    dbQuery->query += "'";
 
-   bool success = m_chatServer->AddQueryToOutput( dbQuery, m_connectionId, false);
+   bool success = m_chatServer->AddQueryToOutput( dbQuery, m_connectionId );
 
    return true;
 }
@@ -457,7 +459,7 @@ void     ChatUser::GetAllChatHistroySinceLastLogin()
    queryString += "'";
    dbQuery->query = queryString;
 
-   m_chatServer->AddQueryToOutput( dbQuery, m_connectionId, false );
+   m_chatServer->AddQueryToOutput( dbQuery, m_connectionId );
 }
 
 //---------------------------------------------------------
@@ -547,7 +549,7 @@ void     ChatUser::StoreChatHistoryMissedSinceLastLogin( PacketDbQueryResult * d
       if( entry.chatChannelUuid.size() && gameTurn.size() )
       {
          entry.isGamechannel =  true;
-         entry.senderTempId = m_chatChannelManager->GetUserId( entry.senderUuid );
+         entry.senderTempId = m_chatRoomManager->GetUserId( entry.senderUuid );
       }
       else
       {
@@ -587,7 +589,7 @@ void     ChatUser::LoadUserProfile( const PacketDbQueryResult * dbResult )
       m_blockContactInvitations =            boost::lexical_cast< bool >( row[ TableUserProfile::Column_block_contact_invitations ] );
       m_blockGroupInvitations =              boost::lexical_cast< bool >( row[ TableUserProfile::Column_block_group_invitations ] );
 
-      m_chatChannelManager->SetUserPreferences( m_uuid, m_blockContactInvitations, m_blockGroupInvitations );
+      m_chatRoomManager->SetUserPreferences( m_uuid, m_blockContactInvitations, m_blockGroupInvitations );
    }
 }
 
@@ -633,7 +635,7 @@ void     ChatUser::SendChatHistoryToClientCommon( const DynamicDataBucket& bucke
       entry.userName =     row[ SimpleChat::Column_user_name ];
       entry.useruuid =     row[ SimpleChat::Column_user_uuid ];
       entry.timestamp =    row[ SimpleChat::Column_timestamp ];
-      entry.userTempId = m_chatChannelManager->GetUserId( entry.useruuid );
+      entry.userTempId = m_chatRoomManager->GetUserId( entry.useruuid );
 
       const string& gameTurn = row[ SimpleChat::Column_game_turn ];
 
@@ -856,12 +858,12 @@ bool     ChatUser::SendChat( const string& message, const string& sendeeUuid, co
 
    if( sendeeUuid.size() > 0 )
    {
-      m_chatChannelManager->UserSendP2PChat( m_uuid, sendeeUuid, message );
+      m_chatRoomManager->UserSendP2PChat( m_uuid, sendeeUuid, message );
       return true;
    }
    else if( channelUuid.size() > 0 )
    {
-      m_chatChannelManager->UserSendsChatToChannel( m_uuid, channelUuid, message, gameTurn );
+      m_chatRoomManager->UserSendsChatToChannel( m_uuid, channelUuid, message, gameTurn );
       return true;
    }
    return false;
@@ -885,7 +887,7 @@ void     ChatUser::RequestChatChannels()
    const int maxChannelsToSend = 15; // given the roughly 130 bytes just for the structure of the chat channel, 
    // we need to be sure that we don't overflow the buffer.
    SerializedKeyValueVector< ChannelInfoFullList >  channelList;
-   m_chatChannelManager->GetChatChannels( m_uuid, channelList );
+   m_chatRoomManager->GetChatRooms( m_uuid, channelList );
 
    if( channelList.size() == 0 )
       return;
@@ -921,7 +923,7 @@ void     ChatUser::RequestChatChannels()
 
   /* PacketChatChannelList* packetChannels = new PacketChatChannelList;// this may need to be moved into a separate function
 
-   m_chatChannelManager->GetChatChannels( m_uuid, packetChannels->channelList );
+   m_chatRoomManager->GetChatChannels( m_uuid, packetChannels->channelList );
 
    SendMessageToClient( packetChannels );*/
 }

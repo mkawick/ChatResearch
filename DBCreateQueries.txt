@@ -266,3 +266,16 @@ CREATE TABLE `language` (
   PRIMARY KEY (`id`)
 ) ENGINE=MyISAM AUTO_INCREMENT=10 DEFAULT CHARSET=utf8$$
 
+delimiter $$
+
+CREATE TABLE `invitation` (
+  `id` int(4) unsigned zerofill NOT NULL AUTO_INCREMENT,
+  `inviter_id` int(11) DEFAULT NULL,
+  `invitee_id` int(11) DEFAULT NULL,
+  `group_uuid` varchar(16) DEFAULT NULL,
+  `date` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `message` varchar(64) DEFAULT NULL,
+  `uuid` varchar(16) DEFAULT NULL,
+  `type` int(11) DEFAULT '0',
+  PRIMARY KEY (`id`)
+) ENGINE=MyISAM AUTO_INCREMENT=322 DEFAULT CHARSET=utf8;

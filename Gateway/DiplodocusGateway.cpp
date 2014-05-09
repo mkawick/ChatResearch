@@ -255,10 +255,12 @@ bool     DiplodocusGateway::OrderOutputs()
 bool     DiplodocusGateway::PushPacketToProperOutput( BasePacket* packet )
 {
    U32 packetType = packet->packetType;
+   U32 packetSubType = packet->packetSubType;
    if( packetType == PacketType_GatewayWrapper )
    {
       PacketGatewayWrapper* wrapper = static_cast< PacketGatewayWrapper* >( packet );
       packetType = wrapper->pPacket->packetType;
+      packetSubType = wrapper->pPacket->packetSubType;
    }
 
    assert( packetType < m_orderedOutputPacketHandlers.size() );
@@ -270,6 +272,7 @@ bool     DiplodocusGateway::PushPacketToProperOutput( BasePacket* packet )
    {
       cout << " *** packet received with which we cannot deal. ***" << endl;
       cout << "     type: " << packetType << endl;
+      cout << "     sub type: " << packetType << endl;
       return false;
    }
 

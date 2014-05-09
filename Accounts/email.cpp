@@ -39,7 +39,7 @@
 using namespace std;
 
 
-#define LogToFile 1
+#define LogToFile 0
 ofstream dumpFile;
 
 static const char* CRLF = "\r\n";

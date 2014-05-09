@@ -1,4 +1,4 @@
-// ChatChannelManager.cpp
+// ChatRoomManager.cpp
 
 #include <assert.h>
 
@@ -7,7 +7,7 @@
 #include <boost/lexical_cast.hpp>
 using boost::format;
 
-#include "ChatChannelManager.h"
+#include "ChatRoomManager.h"
 #include "../NetworkCommon/Packets/BasePacket.h"
 #include "../NetworkCommon/Packets/ChatPacket.h"
 #include "../NetworkCommon/Packets/DbPacket.h"
@@ -17,15 +17,15 @@ using boost::format;
 #include "ChatUser.h"
 
 
-DiplodocusChat*        ChatChannelManager::m_chatServer;
-const int maxNumPlayersInChatChannel = 32;
+DiplodocusChat*        ChatRoomManager::m_chatServer;
+const int maxNumPlayersInChatRoom = 32;
 
-// ChatChannelManagerNeedsUpdate
+// ChatRoomManagerNeedsUpdate
 
 ///////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////
 
-ChatChannelManager::ChatChannelManager(): m_dbIdTracker( 0 ),
+ChatRoomManager::ChatRoomManager(): m_dbIdTracker( 0 ),
                                           m_isInitialized( false ),
                                           m_numChannelsToLoad( 0 ),
                                           m_numUsersToLoadPerQueryForInitialLoad( 1000 ),
@@ -33,34 +33,35 @@ ChatChannelManager::ChatChannelManager(): m_dbIdTracker( 0 ),
                                           m_isPullingAllUsersAndChannels( false ),
                                           m_numChannelChatsSent( 0 ),
                                           m_numP2PChatsSent( 0 ),
-                                          m_numChangesToChatChannel( 0 )
+                                          m_numChangesToChatRoom( 0 ),
+                                          m_dbIdentifier( 0 )
 {
    //m_inboundPackets.reserve( 120 );// absolutely arbitrary.. it seems big enough and log(n) means that this will never be reallocated much
 }
 
 //---------------------------------------------------------------
 
-ChatChannelManager::~ChatChannelManager()
+ChatRoomManager::~ChatRoomManager()
 {
    m_inboundPackets.clear();
 }
 
 //---------------------------------------------------------------
 
-void     ChatChannelManager::Init()
+void     ChatRoomManager::Init()
 {
    string queryString = "SELECT * FROM chat_channel WHERE is_active=1";
 
    cout << "Chat channel manager initializing" << endl;
    PacketDbQuery* dbQuery = DbQueryFactory( queryString, false );
-   SaveQueryDetails( dbQuery, "", "", 0, ChatChannelDbJob::JobType_LoadAllChannels );
+   SaveQueryDetails( dbQuery, "", "", 0, ChatRoomDbJob::JobType_LoadAllChannels );
    Send( dbQuery );
 
   /* queryString = "SELECT user_name, uuid, users.user_id, user_profile.block_contact_invitations, user_profile.block_group_invitations ";
    queryString += "FROM users INNER JOIN user_profile ON users.user_id=user_profile.user_id ";
    queryString += "WHERE user_email IS NOT NULL";
    PacketDbQuery* dbQuery2 = DbQueryFactory( queryString, false );
-   SaveQueryDetails( dbQuery2, "", "", 0, ChatChannelDbJob::JobType_LoadAllUsers );
+   SaveQueryDetails( dbQuery2, "", "", 0, ChatRoomDbJob::JobType_LoadAllUsers );
    Send( dbQuery2 );*/
 
    QueryAllChatUsers( m_offsetIndex_QueryForInitialLoad, m_numUsersToLoadPerQueryForInitialLoad );
@@ -73,21 +74,21 @@ void     ChatChannelManager::Init()
 /*
 Example:
 PacketDbQuery* query = DbQueryFactory( const string& queryString, bool isFandF );
-SaveQueryDetails( dbQuery, const string& channelUuid, const string& authUuid, const string& chatUserLookup, ChatChannelDbJob::JobType jobType, U32 serverId = 0, const string& debugString = "debug_string" );
+SaveQueryDetails( dbQuery, const string& channelUuid, const string& authUuid, const string& chatUserLookup, ChatRoomDbJob::JobType jobType, U32 serverId = 0, const string& debugString = "debug_string" );
 AddSanitizedStrings( dbQuery, list< string >* sanitizedStrings );
 AddCustomData( dbQuery, void* data );
 Send( dbQuery );*/
 
-void     ChatChannelManager::ClearStats()
+void     ChatRoomManager::ClearStats()
 {
    m_numChannelChatsSent = 0;
    m_numP2PChatsSent = 0;
-   m_numChangesToChatChannel = 0;
+   m_numChangesToChatRoom = 0;
 }
 
 //---------------------------------------------------------------
 
-bool     ChatChannelManager::Update()
+bool     ChatRoomManager::Update()
 {
    if( m_isInitialized == false )
    {
@@ -119,7 +120,7 @@ bool     ChatChannelManager::Update()
       bool success = FindDbJob( jobId, m_jobsPending, iter );
       if( success )
       {
-         ChatChannelDbJob& job = *iter;
+         ChatRoomDbJob& job = *iter;
          ProcessDbResult( dbResult, job );
          m_jobsPending.erase( iter );
 
@@ -151,13 +152,13 @@ bool     ChatChannelManager::Update()
 
 //---------------------------------------------------------------
 
-bool     ChatChannelManager::UserHasLoggedIn( const string& userUuid )
+bool     ChatRoomManager::UserHasLoggedIn( const string& userUuid )
 {
    stringhash userHash = GenerateUniqueHash( userUuid );
    UserMapIterator userIter = m_userMap.find( userHash );
    if( userIter == m_userMap.end() )// new user account creation.
    {
-      pair< UserMapIterator, bool > ins = m_userMap.insert( UserPair( userHash, UsersChatChannelList( userUuid ) ) );
+      pair< UserMapIterator, bool > ins = m_userMap.insert( UserPair( userHash, UsersChatRoomList( userUuid ) ) );
       userIter = ins.first;
    }
 
@@ -168,7 +169,7 @@ bool     ChatChannelManager::UserHasLoggedIn( const string& userUuid )
 
 //---------------------------------------------------------------
 
-bool     ChatChannelManager::UserHasLoggedOut( const string& userUuid )
+bool     ChatRoomManager::UserHasLoggedOut( const string& userUuid )
 {
    stringhash userHash = GenerateUniqueHash( userUuid );
    UserMapIterator userIter = m_userMap.find( userHash );
@@ -183,7 +184,7 @@ bool     ChatChannelManager::UserHasLoggedOut( const string& userUuid )
 
 //---------------------------------------------------------------
 
-bool     ChatChannelManager::AddInboundPacket( BasePacket* packet ) // not thread safe.. obviously
+bool     ChatRoomManager::AddInboundPacket( BasePacket* packet ) // not thread safe.. obviously
 {
    m_inboundPackets.push_back( packet );
    return true;
@@ -191,7 +192,7 @@ bool     ChatChannelManager::AddInboundPacket( BasePacket* packet ) // not threa
 
 //---------------------------------------------------------------
 
-bool     ChatChannelManager::HandleDbResult( PacketDbQueryResult* packet ) // not thread safe.. obviously
+bool     ChatRoomManager::HandleDbResult( PacketDbQueryResult* packet ) // not thread safe.. obviously
 {
    m_dbResults.push_back( packet );
    return true;
@@ -199,7 +200,7 @@ bool     ChatChannelManager::HandleDbResult( PacketDbQueryResult* packet ) // no
 
 //---------------------------------------------------------------
 
-void     ChatChannelManager::ProcessIncomingPacket( BasePacket* packet )// should mostly be database 
+void     ChatRoomManager::ProcessIncomingPacket( BasePacket* packet )// should mostly be database 
 {
    PacketFactory factory;
    factory.CleanupPacket( packet );
@@ -207,31 +208,31 @@ void     ChatChannelManager::ProcessIncomingPacket( BasePacket* packet )// shoul
 
 //---------------------------------------------------------------
 
-bool     ChatChannelManager::ProcessDbResult( PacketDbQueryResult* dbResult, ChatChannelDbJob& job )
+bool     ChatRoomManager::ProcessDbResult( PacketDbQueryResult* dbResult, ChatRoomDbJob& job )
 {
    switch( job.jobType )
    {
- /*  case ChatChannelDbJob::JobType_Create:
+ /*  case ChatRoomDbJob::JobType_Create:
       {
         HandleChatChannelCreateResult( dbResult, job );
       }
       break;*/
-   case ChatChannelDbJob::JobType_LoadSingleChannel:
+   case ChatRoomDbJob::JobType_LoadSingleChannel:
       {
-         HandleSingleChannelLoad( dbResult, job );
+         HandleSingleRoomLoad( dbResult, job );
       }
       break;
-   case ChatChannelDbJob::JobType_LoadAllChannels:
+   case ChatRoomDbJob::JobType_LoadAllChannels:
       {
-         HandleLoadAllChannelsResult( dbResult, job );       
+         HandleLoadAllRoomsResult( dbResult, job );       
       }
       break;
-   case ChatChannelDbJob::JobType_LoadAllUsers:
+   case ChatRoomDbJob::JobType_LoadAllUsers:
       {
          HandleLoadAllUsersResult( dbResult, job );
       }
       break;
-   case  ChatChannelDbJob::JobType_AllUsersInChannel:
+   case  ChatRoomDbJob::JobType_AllUsersInChannel:
       {
          if( dbResult->successfulQuery == true && dbResult->bucket.bucket.size() )
          {
@@ -257,7 +258,7 @@ bool     ChatChannelManager::ProcessDbResult( PacketDbQueryResult* dbResult, Cha
 
       }
       break;
-   case  ChatChannelDbJob::JobType_AllUsersInAllChannels:
+   case  ChatRoomDbJob::JobType_AllUsersInAllChannels:
       {         
          HandleAllUsersInAllChannelsResult( dbResult, job );
 
@@ -270,9 +271,9 @@ bool     ChatChannelManager::ProcessDbResult( PacketDbQueryResult* dbResult, Cha
 
 //---------------------------------------------------------------------
 
-int     ChatChannelManager::AddDbJob( const string& debugString, const string& lookupString, U32 serverId, stringhash chatUserLookup, stringhash authUserLookup, ChatChannelDbJob::JobType type )
+int     ChatRoomManager::AddDbJob( const string& debugString, const string& lookupString, U32 serverId, stringhash chatUserLookup, stringhash authUserLookup, ChatRoomDbJob::JobType type )
 {
-   ChatChannelDbJob job;
+   ChatRoomDbJob job;
    job.debugString = debugString;
    job.lookupString = lookupString;
    job.chatUserLookup = chatUserLookup;
@@ -288,10 +289,10 @@ int     ChatChannelManager::AddDbJob( const string& debugString, const string& l
 
 //---------------------------------------------------------------------
 
-PacketDbQuery* ChatChannelManager::DbQueryFactory( const string& queryString, bool isFandF )
+PacketDbQuery* ChatRoomManager::DbQueryFactory( const string& queryString, bool isFandF )
 {
    PacketDbQuery* dbQuery = new PacketDbQuery;
-   dbQuery->id = ChatChannelManagerUniqueId;
+   dbQuery->id = m_dbIdentifier;
    dbQuery->isFireAndForget = isFandF;
    dbQuery->query = queryString;
    return dbQuery;
@@ -299,7 +300,7 @@ PacketDbQuery* ChatChannelManager::DbQueryFactory( const string& queryString, bo
 
 //---------------------------------------------------------------------
 
-bool  ChatChannelManager::SaveQueryDetails( PacketDbQuery* dbQuery, const string& channelUuid, const string& authUuid, stringhash chatUserLookup, ChatChannelDbJob::JobType jobType, U32 serverId, const string& debugString)
+bool  ChatRoomManager::SaveQueryDetails( PacketDbQuery* dbQuery, const string& channelUuid, const string& authUuid, stringhash chatUserLookup, ChatRoomDbJob::JobType jobType, U32 serverId, const string& debugString)
 {
    assert( dbQuery != NULL );
    dbQuery->lookup = AddDbJob( debugString, channelUuid, serverId, chatUserLookup, GenerateUniqueHash( authUuid ), jobType );
@@ -308,7 +309,7 @@ bool  ChatChannelManager::SaveQueryDetails( PacketDbQuery* dbQuery, const string
 
 //---------------------------------------------------------------------
 
-bool  ChatChannelManager::AddSanitizedStrings( PacketDbQuery* dbQuery, list< string >& sanitizedStrings )
+bool  ChatRoomManager::AddSanitizedStrings( PacketDbQuery* dbQuery, list< string >& sanitizedStrings )
 {
    list< string >::iterator it = sanitizedStrings.begin();
    while( it != sanitizedStrings.end() )
@@ -319,7 +320,7 @@ bool  ChatChannelManager::AddSanitizedStrings( PacketDbQuery* dbQuery, list< str
 }
 
 /*
-bool  ChatChannelManager::AddSanitizedStrings( PacketDbQuery* dbQuery, int numParams, ... )
+bool  ChatRoomManager::AddSanitizedStrings( PacketDbQuery* dbQuery, int numParams, ... )
 {
    StringBucket::DataSet& bucket = dbQuery->escapedStrings.bucket; // optimization
    va_list vl;
@@ -337,7 +338,7 @@ bool  ChatChannelManager::AddSanitizedStrings( PacketDbQuery* dbQuery, int numPa
 
 //---------------------------------------------------------------------
 
-bool  ChatChannelManager::AddCustomData( PacketDbQuery* dbQuery, void* data )
+bool  ChatRoomManager::AddCustomData( PacketDbQuery* dbQuery, void* data )
 {
    assert( dbQuery->customData == NULL );
    dbQuery->customData = data;
@@ -346,11 +347,12 @@ bool  ChatChannelManager::AddCustomData( PacketDbQuery* dbQuery, void* data )
 
 //---------------------------------------------------------------------
 
-bool  ChatChannelManager::Send( PacketDbQuery* dbQuery )
+bool  ChatRoomManager::Send( PacketDbQuery* dbQuery )
 {
-   if( m_chatServer->AddQueryToOutput( dbQuery, ChatChannelManagerUniqueId, true ) == false )
+   dbQuery->serverLookup = m_dbIdentifier;
+   if( m_chatServer->AddQueryToOutput( dbQuery, 0 ) == false )
    {
-      cout << "ChatChannelManager:: Query packet rejected" << endl;
+      cout << "ChatRoomManager:: Query packet rejected" << endl;
       
       delete dbQuery;
       return false;
@@ -361,7 +363,7 @@ bool  ChatChannelManager::Send( PacketDbQuery* dbQuery )
 
 //---------------------------------------------------------------------
 
-void     ChatChannelManager::PackageAndSendToOtherServer( BasePacket* packet, U32 serverId )
+void     ChatRoomManager::PackageAndSendToOtherServer( BasePacket* packet, U32 serverId )
 {
    PacketServerJobWrapper* wrapper = new PacketServerJobWrapper;
    wrapper->pPacket = packet;
@@ -373,7 +375,7 @@ void     ChatChannelManager::PackageAndSendToOtherServer( BasePacket* packet, U3
 
 //---------------------------------------------------------------
 
-bool     ChatChannelManager::GetChatChannels( const string& userUuid, ChannelFullKeyValue& availableChannels )
+bool     ChatRoomManager::GetChatRooms( const string& userUuid, ChannelFullKeyValue& availableChannels )
 {
    availableChannels.clear();
 
@@ -392,7 +394,7 @@ bool     ChatChannelManager::GetChatChannels( const string& userUuid, ChannelFul
          ChannelMapIterator channelIter = m_channelMap.find( channelLookupHash );   
          if( channelIter != m_channelMap.end() )
          {
-            const ChatChannel& channel = channelIter->second;
+            const ChatRoom& channel = channelIter->second;
             //channel.userBasics
             // ChannelInfo( channel.name, channel.uuid, channel.gameType, channel.gameInstanceId, 0, channel.isActive )
             ChannelInfoFullList temp( channel.name, channel.uuid, channel.gameType, channel.gameInstanceId, 0, channel.isActive );
@@ -412,24 +414,25 @@ bool     ChatChannelManager::GetChatChannels( const string& userUuid, ChannelFul
 
 //---------------------------------------------------------------------
 
-U32      ChatChannelManager::GetUserId( const string& userUuid ) const
+U32      ChatRoomManager::GetUserId( const string& userUuid ) const
 {
-   const UsersChatChannelList& user = GetUserInfo( userUuid );
+   UsersChatRoomList user ( userUuid );
+   GetUserInfo( userUuid, user );
    return user.userId;
 }
 
 //---------------------------------------------------------------------
 //---------------------------------------------------------------
 
-int      ChatChannelManager::NewDbId()
+int      ChatRoomManager::NewDbId()
 {
    if( ++m_dbIdTracker < 0 ) // wrap around
       m_dbIdTracker = 1;
    return m_dbIdTracker;
 }
 
-ChatChannelManager::ChannelMapIterator   
-ChatChannelManager::FindChatChannel( U32 gameInstanceId, U8 gameType )
+ChatRoomManager::ChannelMapIterator   
+ChatRoomManager::FindChatRoom( U32 gameInstanceId, U8 gameType )
 {
    ChannelMapIterator    iter = m_channelMap.begin();
    while( iter != m_channelMap.end() )
@@ -447,7 +450,7 @@ ChatChannelManager::FindChatChannel( U32 gameInstanceId, U8 gameType )
 
 //---------------------------------------------------------------------
 
-bool     ChatChannelManager::FindDbJob( int jobId, list< ChatChannelDbJob >& listOfJobs, DbJobIterator& iter )
+bool     ChatRoomManager::FindDbJob( int jobId, list< ChatRoomDbJob >& listOfJobs, DbJobIterator& iter )
 {
    //Threading::MutexLock locker ( m_jobMutex );
    iter = listOfJobs.begin();
@@ -464,7 +467,7 @@ bool     ChatChannelManager::FindDbJob( int jobId, list< ChatChannelDbJob >& lis
 
 //---------------------------------------------------------------------
 
-void     ChatChannelManager::AddChatchannel( int id, const string& channelName, const string& channelUuid, bool isActive, int maxPlayers, int gameType, U32 gameInstanceId, const string& createDate )
+void     ChatRoomManager::AddChatRoom( int id, const string& channelName, const string& channelUuid, bool isActive, int maxPlayers, int gameType, U32 gameInstanceId, const string& createDate )
 {
    stringhash  keyLookup = GenerateUniqueHash( channelUuid );
 
@@ -472,7 +475,7 @@ void     ChatChannelManager::AddChatchannel( int id, const string& channelName, 
    
    if( iter != m_channelMap.end() )
    {
-      ChatChannel& channel = iter->second;
+      ChatRoom& channel = iter->second;
       channel.recordId = id;
       channel.name = channelName;
       channel.uuid = channelUuid;
@@ -481,7 +484,7 @@ void     ChatChannelManager::AddChatchannel( int id, const string& channelName, 
       channel.gameInstanceId = gameInstanceId;
       channel.createDate = createDate;
 
-      QueryAllUsersInChatChannel( channelUuid );
+      QueryAllUsersInChatRoom( channelUuid );
    }
    else
    {    
@@ -490,7 +493,7 @@ void     ChatChannelManager::AddChatchannel( int id, const string& channelName, 
       channelMapData.first = keyLookup;
       pair< ChannelMapIterator, bool> newChannelIter  =  m_channelMap.insert( channelMapData );
 
-      ChatChannel& newChannel = newChannelIter.first->second; // this is confusing, but the first element is an iterator and its second param is our new object
+      ChatRoom& newChannel = newChannelIter.first->second; // this is confusing, but the first element is an iterator and its second param is our new object
       newChannel.recordId = id;
       newChannel.name = channelName;
       newChannel.uuid = channelUuid;
@@ -503,7 +506,7 @@ void     ChatChannelManager::AddChatchannel( int id, const string& channelName, 
 
 //---------------------------------------------------------------------
 
-void     ChatChannelManager::StoreUser( const string& userUuid, const string& userName )
+void     ChatRoomManager::StoreUser( const string& userUuid, const string& userName )
 {
    stringhash  userKeyLookup = GenerateUniqueHash( userUuid );
    UserMapIterator userIter = m_userMap.find( userKeyLookup );
@@ -512,23 +515,23 @@ void     ChatChannelManager::StoreUser( const string& userUuid, const string& us
       assert( 0 );// this needs to be rewritten.. depricated iow
       // we need to load this user from the db
 
-      pair< UserMapIterator,bool > newNode = m_userMap.insert( UserPair( userKeyLookup, UsersChatChannelList( userUuid ) ) );
+      pair< UserMapIterator,bool > newNode = m_userMap.insert( UserPair( userKeyLookup, UsersChatRoomList( userUuid ) ) );
       userIter = newNode.first;
-      UsersChatChannelList& userInstance = userIter->second;
+      UsersChatRoomList& userInstance = userIter->second;
       userInstance.userName = userName;
       userInstance.isOnline = false;
    }
 }
 
-void     ChatChannelManager::StoreUser( const string& userUuid, U32 userId, const string& userName, bool blockContactInvites, bool blockGroupInvites )
+void     ChatRoomManager::StoreUser( const string& userUuid, U32 userId, const string& userName, bool blockContactInvites, bool blockGroupInvites )
 {
    stringhash  userKeyLookup = GenerateUniqueHash( userUuid );
    UserMapIterator userIter = m_userMap.find( userKeyLookup );
    if( userIter == m_userMap.end() )
    {
-      pair< UserMapIterator,bool > newNode = m_userMap.insert( UserPair( userKeyLookup, UsersChatChannelList( userUuid ) ) );
+      pair< UserMapIterator,bool > newNode = m_userMap.insert( UserPair( userKeyLookup, UsersChatRoomList( userUuid ) ) );
       userIter = newNode.first;
-      UsersChatChannelList& userInstance = userIter->second;
+      UsersChatRoomList& userInstance = userIter->second;
       userInstance.userId = userId;
       userInstance.userName = userName;
       userInstance.isOnline = false;
@@ -537,26 +540,37 @@ void     ChatChannelManager::StoreUser( const string& userUuid, U32 userId, cons
    }
 }
 
-const UsersChatChannelList&        ChatChannelManager::GetUserInfo( const string& userUuid ) const
+// we should return a bool instead
+bool        ChatRoomManager::GetUserInfo( const string& userUuid, UsersChatRoomList& chatRoom ) const
 {
    stringhash  userKeyLookup = GenerateUniqueHash( userUuid );
    UserMapConstIterator userIter = m_userMap.find( userKeyLookup );
    if( userIter != m_userMap.end() )
    {
-      return userIter->second;
+      chatRoom = userIter->second;
+      return true;
    }
-   assert( 0 );
-   return userIter->second;
+   //chatRoom.cl
+   return false;
 }
 
+bool     ChatRoomManager::IsRoomValid( const string& channelUuid ) const
+{
+   stringhash  channelHash = GenerateUniqueHash( channelUuid );
+   if( m_channelMap.find( channelHash ) == m_channelMap.end() )
+      return false;
 
-void     ChatChannelManager::AddChannelToUser( const string& userUuid, stringhash channelHash )
+   return true;
+}
+   
+
+void     ChatRoomManager::AddRoomToUser( const string& userUuid, stringhash channelHash )
 {
    stringhash  userKeyLookup = GenerateUniqueHash( userUuid );
    UserMapIterator userIter = m_userMap.find( userKeyLookup );
    if( userIter != m_userMap.end() )
    {
-      UsersChatChannelList& userInstance = userIter->second;
+      UsersChatRoomList& userInstance = userIter->second;
       list< stringhash >&   channels = userInstance.channels;
       list< stringhash >::iterator it = channels.begin();
       while( it != channels.end() )// prevent dups
@@ -568,13 +582,13 @@ void     ChatChannelManager::AddChannelToUser( const string& userUuid, stringhas
    }
 }
 
-void     ChatChannelManager::DeleteChannelFromUser( const string& userUuid, stringhash channelHash )
+void     ChatRoomManager::DeleteRoomFromUser( const string& userUuid, stringhash channelHash )
 {
    stringhash  userKeyLookup = GenerateUniqueHash( userUuid );
    UserMapIterator userIter = m_userMap.find( userKeyLookup );
    if( userIter != m_userMap.end() )
    {
-      UsersChatChannelList& userInstance = userIter->second;
+      UsersChatRoomList& userInstance = userIter->second;
       list< stringhash >&   channels = userInstance.channels;
       list< stringhash >::iterator it = channels.begin();
       while( it != channels.end() )// prevent dups
@@ -591,7 +605,7 @@ void     ChatChannelManager::DeleteChannelFromUser( const string& userUuid, stri
 //---------------------------------------------------------------------
 //---------------------------------------------------------------------
 /*
-bool    ChatChannelManager::QueryDeleteChannel( const string& channelUuid, const U32 serverId )
+bool    ChatRoomManager::QueryDeleteRoom( const string& channelUuid, const U32 serverId )
 {
    // we'll simply move the channel to inactive
    stringhash channelHash = GenerateUniqueHash( channelUuid );
@@ -605,7 +619,7 @@ bool    ChatChannelManager::QueryDeleteChannel( const string& channelUuid, const
       text += serverId;
       text += " tried to delete a chat channel on chat channel ";
       text += channelUuid;
-      text += " but that channel does not exist in ChatChannelManager";
+      text += " but that channel does not exist in ChatRoomManager";
       m_chatServer->Log( text, 1 );
       return false;
    }
@@ -621,14 +635,14 @@ bool    ChatChannelManager::QueryDeleteChannel( const string& channelUuid, const
 
    string authUuid;
    stringhash authHash = 0;
-   DbQueryAndPacket( channelUuid, channelUuid, serverId, authUuid, authHash, queryString, ChatChannelDbJob::JobType_Delete, false, &listOfStrings );
+   DbQueryAndPacket( channelUuid, channelUuid, serverId, authUuid, authHash, queryString, ChatRoomDbJob::JobType_Delete, false, &listOfStrings );
 
    return true;
 }
  
 //---------------------------------------------------------------------
  
-bool     ChatChannelManager::RemoveChatChannel( const string& channelUuid )
+bool     ChatRoomManager::RemoveChatChannel( const string& channelUuid )
 {
    stringhash channelHash = GenerateUniqueHash( channelUuid );
    ChannelMapIterator channelIter = m_channelMap.find( channelHash );
@@ -659,7 +673,7 @@ bool     ChatChannelManager::RemoveChatChannel( const string& channelUuid )
 //---------------------------------------------------------------------
 //---------------------------------------------------------------------
 
-bool   ChatChannelManager::CreateNewChannel( const PacketChatCreateChatChannelFromGameServer* request )
+bool   ChatRoomManager::CreateNewRoom( const PacketChatCreateChatChannelFromGameServer* request )
 {
    time_t t = time(0);   // get time now
    struct tm * now = localtime( & t );
@@ -681,7 +695,7 @@ bool   ChatChannelManager::CreateNewChannel( const PacketChatCreateChatChannelFr
    string channelName = ss.str();
 
    // the gameId and the GameInstandId need to be verified here.. the order matters, and I can't figure out which one is which.
-   string channelUuid = CreateNewChannel( channelName, "", request->gameInstanceId, request->gameProductId, request->gameId );
+   string channelUuid = CreateNewRoom( channelName, "", request->gameInstanceId, request->gameProductId, request->gameId );
 
    if( channelUuid.size() )
    {
@@ -696,10 +710,13 @@ bool   ChatChannelManager::CreateNewChannel( const PacketChatCreateChatChannelFr
       while( it != uuidList.end() )
       {
          const string& userUuid = *it++;
-         string userName = GetUserInfo( userUuid ).userName;
-
-         AddUserToChannelAndWriteToDB( channelUuid, userUuid, userName );
-         NotifyUserThatHeWasAddedToChannel( userUuid, channelName, channelUuid );
+         UsersChatRoomList user( userUuid );
+         if( GetUserInfo( userUuid, user ) == true )
+         {
+            string userName = user.userUuid;
+            AddUserToRoomAndWriteToDB( channelUuid, userUuid, userName );
+            NotifyUserThatHeWasAddedToChannel( userUuid, channelName, channelUuid );
+         }
       }
 
    }
@@ -708,17 +725,20 @@ bool   ChatChannelManager::CreateNewChannel( const PacketChatCreateChatChannelFr
 
 //---------------------------------------------------------------------
 
-bool ChatChannelManager::CreateNewChannel( const string& channelName, const string& userUuid )
+bool ChatRoomManager::CreateNewRoom( const string& channelName, const string& userUuid )
 {
-   string channelUuid = CreateNewChannel( channelName, userUuid, 0, 0, 0 );
-   string userName = GetUserInfo( userUuid ).userName;
+   string channelUuid = CreateNewRoom( channelName, userUuid, 0, 0, 0 );
+   UsersChatRoomList userInChatRoom( userUuid );
+   if( GetUserInfo( userUuid, userInChatRoom ) == false )
+      return false;
+   string userName = userInChatRoom.userName;
 
    ChatUser* user = m_chatServer->GetUserByUuid( userUuid );// this is a little odd logic. However, the creator should be online 
    if( user )
    {
       if( channelUuid.size() )
       {
-         AddUserToChannelAndWriteToDB( channelUuid, userUuid, userName );
+         AddUserToRoomAndWriteToDB( channelUuid, userUuid, userName );
          NotifyUserThatHeWasAddedToChannel( userUuid, channelName, channelUuid );
          return true;
       }
@@ -734,7 +754,7 @@ bool ChatChannelManager::CreateNewChannel( const string& channelName, const stri
 
 //---------------------------------------------------------------------
 
-string  ChatChannelManager::CreateUniqueChatChannelId()
+string  ChatRoomManager::CreateUniqueChatRoomId()
 {
    U32 xorValue = 0xFFFFFFFF;
    xorValue  =  GetCurrentMilliseconds();
@@ -757,7 +777,7 @@ string  ChatChannelManager::CreateUniqueChatChannelId()
 
 //---------------------------------------------------------------------
 
-string   ChatChannelManager::CreateNewChannel( const string& channelName, const string userUuid, U32 serverId, U8 gameType, U32 gameInstanceId )
+string   ChatRoomManager::CreateNewRoom( const string& channelName, const string userUuid, U32 serverId, U8 gameType, U32 gameInstanceId )
 {
    stringhash  userKeyLookup = GenerateUniqueHash( userUuid );
 
@@ -767,15 +787,15 @@ string   ChatChannelManager::CreateNewChannel( const string& channelName, const 
       userKeyLookup = 0;
    }
 
-   string      channelUuid = CreateUniqueChatChannelId();
+   string      channelUuid = CreateUniqueChatRoomId();
    bool isActive = true;
    string createDate = GetDateInUTC();
-   AddChatchannel( 0, channelName, channelUuid, isActive, maxNumPlayersInChatChannel, gameType, gameInstanceId, createDate );
+   AddChatRoom( 0, channelName, channelUuid, isActive, maxNumPlayersInChatRoom, gameType, gameInstanceId, createDate );
 
    string queryString = "INSERT INTO chat_channel VALUES( null, '%s','";
    queryString += channelUuid;
    queryString += "', 1, "; // active
-   queryString += boost::lexical_cast< string >( maxNumPlayersInChatChannel );
+   queryString += boost::lexical_cast< string >( maxNumPlayersInChatRoom );
    queryString += ", ";
    queryString += boost::lexical_cast< string >( (U32)( gameType ) );
    queryString += ", ";
@@ -791,15 +811,15 @@ string   ChatChannelManager::CreateNewChannel( const string& channelName, const 
    AddSanitizedStrings( dbQuery, sanitizedStrings );
    Send( dbQuery );
 
-   LoadSingleChannel( channelUuid ); // just grab the db defaults( id, timestamp, etc );
+   LoadSingleRoom( channelUuid ); // just grab the db defaults( id, timestamp, etc );
    return channelUuid;
 }
 
 //---------------------------------------------------------------------
 
-bool     ChatChannelManager::LoadSingleChannel( const string& channelUuid )
+bool     ChatRoomManager::LoadSingleRoom( const string& channelUuid )
 {
-   cout << "LoadSingleChannel " << channelUuid << endl;
+   cout << "LoadSingleRoom " << channelUuid << endl;
 
    string queryString = "SELECT * FROM chat_channel WHERE uuid='%s'";
    U32 serverId = 0;
@@ -808,7 +828,7 @@ bool     ChatChannelManager::LoadSingleChannel( const string& channelUuid )
    sanitizedStrings.push_back( channelUuid );
 
    PacketDbQuery* dbQuery = DbQueryFactory( queryString, false );
-   SaveQueryDetails( dbQuery, "", "", 0, ChatChannelDbJob::JobType_LoadSingleChannel );
+   SaveQueryDetails( dbQuery, "", "", 0, ChatRoomDbJob::JobType_LoadSingleChannel );
    AddSanitizedStrings( dbQuery, sanitizedStrings );
    Send( dbQuery );
 
@@ -818,7 +838,7 @@ bool     ChatChannelManager::LoadSingleChannel( const string& channelUuid )
 //---------------------------------------------------------------------
 //---------------------------------------------------------------------
 
-bool   ChatChannelManager::DeleteChannel( const PacketChatDeleteChatChannelFromGameServer* request )
+bool   ChatRoomManager::DeleteRoom( const PacketChatDeleteChatChannelFromGameServer* request )
 {
    PacketChatDeleteChatChannelFromGameServerResponse* response = new PacketChatDeleteChatChannelFromGameServerResponse;
    response->gameId = request->gameId;
@@ -828,14 +848,14 @@ bool   ChatChannelManager::DeleteChannel( const PacketChatDeleteChatChannelFromG
    bool success = false;
    U8 gameType = request->gameProductId;
    U32 gameInstanceId = request->gameId;// 
-   ChannelMapIterator iter = FindChatChannel( gameInstanceId, gameType );
+   ChannelMapIterator iter = FindChatRoom( gameInstanceId, gameType );
    if( iter == m_channelMap.end() )
    {
       response->numUsersRemoved = 0;
    }
    else
    {
-      success = DeleteChannel( iter->second.uuid );
+      success = DeleteRoom( iter->second.uuid );
       response->numUsersRemoved = static_cast< int >( iter->second.userBasics.size() );
    }
 
@@ -847,7 +867,7 @@ bool   ChatChannelManager::DeleteChannel( const PacketChatDeleteChatChannelFromG
 
 //---------------------------------------------------------------------
 
-bool     ChatChannelManager::DeleteChannel( const string& channelUuid, const string& userUuid )
+bool     ChatRoomManager::DeleteRoom( const string& channelUuid, const string& userUuid )
 {
    ChatUser* userSender = m_chatServer->GetUserByUuid( userUuid );
    if( userSender == NULL )
@@ -856,7 +876,7 @@ bool     ChatChannelManager::DeleteChannel( const string& channelUuid, const str
       text += userUuid;
       text += " tried to send delete channel ";
       text += channelUuid;
-      text += " but the user does not exist in ChatChannelManager";
+      text += " but the user does not exist in ChatRoomManager";
       m_chatServer->Log( text, 1 );
       return false;
    }
@@ -870,7 +890,7 @@ bool     ChatChannelManager::DeleteChannel( const string& channelUuid, const str
       text += userUuid;
       text += " tried to send delete channel ";
       text += channelUuid;
-      text += " but the channel does not exist in ChatChannelManager";
+      text += " but the channel does not exist in ChatRoomManager";
       m_chatServer->Log( text, 1 );
       m_chatServer->SendErrorToClient( connectionId, PacketErrorReport::ErrorType_BadChatChannel );
       return false;
@@ -878,7 +898,7 @@ bool     ChatChannelManager::DeleteChannel( const string& channelUuid, const str
 
    int numUsers = static_cast< int >( channelIter->second.userBasics.size() );
 
-   bool success = DeleteChannel( channelUuid );   
+   bool success = DeleteRoom( channelUuid );   
    
    if( success )
    {
@@ -894,7 +914,7 @@ bool     ChatChannelManager::DeleteChannel( const string& channelUuid, const str
 
 //---------------------------------------------------------------------
 
-bool     ChatChannelManager::DeleteChannel( const string& channelUuid )
+bool     ChatRoomManager::DeleteRoom( const string& channelUuid )
 {
    stringhash  keyLookup = GenerateUniqueHash( channelUuid );
    ChannelMapIterator channelIter = m_channelMap.find( keyLookup );
@@ -937,7 +957,7 @@ bool     ChatChannelManager::DeleteChannel( const string& channelUuid )
    queryString += boost::lexical_cast< string >( (int)( gameInstanceId ) );
    queryString += "'";
 
-   m_numChangesToChatChannel ++;
+   m_numChangesToChatRoom ++;
 
    return true;
 }
@@ -945,7 +965,7 @@ bool     ChatChannelManager::DeleteChannel( const string& channelUuid )
 //---------------------------------------------------------------------
 //---------------------------------------------------------------------
 
-bool     ChatChannelManager::UserSendP2PChat( const string& senderUuid, const string& destinationUuid, const string& message )
+bool     ChatRoomManager::UserSendP2PChat( const string& senderUuid, const string& destinationUuid, const string& message )
 {
    cout << "Sending p2p chat from " << senderUuid << " to " << destinationUuid << ": msg:" << message << endl;
    stringhash senderHash = GenerateUniqueHash( senderUuid );
@@ -958,7 +978,7 @@ bool     ChatChannelManager::UserSendP2PChat( const string& senderUuid, const st
       text += senderUuid;
       text += " tried to send text to user ";
       text += destinationUuid;
-      text += " but the sender does not exist in ChatChannelManager";
+      text += " but the sender does not exist in ChatRoomManager";
       m_chatServer->Log( text, 1 );
       return false;
    }
@@ -973,7 +993,7 @@ bool     ChatChannelManager::UserSendP2PChat( const string& senderUuid, const st
       text += senderUuid;
       text += " tried to send text on user ";
       text += destinationUuid;
-      text += " but the receiver does not exist in ChatChannelManager";
+      text += " but the receiver does not exist in ChatRoomManager";
       m_chatServer->Log( text, 1 );
       // this is totally fine.. you can send a message to another player who is not online
       m_chatServer->SendErrorToClient( connectionId, PacketErrorReport::ErrorType_UserNotOnline );
@@ -997,7 +1017,7 @@ bool     ChatChannelManager::UserSendP2PChat( const string& senderUuid, const st
 
 //---------------------------------------------------------------------
 
-bool     ChatChannelManager::UserSendsChatToChannel( const string& senderUuid, const string& channelUuid, const string& message, U16 gameTurn )
+bool     ChatRoomManager::UserSendsChatToChannel( const string& senderUuid, const string& channelUuid, const string& message, U16 gameTurn )
 {
    cout << "Sending p2p chat from " << senderUuid << " to channel " << channelUuid << ": msg:" << message << endl;
    stringhash userHash = GenerateUniqueHash( senderUuid );
@@ -1010,7 +1030,7 @@ bool     ChatChannelManager::UserSendsChatToChannel( const string& senderUuid, c
       text += senderUuid;
       text += " tried to send text on chat channel ";
       text += channelUuid;
-      text += " but that user does not exist in ChatChannelManager";
+      text += " but that user does not exist in ChatRoomManager";
       m_chatServer->Log( text, 1 );
       return false;
    }
@@ -1043,12 +1063,12 @@ bool     ChatChannelManager::UserSendsChatToChannel( const string& senderUuid, c
       text += senderUuid;
       text += " tried to send text on chat channel ";
       text += channelUuid;
-      text += " but that channel does not exist in ChatChannelManager";
+      text += " but that channel does not exist in ChatRoomManager";
       m_chatServer->Log( text, 1 );
       return false;
    }
 
-   ChatChannel& channel = channelIter->second;
+   ChatRoom& channel = channelIter->second;
    if( channel.userBasics.size() < 1 )
    {
       m_chatServer->SendErrorToClient( connectionId, PacketErrorReport::ErrorType_YouAreTheOnlyPersonInThatChatChannel  );
@@ -1077,13 +1097,20 @@ bool     ChatChannelManager::UserSendsChatToChannel( const string& senderUuid, c
    return true;
 }
 
+bool     ChatRoomManager::RequestChatRoomInfo( const PacketChatListAllMembersInChatChannel* packet )// users + pending
+{
+   assert( 0 );
+
+   return true;
+}
+
 //---------------------------------------------------------------------
 //---------------------------------------------------------------------
 
-bool     ChatChannelManager::RenameChatChannel( const string& channelUuid, const string& newName, const string& userUuid, string& oldName )
+bool     ChatRoomManager::RenameChatRoom( const string& channelUuid, const string& newName, const string& userUuid, string& oldName )
 {
    // I can totally see users renaming this channel repeatedly over each other...
-   string errorText = " RenameChatChannel: User ";
+   string errorText = " RenameChatRoom: User ";
    errorText += userUuid;
    errorText += " renamed channel ";
    errorText += channelUuid;
@@ -1092,7 +1119,7 @@ bool     ChatChannelManager::RenameChatChannel( const string& channelUuid, const
    UserMapIterator requesterIter = m_userMap.find( requesterHash );
    if( requesterIter == m_userMap.end() )
    {
-      errorText += " but the user does not exist in ChatChannelManager";
+      errorText += " but the user does not exist in ChatRoomManager";
       m_chatServer->Log( errorText, 1 );
       return false;
    }
@@ -1100,7 +1127,7 @@ bool     ChatChannelManager::RenameChatChannel( const string& channelUuid, const
    ChatUser* userRequester = m_chatServer->GetUserByUuid( requesterIter->second.userUuid );
    if( userRequester == NULL )
    {
-      errorText += " but the user does not exist in ChatChannelManager";
+      errorText += " but the user does not exist in ChatRoomManager";
       m_chatServer->Log( errorText, 1 );
       return false;
    }
@@ -1111,7 +1138,7 @@ bool     ChatChannelManager::RenameChatChannel( const string& channelUuid, const
    ChannelMapIterator channelIter = m_channelMap.find( channelHash );
    if( channelIter == m_channelMap.end() )
    {
-      errorText += " but that channel does not exist in ChatChannelManager";
+      errorText += " but that channel does not exist in ChatRoomManager";
       m_chatServer->Log( errorText, 1 );
       m_chatServer->SendErrorToClient( connectionId, PacketErrorReport::ErrorType_NoChatChannel );
       return false;
@@ -1131,7 +1158,7 @@ bool     ChatChannelManager::RenameChatChannel( const string& channelUuid, const
    UserMapIterator addedUserIter = m_userMap.find( addedUserHash );
    if( addedUserIter == m_userMap.end() )
    {
-      errorText += " but the added user does not exist in ChatChannelManager";
+      errorText += " but the added user does not exist in ChatRoomManager";
       m_chatServer->Log( errorText, 1 );
       m_chatServer->SendErrorToClient( connectionId, PacketErrorReport::ErrorType_UserUnknown );
       return false;
@@ -1139,7 +1166,7 @@ bool     ChatChannelManager::RenameChatChannel( const string& channelUuid, const
 
 
 
-   ChatChannel& channelInfo = channelIter->second;
+   ChatRoom& channelInfo = channelIter->second;
    list< UserBasics >   ::iterator it = channelInfo.userBasics.begin();
    while( it != channelInfo.userBasics.end() )
    {
@@ -1147,13 +1174,13 @@ bool     ChatChannelManager::RenameChatChannel( const string& channelUuid, const
       {
          errorText += " but that added user is already in that channel";
          m_chatServer->Log( errorText, 1 );
-         m_chatServer->SendErrorToClient( connectionId, PacketErrorReport::ErrorType_CannotAddUserToChannel_AlreadyExists );
+         m_chatServer->SendErrorToClient( connectionId, PacketErrorReport::ErrorType_CannotAddUserToRoom_AlreadyExists );
          return false;
       }
       it++;
    }
 
-   AddUserToChannelAndWriteToDB( channelUuid, addedUserUuid, addedUserIter->second.userName );
+   AddUserToRoomAndWriteToDB( channelUuid, addedUserUuid, addedUserIter->second.userName );
 
    // inform users of success
    list< UserBasics >::iterator userIt = channelInfo.userBasics.begin();
@@ -1173,7 +1200,7 @@ bool     ChatChannelManager::RenameChatChannel( const string& channelUuid, const
 //---------------------------------------------------------------------
 //---------------------------------------------------------------------
 
-bool     ChatChannelManager::SetUserPreferences( const string& userUuid, bool blockContactInvitations, bool blockGroupInvitations )
+bool     ChatRoomManager::SetUserPreferences( const string& userUuid, bool blockContactInvitations, bool blockGroupInvitations )
 {
    stringhash userHash = GenerateUniqueHash( userUuid );
    UserMapIterator userIter = m_userMap.find( userHash );
@@ -1188,12 +1215,12 @@ bool     ChatChannelManager::SetUserPreferences( const string& userUuid, bool bl
 
 //---------------------------------------------------------------------
 
-bool     ChatChannelManager::AddUserToChannel( const PacketChatAddUserToChatChannelGameServer* request )
+bool     ChatRoomManager::AddUserToRoom( const PacketChatAddUserToChatChannelGameServer* request )
 {
    U32 gameInstanceId = request->gameInstanceId;
    const string& addedUserUuid = request->userUuid; // user to remove
 
-   string errorText = " AddUserToChannel: Game server ";
+   string errorText = " AddUserToRoom: Game server ";
    errorText += boost::lexical_cast< string >( request->gameInstanceId );
    errorText += " tried to add another user ";
    errorText += addedUserUuid;
@@ -1207,7 +1234,7 @@ bool     ChatChannelManager::AddUserToChannel( const PacketChatAddUserToChatChan
    response->success = false;
 
 
-   ChannelMapIterator  channelIter = FindChatChannel( request->gameId, 0 );
+   ChannelMapIterator  channelIter = FindChatRoom( request->gameId, 0 );
    if( channelIter == m_channelMap.end() )
    {
       errorText += " but channel does not exist ";
@@ -1216,7 +1243,7 @@ bool     ChatChannelManager::AddUserToChannel( const PacketChatAddUserToChatChan
       return false;
    }
 
-   ChatChannel& channelMapData = channelIter->second;
+   ChatRoom& channelMapData = channelIter->second;
    list< UserBasics >   ::iterator userIt = channelMapData.userBasics.begin();
    while( userIt != channelMapData.userBasics.end() )
    {
@@ -1232,7 +1259,7 @@ bool     ChatChannelManager::AddUserToChannel( const PacketChatAddUserToChatChan
    UserMapIterator addedUserIter = m_userMap.find( addedUserHash );
    if( addedUserIter == m_userMap.end() )
    {
-      errorText += " but the added user does not exist in ChatChannelManager";
+      errorText += " but the added user does not exist in ChatRoomManager";
       m_chatServer->Log( errorText, 1 );
       PackageAndSendToOtherServer( response, request->gameInstanceId );// failure
       return false;
@@ -1241,7 +1268,7 @@ bool     ChatChannelManager::AddUserToChannel( const PacketChatAddUserToChatChan
    const string& channelName = channelMapData.name;
    const string& channelUuid = channelMapData.uuid;
    const string& userName = addedUserIter->second.userName;
-   AddUserToChannelAndWriteToDB( channelUuid, addedUserUuid, userName );
+   AddUserToRoomAndWriteToDB( channelUuid, addedUserUuid, userName );
 
    response->success = true;
    PackageAndSendToOtherServer( response, request->gameInstanceId );
@@ -1263,9 +1290,9 @@ bool     ChatChannelManager::AddUserToChannel( const PacketChatAddUserToChatChan
 
 //---------------------------------------------------------------------
 
-bool     ChatChannelManager::AddUserToChannel( const string& channelUuid, const string& addedUserUuid, const string& requesterUuid )
+bool     ChatRoomManager::AddUserToRoom( const string& channelUuid, const string& addedUserUuid, const string& requesterUuid )
 {
-   string errorText = " AddUserToChannel: User ";
+   string errorText = " AddUserToRoom: User ";
    errorText += requesterUuid;
    errorText += " tried to add another user ";
    errorText += addedUserUuid;
@@ -1277,33 +1304,34 @@ bool     ChatChannelManager::AddUserToChannel( const string& channelUuid, const 
    UserMapIterator requesterIter = m_userMap.find( requesterHash );
    if( requesterIter == m_userMap.end() )
    {
-      errorText += " but the requester does not exist in ChatChannelManager";
+      errorText += " but the requester does not exist in ChatRoomManager";
       m_chatServer->Log( errorText, 1 );
       return false;
    }
 
+   U32 connectionId = 0;
    
    ChatUser* userRequester = m_chatServer->GetUserByUuid( requesterIter->second.userUuid );
    if( userRequester == NULL )
    {
-      errorText += " but the requester does not exist in ChatChannelManager";
+      errorText += " but the requester does not exist in ChatRoomManager";
       m_chatServer->Log( errorText, 1 );
-      return false;
    }
-
-   U32 connectionId = userRequester->GetConnectionId();
-
+   else
+   {
+      connectionId = userRequester->GetConnectionId();
+   }
    stringhash addedUserHash = GenerateUniqueHash( addedUserUuid );
    UserMapIterator addedUserIter = m_userMap.find( addedUserHash );
    if( addedUserIter == m_userMap.end() )
    {
-      errorText += " but the added user does not exist in ChatChannelManager";
+      errorText += " but the added user does not exist in ChatRoomManager";
       m_chatServer->Log( errorText, 1 );
       m_chatServer->SendErrorToClient( connectionId, PacketErrorReport::ErrorType_UserUnknown );
       return false;
    }
 
-   const UsersChatChannelList& recipient = addedUserIter->second;
+   const UsersChatRoomList& recipient = addedUserIter->second;
    // NOTE: This code is only used in P2P inites...
    if( recipient.blockGroupInvites == true )
    {
@@ -1317,13 +1345,13 @@ bool     ChatChannelManager::AddUserToChannel( const string& channelUuid, const 
    ChannelMapIterator channelIter = m_channelMap.find( channelHash );
    if( channelIter == m_channelMap.end() )
    {
-      errorText += " but that channel does not exist in ChatChannelManager";
+      errorText += " but that channel does not exist in ChatRoomManager";
       m_chatServer->Log( errorText, 1 );
       m_chatServer->SendErrorToClient( connectionId, PacketErrorReport::ErrorType_NoChatChannel );
       return false;
    }
 
-   ChatChannel& channelInfo = channelIter->second;
+   ChatRoom& channelInfo = channelIter->second;
    list< UserBasics >   ::iterator it = channelInfo.userBasics.begin();
    while( it != channelInfo.userBasics.end() )
    {
@@ -1337,7 +1365,7 @@ bool     ChatChannelManager::AddUserToChannel( const string& channelUuid, const 
       it++;
    }
 
-   AddUserToChannelAndWriteToDB( channelUuid, addedUserUuid, addedUserIter->second.userName );
+   AddUserToRoomAndWriteToDB( channelUuid, addedUserUuid, addedUserIter->second.userName );
 
    // inform users of success
    list< UserBasics >::iterator userIt = channelInfo.userBasics.begin();
@@ -1356,7 +1384,81 @@ bool     ChatChannelManager::AddUserToChannel( const string& channelUuid, const 
 
 //---------------------------------------------------------------------
 
-bool     ChatChannelManager::AddUserToChannelAndWriteToDB( const string& channelUuid, const string& addedUserUuid, const string& addedUserName )
+bool     ChatRoomManager::UserAddsSelfToRoom( const string& channelUuid, const string& addedUserUuid )
+{
+   string errorText = " UserAddsSelfToRoom: User ";
+   errorText += addedUserUuid;
+   errorText += " to channel ";
+   errorText += channelUuid;
+
+   ///-------------------------------------------------------------
+
+   U32 connectionId = 0; 
+   ChatUser* userRequester = m_chatServer->GetUserByUuid( addedUserUuid );
+   if( userRequester == NULL )
+   {
+      return false;
+   }
+
+   connectionId = userRequester->GetConnectionId();
+
+   stringhash addedUserHash = GenerateUniqueHash( addedUserUuid );
+   UserMapIterator addedUserIter = m_userMap.find( addedUserHash );
+   if( addedUserIter == m_userMap.end() )
+   {
+      errorText += " but the added user does not exist in ChatRoomManager";
+      m_chatServer->Log( errorText, 1 );
+      m_chatServer->SendErrorToClient( connectionId, PacketErrorReport::ErrorType_UserUnknown );
+      return false;
+   }
+
+   const UsersChatRoomList& recipient = addedUserIter->second;
+
+
+   stringhash channelHash = GenerateUniqueHash( channelUuid );   
+   ChannelMapIterator channelIter = m_channelMap.find( channelHash );
+   if( channelIter == m_channelMap.end() )
+   {
+      errorText += " but that channel does not exist in ChatRoomManager";
+      m_chatServer->Log( errorText, 1 );
+      m_chatServer->SendErrorToClient( connectionId, PacketErrorReport::ErrorType_NoChatChannel );
+      return false;
+   }
+
+   ChatRoom& channelInfo = channelIter->second;
+   list< UserBasics >   ::iterator it = channelInfo.userBasics.begin();
+   while( it != channelInfo.userBasics.end() )
+   {
+      if( it->userUuid == addedUserUuid )
+      {
+         errorText += " but that added user is already in that channel";
+         m_chatServer->Log( errorText, 1 );
+         m_chatServer->SendErrorToClient( connectionId, PacketErrorReport::ErrorType_CannotAddUserToChannel_AlreadyExists );
+         return false;
+      }
+      it++;
+   }
+
+   AddUserToRoomAndWriteToDB( channelUuid, addedUserUuid, addedUserIter->second.userName );
+
+   // inform users of success
+   list< UserBasics >::iterator userIt = channelInfo.userBasics.begin();
+   while( userIt != channelInfo.userBasics.end() )
+   {
+      UserBasics& ub = *userIt++;
+      ChatUser* user = m_chatServer->GetUserByUuid( ub.userUuid );
+      if( user )
+      {
+         user->NotifyAddedToChannel( channelInfo.name, channelUuid, addedUserIter->second.userName, addedUserUuid );
+      }
+   }
+
+   return true;
+}
+
+//---------------------------------------------------------------------
+
+bool     ChatRoomManager::AddUserToRoomAndWriteToDB( const string& channelUuid, const string& addedUserUuid, const string& addedUserName )
 {
 // insert into the list of users for that channel
    StoreUserInChannel( channelUuid, addedUserUuid, addedUserName );
@@ -1376,14 +1478,14 @@ bool     ChatChannelManager::AddUserToChannelAndWriteToDB( const string& channel
 
    Send( dbQuery );
 
-   m_numChangesToChatChannel ++;
+   m_numChangesToChatRoom ++;
 
    return true;
 }
 
 //---------------------------------------------------------------------
 
-bool     ChatChannelManager::RemoveUserFromChannelAndWriteToDB( const string& channelUuid, const string& removedUserUuid )
+bool     ChatRoomManager::RemoveUserFromRoomAndWriteToDB( const string& channelUuid, const string& removedUserUuid )
 {
    if( DeleteUserFromChannel( channelUuid, removedUserUuid ) == false )
       return false;
@@ -1401,7 +1503,7 @@ bool     ChatChannelManager::RemoveUserFromChannelAndWriteToDB( const string& ch
 
    Send( dbQuery );
 
-   m_numChangesToChatChannel ++;
+   m_numChangesToChatRoom ++;
 
    return true;
 }
@@ -1409,7 +1511,7 @@ bool     ChatChannelManager::RemoveUserFromChannelAndWriteToDB( const string& ch
 
 //---------------------------------------------------------------------
 
-bool     ChatChannelManager::RemoveChannelAndMarkChannelInDB( const string& channelUuid )
+bool     ChatRoomManager::RemoveRoomAndMarkRoomInDB( const string& channelUuid )
 {
    stringhash channelHash = GenerateUniqueHash( channelUuid );   
    ChannelMapIterator channelIter = m_channelMap.find( channelHash );
@@ -1430,7 +1532,7 @@ bool     ChatChannelManager::RemoveChannelAndMarkChannelInDB( const string& chan
    // remove... it's likely that this list is already empty, but just to be sure.
    // we definitely want it removed from memory
    
-   ChatChannel& channelMapData = channelIter->second;
+   ChatRoom& channelMapData = channelIter->second;
    string channelName = channelIter->second.name;
 
    list< UserBasics >   ::iterator it = channelMapData.userBasics.begin();
@@ -1443,7 +1545,7 @@ bool     ChatChannelManager::RemoveChannelAndMarkChannelInDB( const string& chan
 
    m_channelMap.erase( channelIter );
 
-   m_numChangesToChatChannel ++;
+   m_numChangesToChatRoom ++;
 
    return true;
 }
@@ -1451,7 +1553,7 @@ bool     ChatChannelManager::RemoveChannelAndMarkChannelInDB( const string& chan
 //---------------------------------------------------------------------
 //---------------------------------------------------------------------
 
-bool     ChatChannelManager::RemoveUserFromChannel( const PacketChatRemoveUserFromChatChannelGameServer* request )
+bool     ChatRoomManager::RemoveUserFromRoom( const PacketChatRemoveUserFromChatChannelGameServer* request )
 {
    U32 gameInstanceId = request->gameInstanceId;
    const string& userUuid = request->userUuid; // user to remove
@@ -1461,10 +1563,10 @@ bool     ChatChannelManager::RemoveUserFromChannel( const PacketChatRemoveUserFr
    response->userUuid = userUuid;
    response->success = false;
 
-   ChannelMapIterator  channelIter = FindChatChannel( request->gameId, 0 );
+   ChannelMapIterator  channelIter = FindChatRoom( request->gameId, 0 );
    if( channelIter == m_channelMap.end() )
    {
-      string errorText = " RemoveUserFromChannel: Game server ";
+      string errorText = " RemoveUserFromRoom: Game server ";
       errorText += boost::lexical_cast< string >( request->gameInstanceId );
       errorText += " tried to remove user ";
       errorText += userUuid;
@@ -1478,7 +1580,7 @@ bool     ChatChannelManager::RemoveUserFromChannel( const PacketChatRemoveUserFr
       return false;
    }
 
-   ChatChannel& channelMapData = channelIter->second;
+   ChatRoom& channelMapData = channelIter->second;
    list< UserBasics >   ::iterator userIt = channelMapData.userBasics.begin();
    while( userIt != channelMapData.userBasics.end() )
    {
@@ -1497,7 +1599,7 @@ bool     ChatChannelManager::RemoveUserFromChannel( const PacketChatRemoveUserFr
    const string& channelName = channelMapData.name;
    const string& channelUuid = channelMapData.uuid;
    const string& userName = userIt->userName;
-   RemoveUserFromChannelAndWriteToDB( channelUuid, userUuid );
+   RemoveUserFromRoomAndWriteToDB( channelUuid, userUuid );
 
    response->success = false;
    PackageAndSendToOtherServer( response, request->gameInstanceId );
@@ -1520,7 +1622,7 @@ bool     ChatChannelManager::RemoveUserFromChannel( const PacketChatRemoveUserFr
 
 //---------------------------------------------------------------------
 
-bool     ChatChannelManager::RemoveUserFromChannel( const string& channelUuid, const string& removedUserUuid )
+bool     ChatRoomManager::RemoveUserFromRoom( const string& channelUuid, const string& removedUserUuid )
 {
    stringhash  channelKeyLookup = GenerateUniqueHash( channelUuid );
    stringhash  userKeyLookup = GenerateUniqueHash( removedUserUuid );
@@ -1532,7 +1634,7 @@ bool     ChatChannelManager::RemoveUserFromChannel( const string& channelUuid, c
       text += removedUserUuid;
       text += " tried to be removed from channel ";
       text += channelUuid;
-      text += " but the channel does not exist in ChatChannelManager";
+      text += " but the channel does not exist in ChatRoomManager";
       m_chatServer->Log( text, 1 );
       return false;
    }
@@ -1544,13 +1646,13 @@ bool     ChatChannelManager::RemoveUserFromChannel( const string& channelUuid, c
       text += removedUserUuid;
       text += " tried to be removed from channel ";
       text += channelUuid;
-      text += " but the user does not exist in ChatChannelManager";
+      text += " but the user does not exist in ChatRoomManager";
       m_chatServer->Log( text, 1 );
-      //pair< UserMapIterator, bool > ins = m_userMap.insert( UserPair( userHash, UsersChatChannelList( userUuid ) ) );
+      //pair< UserMapIterator, bool > ins = m_userMap.insert( UserPair( userHash, UsersChatRoomList( userUuid ) ) );
       //userIter = ins.first;
    }
 
-   bool success = RemoveUserFromChannelAndWriteToDB( channelUuid, removedUserUuid );
+   bool success = RemoveUserFromRoomAndWriteToDB( channelUuid, removedUserUuid );
    ChatUser* user = m_chatServer->GetUserByUuid( removedUserUuid );
    if( user )
    {
@@ -1562,11 +1664,11 @@ bool     ChatChannelManager::RemoveUserFromChannel( const string& channelUuid, c
    {
       if( channelIter->second.userBasics.size() == 0 )
       {
-         RemoveChannelAndMarkChannelInDB( channelUuid );
+         RemoveRoomAndMarkRoomInDB( channelUuid );
       }
       else // notify everyone remaining
       {
-         ChatChannel& channelMapData = channelIter->second;
+         ChatRoom& channelMapData = channelIter->second;
          string channelName = channelIter->second.name;
 
          list< UserBasics >   ::iterator it = channelMapData.userBasics.begin();
@@ -1589,7 +1691,7 @@ bool     ChatChannelManager::RemoveUserFromChannel( const string& channelUuid, c
 //---------------------------------------------------------------------
 //---------------------------------------------------------------------
 
-void     ChatChannelManager::StoreUserInChannel( const string& channelUuid, const string& userUuid, const string userName )
+void     ChatRoomManager::StoreUserInChannel( const string& channelUuid, const string& userUuid, const string userName )
 {
    stringhash  channelKeyLookup = GenerateUniqueHash( channelUuid );
    ChannelMapIterator iter = m_channelMap.find( channelKeyLookup );
@@ -1598,7 +1700,7 @@ void     ChatChannelManager::StoreUserInChannel( const string& channelUuid, cons
       return;
    }
 
-   ChatChannel& channelMapData = iter->second;
+   ChatRoom& channelMapData = iter->second;
    list< UserBasics >   ::iterator it = channelMapData.userBasics.begin();
    while( it != channelMapData.userBasics.end() )
    {
@@ -1611,12 +1713,12 @@ void     ChatChannelManager::StoreUserInChannel( const string& channelUuid, cons
 
    //---------------------------------------------
    StoreUser( userUuid, userName );
-   AddChannelToUser( userUuid, channelKeyLookup );
+   AddRoomToUser( userUuid, channelKeyLookup );
 }
 
 //---------------------------------------------------------------------
 
-bool     ChatChannelManager::DeleteUserFromChannel( const string& channelUuid, const string& userUuid )
+bool     ChatRoomManager::DeleteUserFromChannel( const string& channelUuid, const string& userUuid )
 {
    stringhash  channelKeyLookup = GenerateUniqueHash( channelUuid );
    ChannelMapIterator iter = m_channelMap.find( channelKeyLookup );
@@ -1626,7 +1728,7 @@ bool     ChatChannelManager::DeleteUserFromChannel( const string& channelUuid, c
    }
 
    bool success = false;
-   ChatChannel& channelMapData = iter->second;
+   ChatRoom& channelMapData = iter->second;
    list< UserBasics >   ::iterator it = channelMapData.userBasics.begin();
    while( it != channelMapData.userBasics.end() )
    {
@@ -1644,14 +1746,14 @@ bool     ChatChannelManager::DeleteUserFromChannel( const string& channelUuid, c
 
    //---------------------------------------------
 
-   DeleteChannelFromUser( userUuid, channelKeyLookup );
+   DeleteRoomFromUser( userUuid, channelKeyLookup );
 
    return true;
 }
 
 //---------------------------------------------------------------------
 
-void     ChatChannelManager::QueryAllChatUsers( int startIndex, int numToFetch )
+void     ChatRoomManager::QueryAllChatUsers( int startIndex, int numToFetch )
 {
    assert( numToFetch > 0 );
    assert( startIndex >= 0 );
@@ -1666,14 +1768,14 @@ void     ChatChannelManager::QueryAllChatUsers( int startIndex, int numToFetch )
    queryString += boost::lexical_cast< string >( numToFetch );
 
    PacketDbQuery* dbQuery = DbQueryFactory( queryString, false );
-   SaveQueryDetails( dbQuery, "", "", 0, ChatChannelDbJob::JobType_LoadAllUsers );
+   SaveQueryDetails( dbQuery, "", "", 0, ChatRoomDbJob::JobType_LoadAllUsers );
 
    Send( dbQuery );
 }
 
 //---------------------------------------------------------------------
 
-void     ChatChannelManager::StoreAllUsersInChannel( const string& channelUuid, const SerializedKeyValueVector< string >& usersAndIds, bool sendNotification )
+void     ChatRoomManager::StoreAllUsersInChannel( const string& channelUuid, const SerializedKeyValueVector< string >& usersAndIds, bool sendNotification )
 {
    stringhash  channelKeyLookup = GenerateUniqueHash( channelUuid );
    ChannelMapIterator channelIter = m_channelMap.find( channelKeyLookup );
@@ -1682,7 +1784,7 @@ void     ChatChannelManager::StoreAllUsersInChannel( const string& channelUuid, 
       assert( 0 );// wtf
    }
 
-   ChatChannel& channelMapData = channelIter->second;
+   ChatRoom& channelMapData = channelIter->second;
 
    SerializedKeyValueVector< string >::const_KVIterator userIt = usersAndIds.begin();
    while( userIt != usersAndIds.end() )
@@ -1693,7 +1795,7 @@ void     ChatChannelManager::StoreAllUsersInChannel( const string& channelUuid, 
       StoreUserInChannel( channelUuid, userUuid, userName );
       
       StoreUser( userUuid, userName );
-      AddChannelToUser( userUuid, channelKeyLookup );
+      AddRoomToUser( userUuid, channelKeyLookup );
 
       //userInstance.userUuid = userUuid;// happens in c'tor
 
@@ -1707,14 +1809,17 @@ void     ChatChannelManager::StoreAllUsersInChannel( const string& channelUuid, 
 
 //---------------------------------------------------------------------
 
-bool     ChatChannelManager::NotifyUserThatHeWasAddedToChannel( const string& userUuid, const string& channelName, const string& channelUuid )
+bool     ChatRoomManager::NotifyUserThatHeWasAddedToChannel( const string& userUuid, const string& channelName, const string& channelUuid )
 {
    ChatUser* user = m_chatServer->GetUserByUuid( userUuid );
    if( user )
    {
-      string userName = GetUserInfo( userUuid ).userName;
+      UsersChatRoomList userInChannel ( userUuid );
+      if( GetUserInfo( userUuid, userInChannel ) == false )
+         return false;
+
    // todo, change this UUID to the person who added these people
-      return user->NotifyAddedToChannel( channelName, channelUuid, userName, userUuid );
+      return user->NotifyAddedToChannel( channelName, channelUuid, userInChannel.userName, userUuid );
    }
    return false;
 }
@@ -1723,7 +1828,7 @@ bool     ChatChannelManager::NotifyUserThatHeWasAddedToChannel( const string& us
 
 //---------------------------------------------------------------------
 
-bool     ChatChannelManager::QueryAllUsersInChatChannel( const string& channelUuid )
+bool     ChatRoomManager::QueryAllUsersInChatRoom( const string& channelUuid )
 {
    assert( channelUuid.size() != 0 );
    //-----------------------------------------
@@ -1743,16 +1848,16 @@ bool     ChatChannelManager::QueryAllUsersInChatChannel( const string& channelUu
    sanitizedStrings.push_back( channelUuid );
 
    PacketDbQuery* dbQuery = DbQueryFactory( queryString, false );
-   SaveQueryDetails( dbQuery, channelUuid, "", 0, ChatChannelDbJob::JobType_AllUsersInChannel );
+   SaveQueryDetails( dbQuery, channelUuid, "", 0, ChatRoomDbJob::JobType_AllUsersInChannel );
    AddSanitizedStrings( dbQuery, sanitizedStrings );
    return Send( dbQuery );
 
-   //return CreateAndSendUserListJob( queryString, channelIter->second.name, channelUuid, 0, authUuid, userHashLookup, ChatChannelDbJob::JobType_AllUsersInChannel, &listOfStrings );
+   //return CreateAndSendUserListJob( queryString, channelIter->second.name, channelUuid, 0, authUuid, userHashLookup, ChatRoomDbJob::JobType_AllUsersInChannel, &listOfStrings );
 };
 
 //---------------------------------------------------------------------
 
-U32     ChatChannelManager::QueryAllUsersInAllChatChannels()
+U32     ChatRoomManager::QueryAllUsersInAllChatRooms()
 {
    string 
    queryString =  "SELECT user.user_name, user.uuid, user.user_id, joiner.channel_uuid  FROM users AS user ";
@@ -1761,16 +1866,16 @@ U32     ChatChannelManager::QueryAllUsersInAllChatChannels()
 
 
    PacketDbQuery* dbQuery = DbQueryFactory( queryString, false );
-   SaveQueryDetails( dbQuery, "", "", 0, ChatChannelDbJob::JobType_AllUsersInAllChannels );
+   SaveQueryDetails( dbQuery, "", "", 0, ChatRoomDbJob::JobType_AllUsersInAllChannels );
    Send( dbQuery );
 
    return dbQuery->id;
-   //return CreateAndSendUserListJob( queryString, channelIter->second.name, channelUuid, 0, authUuid, userHashLookup, ChatChannelDbJob::JobType_AllUsersInChannel, &listOfStrings );
+   //return CreateAndSendUserListJob( queryString, channelIter->second.name, channelUuid, 0, authUuid, userHashLookup, ChatRoomDbJob::JobType_AllUsersInChannel, &listOfStrings );
 }
 
 //---------------------------------------------------------------------
 
-bool     ChatChannelManager::HandleAllUsersInAllChannelsResult( PacketDbQueryResult* dbResult, ChatChannelDbJob& job )
+bool     ChatRoomManager::HandleAllUsersInAllChannelsResult( PacketDbQueryResult* dbResult, ChatRoomDbJob& job )
 {
    if( dbResult->successfulQuery == true && dbResult->bucket.bucket.size() )
    {
@@ -1797,7 +1902,7 @@ bool     ChatChannelManager::HandleAllUsersInAllChannelsResult( PacketDbQueryRes
 
 //---------------------------------------------------------------------
 
-bool     ChatChannelManager::HandleLoadAllChannelsResult( PacketDbQueryResult* dbResult, ChatChannelDbJob& job )
+bool     ChatRoomManager::HandleLoadAllRoomsResult( PacketDbQueryResult* dbResult, ChatRoomDbJob& job )
 {
    if( dbResult->successfulQuery == true )
    {
@@ -1806,7 +1911,7 @@ bool     ChatChannelManager::HandleLoadAllChannelsResult( PacketDbQueryResult* d
       m_numChannelsToLoad = static_cast< int >( enigma.m_bucket.size() );
       while( it != enigma.end() )
       {
-         SaveChatChannelLoadResult( *it++ );
+         SaveChatRoomLoadResult( *it++ );
       }
    }
 
@@ -1815,7 +1920,7 @@ bool     ChatChannelManager::HandleLoadAllChannelsResult( PacketDbQueryResult* d
 
 //---------------------------------------------------------------------
 
-bool     ChatChannelManager::HandleLoadAllUsersResult( PacketDbQueryResult* dbResult, ChatChannelDbJob& job )
+bool     ChatRoomManager::HandleLoadAllUsersResult( PacketDbQueryResult* dbResult, ChatRoomDbJob& job )
 {
    if( dbResult->successfulQuery == true )
    {
@@ -1823,7 +1928,7 @@ bool     ChatChannelManager::HandleLoadAllUsersResult( PacketDbQueryResult* dbRe
       UserWithChatPreferencesTable::iterator    it = enigma.begin();
       if( it == enigma.end() ) // we are done querying piecemeal
       {
-         QueryAllUsersInAllChatChannels();// now that we've loaded all users, load all of the chat info
+         QueryAllUsersInAllChatRooms();// now that we've loaded all users, load all of the chat info
          return true;
       }
       while( it != enigma.end() )
@@ -1858,7 +1963,7 @@ bool     ChatChannelManager::HandleLoadAllUsersResult( PacketDbQueryResult* dbRe
 
 //---------------------------------------------------------------------
 
-bool     ChatChannelManager::HandleSingleChannelLoad( PacketDbQueryResult* dbResult, ChatChannelDbJob& job )
+bool     ChatRoomManager::HandleSingleRoomLoad( PacketDbQueryResult* dbResult, ChatRoomDbJob& job )
 {
    if( dbResult->successfulQuery == true )
    {
@@ -1867,7 +1972,7 @@ bool     ChatChannelManager::HandleSingleChannelLoad( PacketDbQueryResult* dbRes
       m_numChannelsToLoad = static_cast< int >( enigma.m_bucket.size() );
       while( it != enigma.end() )
       {
-         SaveChatChannelLoadResult( *it++ );
+         SaveChatRoomLoadResult( *it++ );
       }
    }
 
@@ -1876,7 +1981,7 @@ bool     ChatChannelManager::HandleSingleChannelLoad( PacketDbQueryResult* dbRes
 
 //---------------------------------------------------------------------
 
-void     ChatChannelManager::SaveChatChannelLoadResult( ChatChannelTable::row row )
+void     ChatRoomManager::SaveChatRoomLoadResult( ChatChannelTable::row row )
 {
    int      channelId =    boost::lexical_cast< int >( row[ TableChatChannel::Column_id ] );
    string   name =         row[ TableChatChannel::Column_name ];
@@ -1889,12 +1994,12 @@ void     ChatChannelManager::SaveChatChannelLoadResult( ChatChannelTable::row ro
    if( createDate == "NULL" )
       createDate = "";
    
-   AddChatchannel( channelId, name, uuid, isActive, maxPlayers, gameType, gameId, createDate );
+   AddChatRoom( channelId, name, uuid, isActive, maxPlayers, gameType, gameId, createDate );
 }
 
 //---------------------------------------------------------------------
 /*
-void     ChatChannelManager::SaveUserLoadResult( SimpleUserTable::row row )
+void     ChatRoomManager::SaveUserLoadResult( SimpleUserTable::row row )
 {
    //int      id =    boost::lexical_cast< int >( row[ TableSimpleUser::Column_id ] );
    string   name =         row[ TableSimpleUser::Column_name ];
@@ -1906,7 +2011,7 @@ void     ChatChannelManager::SaveUserLoadResult( SimpleUserTable::row row )
 
 //---------------------------------------------------------------------
 
-void     ChatChannelManager::WriteChatToDb( const string& message, const string& senderUuid, const string& friendUuid, const string& channelUuid, U16 gameTurn, U32 connectionId )
+void     ChatRoomManager::WriteChatToDb( const string& message, const string& senderUuid, const string& friendUuid, const string& channelUuid, U16 gameTurn, U32 connectionId )
 {
    bool isGameChannel = false;
    if( channelUuid.size() )
@@ -1915,7 +2020,7 @@ void     ChatChannelManager::WriteChatToDb( const string& message, const string&
       ChannelMapIterator iter = m_channelMap.find( keyLookup );      
       if( iter != m_channelMap.end() )
       {
-         ChatChannel& channel = iter->second;
+         ChatRoom& channel = iter->second;
          if( channel.gameType && channel.gameInstanceId )
             isGameChannel = true;
       }

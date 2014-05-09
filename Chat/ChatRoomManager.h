@@ -5,9 +5,9 @@
 #include <list>
 using namespace std;
 
-#include "ChatChannel.h"
-#include "ChatChannelDbJob.h"
-#include "UsersChatChannelList.h"
+#include "ChatRoom.h"
+#include "ChatRoomDbJob.h"
+#include "UsersChatRoomList.h"
 
 #include "../NetworkCommon/Packets/ChatPacket.h"
 #include "../NetworkCommon/Utils/TableWrapper.h"
@@ -81,87 +81,94 @@ Client requests to send a chat to another user identified by uuid.
    ChatChannelManager writes chat to db
 */
 
-static const int ChatChannelManagerUniqueId = 0;
 ///////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////
 
-class ChatChannelManager
+class ChatRoomManager
 {
 public:
-   ChatChannelManager();
-   ~ChatChannelManager();
+   ChatRoomManager();
+   ~ChatRoomManager();
 
    void           Init();
+
+   void           SetDbIdentifier( int dbIdentifier ) { m_dbIdentifier = dbIdentifier; }
+   int            GetDbIdentifier() const { return m_dbIdentifier; }
 
    static void    Set( DiplodocusChat* svr ) { m_chatServer = svr; }
    int            GetNumChannelChatsSent() const { return m_numChannelChatsSent; }
    int            GetNumP2PChatsSent() const { return m_numP2PChatsSent; }
-   int            GetNumChangesToChatChannel() const { return m_numChangesToChatChannel; }
+   int            GetNumChangesToChatRoom() const { return m_numChangesToChatRoom; }
    void           ClearStats();
 
    bool           Update();
    bool           AddInboundPacket( BasePacket* packet ); // not thread safe
    bool           HandleDbResult( PacketDbQueryResult* packet );
 
-   bool           CreateNewChannel( const string& channelName, const string& userUuid );
-   bool           GetChatChannels( const string& userUuid, ChannelFullKeyValue& availableChannels );
+   bool           CreateNewRoom( const string& channelName, const string& userUuid );
+   bool           GetChatRooms( const string& userUuid, ChannelFullKeyValue& availableChannels );
    U32            GetUserId( const string& userUuid ) const;
 
 
-   bool           CreateNewChannel( const PacketChatCreateChatChannelFromGameServer* pPacket );
-   bool           DeleteChannel( const PacketChatDeleteChatChannelFromGameServer* request );
-   bool           DeleteChannel( const string& chanelUuid, const string& userUuid );
+   bool           CreateNewRoom( const PacketChatCreateChatChannelFromGameServer* pPacket );
+   bool           DeleteRoom( const PacketChatDeleteChatChannelFromGameServer* request );
+   bool           DeleteRoom( const string& chanelUuid, const string& userUuid );
 
-   bool           RenameChatChannel( const string& channelUuid, const string& newName, const string& userUuid, string& oldName );// returns old name
+   bool           RenameChatRoom( const string& channelUuid, const string& newName, const string& userUuid, string& oldName );// returns old name
 
    bool           SetUserPreferences( const string& userUuid, bool blockContactInvitations, bool blockGroupInvitations );
-   bool           AddUserToChannel( const PacketChatAddUserToChatChannelGameServer* packet );
-   bool           AddUserToChannel( const string& channelUuid, const string& userUuid, const string& requesterUuid );
+   bool           AddUserToRoom( const PacketChatAddUserToChatChannelGameServer* packet );
+   bool           AddUserToRoom( const string& channelUuid, const string& userUuid, const string& requesterUuid );
 
-   bool           RemoveUserFromChannel( const PacketChatRemoveUserFromChatChannelGameServer* packet );
-   bool           RemoveUserFromChannel( const string& channelUuid, const string& userUuid );
+   bool           RemoveUserFromRoom( const PacketChatRemoveUserFromChatChannelGameServer* packet );
+   bool           RemoveUserFromRoom( const string& channelUuid, const string& userUuid );
 
    bool           UserHasLoggedIn( const string& userUUid );
    bool           UserHasLoggedOut( const string& userUUid );
    bool           UserSendP2PChat( const string& senderUuid, const string& receiverUuid, const string& message );
    bool           UserSendsChatToChannel( const string& senderUuid, const string& channelUuid, const string& message, U16 gameTurn );
 
+   bool           RequestChatRoomInfo( const PacketChatListAllMembersInChatChannel* packet );// users + pending?
+   bool           UserAddsSelfToRoom( const string& channelUuid, const string& addedUserUuid );
+      
+   bool           GetUserInfo( const string& userUuid, UsersChatRoomList& ) const;
+   bool           IsRoomValid( const string& channelUuid ) const;
 private:
 
    //---------------------------------------------------
-   typedef list< ChatChannelDbJob >          DbJobList;
+   typedef list< ChatRoomDbJob >             DbJobList;
    typedef DbJobList::iterator               DbJobIterator;
 
-   typedef map< stringhash, ChatChannel >    ChannelMap;
+   typedef map< stringhash, ChatRoom >       ChannelMap;
    typedef ChannelMap::iterator              ChannelMapIterator;
-   typedef pair< stringhash, ChatChannel >   ChannelMapPair;
+   typedef pair< stringhash, ChatRoom >      ChannelMapPair;
 
-   typedef map< stringhash, UsersChatChannelList >    UserMap;
-   typedef UserMap::iterator                          UserMapIterator;
-   typedef UserMap::const_iterator                    UserMapConstIterator;
-   typedef pair< stringhash, UsersChatChannelList >   UserPair;
+   typedef map< stringhash, UsersChatRoomList >    UserMap;
+   typedef UserMap::iterator                       UserMapIterator;
+   typedef UserMap::const_iterator                 UserMapConstIterator;
+   typedef pair< stringhash, UsersChatRoomList >   UserPair;
    //---------------------------------------------------
 
    void           ProcessIncomingPacket( BasePacket* );
-   bool           ProcessDbResult( PacketDbQueryResult* packet, ChatChannelDbJob& job );
+   bool           ProcessDbResult( PacketDbQueryResult* packet, ChatRoomDbJob& job );
 
    // lots of utility functions
-   int            AddDbJob( const string& debugString, const string& lookupString, U32 serverId, stringhash chatUserLookup, stringhash authUserLookup, ChatChannelDbJob::JobType type );
+   int            AddDbJob( const string& debugString, const string& lookupString, U32 serverId, stringhash chatUserLookup, stringhash authUserLookup, ChatRoomDbJob::JobType type );
    PacketDbQuery* DbQueryFactory( const string& queryString, bool isFandF = false );
-   bool           SaveQueryDetails( PacketDbQuery* dbQuery, const string& channelUuid, const string& authUuid, stringhash chatUserLookup, ChatChannelDbJob::JobType jobType, U32 serverId = 0, const string& debugString = "debug_string" );
+   bool           SaveQueryDetails( PacketDbQuery* dbQuery, const string& channelUuid, const string& authUuid, stringhash chatUserLookup, ChatRoomDbJob::JobType jobType, U32 serverId = 0, const string& debugString = "debug_string" );
    bool           AddSanitizedStrings( PacketDbQuery* dbQuery, list< string >& sanitizedStrings );
    //bool           AddSanitizedStrings( PacketDbQuery* dbQuery, int num, ... );
    bool           AddCustomData( PacketDbQuery* dbQuery, void* data );
    bool           Send( PacketDbQuery* dbQuery );
    void           PackageAndSendToOtherServer( BasePacket* packet, U32 serverId );
-   string         CreateUniqueChatChannelId();
+   string         CreateUniqueChatRoomId();
 
 
-   bool           FindDbJob( int jobId, list< ChatChannelDbJob >& listOfJobs, DbJobIterator& iter );
-   void           AddChatchannel( int id, const string& channelName, const string& channelUuid, bool isActive, int maxPlayers, int gameType, U32 gameInstanceId, const string& createDate );
+   bool           FindDbJob( int jobId, list< ChatRoomDbJob >& listOfJobs, DbJobIterator& iter );
+   void           AddChatRoom( int id, const string& channelName, const string& channelUuid, bool isActive, int maxPlayers, int gameType, U32 gameInstanceId, const string& createDate );
    void           AddMetaData( PacketDbQueryResult* dbQuery, void* myData );
    int            NewDbId();
-   ChannelMapIterator   FindChatChannel( U32 gameInstanceId, U8 gameType );
+   ChannelMapIterator   FindChatRoom( U32 gameInstanceId, U8 gameType );
    string         FindChannelByGameId( U32 gameInstanceId );
 
    void           StoreUserInChannel( const string& channelUuid, const string& userUuid, const string username );
@@ -169,36 +176,34 @@ private:
    void           QueryAllChatUsers( int startIndex, int numToFetch );
    void           StoreAllUsersInChannel( const string& channelUuid, const SerializedKeyValueVector< string >& usersAndIds, bool sendNotification = false );
    bool           NotifyUserThatHeWasAddedToChannel( const string& userUuid, const string& channelName, const string& channelUuid ); 
-   U32            QueryAllUsersInAllChatChannels();
+   U32            QueryAllUsersInAllChatRooms();
 
    //void           HandleChatChannelCreateResult( PacketDbQueryResult* dbResult, ChatChannelDbJob& job );
-   string         CreateNewChannel( const string& channelName, const string userUuid, U32 serverId, U8 gameType, U32 gameInstanceId );
-   bool           DeleteChannel( const string& chanelUuid );
+   string         CreateNewRoom( const string& channelName, const string userUuid, U32 serverId, U8 gameType, U32 gameInstanceId );
+   bool           DeleteRoom( const string& chanelUuid );
    
-   bool           LoadSingleChannel( const string& channelUuid );
+   bool           LoadSingleRoom( const string& channelUuid );
 
-   bool           HandleLoadAllChannelsResult( PacketDbQueryResult* dbResult, ChatChannelDbJob& job );
-   bool           HandleLoadAllUsersResult( PacketDbQueryResult* dbResult, ChatChannelDbJob& job );
-   bool           HandleSingleChannelLoad( PacketDbQueryResult* dbResult, ChatChannelDbJob& job );
-   void           SaveChatChannelLoadResult( ChatChannelTable::row row );
+   bool           HandleLoadAllRoomsResult( PacketDbQueryResult* dbResult, ChatRoomDbJob& job );
+   bool           HandleLoadAllUsersResult( PacketDbQueryResult* dbResult, ChatRoomDbJob& job );
+   bool           HandleSingleRoomLoad( PacketDbQueryResult* dbResult, ChatRoomDbJob& job );
+   void           SaveChatRoomLoadResult( ChatChannelTable::row row );
    void           SaveUserLoadResult( SimpleUserTable::row row );
-   bool           HandleAllUsersInAllChannelsResult( PacketDbQueryResult* dbResult, ChatChannelDbJob& job );
+   bool           HandleAllUsersInAllChannelsResult( PacketDbQueryResult* dbResult, ChatRoomDbJob& job );
 
    void           StoreUser( const string& userUuid, const string& userName );
    void           StoreUser( const string& userUuid, U32 userId, const string& userName, bool blockContactInvites, bool blockGroupInvites );
-   const UsersChatChannelList&   
-                  GetUserInfo( const string& userUuid ) const;
 
-   void           AddChannelToUser( const string& userUuid, stringhash channelHash );
-   void           DeleteChannelFromUser( const string& userUuid, stringhash channelHash );
-   bool           AddUserToChannelAndWriteToDB( const string& channelUuid, const string& addedUserUuid, const string& addedUserName );
-   bool           RemoveUserFromChannelAndWriteToDB( const string& channelUuid, const string& removedUserUuid );
-   bool           RemoveChannelAndMarkChannelInDB( const string& channelUuid );
+   void           AddRoomToUser( const string& userUuid, stringhash channelHash );
+   void           DeleteRoomFromUser( const string& userUuid, stringhash channelHash );
+   bool           AddUserToRoomAndWriteToDB( const string& channelUuid, const string& addedUserUuid, const string& addedUserName );
+   bool           RemoveUserFromRoomAndWriteToDB( const string& channelUuid, const string& removedUserUuid );
+   bool           RemoveRoomAndMarkRoomInDB( const string& channelUuid );
    //-----------------------------------------------------
 
    // query functions
-   bool     RequestAllUsersInChatChannel( const string& channelUuid, bool fullList, const string& authUuid );
-   bool     QueryAllUsersInChatChannel( const string& channelUuid );
+   bool     RequestAllUsersInChatRoom( const string& channelUuid, bool fullList, const string& authUuid );
+   bool     QueryAllUsersInChatRoom( const string& channelUuid );
    void     WriteChatToDb( const string& message, const string& senderUuid, const string& friendUuid, const string& channelUuid, U16 gameTurn, U32 connectionId );
 
    //-----------------------------------------------------
@@ -226,8 +231,8 @@ private:
    
    int                           m_numChannelChatsSent;
    int                           m_numP2PChatsSent;
-   int                           m_numChangesToChatChannel;
-   
+   int                           m_numChangesToChatRoom;
+   int                           m_dbIdentifier;
 };
 
 ///////////////////////////////////////////////////////////////////

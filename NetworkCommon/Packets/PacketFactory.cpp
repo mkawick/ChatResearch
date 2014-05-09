@@ -15,6 +15,7 @@
 #include "ContactPacket.h"
 #include "DbPacket.h"
 #include "GamePacket.h"
+#include "InvitationPacket.h"
 #include "LoginPacket.h"
 #include "NotificationPacket.h"
 #include "PurchasePacket.h"
@@ -117,6 +118,10 @@ bool	PacketFactory::Parse( const U8* bufferIn, int& bufferOffset, BasePacket** p
    case PacketType_Notification:
       {
          return ParseNotification( bufferIn, bufferOffset, &firstPassParse, packetOut );
+      }
+   case PacketType_Invitation:
+      {
+         return ParseInvitation( bufferIn, bufferOffset, &firstPassParse, packetOut );
       }
    }
 
@@ -1200,6 +1205,77 @@ bool     PacketFactory::ParseNotification( const U8* bufferIn, int& bufferOffset
       }
       return true;
    }
+   return false;
+}
+
+//-----------------------------------------------------------------------------------------
+
+bool     PacketFactory::ParseInvitation( const U8* bufferIn, int& bufferOffset, const BasePacket* firstPassParse, BasePacket** packetOut ) const
+{
+   switch( firstPassParse->packetSubType ) 
+   {
+   case PacketInvitation::InvitationType_Base:
+      {
+         *packetOut = SerializeIn< PacketInvitation >( bufferIn, bufferOffset );
+      }
+      return true;
+   case PacketInvitation::InvitationType_EchoToServer:
+      {
+         *packetOut = SerializeIn< PacketInvitation_EchoToServer >( bufferIn, bufferOffset );
+      }
+      return true;
+   case PacketInvitation::InvitationType_EchoToClient:
+      {
+         *packetOut = SerializeIn< PacketInvitation_EchoToClient >( bufferIn, bufferOffset );
+      }
+      return true;
+   case PacketInvitation::InvitationType_InviteUser:
+      {
+         *packetOut = SerializeIn< PacketInvitation_InviteUser >( bufferIn, bufferOffset );
+      }
+      return true;
+   case PacketInvitation::InvitationType_InviteUserResponse:
+      {
+         *packetOut = SerializeIn< PacketInvitation_InviteUserResponse >( bufferIn, bufferOffset );
+      }
+      return true;
+   case PacketInvitation::InvitationType_CancelInvitation:
+      {
+         *packetOut = SerializeIn< PacketInvitation_CancelInvitation >( bufferIn, bufferOffset );
+      }
+      return true;
+   case PacketInvitation::InvitationType_InvitationWasCancelled:
+      {
+         *packetOut = SerializeIn< PacketInvitation_InvitationWasCancelled >( bufferIn, bufferOffset );
+      }
+      return true;
+   case PacketInvitation::InvitationType_RejectInvitation:
+      {
+         *packetOut = SerializeIn< PacketInvitation_RejectInvitation >( bufferIn, bufferOffset );
+      }
+      return true;
+
+   case PacketInvitation::InvitationType_RejectInvitationResponse:
+      {
+         *packetOut = SerializeIn< PacketInvitation_RejectInvitationResponse >( bufferIn, bufferOffset );
+      }
+      return true;
+   case PacketInvitation::InvitationType_AcceptInvitation:
+      {
+         *packetOut = SerializeIn< PacketInvitation_AcceptInvitation >( bufferIn, bufferOffset );
+      }
+      return true;
+   case PacketInvitation::InvitationType_GetListOfInvitations:
+      {
+         *packetOut = SerializeIn< PacketInvitation_GetListOfInvitations >( bufferIn, bufferOffset );
+      }
+      return true;
+   case PacketInvitation::InvitationType_GetListOfInvitationsResponse:
+      {
+         *packetOut = SerializeIn< PacketInvitation_GetListOfInvitationsResponse >( bufferIn, bufferOffset );
+      }
+      return true;
+    }
    return false;
 }
 

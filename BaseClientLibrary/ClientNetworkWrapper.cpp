@@ -121,8 +121,10 @@ void  ClientNetworkWrapper::Init( const char* serverDNS )
    }
 
    // we user this connection for talking to the load banacer temporily
-   m_fruitadens[ 0 ]->SetName( string( "LoadBalancer" ) );
+   string tempName( "LoadBalancer" );
+   m_fruitadens[ 0 ]->SetName( tempName );
    m_fruitadens[ 0 ]->Connect( m_loadBalancerDns.c_str(), m_loadBalancerPort );
+   m_fruitadens[ 0 ]->RegisterPacketHandlerInterface( this );
    //ReconnectAfterTalkingToLoadBalancer();
 }
 
@@ -141,7 +143,12 @@ void     ClientNetworkWrapper::ReconnectAfterTalkingToLoadBalancer()
          m_fruitadens[i]->RegisterPacketHandlerInterface( this );
          m_fruitadens[i]->Connect( m_serverIpAddress[i].c_str(), m_serverConnectionPort[i] );
       }
-      m_fruitadens[ ConnectionNames_Main ]->SetName( string( "MainGateway" ) );
+
+      if( m_serverIpAddress[ ConnectionNames_Main ].size() > 0 )
+      {
+         string tempName( "MainGateway" );
+         m_fruitadens[ ConnectionNames_Main ]->SetName( tempName );
+      }
    }
 }
 
@@ -177,6 +184,7 @@ bool     ClientNetworkWrapper::InitialConnectionCallback( const Fruitadens* conn
          if( m_savedLoginInfo != NULL )
          {
             SerializePacketOut( m_savedLoginInfo );
+            cout << " InitialConnectionCallback sent login packet" << endl;
             PacketCleaner cleaner( m_savedLoginInfo );
             m_savedLoginInfo = NULL;
          }
@@ -226,6 +234,7 @@ void  ClientNetworkWrapper::Exit()
       m_savedLoginInfo = NULL;
    }
 
+   m_requiresGatewayDiscovery = true;
    m_wasCallbackForReadyToBeginSent = false;
 }
 
@@ -319,6 +328,17 @@ void     ClientNetworkWrapper::UpdateNotifications()
                string accepted = keyValueIt->value; ++keyValueIt;
 
                notify->InvitationAccepted( from, to, accepted == "1" );
+            }
+            break;
+
+         case ClientSideNetworkCallback::NotificationType_GenericInvitationsUpdated:
+            {
+               notify->GenericInvitationsUpdated();
+            }
+            break;
+         case ClientSideNetworkCallback::NotificationType_GenericInvitationRejected:
+            {
+               notify->GenericInvitationRejected();
             }
             break;
          case ClientSideNetworkCallback::NotificationType_SearchResults:
@@ -719,6 +739,9 @@ bool  ClientNetworkWrapper::RequestLogin( const string& userName, const string& 
       PacketCleaner cleaner( m_savedLoginInfo );
       m_savedLoginInfo = NULL;
    }
+
+   cout << " RequestLogin : " << userName << endl;
+
    PacketLogin* login = new PacketLogin;
    login->loginKey = "deadbeef";// currently unused
    login->uuid = userName;
@@ -733,10 +756,12 @@ bool  ClientNetworkWrapper::RequestLogin( const string& userName, const string& 
       SerializePacketOut( login ) == true )
    {
       PacketCleaner cleaner( login );
+      cout << " RequestLogin send packet" << endl;
    }
    else
    {
       m_savedLoginInfo = login;
+      cout << " RequestLogin saved packet to send later" << endl;
    }
 
    return true;
@@ -1681,7 +1706,7 @@ bool     ClientNetworkWrapper::RequestUserWinLossRecord( const string& userName 
 
 //-----------------------------------------------------------------------------
 
-bool     ClientNetworkWrapper::RequestListOfInvitationsSent() const
+bool     ClientNetworkWrapper::RequestListOfInvitationsSentForContacts() const
 {
    PacketContact_GetListOfInvitationsSent    invitationRequest;
    return SerializePacketOut( &invitationRequest );
@@ -1689,7 +1714,7 @@ bool     ClientNetworkWrapper::RequestListOfInvitationsSent() const
 
 //-----------------------------------------------------------------------------
 
-bool     ClientNetworkWrapper::RequestListOfInvitationsReceived() const
+bool     ClientNetworkWrapper::RequestListOfInvitationsReceivedForContacts() const
 {
    PacketContact_GetListOfInvitations    invitationRequest;
    return SerializePacketOut( &invitationRequest );
@@ -1697,7 +1722,7 @@ bool     ClientNetworkWrapper::RequestListOfInvitationsReceived() const
 
 //-----------------------------------------------------------------------------
 
-bool     ClientNetworkWrapper::AcceptInvitation( const string& uuid ) const
+bool     ClientNetworkWrapper::AcceptInvitationForContacts( const string& uuid ) const
 {
    Threading::MutexLock    locker( m_notificationMutex );
 
@@ -1719,7 +1744,7 @@ bool     ClientNetworkWrapper::AcceptInvitation( const string& uuid ) const
    }
    return false;
 }
-
+/*
 //-----------------------------------------------------------------------------
 
 bool     ClientNetworkWrapper::AcceptInvitationFromUsername( const string& userName ) const
@@ -1740,11 +1765,11 @@ bool     ClientNetworkWrapper::AcceptInvitationFromUsername( const string& userN
       it++;
    }
    return false;
-}
+}*/
 
 //-----------------------------------------------------------------------------
 
-bool     ClientNetworkWrapper::DeclineInvitation( const string& uuid, string message ) const
+bool     ClientNetworkWrapper::DeclineInvitationForContacts( const string& uuid, string message ) const
 {
    PacketContact_DeclineInvitation invitationDeclined;
    invitationDeclined.invitationUuid = uuid;
@@ -1757,7 +1782,7 @@ bool     ClientNetworkWrapper::DeclineInvitation( const string& uuid, string mes
 
 //-----------------------------------------------------------------------------
 
-bool     ClientNetworkWrapper::RemoveSentInvitation( const string& uuid ) const
+bool     ClientNetworkWrapper::RemoveSentInvitationForContacts( const string& uuid ) const
 {
    bool found = false;
    Threading::MutexLock    locker( m_notificationMutex );
@@ -1786,8 +1811,53 @@ bool     ClientNetworkWrapper::RemoveSentInvitation( const string& uuid ) const
 }
 
 //-----------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
 
-bool     ClientNetworkWrapper::GetListOfInvitationsSent( list< InvitationInfo >& listOfInvites )
+bool     ClientNetworkWrapper::RequestListOfInvitations() const
+{
+   PacketInvitation_GetListOfInvitations invitationRequest;
+   
+   return SerializePacketOut( &invitationRequest );
+}
+
+bool     ClientNetworkWrapper::AcceptInvitation( const string& uuid ) const
+{
+   PacketInvitation_AcceptInvitation accept;
+   //todo... validate that this is a valid invitation
+   accept.invitationUuid = uuid;
+   return SerializePacketOut( &accept );
+}
+
+bool     ClientNetworkWrapper::DeclineInvitation( const string& uuid, string message ) const
+{
+   PacketInvitation_RejectInvitation decline;
+   //todo... validate that this is a valid invitation
+   decline.invitationUuid = uuid;
+   return SerializePacketOut( &decline );
+}
+
+bool     ClientNetworkWrapper::RemoveSentInvitation( const string& uuid ) const
+{
+   PacketInvitation_CancelInvitation cancel;
+   cancel.invitationUuid = uuid;
+   return SerializePacketOut( &cancel );
+}
+
+bool     ClientNetworkWrapper::InviteUserToChatChannel( const string& channelUuid, const string& userUuid, const string& message )
+{
+   PacketInvitation_InviteUser invite;
+   invite.userUuid = userUuid;
+   invite.inviteGroup = channelUuid;
+   invite.message = message;
+   invite.invitationType = Invitation::InvitationType_ChatRoom;
+
+   return SerializePacketOut( &invite );
+}
+
+//-----------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
+
+bool     ClientNetworkWrapper::GetListOfInvitationsSentForContacts( list< InvitationInfo >& listOfInvites )
 {
    listOfInvites.clear();
    Threading::MutexLock    locker( m_notificationMutex );
@@ -1801,9 +1871,10 @@ bool     ClientNetworkWrapper::GetListOfInvitationsSent( list< InvitationInfo >&
    }
    return true;
 }
+
 //-----------------------------------------------------------------------------
 
-bool     ClientNetworkWrapper::GetListOfInvitationsReceived( list< InvitationInfo >& listOfInvites )
+bool     ClientNetworkWrapper::GetListOfInvitationsReceivedForContacts( list< InvitationInfo >& listOfInvites )
 {
    listOfInvites.clear();
    Threading::MutexLock    locker( m_notificationMutex );
@@ -1816,6 +1887,46 @@ bool     ClientNetworkWrapper::GetListOfInvitationsReceived( list< InvitationInf
       it++;
    }
    return true;
+}
+
+//-----------------------------------------------------------------------------
+
+bool     ClientNetworkWrapper::GetListOfInvitationsSent( list< Invitation >& listOfInvites )
+{
+   listOfInvites.clear();
+   Threading::MutexLock    locker( m_notificationMutex );
+
+   list< Invitation >::iterator it = m_invitations.begin();
+   while( it != m_invitations.end() )
+   {
+      if( it->inviterUuid == m_uuid )
+         listOfInvites.push_back( *it );
+      it++;
+   }
+   if( listOfInvites.size() > 0 )
+      return true;
+   
+   return false;
+}
+
+//-----------------------------------------------------------------------------
+
+bool     ClientNetworkWrapper::GetListOfInvitationsReceived( list< Invitation >& listOfInvites )
+{
+   listOfInvites.clear();
+   Threading::MutexLock    locker( m_notificationMutex );
+
+   list< Invitation >::iterator it = m_invitations.begin();
+   while( it != m_invitations.end() )
+   {
+      if( it->inviteeUuid == m_uuid )
+         listOfInvites.push_back( *it );
+      it++;
+   }
+   if( listOfInvites.size() > 0 )
+      return true;
+   
+   return false;
 }
 
 //-----------------------------------------------------------------------------
@@ -2259,11 +2370,15 @@ void     ClientNetworkWrapper::LoadBalancedNewAddress( const PacketRerouteReques
          }
          m_serverIpAddress[ ConnectionNames_Main ] = address.address;
          m_serverConnectionPort[ ConnectionNames_Main ] = address.port;
+         cout << "Main server address: " << address.address << endl;
+         cout << "Main server port: " << address.port << endl;
       }
       else if( address.whichLocationId == PacketRerouteRequestResponse::LocationId_Asset )
       {
          m_serverIpAddress[ ConnectionNames_Asset ] = address.address;
          m_serverConnectionPort[ ConnectionNames_Asset ] = address.port;
+         cout << "Asset server address: " << address.address << endl;
+         cout << "Asset server port: " << address.port << endl;
       }
       else
       {
@@ -2271,7 +2386,7 @@ void     ClientNetworkWrapper::LoadBalancedNewAddress( const PacketRerouteReques
       }
    }
 
-   if( isReconnectNecessary )
+   //if( isReconnectNecessary )
    {
       Disconnect(); // << slight danger here... disconnecting when we are servicing a previous request
       ReconnectAfterTalkingToLoadBalancer();
@@ -2650,6 +2765,28 @@ bool     ClientNetworkWrapper::HandlePacketReceived( BasePacket* packetIn )
 
             }
             break;
+         case PacketChatToServer::ChatType_ListAllMembersInChatChannelResponse:
+            {
+               PacketChatListAllMembersInChatChannelResponse* packet = static_cast< PacketChatListAllMembersInChatChannelResponse* >( packetIn );
+
+               string                     chatChannelUuid;
+               SerializedKeyValueVector< string >   userList;
+             /*  HandleRemoveUserFromChatChannel( packet );
+
+               SerializedKeyValueVector< string > strings;
+               strings.insert( "channelUuid", packet->chatChannelUuid );
+               strings.insert( "userUuid", packet->userUuid );
+               string success = "0";
+               if( packet->success )
+                  success = "1";
+               strings.insert( "success", success );
+
+               Notification( ClientSideNetworkCallback::NotificationType_ChatChannel_UserRemoved, strings );*/
+
+               Notification( ClientSideNetworkCallback::NotificationType_ChatChannelDetailsIncludingInvites, packet );
+
+            }
+            break;
          }
       }
       break;
@@ -2694,6 +2831,63 @@ bool     ClientNetworkWrapper::HandlePacketReceived( BasePacket* packetIn )
          }
       }
       break;
+      case PacketType_Invitation:
+      {
+         switch( packetIn->packetSubType )
+         {
+         case PacketInvitation::InvitationType_GetListOfInvitationsResponse:
+            {
+               m_invitations.clear();
+               PacketInvitation_GetListOfInvitationsResponse* response = static_cast<PacketInvitation_GetListOfInvitationsResponse*>( packetIn );
+
+               const SerializedKeyValueVector< Invitation >& kvVector = response->invitationList;
+               SerializedKeyValueVector< Invitation >::const_KVIterator it = kvVector.begin();
+               while (it != kvVector.end() )
+               {
+                  const Invitation& invite = it->value;
+                  cout << "Invitation: " << invite.invitationUuid << endl;
+                  cout << "  inviter : " << invite.inviterName << endl;
+                  cout << "  invitee : " << invite.inviteeName << endl;
+                  it++;
+                  m_invitations.push_back( invite );
+               }
+               Notification( ClientSideNetworkCallback::NotificationType_GenericInvitationsUpdated );
+            }
+            break;
+         case PacketInvitation::InvitationType_RejectInvitationResponse:
+            {
+               PacketInvitation_RejectInvitationResponse* response = static_cast<PacketInvitation_RejectInvitationResponse*>( packetIn );
+               cout << "Invitation rejection complete" << endl;
+
+               Notification( ClientSideNetworkCallback::NotificationType_GenericInvitationRejected );
+            }
+            break;
+         case PacketGameToServer::GamePacketType_RawGameData:
+            {
+               PacketGameplayRawData* data = static_cast<PacketGameplayRawData*>( packetIn );
+
+               HandleData( data );
+               cleaner.Clear();
+            }
+            //return false;// this is important... we will delete the packets.
+            break;
+         
+         case PacketGameToServer::GamePacketType_RequestUserWinLossResponse:
+            {
+              /* PacketRequestUserWinLossResponse* response = 
+                     static_cast<PacketRequestUserWinLossResponse*>( packetIn );
+               for( list< ClientSideNetworkCallback* >::iterator it = m_callbacks.begin(); it != m_callbacks.end(); ++it )
+               {
+                  (*it)->UserWinLoss( response->userUuid, response->winLoss );
+               }*/
+               assert( 0 );// not finished, wrong user data
+            }
+            break;
+         }
+      }
+      break;
+
+      
       //------------------------------------------------------------
       case PacketType_Asset:
       {

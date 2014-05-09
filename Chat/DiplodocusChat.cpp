@@ -11,6 +11,7 @@ using namespace std;
 
 #include "../NetworkCommon/Packets/DbPacket.h"
 #include "../NetworkCommon/Packets/ChatPacket.h"
+#include "../NetworkCommon/Packets/InvitationPacket.h"
 #include "../NetworkCommon/Packets/LoginPacket.h"
 #include "../NetworkCommon/Packets/StatPacket.h"
 
@@ -20,7 +21,8 @@ using namespace std;
 
 #include "DiplodocusChat.h"
 #include "ChatUser.h"
-#include "ChatChannelManager.h"
+#include "ChatRoomManager.h"
+#include "InvitationManager.h"
 
 
 ///////////////////////////////////////////////////////////////////
@@ -28,8 +30,10 @@ using namespace std;
 
 DiplodocusChat::DiplodocusChat( const string& serverName, U32 serverId ): Diplodocus< KhaanChat >( serverName, serverId, 0,  ServerType_Chat ),
                                              StatTrackingConnections(),
-                                             m_chatChannelManagerNeedsUpdate( true ),
-                                             m_chatChannelManager( NULL )
+                                             m_chatRoomManagerNeedsUpdate( true ),
+                                             m_invitationManagerNeedsUpdate( true ),
+                                             m_chatRoomManager( NULL ),
+                                             m_invitationManager( NULL )
 {
    this->SetSleepTime( 45 );
 
@@ -43,11 +47,20 @@ DiplodocusChat::DiplodocusChat( const string& serverName, U32 serverId ): Diplod
 
 void  DiplodocusChat :: Init()
 {
-   ChatChannelManager::Set( this );
-   m_chatChannelManager = new ChatChannelManager();
+   ChatRoomManager::Set( this );
+   m_chatRoomManager = new ChatRoomManager();
+   m_chatRoomManager->SetDbIdentifier( 1 );
+   m_chatRoomManager->Init();
+
+   InvitationManager::Set( this );
+   InvitationManager::Set( m_chatRoomManager );
+   m_invitationManager = new InvitationManager();
+   m_invitationManager->SetDbIdentifier( 2 );
+   m_invitationManager->Init();
+   
 
    ChatUser::Set( this );
-   ChatUser::Set( m_chatChannelManager );
+   ChatUser::Set( m_chatRoomManager );
 }
 
 //---------------------------------------------------------------
@@ -109,7 +122,7 @@ ChatUser* DiplodocusChat::GetUser( U32 connectionId )
 
 //---------------------------------------------------------------
 
-ChatUser* DiplodocusChat::GetUserById( U32 userId )
+ChatUser*   DiplodocusChat::GetUserById( U32 userId )
 {
    UserMapIterator it = m_users.begin();
    while( it != m_users.end() )
@@ -124,7 +137,22 @@ ChatUser* DiplodocusChat::GetUserById( U32 userId )
 
 //---------------------------------------------------------------
 
-ChatUser* DiplodocusChat::GetUserByUsername( const string& userName )
+ChatUser*   DiplodocusChat::GetUserByUuid( const string& uuid )
+{
+   UserMapIterator it = m_users.begin(); 
+   while( it != m_users.end() )
+   {
+      if( it->second->GetUuid() == uuid )
+         return it->second;
+      it++;
+   }
+
+   return NULL;
+}
+
+//---------------------------------------------------------------
+
+ChatUser*   DiplodocusChat::GetUserByUsername( const string& userName )
 {
    UserMapIterator it = m_users.begin(); 
    while( it != m_users.end() )
@@ -137,15 +165,14 @@ ChatUser* DiplodocusChat::GetUserByUsername( const string& userName )
    return NULL;
 }
 
-
 //---------------------------------------------------------------
 
-ChatUser* DiplodocusChat::GetUserByUuid( const string& uuid )
+ChatUser*    DiplodocusChat::GetUserByConnectionId( U32 ConnectionId )
 {
    UserMapIterator it = m_users.begin(); 
    while( it != m_users.end() )
    {
-      if( it->second->GetUuid() == uuid )
+      if( it->second->GetConnectionId() == ConnectionId )
          return it->second;
       it++;
    }
@@ -178,27 +205,32 @@ bool     DiplodocusChat::HandleChatPacket( BasePacket* packet, U32 connectionId 
       case PacketChatToServer::ChatType_CreateChatChannelFromGameServer:
          {
             PacketChatCreateChatChannelFromGameServer* pPacket = static_cast< PacketChatCreateChatChannelFromGameServer* > ( packet );
-            m_chatChannelManager->CreateNewChannel( pPacket );
+            m_chatRoomManager->CreateNewRoom( pPacket );
          }
          break;
       case PacketChatToServer::ChatType_AddUserToChatChannelGameServer:
          {
             PacketChatAddUserToChatChannelGameServer* pPacket = static_cast< PacketChatAddUserToChatChannelGameServer* > ( packet );
-            m_chatChannelManager->AddUserToChannel( pPacket );
+            m_chatRoomManager->AddUserToRoom( pPacket );
          }
          break;
       case PacketChatToServer::ChatType_RemoveUserFromChatChannelGameServer:
          {
             PacketChatRemoveUserFromChatChannelGameServer* pPacket = static_cast< PacketChatRemoveUserFromChatChannelGameServer* > ( packet );
-            m_chatChannelManager->RemoveUserFromChannel( pPacket );
+            m_chatRoomManager->RemoveUserFromRoom( pPacket );
          }
          break;
       case PacketChatToServer::ChatType_DeleteChatChannelFromGameServer:
          {
             PacketChatDeleteChatChannelFromGameServer* pPacket = static_cast< PacketChatDeleteChatChannelFromGameServer* > ( packet );
-            m_chatChannelManager->DeleteChannel( pPacket );
+            m_chatRoomManager->DeleteRoom( pPacket );
          }
          break;
+      case PacketChatToServer::ChatType_ListAllMembersInChatChannel:
+         {
+            PacketChatListAllMembersInChatChannel* pPacket = static_cast< PacketChatListAllMembersInChatChannel* > ( packet );
+            m_chatRoomManager->RequestChatRoomInfo( pPacket );
+         }
   /* ChatType_InviteUserToChatChannel,
    ChatType_InviteUserToChatChannelResponse,*/
       }
@@ -207,6 +239,19 @@ bool     DiplodocusChat::HandleChatPacket( BasePacket* packet, U32 connectionId 
    return true;
 }
 
+//---------------------------------------------------------------
+
+bool     DiplodocusChat::HandleInvitationPacket( BasePacket* packet, U32 connectionId )
+{
+   PacketInvitation* invitation = static_cast< PacketInvitation* > ( packet );
+   if( m_invitationManager->HandlePacketRequest( invitation, connectionId ) == false )
+   {
+      PacketFactory factory;
+      factory.CleanupPacket( packet );
+   }
+
+   return true;
+}
 //---------------------------------------------------------------
 
 bool     DiplodocusChat::HandleLoginPacket( BasePacket* packet, U32 connectionId )
@@ -224,7 +269,7 @@ bool     DiplodocusChat::HandleLoginPacket( BasePacket* packet, U32 connectionId
             PacketLogin* pPacket = static_cast< PacketLogin* > ( packet );
             cout << "Login: " << pPacket->userName << ", " << pPacket->uuid << ", " << pPacket->password << endl;
             //pPacket->connectionId;
-            //m_chatChannelManager->CreateNewChannel( pPacket );
+            //m_chatRoomManager->CreateNewChannel( pPacket );
             
          }
          return true;
@@ -233,7 +278,7 @@ bool     DiplodocusChat::HandleLoginPacket( BasePacket* packet, U32 connectionId
             PacketLogout* pPacket = static_cast< PacketLogout* > ( packet );
             cout << "Logout: " << pPacket->wasDisconnectedByError << endl;
             //pPacket->connectionId;
-            //m_chatChannelManager->CreateNewChannel( pPacket );
+            //m_chatRoomManager->CreateNewChannel( pPacket );
          }
          return true;*/
       case PacketLogin::LoginType_PrepareForUserLogin:
@@ -405,15 +450,22 @@ void  DiplodocusChat::UpdateDbResults()
       BasePacket* packet = static_cast<BasePacket*>( result );
 
       U32 connectionId = result->id;
-      bool isChatChannelManager = result->serverLookup > 0 ? true:false;
 
-      if( isChatChannelManager ) //&& connectionId == ChatChannelManagerUniqueId )
+      if( result->serverLookup == m_chatRoomManager->GetDbIdentifier() ) //&& connectionId == ChatChannelManagerUniqueId )
       {
-         if( m_chatChannelManager->HandleDbResult( result ) == false )
+         if( m_chatRoomManager->HandleDbResult( result ) == false )
          {
             factory.CleanupPacket( packet );
          }
-         m_chatChannelManagerNeedsUpdate = true;
+         m_chatRoomManagerNeedsUpdate = true;
+      }
+      else if( result->serverLookup == m_invitationManager->GetDbIdentifier() ) //&& connectionId == ChatChannelManagerUniqueId )
+      {
+         if( m_invitationManager->HandleDbResult( result ) == false )
+         {
+            factory.CleanupPacket( packet );
+         }
+         m_invitationManagerNeedsUpdate = true;
       }
       else
       {
@@ -465,6 +517,14 @@ bool  DiplodocusChat::HandlePacketFromOtherServer( BasePacket* packet, U32 conne
       }
       return true;
    }
+   if( packetType == PacketType_Invitation )
+   {
+      if( HandleInvitationPacket( unwrappedPacket, connectionId ) == false )
+      {
+         factory.CleanupPacket( packet );
+      }
+      return true;
+   }
 
    return false;
 }
@@ -489,8 +549,16 @@ bool  DiplodocusChat::HandlePacketFromClient( BasePacket* packet )
       ChatUser* user = it->second;
       if( user )
       {
+         // could be a switch but we only have two cases.
+         if( unwrappedPacket->packetType == PacketType_Invitation )
+         {
+            m_invitationManager->HandlePacketRequest( unwrappedPacket, connectionId );
+         }
+         else
+         {
          //PacketCleaner cleaner( packet );
-         bool result = user->HandleClientRequest( wrapper->pPacket );
+            bool result = user->HandleClientRequest( unwrappedPacket );
+         }
 
          
          return true;
@@ -540,11 +608,19 @@ void     DiplodocusChat::RemoveLoggedOutUsers()
 //---------------------------------------------------------------
 //---------------------------------------------------------------
 
-bool     DiplodocusChat::AddQueryToOutput( PacketDbQuery* dbQuery, U32 connectionId, bool isChatChannelManager )
+bool     DiplodocusChat::AddQueryToOutput( PacketDbQuery* dbQuery, U32 connectionId )
 {
    PacketFactory factory;
    dbQuery->id = connectionId;
-   dbQuery->serverLookup = isChatChannelManager ? 1 : 0;
+ /*  dbQuery->serverLookup = 0;
+   if( isChatChannelManager )
+   {
+      dbQuery->serverLookup = 1;
+   }
+   else if( isInvitationManager )
+   {
+      dbQuery->serverLookup = 2;
+   }*/
 
    ChainLinkIteratorType itOutputs = m_listOfOutputs.begin();
    while( itOutputs != m_listOfOutputs.end() )// only one output currently supported.
@@ -567,15 +643,27 @@ bool     DiplodocusChat::AddQueryToOutput( PacketDbQuery* dbQuery, U32 connectio
 
 void     DiplodocusChat::UpdateChatChannelManager()
 {
-   if( m_chatChannelManagerNeedsUpdate == false || m_chatChannelManager == NULL )
+   if( m_chatRoomManagerNeedsUpdate == false || m_chatRoomManager == NULL )
       return;
 
-   if( m_chatChannelManager->Update() == true )
+   if( m_chatRoomManager->Update() == true )
    {
-      m_chatChannelManagerNeedsUpdate = false;
+      m_chatRoomManagerNeedsUpdate = false;
    }
 }
 
+//---------------------------------------------------------------
+
+void     DiplodocusChat::UpdateInvitationManager()
+{
+   if( m_invitationManagerNeedsUpdate == false || m_invitationManager == NULL )
+      return;
+
+   if( m_invitationManager->Update() == true )
+   {
+      m_invitationManagerNeedsUpdate = false;
+   }
+}
 
 //---------------------------------------------------------------
 
@@ -603,7 +691,7 @@ void     DiplodocusChat::TrackCountStats( StatTracking stat, float value, int su
 
 void     DiplodocusChat::RunHourlyStats()
 {
-   if( m_chatChannelManager == NULL )
+   if( m_chatRoomManager == NULL )
       return;
 
    time_t currentTime;
@@ -615,12 +703,12 @@ void     DiplodocusChat::RunHourlyStats()
 
       //--------------------------------
 
-      int totalCount = m_chatChannelManager->GetNumChannelChatsSent() + m_chatChannelManager->GetNumP2PChatsSent();
+      int totalCount = m_chatRoomManager->GetNumChannelChatsSent() + m_chatRoomManager->GetNumP2PChatsSent();
       TrackCountStats( StatTracking_ChatNumberOfChatsSentPerHour, static_cast< float >( totalCount ), 0 );
-      TrackCountStats( StatTracking_ChatNumberOfChannelChatsSentPerHour, static_cast< float >( m_chatChannelManager->GetNumChannelChatsSent() ), 0 );
-      TrackCountStats( StatTracking_ChatNumberOfP2PChatsSentPerHour, static_cast< float >( m_chatChannelManager->GetNumP2PChatsSent() ), 0 );
-      TrackCountStats( StatTracking_ChatNumberOfChatChannelChangesPerHour, static_cast< float >( m_chatChannelManager->GetNumChangesToChatChannel() ), 0 );
-      m_chatChannelManager->ClearStats();
+      TrackCountStats( StatTracking_ChatNumberOfChannelChatsSentPerHour, static_cast< float >( m_chatRoomManager->GetNumChannelChatsSent() ), 0 );
+      TrackCountStats( StatTracking_ChatNumberOfP2PChatsSentPerHour, static_cast< float >( m_chatRoomManager->GetNumP2PChatsSent() ), 0 );
+      TrackCountStats( StatTracking_ChatNumberOfChatChannelChangesPerHour, static_cast< float >( m_chatRoomManager->GetNumChangesToChatRoom() ), 0 );
+      m_chatRoomManager->ClearStats();
    }
 }
 
@@ -628,7 +716,7 @@ void     DiplodocusChat::RunHourlyStats()
 
 void     DiplodocusChat::RunDailyStats()
 {
-   if( m_chatChannelManager == NULL )
+   if( m_chatRoomManager == NULL )
       return;
 
    time_t currentTime;
@@ -663,6 +751,7 @@ int      DiplodocusChat::CallbackFunction()
    PeriodicWriteToDB();
    RemoveLoggedOutUsers();
    UpdateChatChannelManager();
+   UpdateInvitationManager();
    UpdateDbResults();
    UpdateAllChatUsers();
 

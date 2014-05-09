@@ -244,6 +244,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\NetworkCommon\Packets\InvitationPacket.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\NetworkCommon\Packets\LoginPacket.cpp"
 				>
 			</File>
@@ -319,6 +323,10 @@
 			</File>
 			<File
 				RelativePath="..\NetworkCommon\Packets\GamePacket.h"
+				>
+			</File>
+			<File
+				RelativePath="..\NetworkCommon\Packets\InvitationPacket.h"
 				>
 			</File>
 			<File

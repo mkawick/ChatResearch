@@ -276,6 +276,8 @@ bool  KhaanGateway::IsWhiteListedIn( const BasePacket* packet ) const
       //return true;
    case PacketType_Notification:
       return true;
+   case PacketType_Invitation:
+      return true;
    }
 
    return false;

@@ -80,6 +80,8 @@ bool     FruitadensGateway::AcceptsPacketType( U32 packetType ) const
             return true;
          if( packetType == PacketType_GatewayInformation )
             return true;
+         if( packetType == PacketType_Invitation )
+            return true;
       }
       break;
 
@@ -194,6 +196,8 @@ bool FruitadensGateway::FilterOutwardPacket( BasePacket* packet ) const
             if( packetType == PacketType_UserInfo )// todo, remove me once we have other things in place
                return true;
             if( packetType == PacketType_GatewayInformation )
+               return true;
+            if( packetType == PacketType_Invitation )
                return true;
          }
          break;

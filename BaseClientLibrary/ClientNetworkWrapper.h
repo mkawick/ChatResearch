@@ -5,11 +5,12 @@
 
 #include "../NetworkCommon/NetworkOut/Fruitadens.h"
 #include "../NetworkCommon/Packets/BasePacket.h"
-#include "../NetworkCommon/Packets/GamePacket.h"
 
-#include "../NetworkCommon/Packets/ContactPacket.h"
 #include "../NetworkCommon/Packets/AssetPacket.h"
 #include "../NetworkCommon/Packets/ChatPacket.h"
+#include "../NetworkCommon/Packets/ContactPacket.h"
+#include "../NetworkCommon/Packets/GamePacket.h"
+#include "../NetworkCommon/Packets/InvitationPacket.h"
 #include "../NetworkCommon/Packets/LoginPacket.h"
 #include "../NetworkCommon/Packets/PurchasePacket.h"
 #include "../NetworkCommon/Packets/NotificationPacket.h"
@@ -57,7 +58,7 @@ public:
    bool     RequestLogout() const;
    bool     ForceLogout();
 
-   bool     IsReadyToLogin() const { return !m_isLoggingIn & !m_isLoggedIn; }
+   bool     IsReadyToLogin() const { return !m_isLoggingIn && !m_isLoggedIn && !m_requiresGatewayDiscovery; }
    bool     IsLoggingIn() const { return m_isLoggingIn; }
    bool     IsLoggedIn() const { return m_isLoggedIn; }   
    bool     IsConnected( bool isMainServer = true ) const;
@@ -101,28 +102,43 @@ public:
    bool     RequestFriendDemographics( const string& username ) const;
    bool     RequestUserWinLossRecord( const string& username ) const;
 
-   bool     RequestListOfInvitationsSent() const;
-   bool     RequestListOfInvitationsReceived() const;
-
    bool     RequestChatChannelHistory( const string& channelUuid, int numRecords = 20, int startingIndex = 0 ) const;
    bool     RequestChatP2PHistory( const string& userUuid, int numRecords = 20, int startingIndex = 0 ) const;
 
+   bool     RequestListOfUsersInChatChannel( const string& uuid ); // two packets sent for current members and invitees
+
    //--------------------------------------------------------------
 
-   bool     AcceptInvitation( const string& uuid ) const;
-   bool     AcceptInvitationFromUsername( const string& userName ) const;
-   bool     DeclineInvitation( const string& uuid, string message ) const;
-   bool     RemoveSentInvitation( const string& uuid ) const;
-   bool     GetListOfInvitationsReceived( list< InvitationInfo >& keyValues );
-   bool     GetListOfInvitationsSent( list< InvitationInfo >& keyValues );
-
-   bool     SendSearchForUsers( const string& searchString, int numRequested, int offset ) const; // min 2 char
-   bool     InviteUserToBeFriend( const string& uuid, const string& username, const string& message );
    bool     RemoveContact( const string& uuid, const string message = "" );
 
    //bool     ChangeGame( const string& gameName );
    bool	   SendP2PTextMessage( const string& message, const string& destinationUserUuid );
    bool	   SendChannelTextMessage( const string& message, const string& chatChannelUuid, U32 gameTurn = 0 );
+
+   //---------------------- invitations ---------------------------
+
+   // contacts
+   bool     RequestListOfInvitationsSentForContacts() const;
+   bool     RequestListOfInvitationsReceivedForContacts() const;
+   bool     AcceptInvitationForContacts( const string& uuid ) const;
+   bool     DeclineInvitationForContacts( const string& uuid, string message ) const;
+   bool     RemoveSentInvitationForContacts( const string& uuid ) const;
+
+   bool     GetListOfInvitationsReceivedForContacts( list< InvitationInfo >& keyValues );
+   bool     GetListOfInvitationsSentForContacts( list< InvitationInfo >& keyValues );
+   
+   bool     SendSearchForUsers( const string& searchString, int numRequested, int offset ) const; // min 2 char
+   bool     InviteUserToBeFriend( const string& uuid, const string& username, const string& message );
+
+   // all other types
+   bool     RequestListOfInvitations() const;
+   bool     AcceptInvitation( const string& uuid ) const;
+   bool     DeclineInvitation( const string& uuid, string message ) const;
+   bool     RemoveSentInvitation( const string& uuid ) const;
+
+   bool     GetListOfInvitationsReceived( list< Invitation >& invitations );
+   bool     GetListOfInvitationsSent( list< Invitation >& invitations );
+   bool     InviteUserToChatChannel( const string& channelUuid, const string& userUuid, const string& message );
 
    //--------------------------------------------------------------
 
@@ -131,6 +147,7 @@ public:
    bool     AddUserToChannel( const string& userUuid, const string& channelUuid ); // PacketChatAddUserToChatChannel
    //bool     DeleteChannel( const string& channelUuid ); // PacketChatDeleteChatChannel
    bool     LeaveChannel( const string& channelUuid );// remove self from channel .. PacketChatRemoveUserFromChatChannel
+   bool     RequestChatChannelInfo( const string& channelUuid );
 
    //--------------------------------------------------------------
    // ********************   Purchases/Products   *******************
@@ -147,6 +164,7 @@ public:
    int      GetNumAvailableProducts() const { return m_products.size(); }
    bool     GetAvailableProduct( int index, ProductBriefPacketed& purchase ) const; // not complete
 
+   //------------------------- asset -------------------------------
    bool     RequestListOfAssetCategories();
    
    bool     RequestListOfAssets( const string& category, int platformId = Platform_ios );
@@ -257,6 +275,7 @@ protected:
 
    SerializedKeyValueVector< InvitationInfo >   m_invitationsReceived;
    SerializedKeyValueVector< InvitationInfo >   m_invitationsSent;
+   list< Invitation >                           m_invitations;
    SerializedVector< ProductBriefPacketed >     m_products;
    SerializedVector< RegisteredDevice >         m_devices;
    UserNameKeyValue                             m_friends;

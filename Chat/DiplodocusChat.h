@@ -17,7 +17,8 @@ using namespace std;
 class ChatUser;
 class PacketDbQuery;
 class PacketDbQueryResult;
-class ChatChannelManager;
+class ChatRoomManager;
+class InvitationManager;
 
 //////////////////////////////////////////////////////////////////////////////////
 
@@ -30,7 +31,8 @@ public:
    DiplodocusChat( const string& serverName, U32 serverId );
    void     Init();
 
-   void     ChatChannelManagerNeedsUpdate() { m_chatChannelManagerNeedsUpdate = true; }
+   void     ChatChannelManagerNeedsUpdate() { m_chatRoomManagerNeedsUpdate = true; }
+   void     InvitationManagerNeedsUpdate() { m_invitationManagerNeedsUpdate = true; }
    void     ServerWasIdentified( IChainedInterface* khaan );
 
    bool     AddInputChainData( BasePacket* packet, U32 connectionId );
@@ -38,7 +40,7 @@ public:
    bool     SendMessageToClient( BasePacket* packet, U32 connectionId );
 
    // from both the ChatUser and the ChatChannelManager
-   bool     AddQueryToOutput( PacketDbQuery* packet, U32 connectionId, bool isChatChannelManager );
+   bool     AddQueryToOutput( PacketDbQuery* packet, U32 connectionId );
 
    //-------------------------------------
 public:
@@ -48,12 +50,14 @@ public:
    ChatUser*    GetUserById( U32 userId );
    ChatUser*    GetUserByUuid( const string& userName );
    ChatUser*    GetUserByUsername( const string& userName );
+   ChatUser*    GetUserByConnectionId( U32 ConnectionId );
 
    //-------------------------------------
 private:
    ChatUser*    CreateNewUser( U32 connectionId );
 
    bool     HandleChatPacket( BasePacket* packet, U32 connectionId );
+   bool     HandleInvitationPacket( BasePacket* packet, U32 connectionId );
    bool     HandleLoginPacket( BasePacket* packet, U32 connectionId );
    bool     HandlePacketFromOtherServer( BasePacket* packet, U32 connectionId );
    bool     HandlePacketFromClient( BasePacket* packet );
@@ -61,6 +65,7 @@ private:
    void     RemoveLoggedOutUsers();
 
    void     UpdateChatChannelManager();
+   void     UpdateInvitationManager();
    void     UpdateAllChatUsers();
    void     UpdateDbResults();
    void     TrackCountStats( StatTracking stat, float value, int sub_category );
@@ -78,8 +83,11 @@ private:
 
    static const int              logoutTimeout = 2 * 60; // two minutes 
 
-   ChatChannelManager*           m_chatChannelManager;
-   bool                          m_chatChannelManagerNeedsUpdate;
+   ChatRoomManager*              m_chatRoomManager;
+   bool                          m_chatRoomManagerNeedsUpdate;
+
+   InvitationManager*            m_invitationManager;
+   bool                          m_invitationManagerNeedsUpdate;
 
    time_t                        m_timestampHourlyStatServerStatisics;
    static const U32              timeoutHourlyStatisics = 60*60;

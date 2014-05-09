@@ -5,11 +5,11 @@ using namespace std;
 
 #include "../NetworkCommon/DataTypes.h"
 
-struct UsersChatChannelList
+struct UsersChatRoomList
 {
 public:
 
-   UsersChatChannelList( const string& uuid ) : userUuid( uuid ) {}
+   UsersChatRoomList( const string& uuid ) : userUuid( uuid ) {}
    // default copy operator and copy c'tor
 
    

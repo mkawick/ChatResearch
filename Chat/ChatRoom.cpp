@@ -1,8 +1,8 @@
-#include "ChatChannel.h"
+#include "ChatRoom.h"
 
-ChatChannel::ChatChannel(): recordId( 0 ), 
+ChatRoom::ChatRoom(): recordId( 0 ), 
                            isActive( false ), 
-                           maxPlayers( DefaultMaxNumPlayersInChatchannel ), 
+                           maxPlayers( DefaultMaxNumPlayersInChatRoom ), 
                            gameType( 0 ), 
                            gameInstanceId( 0 ), 
                            gameTurn( 0 )
