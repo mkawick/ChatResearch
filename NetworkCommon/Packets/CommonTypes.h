@@ -154,7 +154,7 @@ public:
    int            size() const { return static_cast< int >( m_data.size() ); }
    const type&    operator[]( int index ) { return m_data[ index ]; }
    const type&    operator[]( int index ) const { return m_data[ index ]; }
-   bool  remove( int index ) { if ( index <0 || index >= m_data.size() ) return false; m_data.erase( index ); return true; }
+   bool  remove( U32 index ) { if ( index <0 || index >= m_data.size() ) return false; m_data.erase( m_data.begin() + index ); return true; }
 
 protected:
    vector< type >    m_data;

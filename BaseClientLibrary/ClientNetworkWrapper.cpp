@@ -3077,7 +3077,7 @@ bool     ClientNetworkWrapper::HandlePacketReceived( BasePacket* packetIn )
                if( response->success == true )
                {
                   Threading::MutexLock    locker( m_notificationMutex );
-                  for( U32 i = 0; i<m_devices.size(); i++ )
+                  for( int i = 0; i<m_devices.size(); i++ )
                   {
                      if( m_devices[ i ].uuid == response->deviceUuid )
                      {
