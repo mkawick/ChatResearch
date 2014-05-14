@@ -54,8 +54,9 @@ public:
    virtual void  InvitationAccepted( const string& sender, const string& receiver, bool wasAccepted ){}
    virtual void  SearchForUserResultsAvailable() {}
 
-   virtual void  GenericInvitationsUpdated() {} // generic list of all invitations
+   virtual void  GenericInvitationsUpdated( U32 type = 0 ) {} // generic list of all invitations
    virtual void  GenericInvitationRejected() {}
+   virtual void  GroupInvitationsUpdated( U32 type = 0 ) {} // generic list of all invitations
 
    virtual void  ChatChannelHistory( const string& channelUuid, const list< ChatEntry >& listOfChats ) {  }
    virtual void  ChatP2PHistory( const string& userUuid, const list< ChatEntry >& listOfChats ) { }
@@ -68,7 +69,7 @@ public:
    virtual void  ChatChannel_UserRemoved( const string& channelUuid, const string& userUuid, bool success ) { }
    //virtual void  NewChatChannelAdded( const string& channelName, const string& channelUuid, bool success ) { }
 
-   virtual void  ChatChannelDetailsIncludingInvites( const ChatChannel& info ) {}
+   virtual void  ChatChannelMembers( const string& channelUuid, const SerializedKeyValueVector< string >& info ) {}
 
    virtual void  AssetCategoriesLoaded() {}
    virtual void  AssetManifestAvailable( const string& category ) {}
@@ -82,6 +83,7 @@ public:
    virtual void  ProductsForSale( const SerializedKeyValueVector< PurchaseInfo >& thingsToBuy ) {}
 
    virtual void  ListOfDevicesUpdated() const {}
+   virtual void  DeviceRemoved( const string& uuid, bool success ) {}
 
    ClientSideNetworkCallback(): network( NULL ){}
 
@@ -128,6 +130,7 @@ public:
 
       NotificationType_GenericInvitationsUpdated,
       NotificationType_GenericInvitationRejected,
+      NotificationType_GroupInvitationsUpdated,
 
       NotificationType_ChatChannelHistory,
       NotificationType_ChatP2PHistory,
@@ -138,7 +141,7 @@ public:
 
       NotificationType_ChatChannel_UserAdded,
       NotificationType_ChatChannel_UserRemoved,
-      NotificationType_ChatChannelDetailsIncludingInvites,
+      NotificationType_ChatChannelMembers,
 
       NotificationType_AssetCategoriesLoaded,
       NotificationType_AssetManifestAvailable,
@@ -151,6 +154,7 @@ public:
       NotificationType_PurchaseSuccess,
       NotificationType_ProductsForSale,
       NotificationType_ListOfDevicesUpdated,
+      NotificationType_DeviceRemoved,
       NotificationType_Num
    };
    ClientNetworkWrapper* network;

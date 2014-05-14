@@ -39,8 +39,11 @@ public:
 private:
 
    virtual void  CreateJob( const KhaanServerToServer* khaan, BasePacket* packet );
+
+   void     SendJobsToUpperLayers();
    int   CallbackFunction();
 
+   deque< PacketServerJobWrapper* >    m_unprocessedJobs;
    deque<U32>     m_serversNeedingUpdate;
    U32            m_jobIdTracker;
 };

@@ -6,6 +6,8 @@ REM Pushd C:/projects/MberSW/main
 REM start C:/projects/MberSW/main/WorkArea/game_serverD.exe listen.port=21000 db.address=10.16.4.44 db.port=3306 db.username=incinerator db.password=Cm8235 db.schema=playdek s2s.port=21002 chat.port=7402
 REM Popd
 
+start ./debug/LoadBalancer.exe listen.address=localhost listen.port=9500 s2s.port=9502
+
 start ./debug/LoginServer.exe db.address=10.16.4.44 db.port=3306 db.username=incinerator db.password=Cm8235 db.schema=playdek listen.address=localhost listen.port=7600 contact.address=localhost chat.address=localhost contact.port=7502 asset.port=7302 autoAddLoginProduct=false games=[localhost:21000:summon_war,192.168.1.1:21100:MFM]
 
 ping -n 1 -w 1000 127.0.0.1 > nul

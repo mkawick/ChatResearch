@@ -375,6 +375,20 @@ void     ChatRoomManager::PackageAndSendToOtherServer( BasePacket* packet, U32 s
 
 //---------------------------------------------------------------
 
+bool     ChatRoomManager::GetGroupName( const string& groupUuid, string& name ) const
+{
+   name.clear();
+   stringhash roomLookup = GenerateUniqueHash( groupUuid );
+   ChannelMapConstIterator channelIter = m_channelMap.find( roomLookup );   
+   if( channelIter != m_channelMap.end() )
+   {
+      name = channelIter->second.name;
+      return true;
+   }
+   return false;
+}
+//---------------------------------------------------------------
+
 bool     ChatRoomManager::GetChatRooms( const string& userUuid, ChannelFullKeyValue& availableChannels )
 {
    availableChannels.clear();
@@ -419,6 +433,15 @@ U32      ChatRoomManager::GetUserId( const string& userUuid ) const
    UsersChatRoomList user ( userUuid );
    GetUserInfo( userUuid, user );
    return user.userId;
+}
+
+//---------------------------------------------------------------------
+
+string   ChatRoomManager::GetUserName( const string& userUuid ) const
+{
+   UsersChatRoomList user ( userUuid );
+   GetUserInfo( userUuid, user );
+   return user.userName;
 }
 
 //---------------------------------------------------------------------
@@ -554,7 +577,7 @@ bool        ChatRoomManager::GetUserInfo( const string& userUuid, UsersChatRoomL
    return false;
 }
 
-bool     ChatRoomManager::IsRoomValid( const string& channelUuid ) const
+bool     ChatRoomManager::IsGroupValid( const string& channelUuid ) const
 {
    stringhash  channelHash = GenerateUniqueHash( channelUuid );
    if( m_channelMap.find( channelHash ) == m_channelMap.end() )
@@ -865,6 +888,18 @@ bool   ChatRoomManager::DeleteRoom( const PacketChatDeleteChatChannelFromGameSer
    return success;
 }
 
+
+//---------------------------------------------------------------
+
+bool     ChatRoomManager::SendMessageToClient( BasePacket* packet, U32 connectionId ) const
+{
+   PacketGatewayWrapper* wrapper = new PacketGatewayWrapper();
+   wrapper->SetupPacket( packet, connectionId );
+
+   m_chatServer->SendMessageToClient( wrapper, connectionId );
+   return true;
+}
+
 //---------------------------------------------------------------------
 
 bool     ChatRoomManager::DeleteRoom( const string& channelUuid, const string& userUuid )
@@ -1097,9 +1132,31 @@ bool     ChatRoomManager::UserSendsChatToChannel( const string& senderUuid, cons
    return true;
 }
 
-bool     ChatRoomManager::RequestChatRoomInfo( const PacketChatListAllMembersInChatChannel* packet )// users + pending
+bool     ChatRoomManager::RequestChatRoomInfo( const PacketChatListAllMembersInChatChannel* packet, U32 connectionId )
 {
-   assert( 0 );
+   const string& channelUuid = packet->chatChannelUuid;
+   stringhash channelHash = GenerateUniqueHash( channelUuid );
+
+   ChannelMapIterator channelIter = m_channelMap.find( channelHash );
+   if( channelIter == m_channelMap.end() )
+   {
+      m_chatServer->SendErrorToClient( connectionId, PacketErrorReport::ErrorType_BadChatChannel );
+      return false;
+   }
+
+   PacketChatListAllMembersInChatChannelResponse* response = new PacketChatListAllMembersInChatChannelResponse;
+   SerializedKeyValueVector< string >& userList = response->userList;
+   response->chatChannelUuid = packet->chatChannelUuid;
+
+   ChatRoom& channel = channelIter->second;
+   list< UserBasics >::iterator userIt = channel.userBasics.begin();
+   while( userIt != channel.userBasics.end() )
+   {
+      UserBasics& ub = *userIt++;
+      userList.insert( ub.userUuid, ub.userName );
+   }
+
+   SendMessageToClient( response, connectionId );
 
    return true;
 }
@@ -1384,9 +1441,9 @@ bool     ChatRoomManager::AddUserToRoom( const string& channelUuid, const string
 
 //---------------------------------------------------------------------
 
-bool     ChatRoomManager::UserAddsSelfToRoom( const string& channelUuid, const string& addedUserUuid )
+bool     ChatRoomManager::UserAddsSelfToGroup( const string& channelUuid, const string& addedUserUuid )
 {
-   string errorText = " UserAddsSelfToRoom: User ";
+   string errorText = " UserAddsSelfToGroup: User ";
    errorText += addedUserUuid;
    errorText += " to channel ";
    errorText += channelUuid;

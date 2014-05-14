@@ -10,7 +10,7 @@
 
 //#define _MEMLEAK_TESTING_
 
-static const U8   GlobalNetworkProtocolVersion = 20;
+static const U8   GlobalNetworkProtocolVersion = 23;
 
 ///////////////////////////////////////////////////////////////
 
@@ -439,6 +439,7 @@ public:
       ErrorType_Invitation_ExistingInvitationWithThatUser =   1100,
       ErrorType_Invitation_DoesNotExist =                     1101,
       ErrorType_Invitation_UserIsBlockingInvites =            1102,
+      ErrorType_Invitation_BadServerSetup =                   1103,
 
       ErrorType_IncompleteFeature    =                        9900,
       ErrorType_Limit =                                      10000

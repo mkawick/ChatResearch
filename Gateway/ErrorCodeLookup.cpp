@@ -104,6 +104,8 @@ string  ErrorCodeLookup::GetString( int id )
       case PacketErrorReport::ErrorType_Notification_unknown2:                         return string( "Notification_unknown2" );
       case PacketErrorReport::ErrorType_Invitation_ExistingInvitationWithThatUser:     return string( "An Invitation already exists for the group with these two users" );
       case PacketErrorReport::ErrorType_Invitation_DoesNotExist:                       return string( "Invalid invitation" );
+      case PacketErrorReport::ErrorType_Invitation_UserIsBlockingInvites:              return string( "User is blocking invitations" );
+      case PacketErrorReport::ErrorType_Invitation_BadServerSetup:                     return string( "Server is not configured properly for invites of this kind" );
 
       case PacketErrorReport::ErrorType_IncompleteFeature:                             return string( "This feature is incompete" );
    };

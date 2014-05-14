@@ -265,6 +265,12 @@ bool     ChatUser::HandleClientRequest( BasePacket* packet )
                m_chatRoomManager->SetUserPreferences( m_uuid, m_blockContactInvitations, m_blockGroupInvitations );
             }             
             break; 
+         case PacketChatToServer::ChatType_ListAllMembersInChatChannel:
+            {
+               PacketChatListAllMembersInChatChannel* request = static_cast< PacketChatListAllMembersInChatChannel* > ( packet );
+               m_chatRoomManager->RequestChatRoomInfo( request, m_connectionId );
+            }
+            break;
       /*   case PacketChatToServer::ChatType_RequestChatters:
             {
                PacketChatRequestChatters* request = static_cast< PacketChatRequestChatters* > ( packet );
@@ -277,12 +283,7 @@ bool     ChatUser::HandleClientRequest( BasePacket* packet )
                //m_chatRoomManager->AddUserToChannel( request->name, m_uuid );
             }
             break;
-         case PacketChatToServer::ChatType_ListAllMembersInChatChannel:
-            {
-               PacketChatListAllMembersInChatChannel* request = static_cast< PacketChatListAllMembersInChatChannel* > ( packet );
-               m_chatRoomManager->RequestAllUsersInChatChannel( request->chatChannelUuid, request->fullList, m_uuid );
-            }
-            break;
+         
          case PacketChatToServer::ChatType_AdminLoadAllChannels:
             {
                //PacketChatAdminLoadAllChannels* request = static_cast< PacketChatAdminLoadAllChannels* > ( packet );

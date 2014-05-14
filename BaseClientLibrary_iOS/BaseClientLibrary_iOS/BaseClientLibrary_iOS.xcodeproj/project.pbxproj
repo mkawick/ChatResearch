@@ -45,6 +45,7 @@
 		705B338F1885F20B00CCDDE3 /* StatPacket.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 705B338D1885F20B00CCDDE3 /* StatPacket.cpp */; };
 		707B53F41794C1A6001D9BA1 /* DbPacket.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 707B53F21794C1A6001D9BA1 /* DbPacket.cpp */; };
 		708C205419083BC4009BB5D0 /* ClientNetworkWrapper.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 708C204F19083BC4009BB5D0 /* ClientNetworkWrapper.cpp */; };
+		70A0A4BB1919A0D200A6630B /* InvitationPacket.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 70A0A4B91919A0D200A6630B /* InvitationPacket.cpp */; };
 		FAA2B309182B16E200A563B9 /* TournamentPacket.cpp in Sources */ = {isa = PBXBuildFile; fileRef = FAA2B307182B16E200A563B9 /* TournamentPacket.cpp */; };
 		FAA67650181F192A00D9FF01 /* PurchasePacket.cpp in Sources */ = {isa = PBXBuildFile; fileRef = FAA6764D181F192A00D9FF01 /* PurchasePacket.cpp */; };
 /* End PBXBuildFile section */
@@ -119,6 +120,8 @@
 		708C204F19083BC4009BB5D0 /* ClientNetworkWrapper.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = ClientNetworkWrapper.cpp; path = ../BaseClientLibrary/ClientNetworkWrapper.cpp; sourceTree = "<group>"; };
 		708C205019083BC4009BB5D0 /* ClientNetworkWrapper.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = ClientNetworkWrapper.h; path = ../BaseClientLibrary/ClientNetworkWrapper.h; sourceTree = "<group>"; };
 		708C205119083BC4009BB5D0 /* ClientSideNetworkCallback.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = ClientSideNetworkCallback.h; path = ../BaseClientLibrary/ClientSideNetworkCallback.h; sourceTree = "<group>"; };
+		70A0A4B91919A0D200A6630B /* InvitationPacket.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = InvitationPacket.cpp; sourceTree = "<group>"; };
+		70A0A4BA1919A0D200A6630B /* InvitationPacket.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = InvitationPacket.h; sourceTree = "<group>"; };
 		FAA2B307182B16E200A563B9 /* TournamentPacket.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = TournamentPacket.cpp; sourceTree = "<group>"; };
 		FAA2B308182B16E200A563B9 /* TournamentPacket.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = TournamentPacket.h; sourceTree = "<group>"; };
 		FAA6764D181F192A00D9FF01 /* PurchasePacket.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = PurchasePacket.cpp; sourceTree = "<group>"; };
@@ -223,6 +226,8 @@
 		34EA687817611DD400F07E19 /* Packets */ = {
 			isa = PBXGroup;
 			children = (
+				70A0A4B91919A0D200A6630B /* InvitationPacket.cpp */,
+				70A0A4BA1919A0D200A6630B /* InvitationPacket.h */,
 				4C6C019D18F3425E004B0BF6 /* NotificationPacket.cpp */,
 				4C6C019E18F3425E004B0BF6 /* NotificationPacket.h */,
 				705282BE18EB71B000169F69 /* CommonTypes.cpp */,
@@ -376,6 +381,7 @@
 				705282C418EB71B000169F69 /* Serialize.cpp in Sources */,
 				708C205419083BC4009BB5D0 /* ClientNetworkWrapper.cpp in Sources */,
 				703B00CC19084A6400C36217 /* NetworkWrapper_SupportClasses.cpp in Sources */,
+				70A0A4BB1919A0D200A6630B /* InvitationPacket.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

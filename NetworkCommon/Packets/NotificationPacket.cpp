@@ -259,3 +259,41 @@ bool  PacketNotification_RequestListOfDevicesResponse::SerializeOut( U8* data, i
 }
 
 ///////////////////////////////////////////////////////////////
+
+bool  PacketNotification_RemoveDevice::SerializeIn( const U8* data, int& bufferOffset )
+{
+   PacketNotification::SerializeIn( data, bufferOffset );
+   Serialize::In( data, bufferOffset, deviceUuid );
+
+   return true;
+}
+
+bool  PacketNotification_RemoveDevice::SerializeOut( U8* data, int& bufferOffset ) const
+{
+   PacketNotification::SerializeOut( data, bufferOffset );
+   Serialize::Out( data, bufferOffset, deviceUuid );
+
+   return true;
+}
+
+///////////////////////////////////////////////////////////////
+
+bool  PacketNotification_RemoveDeviceResponse::SerializeIn( const U8* data, int& bufferOffset )
+{
+   PacketNotification::SerializeIn( data, bufferOffset );
+   Serialize::In( data, bufferOffset, deviceUuid );
+   Serialize::In( data, bufferOffset, success );
+
+   return true;
+}
+
+bool  PacketNotification_RemoveDeviceResponse::SerializeOut( U8* data, int& bufferOffset ) const
+{
+   PacketNotification::SerializeOut( data, bufferOffset );
+   Serialize::Out( data, bufferOffset, deviceUuid );
+   Serialize::Out( data, bufferOffset, success );
+
+   return true;
+}
+
+///////////////////////////////////////////////////////////////

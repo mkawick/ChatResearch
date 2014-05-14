@@ -22,7 +22,6 @@ using namespace std;
 #include "DiplodocusChat.h"
 #include "ChatUser.h"
 #include "ChatRoomManager.h"
-#include "InvitationManager.h"
 
 
 ///////////////////////////////////////////////////////////////////
@@ -54,13 +53,14 @@ void  DiplodocusChat :: Init()
 
    InvitationManager::Set( this );
    InvitationManager::Set( m_chatRoomManager );
-   m_invitationManager = new InvitationManager();
+   m_invitationManager = new InvitationManager( Invitation::InvitationType_ChatRoom );
    m_invitationManager->SetDbIdentifier( 2 );
    m_invitationManager->Init();
    
 
    ChatUser::Set( this );
    ChatUser::Set( m_chatRoomManager );
+   Diplodocus< KhaanChat >::Init();
 }
 
 //---------------------------------------------------------------
@@ -180,6 +180,32 @@ ChatUser*    DiplodocusChat::GetUserByConnectionId( U32 ConnectionId )
    return NULL;
 }
 
+string      DiplodocusChat::GetUserUuidByConnectionId( U32 connectionId )
+{
+   const ChatUser*  user = GetUserByConnectionId( connectionId );
+   if( user == NULL )
+      return string();
+   return user->GetUuid();
+}
+
+void        DiplodocusChat::GetUserConnectionId( const string& uuid, U32& connectionId )
+{
+   connectionId = 0;
+
+   ChatUser* user = GetUserByUuid( uuid );
+   if( user )
+      connectionId = user->GetConnectionId();
+}
+
+string      DiplodocusChat::GetUserName( const string& uuid )
+{
+   const ChatUser*  user = GetUserByUuid( uuid );
+   if( user == NULL )
+      return string();
+   return user->GetUuid();
+}
+
+//---------------------------------------------------------------
 //---------------------------------------------------------------
 
 void     DiplodocusChat::ServerWasIdentified( IChainedInterface* khaan )
@@ -229,7 +255,7 @@ bool     DiplodocusChat::HandleChatPacket( BasePacket* packet, U32 connectionId 
       case PacketChatToServer::ChatType_ListAllMembersInChatChannel:
          {
             PacketChatListAllMembersInChatChannel* pPacket = static_cast< PacketChatListAllMembersInChatChannel* > ( packet );
-            m_chatRoomManager->RequestChatRoomInfo( pPacket );
+            m_chatRoomManager->RequestChatRoomInfo( pPacket, connectionId );
          }
   /* ChatType_InviteUserToChatChannel,
    ChatType_InviteUserToChatChannelResponse,*/
@@ -444,24 +470,24 @@ void  DiplodocusChat::UpdateDbResults()
    deque< PacketDbQueryResult* >::iterator it = tempQueue.begin();
    while( it != tempQueue.end() )
    {
-      PacketDbQueryResult* result = *it++;
-      if( result->customData != NULL )
+      PacketDbQueryResult* dbResult = *it++;
+      if( dbResult->customData != NULL )
             cout << "UpdateDbResults: Non-null custom data " << endl;
-      BasePacket* packet = static_cast<BasePacket*>( result );
+      BasePacket* packet = static_cast<BasePacket*>( dbResult );
 
-      U32 connectionId = result->id;
+      U32 connectionId = dbResult->id;
 
-      if( result->serverLookup == m_chatRoomManager->GetDbIdentifier() ) //&& connectionId == ChatChannelManagerUniqueId )
+      if( dbResult->serverLookup == m_chatRoomManager->GetDbIdentifier() ) //&& connectionId == ChatChannelManagerUniqueId )
       {
-         if( m_chatRoomManager->HandleDbResult( result ) == false )
+         if( m_chatRoomManager->HandleDbResult( dbResult ) == false )
          {
             factory.CleanupPacket( packet );
          }
          m_chatRoomManagerNeedsUpdate = true;
       }
-      else if( result->serverLookup == m_invitationManager->GetDbIdentifier() ) //&& connectionId == ChatChannelManagerUniqueId )
+      else if( dbResult->serverLookup == m_invitationManager->GetDbIdentifier() ) //&& connectionId == ChatChannelManagerUniqueId )
       {
-         if( m_invitationManager->HandleDbResult( result ) == false )
+         if( m_invitationManager->HandleDbResult( dbResult ) == false )
          {
             factory.CleanupPacket( packet );
          }
@@ -472,7 +498,7 @@ void  DiplodocusChat::UpdateDbResults()
          ChatUser* user = GetUser( connectionId );
          if( user )
          {
-            user->HandleDbResult( result );
+            user->HandleDbResult( dbResult );
          }
          else
          {
@@ -637,6 +663,12 @@ bool     DiplodocusChat::AddQueryToOutput( PacketDbQuery* dbQuery, U32 connectio
 
    factory.CleanupPacket( deleteMe );
    return false;
+}
+//---------------------------------------------------------------
+
+bool     DiplodocusChat::SendErrorToClient( U32 connectionId, PacketErrorReport::ErrorType error )
+{
+   return Diplodocus< KhaanChat >:: SendErrorToClient( connectionId, error, 0 );
 }
 
 //---------------------------------------------------------------

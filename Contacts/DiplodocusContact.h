@@ -3,6 +3,7 @@
 
 #include "../NetworkCommon/Database/QueryHandler.h"
 #include "../NetworkCommon/Stat/StatTrackingConnections.h"
+#include "../NetworkCommon/Invitations/InvitationManager.h"
 #include "KhaanContact.h"
 #include "UserContact.h"
 
@@ -12,10 +13,11 @@ using namespace std;
 class PacketPrepareForUserLogin;
 class PacketPrepareForUserLogout;
 class PacketUserUpdateProfile;
+class UserLookupManager;
 
 ///////////////////////////////////////////////////////////////////
 
-class DiplodocusContact :  public Diplodocus< KhaanContact >, StatTrackingConnections
+class DiplodocusContact :  public Diplodocus< KhaanContact >, public StatTrackingConnections, public PacketSendingInterface
 {
 public:
    typedef Diplodocus< KhaanContact > Parent;
@@ -24,6 +26,8 @@ public:
 
 public:
    DiplodocusContact( const string& serverName, U32 serverId );
+   void     Init();
+
    void     ServerWasIdentified( IChainedInterface* khaan );
    bool     AddInputChainData( BasePacket* packet, U32 connectionId );
 
@@ -33,7 +37,6 @@ public:
 
    bool     AddOutputChainData( BasePacket* packet, U32 connectionId );
    bool     AddQueryToOutput( PacketDbQuery* query );
-   //bool     SendErrorToClient( U32 connectionId, PacketErrorReport::ErrorType error );
 
    void     TrackNumSearches() { m_numSearches++; }
    void     TrackInviteSent() { m_numInvitesSent++; }
@@ -42,6 +45,16 @@ public:
    void     ClearStats();
 
    U32      GetInvitationExpryTime() const { return m_secondsBetweenSendingInvitationAndExpiration; }
+
+   void     InvitationManagerNeedsUpdate() { m_invitationManagerNeedsUpdate = true; }
+   void     UserLookupNeedsUpdate() { m_userLookupNeedsUpdate = true; }
+
+   bool     SendMessageToClient( BasePacket* packet, U32 connectionId );
+   bool     AddQueryToOutput( PacketDbQuery* packet, U32 connectionId );
+   bool     SendErrorToClient( U32 connectionId, PacketErrorReport::ErrorType error );
+   string   GetUserUuidByConnectionId( U32 connectionId );
+   void     GetUserConnectionId( const string& uuid, U32& connectionId );
+   string   GetUserName( const string& uuid );
 
 private:
 
@@ -103,6 +116,12 @@ private:
 
    time_t                           m_timestampExpireOldInvitations;
    U32                              m_secondsBetweenSendingInvitationAndExpiration;
+
+   UserLookupManager*               m_userLookup;
+   bool                             m_invitationManagerNeedsUpdate;
+
+   InvitationManager*               m_invitationManager;
+   bool                             m_userLookupNeedsUpdate;
 
    enum QueryType 
    {

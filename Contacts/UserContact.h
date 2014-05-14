@@ -1,4 +1,5 @@
 #pragma once
+
 #include "../NetworkCommon/DataTypes.h"
 #include "../NetworkCommon/Packets/ContactPacket.h"
 #include "../NetworkCommon/Utils/TableWrapper.h"
@@ -8,7 +9,7 @@ class DiplodocusContact;
 class PacketContact;
 class PacketUserUpdateProfile;
 
-struct Invitation
+struct P2PInvitation
 {
    int   inviterId;
    int   inviteeId;
@@ -137,8 +138,8 @@ private:
    time_t               m_timeLoggedOut;
 
    vector< UserInfo >   m_friends;
-   vector< Invitation > m_invitationsOut;
-   vector< Invitation > m_invitationsIn;
+   vector< P2PInvitation > m_invitationsOut;
+   vector< P2PInvitation > m_invitationsIn;
    //vector< PacketContact_InviteContact > m_invitationsPendingUserLookup;
 
    int                  m_invitationQueryIndex;

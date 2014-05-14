@@ -14,7 +14,8 @@ struct Invitation
       InvitationType_Group,
       InvitationType_Alliance,
       InvitationType_Friend,
-      InvitationType_Event
+      InvitationType_Event,
+      InvitationType_Num
    };
 
    string   invitationUuid;
@@ -22,6 +23,7 @@ struct Invitation
    string   inviterUuid;
    string   inviteeName; 
    string   inviteeUuid; 
+   string   groupName; // if the group has a name
    string   groupUuid; // applies to event UUIDs, tournament UUIDs, etc.
    string   message;
    string   date;
@@ -31,7 +33,16 @@ struct Invitation
 
    bool  SerializeIn( const U8* data, int& bufferOffset );
    bool  SerializeOut( U8* data, int& bufferOffset ) const;
+
+   bool  IsUserInThisInvitation( const string& uuid ) const { if( inviteeUuid == uuid || inviterUuid == uuid ) return true; return false; }
 };
+
+//////////////////////////////////////////////////////////////////////////////
+
+typedef bool (* MatchInvitationType)( const Invitation& invite, const string& userUuid ) ;
+
+bool     IsUserInThisInvitation( const Invitation& invite, const string& userUuid );
+bool     IsInvitationGroup( const Invitation& invite, const string& groupUuid );
 
 ///////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////
@@ -57,7 +68,10 @@ public:
       InvitationType_AcceptInvitation,      
 
       InvitationType_GetListOfInvitations,// none=all, or specify type
-      InvitationType_GetListOfInvitationsResponse
+      InvitationType_GetListOfInvitationsResponse,
+
+      InvitationType_GetListOfInvitationsForGroup,
+      InvitationType_GetListOfInvitationsForGroupResponse
    };
 
 public:
@@ -65,6 +79,8 @@ public:
 
    bool  SerializeIn( const U8* data, int& bufferOffset );
    bool  SerializeOut( U8* data, int& bufferOffset ) const;
+
+   U8       invitationType;  // Invitation:: InvitationType
 };
 
 ///////////////////////////////////////////////////////////////
@@ -85,18 +101,18 @@ public:
 
 ///////////////////////////////////////////////////////////////
 
-class PacketInvitation_EchoToServer : public BasePacket
+class PacketInvitation_EchoToServer : public PacketInvitation
 {
 public:
-   PacketInvitation_EchoToServer(): BasePacket( PacketType_Invitation, PacketInvitation::InvitationType_EchoToServer ) {}
+   PacketInvitation_EchoToServer(): PacketInvitation( PacketType_Invitation, PacketInvitation::InvitationType_EchoToServer ) {}
 };
 
 ///////////////////////////////////////////////////////////////
 
-class PacketInvitation_EchoToClient : public BasePacket
+class PacketInvitation_EchoToClient : public PacketInvitation
 {
 public:
-   PacketInvitation_EchoToClient(): BasePacket( PacketType_Invitation, PacketInvitation::InvitationType_EchoToClient ) {}
+   PacketInvitation_EchoToClient(): PacketInvitation( PacketType_Invitation, PacketInvitation::InvitationType_EchoToClient ) {}
 };
 
 ///////////////////////////////////////////////////////////////
@@ -112,7 +128,6 @@ public:
    string   userUuid; 
    string   inviteGroup;
    string   message;
-   U8       invitationType;
 };
 
 ///////////////////////////////////////////////////////////////
@@ -202,7 +217,6 @@ public:
    bool  SerializeIn( const U8* data, int& bufferOffset );
    bool  SerializeOut( U8* data, int& bufferOffset ) const;
 
-   string   userUuid;
 };
 
 ///////////////////////////////////////////////////////////////
@@ -211,13 +225,35 @@ class PacketInvitation_GetListOfInvitationsResponse : public PacketInvitation
 {
 public:
    PacketInvitation_GetListOfInvitationsResponse() : PacketInvitation( PacketType_Invitation, InvitationType_GetListOfInvitationsResponse ){  }
+   PacketInvitation_GetListOfInvitationsResponse( U8 type, U8 subType ) : PacketInvitation( type, subType ){  }
 
    bool  SerializeIn( const U8* data, int& bufferOffset );
    bool  SerializeOut( U8* data, int& bufferOffset ) const;
 
-   string   userUuid;
+   string   uuid;
    SerializedKeyValueVector < Invitation >  invitationList;
 };
+
+///////////////////////////////////////////////////////////////
+
+class PacketInvitation_GetListOfInvitationsForGroup : public PacketInvitation
+{
+public:
+   PacketInvitation_GetListOfInvitationsForGroup() : PacketInvitation( PacketType_Invitation, InvitationType_GetListOfInvitationsForGroup ){  }
+
+   bool  SerializeIn( const U8* data, int& bufferOffset );
+   bool  SerializeOut( U8* data, int& bufferOffset ) const;
+
+   string   groupUuid;
+};
+
+///////////////////////////////////////////////////////////////
+
+class PacketInvitation_GetListOfInvitationsForGroupResponse : public PacketInvitation_GetListOfInvitationsResponse
+{
+public:
+   PacketInvitation_GetListOfInvitationsForGroupResponse() : PacketInvitation_GetListOfInvitationsResponse( PacketType_Invitation, InvitationType_GetListOfInvitationsForGroupResponse ){  }
+}; 
 
 ///////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////

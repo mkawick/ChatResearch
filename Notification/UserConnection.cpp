@@ -222,6 +222,12 @@ bool  UserConnection::HandleRequestFromClient( const BasePacket* packet )
                RequestDevicesList( request );
             }
             break;
+         case PacketNotification::NotificationType_RemoveDevice: 
+            {
+               const PacketNotification_RemoveDevice* removal = static_cast< const PacketNotification_RemoveDevice* >( packet );
+               RemoveDevice( removal );
+            }
+            break;
         /* case PacketNotification::NotificationType_EnableDevice:
             {
             }
@@ -536,6 +542,7 @@ void        UserConnection::RequestDevicesList( const PacketNotification_Request
 {
    PacketNotification_RequestListOfDevicesResponse* response = new PacketNotification_RequestListOfDevicesResponse;
 
+   // todo, divide this into multiple packets to deal with overflow.
    RegisteredDeviceIterator deviceIt = m_deviceList.begin();
    while( deviceIt != m_deviceList.end() )
    {
@@ -551,6 +558,67 @@ void        UserConnection::RequestDevicesList( const PacketNotification_Request
          rd.productId = deviceNotificationIter->gameType;
          rd.uuid = deviceIt->uuid;
          response->devices.push_back( rd );
+      }
+      deviceIt++;
+   }
+
+   SendMessageToClient( response );
+}
+
+//------------------------------------------------------------
+
+void        UserConnection::RemoveDevice( const PacketNotification_RemoveDevice* removal )
+{
+   cout << "Remove device" << endl;
+   PacketNotification_RemoveDeviceResponse* response = new PacketNotification_RemoveDeviceResponse;
+   response->success = false;
+   response->deviceUuid = removal->deviceUuid;
+
+   RegisteredDeviceIterator deviceIt = m_deviceList.begin();
+   while( deviceIt != m_deviceList.end() )
+   {
+      U32 userDeviceId = deviceIt->userDeviceId;
+      DeviceNotificationsIterator deviceNotificationIter = FindDeviceNotificationByDeviceId( userDeviceId );
+      
+      if( deviceIt->uuid == removal->deviceUuid )
+      {
+
+         PacketDbQuery* dbQuery = new PacketDbQuery;
+         dbQuery->id =           m_userInfo.connectionId;
+         dbQuery->meta =         "";
+         dbQuery->lookup =       QueryType_DeleteDevice;
+         dbQuery->serverLookup = m_userInfo.userId;
+         dbQuery->query = "DELETE FROM user_device WHERE user_uuid='";
+         dbQuery->query += m_userInfo.uuid; // a little extra validation
+         dbQuery->query += "' AND id='";
+         dbQuery->query += boost::lexical_cast<string> ( deviceIt->userDeviceId );
+         dbQuery->query += "'";
+         dbQuery->isFireAndForget = true;
+
+         cout << dbQuery->query << endl;
+
+         m_mainThread->AddQueryToOutput( dbQuery );
+
+         dbQuery = new PacketDbQuery;
+         dbQuery->id =           m_userInfo.connectionId;
+         dbQuery->meta =         "";
+         dbQuery->lookup =       QueryType_DeleteDeviceNotification;
+         dbQuery->serverLookup = m_userInfo.userId;
+         dbQuery->query = "DELETE FROM user_device_notification WHERE user_device_id='";
+         dbQuery->query += boost::lexical_cast<string> ( deviceIt->userDeviceId );
+         dbQuery->query += "'";
+         dbQuery->isFireAndForget = true;
+
+         cout << dbQuery->query << endl;
+
+         m_mainThread->AddQueryToOutput( dbQuery );
+
+         m_deviceList.erase( deviceIt );
+         m_deviceEnabledList.erase( deviceNotificationIter );
+
+         response->success = true;
+
+         break; // iterator will be bad at this point
       }
       deviceIt++;
    }

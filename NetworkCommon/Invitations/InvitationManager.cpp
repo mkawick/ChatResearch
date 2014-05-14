@@ -1,20 +1,19 @@
 // InvitationManager.cpp
 
 #include <assert.h>
+#include <map>
+using namespace std;
 
 #include <iomanip>
 #include <boost/format.hpp>
 #include <boost/lexical_cast.hpp>
+#include <boost/version.hpp>
 using boost::format;
 
-#include "ChatRoomManager.h"
-#include "../NetworkCommon/Packets/BasePacket.h"
-#include "../NetworkCommon/Packets/ChatPacket.h"
-#include "../NetworkCommon/Packets/DbPacket.h"
-#include "../NetworkCommon/Packets/InvitationPacket.h"
-
-#include "DiplodocusChat.h"
-#include "ChatUser.h"
+#include "../Packets/PacketFactory.h"
+#include "../Utils/Utils.h"
+#include "../Utils/Enigmosaurus.h"
+//#include "../NetworkIn/Diplodocus.h"
 #include "InvitationManager.h"
 
 /*
@@ -52,17 +51,21 @@ typedef Enigmosaurus <TableUser_Invitation> InvitationTable;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-DiplodocusChat*         InvitationManager::m_chatServer;
-ChatRoomManager*        InvitationManager::m_chatRoomManager;
+PacketSendingInterface* InvitationManager::m_mainServer;
+GroupLookupInterface*   InvitationManager::m_groupLookup;
 
 ///////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////
 
 
-InvitationManager::InvitationManager() : m_dbIdentifier (0), 
+InvitationManager::InvitationManager( Invitation:: InvitationType type ) : m_dbIdentifier (0), 
                                          m_isInitialized( false ),
-                                         m_initialRequestForAllInvitesSent( false )
+                                         m_initialRequestForAllInvitesSent( false ),
+                                         m_type( type )
 {
+   time_t currentTime;
+   time( &currentTime );
+   m_timeOutBeforeInitializing = currentTime;
 }
 
 InvitationManager::~InvitationManager()
@@ -71,6 +74,13 @@ InvitationManager::~InvitationManager()
 
 void     InvitationManager::Init()
 {
+   time_t currentTime;
+   time( &currentTime );
+
+   if( difftime( currentTime, m_timeOutBeforeInitializing ) < 15 ) // let the other services finish because we rely on them
+   {
+      return;
+   }
    // load all invitations
    if( m_initialRequestForAllInvitesSent == false )
    {
@@ -80,9 +90,10 @@ void     InvitationManager::Init()
       dbQuery->lookup =       QueryType_AllInvitations;
       dbQuery->serverLookup = m_dbIdentifier;
       dbQuery->query = "SELECT invitation.*, U1.user_name, U2.user_name FROM invitation "\
-                        "INNER JOIN users AS U1 ON inviter_id = U1.uuid INNER JOIN users AS U2 ON invitee_id = U2.uuid";
+                        "INNER JOIN users AS U1 ON inviter_id = U1.uuid INNER JOIN users AS U2 ON invitee_id = U2.uuid  WHERE type=";
+      dbQuery->query += boost::lexical_cast< string >( m_type );
 
-      m_chatServer->AddQueryToOutput( dbQuery, 0 );
+      m_mainServer->AddQueryToOutput( dbQuery, 0 );
       m_initialRequestForAllInvitesSent = true;
    }
 }
@@ -119,7 +130,7 @@ bool     InvitationManager::HandleDbResult( PacketDbQueryResult* packet ) // not
    m_isInitialized = true;
 
    m_dbResults.push_back( packet );
-   m_chatServer->InvitationManagerNeedsUpdate();   
+   m_mainServer->InvitationManagerNeedsUpdate();   
    return true;
 }
 
@@ -199,6 +210,14 @@ bool     InvitationManager::HandlePacketRequest( const BasePacket* packet, U32 c
    case PacketInvitation::InvitationType_GetListOfInvitations:
       return RequestListOfInvitations( static_cast < const PacketInvitation_GetListOfInvitations*> ( packet ), connectionId );
 
+   case PacketInvitation::InvitationType_GetListOfInvitationsForGroup: 
+      return RequestListOfIntivationsToGroup( static_cast< const PacketInvitation_GetListOfInvitationsForGroup*> ( packet ), connectionId );
+
+   case PacketInvitation::InvitationType_GetListOfInvitationsForGroupResponse:
+      cout << "InvitationType_InvitationWasCancelled arrived at server" << endl;
+      assert( 0 );
+      break;
+      
    default:
       break;
    }
@@ -212,7 +231,7 @@ bool     InvitationManager::EchoHandler( U32 connectionId )
 {
    cout << " Echo " << endl;
    PacketInvitation_EchoToClient* echo = new PacketInvitation_EchoToClient;
-   m_chatServer->SendPacketToGateway( echo, connectionId );
+   SendMessageToClient( echo, connectionId );
    return true;
 }
 
@@ -221,34 +240,41 @@ bool     InvitationManager::EchoHandler( U32 connectionId )
 
 bool     InvitationManager::InviteUserToChatRoom( const PacketInvitation_InviteUser* invitationPacket, U32 connectionId )
 {
-   ChatUser* sender = m_chatServer->GetUserByConnectionId( connectionId );
-   if( sender == NULL )
+   if( m_groupLookup == NULL )
    {
-      m_chatServer->SendErrorToClient( connectionId, PacketErrorReport::ErrorType_UserUnknown );
+      m_mainServer->SendErrorToClient( connectionId, PacketErrorReport::ErrorType_Invitation_BadServerSetup );
       return false;
    }
 
-   UsersChatRoomList userInChatRoom( invitationPacket->userUuid );
-   if( m_chatRoomManager->GetUserInfo( invitationPacket->userUuid, userInChatRoom ) == false )
+   const string& senderUuid = m_mainServer->GetUserUuidByConnectionId( connectionId );
+   if( senderUuid.size() == 0 )
    {
-      m_chatServer->SendErrorToClient( connectionId, PacketErrorReport::ErrorType_UserUnknown );
+      m_mainServer->SendErrorToClient( connectionId, PacketErrorReport::ErrorType_UserUnknown );
       return false;
    }
 
-   if( m_chatRoomManager->IsRoomValid( invitationPacket->inviteGroup ) == false )
+   //UsersChatRoomList userInChatRoom( invitationPacket->userUuid );
+   string inviteeName = m_groupLookup->GetUserName( invitationPacket->userUuid );
+   if( inviteeName.size() == 0 )
    {
-      m_chatServer->SendErrorToClient( connectionId, PacketErrorReport::ErrorType_BadChatChannel );
+      m_mainServer->SendErrorToClient( connectionId, PacketErrorReport::ErrorType_UserUnknown );
       return false;
    }
 
-   if( IsThereAlreadyAnInvitationToThisGroupInvolvingTheseTwoUsers( invitationPacket->userUuid, sender->GetUuid(), invitationPacket->inviteGroup ) )
+   if( m_groupLookup->IsGroupValid( invitationPacket->inviteGroup ) == false )
+   {
+      m_mainServer->SendErrorToClient( connectionId, PacketErrorReport::ErrorType_BadChatChannel );
+      return false;
+   }
+
+   if( IsThereAlreadyAnInvitationToThisGroupInvolvingTheseTwoUsers( invitationPacket->userUuid, senderUuid, invitationPacket->inviteGroup ) )
    {
       PacketInvitation_InviteUserResponse* response = new PacketInvitation_InviteUserResponse;
       response->succeeded = false;
       response->newInvitationUuid = "";
 
-      m_chatServer->SendPacketToGateway( response, connectionId );
-      m_chatServer->SendErrorToClient( connectionId, PacketErrorReport::ErrorType_Invitation_ExistingInvitationWithThatUser );
+      SendMessageToClient( response, connectionId );
+      m_mainServer->SendErrorToClient( connectionId, PacketErrorReport::ErrorType_Invitation_ExistingInvitationWithThatUser );
       return false;
    }
 
@@ -262,33 +288,35 @@ bool     InvitationManager::InviteUserToChatRoom( const PacketInvitation_InviteU
    invite.invitationUuid = invitationUuid;
 
    invite.inviteeUuid = invitationPacket->userUuid;
-   invite.inviterUuid = sender->GetUuid();
+   invite.inviterUuid = senderUuid;
    invite.message = invitationPacket->message;
    invite.type = invitationPacket->invitationType;//Invitation::InvitationType_ChatRoom;
-   invite.inviteeName = userInChatRoom.userName;
-   invite.inviterName = sender->GetUserName();
-
-   InsertInvitationIntoDb( invite );
+   invite.inviteeName = inviteeName;
+   invite.inviterName = m_mainServer->GetUserName( senderUuid );
    AddInvitationToStorage( invite );
 
+
+   InsertInvitationIntoDb( invite );   
+
    // notify sender of the new invitation sent
-   SendUserHisInvitations( sender );
+   SendUserHisInvitations <PacketInvitation_GetListOfInvitationsResponse> ( m_invitationMap, IsUserInThisInvitation, senderUuid, connectionId );
    
    PacketInvitation_InviteUserResponse* response = new PacketInvitation_InviteUserResponse;
    response->succeeded = true;
    response->newInvitationUuid = invitationUuid;
 
-   m_chatServer->SendPacketToGateway( response, connectionId );
+   SendMessageToClient( response, connectionId );
 
-   ChatUser* receiver = m_chatServer->GetUserByUuid( invitationPacket->userUuid ); // only used to send updated invitations
+   U32 receivedConnectionId = 0;
+   m_mainServer->GetUserConnectionId( invitationPacket->userUuid, receivedConnectionId );
    // notify recipient of the new invitation received.
-   if( receiver != NULL )
+   if( receivedConnectionId != 0 )
    {
-      SendUserHisInvitations( receiver );
+      SendUserHisInvitations <PacketInvitation_GetListOfInvitationsResponse> ( m_invitationMap, IsUserInThisInvitation, invitationPacket->userUuid, receivedConnectionId );
      /* PacketInvitation_InviteUserResponse* response = new PacketInvitation_InviteUserResponse;
       response->succeeded = true;
       response->newInvitationUuid = invitationUuid;
-      m_chatServer->SendPacketToGateway( response, receiver->GetConnectionId() );*/
+      m_mainServer->SendPacketToGateway( response, receiver->GetConnectionId() );*/
    }
 
    return true;
@@ -298,28 +326,28 @@ bool     InvitationManager::InviteUserToChatRoom( const PacketInvitation_InviteU
 
 bool     InvitationManager::CancelInvitation( const PacketInvitation_CancelInvitation* invite, U32 connectionId  )
 {
-   m_chatServer->SendErrorToClient( connectionId, PacketErrorReport::ErrorType_IncompleteFeature );
+   m_mainServer->SendErrorToClient( connectionId, PacketErrorReport::ErrorType_IncompleteFeature );
       return false;
 /*
    stringhash lookup = GenerateUniqueHash( invitation->invitationUuid );
    InvitationMapIterator it = m_invitationMap.find( lookup );
    if( it == m_invitationMap.end() )
    {
-      m_chatServer->SendErrorToClient( connectionId, PacketErrorReport::ErrorType_Invitation_DoesNotExist );
+      m_mainServer->SendErrorToClient( connectionId, PacketErrorReport::ErrorType_Invitation_DoesNotExist );
       return false;
    }
 
    const Invitation& invite = it->second;
 
-   ChatUser* sender = m_chatServer->GetUserByConnectionId( connectionId );
+   ChatUser* sender = m_mainServer->GetUserByConnectionId( connectionId );
    if( sender == NULL )
    {
-      m_chatServer->SendErrorToClient( connectionId, PacketErrorReport::ErrorType_UserUnknown );
+      m_mainServer->SendErrorToClient( connectionId, PacketErrorReport::ErrorType_UserUnknown );
       return false;
    }
    if( invite.inviteeUuid != sender->GetUuid () )
    {
-      m_chatServer->SendErrorToClient( connectionId, PacketErrorReport::ErrorType_Invitation_DoesNotExist );// you are not allowed to accept this.
+      m_mainServer->SendErrorToClient( connectionId, PacketErrorReport::ErrorType_Invitation_DoesNotExist );// you are not allowed to accept this.
       return false;
    }
 
@@ -335,36 +363,38 @@ bool     InvitationManager::RejectInvitation( const PacketInvitation_RejectInvit
    InvitationMapIterator it = m_invitationMap.find( lookup );
    if( it == m_invitationMap.end() )
    {
-      m_chatServer->SendErrorToClient( connectionId, PacketErrorReport::ErrorType_Invitation_DoesNotExist );
+      m_mainServer->SendErrorToClient( connectionId, PacketErrorReport::ErrorType_Invitation_DoesNotExist );
       return false;
    }
 
    const Invitation& invite = it->second;
 
-   ChatUser* rejecter = m_chatServer->GetUserByConnectionId( connectionId );
-   if( rejecter == NULL )
+   string rejecterUuid = m_mainServer->GetUserUuidByConnectionId( connectionId );
+   if( rejecterUuid.size() == 0 )
    {
-      m_chatServer->SendErrorToClient( connectionId, PacketErrorReport::ErrorType_UserUnknown );
+      m_mainServer->SendErrorToClient( connectionId, PacketErrorReport::ErrorType_UserUnknown );
       return false;
    }
-   if( invite.inviteeUuid != rejecter->GetUuid () )
+   if( invite.inviteeUuid != rejecterUuid )
    {
-      m_chatServer->SendErrorToClient( connectionId, PacketErrorReport::ErrorType_Invitation_DoesNotExist );// you are not allowed to accept this.
+      m_mainServer->SendErrorToClient( connectionId, PacketErrorReport::ErrorType_Invitation_DoesNotExist );// you are not allowed to accept this.
       return false;
    }
 
    U32 invitationId = invite.invitationId;
-   ChatUser* inviter = m_chatServer->GetUserByUuid( invite.inviterUuid ); // only used to send updated invitations
+   string inviterUuid = invite.inviterUuid;
+   U32 inviterConnectionId = 0;
+   m_mainServer->GetUserConnectionId( inviterUuid, inviterConnectionId );
    m_invitationMap.erase( it );// must erase before sending the updated lists.
 
    PacketInvitation_RejectInvitationResponse* response = new PacketInvitation_RejectInvitationResponse;
    SendMessageToClient( response, connectionId );
-   SendUserHisInvitations( rejecter );
+   SendUserHisInvitations <PacketInvitation_GetListOfInvitationsResponse> ( m_invitationMap, IsUserInThisInvitation, rejecterUuid, connectionId );
 
    
-   if( inviter != NULL )
+   if( inviterConnectionId != 0 )
    {
-      SendUserHisInvitations( inviter );
+      SendUserHisInvitations <PacketInvitation_GetListOfInvitationsResponse> ( m_invitationMap, IsUserInThisInvitation, inviterUuid, inviterConnectionId );
    }
 
    DeleteInvitationFromDb( invitationId );
@@ -380,40 +410,52 @@ bool     InvitationManager::AcceptInvitation( const PacketInvitation_AcceptInvit
    InvitationMapIterator it = m_invitationMap.find( lookup );
    if( it == m_invitationMap.end() )
    {
-      m_chatServer->SendErrorToClient( connectionId, PacketErrorReport::ErrorType_Invitation_DoesNotExist );
+      m_mainServer->SendErrorToClient( connectionId, PacketErrorReport::ErrorType_Invitation_DoesNotExist );
       return false;
    }
 
    const Invitation& invite = it->second;
 
-   ChatUser* sender = m_chatServer->GetUserByConnectionId( connectionId );
-   if( sender == NULL )
+   U32 senderConnectionId = 0;
+   string senderUuid = m_mainServer->GetUserUuidByConnectionId( connectionId );
+   if( senderUuid.size() == 0 )
    {
-      m_chatServer->SendErrorToClient( connectionId, PacketErrorReport::ErrorType_UserUnknown );
+      m_mainServer->SendErrorToClient( connectionId, PacketErrorReport::ErrorType_UserUnknown );
       return false;
    }
-   if( invite.inviteeUuid != sender->GetUuid () )
+   if( invite.inviteeUuid != senderUuid )
    {
-      m_chatServer->SendErrorToClient( connectionId, PacketErrorReport::ErrorType_Invitation_DoesNotExist );// you are not allowed to accept this.
+      m_mainServer->SendErrorToClient( connectionId, PacketErrorReport::ErrorType_Invitation_DoesNotExist );// you are not allowed to accept this.
       return false;
    }
 
-   if( m_chatRoomManager->UserAddsSelfToRoom( invite.groupUuid, invite.inviteeUuid ) == false )// bad chat room
+   if( invite.groupUuid.size() > 0 ) // accounting for non-group invites
    {
-      m_chatServer->SendErrorToClient( connectionId, PacketErrorReport::ErrorType_Invitation_DoesNotExist );
-      return false;
+      if( m_groupLookup == NULL )
+      {
+         m_mainServer->SendErrorToClient( connectionId, PacketErrorReport::ErrorType_Invitation_BadServerSetup );
+         return false;
+      }
+
+      if( m_groupLookup->UserAddsSelfToGroup( invite.groupUuid, invite.inviteeUuid ) == false )// bad chat room
+      {
+         m_mainServer->SendErrorToClient( connectionId, PacketErrorReport::ErrorType_Invitation_DoesNotExist );
+         return false;
+      }
    }
 
    U32 invitationId = invite.invitationId;
-   ChatUser* inviter = m_chatServer->GetUserByUuid( invite.inviterUuid ); // only used to send updated invitations
+   string inviterUuid = invite.inviterUuid;
+   U32 inviterConnectionId = 0;
+   m_mainServer->GetUserConnectionId( inviterUuid, inviterConnectionId );
    m_invitationMap.erase( it );// must erase before sending the updated lists.
 
-   SendUserHisInvitations( sender );
+   SendUserHisInvitations <PacketInvitation_GetListOfInvitationsResponse> ( m_invitationMap, IsUserInThisInvitation, senderUuid, connectionId );
 
    
-   if( inviter != NULL )
+   if( inviterConnectionId != 0 )
    {
-      SendUserHisInvitations( inviter );
+      SendUserHisInvitations <PacketInvitation_GetListOfInvitationsResponse> ( m_invitationMap, IsUserInThisInvitation, inviterUuid, inviterConnectionId );
    }
 
    DeleteInvitationFromDb( invitationId );   
@@ -425,44 +467,122 @@ bool     InvitationManager::AcceptInvitation( const PacketInvitation_AcceptInvit
 
 bool     InvitationManager::RequestListOfInvitations( const PacketInvitation_GetListOfInvitations* request, U32 connectionId )
 {
-   ChatUser* user = m_chatServer->GetUserByConnectionId( connectionId );
-   if( user == NULL )
+   string senderUuid = m_mainServer->GetUserUuidByConnectionId( connectionId );
+   if( senderUuid.size() == 0 )
    {
-      m_chatServer->SendErrorToClient( connectionId, PacketErrorReport::ErrorType_UserUnknown );
+      m_mainServer->SendErrorToClient( connectionId, PacketErrorReport::ErrorType_UserUnknown );
       return false;
    }
 
-   SendUserHisInvitations( user );
+   SendUserHisInvitations <PacketInvitation_GetListOfInvitationsResponse> ( m_invitationMap, IsUserInThisInvitation, senderUuid, connectionId );
+   return true;
+}
 
+bool     InvitationManager::RequestListOfIntivationsToGroup( const PacketInvitation_GetListOfInvitationsForGroup* request, U32 connectionId )
+{
+   string senderUuid = m_mainServer->GetUserUuidByConnectionId( connectionId );
+   if( senderUuid.size() == 0 )
+   {
+      m_mainServer->SendErrorToClient( connectionId, PacketErrorReport::ErrorType_UserUnknown );
+      return false;
+   }
+
+   // we do not want to allow a user to simply pull down all of the invitations for random groups. 
+   // because we are using uuids, we do not need to filter, in theory, but definitely keep an eye on this.
+   // we could go to the chat channel manager and pull a list of groups and verify that the user is
+   // in that group, and if not, look at the invitations for this user and verify that he has been invited to 
+   // that group ... at least
+
+   //m_invitationMap;
+
+   SendUserHisInvitations <PacketInvitation_GetListOfInvitationsForGroupResponse> ( m_invitationMap, IsInvitationGroup, request->groupUuid, connectionId );
    return true;
 }
 
 ///////////////////////////////////////////////////////////////////
 
- void    InvitationManager::SendUserHisInvitations( const ChatUser* user )
+template< typename PacketType >
+ void    InvitationManager::SendUserHisInvitations( const InvitationMap& listOfInvitations, MatchInvitationType compare, const string& uuidId, U32 connectionId )
 {
-   PacketInvitation_GetListOfInvitationsResponse* response = new PacketInvitation_GetListOfInvitationsResponse;
-   const string& userUuid = user->GetUuid();
-   response->userUuid = userUuid;
-   
-   InvitationMapIterator it = m_invitationMap.begin();
-   while( it != m_invitationMap.end() )
+   // todo, add looking up the group names if the name is blank
+
+   const int maxInvitationsToSend = 15; // given the roughly 130 bytes just for the structure of the chat channel, 
+   // we need to be sure that we don't overflow the buffer.
+   if( listOfInvitations.size() == 0 )
+   {
+      PacketType* response = new PacketType;
+      response->uuid = uuidId;
+      response->invitationList.SetIndexParams( 0, 0 );
+      SendMessageToClient( response, connectionId );
+      return;
+   }   
+
+   int   currentOffset = 0;
+   int   totalCount = listOfInvitations.size();
+   int   countForThisUser = 0;
+   InvitationMapConstIterator it = listOfInvitations.begin();
+   while( it != listOfInvitations.end() )
    {
       const Invitation& invite = it->second;
-      if( invite.inviteeUuid == userUuid || invite.inviterUuid == userUuid )
+      if( compare( invite, uuidId ) == true )
       {
-         response->invitationList.insert( invite.groupUuid, invite );
+         countForThisUser++;
       }
-     /* if( response->invitationList.size() >= 10 )
-      {
-         SendMessageToClient( response, connectionId );
-         PacketInvitation_GetListOfInvitationsResponse* response = new PacketInvitation_GetListOfInvitationsResponse;
-         response->userUuid = userUuid;
-      }*/
       it++;
    }
 
-   SendMessageToClient( response, user->GetConnectionId() );
+   //------------- here is where we loop and send out all matching invitations -----------
+   PacketType* response = new PacketType;
+   response->uuid = uuidId;
+   response->invitationList.SetIndexParams( currentOffset, countForThisUser );
+   if( countForThisUser == 0 )
+   {
+      SendMessageToClient( response, connectionId );
+      return;
+   }
+
+   //for( int i=0; i<totalCount; i++ )// walk the entire list looking for appropriate matching invitations
+   it = listOfInvitations.begin();
+   while( it != listOfInvitations.end() )
+   {
+      const Invitation& invite = it->second;
+      if( compare( invite, uuidId ) == true )
+      {
+         response->invitationList.insert( invite.groupUuid, invite );
+         if( response->invitationList.size() >= maxInvitationsToSend )
+         {
+            SendMessageToClient( response, connectionId );
+
+            currentOffset += maxInvitationsToSend; // important here
+
+            if( currentOffset < countForThisUser ) // we may have just sent the last invitation
+            {
+            // restart with a new packet
+               response = new PacketType;
+               response->uuid = uuidId;
+               response->invitationList.SetIndexParams( currentOffset, countForThisUser );
+            }
+            else
+            {
+               return;// we're done
+            }
+         }
+      }
+      it++;
+   }
+   if( response && response->invitationList.size() != 0 )
+   {
+      SendMessageToClient( response, connectionId );
+   }
+   else
+   {
+      if( response == NULL )
+         cout << "response packet is invalid" << endl;
+      else
+         cout << "response packet has 0 inviations" << endl;
+      assert( 0 );
+   }
+   //------------- end loop and send out all matching invitations -----------
 }
 
 /*
@@ -483,18 +603,18 @@ void     InvitationManager::SendInvitationToUser( const Invitation& invite )// r
 }
 */
 
-bool           InvitationManager::IsInvitationAlreadyStored( const Invitation& invite )
-{
-   assert( 0 );// todo
 
-   return false;
-}
-
-void           InvitationManager::AddInvitationToStorage( const Invitation& invite )
+void           InvitationManager::AddInvitationToStorage( Invitation& invite )
 {
+   string name;
+   if( m_groupLookup != NULL && 
+      m_groupLookup->GetGroupName( invite.groupUuid, name ) == true )
+   {
+      invite.groupName = name;
+   }
    stringhash lookup = GenerateUniqueHash( invite.invitationUuid );
    InvitationMapIterator it = m_invitationMap.find( lookup );
-   if( it != m_invitationMap.end() )
+   if( it != m_invitationMap.end() )      
    {
       it->second = invite;
    }
@@ -502,18 +622,6 @@ void           InvitationManager::AddInvitationToStorage( const Invitation& invi
    {
       m_invitationMap.insert( InvitationPair( GenerateUniqueHash( invite.invitationUuid ), invite ) );
    }
-}
-
-bool           InvitationManager::DoesUserHavePendingInvite( const string& inviterUuid, const string& inviteeUuid )
-{
-   /*InvitationMapIterator it = m_invitationMap.begin();
-   while( it != m_invitationMap.end() )
-   {
-      const Invitation& invite = it->second;
-      if( invite.
-   }*/
-
-   return false;
 }
 
 bool           InvitationManager::IsThereAlreadyAnInvitationToThisGroupInvolvingTheseTwoUsers( const string& user1, const string& user2, const string& groupUuid ) const 
@@ -537,9 +645,6 @@ bool           InvitationManager::IsThereAlreadyAnInvitationToThisGroupInvolving
 
 void           InvitationManager::InsertInvitationIntoDb( const Invitation& invite )
 {
-  /* if( IsInvitationAlreadyStored( const Invitation& invite ) == true )
-      return;*/
-
    PacketDbQuery* dbQuery = new PacketDbQuery;
    dbQuery->id =           0;
    dbQuery->meta =         "";
@@ -561,7 +666,7 @@ void           InvitationManager::InsertInvitationIntoDb( const Invitation& invi
    query += boost::lexical_cast< string >( (U32) invite.type );
    dbQuery->query = query;
 
-   m_chatServer->AddQueryToOutput( dbQuery, 0 );
+   m_mainServer->AddQueryToOutput( dbQuery, 0 );
 }
 
 void           InvitationManager::DeleteInvitationFromDb( U32 invitationId )
@@ -578,7 +683,7 @@ void           InvitationManager::DeleteInvitationFromDb( U32 invitationId )
    query += boost::lexical_cast< string >( invitationId );
    dbQuery->query = query;
 
-   m_chatServer->AddQueryToOutput( dbQuery, 0 );
+   m_mainServer->AddQueryToOutput( dbQuery, 0 );
 }
 
 /*
@@ -590,10 +695,18 @@ void           InvitationManager::SendInvitationToSenderAndRecipient( const Invi
 
 bool     InvitationManager::SendMessageToClient( BasePacket* packet, U32 connectionId ) const
 {
+   if( packet->packetType != PacketType_Invitation )
+   {
+      cout << "Invitation manager is sending the wrong type of data" << endl;
+      assert( 0 );
+   }
+   PacketInvitation* p = static_cast<PacketInvitation*>( packet );
+   p->invitationType = m_type;
+
    PacketGatewayWrapper* wrapper = new PacketGatewayWrapper();
    wrapper->SetupPacket( packet, connectionId );
 
-   m_chatServer->SendMessageToClient( wrapper, connectionId );
+   m_mainServer->SendMessageToClient( wrapper, connectionId );
    return true;
 }
 

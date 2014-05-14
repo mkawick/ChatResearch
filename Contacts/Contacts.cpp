@@ -150,10 +150,10 @@ int main( int argc, const char* argv[] )
    PrepConnection< FruitadensServer, DiplodocusContact > ( statIpAddressString, statPort, "stat", contactServer, ServerType_Stat, true );
    
    //----------------------------------------------------------------
-   
-   contactServer->Init();
 
    s2s->AddOutputChain( contactServer );
+
+   contactServer->Init();
 
    contactServer->Run();
 

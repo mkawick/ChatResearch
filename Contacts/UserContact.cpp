@@ -582,10 +582,10 @@ bool  UserContact::ListOfInvitationsReceived_SendToClient()
 {
    PacketContact_GetListOfInvitationsResponse* packet = new PacketContact_GetListOfInvitationsResponse;
    
-   vector< Invitation >::iterator  it = m_invitationsIn.begin();
+   vector< P2PInvitation >::iterator  it = m_invitationsIn.begin();
    while ( it != m_invitationsIn.end() )
    {
-      const Invitation& invite = *it++; 
+      const P2PInvitation& invite = *it++; 
       InvitationInfo ii;
       ii.message = invite.message;
       ii.inviterName = invite.userName;// note who is who here
@@ -608,10 +608,10 @@ bool  UserContact::ListOfInvitationsSent_SendToClient()
 {
    PacketContact_GetListOfInvitationsSentResponse* packet = new PacketContact_GetListOfInvitationsSentResponse;
    
-   vector< Invitation >::iterator  it = m_invitationsOut.begin();
+   vector< P2PInvitation >::iterator  it = m_invitationsOut.begin();
    while ( it != m_invitationsOut.end() )
    {
-      const Invitation& invite = *it++; 
+      const P2PInvitation& invite = *it++; 
       InvitationInfo ii;
       ii.message = invite.message;
       ii.inviterName = m_userInfo.userName;// note who is who here
@@ -647,13 +647,13 @@ bool     UserContact::DoesPendingInvitationExist( const string& inviteeUuid, con
       }
    }
 
-   vector< Invitation >::iterator it = m_invitationsOut.begin();
+   vector< P2PInvitation >::iterator it = m_invitationsOut.begin();
    if( inviteeUuid.size() )
    {
       // we have all of your current invitations in memory... verify that we don't already have a pending invitation
       while( it != m_invitationsOut.end() )
       {
-         const Invitation& invite = *it++;
+         const P2PInvitation& invite = *it++;
          if( invite.userUuid == inviteeUuid )
          {
             return true;
@@ -664,7 +664,7 @@ bool     UserContact::DoesPendingInvitationExist( const string& inviteeUuid, con
    {
       while( it != m_invitationsOut.end() )
       {
-         const Invitation& invite = *it++;
+         const P2PInvitation& invite = *it++;
          if( invite.userName == inviteeName )
          {
             return true;
@@ -679,10 +679,10 @@ bool     UserContact::DoesPendingInvitationExist( const string& inviteeUuid, con
 
 bool  UserContact::HaveIAlreadyBeenInvited( const string& userUuid )
 {
-   vector< Invitation >::iterator it = m_invitationsIn.begin();
+   vector< P2PInvitation >::iterator it = m_invitationsIn.begin();
    while( it != m_invitationsIn.end() )
    {
-      const Invitation& invite = *it++;
+      const P2PInvitation& invite = *it++;
       if( invite.userUuid == userUuid )
       {
          return true;
@@ -709,7 +709,7 @@ void  UserContact::InsertFriend( U32 id, const string& userName, const string& u
 
 void  UserContact::InsertInvitationReceived( U32 inviteeId, U32 inviterId, bool wasNotified, const string& userName, const string& userUuid, const string& message, const string& invitationUuid, const string& date )
 {
-   Invitation invite;
+   P2PInvitation invite;
    invite.inviteeId = inviteeId;
    invite.inviterId = inviterId;
    invite.wasNotified = wasNotified;
@@ -724,7 +724,7 @@ void  UserContact::InsertInvitationReceived( U32 inviteeId, U32 inviterId, bool 
 }
 void  UserContact::InsertInvitationSent( U32 inviteeId, U32 inviterId, bool wasNotified, const string& userName, const string& userUuid, const string& message, const string& invitationUuid, const string& date )
 {
-   Invitation invite;
+   P2PInvitation invite;
    invite.inviteeId = inviteeId;
    invite.inviterId = inviterId;
    invite.wasNotified = wasNotified;
@@ -739,10 +739,10 @@ void  UserContact::InsertInvitationSent( U32 inviteeId, U32 inviterId, bool wasN
 
 void  UserContact::RemoveInvitationReceived( const string& invitationUuid )
 {
-   vector< Invitation >::iterator  it = m_invitationsIn.begin();
+   vector< P2PInvitation >::iterator  it = m_invitationsIn.begin();
    while ( it != m_invitationsIn.end() )
    {
-      const Invitation& invite = *it; 
+      const P2PInvitation& invite = *it; 
       if( invite.uuid == invitationUuid )
       {
          m_invitationsIn.erase( it );
@@ -754,10 +754,10 @@ void  UserContact::RemoveInvitationReceived( const string& invitationUuid )
 
 void  UserContact::RemoveInvitationSent( const string& invitationUuid )
 {
-  vector< Invitation >::iterator  it = m_invitationsOut.begin();
+  vector< P2PInvitation >::iterator  it = m_invitationsOut.begin();
    while ( it != m_invitationsOut.end() )
    {
-      const Invitation& invite = *it; 
+      const P2PInvitation& invite = *it; 
       if( invite.uuid == invitationUuid )
       {
          m_invitationsOut.erase( it );
@@ -926,10 +926,10 @@ bool  UserContact::RemoveSentInvitation( const PacketContact_RemoveInvitation* p
    const string& invitationUuid = packet->invitationUuid;
 
    // verify that the sent invite is valid
-   vector< Invitation >::iterator  it = m_invitationsOut.begin();
+   vector< P2PInvitation >::iterator  it = m_invitationsOut.begin();
    while ( it != m_invitationsOut.end() )
    {
-      const Invitation& invite = *it; 
+      const P2PInvitation& invite = *it; 
       if( invite.uuid == invitationUuid )
       {
          found = true;

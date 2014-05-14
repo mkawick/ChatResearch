@@ -2,6 +2,21 @@
 
 #include "InvitationPacket.h"
 
+//////////////////////////////////////////////////////////////
+
+bool     IsUserInThisInvitation( const Invitation& invite, const string& userUuid )
+{
+   if( invite.inviteeUuid == userUuid || invite.inviterUuid == userUuid ) 
+      return true; 
+   return false;
+}
+
+bool     IsInvitationGroup( const Invitation& invite, const string& groupUuid )
+{
+   if( invite.groupUuid == groupUuid ) 
+      return true; 
+   return false;
+}
 
 //////////////////////////////////////////////////////////////
 
@@ -12,6 +27,7 @@ bool  Invitation::SerializeIn( const U8* data, int& bufferOffset )
    Serialize::In( data, bufferOffset, inviterUuid );
    Serialize::In( data, bufferOffset, inviteeName );
    Serialize::In( data, bufferOffset, inviteeUuid );
+   Serialize::In( data, bufferOffset, groupName );
    Serialize::In( data, bufferOffset, groupUuid );
    //Serialize::In( data, bufferOffset, message );
    Serialize::In( data, bufferOffset, date );
@@ -27,6 +43,7 @@ bool  Invitation::SerializeOut( U8* data, int& bufferOffset ) const
    Serialize::Out( data, bufferOffset, inviterUuid );
    Serialize::Out( data, bufferOffset, inviteeName );
    Serialize::Out( data, bufferOffset, inviteeUuid );
+   Serialize::Out( data, bufferOffset, groupName );
    Serialize::Out( data, bufferOffset, groupUuid );
    //Serialize::Out( data, bufferOffset, message );
    Serialize::Out( data, bufferOffset, date );
@@ -40,6 +57,7 @@ bool  Invitation::SerializeOut( U8* data, int& bufferOffset ) const
 bool  PacketInvitation::SerializeIn( const U8* data, int& bufferOffset )
 {
    BasePacket::SerializeIn( data, bufferOffset );
+   Serialize::In( data, bufferOffset, invitationType );
 
    return true;
 }
@@ -47,6 +65,7 @@ bool  PacketInvitation::SerializeIn( const U8* data, int& bufferOffset )
 bool  PacketInvitation::SerializeOut( U8* data, int& bufferOffset ) const
 {
    BasePacket::SerializeOut( data, bufferOffset );
+   Serialize::Out( data, bufferOffset, invitationType );
 
    return true;
 }
@@ -111,7 +130,6 @@ bool  PacketInvitation_InviteUser::SerializeIn( const U8* data, int& bufferOffse
    Serialize::In( data, bufferOffset, userUuid );
    Serialize::In( data, bufferOffset, inviteGroup );
    Serialize::In( data, bufferOffset, message );
-   Serialize::In( data, bufferOffset, invitationType );
 
    return true;
 }
@@ -122,7 +140,6 @@ bool  PacketInvitation_InviteUser::SerializeOut( U8* data, int& bufferOffset ) c
    Serialize::Out( data, bufferOffset, userUuid );
    Serialize::Out( data, bufferOffset, inviteGroup );
    Serialize::Out( data, bufferOffset, message );
-   Serialize::Out( data, bufferOffset, invitationType );
 
    return true;
 }
@@ -224,7 +241,6 @@ bool  PacketInvitation_AcceptInvitation::SerializeOut( U8* data, int& bufferOffs
 bool  PacketInvitation_GetListOfInvitations::SerializeIn( const U8* data, int& bufferOffset )
 {
    PacketInvitation::SerializeIn( data, bufferOffset );
-   Serialize::In( data, bufferOffset, userUuid );
 
    return true;
 }
@@ -232,7 +248,6 @@ bool  PacketInvitation_GetListOfInvitations::SerializeIn( const U8* data, int& b
 bool  PacketInvitation_GetListOfInvitations::SerializeOut( U8* data, int& bufferOffset ) const
 {
    PacketInvitation::SerializeOut( data, bufferOffset );
-   Serialize::Out( data, bufferOffset, userUuid );
 
    return true;
 }
@@ -242,7 +257,7 @@ bool  PacketInvitation_GetListOfInvitations::SerializeOut( U8* data, int& buffer
 bool  PacketInvitation_GetListOfInvitationsResponse::SerializeIn( const U8* data, int& bufferOffset )
 {
    PacketInvitation::SerializeIn( data, bufferOffset );
-   Serialize::In( data, bufferOffset, userUuid );
+   Serialize::In( data, bufferOffset, uuid );
    Serialize::In( data, bufferOffset, invitationList );
 
    return true;
@@ -251,10 +266,49 @@ bool  PacketInvitation_GetListOfInvitationsResponse::SerializeIn( const U8* data
 bool  PacketInvitation_GetListOfInvitationsResponse::SerializeOut( U8* data, int& bufferOffset ) const
 {
    PacketInvitation::SerializeOut( data, bufferOffset );
-   Serialize::Out( data, bufferOffset, userUuid );
+   Serialize::Out( data, bufferOffset, uuid );
    Serialize::Out( data, bufferOffset, invitationList );
 
    return true;
 }
+
+///////////////////////////////////////////////////////////////
+
+bool  PacketInvitation_GetListOfInvitationsForGroup::SerializeIn( const U8* data, int& bufferOffset )
+{
+   PacketInvitation::SerializeIn( data, bufferOffset );
+   Serialize::In( data, bufferOffset, groupUuid );
+
+   return true;
+}
+
+bool  PacketInvitation_GetListOfInvitationsForGroup::SerializeOut( U8* data, int& bufferOffset ) const
+{
+   PacketInvitation::SerializeOut( data, bufferOffset );
+   Serialize::Out( data, bufferOffset, groupUuid );
+
+   return true;
+}
+
+///////////////////////////////////////////////////////////////
+
+/*
+bool  PacketInvitation_GetListOfInvitationsForGroupResponse::SerializeIn( const U8* data, int& bufferOffset )
+{
+   PacketInvitation::SerializeIn( data, bufferOffset );
+   Serialize::In( data, bufferOffset, groupUuid );
+   Serialize::In( data, bufferOffset, invitationList );
+
+   return true;
+}
+
+bool  PacketInvitation_GetListOfInvitationsForGroupResponse::SerializeOut( U8* data, int& bufferOffset ) const
+{
+   PacketInvitation::SerializeOut( data, bufferOffset );
+   Serialize::Out( data, bufferOffset, groupUuid );
+   Serialize::Out( data, bufferOffset, invitationList );
+
+   return true;
+}*/
 
 ///////////////////////////////////////////////////////////////

@@ -11,6 +11,7 @@ using namespace std;
 
 #include "../NetworkCommon/Packets/ChatPacket.h"
 #include "../NetworkCommon/Utils/TableWrapper.h"
+#include "../NetworkCommon/Invitations/InvitationManager.h"
 
 //------------------------------------------------------
 
@@ -84,7 +85,7 @@ Client requests to send a chat to another user identified by uuid.
 ///////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////
 
-class ChatRoomManager
+class ChatRoomManager : public GroupLookupInterface
 {
 public:
    ChatRoomManager();
@@ -106,8 +107,10 @@ public:
    bool           HandleDbResult( PacketDbQueryResult* packet );
 
    bool           CreateNewRoom( const string& channelName, const string& userUuid );
+   bool           GetGroupName( const string& groupUuid, string& name ) const;
    bool           GetChatRooms( const string& userUuid, ChannelFullKeyValue& availableChannels );
    U32            GetUserId( const string& userUuid ) const;
+   string         GetUserName( const string& uuid ) const;
 
 
    bool           CreateNewRoom( const PacketChatCreateChatChannelFromGameServer* pPacket );
@@ -128,11 +131,13 @@ public:
    bool           UserSendP2PChat( const string& senderUuid, const string& receiverUuid, const string& message );
    bool           UserSendsChatToChannel( const string& senderUuid, const string& channelUuid, const string& message, U16 gameTurn );
 
-   bool           RequestChatRoomInfo( const PacketChatListAllMembersInChatChannel* packet );// users + pending?
-   bool           UserAddsSelfToRoom( const string& channelUuid, const string& addedUserUuid );
+   bool           RequestChatRoomInfo( const PacketChatListAllMembersInChatChannel* packet, U32 connectionId );// users + pending?
+   //bool           UserAddsSelfToRoom( const string& channelUuid, const string& addedUserUuid );
       
+   bool           UserAddsSelfToGroup( const string& channelUuid, const string& addedUserUuid );
    bool           GetUserInfo( const string& userUuid, UsersChatRoomList& ) const;
-   bool           IsRoomValid( const string& channelUuid ) const;
+   //bool           IsRoomValid( const string& channelUuid ) const;
+   bool           IsGroupValid( const string& inviteGroup ) const;
 private:
 
    //---------------------------------------------------
@@ -141,6 +146,7 @@ private:
 
    typedef map< stringhash, ChatRoom >       ChannelMap;
    typedef ChannelMap::iterator              ChannelMapIterator;
+   typedef ChannelMap::const_iterator        ChannelMapConstIterator;
    typedef pair< stringhash, ChatRoom >      ChannelMapPair;
 
    typedef map< stringhash, UsersChatRoomList >    UserMap;
@@ -181,6 +187,7 @@ private:
    //void           HandleChatChannelCreateResult( PacketDbQueryResult* dbResult, ChatChannelDbJob& job );
    string         CreateNewRoom( const string& channelName, const string userUuid, U32 serverId, U8 gameType, U32 gameInstanceId );
    bool           DeleteRoom( const string& chanelUuid );
+   bool           SendMessageToClient( BasePacket* packet, U32 connectionId ) const;
    
    bool           LoadSingleRoom( const string& channelUuid );
 

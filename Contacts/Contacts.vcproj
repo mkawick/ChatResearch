@@ -194,6 +194,10 @@
 				RelativePath=".\UserContact.cpp"
 				>
 			</File>
+			<File
+				RelativePath=".\UserLookupManager.cpp"
+				>
+			</File>
 		</Filter>
 		<Filter
 			Name="Header Files"
@@ -210,6 +214,10 @@
 			</File>
 			<File
 				RelativePath=".\UserContact.h"
+				>
+			</File>
+			<File
+				RelativePath=".\UserLookupManager.h"
 				>
 			</File>
 		</Filter>
@@ -413,6 +421,18 @@
 				</File>
 				<File
 					RelativePath="..\NetworkCommon\Stat\StatTrackingConnections.h"
+					>
+				</File>
+			</Filter>
+			<Filter
+				Name="Invitations"
+				>
+				<File
+					RelativePath="..\NetworkCommon\Invitations\InvitationManager.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\NetworkCommon\Invitations\InvitationManager.h"
 					>
 				</File>
 			</Filter>

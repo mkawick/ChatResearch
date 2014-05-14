@@ -64,6 +64,7 @@ private:
 
    void        UpdateDevice( const PacketNotification_UpdateDevice* device );
    void        RequestDevicesList( const PacketNotification_RequestListOfDevices* device );
+   void        RemoveDevice( const PacketNotification_RemoveDevice* removal );
    void        UpdateDbRecordForDevice( U32 id );
    void        CreateNewDeviceNotificationEntry( U32 userDeviceId, U32 gameType );
    bool        SendMessageToClient( BasePacket* packet ) const;
@@ -99,7 +100,9 @@ private:
       QueryType_InsertDeviceNotification,
       QueryType_UpdateDevice,
       QueryType_UpdateDeviceNotification,
-      QueryType_Request
+      QueryType_Request,
+      QueryType_DeleteDevice,
+      QueryType_DeleteDeviceNotification
    };
 
    static NotificationMainThread* m_mainThread;

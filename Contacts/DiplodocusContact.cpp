@@ -11,6 +11,7 @@ using boost::format;
 #include "../NetworkCommon/Packets/PacketFactory.h"
 
 #include "DiplodocusContact.h"
+#include "UserLookupManager.h"
 
 #include <iostream>
 using namespace std;
@@ -20,13 +21,16 @@ using namespace std;
 ///////////////////////////////////////////////////////////////////
 
 DiplodocusContact::DiplodocusContact( const string& serverName, U32 serverId ): Diplodocus< KhaanContact >( serverName, serverId, 0,  ServerType_Contact ),
-                        StatTrackingConnections(),
-                        m_numSearches( 0 ),
-                        m_numInvitesSent( 0 ),
-                        m_numInvitesAccepted( 0 ),
-                        m_numInvitesRejected( 0 ),
-                        m_hasRequestedAdminSettings( false ),
-                        m_timestampExpireOldInvitations( false )
+                                             StatTrackingConnections(),
+                                             m_numSearches( 0 ),
+                                             m_numInvitesSent( 0 ),
+                                             m_numInvitesAccepted( 0 ),
+                                             m_numInvitesRejected( 0 ),
+                                             m_hasRequestedAdminSettings( false ),
+                                             m_timestampExpireOldInvitations( false ),
+                                             m_invitationManager( NULL ),
+                                             m_invitationManagerNeedsUpdate( false ),
+                                             m_userLookupNeedsUpdate( false )
 {
    SetSleepTime( 45 );
    time_t currentTime;
@@ -37,6 +41,21 @@ DiplodocusContact::DiplodocusContact( const string& serverName, U32 serverId ): 
    m_timestampExpireOldInvitations = 0;
 
    m_secondsBetweenSendingInvitationAndExpiration = 60*60 * 24 * 7;// 7 days;
+}
+
+void     DiplodocusContact::Init()
+{
+   m_userLookup = new UserLookupManager;
+   m_userLookup->Init();
+   m_userLookup->SetDbIdentifier( 1 );
+
+   InvitationManager::Set( this );
+   InvitationManager::Set( m_userLookup );
+   m_invitationManager = new InvitationManager( Invitation::InvitationType_Friend );
+   m_invitationManager->SetDbIdentifier( 2 );
+   m_invitationManager->Init();
+
+   Diplodocus< KhaanContact >::Init();
 }
 
 //---------------------------------------------------------------
@@ -247,6 +266,35 @@ UserContact* DiplodocusContact::GetUserByUuid( const string& uuid )
    return NULL;
 }
 
+
+string      DiplodocusContact::GetUserUuidByConnectionId( U32 connectionId )
+{
+   UserContactMapIterator found = m_users.find( connectionId );
+   if( found == m_users.end() )
+   {
+      return NULL;
+   }
+   return found->second.GetUserInfo().uuid;
+}
+
+void        DiplodocusContact::GetUserConnectionId( const string& uuid, U32& connectionId )
+{
+   connectionId = 0;
+
+   UserContact* contact = GetUserByUuid( uuid );
+   if( contact )
+      connectionId = contact->GetUserInfo().connectionId;
+}
+
+string      DiplodocusContact::GetUserName( const string& uuid )
+{
+   const UserContact*   user = GetUserByUuid( uuid );
+   if( user == NULL )
+      return string();
+   return user->GetUserInfo().userName;
+}
+
+
 //---------------------------------------------------------------
 
 
@@ -362,19 +410,39 @@ void  DiplodocusContact::UpdateDbResults()
       PacketDbQueryResult* dbResult = *it++;
       if( dbResult->customData != NULL )
             cout << "UpdateDbResults: Non-null custom data " << endl;
+      BasePacket* packet = static_cast<BasePacket*>( dbResult );
 
       U32 connectionId = dbResult->id;
       if( connectionId != 0 )
       {
-         UserContactMapIterator it = m_users.find( connectionId );
-         if( it != m_users.end() )
+         if( dbResult->serverLookup == m_userLookup->GetDbIdentifier() ) //&& connectionId == ChatChannelManagerUniqueId )
          {
-            cout << "Db query type: "<< dbResult->lookup << " handed off to UserContact #" << connectionId << endl;
-            it->second.HandleDbQueryResult( dbResult );
+            if( m_userLookup->HandleDbResult( dbResult ) == false )
+            {
+               factory.CleanupPacket( packet );
+            }
+            m_userLookupNeedsUpdate = true;
+         }
+         else if( dbResult->serverLookup == m_invitationManager->GetDbIdentifier() ) //&& connectionId == ChatChannelManagerUniqueId )
+         {
+            if( m_invitationManager->HandleDbResult( dbResult ) == false )
+            {
+               factory.CleanupPacket( packet );
+            }
+            m_invitationManagerNeedsUpdate = true;
          }
          else
          {
-            cout << "ERROR: DB Result has user that cannot be found" << endl;
+            UserContactMapIterator it = m_users.find( connectionId );
+            if( it != m_users.end() )
+            {
+               cout << "Db query type: "<< dbResult->lookup << " handed off to UserContact #" << connectionId << endl;
+               it->second.HandleDbQueryResult( dbResult );
+            }
+            else
+            {
+               cout << "ERROR: DB Result has user that cannot be found" << endl;
+            }
          }
       }
       else
@@ -395,7 +463,6 @@ void  DiplodocusContact::UpdateDbResults()
          }
       }
 
-      BasePacket* packet = static_cast<BasePacket*>( dbResult );
       PacketCleaner cleaner( packet );
    }
 }
@@ -716,5 +783,74 @@ void     DiplodocusContact::ClearStats()
 
 //---------------------------------------------------------------
 
+//---------------------------------------------------------------
 
+bool     DiplodocusContact::SendMessageToClient( BasePacket* packet, U32 connectionId )
+{
+   if( packet->packetType == PacketType_GatewayWrapper )// this is already wrapped up and ready for the gateway... send it on.
+   {
+      Threading::MutexLock locker( m_mutex );
+
+      ClientMapIterator itInputs = m_connectedClients.begin();
+      if( itInputs != m_connectedClients.end() )// only one output currently supported.
+      {
+         KhaanContact* khaan = static_cast< KhaanContact* >( itInputs->second );
+         khaan->AddOutputChainData( packet );
+         m_clientsNeedingUpdate.push_back( khaan->GetChainedId() );
+         itInputs++;
+      }
+      return true;
+   }
+
+   if( packet->packetType == PacketType_DbQuery )
+   {
+      Threading::MutexLock locker( m_outputChainListMutex );
+      // we don't do much interpretation here, we simply pass output data onto our output, which should be the DB or other servers.
+      ChainLinkIteratorType itOutputs = m_listOfOutputs.begin();
+      while( itOutputs != m_listOfOutputs.end() )// only one output currently supported.
+      {
+         ChainType* outputPtr = static_cast< ChainType*> ( (*itOutputs).m_interface );
+         if( outputPtr->AddInputChainData( packet, m_chainId ) == true )
+         {
+            break;
+         }
+         itOutputs++;
+      }
+      return true;
+   }
+
+   return false;
+}
+
+
+bool     DiplodocusContact::AddQueryToOutput( PacketDbQuery* dbQuery, U32 connectionId )
+{
+   PacketFactory factory;
+   dbQuery->id = connectionId;
+
+   ChainLinkIteratorType itOutputs = m_listOfOutputs.begin();
+   while( itOutputs != m_listOfOutputs.end() )// only one output currently supported.
+   {
+      ChainType* outputPtr = static_cast< ChainType*> ( (*itOutputs).m_interface );
+      if( outputPtr->AddInputChainData( dbQuery, m_chainId ) == true )
+      {
+         return true;
+      }
+      itOutputs++;
+   }
+
+   BasePacket* deleteMe = static_cast< BasePacket*>( dbQuery );
+
+   factory.CleanupPacket( deleteMe );
+   return false;
+}
+
+bool     DiplodocusContact::SendErrorToClient( U32 connectionId, PacketErrorReport::ErrorType error )
+{
+   return Diplodocus< KhaanContact >:: SendErrorToClient( connectionId, error, 0 );
+}
+
+//---------------------------------------------------------------
+
+//
 ///////////////////////////////////////////////////////////////////

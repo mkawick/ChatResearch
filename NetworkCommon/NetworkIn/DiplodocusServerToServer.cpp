@@ -1,5 +1,7 @@
 // DiplodocusServerToServer.cpp
 
+#include <assert.h>
+
 #include "../ServerConstants.h"
 #include "../DataTypes.h"
 
@@ -137,15 +139,40 @@ void  DiplodocusServerToServer::CreateJob( const KhaanServerToServer* khaan, Bas
    wrapper->pPacket = packet;
    wrapper->serverId = khaan->GetServerId();
 
-   ChainLinkIteratorType itOutputs = m_listOfOutputs.begin();
-   if( itOutputs != m_listOfOutputs.end() )// we should only have one of these
+   LockMutex();
+   m_unprocessedJobs.push_back( wrapper );
+   UnlockMutex();
+}
+
+void     DiplodocusServerToServer::SendJobsToUpperLayers()
+{
+   LockMutex();   
+      deque< PacketServerJobWrapper* > queueOfJobs =   m_unprocessedJobs;
+      m_unprocessedJobs.clear();
+   UnlockMutex();
+
+   PacketFactory factory;
+   while( queueOfJobs.size() )
    {
-      if( static_cast< ChainType*> ( itOutputs->m_interface)->AddInputChainData( wrapper, khaan->GetServerId() ) == false )
+      PacketServerJobWrapper* wrapper = queueOfJobs.front();
+      queueOfJobs.pop_front();
+
+      ChainLinkIteratorType itOutputs = m_listOfOutputs.begin();
+      if( itOutputs != m_listOfOutputs.end() )// we should only have one of these
       {
-         Log(" Bad S2S packet ", 4);
-         delete packet;
-         delete wrapper;
+         if( static_cast< ChainType*> ( itOutputs->m_interface)->AddInputChainData( wrapper, wrapper->serverId ) == false )
+         {
+            Log(" Bad S2S packet ", 4);
+            BasePacket* packet = static_cast< BasePacket* >( wrapper );
+            factory.CleanupPacket( packet );
+         }
       }
+      else
+      {
+         cout << "Bad Dipl_S2S setup" << endl;
+         assert( 0 );
+      }
+
    }
 }
 
@@ -223,32 +250,8 @@ int   DiplodocusServerToServer::CallbackFunction()
       UnlockMutex();
    }
 
- /*  LockMutex();
-   while( m_clientsNeedingUpdate.size() )
-   {
-      m_clientsNeedingUpdate.front();
-      U32 serverId = m_clientsNeedingUpdate.front();
-      m_clientsNeedingUpdate.pop_front();
-
-      
-      ChainLinkIteratorType itInputs = m_listOfInputs.begin();
-      while( itInputs != m_listOfInputs.end() )
-      {
-         ChainLink& chainedInput = *itInputs++;
-         IChainedInterface* interfacePtr = chainedInput.m_interface;
-         KhaanServerToServer* khaan = static_cast< KhaanServerToServer* >( interfacePtr );
-         if( khaan->GetChainedId() == serverId )
-         {
-            if( khaan->Update() == false )
-            {
-               m_clientsNeedingUpdate.push_back( serverId );// put this back in the queue
-            }
-         }
-      }
-   }
-   UnlockMutex();*/
-
    UpdateAllConnections();
+   SendJobsToUpperLayers();
 
    return 1;
 }

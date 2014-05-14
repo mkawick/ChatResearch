@@ -333,7 +333,14 @@ void     ClientNetworkWrapper::UpdateNotifications()
 
          case ClientSideNetworkCallback::NotificationType_GenericInvitationsUpdated:
             {
-               notify->GenericInvitationsUpdated();
+               U32 invitationType = boost::lexical_cast< U32 >( qn.intValue );
+               notify->GenericInvitationsUpdated( invitationType );
+            }
+            break;
+         case ClientSideNetworkCallback::NotificationType_GroupInvitationsUpdated:
+            {
+               U32 invitationType = boost::lexical_cast< U32 >( qn.intValue );
+               notify->GroupInvitationsUpdated( invitationType );
             }
             break;
          case ClientSideNetworkCallback::NotificationType_GenericInvitationRejected:
@@ -545,6 +552,15 @@ void     ClientNetworkWrapper::UpdateNotifications()
                notify->ChatChannel_UserRemoved( channelUuid, userUuid, success );
             }
             break;
+
+         case ClientSideNetworkCallback::NotificationType_ChatChannelMembers:
+            {
+               PacketChatListAllMembersInChatChannelResponse* packetChatHistoryResult = 
+                  static_cast<PacketChatListAllMembersInChatChannelResponse*>( qn.packet );
+
+               notify->ChatChannelMembers( packetChatHistoryResult->chatChannelUuid, packetChatHistoryResult->userList );
+            }
+            break;
                
          case ClientSideNetworkCallback::NotificationType_AssetCategoriesLoaded:
             {
@@ -575,6 +591,18 @@ void     ClientNetworkWrapper::UpdateNotifications()
          case ClientSideNetworkCallback::NotificationType_ListOfDevicesUpdated:
             {
                notify->ListOfDevicesUpdated();
+            }
+            break;
+         case ClientSideNetworkCallback::NotificationType_DeviceRemoved:
+            {
+               string channelUuid = qn.genericKeyValuePairs.find( "channelUuid" );
+               string successString = qn.genericKeyValuePairs.find( "success" );
+
+               bool success = false;
+               if( successString == "1" )
+                  success = true;
+
+               notify->DeviceRemoved( channelUuid, success );
             }
             break;
             
@@ -1813,34 +1841,66 @@ bool     ClientNetworkWrapper::RemoveSentInvitationForContacts( const string& uu
 //-----------------------------------------------------------------------------
 //-----------------------------------------------------------------------------
 
-bool     ClientNetworkWrapper::RequestListOfInvitations() const
+bool     ClientNetworkWrapper::RequestListOfInvitations( Invitation::InvitationType type ) const
 {
    PacketInvitation_GetListOfInvitations invitationRequest;
+   invitationRequest.invitationType = type;
    
    return SerializePacketOut( &invitationRequest );
 }
 
-bool     ClientNetworkWrapper::AcceptInvitation( const string& uuid ) const
+bool     ClientNetworkWrapper::AcceptInvitation( const string& uuid, Invitation::InvitationType type ) const
 {
    PacketInvitation_AcceptInvitation accept;
    //todo... validate that this is a valid invitation
    accept.invitationUuid = uuid;
+   accept.invitationType = type;
+
    return SerializePacketOut( &accept );
 }
 
-bool     ClientNetworkWrapper::DeclineInvitation( const string& uuid, string message ) const
+bool     ClientNetworkWrapper::DeclineInvitation( const string& uuid, string message, Invitation::InvitationType type ) const
 {
    PacketInvitation_RejectInvitation decline;
    //todo... validate that this is a valid invitation
    decline.invitationUuid = uuid;
+   decline.invitationType = type;
+
    return SerializePacketOut( &decline );
 }
 
-bool     ClientNetworkWrapper::RemoveSentInvitation( const string& uuid ) const
+bool     ClientNetworkWrapper::RemoveSentInvitation( const string& uuid, Invitation::InvitationType type ) const
 {
    PacketInvitation_CancelInvitation cancel;
    cancel.invitationUuid = uuid;
+   cancel.invitationType = type;
+
    return SerializePacketOut( &cancel );
+}
+
+bool     ClientNetworkWrapper::RequestListOfMembersInGroup( const string& groupUuid, Invitation::InvitationType type ) const
+{
+   if( type == Invitation::InvitationType_ChatRoom  )
+   {
+      PacketChatListAllMembersInChatChannel  request;
+      request.chatChannelUuid = groupUuid;
+      //request. = type;
+      
+      return SerializePacketOut( &request );
+   }
+   else
+   {
+      return false;
+   }
+}
+
+bool     ClientNetworkWrapper::RequestListOfInvitationsForGroup( const string& groupUuid, Invitation::InvitationType type ) const
+{
+   PacketInvitation_GetListOfInvitationsForGroup   invitationRequest;
+   invitationRequest.groupUuid = groupUuid;
+   invitationRequest.invitationType = type;
+
+   return SerializePacketOut( &invitationRequest );
 }
 
 bool     ClientNetworkWrapper::InviteUserToChatChannel( const string& channelUuid, const string& userUuid, const string& message )
@@ -1891,13 +1951,15 @@ bool     ClientNetworkWrapper::GetListOfInvitationsReceivedForContacts( list< In
 
 //-----------------------------------------------------------------------------
 
-bool     ClientNetworkWrapper::GetListOfInvitationsSent( list< Invitation >& listOfInvites )
+bool     ClientNetworkWrapper::GetListOfInvitationsSent( list< Invitation >& listOfInvites, Invitation::InvitationType type )
 {
+   assert( type > 0 && type < Invitation::InvitationType_Num );
    listOfInvites.clear();
    Threading::MutexLock    locker( m_notificationMutex );
 
-   list< Invitation >::iterator it = m_invitations.begin();
-   while( it != m_invitations.end() )
+   list< Invitation >& tempInvitationList = m_invitations[ type ];
+   list< Invitation >::iterator it = tempInvitationList.begin();
+   while( it != tempInvitationList.end() )
    {
       if( it->inviterUuid == m_uuid )
          listOfInvites.push_back( *it );
@@ -1911,16 +1973,40 @@ bool     ClientNetworkWrapper::GetListOfInvitationsSent( list< Invitation >& lis
 
 //-----------------------------------------------------------------------------
 
-bool     ClientNetworkWrapper::GetListOfInvitationsReceived( list< Invitation >& listOfInvites )
+bool     ClientNetworkWrapper::GetListOfInvitationsReceived( list< Invitation >& listOfInvites, Invitation::InvitationType type )
 {
+   assert( type > 0 && type < Invitation::InvitationType_Num );
    listOfInvites.clear();
    Threading::MutexLock    locker( m_notificationMutex );
 
-   list< Invitation >::iterator it = m_invitations.begin();
-   while( it != m_invitations.end() )
+   list< Invitation >& tempInvitationList = m_invitations[ type ];
+   list< Invitation >::iterator it = tempInvitationList.begin();
+   while( it != tempInvitationList.end() )
    {
       if( it->inviteeUuid == m_uuid )
          listOfInvites.push_back( *it );
+      it++;
+   }
+   if( listOfInvites.size() > 0 )
+      return true;
+   
+   return false;
+}
+
+//-----------------------------------------------------------------------------
+
+bool     ClientNetworkWrapper::GetListOfGroupInvitations( list< Invitation >& listOfInvites, Invitation::InvitationType type )
+{
+   assert( type > 0 && type < Invitation::InvitationType_Num );
+
+   listOfInvites.clear();
+   Threading::MutexLock    locker( m_notificationMutex );
+
+   list< Invitation >& tempInvitationList = m_invitationsToGroup[ type ];
+   list< Invitation >::iterator it = tempInvitationList.begin();
+   while( it != tempInvitationList.end() )
+   {
+      listOfInvites.push_back( *it );
       it++;
    }
    if( listOfInvites.size() > 0 )
@@ -2218,6 +2304,19 @@ bool    ClientNetworkWrapper::GetDevice( int index, RegisteredDevice& device ) c
       return false;
    device = m_devices[ index ];
    return true;
+}
+
+//-----------------------------------------------------------------------------
+
+bool    ClientNetworkWrapper::RemoveDevice( const string& deviceUuid ) const
+{
+   if( deviceUuid.size() < 1 )
+      return false;
+
+   PacketNotification_RemoveDevice  remove;
+   remove.deviceUuid = deviceUuid;
+
+   return SerializePacketOut( &remove );
 }
 
 //-----------------------------------------------------------------------------
@@ -2769,22 +2868,9 @@ bool     ClientNetworkWrapper::HandlePacketReceived( BasePacket* packetIn )
             {
                PacketChatListAllMembersInChatChannelResponse* packet = static_cast< PacketChatListAllMembersInChatChannelResponse* >( packetIn );
 
-               string                     chatChannelUuid;
-               SerializedKeyValueVector< string >   userList;
-             /*  HandleRemoveUserFromChatChannel( packet );
+               Notification( ClientSideNetworkCallback::NotificationType_ChatChannelMembers, packet );
 
-               SerializedKeyValueVector< string > strings;
-               strings.insert( "channelUuid", packet->chatChannelUuid );
-               strings.insert( "userUuid", packet->userUuid );
-               string success = "0";
-               if( packet->success )
-                  success = "1";
-               strings.insert( "success", success );
-
-               Notification( ClientSideNetworkCallback::NotificationType_ChatChannel_UserRemoved, strings );*/
-
-               Notification( ClientSideNetworkCallback::NotificationType_ChatChannelDetailsIncludingInvites, packet );
-
+               cleaner.Clear();
             }
             break;
          }
@@ -2837,21 +2923,66 @@ bool     ClientNetworkWrapper::HandlePacketReceived( BasePacket* packetIn )
          {
          case PacketInvitation::InvitationType_GetListOfInvitationsResponse:
             {
-               m_invitations.clear();
                PacketInvitation_GetListOfInvitationsResponse* response = static_cast<PacketInvitation_GetListOfInvitationsResponse*>( packetIn );
+               const SerializedKeyValueVector< Invitation >& invitaions = response->invitationList;
 
-               const SerializedKeyValueVector< Invitation >& kvVector = response->invitationList;
-               SerializedKeyValueVector< Invitation >::const_KVIterator it = kvVector.begin();
-               while (it != kvVector.end() )
+               int whichGroup = response->invitationType;
+               assert( whichGroup >0 && whichGroup < Invitation::InvitationType_Num );
+               U16 firstIndex = invitaions.GetFirstIndex();
+               U16 totalCount = invitaions.GetTotalCount();
+               U16 numChannelsInCurrentList = invitaions.size();
+               if( invitaions.GetFirstIndex() == 0 )
+               {
+                  m_invitations[ whichGroup ].clear();
+               }
+               
+               SerializedKeyValueVector< Invitation >::const_KVIterator it = invitaions.begin();
+               while (it != invitaions.end() )
                {
                   const Invitation& invite = it->value;
                   cout << "Invitation: " << invite.invitationUuid << endl;
                   cout << "  inviter : " << invite.inviterName << endl;
                   cout << "  invitee : " << invite.inviteeName << endl;
                   it++;
-                  m_invitations.push_back( invite );
+                  m_invitations[ whichGroup ].push_back( invite );
                }
-               Notification( ClientSideNetworkCallback::NotificationType_GenericInvitationsUpdated );
+               if( firstIndex + numChannelsInCurrentList >= totalCount) // We are at the end of the list
+               {
+                  Notification( ClientSideNetworkCallback::NotificationType_GenericInvitationsUpdated, whichGroup );
+               }
+            }
+            break;
+         case PacketInvitation::InvitationType_GetListOfInvitationsForGroupResponse:
+            {
+               PacketInvitation_GetListOfInvitationsForGroupResponse* response = static_cast<PacketInvitation_GetListOfInvitationsForGroupResponse*>( packetIn );
+               const SerializedKeyValueVector< Invitation >& invitaions = response->invitationList;
+
+               int whichGroup = response->invitationType;
+               assert( whichGroup >0 && whichGroup < Invitation::InvitationType_Num );
+
+               U16 firstIndex = invitaions.GetFirstIndex();
+               U16 totalCount = invitaions.GetTotalCount();
+               U16 numChannelsInCurrentList = invitaions.size();
+               if( invitaions.GetFirstIndex() == 0 )
+               {
+                  m_invitationsToGroup[ whichGroup ].clear();
+               }
+               
+               SerializedKeyValueVector< Invitation >::const_KVIterator it = invitaions.begin();
+               while (it != invitaions.end() )
+               {
+                  const Invitation& invite = it->value;
+                  cout << "Invitation: " << invite.invitationUuid << endl;
+                  cout << "  inviter : " << invite.inviterName << endl;
+                  cout << "  invitee : " << invite.inviteeName << endl;
+                  it++;
+                  m_invitationsToGroup[ whichGroup ].push_back( invite );
+               }
+               if( firstIndex + numChannelsInCurrentList >= totalCount) // We are at the end of the list
+               {
+                  Notification( ClientSideNetworkCallback::NotificationType_GroupInvitationsUpdated, whichGroup );
+               }
+
             }
             break;
          case PacketInvitation::InvitationType_RejectInvitationResponse:
@@ -2933,6 +3064,30 @@ bool     ClientNetworkWrapper::HandlePacketReceived( BasePacket* packetIn )
                HandleListOfDevices( packet );
 
                Notification( ClientSideNetworkCallback::NotificationType_ListOfDevicesUpdated );
+            }
+            break;
+            case PacketNotification::NotificationType_RemoveDeviceResponse:
+            {
+               PacketNotification_RemoveDeviceResponse* response =  
+                  static_cast<PacketNotification_RemoveDeviceResponse*>( packetIn );
+
+               SerializedKeyValueVector< string > strings;
+               strings.insert( "channelUuid", response->deviceUuid );
+               strings.insert( "success", boost::lexical_cast< string >( response->success ? 1:0 ) );
+               if( response->success == true )
+               {
+                  Threading::MutexLock    locker( m_notificationMutex );
+                  for( U32 i = 0; i<m_devices.size(); i++ )
+                  {
+                     if( m_devices[ i ].uuid == response->deviceUuid )
+                     {
+                        m_devices.remove( i );
+                        break;
+                     }
+                  }
+               }
+
+               Notification( ClientSideNetworkCallback::NotificationType_DeviceRemoved, strings );
             }
             break;
             

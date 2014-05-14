@@ -131,14 +131,18 @@ public:
    bool     InviteUserToBeFriend( const string& uuid, const string& username, const string& message );
 
    // all other types
-   bool     RequestListOfInvitations() const;
-   bool     AcceptInvitation( const string& uuid ) const;
-   bool     DeclineInvitation( const string& uuid, string message ) const;
-   bool     RemoveSentInvitation( const string& uuid ) const;
+   bool     RequestListOfInvitations( Invitation::InvitationType = Invitation::InvitationType_ChatRoom ) const;
+   bool     AcceptInvitation( const string& uuid, Invitation::InvitationType = Invitation::InvitationType_ChatRoom ) const;
+   bool     DeclineInvitation( const string& uuid, string message, Invitation::InvitationType = Invitation::InvitationType_ChatRoom ) const;
+   bool     RemoveSentInvitation( const string& uuid, Invitation::InvitationType = Invitation::InvitationType_ChatRoom ) const;
 
-   bool     GetListOfInvitationsReceived( list< Invitation >& invitations );
-   bool     GetListOfInvitationsSent( list< Invitation >& invitations );
+   bool     GetListOfInvitationsReceived( list< Invitation >& invitations, Invitation::InvitationType = Invitation::InvitationType_ChatRoom );
+   bool     GetListOfInvitationsSent( list< Invitation >& invitations, Invitation::InvitationType = Invitation::InvitationType_ChatRoom );
+   bool     GetListOfGroupInvitations( list< Invitation >& invitations, Invitation::InvitationType = Invitation::InvitationType_ChatRoom );// generic... applies to different groups
    bool     InviteUserToChatChannel( const string& channelUuid, const string& userUuid, const string& message );
+   
+   bool     RequestListOfMembersInGroup( const string& groupUuid, Invitation::InvitationType = Invitation::InvitationType_ChatRoom ) const;
+   bool     RequestListOfInvitationsForGroup( const string& groupUuid, Invitation::InvitationType = Invitation::InvitationType_ChatRoom ) const;
 
    //--------------------------------------------------------------
 
@@ -177,6 +181,7 @@ public:
    bool     ChangeDevice( const string& deviceUuid, const string& deviceNewName, bool isEnabled, int iconId );
    int      GetNumDevices() const { return m_devices.size(); }
    bool     GetDevice( int index, RegisteredDevice& device ) const;
+   bool     RemoveDevice( const string& deviceUuid ) const;
 
    bool     SendPurchases( const vector< RegisteredProduct >& purchases, int platformId = Platform_ios ); 
    bool     GiveProduct( const string& userName, const string& productUuid, int quantity, const string& notes, int platformId = Platform_ios );
@@ -275,7 +280,8 @@ protected:
 
    SerializedKeyValueVector< InvitationInfo >   m_invitationsReceived;
    SerializedKeyValueVector< InvitationInfo >   m_invitationsSent;
-   list< Invitation >                           m_invitations;
+   list< Invitation >                           m_invitations[ Invitation::InvitationType_Num ];
+   list< Invitation >                           m_invitationsToGroup[ Invitation::InvitationType_Num ];
    SerializedVector< ProductBriefPacketed >     m_products;
    SerializedVector< RegisteredDevice >         m_devices;
    UserNameKeyValue                             m_friends;

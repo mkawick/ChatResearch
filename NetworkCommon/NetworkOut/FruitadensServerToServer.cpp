@@ -37,6 +37,7 @@ FruitadensServerToServer::~FruitadensServerToServer()
 
 void  FruitadensServerToServer::AddToOutwardFilters( U16 packetType )
 {
+   Threading::MutexLock    locker( m_mutex );
    vector< U16 >::const_iterator it = outwardPacketFilters.begin();
    while( it != outwardPacketFilters.end() )
    {
@@ -60,6 +61,7 @@ bool  FruitadensServerToServer::FilterOutwardPacket( BasePacket* packet ) const
       return true;
    }
 
+   Threading::MutexLock    locker( m_mutex );
    vector< U16 >::const_iterator it = outwardPacketFilters.begin();
    while( it != outwardPacketFilters.end() )
    {
@@ -82,9 +84,13 @@ int  FruitadensServerToServer::MainLoop_OutputProcessing()
    {
       PacketFactory factory;
       m_mutex.lock();
-      while( m_packetsReadyToSend.size() )
+      PacketQueue packetQueue = m_packetsReadyToSend;
+      m_packetsReadyToSend.clear();
+      m_mutex.unlock();
+
+      while( packetQueue.size() )
       {
-         BasePacket* packet = m_packetsReadyToSend.front();
+         BasePacket* packet = packetQueue.front();
 
          if( packet->packetType == PacketType_ServerToServerWrapper )         
          {
@@ -102,11 +108,11 @@ int  FruitadensServerToServer::MainLoop_OutputProcessing()
          wrapper.pPacket = packet;*/
 
          //SerializePacketOut( &wrapper );
-         m_packetsReadyToSend.pop_front();
+         packetQueue.pop_front();
 
          factory.CleanupPacket( packet );
       }
-      m_mutex.unlock();
+      
    }
 
    return 0;

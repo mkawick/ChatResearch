@@ -11,18 +11,18 @@ using namespace std;
 
 #include "../NetworkCommon/NetworkIn/Diplodocus.h"
 #include "../NetworkCommon/Stat/StatTrackingConnections.h"
-#include "KhaanChat.h"
+#include "../NetworkCommon/Invitations/InvitationManager.h"
 
+#include "KhaanChat.h"
 
 class ChatUser;
 class PacketDbQuery;
 class PacketDbQueryResult;
 class ChatRoomManager;
-class InvitationManager;
 
 //////////////////////////////////////////////////////////////////////////////////
 
-class DiplodocusChat : public Diplodocus< KhaanChat >, StatTrackingConnections
+class DiplodocusChat : public Diplodocus< KhaanChat >, public StatTrackingConnections, public PacketSendingInterface
 {
 public: 
    typedef Diplodocus< KhaanChat > ChainedType;
@@ -37,20 +37,27 @@ public:
 
    bool     AddInputChainData( BasePacket* packet, U32 connectionId );
    bool     AddOutputChainData( BasePacket* packet, U32 connectionId );
-   bool     SendMessageToClient( BasePacket* packet, U32 connectionId );
+   
 
    // from both the ChatUser and the ChatChannelManager
+   // PacketSendingInterface   
+   bool     SendMessageToClient( BasePacket* packet, U32 connectionId );
    bool     AddQueryToOutput( PacketDbQuery* packet, U32 connectionId );
+   bool     SendErrorToClient( U32 connectionId, PacketErrorReport::ErrorType error );
 
    //-------------------------------------
 public:
 // utility functions used by the ChatChannelManager
-   ChatUser*    UpdateExistingUsersConnectionId( const string& uuid, U32 connectionId );
-   ChatUser*    GetUser( U32 connectionId );
-   ChatUser*    GetUserById( U32 userId );
-   ChatUser*    GetUserByUuid( const string& userName );
-   ChatUser*    GetUserByUsername( const string& userName );
-   ChatUser*    GetUserByConnectionId( U32 ConnectionId );
+   ChatUser*   UpdateExistingUsersConnectionId( const string& uuid, U32 connectionId );
+   ChatUser*   GetUser( U32 connectionId );
+   ChatUser*   GetUserById( U32 userId );
+   ChatUser*   GetUserByUuid( const string& userName );
+   ChatUser*   GetUserByUsername( const string& userName );
+   ChatUser*   GetUserByConnectionId( U32 ConnectionId );
+
+   string      GetUserUuidByConnectionId( U32 connectionId );
+   void        GetUserConnectionId( const string& uuid, U32& connectionId );
+   string      GetUserName( const string& uuid );
 
    //-------------------------------------
 private:

@@ -205,10 +205,6 @@
 				>
 			</File>
 			<File
-				RelativePath=".\InvitationManager.cpp"
-				>
-			</File>
-			<File
 				RelativePath=".\KhaanChat.cpp"
 				>
 			</File>
@@ -244,10 +240,6 @@
 			</File>
 			<File
 				RelativePath=".\DiplodocusChat.h"
-				>
-			</File>
-			<File
-				RelativePath=".\InvitationManager.h"
 				>
 			</File>
 			<File
@@ -459,6 +451,18 @@
 				</File>
 				<File
 					RelativePath="..\NetworkCommon\Stat\StatTrackingConnections.h"
+					>
+				</File>
+			</Filter>
+			<Filter
+				Name="Invitations"
+				>
+				<File
+					RelativePath="..\NetworkCommon\Invitations\InvitationManager.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\NetworkCommon\Invitations\InvitationManager.h"
 					>
 				</File>
 			</Filter>

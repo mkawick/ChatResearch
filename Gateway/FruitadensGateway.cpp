@@ -9,6 +9,7 @@ using boost::format;
 #include "../NetworkCommon/Packets/BasePacket.h"
 #include "../NetworkCommon/Packets/CheatPacket.h"
 #include "../NetworkCommon/Packets/ServerToServerPacket.h"
+#include "../NetworkCommon/Packets/InvitationPacket.h"
 #include "../NetworkCommon/Utils/CommandLineParser.h"
 
 #include <iostream>
@@ -198,7 +199,11 @@ bool FruitadensGateway::FilterOutwardPacket( BasePacket* packet ) const
             if( packetType == PacketType_GatewayInformation )
                return true;
             if( packetType == PacketType_Invitation )
-               return true;
+            {
+               const PacketInvitation* invite = static_cast< const PacketInvitation*> ( wrapper->pPacket );
+               if( invite->invitationType == Invitation::InvitationType_ChatRoom )
+                  return true;
+            }
          }
          break;
 
@@ -219,6 +224,12 @@ bool FruitadensGateway::FilterOutwardPacket( BasePacket* packet ) const
             if( packetType == PacketType_Contact )
             {
                return true;
+            }
+            if( packetType == PacketType_Invitation )
+            {
+               const PacketInvitation* invite = static_cast< const PacketInvitation*> ( wrapper->pPacket );
+               if( invite->invitationType == Invitation::InvitationType_Friend )
+                  return true;
             }
          }
          break;

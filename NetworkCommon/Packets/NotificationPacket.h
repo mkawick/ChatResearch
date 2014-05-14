@@ -39,6 +39,10 @@ public:
 
       NotificationType_RequestListOfDevices,  // based on product.. 0 means all devices
       NotificationType_RequestListOfDevicesResponse,
+
+      NotificationType_RemoveDevice,
+      NotificationType_RemoveDeviceResponse
+
      /* NotificationType_EnableDevice,
       NotificationType_EnableDeviceResponse,*/
    };
@@ -188,6 +192,34 @@ public:
 
    SerializedVector< RegisteredDevice > devices;
 };
+
+///////////////////////////////////////////////////////////////
+
+class PacketNotification_RemoveDevice: public PacketNotification
+{
+public:
+   PacketNotification_RemoveDevice() : PacketNotification( PacketType_Notification, NotificationType_RemoveDevice ){  }
+
+   bool  SerializeIn( const U8* data, int& bufferOffset );
+   bool  SerializeOut( U8* data, int& bufferOffset ) const;
+
+   string      deviceUuid;
+};
+
+///////////////////////////////////////////////////////////////
+
+class PacketNotification_RemoveDeviceResponse: public PacketNotification
+{
+public:
+   PacketNotification_RemoveDeviceResponse() : PacketNotification( PacketType_Notification, NotificationType_RemoveDeviceResponse ){  }
+
+   bool  SerializeIn( const U8* data, int& bufferOffset );
+   bool  SerializeOut( U8* data, int& bufferOffset ) const;
+
+   string      deviceUuid;
+   bool        success;
+};
+
 
 
 ///////////////////////////////////////////////////////////////////

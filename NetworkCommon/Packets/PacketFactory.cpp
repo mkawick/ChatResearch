@@ -1204,6 +1204,17 @@ bool     PacketFactory::ParseNotification( const U8* bufferIn, int& bufferOffset
          *packetOut = SerializeIn< PacketNotification_RequestListOfDevicesResponse >( bufferIn, bufferOffset );
       }
       return true;
+
+   case PacketNotification::NotificationType_RemoveDevice:
+      {
+         *packetOut = SerializeIn< PacketNotification_RemoveDevice >( bufferIn, bufferOffset );
+      }
+      return true;
+   case PacketNotification::NotificationType_RemoveDeviceResponse:
+      {
+         *packetOut = SerializeIn< PacketNotification_RemoveDeviceResponse >( bufferIn, bufferOffset );
+      }
+      return true;
    }
    return false;
 }
@@ -1273,6 +1284,16 @@ bool     PacketFactory::ParseInvitation( const U8* bufferIn, int& bufferOffset, 
    case PacketInvitation::InvitationType_GetListOfInvitationsResponse:
       {
          *packetOut = SerializeIn< PacketInvitation_GetListOfInvitationsResponse >( bufferIn, bufferOffset );
+      }
+      return true;
+   case PacketInvitation::InvitationType_GetListOfInvitationsForGroup:
+      {
+         *packetOut = SerializeIn< PacketInvitation_GetListOfInvitationsForGroup >( bufferIn, bufferOffset );
+      }
+      return true;
+   case PacketInvitation::InvitationType_GetListOfInvitationsForGroupResponse:
+      {
+         *packetOut = SerializeIn< PacketInvitation_GetListOfInvitationsForGroupResponse >( bufferIn, bufferOffset );
       }
       return true;
     }
