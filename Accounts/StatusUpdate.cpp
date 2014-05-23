@@ -69,10 +69,10 @@ StatusUpdate::StatusUpdate( const string& serverName, U32 serverId ) : Queryer()
    m_resetPasswordHandler->SetPeriodicty( timeoutResetPassword );
 
    
-   string queryForChangeEmail = "SELECT id, user_account_uuid, reset_key, new_email, new_username, time_last_email_sent, language_id, user_email, user_name FROM playdek.reset_user_email_name INNER JOIN playdek.users ON reset_user_email_name.user_account_uuid=users.uuid WHERE was_email_sent=0;";
+  /* string queryForChangeEmail = "SELECT id, user_account_uuid, reset_key, new_email, new_username, time_last_email_sent, language_id, user_email, user_name FROM playdek.reset_user_email_name INNER JOIN playdek.users ON reset_user_email_name.user_account_uuid=users.uuid WHERE was_email_sent=0;";
 
    m_resetUsernameEmailHandler = new ResetUserEmailQueryHandler( QueryType_ChangeUsernameEmail, this, queryForChangeEmail );
-   m_resetUsernameEmailHandler->SetPeriodicty( timeoutChangeUsernameEmail );
+   m_resetUsernameEmailHandler->SetPeriodicty( timeoutChangeUsernameEmail );*/
 
    LogOpen();
    LogMessage( LOG_PRIO_INFO, "Accounts::Accounts server created\n" );
@@ -87,7 +87,7 @@ StatusUpdate::~StatusUpdate()
    delete m_blankUserProfileHandler;
    delete m_newAccountHandler;
    delete m_resetPasswordHandler;
-   delete m_resetUsernameEmailHandler;
+   //delete m_resetUsernameEmailHandler;
 }
 
 //---------------------------------------------------------------
@@ -346,7 +346,7 @@ int      StatusUpdate::CallbackFunction()
             m_resetPasswordHandler->Update( currentTime );
 
             // we are only testing so this should be moved
-            m_resetUsernameEmailHandler->Update( currentTime );
+            //m_resetUsernameEmailHandler->Update( currentTime );
          }
          
          m_newAccountHandler->Update( currentTime );
@@ -355,7 +355,7 @@ int      StatusUpdate::CallbackFunction()
       m_blankUuidHandler->Update( currentTime );
       //DuplicateUUIDSearch();// no longer needed after-the-fact.
 
-      m_blankUserProfileHandler->Update( currentTime ); // no longer needed
+      m_blankUserProfileHandler->Update( currentTime ); 
       if( m_enableAddingUserProducts )
       {
          m_addProductEntryHandler->Update( currentTime );
@@ -416,10 +416,10 @@ bool     StatusUpdate::AddOutputChainData( BasePacket* packet, U32 connectionId 
          {
             wasHandled = true;
          }
-         else if( m_resetUsernameEmailHandler->HandleResult( dbResult ) == true )
+        /* else if( m_resetUsernameEmailHandler->HandleResult( dbResult ) == true )
          {
             wasHandled = true;
-         }
+         }*/
          else
          {
             switch( dbResult->lookup )
@@ -538,15 +538,9 @@ void     StatusUpdate::HandleAutoCreateAccounts( const PacketDbQueryResult* dbRe
 
       string query = "INSERT INTO users (user_id, user_name, user_name_match, user_pw_hash, user_email, user_gamekit_hash, user_creation_date, uuid, active, language_id, user_confirmation_date) VALUES ('";
       query += userId;
-      query += "', '";
-      query += name;
-      query += "', '";
-      query += lowerCaseUserName;
-      query += "', ";
+      query += "', '%s', '%s', ";
       query += passwordHash;
-      query += ", '";
-      query += email;
-      query += "', '";
+      query += ", '%s', '";
       query += gamekitHash;
       query += "', '";
       query += timeCreated;
@@ -557,15 +551,9 @@ void     StatusUpdate::HandleAutoCreateAccounts( const PacketDbQueryResult* dbRe
       query += languageId;   
       query += ", '";
       query += timeCreated;
-      query += "') ON DUPLICATE KEY UPDATE user_name='";
-      query += name;
-      query += "', user_name_match='";
-      query += lowerCaseUserName;
-      query += "', user_pw_hash='";
+      query += "') ON DUPLICATE KEY UPDATE user_name='%s', user_name_match='%s', user_pw_hash='";
       query += passwordHash;
-      query += "', user_email='";
-      query += email;
-      query += "', user_gamekit_hash='";
+      query += "', user_email='%s', user_gamekit_hash='";
       query += gamekitHash;
       query += "', user_creation_date='";
       query += timeCreated;
@@ -577,6 +565,13 @@ void     StatusUpdate::HandleAutoCreateAccounts( const PacketDbQueryResult* dbRe
       dbQuery->id = 0;
       dbQuery->lookup = QueryType_AutoCreateUsersInsertOrUpdate;
       dbQuery->isFireAndForget = true;
+      
+      dbQuery->escapedStrings.insert( name );
+      dbQuery->escapedStrings.insert( lowerCaseUserName );
+      dbQuery->escapedStrings.insert( email );
+      dbQuery->escapedStrings.insert( name );
+      dbQuery->escapedStrings.insert( lowerCaseUserName );
+      dbQuery->escapedStrings.insert( email );
 
       dbQuery->query = query;
       AddQueryToOutput( dbQuery );

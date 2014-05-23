@@ -69,7 +69,7 @@ public:
    virtual void  ChatChannel_UserRemoved( const string& channelUuid, const string& userUuid, bool success ) { }
    //virtual void  NewChatChannelAdded( const string& channelName, const string& channelUuid, bool success ) { }
 
-   virtual void  ChatChannelMembers( const string& channelUuid, const SerializedKeyValueVector< string >& info ) {}
+   virtual void  ChatChannelMembers( const string& channelName, const string& channelUuid, const SerializedKeyValueVector< string >& info ) {}
 
    virtual void  AssetCategoriesLoaded() {}
    virtual void  AssetManifestAvailable( const string& category ) {}
@@ -82,7 +82,8 @@ public:
    virtual void  PurchaseSuccess( const string& purchaseUuid, bool success ){}
    virtual void  ProductsForSale( const SerializedKeyValueVector< PurchaseInfo >& thingsToBuy ) {}
 
-   virtual void  ListOfDevicesUpdated() const {}
+   virtual void  UpdatedDeviceID() {}
+   virtual void  ListOfDevicesUpdated() {}
    virtual void  DeviceRemoved( const string& uuid, bool success ) {}
 
    ClientSideNetworkCallback(): network( NULL ){}
@@ -153,6 +154,7 @@ public:
 
       NotificationType_PurchaseSuccess,
       NotificationType_ProductsForSale,
+      NotificationType_DeviceIDUpdated,
       NotificationType_ListOfDevicesUpdated,
       NotificationType_DeviceRemoved,
       NotificationType_Num

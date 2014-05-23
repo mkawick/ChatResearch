@@ -62,6 +62,7 @@ public:
    void           InputRemovalInProgress( IChainedInterface * chainedInput );
 
    void           PrintPacketTypes( bool printingOn = true );
+   void           PrintFunctionNames( bool printingOn = true );
 
    void           SetupReroute( const string& address, U16 port );
    bool           IsRerouoting() { return ( m_reroutePort != 0 ) && ( m_rerouteAddress.size() > 0 ); }
@@ -73,6 +74,7 @@ private:
    
    void           InputConnected( IChainedInterface * );
    bool           PushPacketToProperOutput( BasePacket* packet );
+   void           SortOutgoingPackets();
 
    void           HandlePacketToKhaan( KhaanGateway* khaan, BasePacket* packet );
    
@@ -122,6 +124,7 @@ private:
    PacketQueue                m_packetsToBeSentInternally;
 
    bool                       m_printPacketTypes;
+   bool                       m_printFunctionNames;
    bool                       m_connectionsRequireAuthentication;
 
    string                     m_rerouteAddress;

@@ -110,8 +110,8 @@ bool  PacketNotification_RegisterDevice::SerializeIn( const U8* data, int& buffe
 {
    PacketNotification::SerializeIn( data, bufferOffset );
    Serialize::In( data, bufferOffset, deviceName );
-   //Serialize::In( data, bufferOffset, userId );
    Serialize::In( data, bufferOffset, deviceId );
+   Serialize::In( data, bufferOffset, assignedUuid );
    Serialize::In( data, bufferOffset, platformId );
 
    return true;
@@ -121,8 +121,8 @@ bool  PacketNotification_RegisterDevice::SerializeOut( U8* data, int& bufferOffs
 {
    PacketNotification::SerializeOut( data, bufferOffset );
    Serialize::Out( data, bufferOffset, deviceName );
-   //Serialize::Out( data, bufferOffset, userId );
    Serialize::Out( data, bufferOffset, deviceId );
+   Serialize::Out( data, bufferOffset, assignedUuid );
    Serialize::Out( data, bufferOffset, platformId );
 
    return true;

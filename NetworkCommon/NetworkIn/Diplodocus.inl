@@ -409,10 +409,10 @@ void  Diplodocus< InputChain, OutputChain >::OnAccept( evconnlistener* listenerO
    
    if( This->m_sendHelloPacket )
    {
-      PacketGatewayWrapper* wrapper    = new PacketGatewayWrapper;
-      wrapper->SetupPacket( new PacketHello(), -1 );
+      //PacketGatewayWrapper* wrapper    = new PacketGatewayWrapper;
+      //wrapper->SetupPacket( new PacketHello(), -1 );
 
-      khaan->AddOutputChainData( wrapper, -1 );
+      khaan->AddOutputChainData( new PacketHello(), -1 );
    }
 
    This->AddClientConnection( khaan );
@@ -551,15 +551,22 @@ void	Diplodocus< InputChain, OutputChain >::UpdateAllConnections()
    // the potential exists for this queue to be updated while we are working on it
    // this is alright as long as we pull from the front and push onto the back as this list is non-persistent
 
-   Threading::MutexLock locker( m_mutex );
-   if( m_clientsNeedingUpdate.size() == 0 )// no locking a mutex if you don't need to do it.
-      return;
+   deque< U32 > localQueue;
+
+   {// creating local scope
+      Threading::MutexLock locker( m_mutex );
+      if( m_clientsNeedingUpdate.size() == 0 )// no locking a mutex if you don't need to do it.
+         return;
+
+      localQueue = m_clientsNeedingUpdate;
+      m_clientsNeedingUpdate.clear();
+   }
 
    
-   while( m_clientsNeedingUpdate.size() )// threads can remove themselves.
+   while( localQueue.size() )// threads can remove themselves.
    {
-      U32 id = m_clientsNeedingUpdate.front();
-      m_clientsNeedingUpdate.pop_front();
+      U32 id = localQueue.front();
+      localQueue.pop_front();
 
       ClientMapIterator it = m_connectedClients.end();
       if( m_connectedClients.size() )// preventing removal crashes.

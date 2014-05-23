@@ -71,18 +71,10 @@ void     BlankUserProfileHandler::CreateBlankProfile( const string& user_id, int
    dbQuery->lookup = m_queryType;
    dbQuery->isFireAndForget = true;
 
-   dbQuery->query = "INSERT INTO user_profile VALUES( '";
-   dbQuery->query += user_id;
-   dbQuery->query += "', DEFAULT, DEFAULT, DEFAULT, DEFAULT, DEFAULT, DEFAULT, DEFAULT, DEFAULT, DEFAULT, DEFAULT, DEFAULT, DEFAULT, DEFAULT, DEFAULT, DEFAULT, DEFAULT, ";
-   if( productId == 0 )
-   {
-      dbQuery->query += "DEFAULT";
-   }
-   else
-   {
-      dbQuery->query += boost::lexical_cast< string >( productId );
-   }
-
+   dbQuery->query = "INSERT INTO user_profile (user_id, account_create_product_id) VALUES (";
+   dbQuery->query += boost::lexical_cast< string >( user_id );
+   dbQuery->query += ",";
+   dbQuery->query += boost::lexical_cast< string >( productId );
    dbQuery->query += ")";
 
    m_parent->AddQueryToOutput( dbQuery );

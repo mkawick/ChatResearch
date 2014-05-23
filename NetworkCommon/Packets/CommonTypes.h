@@ -152,6 +152,7 @@ public:
    // helper functions
    void           push_back( type value ) { m_data.push_back( value ); }
    int            size() const { return static_cast< int >( m_data.size() ); }
+   void           clear() { m_data.clear(); }
    const type&    operator[]( int index ) { return m_data[ index ]; }
    const type&    operator[]( int index ) const { return m_data[ index ]; }
    bool  remove( U32 index ) { if ( index <0 || index >= m_data.size() ) return false; m_data.erase( m_data.begin() + index ); return true; }

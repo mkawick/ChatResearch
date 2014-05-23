@@ -71,6 +71,7 @@ void  PrintInstructions()
    cout << "    asset.only        - connect to only the asset server" << endl;
    cout << "    asset.block       - do not connect to the asset server" << endl;
 
+   cout << "    print.functions   - print each function for debugging" << endl;
    cout << "    print.packets     - print each packet for debugging" << endl;
 
    cout << "    games = [192.168.1.0:21000:MFM,localhost:21100:game1]     - game list" << endl;
@@ -118,6 +119,7 @@ int main( int argc, const char* argv[] )
    string notificationPortString = "7900";
    string notificationIpAddressString = "localhost";
 
+   string printFunctionsString = "false";
    string printPacketTypes = "false";
 
    string assetOnlyString = "false";
@@ -163,6 +165,7 @@ int main( int argc, const char* argv[] )
    parser.FindValue( "stat.port", statPortString );
    parser.FindValue( "stat.address", statIpAddressString );
 
+   parser.FindValue( "print.functions", printFunctionsString );
    parser.FindValue( "print.packets", printPacketTypes );
 
    parser.FindValue( "asset.only", assetOnlyString );
@@ -185,7 +188,10 @@ int main( int argc, const char* argv[] )
          listenPort = 9600;
 
    U16 reroutePort = 0;
-   bool printPackets = false, assetOnly = false, assetBlock = false; 
+   bool printPackets = false, 
+         printFunctions = false,
+         assetOnly = false, 
+         assetBlock = false; 
 
    try 
    {
@@ -210,6 +216,10 @@ int main( int argc, const char* argv[] )
    if( printPacketTypes == "1" || printPacketTypes == "true" || printPacketTypes == "TRUE" )
    {
       printPackets = true;
+   }
+   if( printFunctionsString == "1" || printFunctionsString == "true" || printFunctionsString == "TRUE" )
+   {
+      printFunctions = true;
    }
    if( assetOnlyString == "1" || assetOnlyString == "true" || assetOnlyString == "TRUE" )
    {
@@ -250,6 +260,7 @@ int main( int argc, const char* argv[] )
    }
    gatewayServer->SetAsGame( false );
    gatewayServer->PrintPacketTypes( printPackets );
+   gatewayServer->PrintFunctionNames( printFunctions );
    gatewayServer->SetupListening( listenPort );
 
    if( assetOnly == true )

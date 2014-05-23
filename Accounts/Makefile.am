@@ -26,6 +26,7 @@ ResetPasswordQueryHandler.cpp \
 ../NetworkCommon/Packets/ContactPacket.cpp \
 ../NetworkCommon/Packets/DbPacket.cpp \
 ../NetworkCommon/Packets/GamePacket.cpp \
+../NetworkCommon/Packets/InvitationPacket.cpp \
 ../NetworkCommon/Packets/LoginPacket.cpp \
 ../NetworkCommon/Packets/NotificationPacket.cpp \
 ../NetworkCommon/Packets/PacketFactory.cpp \

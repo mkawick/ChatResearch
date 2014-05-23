@@ -28,8 +28,10 @@ bool  PacketContact::SerializeOut( U8* data, int& bufferOffset ) const
 bool  FriendInfo::SerializeIn( const U8* data, int& bufferOffset )
 {
    Serialize::In( data, bufferOffset, userName );
+   Serialize::In( data, bufferOffset, notesAboutThisUser );
    Serialize::In( data, bufferOffset, avatarId );
    Serialize::In( data, bufferOffset, isOnline );
+   Serialize::In( data, bufferOffset, markedAsFavorite );
 
    return true;
 }
@@ -37,8 +39,10 @@ bool  FriendInfo::SerializeIn( const U8* data, int& bufferOffset )
 bool  FriendInfo::SerializeOut( U8* data, int& bufferOffset ) const
 {
    Serialize::Out( data, bufferOffset, userName );
+   Serialize::Out( data, bufferOffset, notesAboutThisUser );
    Serialize::Out( data, bufferOffset, avatarId );
    Serialize::Out( data, bufferOffset, isOnline );
+   Serialize::Out( data, bufferOffset, markedAsFavorite );
 
    return true;
 }
@@ -437,6 +441,26 @@ bool  PacketContact_FriendOnlineStatusChange::SerializeIn( const U8* data, int& 
 }
 
 bool  PacketContact_FriendOnlineStatusChange::SerializeOut( U8* data, int& bufferOffset ) const 
+{ 
+   PacketContact::SerializeOut( data, bufferOffset );
+   Serialize::Out( data, bufferOffset, uuid );
+   Serialize::Out( data, bufferOffset, friendInfo );
+
+   return true; 
+}
+
+///////////////////////////////////////////////////////////////
+
+bool  PacketContact_SetNotationOnUser::SerializeIn( const U8* data, int& bufferOffset )
+{ 
+   PacketContact::SerializeIn( data, bufferOffset );
+   Serialize::In( data, bufferOffset, uuid );
+   Serialize::In( data, bufferOffset, friendInfo );
+
+   return true; 
+}
+
+bool  PacketContact_SetNotationOnUser::SerializeOut( U8* data, int& bufferOffset ) const 
 { 
    PacketContact::SerializeOut( data, bufferOffset );
    Serialize::Out( data, bufferOffset, uuid );

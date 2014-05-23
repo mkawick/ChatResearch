@@ -28,3 +28,6 @@ void LogMessage(int priority, const char *fmt, ...);
 void LogClose();
 
 
+void  FileLogOpen( const char* filename = 0L );
+void  FileLog( const char* text );
+void  FileLogClose();

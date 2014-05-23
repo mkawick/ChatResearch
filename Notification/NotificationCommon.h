@@ -34,10 +34,11 @@ public:
    enum Columns
    {
       Column_id,
-      Column_device_id,
+      Column_user_device_id,
       Column_game_type,
       Column_is_enabled,
       Column_time_last_changed,
+      Column_device_id,
       Column_end
    };
    static const char* const column_names[];

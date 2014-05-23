@@ -53,8 +53,11 @@ class BasicUser
 public:
    string   userName;
    string   UUID;
+   string   notesAboutThisUser;
    U32      avatarId; 
    bool     isOnline;
+   bool     markedAsFavorite;
+   
 };
 
 //-------------------------------------------
@@ -97,10 +100,10 @@ typedef vector< ChatChannel >    ChatChannelVector;
 
 class Group
 {
-   string groupName;
-   string groupMotto;
-   int    avatarId;
-   string chatChannel; // the venn diagrap for groups and channels may not be 1-1
+   string   groupName;
+   string   groupMotto;
+   int      avatarId;
+   string   chatChannel; // the venn diagrap for groups and channels may not be 1-1
    vector< BasicUser > usersInGroup;
 };
 

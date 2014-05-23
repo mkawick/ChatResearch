@@ -766,6 +766,12 @@ bool     PacketFactory::ParseContact( const U8* bufferIn, int& bufferOffset, con
          *packetOut = SerializeIn< PacketContact_FriendOnlineStatusChange >( bufferIn, bufferOffset );
       }
       return true;
+
+   case PacketContact::ContactType_SetNotation:
+      {
+         *packetOut = SerializeIn< PacketContact_SetNotationOnUser >( bufferIn, bufferOffset );
+      }
+      return true;
    }
    return false;
 }

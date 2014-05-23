@@ -8,6 +8,7 @@ class PacketDbQueryResult;
 class DiplodocusContact;
 class PacketContact;
 class PacketUserUpdateProfile;
+class PacketContact_SetNotationOnUser;
 
 struct P2PInvitation
 {
@@ -80,6 +81,7 @@ private:
    bool  PerformSearch( const PacketContact_SearchForUser* packet );
    bool  RemoveContact( const PacketContact_ContactRemove* packet );
    bool  EchoHandler();
+   bool  AddNotationToContact( const PacketContact_SetNotationOnUser* notationPacket );
 
    void  FinishAcceptingInvitation( const PacketDbQueryResult* result ); 
    void  FinishDecliningingInvitation(  const PacketDbQueryResult* dbResult );
@@ -96,7 +98,7 @@ private:
 
    void  InsertInvitationReceived( U32 inviteeId, U32 inviterId, bool wasNotified, const string& userName, const string& userUuid, const string& message, const string& invitationUuid, const string& date );
    void  InsertInvitationSent( U32 inviteeId, U32 inviterId, bool wasNotified, const string& userName, const string& userUuid, const string& message, const string& invitationUuid, const string& date );
-   void  InsertFriend( U32 id, const string& userName, const string& uuid, const string& email, U32 avatarId, bool isActive );
+   void  InsertFriend( UserInfo& ui );
    void  RemoveInvitationReceived( const string& uuid );
    void  RemoveInvitationSent( const string& invitationUuid );
 
@@ -107,6 +109,7 @@ private:
       QueryType_FriendRequestReceived,
       QueryType_FriendRequestsSent,
       QueryType_DeleteFriend,
+      QueryType_FriendAddNotation,
 
       QueryType_GetInviteeDetails,
       QueryType_AddInvitationToUser,
@@ -137,7 +140,7 @@ private:
 
    time_t               m_timeLoggedOut;
 
-   vector< UserInfo >   m_friends;
+   vector< UserInfo >   m_contacts;
    vector< P2PInvitation > m_invitationsOut;
    vector< P2PInvitation > m_invitationsIn;
    //vector< PacketContact_InviteContact > m_invitationsPendingUserLookup;

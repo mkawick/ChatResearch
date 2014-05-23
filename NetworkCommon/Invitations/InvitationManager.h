@@ -68,6 +68,24 @@ public:
 
 protected:
 
+   enum 
+   {
+      QueryType_AllInvitations,
+      QueryType_InsertInvitation,
+      QueryType_DeleteInvitation,
+   };
+
+   static PacketSendingInterface*            m_mainServer;
+   static GroupLookupInterface*              m_groupLookup;
+   deque< PacketDbQueryResult* > m_dbResults;
+
+   typedef map< stringhash, Invitation >     InvitationMap;
+   typedef pair< stringhash, Invitation >    InvitationPair;
+   typedef InvitationMap::iterator           InvitationMapIterator;
+   typedef InvitationMap::const_iterator     InvitationMapConstIterator;
+
+protected:
+
    bool           EchoHandler( U32 connectionId );
    bool           InviteUserToChatRoom( const PacketInvitation_InviteUser* invitation, U32 connectionId );
    bool           CancelInvitation( const PacketInvitation_CancelInvitation* invitation, U32 connectionId );
@@ -84,24 +102,12 @@ protected:
    void           DeleteInvitationFromDb( U32 invitationId );
    //void           SendInvitationToSenderAndRecipient( const Invitation& inv );
 
+   InvitationMapConstIterator  FindInvitation( const string& inviter, const string& invitationUuid ) const;
+   InvitationMapConstIterator  FindInvitation( const string& inviter, const string& invitee, const string& groupUuid ) const ;
    bool           IsThereAlreadyAnInvitationToThisGroupInvolvingTheseTwoUsers( const string& user1, const string& user2, const string& groupUuid ) const;
    
 
-   enum 
-   {
-      QueryType_AllInvitations,
-      QueryType_InsertInvitation,
-      QueryType_DeleteInvitation,
-   };
-
-   static PacketSendingInterface*            m_mainServer;
-   static GroupLookupInterface*              m_groupLookup;
-   deque< PacketDbQueryResult* > m_dbResults;
-
-   typedef map< stringhash, Invitation >     InvitationMap;
-   typedef pair< stringhash, Invitation >    InvitationPair;
-   typedef InvitationMap::iterator           InvitationMapIterator;
-   typedef InvitationMap::const_iterator     InvitationMapConstIterator;
+   
 
    Invitation::InvitationType          m_type;
    InvitationMap                       m_invitationMap;

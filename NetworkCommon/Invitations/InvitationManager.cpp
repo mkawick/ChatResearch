@@ -324,35 +324,48 @@ bool     InvitationManager::InviteUserToChatRoom( const PacketInvitation_InviteU
 
 ///////////////////////////////////////////////////////////////////
 
-bool     InvitationManager::CancelInvitation( const PacketInvitation_CancelInvitation* invite, U32 connectionId  )
+bool     InvitationManager::CancelInvitation( const PacketInvitation_CancelInvitation* invite, U32 connectionId )
 {
-   m_mainServer->SendErrorToClient( connectionId, PacketErrorReport::ErrorType_IncompleteFeature );
+  /* m_mainServer->SendErrorToClient( connectionId, PacketErrorReport::ErrorType_IncompleteFeature );
+      return false;*/
+
+   if( m_groupLookup == NULL )
+   {
+      m_mainServer->SendErrorToClient( connectionId, PacketErrorReport::ErrorType_Invitation_BadServerSetup );
       return false;
-/*
-   stringhash lookup = GenerateUniqueHash( invitation->invitationUuid );
-   InvitationMapIterator it = m_invitationMap.find( lookup );
+   }
+
+   const string& senderUuid = m_mainServer->GetUserUuidByConnectionId( connectionId );
+   if( senderUuid.size() == 0 )
+   {
+      m_mainServer->SendErrorToClient( connectionId, PacketErrorReport::ErrorType_UserUnknown );
+      return false;
+   }
+
+
+   InvitationMapConstIterator it = FindInvitation( senderUuid, invite->invitationUuid );
    if( it == m_invitationMap.end() )
    {
       m_mainServer->SendErrorToClient( connectionId, PacketErrorReport::ErrorType_Invitation_DoesNotExist );
       return false;
    }
 
-   const Invitation& invite = it->second;
+   U32 invitationId = it->second.invitationId;
+   const string inviteeUuid = it->second.inviteeUuid;
+   
+   m_invitationMap.erase( it );
+   DeleteInvitationFromDb( invitationId );
 
-   ChatUser* sender = m_mainServer->GetUserByConnectionId( connectionId );
-   if( sender == NULL )
+   SendUserHisInvitations <PacketInvitation_GetListOfInvitationsResponse> ( m_invitationMap, IsUserInThisInvitation, senderUuid, connectionId );
+
+   U32 receivedConnectionId = 0;
+   m_mainServer->GetUserConnectionId( inviteeUuid, receivedConnectionId );
+   if( receivedConnectionId != 0 )
    {
-      m_mainServer->SendErrorToClient( connectionId, PacketErrorReport::ErrorType_UserUnknown );
-      return false;
-   }
-   if( invite.inviteeUuid != sender->GetUuid () )
-   {
-      m_mainServer->SendErrorToClient( connectionId, PacketErrorReport::ErrorType_Invitation_DoesNotExist );// you are not allowed to accept this.
-      return false;
+      SendUserHisInvitations <PacketInvitation_GetListOfInvitationsResponse> ( m_invitationMap, IsUserInThisInvitation, inviteeUuid, receivedConnectionId );
    }
 
-   // PacketInvitation_InvitationWasCancelled
-   return true;*/
+   return true;
 }
 
 ///////////////////////////////////////////////////////////////////
@@ -604,6 +617,8 @@ void     InvitationManager::SendInvitationToUser( const Invitation& invite )// r
 */
 
 
+///////////////////////////////////////////////////////////////////
+
 void           InvitationManager::AddInvitationToStorage( Invitation& invite )
 {
    string name;
@@ -624,6 +639,50 @@ void           InvitationManager::AddInvitationToStorage( Invitation& invite )
    }
 }
 
+///////////////////////////////////////////////////////////////////
+
+InvitationManager::InvitationMapConstIterator  
+InvitationManager::FindInvitation( const string& inviter, const string& invitationUuid ) const 
+{
+   InvitationMapConstIterator it = m_invitationMap.begin();
+   while( it != m_invitationMap.end() )
+   {
+      const Invitation& invite = it->second;
+      if( invite.invitationUuid == invitationUuid ) // this seems like the best way to do a first pass test
+      {
+         if( invite.inviterUuid == inviter )
+         {
+            return it;
+         }
+      }
+      it++;
+   }
+   return m_invitationMap.end();
+}
+
+///////////////////////////////////////////////////////////////////
+
+InvitationManager::InvitationMapConstIterator  
+InvitationManager::FindInvitation( const string& inviter, const string& invitee, const string& groupUuid ) const 
+{
+   InvitationMapConstIterator it = m_invitationMap.begin();
+   while( it != m_invitationMap.end() )
+   {
+      const Invitation& invite = it->second;
+      if( invite.groupUuid == groupUuid ) // this seems like the best way to do a first pass test
+      {
+         if( invite.inviteeUuid == inviter && invite.inviterUuid == invitee )
+         {
+            return it;
+         }
+      }
+      it++;
+   }
+   return m_invitationMap.end();
+}
+
+///////////////////////////////////////////////////////////////////
+
 bool           InvitationManager::IsThereAlreadyAnInvitationToThisGroupInvolvingTheseTwoUsers( const string& user1, const string& user2, const string& groupUuid ) const 
 {
    InvitationMapConstIterator it = m_invitationMap.begin();
@@ -632,8 +691,8 @@ bool           InvitationManager::IsThereAlreadyAnInvitationToThisGroupInvolving
       const Invitation& invite = it->second;
       if( invite.groupUuid == groupUuid ) // this seems like the best way to do a first pass test
       {
-         if( invite.inviteeUuid == user1 || invite.inviterUuid == user1 ||
-            invite.inviteeUuid == user2 || invite.inviterUuid == user2 )
+         if( ( invite.inviteeUuid == user1 && invite.inviterUuid == user2 ) ||
+            ( invite.inviteeUuid == user2 && invite.inviterUuid == user1 ) )
          {
             return true;
          }

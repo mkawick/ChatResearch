@@ -230,6 +230,10 @@ void	Khaan :: UpdateOutwardPacketList()
 
       BasePacket* packet = m_packetsOut.front();      
       packet->SerializeOut( m_outboundBuffer, length );
+      if( packet->packetType == 9 )
+      {
+         sizeOfHeader = sizeOfHeader;
+      }
       
       totalBytesLeftToWrite -= length;
       if( totalBytesLeftToWrite < 0 )

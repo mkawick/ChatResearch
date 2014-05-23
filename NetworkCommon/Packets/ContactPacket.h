@@ -17,6 +17,8 @@ struct UserInfo
    string   email;
    string   passwordHash;
    U32      id;
+   bool     favorite;
+   string   note;
 };
 
 ///////////////////////////////////////////////////////////////////
@@ -26,13 +28,21 @@ class FriendInfo     //string userUuid.. will be stored by id using uuid
 public:
    FriendInfo(): avatarId( 0 ), isOnline( false ) {}
    FriendInfo( const string& name, int avatar, bool online ): userName( name ), avatarId( avatar ), isOnline( online )  {}
+   FriendInfo( const string& name, int avatar, bool online, bool favorite, const string& notes ): 
+            userName( name ), 
+            avatarId( avatar ), 
+            isOnline( online ),
+            markedAsFavorite( favorite ),
+            notesAboutThisUser( notes ){}
 
    bool  SerializeIn( const U8* data, int& bufferOffset );
    bool  SerializeOut( U8* data, int& bufferOffset ) const;
 
    string   userName;
+   string   notesAboutThisUser;
    int      avatarId;
    bool     isOnline;
+   bool     markedAsFavorite;
 };
 
 class InvitationInfo // string   uuid; .. stored in the associated container
@@ -91,6 +101,8 @@ public:
       ContactType_GetProfileResponse,
       ContactType_UpdateProfile,
       ContactType_UserProfileUpdated,
+
+      ContactType_SetNotation,
    };
 public:
    PacketContact( int packet_type = PacketType_Contact, int packet_sub_type = ContactType_Base ) : BasePacket( packet_type, packet_sub_type ) {}
@@ -364,3 +376,18 @@ public:
 };
 
 ///////////////////////////////////////////////////////////////////
+
+class PacketContact_SetNotationOnUser : public PacketContact
+{
+public:
+   PacketContact_SetNotationOnUser() : PacketContact( PacketType_Contact, ContactType_SetNotation ){  }
+
+   bool  SerializeIn( const U8* data, int& bufferOffset );
+   bool  SerializeOut( U8* data, int& bufferOffset ) const;
+
+   string         uuid;
+   FriendInfo     friendInfo;
+};
+
+///////////////////////////////////////////////////////////////////
+

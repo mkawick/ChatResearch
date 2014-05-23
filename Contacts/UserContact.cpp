@@ -29,6 +29,8 @@ public:
       Column_language_id,
       Column_active,
       Column_avatar_id,
+      Column_favorite,
+      Column_note,
       Column_end
    };
    static const char* const column_names[];
@@ -111,7 +113,7 @@ void  UserContact::PrepFriendQuery()
    dbQuery->meta =         "";
    dbQuery->lookup =       QueryType_Friends;
    dbQuery->serverLookup = m_userInfo.id;
-   string query = "SELECT users.user_id, users.user_name, users.uuid, users.user_email, users.language_id, users.active, profile.mber_avatar ";
+   string query = "SELECT users.user_id, users.user_name, users.uuid, users.user_email, users.language_id, users.active, profile.mber_avatar, friends.favorite, friends.note ";
    query += "FROM users INNER JOIN user_profile AS profile ON users.user_id=profile.user_id ";
    query += "INNER JOIN friends ON users.user_id=friends.userid2 ";
    query += "WHERE friends.userId1=";
@@ -209,8 +211,8 @@ bool  UserContact::UpdateProfile( const PacketUserUpdateProfile* profile )
    
 
    
- /*  vector< UserInfo >::iterator  it = m_friends.begin();
-   while ( it != m_friends.end() )
+ /*  vector< UserInfo >::iterator  it = m_contacts.begin();
+   while ( it != m_contacts.end() )
    {
       const UserInfo& ui = *it++; 
       UserContact* contact = m_contactServer->GetUser( ui.id );
@@ -267,7 +269,7 @@ bool  UserContact::HandleDbQueryResult( const PacketDbQueryResult* dbResult )
       return true;
    case QueryType_Friends:
       {
-         m_friends.clear();
+         m_contacts.clear();
          UserPlusAvatarTable            enigma( dbResult->bucket );
          UserPlusAvatarTable::iterator  it = enigma.begin();
          while( it != enigma.end() )
@@ -280,6 +282,12 @@ bool  UserContact::HandleDbQueryResult( const PacketDbQueryResult* dbResult )
             ui.uuid =             row[ TableUser_PlusAvatarIconId::Column_uuid ];
             ui.email =            row[ TableUser_PlusAvatarIconId::Column_email ];
             ui.avatarId =         boost::lexical_cast< U32 >( row[ TableUser_PlusAvatarIconId::Column_avatar_id ] );
+            ui.favorite =         boost::lexical_cast< bool >( row[ TableUser_PlusAvatarIconId::Column_favorite ] );
+            ui.note =             row[ TableUser_PlusAvatarIconId::Column_note ];
+
+            if( ui.note == "NULL" )
+               ui.note.clear();
+
            /* string languageNameId = row[ TableUser_PlusAvatarIconId::Column_language_id ];
             U32 languageId =       0; 
             if( languageNameId.size() && 
@@ -294,7 +302,7 @@ bool  UserContact::HandleDbQueryResult( const PacketDbQueryResult* dbResult )
                ui.active = false;
             else
                ui.active =           boost::lexical_cast< bool >( active );
-            InsertFriend( ui.id, ui.userName, ui.uuid, ui.email, ui.avatarId, ui.active );
+            InsertFriend( ui );//ui.id, ui.userName, ui.uuid, ui.email, ui.avatarId, ui.active, ui.favorite, ui.note );
          }
 
          m_friendListFilled = true;
@@ -487,6 +495,10 @@ bool     UserContact::HandleRequestFromClient( const PacketContact* packet )
 
    case PacketContact::ContactType_EchoToServer:
       return EchoHandler();
+
+   case PacketContact::ContactType_SetNotation:
+      return AddNotationToContact( static_cast< const PacketContact_SetNotationOnUser* >( packet ) );
+      
    }
 
    return false;
@@ -496,14 +508,14 @@ bool     UserContact::HandleRequestFromClient( const PacketContact* packet )
 
 bool     UserContact::InformFriendsOfOnlineStatus( bool isOnline )
 {
-   if( m_friends.size() == 0 )
+   if( m_contacts.size() == 0 )
       return false;
 
    if( m_displayOnlineStatusToOtherUsers == false )
       isOnline = false;
 
-   vector< UserInfo >::iterator  it = m_friends.begin();
-   while ( it != m_friends.end() )
+   vector< UserInfo >::iterator  it = m_contacts.begin();
+   while ( it != m_contacts.end() )
    {
       const UserInfo& ui = *it++; 
       UserContact* contact = m_contactServer->GetUser( ui.id );
@@ -541,7 +553,7 @@ void     UserContact::FinishLoginBySendingUserFriendsAndInvitations()
 
 bool     UserContact::YourFriendsOnlineStatusChange( U32 connectionId, const string& userName, const string& UUID, int avatarId, bool isOnline )
 {
-   if( m_friends.size() == 0 )
+   if( m_contacts.size() == 0 )
       return false;
 
    PacketContact_FriendOnlineStatusChange* packet = new PacketContact_FriendOnlineStatusChange;
@@ -549,6 +561,7 @@ bool     UserContact::YourFriendsOnlineStatusChange( U32 connectionId, const str
    packet->uuid = UUID;
    packet->friendInfo.isOnline = isOnline;
    packet->friendInfo.avatarId = avatarId;
+   packet->friendInfo.markedAsFavorite = ( rand()%4)? false:true;
    // PacketContact_FriendOnlineStatusChange
     m_contactServer->SendPacketToGateway( packet, m_connectionId );
 
@@ -561,14 +574,14 @@ bool     UserContact::GetListOfContacts()
 {
    PacketContact_GetListOfContactsResponse* packet = new PacketContact_GetListOfContactsResponse;
 
-   vector< UserInfo >::iterator  it = m_friends.begin();
-   while ( it != m_friends.end() )
+   vector< UserInfo >::iterator  it = m_contacts.begin();
+   while ( it != m_contacts.end() )
    {
       const UserInfo& ui = *it++; 
 
       const UserContact* testUser = m_contactServer->GetUser( ui.id );
       bool isLoggedIn = testUser != NULL;
-      packet->friends.insert( ui.uuid, FriendInfo( ui.userName, ui.avatarId, isLoggedIn ) );
+      packet->friends.insert( ui.uuid, FriendInfo( ui.userName, ui.avatarId, isLoggedIn, ui.favorite, ui.note ) );
    }
    
    m_contactServer->SendPacketToGateway( packet, m_connectionId );
@@ -692,19 +705,12 @@ bool  UserContact::HaveIAlreadyBeenInvited( const string& userUuid )
 }
 
 //------------------------------------------------------------------------------------------------
-
-void  UserContact::InsertFriend( U32 id, const string& userName, const string& uuid, const string& email, U32 avatarId, bool isActive )
+// U32 id, const string& userName, const string& uuid, const string& email, U32 avatarId, bool isActive
+void  UserContact::InsertFriend( UserInfo& ui )//U32 id, const string& userName, const string& uuid, const string& email, U32 avatarId, bool isActive )
 {
-   UserInfo ui;
+   ui.connectionId = 0;
 
-   ui.id =              id;
-   ui.userName =        userName;
-   ui.uuid =            uuid;
-   ui.email =           email;
-   ui.avatarId =        avatarId;
-   ui.connectionId =    0;
-   ui.active =          isActive;
-   m_friends.push_back( ui );
+   m_contacts.push_back( ui );
 }
 
 void  UserContact::InsertInvitationReceived( U32 inviteeId, U32 inviterId, bool wasNotified, const string& userName, const string& userUuid, const string& message, const string& invitationUuid, const string& date )
@@ -779,8 +785,8 @@ bool     UserContact::InviteUser( const PacketContact_InviteContact* packet )
    
 
    // major problem here... they may already be friends
-   vector< UserInfo >::const_iterator it = m_friends.begin();
-   while( it != m_friends.end() )
+   vector< UserInfo >::const_iterator it = m_contacts.begin();
+   while( it != m_contacts.end() )
    {
       const UserInfo& fr = *it++;
       if( fr.userName == inviteeName || fr.uuid == inviteeUuid )
@@ -1039,8 +1045,8 @@ bool  UserContact::RemoveContact( const PacketContact_ContactRemove* packet )
 
    bool found = false;
     // major problem here... they may not be friends
-   vector< UserInfo >::const_iterator it = m_friends.begin();
-   while( it != m_friends.end() )
+   vector< UserInfo >::const_iterator it = m_contacts.begin();
+   while( it != m_contacts.end() )
    {
       const UserInfo& fr = *it;
       if( fr.uuid == contactUuid )
@@ -1109,6 +1115,70 @@ bool  UserContact::EchoHandler()
    cout << " Echo " << endl;
    PacketContact_EchoToClient* echo = new PacketContact_EchoToClient;
    m_contactServer->SendPacketToGateway( echo, m_connectionId );
+   return true;
+}
+
+//------------------------------------------------------------------------------------------------
+
+bool  UserContact::AddNotationToContact( const PacketContact_SetNotationOnUser* notationPacket )
+{
+   // validate that this is one of your contacts
+   const string& contactUuid = notationPacket->uuid;
+
+   bool  found = false;
+   U32   friendId = 0;
+    // major problem here... they may not be friends
+   vector< UserInfo >::iterator it = m_contacts.begin();
+   while( it != m_contacts.end() )
+   {
+      const UserInfo& fr = *it;
+      if( fr.uuid == contactUuid )
+      {
+         found = true;
+         friendId = fr.id;
+         break;
+      }
+      it++;
+   }
+
+   if( found == false )
+   {
+      m_contactServer->SendErrorToClient( m_connectionId, PacketErrorReport::ErrorType_Contact_NotAUserContact );
+      return false;
+   }
+
+   // update these
+   it->favorite = notationPacket->friendInfo.markedAsFavorite;
+   it->note = notationPacket->friendInfo.notesAboutThisUser;
+
+   PacketDbQuery* dbQuery = new PacketDbQuery;
+   dbQuery->id =           m_connectionId;
+   dbQuery->meta =         "";
+   dbQuery->lookup =       QueryType_FriendAddNotation;
+   dbQuery->serverLookup = m_userInfo.id;
+   dbQuery->isFireAndForget = true;
+
+   //"UPDATE friends SET favorite=1, note=NULL WHERE userid1=16464 AND userid2=16459"
+   string query = "UPDATE friends SET favorite=";
+   query += boost::lexical_cast< string > ( notationPacket->friendInfo.markedAsFavorite ? 1:0 );
+   query += ", note=";
+   if( notationPacket->friendInfo.notesAboutThisUser.size() == 0 )
+   {
+      query += "NULL ";
+   }
+   else
+   {
+      query += "'%s' ";
+      dbQuery->escapedStrings.insert( notationPacket->friendInfo.notesAboutThisUser );
+   }
+   query += "WHERE userid1=";
+   query += boost::lexical_cast <string>( m_userInfo.id );
+   query += " AND  userid2=";
+   query += boost::lexical_cast< string >( friendId );
+   dbQuery->query = query;
+
+   m_contactServer->AddQueryToOutput( dbQuery );
+
    return true;
 }
 

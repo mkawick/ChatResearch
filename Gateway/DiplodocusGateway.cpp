@@ -11,6 +11,7 @@ using boost::format;
 #include "../NetworkCommon/Packets/PacketFactory.h"
 #include "../NetworkCommon/Packets/StatPacket.h"
 #include "../NetworkCommon/Utils/CommandLineParser.h"
+#include "../NetworkCommon/Logging/server_log.h"
 //#include "../NetworkCommon/ChainedArchitecture/ChainedInterface.h"
 
 #include "FruitadensGateway.h"
@@ -19,13 +20,13 @@ using boost::format;
 
 //#define VERBOSE
 
-
 //-----------------------------------------------------------------------------------------
 //-----------------------------------------------------------------------------------------
 
 DiplodocusGateway::DiplodocusGateway( const string& serverName, U32 serverId ) : Diplodocus< KhaanGateway > ( serverName, serverId, 0, ServerType_Gateway ), StatTrackingConnections(),
                                           m_connectionIdTracker( 12 ),
                                           m_printPacketTypes( false ),
+                                          m_printFunctionNames( false ),
                                           m_reroutePort( 0 )
 {
    SetSleepTime( 16 );// 30 fps
@@ -49,7 +50,10 @@ void     DiplodocusGateway::Init()
 void   DiplodocusGateway::NotifyFinishedAdding( IChainedInterface* obj ) 
 {
    //obj->
-   cout << " NotifyFinishedAdding: added obj " << endl;
+   if( m_printFunctionNames )
+   {
+      FileLog( " NotifyFinishedAdding: added obj " );
+   }
    //m_listOfInputs
 } 
 
@@ -57,6 +61,10 @@ void   DiplodocusGateway::NotifyFinishedAdding( IChainedInterface* obj )
 
 U32      DiplodocusGateway::GetNextConnectionId()
 {
+   if( m_printFunctionNames )
+   {
+      FileLog( "DiplodocusGateway::GetNextConnectionId" );
+   }
    Threading::MutexLock locker( m_inputChainListMutex );
    m_connectionIdTracker ++;
    if( m_connectionIdTracker >= ConnectionIdExclusion.low &&  m_connectionIdTracker <= ConnectionIdExclusion.high )
@@ -72,6 +80,10 @@ U32      DiplodocusGateway::GetNextConnectionId()
 
 bool  DiplodocusGateway::AddInputChainData( BasePacket* packet, U32 connectionId ) // coming from the client-side socket
 {
+   if( m_printFunctionNames )
+   {
+      FileLog( "DiplodocusGateway::AddInputChainData" );
+   }
    PrintDebugText( "AddInputChainData", 1);
    ConnectionMapIterator connIt = m_connectionMap.find( connectionId );
    if( connIt != m_connectionMap.end() )
@@ -90,7 +102,11 @@ bool  DiplodocusGateway::AddInputChainData( BasePacket* packet, U32 connectionId
 
       if( m_printPacketTypes )
       {
-         cout << "Packet to servers: " << (int)packet->packetType << ":" << (int)packet->packetSubType << endl;
+         string printer = "Packet to servers: ";
+         printer += (int)packet->packetType;
+         printer += ":";
+         printer += (int)packet->packetSubType;
+         FileLog( printer.c_str() );
       }
 
       Threading::MutexLock locker( m_inputChainListMutex );
@@ -132,9 +148,19 @@ void     DiplodocusGateway::HandleReroutRequest( U32 connectionId )
 
 void     DiplodocusGateway::InputConnected( IChainedInterface * chainedInput )
 {
+   if( m_printFunctionNames )
+   {
+      FileLog( "DiplodocusGateway::InputConnected" );
+   }
    KhaanGateway* khaan = static_cast< KhaanGateway* >( chainedInput );
    string currentTime = GetDateInUTC();
-   cout << "Accepted connection at time:" << currentTime << " from " << inet_ntoa( khaan->GetIPAddress().sin_addr ) << endl;
+
+   string printer = "Accepted connection at time:" + currentTime + " from " + inet_ntoa( khaan->GetIPAddress().sin_addr );
+   cout << printer << endl;
+   if( m_printFunctionNames )
+   {
+      FileLog( printer.c_str() );
+   }
    PrintDebugText( "** InputConnected" , 1 );
    U32 newId = GetNextConnectionId();
    m_socketToConnectionMap.insert( SocketToConnectionPair( khaan->GetSocketId(), newId ) );
@@ -160,9 +186,20 @@ void     DiplodocusGateway::InputConnected( IChainedInterface * chainedInput )
 
 void     DiplodocusGateway::InputRemovalInProgress( IChainedInterface * chainedInput )
 {
+   if( m_printFunctionNames )
+   {
+      FileLog( "DiplodocusGateway::InputRemovalInProgress" );
+   }
    KhaanGateway* khaan = static_cast< KhaanGateway* >( chainedInput );
    string currentTime = GetDateInUTC();
-   cout << "Client disconnection at time:" << currentTime << " from " << inet_ntoa( khaan->GetIPAddress().sin_addr ) << endl;
+  // cout << "Client disconnection at time:" << currentTime << " from " << inet_ntoa( khaan->GetIPAddress().sin_addr ) << endl;
+
+   string printer = "Client disconnection at time:" + currentTime + " from " + inet_ntoa( khaan->GetIPAddress().sin_addr );
+   cout << printer << endl;
+   if( m_printFunctionNames )
+   {
+      FileLog( printer.c_str() );
+   }
 
    PrintDebugText( "** InputRemovalInProgress" , 1 );
    int connectionId = khaan->GetConnectionId();
@@ -191,10 +228,27 @@ void     DiplodocusGateway::InputRemovalInProgress( IChainedInterface * chainedI
 
 //-----------------------------------------------------------------------------------------
 
+void     DiplodocusGateway::PrintFunctionNames( bool printingOn ) 
+{
+   m_printFunctionNames = printingOn; 
+   cout << "Gateway side function name printing is ";
+   if( m_printFunctionNames == true )
+   {
+      cout << "enabled" << endl;
+   }
+   else
+   {
+      cout << "disabled" << endl;
+   }
+}
+
+
+//-----------------------------------------------------------------------------------------
+
 void     DiplodocusGateway::PrintPacketTypes( bool printingOn ) 
 {
    m_printPacketTypes = printingOn; 
-   cout << "Client side packet printing is ";
+   cout << "Gateway side packet printing is ";
    if( m_printPacketTypes == true )
    {
       cout << "enabled" << endl;
@@ -209,6 +263,10 @@ void     DiplodocusGateway::PrintPacketTypes( bool printingOn )
 
 void     DiplodocusGateway::SetupReroute( const string& address, U16 port )
 {
+   if( m_printFunctionNames )
+   {
+      FileLog( "DiplodocusGateway::SetupReroute" );
+   }
    m_rerouteAddress = address;
    m_reroutePort = port;
 
@@ -228,6 +286,10 @@ void     DiplodocusGateway::TrackCountStats( StatTracking stat, float value, int
 
 bool     DiplodocusGateway::OrderOutputs()
 {
+   if( m_printFunctionNames )
+   {
+      FileLog( "DiplodocusGateway::OrderOutputs" );
+   }
    if( m_orderedOutputPacketHandlers.size() > 0 )
       return false;
 
@@ -254,6 +316,11 @@ bool     DiplodocusGateway::OrderOutputs()
 
 bool     DiplodocusGateway::PushPacketToProperOutput( BasePacket* packet )
 {
+   if( m_printFunctionNames )
+   {
+      FileLog( "DiplodocusGateway::PushPacketToProperOutput" );
+   }
+
    U32 packetType = packet->packetType;
    U32 packetSubType = packet->packetSubType;
    if( packetType == PacketType_GatewayWrapper )
@@ -272,7 +339,14 @@ bool     DiplodocusGateway::PushPacketToProperOutput( BasePacket* packet )
    {
       cout << " *** packet received with which we cannot deal. ***" << endl;
       cout << "     type: " << packetType << endl;
-      cout << "     sub type: " << packetType << endl;
+      cout << "     sub type: " << packetSubType << endl;
+
+      
+      string typeString = "     type: " + packetType;
+      string subTypeString = "     sub type: " + packetSubType;
+      FileLog( " *** packet received with which we cannot deal. ***" );
+      FileLog( typeString.c_str() );
+      FileLog( subTypeString.c_str() );
       return false;
    }
 
@@ -292,58 +366,15 @@ bool     DiplodocusGateway::PushPacketToProperOutput( BasePacket* packet )
 }
 
 //-----------------------------------------------------------------------------------------
-/*
-int  DiplodocusGateway::MainLoop_InputProcessing()
+
+//-----------------------------------------------------------------------------------------
+
+void     DiplodocusGateway::SortOutgoingPackets()
 {
-   // m_inputChainListMutex.lock   // see CChainedThread<Type>::CallbackFunction()
-   CommonUpdate();
-
-   SendStatsToLoadBalancer();
-   StatTrackingConnections::SendStatsToStatServer( m_listOfOutputs, m_serverName, m_serverId, m_serverType );
-
-   CleanupOldConnections();
-
-   RunHourlyAverages();
-
-   MoveClientBoundPacketsFromTempToKhaan();
-   UpdateAllClientConnections();
-
-   if( m_packetsToBeSentInternally.size() == 0 )
-      return 0;
-
-   PrintDebugText( "MainLoop_InputProcessing" );
-
-   PacketFactory factory;
-   while( m_packetsToBeSentInternally.size() )
+   if( m_printFunctionNames )
    {
-      BasePacket* packet = m_packetsToBeSentInternally.front();
-      if( PushPacketToProperOutput( packet ) == false )
-      {
-         factory.CleanupPacket( packet );
-      }
-      m_packetsToBeSentInternally.pop_front();
+      FileLog( "DiplodocusGateway::SortOutgoingPackets" );
    }
-
-   return 1;
-}*/
-
-int       DiplodocusGateway::CallbackFunction()
-{
-   CommonUpdate();
-
-   SendStatsToLoadBalancer();
-   StatTrackingConnections::SendStatsToStatServer( m_listOfOutputs, m_serverName, m_serverId, m_serverType );
-
-   CleanupOldConnections();
-
-   RunHourlyAverages();
-
-   MoveClientBoundPacketsFromTempToKhaan();
-   UpdateAllClientConnections();
-
-   
-   if( m_packetsToBeSentInternally.size() == 0 )
-      return 0;
 
    m_inputChainListMutex.lock();
    PacketQueue localQue = m_packetsToBeSentInternally;
@@ -360,6 +391,34 @@ int       DiplodocusGateway::CallbackFunction()
       }
       localQue.pop_front();
    }
+}
+
+//-----------------------------------------------------------------------------------------
+
+int       DiplodocusGateway::CallbackFunction()
+{
+   if( m_printFunctionNames )
+   {
+      FileLog( "DiplodocusGateway::CallbackFunction" );
+   }
+
+   CommonUpdate();
+
+   SendStatsToLoadBalancer();
+   StatTrackingConnections::SendStatsToStatServer( m_listOfOutputs, m_serverName, m_serverId, m_serverType );
+
+   CleanupOldConnections();
+
+   RunHourlyAverages();
+
+   MoveClientBoundPacketsFromTempToKhaan();
+   UpdateAllClientConnections();
+
+   
+   if( m_packetsToBeSentInternally.size() == 0 )
+      return 0;
+
+   SortOutgoingPackets();
 
    return 1;
 }
@@ -368,6 +427,10 @@ int       DiplodocusGateway::CallbackFunction()
 
 void  DiplodocusGateway::CleanupOldConnections()
 {
+   if( m_printFunctionNames )
+   {
+      FileLog( "DiplodocusGateway::CleanupOldConnections" );
+   }
    // cleanup old connections
    time_t currentTime;
    time( &currentTime );
@@ -394,6 +457,11 @@ void  DiplodocusGateway::CleanupOldConnections()
 
 void  DiplodocusGateway::RunHourlyAverages()
 {
+   if( m_printFunctionNames )
+   {
+      FileLog( "DiplodocusGateway::RunHourlyAverages" );
+   }
+
    if( m_connectionMap.size() == 0 )
       return;
 
@@ -417,8 +485,6 @@ void  DiplodocusGateway::RunHourlyAverages()
             time_t connectionTime = khaanWrapper.m_connector->GetConnectionTime();
             totalNumSeconds += static_cast<float>( difftime( currentTime, connectionTime ) );
          }
-
-         
       }
 
       float averageNumSeconds = totalNumSeconds / numConnections;
@@ -432,6 +498,11 @@ void  DiplodocusGateway::RunHourlyAverages()
 
 void  DiplodocusGateway::SendStatsToLoadBalancer()
 {
+   if( m_printFunctionNames )
+   {
+      FileLog( "DiplodocusGateway::SendStatsToLoadBalancer" );
+   }
+
    time_t currentTime;
    time( &currentTime );
 
@@ -476,6 +547,11 @@ void  DiplodocusGateway::SendStatsToLoadBalancer()
 
 bool  DiplodocusGateway::AddOutputChainData( BasePacket* packet, U32 serverType )
 {
+   if( m_printFunctionNames )
+   {
+      FileLog( "DiplodocusGateway::AddOutputChainData" );
+   }
+
    PrintDebugText( "AddOutputChainData" ); 
 
    // pass through only
@@ -503,6 +579,11 @@ bool  DiplodocusGateway::AddOutputChainData( BasePacket* packet, U32 serverType 
 // assuming that everything is thread protected at this point
 void  DiplodocusGateway::HandlePacketToKhaan( KhaanGateway* khaan, BasePacket* packet )
 {
+   if( m_printFunctionNames )
+   {
+      FileLog( "DiplodocusGateway::HandlePacketToKhaan" );
+   }
+
    PrintDebugText( "HandlePacketToKhaan" );
    U32 connectionId = khaan->GetConnectionId();
    if( packet->packetType == PacketType_Login && 
@@ -552,7 +633,12 @@ void  DiplodocusGateway::HandlePacketToKhaan( KhaanGateway* khaan, BasePacket* p
 
    if( m_printPacketTypes )
    {
-      cout << "Packet to client: " << (int)packet->packetType << ":" << (int)packet->packetSubType << endl;
+      //cout << "Packet to client: " << (int)packet->packetType << ":" << (int)packet->packetSubType << endl;
+      string printer = "Packet to client: ";
+      printer += (int)packet->packetType;
+      printer += ":";
+      printer += (int)packet->packetSubType;
+      FileLog( printer.c_str() );
    }
    if( packet->packetType == PacketType_ErrorReport )
    {
@@ -570,6 +656,11 @@ void  DiplodocusGateway::HandlePacketToKhaan( KhaanGateway* khaan, BasePacket* p
 
 void  DiplodocusGateway::AddClientConnectionNeedingUpdate( U32 connectionId )
 {
+   if( m_printFunctionNames )
+   {
+      FileLog( "DiplodocusGateway::AddClientConnectionNeedingUpdate" );
+   }
+
    ConnectionIdQueue::iterator it = m_connectionsNeedingUpdate.begin();
    while( it != m_connectionsNeedingUpdate.end() )
    {
@@ -583,15 +674,25 @@ void  DiplodocusGateway::AddClientConnectionNeedingUpdate( U32 connectionId )
 
 void  DiplodocusGateway::MoveClientBoundPacketsFromTempToKhaan()
 {
-   if( m_clientBoundTempStorage.size() )
+   if( m_printFunctionNames )
+   {
+      FileLog( "DiplodocusGateway::MoveClientBoundPacketsFromTempToKhaan" );
+      FileLog( "MainLoop_OutputProcessing" );
+   }
+
+   m_inputChainListMutex.lock();
+   std::deque< BasePacket* >  localQueue = m_clientBoundTempStorage;
+   m_clientBoundTempStorage.clear();
+   m_inputChainListMutex.unlock();
+
+   if( localQueue.size() )
    {
       PrintDebugText( "MainLoop_OutputProcessing" );
-
       PacketFactory factory;
-      while( m_clientBoundTempStorage.size() )
+      while( localQueue.size() )
       {
-         PacketGatewayWrapper* wrapper = static_cast< PacketGatewayWrapper* >( m_clientBoundTempStorage.front() );
-         m_clientBoundTempStorage.pop_front();
+         PacketGatewayWrapper* wrapper = static_cast< PacketGatewayWrapper* >( localQueue.front() );
+         localQueue.pop_front();
          int connectionId = wrapper->connectionId;
          BasePacket* dataPacket = wrapper->pPacket;
          delete wrapper;
@@ -642,34 +743,13 @@ void  DiplodocusGateway::MoveClientBoundPacketsFromTempToKhaan()
 
 void  DiplodocusGateway::UpdateAllClientConnections()
 {
-   /*ConnectionIdQueue moreTimeNeededQueue;
-   while( m_connectionsNeedingUpdate.size() > 0 )// this has the m_outputChainListMutex protection
+   if( m_printFunctionNames )
    {
-      int connectionId = m_connectionsNeedingUpdate.front();
-      m_connectionsNeedingUpdate.pop_front();
-      ConnectionMapIterator connIt = m_connectionMap.find( connectionId );
-      if( connIt != m_connectionMap.end() )
-      {
-         cout << "client updated" << endl;
-         KhaanGateway* khaan = connIt->second.m_connector;
-         if( khaan )
-         {
-            bool didFinish = khaan->Update();
-            if( didFinish == false )
-            {
-               moreTimeNeededQueue.push_back( connectionId );
-            }
-            khaan->
-         }
-      }
+      FileLog( "DiplodocusGateway::UpdateAllClientConnections" );
    }
-   //
-   m_connectionsNeedingUpdate = moreTimeNeededQueue; // copy */
 
-   if( m_connectionsNeedingUpdate.size() != 0 )
-   {
-      m_connectionsNeedingUpdate.clear();
-   }
+   m_inputChainListMutex.lock();
+   m_connectionsNeedingUpdate.clear();
 
    ConnectionMapIterator connIt = m_connectionMap.begin();
    while( connIt != m_connectionMap.end() )
@@ -684,6 +764,7 @@ void  DiplodocusGateway::UpdateAllClientConnections()
       }
       connIt++;
    }
+   m_inputChainListMutex.unlock();
 }
 
 //-----------------------------------------------------------------------------------------

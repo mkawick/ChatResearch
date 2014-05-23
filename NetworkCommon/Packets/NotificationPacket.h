@@ -100,6 +100,7 @@ public:
 
    string   deviceName; 
    string   deviceId;
+   string   assignedUuid;
    U8       platformId;
 };
 

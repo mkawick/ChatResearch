@@ -97,8 +97,8 @@ public:
    //--------------------------------------------------------------
 
    //--------------------------------------------------------------
-   // ********************   Friends/Chat     *******************
-   bool     RequestListOfFriends() const;
+   // ********************   Contacts/Chat     *******************
+   bool     RequestListOfContacts() const;
    bool     RequestFriendDemographics( const string& username ) const;
    bool     RequestUserWinLossRecord( const string& username ) const;
 
@@ -109,6 +109,7 @@ public:
 
    //--------------------------------------------------------------
 
+   void     AddNotationToContact( const string& uuid, bool isFavorite, const string& message ); 
    bool     RemoveContact( const string& uuid, const string message = "" );
 
    //bool     ChangeGame( const string& gameName );
@@ -128,7 +129,7 @@ public:
    bool     GetListOfInvitationsSentForContacts( list< InvitationInfo >& keyValues );
    
    bool     SendSearchForUsers( const string& searchString, int numRequested, int offset ) const; // min 2 char
-   bool     InviteUserToBeFriend( const string& uuid, const string& username, const string& message );
+   bool     InviteUserToBeContact( const string& uuid, const string& username, const string& message );
 
    // all other types
    bool     RequestListOfInvitations( Invitation::InvitationType = Invitation::InvitationType_ChatRoom ) const;
@@ -176,7 +177,7 @@ public:
    bool     RequestAssetByName( const string& assetName );
    bool     RequestAvatarById( U32 id );
 
-   bool     RegisterDevice( const string& deviceId, const string& deviceName, int platformId = Platform_ios ); // int gameProductId = GameProductId_SUMMONWAR, 
+   bool     RegisterDevice( const string& playdekUuid, const string& deviceName, PlatformType platformId, const string& vendorProvidedDeviceId );// platformId = Platform_ios ); 
    bool     RequestListOfDevicesForThisGame( int platformId = Platform_ios );
    bool     ChangeDevice( const string& deviceUuid, const string& deviceNewName, bool isEnabled, int iconId );
    int      GetNumDevices() const { return m_devices.size(); }
@@ -196,13 +197,14 @@ public:
 
    U32      FindGame( const string& name ) const;
    string   FindGameNameFromGameId( U32 id ) const;
-   string   FindFriend( const string& name ) const;
-   string   FindFriendFromUuid( const string& uuid ) const;
+   string   FindContact( const string& name ) const;
+   string   FindContactFromUuid( const string& uuid ) const;
 
-   int      GetNumFriends() const { return static_cast<int>( m_friends.size() ); }
-   bool     GetFriend( int index, BasicUser& user );
-   bool     IsFriend( const string& userUuid );
-   bool     IsFriendByName( const string& userName );
+   int      GetNumContacts() const { return static_cast<int>( m_contacts.size() ); }
+   bool     GetContact( int index, BasicUser& user );
+   bool     GetContact( const string& uuid, BasicUser& user );
+   bool     IsContact( const string& userUuid );
+   bool     IsContactByName( const string& userName );
 
    int      GetNumUserSearchResults() const { return m_lastUserSearch.size(); }
    bool     GetUserSearchResult( int index, BasicUser& user );
@@ -284,7 +286,7 @@ protected:
    list< Invitation >                           m_invitationsToGroup[ Invitation::InvitationType_Num ];
    SerializedVector< ProductBriefPacketed >     m_products;
    SerializedVector< RegisteredDevice >         m_devices;
-   UserNameKeyValue                             m_friends;
+   UserNameKeyValue                             m_contacts;
    UserNameKeyValue                             m_lastUserSearch;
    ChatChannelVector                            m_channels;
    GameList                                     m_gameList;

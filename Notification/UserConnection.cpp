@@ -155,6 +155,7 @@ void  UserConnection::StoreListOfDevices( const PacketDbQueryResult* dbResult )
       rd.deviceId =                          row[ TableUserDevice::Column_device_id ];
       rd.platformId =                        boost::lexical_cast< int  >( row[ TableUserDevice::Column_platformId ] );
       rd.isEnabled =                         boost::lexical_cast< bool  >( row[ TableUserDevice::Column_is_enabled ] );
+   
 
       m_deviceList.push_back( rd );
    }
@@ -180,9 +181,12 @@ void  UserConnection::StoreDevicesPerGameList( const PacketDbQueryResult* dbResu
 
       UserDeviceNotifications dn;
       dn.id =                                boost::lexical_cast< int  >( row[ TableUserDeviceNotifications::Column_id ] );
-      dn.deviceId =                          boost::lexical_cast< int  >( row[ TableUserDeviceNotifications::Column_device_id ] );
+      dn.userDeviceId =                      boost::lexical_cast< int  >( row[ TableUserDeviceNotifications::Column_user_device_id ] );
       dn.gameType =                          boost::lexical_cast< int  >( row[ TableUserDeviceNotifications::Column_game_type ] );
-      dn.isEnabled=                          boost::lexical_cast< bool  >( row[ TableUserDeviceNotifications::Column_is_enabled ] );
+      dn.isEnabled =                         boost::lexical_cast< bool >( row[ TableUserDeviceNotifications::Column_is_enabled ] );
+      dn.deviceId =                          row[ TableUserDeviceNotifications::Column_device_id ];
+      if( dn.deviceId == "null" )
+         dn.deviceId.clear();
 
       m_deviceEnabledList.push_back( dn );
    }
@@ -260,22 +264,19 @@ static const char *devicetoa(const unsigned char *device, int device_len)
    return devstr;
 }
 
-void     UserConnection::RegisterNewDevice( const PacketNotification_RegisterDevice* registerDevice )
-{
-   if( registerDevice->deviceId.size() < 8 )
-   {
-      m_mainThread->SendErrorToClient( m_userInfo.connectionId, PacketErrorReport::ErrorType_Notification_DeviceIdIncorrect );
-      return;
-   }
+//------------------------------------------------------------
 
-   RegisteredDeviceIterator   deviceIt = m_deviceList.begin();
-   while( deviceIt != m_deviceList.end() )
+bool     UserConnection::FindDeviceAndUpdate( RegisteredDeviceList deviceList, const PacketNotification_RegisterDevice* registerDevice )
+{
+   RegisteredDeviceIterator   deviceIt = deviceList.begin();
+   while( deviceIt != deviceList.end() )
    {
-      if( deviceIt->deviceId == registerDevice->deviceId )
+      //if( deviceIt->deviceId == registerDevice->deviceId )
+      if( deviceIt->uuid == registerDevice->assignedUuid )
       {
          // look up the  device notification and if it exists, report this error.
          U32 userDeviceId = deviceIt->userDeviceId;
-         DeviceNotificationsIterator   deviceEnabledIt = FindDeviceNotificationByDeviceId( userDeviceId );
+         DeviceNotificationsIterator   deviceEnabledIt = FindDeviceNotificationByUserDeviceId( userDeviceId );
          if( deviceEnabledIt != m_deviceEnabledList.end() )
          {
             m_mainThread->SendErrorToClient( m_userInfo.connectionId, PacketErrorReport::ErrorType_Notification_DeviceAlreadyRegistered );
@@ -284,19 +285,36 @@ void     UserConnection::RegisterNewDevice( const PacketNotification_RegisterDev
          else
          {
             //otherwise, we are logging in from a new game and we need to create a new entry... you are logging in from the same game but a different device
-            CreateNewDeviceNotificationEntry( userDeviceId, m_userInfo.gameProductId );
+            CreateNewDeviceNotificationEntry( userDeviceId, m_userInfo.gameProductId, deviceIt->deviceId );
          }
 
          if( registerDevice->deviceName.size() && deviceIt->name.size() == 0 )
          {
             GrandfatherInOldDevices( deviceIt, registerDevice->deviceName );
          }
-         return;
+         return true;
       }
       deviceIt++;
    }
 
-   string newDeviceUuid = GenerateUUID ();
+   return false;
+}
+
+//------------------------------------------------------------
+
+void     UserConnection::RegisterNewDevice( const PacketNotification_RegisterDevice* registerDevice )
+{
+   if( registerDevice->deviceId.size() < 8 )
+   {
+      m_mainThread->SendErrorToClient( m_userInfo.connectionId, PacketErrorReport::ErrorType_Notification_DeviceIdIncorrect );
+      return;
+   }
+
+   if( FindDeviceAndUpdate( m_deviceList, registerDevice ) == true )
+      return;
+
+   U32 xorValue = GetCurrentMilliseconds();
+   string newDeviceUuid = GenerateUUID( xorValue );
 
    string query( "INSERT INTO user_device VALUES( DEFAULT, '");
    query += m_userInfo.uuid;
@@ -361,25 +379,27 @@ void  UserConnection::CreateEnabledNotificationEntry( const PacketDbQueryResult*
    U32 userDeviceId = dbResult->insertId;
    U32 gameType = static_cast< U32>( dbResult->serverLookup );
 
+   CreateNewDeviceNotificationEntry( userDeviceId, gameType, rd->deviceId );   
+
    //----------------------------
    rd->deviceId = userDeviceId;
    m_deviceList.push_back( *rd );
    delete rd;
    //----------------------------
-
-   CreateNewDeviceNotificationEntry( userDeviceId, gameType );   
 }
 
 //------------------------------------------------------------
 
 // we do not make all of the same error checks here... it's too costly and assumed to have already have been performed
-void  UserConnection::CreateNewDeviceNotificationEntry( U32 userDeviceId, U32 gameType )
+void  UserConnection::CreateNewDeviceNotificationEntry( U32 userDeviceId, U32 gameType, const string& deviceId )
 {
    string query( "INSERT INTO user_device_notification VALUES( DEFAULT, ");
    query += boost::lexical_cast< string  >( userDeviceId );
    query += ", ";
    query += boost::lexical_cast< string  >( gameType );
-   query += ", 1, DEFAULT )";// is enabled, timestamp
+   query += ", 1, DEFAULT, '";
+   query += devicetoa( (const unsigned char*)deviceId.c_str(), deviceId.size() );
+   query += "')";// is enabled, timestamp
 
    //cout << query << endl;
 
@@ -448,7 +468,7 @@ void  UserConnection::UpdateDevice( const PacketNotification_UpdateDevice* updat
       return;
    }
 
-   DeviceNotificationsIterator deviceEnabledIt = FindDeviceNotificationByDeviceId( userDeviceId );
+   DeviceNotificationsIterator deviceEnabledIt = FindDeviceNotificationByUserDeviceId( userDeviceId );
    if( deviceEnabledIt == m_deviceEnabledList.end() )
    {
       string text = "UpdateDevice:: User ";
@@ -492,7 +512,7 @@ void  UserConnection::UpdateDbRecordForDevice( U32 id )
 
    U32 userDeviceId = deviceIt->userDeviceId;
    
-   DeviceNotificationsIterator deviceEnabledIt = FindDeviceNotificationByDeviceId( userDeviceId );
+   DeviceNotificationsIterator deviceEnabledIt = FindDeviceNotificationByUserDeviceId( userDeviceId );
    if( deviceEnabledIt == m_deviceEnabledList.end() )
    {
       return;
@@ -503,6 +523,8 @@ void  UserConnection::UpdateDbRecordForDevice( U32 id )
    query += deviceIt->name;
    query += "', icon_id=";
    query += boost::lexical_cast< string  >( deviceIt->iconId );
+   query += ", is_enabled=";
+   query += boost::lexical_cast< string  >( deviceEnabledIt->isEnabled );
    query += " WHERE id=";
    query += boost::lexical_cast< string  >( deviceIt->userDeviceId );
 
@@ -536,6 +558,21 @@ void  UserConnection::UpdateDbRecordForDevice( U32 id )
    m_mainThread->AddQueryToOutput( dbQuery );
 }
 
+void     DumpDevice( const string& userName, const string&  userUuid, const ExtendedRegisteredDevice& rd )
+{
+   cout << "User Name: " << userName << endl;
+   cout << "User Uuid: " << userUuid << endl;
+   cout << "   device id: " << rd.deviceId << endl;
+   cout << "   device uuid: " << rd.uuid << endl;
+   cout << "   device iconId: " << rd.iconId << endl;
+   cout << "   device isEnabled: " << rd.isEnabled << endl;
+   cout << "   device idname " << rd.name << endl;
+   cout << "   device platformId: " << rd.platformId << endl;
+   cout << "   device productId: " << rd.productId << endl;
+   cout << "   device userDeviceId: " << rd.userDeviceId << endl;
+   cout << " --------------------------- " << endl;
+}
+
 //------------------------------------------------------------
 
 void        UserConnection::RequestDevicesList( const PacketNotification_RequestListOfDevices* device )
@@ -546,8 +583,10 @@ void        UserConnection::RequestDevicesList( const PacketNotification_Request
    RegisteredDeviceIterator deviceIt = m_deviceList.begin();
    while( deviceIt != m_deviceList.end() )
    {
+      DumpDevice( m_userInfo.userName, m_userInfo.uuid, *deviceIt );
+
       U32 userDeviceId = deviceIt->userDeviceId;
-      DeviceNotificationsIterator deviceNotificationIter = FindDeviceNotificationByDeviceId( userDeviceId );
+      DeviceNotificationsIterator deviceNotificationIter = FindDeviceNotificationByUserDeviceId( userDeviceId );
       if( deviceNotificationIter != m_deviceEnabledList.end() )
       {
          RegisteredDevice rd;
@@ -578,7 +617,7 @@ void        UserConnection::RemoveDevice( const PacketNotification_RemoveDevice*
    while( deviceIt != m_deviceList.end() )
    {
       U32 userDeviceId = deviceIt->userDeviceId;
-      DeviceNotificationsIterator deviceNotificationIter = FindDeviceNotificationByDeviceId( userDeviceId );
+      DeviceNotificationsIterator deviceNotificationIter = FindDeviceNotificationByUserDeviceId( userDeviceId );
       
       if( deviceIt->uuid == removal->deviceUuid )
       {
@@ -665,7 +704,28 @@ UserConnection::RegisteredDeviceIterator
 
 // if you pass in a 0, you get all devices for all platforms.
 UserConnection::DeviceNotificationsIterator   
-   UserConnection::FindDeviceNotificationByDeviceId( U32 id )
+   UserConnection::FindDeviceNotificationByUserDeviceId( U32 id )
+{
+   DeviceNotificationsIterator  deviceEnabledIt = m_deviceEnabledList.begin();
+   while( deviceEnabledIt != m_deviceEnabledList.end() )
+   {
+      if( m_userInfo.gameProductId == deviceEnabledIt->gameType )// we should match both fields.
+      {
+         if( deviceEnabledIt->userDeviceId == id )
+         {
+            return deviceEnabledIt;
+         }
+      }
+      deviceEnabledIt++;
+   }
+   return deviceEnabledIt;
+}
+
+//------------------------------------------------------------
+
+// if you pass in a 0, you get all devices for all platforms.
+UserConnection::DeviceNotificationsIterator   
+   UserConnection::FindDeviceNotificationByDeviceId( const string& id )
 {
    DeviceNotificationsIterator  deviceEnabledIt = m_deviceEnabledList.begin();
    while( deviceEnabledIt != m_deviceEnabledList.end() )

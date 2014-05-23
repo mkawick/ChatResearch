@@ -160,7 +160,7 @@ void     ClientNetworkWrapper::Disconnect()
       {
          m_fruitadens[ i ]->RegisterPacketHandlerInterface( NULL );
          m_fruitadens[ i ]->Disconnect();
-      }
+      }     
    }
 }
 
@@ -221,21 +221,78 @@ bool     ClientNetworkWrapper::InitialDisconnectionCallback( const Fruitadens* c
 void  ClientNetworkWrapper::Exit()
 {
    Disconnect();
-   m_isLoggingIn = false;
-   m_isLoggedIn = false;
+
+   Threading::MutexLock    locker( m_notificationMutex );
+
+   while( m_notifications.size() )
+   {
+      const QueuedNotification& qn = m_notifications.front();
+      SerializedKeyValueVector< string >::const_KVIterator keyValueIt = qn.genericKeyValuePairs.begin();
+      PacketCleaner cleaner( qn.packet );
+
+      delete [] qn.genericData;
+      m_notifications.pop();
+   }
+
+   // clearing all values
+   m_userName.clear(), m_attemptedUsername.clear();
+   m_email.clear();
+   m_uuid.clear();
+   m_motto.clear();
+   m_thisDeviceUuid.clear();
+   m_selectedGame = 0;
+   m_avatarId = 0;
+   m_languageId = 0;
+
+   m_showWinLossRecord = false;
+   m_marketingOptOut = false;
+   m_showGenderProfile = false;
+   m_displayOnlineStatusToOtherUsers = false;
+   m_blockContactInvitations = false;
+   m_blockGroupInvitations = false;
+   m_wasCallbackForReadyToBeginSent = false;
+
+   /*
+   m_requiresGatewayDiscovery = true;
+   m_serverIpAddress[0].clear();
+   m_serverIpAddress[1].clear();
+
+   m_serverConnectionPort[0] = 0;
+   m_serverConnectionPort[1] = 0;
+   */
 
    m_invitationsReceived.clear();
    m_invitationsSent.clear();
-   m_assets.clear();
+
+   for( int i=0; i<Invitation::InvitationType_Num; i++ )
+   {
+      m_invitations[ i ].clear();
+      m_invitationsToGroup[ i ].clear();
+   }
+
+   m_products.clear();
+   m_devices.clear();
+   m_contacts.clear();
+   m_lastUserSearch.clear();
+   m_channels.clear();
+   m_gameList.clear();
+
+   m_purchases.clear();
+
+   //m_gameProductId; // do not change this
+   m_isLoggingIn = false;
+   m_isLoggedIn = false;
+   m_isCreatingAccount = false;
+   m_connectionId = 0;
+   m_lastLoggedOutTime.clear();
+   m_lastRawDataIndex = 0;
+
    m_availableTournaments.clear();
    if( m_savedLoginInfo )
    {
       PacketCleaner cleaner( m_savedLoginInfo );
       m_savedLoginInfo = NULL;
    }
-
-   m_requiresGatewayDiscovery = true;
-   m_wasCallbackForReadyToBeginSent = false;
 }
 
 string   ClientNetworkWrapper::GenerateHash( const string& stringThatIWantHashed )
@@ -558,7 +615,10 @@ void     ClientNetworkWrapper::UpdateNotifications()
                PacketChatListAllMembersInChatChannelResponse* packetChatHistoryResult = 
                   static_cast<PacketChatListAllMembersInChatChannelResponse*>( qn.packet );
 
-               notify->ChatChannelMembers( packetChatHistoryResult->chatChannelUuid, packetChatHistoryResult->userList );
+               ChatChannel channel;
+               GetChannel( packetChatHistoryResult->chatChannelUuid, channel );
+
+               notify->ChatChannelMembers( channel.channelName,  packetChatHistoryResult->chatChannelUuid, packetChatHistoryResult->userList );
             }
             break;
                
@@ -593,6 +653,11 @@ void     ClientNetworkWrapper::UpdateNotifications()
                notify->ListOfDevicesUpdated();
             }
             break;
+         case ClientSideNetworkCallback::NotificationType_DeviceIDUpdated:
+            {
+               notify->UpdatedDeviceID();
+            }
+               break;
          case ClientSideNetworkCallback::NotificationType_DeviceRemoved:
             {
                string channelUuid = qn.genericKeyValuePairs.find( "channelUuid" );
@@ -1093,7 +1158,7 @@ bool     ClientNetworkWrapper::SetBlockGroupInvitations( bool block )
 
 //-----------------------------------------------------------------------------
 
-bool  ClientNetworkWrapper::RequestListOfFriends() const
+bool  ClientNetworkWrapper::RequestListOfContacts() const
 {
    if( IsConnected() == false )
    {
@@ -1264,7 +1329,44 @@ bool  ClientNetworkWrapper::RequestChatP2PHistory( const string& userUuid, int n
    return true;
 }
 
+//-----------------------------------------------------------------------------
+  
+void     ClientNetworkWrapper::AddNotationToContact( const string& uuid, bool isFavorite, const string& message )
+{
+   if( IsConnected() == false )
+   {
+      return;
+   }
 
+   UserNameKeyValue::KVIterator  itFriends;
+   bool found = false;
+   {
+      Threading::MutexLock    locker( m_notificationMutex );
+
+      itFriends = m_contacts.begin();
+      while( itFriends != m_contacts.end() )
+      {
+         if( itFriends->key == uuid )
+         {
+            itFriends->value.markedAsFavorite = isFavorite;
+            itFriends->value.notesAboutThisUser = message;
+            found = true;
+            break;
+         }
+         itFriends++;
+      }
+   }
+
+   if( found )
+   {
+      PacketContact_SetNotationOnUser notation;
+      notation.uuid = uuid;
+      //notation.friendInfo = itFriends->value;
+      notation.friendInfo.markedAsFavorite = isFavorite;
+      notation.friendInfo.notesAboutThisUser = message;
+      SerializePacketOut( &notation );
+   }
+}
 
 //-----------------------------------------------------------------------------
 /*
@@ -1316,10 +1418,10 @@ string   ClientNetworkWrapper::FindGameNameFromGameId( U32 id ) const
 */
 //-----------------------------------------------------------------------------
 
-string   ClientNetworkWrapper::FindFriend( const string& name ) const 
+string   ClientNetworkWrapper::FindContact( const string& name ) const 
 {
-   UserNameKeyValue::const_KVIterator  itFriends = m_friends.begin();
-   while( itFriends != m_friends.end() )
+   UserNameKeyValue::const_KVIterator  itFriends = m_contacts.begin();
+   while( itFriends != m_contacts.end() )
    {
       const BasicUser&  kvpFriend = itFriends->value;
       
@@ -1337,17 +1439,18 @@ string   ClientNetworkWrapper::FindFriend( const string& name ) const
 
 //-----------------------------------------------------------------------------
 
-string   ClientNetworkWrapper::FindFriendFromUuid( const string& uuid ) const 
+string   ClientNetworkWrapper::FindContactFromUuid( const string& uuid ) const 
 {
    Threading::MutexLock    locker( m_notificationMutex );
 
-   UserNameKeyValue::const_KVIterator  itFriends = m_friends.begin();
-   while( itFriends != m_friends.end() )
+   UserNameKeyValue::const_KVIterator  itFriends = m_contacts.begin();
+   while( itFriends != m_contacts.end() )
    {
       if( itFriends->key == uuid )
       {
          return itFriends->value.userName;
       }
+      itFriends++;
    }
    if( uuid == m_uuid )// this method is commonly used as a lookup.. let's make it simple to use
       return m_userName;
@@ -1357,9 +1460,9 @@ string   ClientNetworkWrapper::FindFriendFromUuid( const string& uuid ) const
 
 //-----------------------------------------------------------------------------
 
-bool     ClientNetworkWrapper::GetFriend( int index, BasicUser& user )
+bool     ClientNetworkWrapper::GetContact( int index, BasicUser& user )
 {
-   if( index < 0 || index >= m_friends.size() )
+   if( index < 0 || index >= m_contacts.size() )
    {
       user.userName.clear();
       user.UUID.clear();
@@ -1369,8 +1472,8 @@ bool     ClientNetworkWrapper::GetFriend( int index, BasicUser& user )
    Threading::MutexLock    locker( m_notificationMutex );
 
    int i = 0;
-   UserNameKeyValue::const_KVIterator  itFriends = m_friends.begin();
-   while( itFriends != m_friends.end() )
+   UserNameKeyValue::const_KVIterator  itFriends = m_contacts.begin();
+   while( itFriends != m_contacts.end() )
    {
       if( i == index )
       {
@@ -1384,9 +1487,29 @@ bool     ClientNetworkWrapper::GetFriend( int index, BasicUser& user )
    return false;
 }
 
+
 //-----------------------------------------------------------------------------
 
-bool     ClientNetworkWrapper::IsFriend( const string& userUuid )
+bool     ClientNetworkWrapper::GetContact( const string& uuid, BasicUser& user )
+{
+   Threading::MutexLock    locker( m_notificationMutex );
+
+   UserNameKeyValue::const_KVIterator  itFriends = m_contacts.begin();
+   while( itFriends != m_contacts.end() )
+   {
+      if( itFriends->key == uuid )
+      {
+         user = itFriends->value;
+         return true;
+      }
+      itFriends++;
+   }
+   return false;
+}
+
+//-----------------------------------------------------------------------------
+
+bool     ClientNetworkWrapper::IsContact( const string& userUuid )
 {
    if( userUuid.size() < 2 )
    {
@@ -1395,8 +1518,8 @@ bool     ClientNetworkWrapper::IsFriend( const string& userUuid )
 
    Threading::MutexLock    locker( m_notificationMutex );
 
-   UserNameKeyValue::const_KVIterator  itFriends = m_friends.begin();
-   while( itFriends != m_friends.end() )
+   UserNameKeyValue::const_KVIterator  itFriends = m_contacts.begin();
+   while( itFriends != m_contacts.end() )
    {
       if( itFriends->key == userUuid )
       {
@@ -1409,7 +1532,7 @@ bool     ClientNetworkWrapper::IsFriend( const string& userUuid )
 
 //-----------------------------------------------------------------------------
 
-bool     ClientNetworkWrapper::IsFriendByName( const string& userName )
+bool     ClientNetworkWrapper::IsContactByName( const string& userName )
 {
    if( userName.size() < 2 )
    {
@@ -1418,8 +1541,8 @@ bool     ClientNetworkWrapper::IsFriendByName( const string& userName )
 
    Threading::MutexLock    locker( m_notificationMutex );
 
-   UserNameKeyValue::const_KVIterator  itFriends = m_friends.begin();
-   while( itFriends != m_friends.end() )
+   UserNameKeyValue::const_KVIterator  itFriends = m_contacts.begin();
+   while( itFriends != m_contacts.end() )
    {
       if( itFriends->value.userName == userName )
       {
@@ -2073,7 +2196,7 @@ bool     ClientNetworkWrapper::SendSearchForUsers( const string& searchString, i
 
 //-----------------------------------------------------------------------------
 
-bool     ClientNetworkWrapper::InviteUserToBeFriend( const string& uuid, const string& userName, const string& message )
+bool     ClientNetworkWrapper::InviteUserToBeContact( const string& uuid, const string& userName, const string& message )
 {
    if( uuid.size() < 2 && userName.size() < 2 )
       return false;
@@ -2092,7 +2215,7 @@ bool     ClientNetworkWrapper::InviteUserToBeFriend( const string& uuid, const s
 
 bool     ClientNetworkWrapper::RemoveContact( const string& contactUuid, const string message )
 {
-   if( IsFriend( contactUuid ) == false )
+   if( IsContact( contactUuid ) == false )
       return false;
 
    PacketContact_ContactRemove removal;
@@ -2262,12 +2385,13 @@ bool     ClientNetworkWrapper::RequestAvatarById( U32 id )
 
 //-----------------------------------------------------------------------------
 
-bool     ClientNetworkWrapper::RegisterDevice( const string& deviceId, const string& deviceName, int platformId )
+bool     ClientNetworkWrapper::RegisterDevice( const string& playdekUuid, const string& deviceName, PlatformType platformId, const string& vendorProvidedDeviceId )
 {
    PacketNotification_RegisterDevice registration;
    registration.deviceName = deviceName;
-   registration.deviceId = deviceId;
-   registration.platformId = platformId;
+   registration.deviceId = vendorProvidedDeviceId;
+   registration.platformId = (int) platformId;
+   registration.assignedUuid = playdekUuid;
 
    return SerializePacketOut( &registration );
 }
@@ -2497,6 +2621,12 @@ void     ClientNetworkWrapper::LoadBalancedNewAddress( const PacketRerouteReques
 bool     ClientNetworkWrapper::HandlePacketReceived( BasePacket* packetIn )
 {
    PacketCleaner cleaner( packetIn );
+
+   cout << "Packet type " << packetIn->packetType << endl;
+   if( packetIn->packetType == 9 )
+   {
+      cout << "Type 9 met" << endl;
+   }
 
    switch( packetIn->packetType )
    {
@@ -2924,20 +3054,20 @@ bool     ClientNetworkWrapper::HandlePacketReceived( BasePacket* packetIn )
          case PacketInvitation::InvitationType_GetListOfInvitationsResponse:
             {
                PacketInvitation_GetListOfInvitationsResponse* response = static_cast<PacketInvitation_GetListOfInvitationsResponse*>( packetIn );
-               const SerializedKeyValueVector< Invitation >& invitaions = response->invitationList;
+               const SerializedKeyValueVector< Invitation >& invitations = response->invitationList;
 
                int whichGroup = response->invitationType;
                assert( whichGroup >0 && whichGroup < Invitation::InvitationType_Num );
-               U16 firstIndex = invitaions.GetFirstIndex();
-               U16 totalCount = invitaions.GetTotalCount();
-               U16 numChannelsInCurrentList = invitaions.size();
-               if( invitaions.GetFirstIndex() == 0 )
+               U16 firstIndex = invitations.GetFirstIndex();
+               U16 totalCount = invitations.GetTotalCount();
+               U16 numChannelsInCurrentList = invitations.size();
+               if( invitations.GetFirstIndex() == 0 )
                {
                   m_invitations[ whichGroup ].clear();
                }
                
-               SerializedKeyValueVector< Invitation >::const_KVIterator it = invitaions.begin();
-               while (it != invitaions.end() )
+               SerializedKeyValueVector< Invitation >::const_KVIterator it = invitations.begin();
+               while (it != invitations.end() )
                {
                   const Invitation& invite = it->value;
                   cout << "Invitation: " << invite.invitationUuid << endl;
@@ -2955,21 +3085,21 @@ bool     ClientNetworkWrapper::HandlePacketReceived( BasePacket* packetIn )
          case PacketInvitation::InvitationType_GetListOfInvitationsForGroupResponse:
             {
                PacketInvitation_GetListOfInvitationsForGroupResponse* response = static_cast<PacketInvitation_GetListOfInvitationsForGroupResponse*>( packetIn );
-               const SerializedKeyValueVector< Invitation >& invitaions = response->invitationList;
+               const SerializedKeyValueVector< Invitation >& invitations = response->invitationList;
 
                int whichGroup = response->invitationType;
                assert( whichGroup >0 && whichGroup < Invitation::InvitationType_Num );
 
-               U16 firstIndex = invitaions.GetFirstIndex();
-               U16 totalCount = invitaions.GetTotalCount();
-               U16 numChannelsInCurrentList = invitaions.size();
-               if( invitaions.GetFirstIndex() == 0 )
+               U16 firstIndex = invitations.GetFirstIndex();
+               U16 totalCount = invitations.GetTotalCount();
+               U16 numChannelsInCurrentList = invitations.size();
+               if( invitations.GetFirstIndex() == 0 )
                {
                   m_invitationsToGroup[ whichGroup ].clear();
                }
                
-               SerializedKeyValueVector< Invitation >::const_KVIterator it = invitaions.begin();
-               while (it != invitaions.end() )
+               SerializedKeyValueVector< Invitation >::const_KVIterator it = invitations.begin();
+               while (it != invitations.end() )
                {
                   const Invitation& invite = it->value;
                   cout << "Invitation: " << invite.invitationUuid << endl;
@@ -3054,6 +3184,8 @@ bool     ClientNetworkWrapper::HandlePacketReceived( BasePacket* packetIn )
                PacketNotification_RegisterDeviceResponse* response = 
                   static_cast<PacketNotification_RegisterDeviceResponse*>( packetIn );
                m_thisDeviceUuid = response->deviceUuid;
+               
+               Notification( ClientSideNetworkCallback::NotificationType_DeviceIDUpdated );
             }
             break;
             case PacketNotification::NotificationType_RequestListOfDevicesResponse:
@@ -3147,7 +3279,7 @@ void     ClientNetworkWrapper::HandleListOfContacts( const PacketContact_GetList
 {
    cout << " HandleListOfContacts : num records: " << packet->friends.size() << endl;
 
-   m_friends.clear();
+   m_contacts.clear();
 
    Threading::MutexLock    locker( m_notificationMutex );
 
@@ -3159,8 +3291,10 @@ void     ClientNetworkWrapper::HandleListOfContacts( const PacketContact_GetList
       bu.userName = it->value.userName;
       bu.UUID = it->key;
       bu.avatarId = it->value.avatarId;
+      bu.notesAboutThisUser = it->value.notesAboutThisUser;
+      bu.markedAsFavorite = it->value.markedAsFavorite;
 
-      m_friends.insert( it->key, bu );
+      m_contacts.insert( it->key, bu );
       it++;
    }
 }
@@ -3171,8 +3305,8 @@ void     ClientNetworkWrapper::HandleUserOnlineStatusChange( const PacketContact
    Threading::MutexLock    locker( m_notificationMutex );
 
    bool updated = false;
-   UserNameKeyValue::KVIterator  itFriends = m_friends.begin();
-   while( itFriends != m_friends.end() )
+   UserNameKeyValue::KVIterator  itFriends = m_contacts.begin();
+   while( itFriends != m_contacts.end() )
    {
       if( itFriends->key == packet->uuid )
       {
@@ -3332,8 +3466,8 @@ void     ClientNetworkWrapper::HandleUserChatStatusChange( const PacketChatUserS
    Threading::MutexLock    locker( m_notificationMutex );
 
    bool updated = false;
-   UserNameKeyValue::KVIterator  itFriends = m_friends.begin();
-   while( itFriends != m_friends.end() )
+   UserNameKeyValue::KVIterator  itFriends = m_contacts.begin();
+   while( itFriends != m_contacts.end() )
    {
       if( itFriends->key == packet->uuid )
       {
@@ -3607,7 +3741,7 @@ bool     ClientNetworkWrapper::AddUserToChatChannel( const string& channelUuid, 
    string name = userName;
    if( userName.length() == 0 )
    {
-      name = FindFriendFromUuid( userUuid );
+      name = FindContactFromUuid( userUuid );
    }
    if( name.length() == 0 )
    {

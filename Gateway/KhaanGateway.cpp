@@ -248,7 +248,13 @@ bool  KhaanGateway::IsWhiteListedIn( const BasePacket* packet ) const
          return false;
       }
    case PacketType_Login:
-      return true;
+      {
+         if( packet->packetSubType == PacketLogin::LoginType_ListOfAggregatePurchases )
+         {
+            return true;// breakpoint
+         }
+         return true;
+      }
    case PacketType_Chat:
       return true;
    case PacketType_UserInfo:
