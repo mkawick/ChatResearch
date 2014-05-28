@@ -3310,7 +3310,9 @@ void     ClientNetworkWrapper::HandleUserOnlineStatusChange( const PacketContact
    {
       if( itFriends->key == packet->uuid )
       {
+         itFriends->value.userName = packet->friendInfo.userName;
          itFriends->value.isOnline = packet->friendInfo.isOnline;
+         itFriends->value.avatarId = packet->friendInfo.avatarId;
          updated = true;
       }
       itFriends++;

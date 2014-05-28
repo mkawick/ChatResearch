@@ -6,6 +6,7 @@
 
 #include "../NetworkOut/Fruitadens.h"
 #include "../ChainedArchitecture/ChainedInterface.h"
+
 ///////////////////////////////////////////////////////////////
 
 class StatTrackingConnections
@@ -47,6 +48,7 @@ public:
 
    StatTrackingConnections();
 
+   Threading::Mutex     m_statMutex;
    deque< PacketStat* > m_stats;
    time_t         m_timeoutSendStatServerStats;
    static const U32 timeoutSendStatServerStats = 60;

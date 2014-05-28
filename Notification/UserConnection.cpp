@@ -512,16 +512,13 @@ void  UserConnection::UpdateDbRecordForDevice( U32 id )
 
    U32 userDeviceId = deviceIt->userDeviceId;
    
-   DeviceNotificationsIterator deviceEnabledIt = FindDeviceNotificationByUserDeviceId( userDeviceId );
+   DeviceNotificationsIterator   deviceEnabledIt = FindDeviceNotificationByUserDeviceId( userDeviceId );
    if( deviceEnabledIt == m_deviceEnabledList.end() )
    {
       return;
    }
 
-
-   string query( "UPDATE user_device SET name='");
-   query += deviceIt->name;
-   query += "', icon_id=";
+   string query( "UPDATE user_device SET name='%s', icon_id=" );
    query += boost::lexical_cast< string  >( deviceIt->iconId );
    query += ", is_enabled=";
    query += boost::lexical_cast< string  >( deviceEnabledIt->isEnabled );
@@ -534,6 +531,8 @@ void  UserConnection::UpdateDbRecordForDevice( U32 id )
    dbQuery->lookup =       QueryType_UpdateDevice;
    dbQuery->serverLookup = userDeviceId;
    dbQuery->query =        query;
+
+   dbQuery->escapedStrings.insert( deviceIt->name );
 
    m_mainThread->AddQueryToOutput( dbQuery );
 

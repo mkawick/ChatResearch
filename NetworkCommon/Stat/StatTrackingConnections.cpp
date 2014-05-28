@@ -147,7 +147,9 @@ void  StatTrackingConnections::TrackCountStats( const string& serverName, int Se
    packet->value = value;
    packet->timestamp = GetDateInUTC();
 
+   m_statMutex.lock();
    m_stats.push_back( packet );
+   m_statMutex.unlock();
 }
 
 //-----------------------------------------------------------------------------------------
@@ -164,7 +166,9 @@ void     StatTrackingConnections::TrackStats( const string& serverName, int Serv
    packet->timestamp = GetDateInUTC();
    packet->statType = type;
 
+   m_statMutex.lock();
    m_stats.push_back( packet );
+   m_statMutex.unlock();
 }
 
 
@@ -172,13 +176,18 @@ void     StatTrackingConnections::TrackStats( const string& serverName, int Serv
 
 void     StatTrackingConnections::SendStatsToStatServer( Fruitadens* fruity, const string& serverName, U32 serverId, ServerType serverType )
 {
+   m_statMutex.lock();
+   deque< PacketStat* > localQueue = m_stats;
+   m_stats.clear();
+   m_statMutex.unlock();
+
    PacketFactory factory;
    if( fruity != NULL )
    {
-      while( m_stats.size() )
-      {
-         PacketStat* packet = static_cast< PacketStat* >( m_stats.front() );
-         m_stats.pop_front();
+      while( localQueue.size() )
+      {         
+         PacketStat* packet = static_cast< PacketStat* >( localQueue.front() );
+         localQueue.pop_front();
 
          packet->serverReporting = serverName;
          //packet->category = serverType;
@@ -204,10 +213,10 @@ void     StatTrackingConnections::SendStatsToStatServer( Fruitadens* fruity, con
    }
    else// simply cleanup
    {
-      while( m_stats.size() )
+      while( localQueue.size() )
       {
-         BasePacket* packet = static_cast< BasePacket* >( m_stats.front() );
-         m_stats.pop_front();
+         BasePacket* packet = static_cast< BasePacket* >( localQueue.front() );
+         localQueue.pop_front();
          factory.CleanupPacket( packet );
       }
    }

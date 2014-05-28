@@ -561,7 +561,7 @@ bool     UserContact::YourFriendsOnlineStatusChange( U32 connectionId, const str
    packet->uuid = UUID;
    packet->friendInfo.isOnline = isOnline;
    packet->friendInfo.avatarId = avatarId;
-   packet->friendInfo.markedAsFavorite = ( rand()%4)? false:true;
+   //packet->friendInfo.markedAsFavorite = ;
    // PacketContact_FriendOnlineStatusChange
     m_contactServer->SendPacketToGateway( packet, m_connectionId );
 

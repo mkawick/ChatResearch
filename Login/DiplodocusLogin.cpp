@@ -76,12 +76,8 @@ void     DiplodocusLogin:: ServerWasIdentified( IChainedInterface* khaan )
 
 bool     DiplodocusLogin:: AddInputChainData( BasePacket* packet, U32 connectionId )
 {
-   // if packet is a login or a logout packet we'll handle it, otherwise.. no deal.
-   // all packets coming in should be from the gateway only 
-
-   //LogMessage( LOG_PRIO_INFO, "Login::Data in" );
-
-   //cout << "Login::Data in" << endl;
+   // all packets coming in should be from the gateway only through s2s connections.
+   // this is already multi threaded, so putting threading protections here is duplicative.
 
    if( packet->packetType != PacketType_GatewayWrapper )
    {
@@ -567,11 +563,12 @@ void     DiplodocusLogin:: RemoveOldConnections()
    while( it != m_userConnectionMap.end() )
    {
       UserConnectionMapIterator temp = it++;
-      if( temp->second.IsReadyToBeCleanedUp() == true && // do not remove in the middle of logging out
-         temp->second.m_loggedOutTime != 0 )
+      const ConnectionToUser& connection = temp->second;
+      if( connection.IsReadyToBeCleanedUp() == true && // do not remove in the middle of logging out
+         connection.m_loggedOutTime != 0 )
       {
          const int normalExpireTime = 3; // seconds
-         if( difftime( testTimer, temp->second.m_loggedOutTime ) >= normalExpireTime )
+         if( difftime( testTimer, connection.m_loggedOutTime ) >= normalExpireTime )
          {
             FinalizeLogout( temp->first, false );
             m_userConnectionMap.erase( temp );
@@ -584,7 +581,7 @@ void     DiplodocusLogin:: RemoveOldConnections()
 
 U32     DiplodocusLogin:: FindUserAlreadyInGame( const string& userName, U8 gameProductId )
 {
-   Threading::MutexLock locker( m_mutex );
+   Threading::MutexLock locker( m_inputChainListMutex );
 
    UserConnectionMapIterator it = m_userConnectionMap.begin();
    while( it != m_userConnectionMap.end() )
@@ -2216,19 +2213,6 @@ int      DiplodocusLogin:: CallbackFunction()
    time_t currentTime;
    time( &currentTime );
    m_stringLookup->Update( currentTime );
-
- /*  m_mutex.lock();
-   ChainLinkIteratorType itInputs = m_listOfInputs.begin();
-   while( itInputs != m_listOfInputs.end() )// only one output currently supported.
-   {
-      ChainedInterface<BasePacket*>*  inputPtr = itInputs->m_interface;
-      InputChainType* connection = static_cast< InputChainType* >( inputPtr );
-      connection->Update();
-      itInputs++;
-   }
-   
-
-   m_mutex.unlock();*/
 
    UpdateAllConnections();
 

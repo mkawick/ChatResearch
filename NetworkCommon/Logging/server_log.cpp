@@ -96,6 +96,7 @@ void  FileLog( const char* text )
    string printable( text );
    printable += "\r\n";
    loggingFile.write( printable.c_str(), printable.length() );
+   loggingFile.flush();
 }
 
 void  FileLogClose()
