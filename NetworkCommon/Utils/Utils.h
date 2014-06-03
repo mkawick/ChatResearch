@@ -127,13 +127,14 @@ bool ConvertToString( T value, std::string& InputString, int radix = 10 )
    {
       while( value != 0 )
       {
-         char ins = (char)( value % radix );
-         if( ins < 0 )
+         char ins[] = {(char)( value % radix ),0};
+         if( ins[0] < 0 )
          {
-            ins *= -1;
+            ins[0] *= -1;
          }
-         ins += '0';
-         InputString.insert( 0, 1, ins );
+         ins[0] += '0';
+         std::string addition = ins;
+         InputString += addition;
          value /= radix;
       }
    }
@@ -142,28 +143,32 @@ bool ConvertToString( T value, std::string& InputString, int radix = 10 )
       char lookup [] = "ABCDEF";
       while( value != 0 )
       {
-         char ins = (char)( value % radix );
-         if( ins < 0 )
+         char ins[] = {(char)( value % radix ), 0};
+         if( ins[0] < 0 )
          {
-            ins *= -1;
+            ins[0] *= -1;
          }
-         if( ins < 10 )
+         if( ins[0] < 10 )
          {
-            ins += '0';
+            ins[0] += '0';
          }
          else
          {
-            ins -= 10;
-            ins = lookup[ (int) ins ];// cast for compiler warning only
+            ins[0] -= 10;
+            ins[0] = lookup[ (int) ins ];// cast for compiler warning only
          }
-         InputString.insert( 0, 1, ins );
+         
+         std::string addition = ins;
+         InputString += addition;
+         
          value /= radix;
       }
    }
 
    if( positive == false )
    {
-      InputString.insert( 0, 1, '-' );
+      const char* dash = "-";
+      InputString.insert( (int)0, dash );
    }
 
    return true;

@@ -221,7 +221,7 @@ bool     NotificationMainThread::ConnectUser( const PacketPrepareForUserLogin* l
       return false;
 
    bool found = false;
-   // if the user is already here but relogged, simply 
+   // if the user is already here but relogged, simply add a new entry using the same basic setup
    m_mutex.lock();
       it = m_userConnectionMap.begin();
       while( it != m_userConnectionMap.end() )
@@ -229,14 +229,9 @@ bool     NotificationMainThread::ConnectUser( const PacketPrepareForUserLogin* l
          if( it->second.GetUserInfo().uuid == loginPacket->uuid ) 
          {
             found = true;
-            //U32 id = it->second.GetUserInfo().id;
-           /* UserIdToContactMapIterator itIdToContact = m_userLookupById.find( id );
-            if( itIdToContact != m_userLookupById.end() )
-            {
-               itIdToContact->second = connectionId;
-            }*/
             it->second.SetConnectionId( connectionId );
             
+            it->second.Relog();
             m_userConnectionMap.insert( UserConnectionPair( connectionId, it->second ) );
             m_userConnectionMap.erase( it );
             break;
@@ -264,7 +259,9 @@ bool     NotificationMainThread::DisconnectUser( const PacketPrepareForUserLogou
 {
    U32 connectionId = loginPacket->connectionId;
 
+   m_mutex.lock();
    UserConnectionIterator it = m_userConnectionMap.find( connectionId );
+   m_mutex.unlock();
    if( it == m_userConnectionMap.end() )
       return false;
 

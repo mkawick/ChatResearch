@@ -38,6 +38,8 @@ ConnectionToUser:: ConnectionToUser( const string& name, const string& pword, co
                      m_userName( name ), 
                      m_passwordHash( pword ), 
                      m_loginKey( key ), 
+                     m_avatarIcon( 0 ),
+                     m_loginAttemptCount( 0 ),
                      status( LoginStatus_Pending ), 
                      m_gameProductId( 0 ),
                      m_connectionId( 0 ),
@@ -159,7 +161,7 @@ bool  ConnectionToUser::StoreProductInfo( PacketDbQueryResult* dbResult )
             ProductTable::row       row = *it++;
 
             PurchaseEntry pe;
-            pe.productStoreId =     row[ TableProduct::Column_name ];
+            pe.productUuid =     row[ TableProduct::Column_name ];
             pe.name =               row[ TableProduct::Column_filter_name ];
             purchasePacket->purchases.push_back( pe );
          }
@@ -654,7 +656,18 @@ void     ConnectionToUser:: SendListOfOwnedProductsToClient( U32 m_connectionId 
       PurchaseEntry pe;
       pe.name = pb.filterName;
       pe.quantity = pb.quantity;
-      pe.productStoreId = pb.uuid;
+      if( pb.productDbId )
+      {
+         ProductInfo pi;
+         userManager->GetProductByProductId( pb.productDbId, pi );
+         if( pi.parentId != 0 )
+         {
+            userManager->GetProductByProductId( pi.parentId, pi );// reuse this local variable
+            pe.parentUuid = pi.uuid;
+         }
+      }
+      
+      pe.productUuid = pb.uuid;
 
       purchases->purchases.push_back( pe );
    }
@@ -749,6 +762,10 @@ bool     ConnectionToUser:: AddPurchase( const PacketAddPurchaseEntry* purchase 
 bool     ConnectionToUser:: StoreUserPurchases( const PacketListOfUserAggregatePurchases* deviceReportedPurchases )// only works for self
 {
    int numItems = deviceReportedPurchases->purchases.size();
+   if( numItems )
+   {
+      cout << " user purchases reported: " << endl;
+   }
    for( int i=0; i< numItems; i++ )
    {
       const PurchaseEntry& purchaseEntry = deviceReportedPurchases->purchases[i];
@@ -756,13 +773,21 @@ bool     ConnectionToUser:: StoreUserPurchases( const PacketListOfUserAggregateP
       //----------------
       if( purchaseEntry.name.size() == 0 )// we can't do anything with this.
       {
-         cout << "   ***Invalid product id...title: " << purchaseEntry.productStoreId << "   price: " << purchaseEntry.price <<  "   number price: " << purchaseEntry.number_price << endl;
+         cout << "   ***Invalid product id...title: " << purchaseEntry.productUuid << "   name: " << purchaseEntry.name << endl;
       }
       else
       {
+         if( purchaseEntry.productUuid.size() == 0 )
+         {
+            //cout << "   ***Invalid product id...title: " << purchaseEntry.productUuid << "   price: " << purchaseEntry.price <<  "   number price: " << purchaseEntry.number_price << endl;
+            cout << "   ***Invalid product id...title: " << purchaseEntry.productUuid << "   name: " << purchaseEntry.name << endl;
+            userManager->SendErrorToClient( m_connectionId, PacketErrorReport::ErrorType_Purchase_ProductUnknown ); 
+            continue;
+         }
+
          // the order of the next two lines matters a lot.
-         int userProductIndex = FindProductFilterName( purchaseEntry.productStoreId );
-         AddProductFilterName( purchaseEntry.productStoreId );// we're gonna save the name, regardless. The device told us about the purchase.
+         int userProductIndex = FindProductFilterName( purchaseEntry.productUuid );
+         AddProductFilterName( purchaseEntry.productUuid );// we're gonna save the name, regardless. The device told us about the purchase.
 
          //**  find the item in the user record and add it to the db if not **
          if( userProductIndex == -1 && originalProductNameIndex != -1 )// the user doesn't have the record, but the rest of the DB does.
@@ -772,7 +797,7 @@ bool     ConnectionToUser:: StoreUserPurchases( const PacketListOfUserAggregateP
             if( result == true )
             {
                const string& productUuid = productInfo.uuid;
-               WriteProductToUserRecord( m_userUuid, productUuid, purchaseEntry.number_price, purchaseEntry.quantity, "", "" );
+               WriteProductToUserRecord( m_userUuid, productUuid, 1, purchaseEntry.quantity, "", "" );
                AddToProductsOwned( productInfo.productId, productInfo.lookupName, productUuid, purchaseEntry.quantity );
             }
          }
@@ -782,18 +807,22 @@ bool     ConnectionToUser:: StoreUserPurchases( const PacketListOfUserAggregateP
             ProductInfo pi;
             pi.name = purchaseEntry.name;
             pi.filterName = purchaseEntry.name;
-            // productStoreId .. I don't know what to do with this.
-            pi.price = purchaseEntry.number_price;
+            // productUuid .. I don't know what to do with this.
+            //pi.price = purchaseEntry.number_price;
             pi.quantity = purchaseEntry.quantity;
+            //pi.parentId
+           // pi.uuid = 
 
             productsWaitingForInsertionToDb.push_back( pi );
             //productsOwned.insert( pi );
             userManager->AddNewProductToDb( purchaseEntry );
          }
-         cout << "   title: " << purchaseEntry.name << "   price: " << purchaseEntry.price <<  "   number price: " << purchaseEntry.number_price << endl;
+         cout << "   title: " << purchaseEntry.name << endl;
       }
       
    }
+
+   SendListOfProductsToClientAndAsset( m_connectionId );
 
    return true;
 }
@@ -860,11 +889,18 @@ void     ConnectionToUser:: WriteProductToUserRecord( const string& userUuid, co
    dbQuery->serverLookup = 0;
    dbQuery->isFireAndForget = true;
 
-   dbQuery->query = "INSERT INTO user_join_product VALUES( DEFAULT, '%s', '%s',DEFAULT,";
+   /*dbQuery->query = "INSERT INTO user_join_product VALUES( DEFAULT, '%s', '%s',DEFAULT,";
    dbQuery->query += boost::lexical_cast< string >( pricePaid );
    dbQuery->query += ",1,";
    dbQuery->query += boost::lexical_cast< string >( numPurchased );
-   dbQuery->query += ",'%s','%s',NULL, 0)";
+   dbQuery->query += ",'%s','%s',NULL, 0)";*/
+   dbQuery->query = "INSERT INTO playdek.user_join_product (user_uuid, product_id, price_paid, num_purchased, admin_provided, admin_notes ) VALUES ( ";
+   dbQuery->query += "'%S', '%S', ";
+   dbQuery->query += boost::lexical_cast< string >( pricePaid );
+   dbQuery->query += ",";
+   dbQuery->query += boost::lexical_cast< string >( numPurchased );
+   dbQuery->query += ",'%s', '%s' );";
+
 
    dbQuery->escapedStrings.insert( userUuid );
    dbQuery->escapedStrings.insert( productUuid );

@@ -257,6 +257,7 @@ public:
 
    string   chatChannelUuid;
    string   userUuid;
+   string   startingTimestamp;
    int      numRecords;
    int      startingIndex;
 };
@@ -286,6 +287,9 @@ public:
 
    string   chatChannelUuid;
    string   userUuid;
+   string   startingTimestamp;
+   int      startingIndex;
+
    SerializedVector< ChatEntry > chat;
 };
 

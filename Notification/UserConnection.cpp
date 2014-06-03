@@ -49,6 +49,12 @@ int   UserConnection::SecondsExpiredSinceLoggedOut()
    return  static_cast<int> ( difftime( currentTime, m_timeLoggedOut ) );
 }
 
+void  UserConnection::Relog()
+{
+   m_timeLoggedOut = 0;
+   m_isLoggedOut = false;
+}
+
 //------------------------------------------------------------
 
 void  UserConnection::RequestAllDevicesForUser()
@@ -156,7 +162,6 @@ void  UserConnection::StoreListOfDevices( const PacketDbQueryResult* dbResult )
       rd.platformId =                        boost::lexical_cast< int  >( row[ TableUserDevice::Column_platformId ] );
       rd.isEnabled =                         boost::lexical_cast< bool  >( row[ TableUserDevice::Column_is_enabled ] );
    
-
       m_deviceList.push_back( rd );
    }
 }
@@ -352,6 +357,11 @@ void     UserConnection::RegisterNewDevice( const PacketNotification_RegisterDev
    m_mainThread->AddQueryToOutput( dbQuery );
 
 
+   RequestAllDevicesForUser();
+   //m_deviceList.push_back( *rd );// this is costly
+
+   //RequestAllDeviceNotification();// this is the best way. There is an id that the db must generate for this to be a coherent value.
+
    SendNewDeviceRegistrationResponse( newDeviceUuid );
 }
 
@@ -397,7 +407,7 @@ void  UserConnection::CreateNewDeviceNotificationEntry( U32 userDeviceId, U32 ga
    query += boost::lexical_cast< string  >( userDeviceId );
    query += ", ";
    query += boost::lexical_cast< string  >( gameType );
-   query += ", 1, DEFAULT, '";
+   query += ", 1, DEFAULT, x'";
    query += devicetoa( (const unsigned char*)deviceId.c_str(), deviceId.size() );
    query += "')";// is enabled, timestamp
 
@@ -610,16 +620,16 @@ void        UserConnection::RemoveDevice( const PacketNotification_RemoveDevice*
    cout << "Remove device" << endl;
    PacketNotification_RemoveDeviceResponse* response = new PacketNotification_RemoveDeviceResponse;
    response->success = false;
-   response->deviceUuid = removal->deviceUuid;
+   const string& lookupUuid = removal->deviceUuid;
+   response->deviceUuid = lookupUuid;
 
    RegisteredDeviceIterator deviceIt = m_deviceList.begin();
    while( deviceIt != m_deviceList.end() )
    {
-      U32 userDeviceId = deviceIt->userDeviceId;
-      DeviceNotificationsIterator deviceNotificationIter = FindDeviceNotificationByUserDeviceId( userDeviceId );
-      
-      if( deviceIt->uuid == removal->deviceUuid )
+      if( deviceIt->uuid == lookupUuid )
       {
+         U32 userDeviceId = deviceIt->userDeviceId;  
+         DeviceNotificationsIterator deviceNotificationIter = FindDeviceNotificationByUserDeviceId( userDeviceId );
 
          PacketDbQuery* dbQuery = new PacketDbQuery;
          dbQuery->id =           m_userInfo.connectionId;
@@ -629,7 +639,7 @@ void        UserConnection::RemoveDevice( const PacketNotification_RemoveDevice*
          dbQuery->query = "DELETE FROM user_device WHERE user_uuid='";
          dbQuery->query += m_userInfo.uuid; // a little extra validation
          dbQuery->query += "' AND id='";
-         dbQuery->query += boost::lexical_cast<string> ( deviceIt->userDeviceId );
+         dbQuery->query += boost::lexical_cast<string> ( userDeviceId );
          dbQuery->query += "'";
          dbQuery->isFireAndForget = true;
 
@@ -643,7 +653,7 @@ void        UserConnection::RemoveDevice( const PacketNotification_RemoveDevice*
          dbQuery->lookup =       QueryType_DeleteDeviceNotification;
          dbQuery->serverLookup = m_userInfo.userId;
          dbQuery->query = "DELETE FROM user_device_notification WHERE user_device_id='";
-         dbQuery->query += boost::lexical_cast<string> ( deviceIt->userDeviceId );
+         dbQuery->query += boost::lexical_cast<string> ( userDeviceId );
          dbQuery->query += "'";
          dbQuery->isFireAndForget = true;
 
@@ -662,6 +672,7 @@ void        UserConnection::RemoveDevice( const PacketNotification_RemoveDevice*
    }
 
    SendMessageToClient( response );
+   RequestDevicesList( NULL );
 }
 
 //------------------------------------------------------------

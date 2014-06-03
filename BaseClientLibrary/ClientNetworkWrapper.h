@@ -102,8 +102,8 @@ public:
    bool     RequestFriendDemographics( const string& username ) const;
    bool     RequestUserWinLossRecord( const string& username ) const;
 
-   bool     RequestChatChannelHistory( const string& channelUuid, int numRecords = 20, int startingIndex = 0 ) const;
-   bool     RequestChatP2PHistory( const string& userUuid, int numRecords = 20, int startingIndex = 0 ) const;
+   bool     RequestChatChannelHistory( const string& channelUuid, int numRecords = 20, int startingIndex = 0, const char* startingTimestamp = NULL ) const;
+   bool     RequestChatP2PHistory( const string& userUuid, int numRecords = 20, int startingIndex = 0, const char* startingTimestamp = NULL  ) const;
 
    bool     RequestListOfUsersInChatChannel( const string& uuid ); // two packets sent for current members and invitees
 

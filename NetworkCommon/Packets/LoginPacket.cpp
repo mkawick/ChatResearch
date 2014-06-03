@@ -153,12 +153,9 @@ bool  PacketCreateAccountResponse::SerializeOut( U8* data, int& bufferOffset ) c
 bool  PurchaseEntry::SerializeIn( const U8* data, int& bufferOffset )
 {
    Serialize::In( data, bufferOffset, name );
-   Serialize::In( data, bufferOffset, productStoreId );
-   Serialize::In( data, bufferOffset, price );
-   Serialize::In( data, bufferOffset, number_price );
    Serialize::In( data, bufferOffset, quantity );
-   
-   Serialize::In( data, bufferOffset, date );
+   Serialize::In( data, bufferOffset, productUuid );
+   Serialize::In( data, bufferOffset, parentUuid );
 
    return true;
 }
@@ -166,13 +163,9 @@ bool  PurchaseEntry::SerializeIn( const U8* data, int& bufferOffset )
 bool  PurchaseEntry::SerializeOut( U8* data, int& bufferOffset ) const
 {
    Serialize::Out( data, bufferOffset, name );
-   Serialize::Out( data, bufferOffset, productStoreId );
-   Serialize::Out( data, bufferOffset, price );
-   Serialize::Out( data, bufferOffset, number_price );
    Serialize::Out( data, bufferOffset, quantity );
-
-   Serialize::Out( data, bufferOffset, date );
-
+   Serialize::Out( data, bufferOffset, productUuid );
+   Serialize::Out( data, bufferOffset, parentUuid );
    return true;
 }
 ///////////////////////////////////////////////////////////////

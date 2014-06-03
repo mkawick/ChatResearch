@@ -64,13 +64,13 @@ private:
    bool              RequestUserProfileInfo();
    void              RequestChatChannels();
    void              RequestAllBasicChatInfo();
-   void              QueryChatChannelHistory( const string& channelUuid, int numRecords, int startingIndex );
+   void              QueryChatChannelHistory( const string& channelUuid, int numRecords, int startingIndex, const string& startingTimestamp );
    void              LoadUserProfile( const PacketDbQueryResult * dbResult );
    void              SendChatChannelHistoryToClient( const PacketDbQueryResult * dbResult );
 
-   void              QueryChatP2PHistory( const string& userUuid, int numRecords, int startingIndex );
+   void              QueryChatP2PHistory( const string& userUuid, int numRecords, int startingIndex, const string& startingTimestamp );
    void              SendChatp2pHistoryToClient( PacketDbQueryResult * dbResult );
-   void              SendChatHistoryToClientCommon ( const DynamicDataBucket& bucket, const string& userUuid, const string& chatChannelUuid );
+   void              SendChatHistoryToClientCommon ( const DynamicDataBucket& bucket, const string& userUuid, const string& chatChannelUuid, const string& startingTimestamp, int startingIndex );
 
    void              RequestProfileInfo();
    void              GetAllChatHistroySinceLastLogin();

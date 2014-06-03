@@ -30,9 +30,13 @@ struct ConnectionToUser
    ConnectionToUser( const string& name, const string& pword, const string& key );
    void     SetManager( DiplodocusLogin* manager )  { userManager = manager; }
    void     ClearLoggingOutStatus() { m_loggedOutTime = 0; }
-   bool     CanContinueLogginIn() const { return m_isActive; }
+   bool     CanContinueLogginIn() const { return m_isActive && ( m_isReadyToBeCleanedUp == false ); }
 
    time_t   GetLoginTime() const { return m_loginTime; }
+
+   LoginStatus GetLoginStatus() const { return status; }
+   void     IncreaseLoginAttemptCount() { ++m_loginAttemptCount; }
+   int      GetLoginAttemptCount() const { return m_loginAttemptCount; }
 
    //------------------------------------------------
 
@@ -93,6 +97,7 @@ struct ConnectionToUser
    string                  m_lastLogoutTime;
    string                  m_userMotto;
    int                     m_avatarIcon;
+   int                     m_loginAttemptCount;
 
    LoginStatus             status;
    U8                      m_gameProductId;

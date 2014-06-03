@@ -241,7 +241,6 @@ bool  PacketChatUserAddedToChatChannelFromGameServer::SerializeOut( U8* data, in
    return true;
 }
 
-
 ///////////////////////////////////////////////////////////////
 
 bool  PacketChatHistoryRequest::SerializeIn( const U8* data, int& bufferOffset )
@@ -249,6 +248,7 @@ bool  PacketChatHistoryRequest::SerializeIn( const U8* data, int& bufferOffset )
    BasePacket::SerializeIn( data, bufferOffset );
    Serialize::In( data, bufferOffset, chatChannelUuid );
    Serialize::In( data, bufferOffset, userUuid );
+   Serialize::In( data, bufferOffset, startingTimestamp );
    Serialize::In( data, bufferOffset, numRecords );   
    Serialize::In( data, bufferOffset, startingIndex );
 
@@ -260,6 +260,7 @@ bool  PacketChatHistoryRequest::SerializeOut( U8* data, int& bufferOffset ) cons
    BasePacket::SerializeOut( data, bufferOffset );
    Serialize::Out( data, bufferOffset, chatChannelUuid );
    Serialize::Out( data, bufferOffset, userUuid );
+   Serialize::Out( data, bufferOffset, startingTimestamp );
    Serialize::Out( data, bufferOffset, numRecords );
    Serialize::Out( data, bufferOffset, startingIndex );
 
@@ -299,6 +300,8 @@ bool  PacketChatHistoryResult::SerializeIn( const U8* data, int& bufferOffset )
    BasePacket::SerializeIn( data, bufferOffset );
    Serialize::In( data, bufferOffset, chatChannelUuid );
    Serialize::In( data, bufferOffset, userUuid );
+   Serialize::In( data, bufferOffset, startingTimestamp );
+   Serialize::In( data, bufferOffset, startingIndex );
    Serialize::In( data, bufferOffset, chat );
 
    return true;
@@ -309,6 +312,8 @@ bool  PacketChatHistoryResult::SerializeOut( U8* data, int& bufferOffset ) const
    BasePacket::SerializeOut( data, bufferOffset );
    Serialize::Out( data, bufferOffset, chatChannelUuid );
    Serialize::Out( data, bufferOffset, userUuid );
+   Serialize::Out( data, bufferOffset, startingTimestamp );
+   Serialize::Out( data, bufferOffset, startingIndex );
    Serialize::Out( data, bufferOffset, chat );
 
    return true;

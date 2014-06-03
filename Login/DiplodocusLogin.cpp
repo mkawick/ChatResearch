@@ -248,9 +248,19 @@ bool     DiplodocusLogin:: LogUserIn( const string& userName, const string& pass
       ReinsertUserConnection( oldConnectionId, connectionId );// and we remove the old connection
 
       ConnectionToUser* connection = GetUserConnection( connectionId );
-
       if( connection )
       {
+         if( connection->GetLoginStatus() == ConnectionToUser::LoginStatus_Invalid )// already failed. Screw this hacker
+         {
+            // user may attempt hacking.. only 3 attempts allowed
+            if( connection->GetLoginAttemptCount () > 3 )
+            {
+               ForceUserLogoutAndBlock( connectionId );// force disconnect
+               return false;
+            }
+            return SetupQueryForLogin( userName, password, gameProductId, connectionId );
+         }
+
          connection->ClearLoggingOutStatus();
          if( connection->CanContinueLogginIn() == true )
          {
@@ -322,6 +332,13 @@ bool  DiplodocusLogin:: LoadUserAccount( const string& userName, const string& p
    conn.m_connectionId = connectionId;
    AddUserConnection( UserConnectionPair( connectionId, conn ) );
 
+   return SetupQueryForLogin( userName, password, gameProductId, connectionId );
+}
+
+//---------------------------------------------------------------
+
+bool  DiplodocusLogin:: SetupQueryForLogin( const string& userName, const string& password, U8 gameProductId, U32 connectionId )
+{
    //*********************************************************************************
    // perhaps some validation here is in order like is this user valid based on the key
    //*********************************************************************************
@@ -346,6 +363,7 @@ bool     DiplodocusLogin:: HandleUserLoginResult( U32 connectionId, const Packet
    ConnectionToUser* connection = GetUserConnection( connectionId );
    if( connection )
    {
+      connection->IncreaseLoginAttemptCount();
       if( dbResult->successfulQuery == false || dbResult->GetBucket().size() == 0 )
       {
          connection->ClearLoggingOutStatus();
@@ -1357,7 +1375,10 @@ bool  DiplodocusLogin:: SendLoginStatus(  ChainType*  destinationServerPtr,
 
       prepareForUser->active = isActive;
       prepareForUser->email= email;
-      prepareForUser->userId = boost::lexical_cast<U32>( userId );
+      string tempUserId = userId;
+      if( userId.size() == 0 )
+         tempUserId = "0";
+      prepareForUser->userId = boost::lexical_cast<U32>( tempUserId );
       prepareForUser->password = passwordHash;
       prepareForUser->loginKey = loginKey;
       prepareForUser->languageId = languageId;
@@ -1897,6 +1918,8 @@ void     DiplodocusLogin:: StoreAllProducts( const PacketDbQueryResult* dbResult
       if( temp == "" )
          temp = "0";
 
+      productDefn.parentId =  boost::lexical_cast< int >( row[ TableProduct::Column_parent_id ] );
+
       productDefn.productType  = boost::lexical_cast< int >( temp );
       
 
@@ -2017,9 +2040,9 @@ void     DiplodocusLogin:: AddNewProductToDb( const PurchaseEntry& product )
 
    dbQuery->query = "INSERT INTO product VALUES( DEFAULT, 0, '";// new products haven an id of 0
    dbQuery->query += newUuid;
-   dbQuery->query += "', '%s', '%s', NOW(), 0, DEFAULT, DEFAULT, DEFAULT)";
+   dbQuery->query += "', '%s', '%s', NOW(), 0, DEFAULT, DEFAULT, DEFAULT, DEFAULT)";
 
-   dbQuery->escapedStrings.insert( product.productStoreId );
+   dbQuery->escapedStrings.insert( product.productUuid );
    dbQuery->escapedStrings.insert( product.name );
 
    AddQueryToOutput( dbQuery );

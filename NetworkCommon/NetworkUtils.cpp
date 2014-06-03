@@ -114,7 +114,7 @@ void GetLocalIpAddress( char* buffer, size_t buflen )
    assert( buflen >= 16 );
    struct hostent *hostLocal;
 
-   const int MAXHOSTNAMELEN = 256;
+#define  MAXHOSTNAMELEN  256
    char localHostname[ MAXHOSTNAMELEN ];
    gethostname( localHostname, MAXHOSTNAMELEN );
    if ( ( hostLocal = gethostbyname( localHostname ) ) == NULL ) 

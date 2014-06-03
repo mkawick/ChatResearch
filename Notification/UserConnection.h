@@ -42,6 +42,7 @@ public:
    void        SetConnectionId( U32 id ) { m_userInfo.connectionId = id; }
 
    bool        IsLoggedOut() const { return m_isLoggedOut; }
+   void        Relog();
    int         SecondsExpiredSinceLoggedOut();
    void        UserLogged() { m_isLoggedOut = false; }
    void        UserLoggedOut();

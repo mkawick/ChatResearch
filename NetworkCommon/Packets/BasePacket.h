@@ -412,6 +412,7 @@ public:
       ErrorType_Purchase_UserCannotPurchaseAnyMoreOfThese =    807,
       ErrorType_Purchase_AllPurchasingIsClosedRightNow =       808,
       ErrorType_Purchase_Success =                             809,
+      ErrorType_Purchase_ProductUnknown =                      810,
       ErrorType_Purchase_unknown1,
       ErrorType_Purchase_unknown2,
 

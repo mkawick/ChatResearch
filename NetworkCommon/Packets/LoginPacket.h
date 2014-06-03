@@ -159,19 +159,20 @@ public:
 
 ///////////////////////////////////////////////////////////////
 
+///////////////////////////////////////////////////////////////
+
 struct PurchaseEntry
 {
-   PurchaseEntry() : number_price( 0 ), quantity( 0 ) {}
+   PurchaseEntry() : quantity( 0 ) {}
 
    bool  SerializeIn( const U8* data, int& bufferOffset );
    bool  SerializeOut( U8* data, int& bufferOffset ) const;
 
-   string   productStoreId; // apple's name for it.
    string   name;
-   string   price;
-   double   number_price;
+   //string   productStoreId;
    float    quantity;
-   string   date; // not currently available
+   string   productUuid;
+   string   parentUuid;
 };
 
 struct ProductBriefPacketed

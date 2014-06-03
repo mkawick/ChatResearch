@@ -129,7 +129,10 @@ bool     ChatRoomManager::Update()
       }
       else
       {
-         assert( 0 );
+         //ssert( 0 );
+         cout << "********************************" << endl;
+         cout << " DATABASE FAILURE: could not find job during update" << endl;
+         cout << "********************************" << endl;
       }
    }
 

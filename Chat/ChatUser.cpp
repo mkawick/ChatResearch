@@ -168,11 +168,11 @@ bool     ChatUser::HandleClientRequest( BasePacket* packet )
                PacketChatHistoryRequest* request = static_cast< PacketChatHistoryRequest* > ( packet );
                if( request->chatChannelUuid.size() )
                {
-                  QueryChatChannelHistory( request->chatChannelUuid, request->numRecords, request->startingIndex );
+                  QueryChatChannelHistory( request->chatChannelUuid, request->numRecords, request->startingIndex, request->startingTimestamp );
                }
                else
                {
-                  QueryChatP2PHistory( request->userUuid, request->numRecords, request->startingIndex );
+                  QueryChatP2PHistory( request->userUuid, request->numRecords, request->startingIndex, request->startingTimestamp );
                }
             }
             break;
@@ -313,7 +313,15 @@ bool     ChatUser::HandleClientRequest( BasePacket* packet )
 
 //------------------------------------------------------------------------------------------------
 
-void     ChatUser::QueryChatChannelHistory( const string& channelUuid, int numRecords, int startingIndex  )
+struct ChatHistoryLookupData 
+{
+   string   userUuid;
+   string   channelUuid;
+   string   startingTimestamp;
+   int      startingIndex;
+};
+
+void     ChatUser::QueryChatChannelHistory( const string& channelUuid, int numRecords, int startingIndex, const string& startingTimestamp  )
 {
    // SELECT chat.text, user.name, chat.timestamp, chat.game_turn
    // FROM chat as chat, user as user
@@ -340,22 +348,43 @@ void     ChatUser::QueryChatChannelHistory( const string& channelUuid, int numRe
    dbQuery->id = m_connectionId;
    dbQuery->lookup = QueryType_ChatChannelHistory;
 
-   string queryString = "SELECT chat.text, users.user_name, users.uuid, chat.game_turn, chat.timestamp FROM chat_message AS chat, users WHERE chat.user_id_sender=users.uuid AND chat_channel_id='%s'";
-   queryString += " ORDER BY chat.timestamp DESC LIMIT ";
-   queryString += boost::lexical_cast< string >( startingIndex );
-   queryString += ",";
+   string queryString = "SELECT chat.text, users.user_name, users.uuid, chat.game_turn, chat.timestamp ";
+   queryString += " FROM chat_message AS chat, users WHERE chat.user_id_sender=users.uuid AND ";
+   queryString += "chat_channel_id='%s'";
+
+   string limitString = " ORDER BY chat.timestamp DESC LIMIT ";
+   if( startingTimestamp.size() == 0 )
+   {
+      queryString += limitString;
+      queryString += boost::lexical_cast< string >( startingIndex );
+      queryString += ",";
+   }
+   else
+   {
+      queryString += "AND timestamp<'%s' ";
+      queryString += limitString;
+   }
    queryString += boost::lexical_cast< string >( numRecords );
 
    dbQuery->query = queryString;
    dbQuery->escapedStrings.insert( channelUuid );
-   dbQuery->meta = channelUuid;
+   if( startingTimestamp.size() )// this might be empty
+   {
+      dbQuery->escapedStrings.insert( startingTimestamp );
+   }
+   //dbQuery->meta = channelUuid;
+   ChatHistoryLookupData* extras = new ChatHistoryLookupData; 
+   extras->channelUuid = channelUuid;
+   extras->startingIndex = startingIndex;
+   extras->startingTimestamp = startingTimestamp;
+   dbQuery->customData = extras;
 
    m_chatServer->AddQueryToOutput( dbQuery, m_connectionId );
 }
 
 //------------------------------------------------------------------------------------------------
 
-void     ChatUser::QueryChatP2PHistory( const string& userUuid, int numRecords, int startingIndex )
+void     ChatUser::QueryChatP2PHistory( const string& userUuid, int numRecords, int startingIndex, const string& startingTimestamp )
 {
    /*
    SELECT chat.text, users.user_name, users.uuid, chat.game_turn, chat.timestamp
@@ -395,10 +424,20 @@ void     ChatUser::QueryChatP2PHistory( const string& userUuid, int numRecords, 
                   "chat_channel_id='' AND  ( "\
                   "(user_id_sender='%s' AND user_id_recipient='%s' ) or " \
                   "(user_id_sender='%s' AND user_id_recipient='%s' ) " \
-                  ") "\
-                  "ORDER BY timestamp DESC LIMIT ";
-   queryString += boost::lexical_cast< string >( startingIndex );
-   queryString += ",";
+                  ") ";
+
+   string limitString = "ORDER BY timestamp DESC LIMIT ";
+   if( startingTimestamp.size() == 0 )
+   {
+      queryString += limitString;
+      queryString += boost::lexical_cast< string >( startingIndex );
+      queryString += ",";
+   }
+   else
+   {
+      queryString += "AND timestamp<'%s' ";
+      queryString += limitString;
+   }
    queryString += boost::lexical_cast< string >( numRecords );
 
    dbQuery->query = queryString;
@@ -406,7 +445,18 @@ void     ChatUser::QueryChatP2PHistory( const string& userUuid, int numRecords, 
    dbQuery->escapedStrings.insert( m_uuid );
    dbQuery->escapedStrings.insert( m_uuid );
    dbQuery->escapedStrings.insert( userUuid );
-   dbQuery->meta = userUuid;
+   
+   if( startingTimestamp.size() )// this might be empty
+   {
+      dbQuery->escapedStrings.insert( startingTimestamp );
+   }
+   //dbQuery->meta = userUuid;
+
+   ChatHistoryLookupData* extras = new ChatHistoryLookupData; 
+   extras->userUuid = userUuid;
+   extras->startingIndex = startingIndex;
+   extras->startingTimestamp = startingTimestamp;
+   dbQuery->customData = extras;
 
    m_chatServer->AddQueryToOutput( dbQuery, m_connectionId );
 }
@@ -477,6 +527,7 @@ bool     ChatUser::HandleDbResult( PacketDbQueryResult * dbResult )
       {
          LoadUserProfile( dbResult );
       }
+      break;
    case QueryType_ChatChannelHistory:
       {
          SendChatChannelHistoryToClient( dbResult );
@@ -594,14 +645,22 @@ void     ChatUser::LoadUserProfile( const PacketDbQueryResult * dbResult )
    }
 }
 
+//---------------------------------------------------------------
+
 void     ChatUser::SendChatChannelHistoryToClient( const PacketDbQueryResult * dbResult )
 {
    if( dbResult->bucket.bucket.size() == 0 )
    {
       m_chatServer->SendErrorToClient( m_connectionId, PacketErrorReport::ErrorType_NoChatHistoryExistsOnSelectedChannel );
-      return;
+      //return;
    }
-   SendChatHistoryToClientCommon( dbResult->bucket, "" , dbResult->meta );
+
+   ChatHistoryLookupData* extras = reinterpret_cast<ChatHistoryLookupData*> ( dbResult->customData  );
+   if( extras )
+   {
+      SendChatHistoryToClientCommon( dbResult->bucket, extras->userUuid , extras->channelUuid, extras->startingTimestamp, extras->startingIndex );
+      delete extras;
+   }   
 }
 
 //---------------------------------------------------------------
@@ -611,21 +670,28 @@ void     ChatUser::SendChatp2pHistoryToClient( PacketDbQueryResult * dbResult )
    if( dbResult->bucket.bucket.size() == 0 )
    {
       m_chatServer->SendErrorToClient( m_connectionId, PacketErrorReport::ErrorType_NoChatHistoryExistsForThisUser );
-      return;
+      //return;
    }
 
-   SendChatHistoryToClientCommon( dbResult->bucket, dbResult->meta, "" );
+   ChatHistoryLookupData* extras = reinterpret_cast<ChatHistoryLookupData*> ( dbResult->customData  );
+   if( extras )
+   {
+      SendChatHistoryToClientCommon( dbResult->bucket, extras->userUuid , extras->channelUuid, extras->startingTimestamp, extras->startingIndex );
+      delete extras;
+   }   
 }
 
 //---------------------------------------------------------------
 
-void     ChatUser::SendChatHistoryToClientCommon( const DynamicDataBucket& bucket, const string& userUuid, const string& chatChannelUuid )
+void     ChatUser::SendChatHistoryToClientCommon( const DynamicDataBucket& bucket, const string& userUuid, const string& chatChannelUuid, const string& startingTimestamp, int startingIndex )
 {
    SimpleChatTable              enigma( bucket );
    const int maxNumMessagesPerPacket = 20;
    PacketChatHistoryResult* result = new PacketChatHistoryResult;
    result->userUuid = userUuid;
    result->chatChannelUuid = chatChannelUuid;
+   result->startingIndex = startingIndex;
+   result->startingTimestamp = startingTimestamp;
 
    SimpleChatTable::iterator    it = enigma.begin();
    while( it != enigma.end() )
@@ -667,7 +733,7 @@ void     ChatUser::SendChatHistoryToClientCommon( const DynamicDataBucket& bucke
       }
    }
    // send the 'residual'
-   if( result && result->chat.size() )
+   if( result )//&& result->chat.size() )
    {
       SendMessageToClient( result );
    }

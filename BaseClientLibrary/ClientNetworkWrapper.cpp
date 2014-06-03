@@ -1,9 +1,9 @@
 #include "ClientNetworkWrapper.h"
 
-#include "../ServerStack/NetworkCommon/Utils/Utils.h"
-#include "../ServerStack/NetworkCommon/Packets/CheatPacket.h"
-#include "../ServerStack/NetworkCommon/Packets/PacketFactory.h"
-#include "../ServerStack/NetworkCommon/ChainedArchitecture/Thread.h"
+#include "../NetworkCommon/Utils/Utils.h"
+#include "../NetworkCommon/Packets/CheatPacket.h"
+#include "../NetworkCommon/Packets/PacketFactory.h"
+#include "../NetworkCommon/ChainedArchitecture/Thread.h"
 
 #include <assert.h>
 #include <iostream>
@@ -520,7 +520,6 @@ void     ClientNetworkWrapper::UpdateNotifications()
             {
                PacketChatHistoryResult* packetChatHistoryResult = 
                   static_cast<PacketChatHistoryResult*>( qn.packet );
-               notify->ServerRequestsListOfUserPurchases();
                list< ChatEntry > listOfChats;
                int num = packetChatHistoryResult->chat.size();
                for( int i=0; i<num; i++ )
@@ -1299,7 +1298,7 @@ bool  ClientNetworkWrapper::PurchaseEntryIntoTournament( const string& tournamen
 
 //-----------------------------------------------------------------------------
   
-bool  ClientNetworkWrapper::RequestChatChannelHistory( const string& channelUuid, int numRecords, int startingIndex ) const
+bool  ClientNetworkWrapper::RequestChatChannelHistory( const string& channelUuid, int numRecords, int startingIndex, const char* startingTimestamp ) const
 {
    if( IsConnected() == false )
    {
@@ -1309,13 +1308,17 @@ bool  ClientNetworkWrapper::RequestChatChannelHistory( const string& channelUuid
    history.chatChannelUuid = channelUuid;
    history.numRecords = numRecords;
    history.startingIndex = startingIndex;
+   if( startingTimestamp != NULL )
+   {
+      history.startingTimestamp = startingTimestamp;
+   }
    SerializePacketOut( &history );
    return true;
 }
 
 //-----------------------------------------------------------------------------
   
-bool  ClientNetworkWrapper::RequestChatP2PHistory( const string& userUuid, int numRecords, int startingIndex ) const
+bool  ClientNetworkWrapper::RequestChatP2PHistory( const string& userUuid, int numRecords, int startingIndex, const char* startingTimestamp ) const
 {
    if( IsConnected() == false )
    {
@@ -1325,6 +1328,10 @@ bool  ClientNetworkWrapper::RequestChatP2PHistory( const string& userUuid, int n
    history.userUuid = userUuid;
    history.numRecords = numRecords;
    history.startingIndex = startingIndex;
+   if( startingTimestamp != NULL )
+   {
+      history.startingTimestamp = startingTimestamp;
+   }
    SerializePacketOut( &history );
    return true;
 }
@@ -2458,11 +2465,14 @@ bool     ClientNetworkWrapper::SendPurchases( const vector< RegisteredProduct >&
       const RegisteredProduct& rp = *it++;
       
       PurchaseEntry pe;
-      pe.productStoreId = rp.id;
+      pe.productUuid = rp.id;
       pe.name = rp.title;
-      pe.number_price = rp.number_price;
-      pe.price = rp.price;
-      pe.date = GetDateInUTC();
+      pe.quantity = rp.quantity;
+      //pe.parentUuid = rp.parentUuid;
+      //pe.productUuid = rp.;
+      //pe.number_price = rp.number_price;
+      //pe.price = rp.price;
+      //pe.date = GetDateInUTC();
 
       packet.purchases.push_back( pe );
    }

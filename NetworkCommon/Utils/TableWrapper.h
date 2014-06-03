@@ -451,6 +451,7 @@ public:
       Column_notes,
       Column_name_string,
       Column_icon_lookup,
+      Column_parent_id,
       Column_end
    };
 };

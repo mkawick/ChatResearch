@@ -278,6 +278,8 @@ void*    CAbstractThread::ThreadFunction( void* data )
 #if PLATFORM == PLATFORM_WINDOWS
       DWORD dwWaitResult = WaitForSingleObject(  thread->m_thread, timeoutUponDeleteMs );
       CloseHandle( thread->m_thread );
+#elif defined(ANDROID)
+      // don't bother on android
 #else
       pthread_cancel( thread->m_thread );
 #endif
