@@ -428,7 +428,7 @@ bool  ConnectionToUser::FinalizeLogout()
    dbQuery->lookup =          DiplodocusLogin::QueryType_UserLogout;
    dbQuery->isFireAndForget = true;// no result is needed
    
-   string queryString = "UPDATE users AS user SET user.last_logout_timestamp=NOW() WHERE user.uuid = '";
+   string queryString = "UPDATE users AS user SET user.last_logout_timestamp=UTC_TIMESTAMP() WHERE user.uuid = '";
    queryString +=             m_userUuid;
    queryString += "'";
    dbQuery->query =           queryString;
@@ -487,7 +487,7 @@ bool  ConnectionToUser::UpdateLastLoggedInTime()
    dbQuery->lookup =          DiplodocusLogin::QueryType_UpdateLastLoggedInTime;
    dbQuery->isFireAndForget = true;// no result is needed
 
-   string queryString = "UPDATE users AS user SET user.last_login_timestamp=now() WHERE uuid = '";
+   string queryString = "UPDATE users AS user SET user.last_login_timestamp=UTC_TIMESTAMP() WHERE uuid = '";
    queryString +=             m_userUuid;
    queryString += "'";
    dbQuery->query =           queryString;
@@ -504,7 +504,7 @@ bool  ConnectionToUser::UpdateLastLoggedOutTime()
    dbQuery->lookup =          DiplodocusLogin::QueryType_UpdateLastLoggedOutTime;
    dbQuery->isFireAndForget = true;// no result is needed
 
-   string queryString = "UPDATE users AS user SET user.last_logout_timestamp=now() WHERE uuid = '";
+   string queryString = "UPDATE users AS user SET user.last_logout_timestamp=UTC_TIMESTAMP() WHERE uuid = '";
    queryString += m_userUuid;
    queryString += "'";
    dbQuery->query =           queryString;
@@ -764,7 +764,9 @@ bool     ConnectionToUser:: StoreUserPurchases( const PacketListOfUserAggregateP
    int numItems = deviceReportedPurchases->purchases.size();
    if( numItems )
    {
+      cout << " ************************ " << endl;
       cout << " user purchases reported: " << endl;
+      cout << " ************************ " << endl;
    }
    for( int i=0; i< numItems; i++ )
    {

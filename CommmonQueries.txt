@@ -65,3 +65,12 @@ and users.user_email IS NOT NULL AND profile.marketing_opt_out=0
 AND users.user_confirmation_date>'2013-11-21 00:00:00' LIMIT 20000
 
 //-----------------------------------------------------
+
+copying from one table to another...
+
+
+INSERT INTO playdek.string (string, category, description, english )
+	SELECT name_string, "product", name, name 
+	FROM playdek.product 
+	WHERE product_id>7502 AND product_id<7800
+	limit 1000;

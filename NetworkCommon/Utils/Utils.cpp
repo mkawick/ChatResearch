@@ -131,7 +131,7 @@ string GetDateInUTC( int diffDays, int diffHours, int diffMinutes )
 {
    ostringstream Convert;
    time_t t = time(0);   // get time now
-   struct tm * now = localtime( & t );
+   struct tm * now = gmtime( & t );
    if( diffDays || diffHours || diffMinutes )
    {
       struct tm* temp = now;
@@ -139,8 +139,7 @@ string GetDateInUTC( int diffDays, int diffHours, int diffMinutes )
       temp->tm_hour += diffHours;
       temp->tm_min += diffMinutes;
       t = mktime( temp );
-      now = localtime( & t );
-      //ctime(&temp);
+      now = gmtime( & t );
    }
 
    string strMonth = Get0PrefixedValue( now->tm_mon + 1 ) ;
@@ -164,7 +163,7 @@ string GetDateInUTC( int diffDays, int diffHours, int diffMinutes )
 string GetDateInUTC( time_t t )
 {
    ostringstream Convert;
-   struct tm * now = localtime( & t );
+   struct tm * now = gmtime( & t );
    string strMonth = Get0PrefixedValue( now->tm_mon + 1 ) ;
    string strDay = Get0PrefixedValue( now->tm_mday );
    string strHour = Get0PrefixedValue( now->tm_hour );
@@ -185,7 +184,7 @@ U64   GetDateFromString( const char* UTCFormatted )
 {   
    time_t now = time(0);
    struct tm *nowtm;
-   nowtm = localtime(&now);
+   nowtm = gmtime(&now);
    sscanf( UTCFormatted, "%d-%d-%d %d:%d:%d", &nowtm->tm_year, &nowtm->tm_mon, &nowtm->tm_mday,  
       &nowtm->tm_hour, &nowtm->tm_min, &nowtm->tm_sec );
 
@@ -240,7 +239,7 @@ U32            GetCurrentMilliseconds()
 
 time_t  ZeroOutMinutes( time_t currentTime )
 {
-   struct tm * now = localtime( &currentTime );
+   struct tm * now = gmtime( &currentTime );
    now->tm_min = 0;
    now->tm_sec = 0;
    return mktime( now );
@@ -248,7 +247,7 @@ time_t  ZeroOutMinutes( time_t currentTime )
 
 time_t  ZeroOutHours( time_t currentTime )
 {
-   struct tm * now = localtime( &currentTime );
+   struct tm * now = gmtime( &currentTime );
    now->tm_hour = 0;
    now->tm_min = 0;
    now->tm_sec = 0;
@@ -377,7 +376,7 @@ void  PrintCurrentTime()
    char nowBuf[100];
    time_t now = time(0);
    struct tm *nowtm;
-   nowtm = localtime(&now);
+   nowtm = gmtime(&now);
    strftime(nowBuf, sizeof(nowBuf), "%Y-%m-%d %H:%M:%S", nowtm);
 
    cout << nowBuf << endl;

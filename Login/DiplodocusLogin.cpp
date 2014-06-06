@@ -1908,10 +1908,21 @@ void     DiplodocusLogin:: StoreAllProducts( const PacketDbQueryResult* dbResult
       ProductTable::row       row = *it++;
 
       ProductInfo productDefn;
-      productDefn.productId  = boost::lexical_cast< int >( row[ TableProduct::Column_product_id ] );
       productDefn.uuid =                 row[ TableProduct::Column_uuid ];
       productDefn.name =                 row[ TableProduct::Column_name ];
+      int id = boost::lexical_cast< int >( row[ TableProduct::Column_id ] );
       productDefn.filterName =           row[ TableProduct::Column_filter_name ];
+
+      string productId = row[ TableProduct::Column_product_id ];
+      if( productId == "NULL" || productId.size() == 0 || productId == "0" ||
+         productDefn.filterName.size() == 0 )
+      {
+         cout << "Invalid product: " << id << ", name='" << productDefn.name << "', uuid='" << productDefn.uuid << "', filter='" << productDefn.filterName << "'" << endl;
+         continue;// invalid product
+      }
+      productDefn.productId  = boost::lexical_cast< int >( productId );
+      
+      
       productDefn.Begindate =            row[ TableProduct::Column_begin_date ];
       productDefn.lookupName =           row[ TableProduct::Column_name_string ];
       string temp = row[ TableProduct::Column_product_type ];
@@ -2025,6 +2036,7 @@ void     DiplodocusLogin:: RequestListOfProductsFromClient( U32 connectionId )
 
 void     DiplodocusLogin:: AddNewProductToDb( const PurchaseEntry& product )
 {
+   
    PacketDbQuery* dbQuery = new PacketDbQuery;
    dbQuery->id =           0;
    dbQuery->lookup =       QueryType_AddProductInfo;
@@ -2038,12 +2050,16 @@ void     DiplodocusLogin:: AddNewProductToDb( const PurchaseEntry& product )
    std::string lowercase_username = product.name; 
    std::transform( lowercase_username.begin(), lowercase_username.end(), lowercase_username.begin(), ::tolower );
 
+   cout << "New product entry: " << endl;
+   cout << " name: " << lowercase_username << endl;
+   cout << " UUID: " << newUuid << endl;
+
    dbQuery->query = "INSERT INTO product VALUES( DEFAULT, 0, '";// new products haven an id of 0
    dbQuery->query += newUuid;
-   dbQuery->query += "', '%s', '%s', NOW(), 0, DEFAULT, DEFAULT, DEFAULT, DEFAULT)";
+   dbQuery->query += "', '%s', '%s', UTC_TIMESTAMP(), 0, DEFAULT, DEFAULT, DEFAULT, DEFAULT)";
 
-   dbQuery->escapedStrings.insert( product.productUuid );
    dbQuery->escapedStrings.insert( product.name );
+   dbQuery->escapedStrings.insert( product.productUuid );
 
    AddQueryToOutput( dbQuery );
 

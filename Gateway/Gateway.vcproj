@@ -60,7 +60,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="../Debug/PacketLibrary.lib"
+				AdditionalDependencies="../Debug/PacketLibrary.lib Ws2_32.lib"
 				OutputFile="$(OutDir)\$(ProjectName)Server.exe"
 				LinkIncremental="2"
 				IgnoreDefaultLibraryNames="libcmt.lib"

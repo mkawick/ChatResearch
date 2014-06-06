@@ -535,7 +535,7 @@ void     DiplodocusContact::ExpireOldInvitations()
 
       //SELECT * FROM playdek.friend_pending where sent_date < ( NOW() - interval 1000000 second );
 
-      string whereClause = "FROM playdek.friend_pending WHERE sent_date < ( NOW() - interval ";
+      string whereClause = "FROM playdek.friend_pending WHERE sent_date < ( UTC_TIMESTAMP() - interval ";
       whereClause += boost::lexical_cast< string >( seconds );
       whereClause += " second )";
 

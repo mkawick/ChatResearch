@@ -702,7 +702,7 @@ bool     ChatRoomManager::RemoveChatChannel( const string& channelUuid )
 bool   ChatRoomManager::CreateNewRoom( const PacketChatCreateChatChannelFromGameServer* request )
 {
    time_t t = time(0);   // get time now
-   struct tm * now = localtime( & t );
+   struct tm * now = gmtime( & t );
    
    int year = now->tm_year - 100; // 113 => 2013.
    int month = now->tm_mon;
@@ -2095,7 +2095,7 @@ void     ChatRoomManager::WriteChatToDb( const string& message, const string& se
    {
       queryString += "null";
    }
-   queryString += ", '%s', CURRENT_TIMESTAMP, ";
+   queryString += ", '%s', UTC_TIMESTAMP(), ";
    if( isGameChannel == true )
    {
       queryString += boost::lexical_cast< string >( gameTurn );
