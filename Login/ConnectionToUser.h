@@ -49,8 +49,8 @@ struct ConnectionToUser
 
    //------------------------------------------------
    
-   void     AddProductFilterName( const string& text );
-   int      FindProductFilterName( const string& text ); 
+   void     AddProductVendorUuid( string text );
+   int      FindProductVendorUuid( string text ); 
 
    //------------------------------------------------
 
@@ -64,9 +64,10 @@ struct ConnectionToUser
    bool     HandleRequestForListOfPurchases( const PacketListOfUserPurchasesRequest* purchase );
    bool     AddPurchase( const PacketAddPurchaseEntry* purchase );
    bool     StoreUserPurchases( const PacketListOfUserAggregatePurchases* deviceReportedPurchases );
+   bool     CanProductBePurchasedMultipleTimes( const ProductInfo& productInfo );
 
    void     AddCurrentlyLoggedInProductToUserPurchases();
-   void     WriteProductToUserRecord( const string& productFilterName, double pricePaid );
+   void     WriteProductToUserRecord( const string& productVendorUuid, double pricePaid );
    void     WriteProductToUserRecord( const string& userUuid, const string& productUuid, double pricePaid, float numPurchased, string adminId, string adminNotes );
    void     StoreListOfUsersProductsFromDB( PacketDbQueryResult* dbResult, bool shouldAddLoggedInProduct );
 
@@ -75,7 +76,9 @@ struct ConnectionToUser
    void     RequestProfile( const string& email, const string& uuid, const string& name, bool asAdmin );
    bool     UpdateProfile( const PacketUpdateUserProfile* updateProfileRequest );
    bool     UpdateProfile( const PacketUpdateSelfProfile* updateProfileRequest );
+   void     AddItemToProductTable( const PurchaseEntry& purchaseEntry );
    bool     HandleAdminRequestUserProfile( const PacketDbQueryResult* dbResult );
+   void     StoreOffProductInUserRecord ( int userManagerIndex, const string& productUuid, float numPurchased );
 
    bool     LoginResult( const PacketDbQueryResult* dbResult );
 
@@ -135,7 +138,7 @@ struct ConnectionToUser
    time_zone
    */
    
-   vector< string >        productFilterNames;
+   vector< string >        productVendorUuids;
    vector< ProductInfo >   productsWaitingForInsertionToDb;
    map< U32, ProductBrief >  productsOwned;
    
@@ -167,7 +170,7 @@ protected:
    void     PackOtherUserProfileRequestAndSendToClient( U32 connectionId );
 
    void     ClearAllProductsOwned();
-   void     AddToProductsOwned( int productDbId, const string& productName, const string& productUuid, float quantity );
+   void     AddToProductsOwned( int productDbId, const string& productName, const string& productUuid, float quantity, const string& vendorUuid );
    void     SendListOfProductsToClientAndAsset( U32 connectionId );
    void     SendListOfOwnedProductsToClient( U32 connectionId );
    void     TellContactServerToReloadUserProfile();

@@ -443,11 +443,13 @@ bool  ConnectionToUser::FinalizeLogout()
 
 //-----------------------------------------------------------------
 
-void  ConnectionToUser::AddProductFilterName( const string& text )
+void  ConnectionToUser::AddProductVendorUuid( string text )
 {
+   std::transform( text.begin(), text.end(), text.begin(), ::tolower );
+
    bool found = false;
-   vector< string >::iterator searchIt = productFilterNames.begin();
-   while( searchIt != productFilterNames.end() )
+   vector< string >::iterator searchIt = productVendorUuids.begin();
+   while( searchIt != productVendorUuids.end() )
    {
       if( *searchIt == text )
       {
@@ -458,24 +460,26 @@ void  ConnectionToUser::AddProductFilterName( const string& text )
    }
    if( found == false )
    {
-      productFilterNames.push_back( text );
+      productVendorUuids.push_back( text );
    }
 }
 
 //-----------------------------------------------------------------
 
-int   ConnectionToUser::FindProductFilterName( const string& text )
+int   ConnectionToUser::FindProductVendorUuid( string text )
 {
-   vector< string >::iterator searchIt = productFilterNames.begin();
-   while( searchIt != productFilterNames.end() )
+   std::transform( text.begin(), text.end(), text.begin(), ::tolower );
+
+   vector< string >::iterator searchIt = productVendorUuids.begin();
+   while( searchIt != productVendorUuids.end() )
    {
       if( *searchIt == text )
       {
-         return ( searchIt - productFilterNames.begin() );
+         return ( searchIt - productVendorUuids.begin() );
       }
       searchIt++;
    }
-   return -1;
+   return DiplodocusLogin::ProductNotFound;
 }
 
 //-----------------------------------------------------------------
@@ -520,7 +524,7 @@ bool    ConnectionToUser:: SuccessfulLoginFinished( U32 connectId, bool isRelogg
    m_isLoggingOut = false;// for relogin, we need this to be cleared.
    UpdateConnectionId( connectId );
 
-   productFilterNames.clear();
+   productVendorUuids.clear();
    productsWaitingForInsertionToDb.clear();
 
    bool success = true;
@@ -654,7 +658,7 @@ void     ConnectionToUser:: SendListOfOwnedProductsToClient( U32 m_connectionId 
          continue;
 
       PurchaseEntry pe;
-      pe.name = pb.filterName;
+      pe.name = pb.vendorUuid;
       pe.quantity = pb.quantity;
       if( pb.productDbId )
       {
@@ -715,7 +719,7 @@ bool     ConnectionToUser:: AddPurchase( const PacketAddPurchaseEntry* purchase 
          double price = 0.0;
          float numToGive = static_cast<float>( purchase->quantity );
          WriteProductToUserRecord( m_userUuid, productUuid, price, numToGive, m_userUuid, "add purchase entry to self by admin" );
-         AddToProductsOwned( productInfo.productId, productInfo.lookupName, productUuid, numToGive );
+         AddToProductsOwned( productInfo.productId, productInfo.lookupName, productUuid, numToGive, productInfo.vendorUuid );
          
          SendListOfProductsToClientAndAsset( m_connectionId );
          return true;
@@ -737,13 +741,13 @@ bool     ConnectionToUser:: AddPurchase( const PacketAddPurchaseEntry* purchase 
          float numToGive = static_cast<float>( purchase->quantity );
          WriteProductToUserRecord( it->second.m_userUuid, productUuid, price, numToGive, m_userUuid, "add purchase entry by admin" );
 
-         it->second.AddToProductsOwned( productInfo.productId, productInfo.lookupName, productUuid, numToGive );
+         it->second.AddToProductsOwned( productInfo.productId, productInfo.lookupName, productUuid, numToGive, productInfo.vendorUuid );
          it->second.SendListOfOwnedProductsToClient( m_connectionId );
 
          ConnectionToUser* loadedConnection = userManager->GetLoadedUserConnectionByUuid( m_userUuid );
          if( loadedConnection )
          {
-            loadedConnection->AddToProductsOwned( productInfo.productId, productInfo.lookupName, productInfo.uuid, 1 );
+            loadedConnection->AddToProductsOwned( productInfo.productId, productInfo.lookupName, productInfo.uuid, 1, productInfo.vendorUuid );
             loadedConnection->SendListOfOwnedProductsToClient( m_connectionId );
          }
          return true;
@@ -766,12 +770,15 @@ bool     ConnectionToUser:: StoreUserPurchases( const PacketListOfUserAggregateP
    {
       cout << " ************************ " << endl;
       cout << " user purchases reported: " << endl;
-      cout << " ************************ " << endl;
+      
    }
    for( int i=0; i< numItems; i++ )
    {
       const PurchaseEntry& purchaseEntry = deviceReportedPurchases->purchases[i];
-      int  originalProductNameIndex = userManager->FindProductByName( purchaseEntry.name );
+      int  originalProductNameIndex = userManager->FindProductByVendorUuid( purchaseEntry.productUuid );
+      if( originalProductNameIndex == DiplodocusLogin::ProductNotFound )
+         originalProductNameIndex = userManager->FindProductByName( purchaseEntry.name );
+
       //----------------
       if( purchaseEntry.name.size() == 0 )// we can't do anything with this.
       {
@@ -787,12 +794,22 @@ bool     ConnectionToUser:: StoreUserPurchases( const PacketListOfUserAggregateP
             continue;
          }
 
-         // the order of the next two lines matters a lot.
-         int userProductIndex = FindProductFilterName( purchaseEntry.productUuid );
-         AddProductFilterName( purchaseEntry.productUuid );// we're gonna save the name, regardless. The device told us about the purchase.
+         if( originalProductNameIndex == DiplodocusLogin::ProductNotFound )
+         {
+            AddItemToProductTable( purchaseEntry );
+         }
+
+         StoreOffProductInUserRecord ( originalProductNameIndex, purchaseEntry.productUuid, purchaseEntry.quantity );
+        /* int userProductIndex = DiplodocusLogin::ProductNotFound;
+         if( purchaseEntry.productUuid.size() )
+         {
+            // the order of the next two lines matters a lot.
+            userProductIndex = FindProductVendorUuid( purchaseEntry.productUuid );
+            AddProductVendorUuid( purchaseEntry.productUuid );// we're gonna save the name, regardless. The device told us about the purchase.
+         }
 
          //**  find the item in the user record and add it to the db if not **
-         if( userProductIndex == -1 && originalProductNameIndex != -1 )// the user doesn't have the record, but the rest of the DB does.
+         if( originalProductNameIndex != DiplodocusLogin::ProductNotFound )// the user doesn't have the record, but the rest of the DB does.
          {
             ProductInfo productInfo;
             bool result = userManager->GetProductByIndex( originalProductNameIndex, productInfo );
@@ -800,33 +817,87 @@ bool     ConnectionToUser:: StoreUserPurchases( const PacketListOfUserAggregateP
             {
                const string& productUuid = productInfo.uuid;
                WriteProductToUserRecord( m_userUuid, productUuid, 1, purchaseEntry.quantity, "", "" );
-               AddToProductsOwned( productInfo.productId, productInfo.lookupName, productUuid, purchaseEntry.quantity );
+               AddToProductsOwned( productInfo.productId, productInfo.lookupName, productUuid, purchaseEntry.quantity, productInfo.vendorUuid );
             }
-         }
-
-         if( originalProductNameIndex == -1 )
-         {
-            ProductInfo pi;
-            pi.name = purchaseEntry.name;
-            pi.filterName = purchaseEntry.name;
-            // productUuid .. I don't know what to do with this.
-            //pi.price = purchaseEntry.number_price;
-            pi.quantity = purchaseEntry.quantity;
-            //pi.parentId
-           // pi.uuid = 
-
-            productsWaitingForInsertionToDb.push_back( pi );
-            //productsOwned.insert( pi );
-            userManager->AddNewProductToDb( purchaseEntry );
-         }
-         cout << "   title: " << purchaseEntry.name << endl;
+         }*/
+         
       }
+      cout << "  " << i << ":   title: " << purchaseEntry.name << endl;
       
+   }
+   if( numItems )
+   {
+      cout << " ************************ " << endl;
    }
 
    SendListOfProductsToClientAndAsset( m_connectionId );
 
    return true;
+}
+
+//---------------------------------------------------------------
+
+void  ConnectionToUser:: AddItemToProductTable( const PurchaseEntry& purchaseEntry )
+{
+   ProductInfo pi;
+   pi.name = purchaseEntry.name;
+   pi.vendorUuid = purchaseEntry.productUuid;
+   std::transform( pi.vendorUuid.begin(), pi.vendorUuid.end(), pi.vendorUuid.begin(), ::tolower );
+   // productUuid .. I don't know what to do with this.
+   //pi.price = purchaseEntry.number_price;
+   pi.quantity = purchaseEntry.quantity;
+
+   productsWaitingForInsertionToDb.push_back( pi );
+   //productsOwned.insert( pi );
+   userManager->AddNewProductToDb( purchaseEntry );
+}
+
+//---------------------------------------------------------------
+
+bool     ConnectionToUser:: CanProductBePurchasedMultipleTimes( const ProductInfo& productInfo )
+{
+   // todo: verify that the product cannot be bought multiple times. 
+   // Some IAP/DLC can be purchased multiple times. e.g. Tournament tickets, consumables
+   return false;
+}
+
+//---------------------------------------------------------------
+
+void     ConnectionToUser:: StoreOffProductInUserRecord ( int userManagerIndex, 
+                                                         const string& productUuid, 
+                                                         float numPurchased)
+{
+   if( numPurchased == 0 )
+      return;
+
+   int userProductIndex = DiplodocusLogin::ProductNotFound;
+   if( productUuid.size() )
+   {
+      // the order of the next two lines matters a lot.
+      userProductIndex = FindProductVendorUuid( productUuid ); 
+      if( userProductIndex == DiplodocusLogin::ProductNotFound )
+      {
+         AddProductVendorUuid( productUuid );// we're gonna save the name, regardless.
+      }
+   }   
+
+   //**  find the item in the user record and add it to the db if not **
+   if( userManagerIndex != DiplodocusLogin::ProductNotFound )
+   {
+      ProductInfo productInfo;
+      bool result = userManager->GetProductByIndex( userManagerIndex, productInfo );
+      if( result == true )
+      {
+         // this logic is tricky. If I don't already have it.. or I can purchase it again...
+         if( userProductIndex == DiplodocusLogin::ProductNotFound ||
+                CanProductBePurchasedMultipleTimes( productInfo ) == true )
+         {
+            const string& productUuid = productInfo.uuid;
+            WriteProductToUserRecord( m_userUuid, productUuid, 1.0, numPurchased, "", "" );
+            AddToProductsOwned( productInfo.productId, productInfo.lookupName, productUuid, numPurchased, productInfo.vendorUuid );
+         }
+      }
+   }
 }
 
 //---------------------------------------------------------------
@@ -852,16 +923,16 @@ void     ConnectionToUser:: AddCurrentlyLoggedInProductToUserPurchases()// only 
 
    WriteProductToUserRecord( m_userUuid, productInfo.uuid, 0.0, 1, "user", "default by login" );
    float numToGive = 1;
-   AddToProductsOwned( productInfo.productId, productInfo.lookupName, productInfo.uuid, numToGive );
+   AddToProductsOwned( productInfo.productId, productInfo.lookupName, productInfo.uuid, numToGive, productInfo.vendorUuid );
 }
 
 //---------------------------------------------------------------
 
-void     ConnectionToUser:: WriteProductToUserRecord( const string& productFilterName, double pricePaid )
+void     ConnectionToUser:: WriteProductToUserRecord( const string& productVendorUuid, double pricePaid )
 {
-   int userProductIndex = FindProductFilterName( productFilterName );
+   int userProductIndex = FindProductVendorUuid( productVendorUuid );
    //**  find the item in the user record and add it to the db if not **
-   if( userProductIndex == -1 )// the user doesn't have the record, but the rest of the DB does.
+   if( userProductIndex == DiplodocusLogin::ProductNotFound )// the user doesn't have the record, but the rest of the DB does.
    {
       userManager->SendErrorToClient( m_connectionId, PacketErrorReport::ErrorType_Cheat_ProductUnknown ); 
       return;
@@ -872,7 +943,7 @@ void     ConnectionToUser:: WriteProductToUserRecord( const string& productFilte
    if( result == true )
    {
       WriteProductToUserRecord( m_userUuid, productInfo.uuid, pricePaid, 1, m_userUuid, "new product reported by user login" );
-      AddToProductsOwned( productInfo.productId, productInfo.lookupName, productInfo.uuid, 1 );
+      AddToProductsOwned( productInfo.productId, productInfo.lookupName, productInfo.uuid, 1, productInfo.vendorUuid );
    }
    else
    {
@@ -897,7 +968,7 @@ void     ConnectionToUser:: WriteProductToUserRecord( const string& userUuid, co
    dbQuery->query += boost::lexical_cast< string >( numPurchased );
    dbQuery->query += ",'%s','%s',NULL, 0)";*/
    dbQuery->query = "INSERT INTO playdek.user_join_product (user_uuid, product_id, price_paid, num_purchased, admin_provided, admin_notes ) VALUES ( ";
-   dbQuery->query += "'%S', '%S', ";
+   dbQuery->query += "'%s', '%s', ";
    dbQuery->query += boost::lexical_cast< string >( pricePaid );
    dbQuery->query += ",";
    dbQuery->query += boost::lexical_cast< string >( numPurchased );
@@ -947,20 +1018,20 @@ void     ConnectionToUser:: StoreListOfUsersProductsFromDB( PacketDbQueryResult*
       UserOwnedProductSimpleTable::row       row = *it++;
 
       int productId =   boost::lexical_cast< int>   ( row[ TableUserOwnedProductSimple::Column_product_id ] );
-      string lookupName =                             row[ TableUserOwnedProductSimple::Column_product_name_string ];
+      string stringLookupName =                       row[ TableUserOwnedProductSimple::Column_product_name_string ];
       string productUuid =                            row[ TableUserOwnedProductSimple::Column_product_uuid ];
       float  quantity = boost::lexical_cast< float> ( row[ TableUserOwnedProductSimple::Column_quantity ] );
-      string filterName =                             row[ TableUserOwnedProductSimple::Column_filter_name ];
+      string productVendorUuid =                      row[ TableUserOwnedProductSimple::Column_filter_name ];
 
       if( m_gameProductId == productId )
       {
          didFindGameProduct = true;
       }
-      userWhoGetsProducts->AddToProductsOwned( productId, lookupName, productUuid, quantity );
+      userWhoGetsProducts->AddToProductsOwned( productId, stringLookupName, productUuid, quantity, productVendorUuid );
          
       if( loadedConnection != NULL )
       {
-         loadedConnection->AddToProductsOwned( productId, lookupName, productUuid, quantity );
+         loadedConnection->AddToProductsOwned( productId, stringLookupName, productUuid, quantity, productVendorUuid );
       }
    }
 
@@ -1050,7 +1121,7 @@ bool     ConnectionToUser:: HandleCheat_RemoveAll( const string& command )
 bool     ConnectionToUser:: HandleCheat_AddProduct( const string& productName )
 {
    int productIndex = userManager->FindProductByName( productName );
-   if( productIndex == -1 )
+   if( productIndex == DiplodocusLogin::ProductNotFound )
    {
       userManager->SendErrorToClient( m_connectionId, PacketErrorReport::ErrorType_Cheat_ProductUnknown );
       return false;
@@ -1062,11 +1133,11 @@ bool     ConnectionToUser:: HandleCheat_AddProduct( const string& productName )
    {
       //WriteProductToUserRecord( userUuid, product.uuid, product.price );
       WriteProductToUserRecord( m_userUuid, productInfo.uuid, 0.0, 1, m_userUuid, "added by cheat" );
-      AddToProductsOwned( productInfo.productId, productInfo.lookupName, productInfo.uuid, 1 );
+      AddToProductsOwned( productInfo.productId, productInfo.lookupName, productInfo.uuid, 1, productInfo.vendorUuid );
       ConnectionToUser* loadedConnection = userManager->GetLoadedUserConnectionByUuid( m_userUuid );
       if( loadedConnection )
       {
-         loadedConnection->AddToProductsOwned( productInfo.productId, productInfo.lookupName, productInfo.uuid, 1 );
+         loadedConnection->AddToProductsOwned( productInfo.productId, productInfo.lookupName, productInfo.uuid, 1, productInfo.vendorUuid );
          loadedConnection->SendListOfProductsToClientAndAsset( m_connectionId );
       }
    }
@@ -1163,12 +1234,12 @@ void     ConnectionToUser:: PackOtherUserProfileRequestAndSendToClient( U32 m_co
 void     ConnectionToUser:: ClearAllProductsOwned()
 {
    productsOwned.clear();
-   productFilterNames.clear();
+   productVendorUuids.clear();
 }
 
 //-----------------------------------------------------------------
 
-void     ConnectionToUser:: AddToProductsOwned( int productDbId, const string& lookupName, const string& productUuid, float quantity )
+void     ConnectionToUser:: AddToProductsOwned( int productDbId, const string& lookupName, const string& productUuid, float quantity, const string& vendorUuid  )
 {
 
    map< U32, ProductBrief >::iterator it = productsOwned.find( productDbId );
@@ -1180,14 +1251,14 @@ void     ConnectionToUser:: AddToProductsOwned( int productDbId, const string& l
    {
       ProductBrief brief;
       brief.productDbId = productDbId;
-      brief.filterName = userManager->GetStringLookup()->GetString( lookupName, m_languageId );
+      brief.localizedName = userManager->GetStringLookup()->GetString( lookupName, m_languageId );
 
-
+      brief.vendorUuid = vendorUuid;
       brief.uuid = productUuid;
       brief.quantity = quantity;
       productsOwned.insert( pair< U32, ProductBrief > ( productDbId, brief ) );
 
-      AddProductFilterName( lookupName );
+      AddProductVendorUuid( vendorUuid );
    }
 }
 

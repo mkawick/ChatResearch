@@ -173,7 +173,7 @@ bool  PurchaseEntry::SerializeOut( U8* data, int& bufferOffset ) const
 bool  ProductBriefPacketed::SerializeIn( const U8* data, int& bufferOffset )
 {
    Serialize::In( data, bufferOffset, uuid );
-   Serialize::In( data, bufferOffset, filterName );
+   Serialize::In( data, bufferOffset, vendorUuid );
    Serialize::In( data, bufferOffset, quantity );
 
    return true;
@@ -182,7 +182,7 @@ bool  ProductBriefPacketed::SerializeIn( const U8* data, int& bufferOffset )
 bool  ProductBriefPacketed::SerializeOut( U8* data, int& bufferOffset ) const
 {
    Serialize::Out( data, bufferOffset, uuid );
-   Serialize::Out( data, bufferOffset, filterName );
+   Serialize::Out( data, bufferOffset, vendorUuid );
    Serialize::Out( data, bufferOffset, quantity );
 
    return true;

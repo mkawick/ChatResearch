@@ -930,17 +930,20 @@ bool        DiplodocusLogin:: CreateUserAccount( U32 connectionId, const string&
 
 int         DiplodocusLogin:: FindProductByName( const string& name )
 {
+   std::string lowercase_productUUID = name; 
+   std::transform( lowercase_productUUID.begin(), lowercase_productUUID.end(), lowercase_productUUID.begin(), ::tolower );
+
    ProductList::iterator it = m_productList.begin();
    while( it != m_productList.end() )
    {
-      if( it->filterName == name )   // NOTE: these names may vary
+      if( it->vendorUuid == name )   // NOTE: these names may vary
       {
-	     int index = static_cast< int >( it - m_productList.begin() );
+	      int index = static_cast< int >( it - m_productList.begin() );
          return index;
       }
       it++;
    }
-   return -1;
+   return DiplodocusLogin::ProductNotFound;
 }
 
 
@@ -973,6 +976,25 @@ bool        DiplodocusLogin:: FindProductByUuid( const string& uuid, ProductInfo
    }
 
    return false;
+}
+
+int        DiplodocusLogin:: FindProductByVendorUuid( const string& vendorUuid )
+{
+   std::string lowercase_productUUID = vendorUuid; 
+   std::transform( lowercase_productUUID.begin(), lowercase_productUUID.end(), lowercase_productUUID.begin(), ::tolower );
+
+   vector< ProductInfo >::iterator it = m_productList.begin();
+   while( it != m_productList.end() )
+   {
+      if( it->vendorUuid == lowercase_productUUID )
+      {
+         int index = static_cast< int >( it - m_productList.begin() );
+         return index;
+      }
+      it++;
+   }
+
+   return DiplodocusLogin::ProductNotFound;
 }
 
 bool        DiplodocusLogin:: GetProductByIndex( int index, ProductInfo& returnPi )
@@ -1116,7 +1138,7 @@ bool     DiplodocusLogin:: HandleRequestListOfProducts( U32 connectionId, Packet
       const ProductInfo& pi = *it ++;
       ProductBriefPacketed brief;
       brief.uuid = pi.uuid;
-      brief.filterName = pi.filterName;
+      brief.vendorUuid = pi.vendorUuid;
       brief.quantity = pi.quantity;
       response->products.push_back( brief );
    }
@@ -1190,9 +1212,11 @@ bool   DiplodocusLogin:: HandleCheats( U32 connectionId, const PacketCheat* chea
 
 //---------------------------------------------------------------
 
-bool     DiplodocusLogin:: UpdateProductFilterName( int index, const string& newFilterName )
+bool     DiplodocusLogin:: UpdateProductFilterName( int index, string newVendorUuid )
 {
-   m_productList[ index ].filterName = newFilterName;
+   std::transform( newVendorUuid.begin(), newVendorUuid.end(), newVendorUuid.begin(), ::tolower );
+
+   m_productList[ index ].vendorUuid = newVendorUuid;
 
    PacketDbQuery* dbQuery = new PacketDbQuery;
    dbQuery->id =              0 ;
@@ -1200,7 +1224,7 @@ bool     DiplodocusLogin:: UpdateProductFilterName( int index, const string& new
    dbQuery->isFireAndForget = true;// no result is needed
 
    string queryString = "UPDATE product SET filter_name='%s' WHERE uuid='%s'";
-   dbQuery->escapedStrings.insert( newFilterName );
+   dbQuery->escapedStrings.insert( newVendorUuid );
    dbQuery->escapedStrings.insert( m_productList[ index ].uuid );
    dbQuery->query =           queryString;
 
@@ -1911,15 +1935,20 @@ void     DiplodocusLogin:: StoreAllProducts( const PacketDbQueryResult* dbResult
       productDefn.uuid =                 row[ TableProduct::Column_uuid ];
       productDefn.name =                 row[ TableProduct::Column_name ];
       int id = boost::lexical_cast< int >( row[ TableProduct::Column_id ] );
-      productDefn.filterName =           row[ TableProduct::Column_filter_name ];
+      productDefn.vendorUuid =           row[ TableProduct::Column_vendor_uuid ];
 
       string productId = row[ TableProduct::Column_product_id ];
       if( productId == "NULL" || productId.size() == 0 || productId == "0" ||
-         productDefn.filterName.size() == 0 )
+         productDefn.vendorUuid.size() == 0 )
       {
-         cout << "Invalid product: " << id << ", name='" << productDefn.name << "', uuid='" << productDefn.uuid << "', filter='" << productDefn.filterName << "'" << endl;
+         cout << "Invalid product: " << id << ", name='" << productDefn.name << "', uuid='" << productDefn.uuid << "', filter='" << productDefn.vendorUuid << "'" << endl;
          continue;// invalid product
       }
+
+      std::string lowercase_productUUID = productDefn.vendorUuid; 
+      std::transform( lowercase_productUUID.begin(), lowercase_productUUID.end(), lowercase_productUUID.begin(), ::tolower );
+      productDefn.vendorUuid = lowercase_productUUID;
+
       productDefn.productId  = boost::lexical_cast< int >( productId );
       
       
@@ -1946,7 +1975,7 @@ void     DiplodocusLogin:: StoreSingleProduct( const PacketDbQueryResult* dbResu
 {
    ProductTable            enigma( dbResult->bucket );
 
-   string filterName;
+   string vendorUuid;
    string filterUuid;
    ProductTable::row row = *enigma.begin();
    //if( it != enigma.end() )
@@ -1955,7 +1984,11 @@ void     DiplodocusLogin:: StoreSingleProduct( const PacketDbQueryResult* dbResu
       productDefn.productId  = boost::lexical_cast< int >( row[ TableProduct::Column_product_id ] );
       productDefn.uuid =                 row[ TableProduct::Column_uuid ];
       productDefn.name =                 row[ TableProduct::Column_name ];
-      productDefn.filterName =           row[ TableProduct::Column_filter_name ];
+      productDefn.vendorUuid =           row[ TableProduct::Column_vendor_uuid ];
+      std::string lowercase_productUUID = productDefn.vendorUuid; 
+      std::transform( lowercase_productUUID.begin(), lowercase_productUUID.end(), lowercase_productUUID.begin(), ::tolower );
+      productDefn.vendorUuid = lowercase_productUUID;
+
       productDefn.Begindate =            row[ TableProduct::Column_begin_date ];
       productDefn.lookupName =           row[ TableProduct::Column_name_string ];
 
@@ -1964,7 +1997,7 @@ void     DiplodocusLogin:: StoreSingleProduct( const PacketDbQueryResult* dbResu
          temp = "0";
       productDefn.productType  = boost::lexical_cast< int >( temp );
       
-      filterName = productDefn.filterName;
+      vendorUuid = productDefn.vendorUuid;
       filterUuid = productDefn.uuid;
 
       m_productList.push_back( productDefn );
@@ -1979,7 +2012,7 @@ void     DiplodocusLogin:: StoreSingleProduct( const PacketDbQueryResult* dbResu
       vector< ProductInfo >::iterator productIt = userProducts.begin();
       while( productIt != userProducts.end() )
       {
-         if( productIt->filterName == filterName )
+         if( productIt->vendorUuid == vendorUuid )
          {
             double price = productIt->price;
             userIt->second.WriteProductToUserRecord( filterUuid, price );
@@ -2036,6 +2069,8 @@ void     DiplodocusLogin:: RequestListOfProductsFromClient( U32 connectionId )
 
 void     DiplodocusLogin:: AddNewProductToDb( const PurchaseEntry& product )
 {
+   std::string lowercase_productUuidname = product.productUuid; 
+   std::transform( lowercase_productUuidname.begin(), lowercase_productUuidname.end(), lowercase_productUuidname.begin(), ::tolower );
    
    PacketDbQuery* dbQuery = new PacketDbQuery;
    dbQuery->id =           0;
@@ -2045,13 +2080,10 @@ void     DiplodocusLogin:: AddNewProductToDb( const PurchaseEntry& product )
    dbQuery->isFireAndForget = true;
 
    U32 hash = static_cast<U32>( GenerateUniqueHash( product.name ) );
-   string newUuid = GenerateUUID( hash );
-
-   std::string lowercase_username = product.name; 
-   std::transform( lowercase_username.begin(), lowercase_username.end(), lowercase_username.begin(), ::tolower );
+   string newUuid = GenerateUUID( hash );   
 
    cout << "New product entry: " << endl;
-   cout << " name: " << lowercase_username << endl;
+   cout << " name: " << product.name << endl;
    cout << " UUID: " << newUuid << endl;
 
    dbQuery->query = "INSERT INTO product VALUES( DEFAULT, 0, '";// new products haven an id of 0
@@ -2059,7 +2091,7 @@ void     DiplodocusLogin:: AddNewProductToDb( const PurchaseEntry& product )
    dbQuery->query += "', '%s', '%s', UTC_TIMESTAMP(), 0, DEFAULT, DEFAULT, DEFAULT, DEFAULT)";
 
    dbQuery->escapedStrings.insert( product.name );
-   dbQuery->escapedStrings.insert( product.productUuid );
+   dbQuery->escapedStrings.insert( lowercase_productUuidname );
 
    AddQueryToOutput( dbQuery );
 
@@ -2072,8 +2104,8 @@ void     DiplodocusLogin:: AddNewProductToDb( const PurchaseEntry& product )
    dbQuery->meta =         product.name;
    dbQuery->serverLookup = 0;
 
-   dbQuery->query = "SELECT * FROM product WHERE filter_name = '%s'";
-   dbQuery->escapedStrings.insert( product.name );
+   dbQuery->query = "SELECT * FROM product WHERE uuid = '%s'";
+   dbQuery->escapedStrings.insert( newUuid );
 
    AddQueryToOutput( dbQuery );
 }
@@ -2087,13 +2119,13 @@ void     DiplodocusLogin:: SendListOfUserProductsToAssetServer( U32 connectionId
    {
       PacketListOfUserProductsS2S* packet = new PacketListOfUserProductsS2S;
       packet->uuid = connection->m_userUuid;
-      vector< string >::iterator it =  connection->productFilterNames.begin();
-      while( it != connection->productFilterNames.end() )
+      vector< string >::iterator it =  connection->productVendorUuids.begin();
+      while( it != connection->productVendorUuids.end() )
       {
          ProductInfo productDefn;
          if( FindProductByLookupName( *it++, productDefn ) == true )
          {
-            packet->products.insert( productDefn.filterName );
+            packet->products.insert( productDefn.vendorUuid );
          }
       }
 

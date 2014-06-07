@@ -1176,7 +1176,7 @@ bool  ClientNetworkWrapper::GetAvailableProduct( int index, ProductBriefPacketed
    if( index < 0 || index >= m_products.size() )
    {
       product.quantity = -1;
-      product.filterName.clear();
+      product.vendorUuid.clear();
       return false;
    }
 

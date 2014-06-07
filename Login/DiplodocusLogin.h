@@ -93,6 +93,11 @@ public:
       ProductType_ticket,
       ProductType_money
    };
+   enum 
+   {
+      ProductNotFound = -1
+   };
+
 public: 
    typedef Diplodocus< KhaanLogin > ChainedType;
 
@@ -119,6 +124,7 @@ public:
 
    ConnectionToUser* GetLoadedUserConnectionByUuid(const string & uuid );
    bool           FindProductByUuid( const string& uuid, ProductInfo& returnPi  );
+   int            FindProductByVendorUuid( const string& vendorUuid );
    bool           GetProductByIndex( int index, ProductInfo& returnPi );
    bool           GetProductByProductId( int productId, ProductInfo& returnPi );
 
@@ -182,7 +188,7 @@ private:
    bool     HandleCheats( U32 connectionId, const PacketCheat* cheat );
    
    void     StoreListOfUsersProductsFromDB( U32 connectionId, PacketDbQueryResult* dbResult );
-   bool     UpdateProductFilterName( int index, const string& newFilterName );
+   bool     UpdateProductFilterName( int index, string newFilterName );
    void     RequestListOfProductsFromClient( U32 connectionId );
    void     SendListOfPurchasesToUser( U32 connectionId, PacketDbQueryResult* dbResult );
 

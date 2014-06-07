@@ -13,7 +13,7 @@ struct ProductInfo
    int      productId;
    string   uuid;
    string   name;
-   string   filterName;
+   string   vendorUuid;
    string   Begindate;
    string   lookupName;
    int      productType;
@@ -30,7 +30,8 @@ struct ProductBrief
    ProductBrief() : productDbId( 0 ), quantity( 0 ) {}
    int      productDbId;
    string   uuid;
-   string   filterName;
+   string   vendorUuid;
+   string   localizedName;
    float    quantity;
 };
 

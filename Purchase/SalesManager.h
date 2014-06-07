@@ -101,7 +101,7 @@ public:
    int      productId;
    string   uuid;
    string   name;
-   string   filterName;
+   string   vendorUuid;
    string   firstAvail;
    int      productType;
    string   nameStringLookup;

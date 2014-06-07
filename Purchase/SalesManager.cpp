@@ -463,10 +463,10 @@ Product&    Product::operator = ( ProductTable::row  row )
    productId =          boost::lexical_cast< int > ( row[ TableProduct::Column_product_id ] );
    uuid =               row[ TableProduct::Column_uuid ];
    name =               row[ TableProduct::Column_name ];
-   filterName =         row[ TableProduct::Column_filter_name ];
+   vendorUuid =         row[ TableProduct::Column_vendor_uuid ];
    firstAvail =         row[ TableProduct::Column_begin_date ];
    productType =        boost::lexical_cast< int > ( row[ TableProduct::Column_product_type ] );
-   nameStringLookup =       row[ TableProduct::Column_name_string ];
+   nameStringLookup =   row[ TableProduct::Column_name_string ];
    iconLookup =         row[ TableProduct::Column_icon_lookup ];
 
    return *this;

@@ -445,7 +445,7 @@ public:
       Column_product_id,
       Column_uuid,
       Column_name,
-      Column_filter_name,
+      Column_vendor_uuid,
       Column_begin_date,
       Column_product_type,
       Column_notes,

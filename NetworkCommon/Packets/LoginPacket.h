@@ -183,7 +183,7 @@ struct ProductBriefPacketed
    bool  SerializeOut( U8* data, int& bufferOffset ) const;
 
    string   uuid;
-   string   filterName;
+   string   vendorUuid;
    float    quantity;
 };
 
