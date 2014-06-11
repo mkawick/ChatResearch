@@ -614,17 +614,9 @@ bool     ConnectionToUser:: RequestListOfPurchases( const string& user_uuid )
 
 bool     ConnectionToUser:: HandleRequestForListOfPurchases( const PacketListOfUserPurchasesRequest* purchase )
 {
-   //FindUser( "", purchase->userUuid, "" );
-  /* UserConnectionMapIterator  it = FindUser( "", purchase->userUuid, "" );
-   if( it == adminUserData.end() )
-   {
-      userManager->SendErrorToClient( m_connectionId, PacketErrorReport::ErrorType_Cheat_BadUserLookup_TryLoadingUserFirst );
-         
-      return false;
-   }*/
-
    if( purchase->userUuid == m_userUuid )
    {
+      cout << "HandleRequestForListOfPurchases: SendListOfProductsToClientAndAsset" << endl;
       SendListOfProductsToClientAndAsset( m_connectionId );
    }
 
@@ -646,6 +638,8 @@ void     ConnectionToUser:: SendListOfProductsToClientAndAsset( U32 m_connection
 
 void     ConnectionToUser:: SendListOfOwnedProductsToClient( U32 m_connectionId )
 {
+   cout << "Sending user his/her list of products" << endl;
+
    PacketListOfUserAggregatePurchases* purchases = new PacketListOfUserAggregatePurchases;
 
    map< U32, ProductBrief >::iterator it = productsOwned.begin();
@@ -658,23 +652,45 @@ void     ConnectionToUser:: SendListOfOwnedProductsToClient( U32 m_connectionId 
          continue;
 
       PurchaseEntry pe;
-      pe.name = pb.vendorUuid;
+      pe.name = pb.localizedName;
       pe.quantity = pb.quantity;
-      if( pb.productDbId )
+      if( pb.productDbId || pe.name.size() == 0 )// fix up potentially bad data
       {
          ProductInfo pi;
          userManager->GetProductByProductId( pb.productDbId, pi );
+         if( pe.name.size() == 0 )
+         {
+            //userManager->GetProductByProductId( pb.productDbId, pi );
+            pe.name = userManager->GetStringLookup()->GetString( pi.lookupName, m_languageId );
+         }
          if( pi.parentId != 0 )
          {
             userManager->GetProductByProductId( pi.parentId, pi );// reuse this local variable
             pe.parentUuid = pi.uuid;
          }
+         
+      }
+      if( pe.name == "bunk01" ||
+         pe.name == "bunk-renamed" )
+      {
+         cout << "Bunk01 found" << endl;
       }
       
       pe.productUuid = pb.uuid;
 
       purchases->purchases.push_back( pe );
    }
+
+   int num = purchases->purchases.size();
+   cout << "SendListOfOwnedProductsToClient:: list of products: num=" << num << endl;
+   for( int i=0; i< num; i++ )
+   {
+      const PurchaseEntry& pe = purchases->purchases[i];
+      
+      cout << i << ") Uuid:    " << pe.productUuid << endl;
+      cout << "   name:        " << pe.name << endl;
+   }
+   cout << "endlist" << endl << endl;
 
    userManager->SendPacketToGateway( purchases, m_connectionId );
 }
@@ -720,7 +736,8 @@ bool     ConnectionToUser:: AddPurchase( const PacketAddPurchaseEntry* purchase 
          float numToGive = static_cast<float>( purchase->quantity );
          WriteProductToUserRecord( m_userUuid, productUuid, price, numToGive, m_userUuid, "add purchase entry to self by admin" );
          AddToProductsOwned( productInfo.productId, productInfo.lookupName, productUuid, numToGive, productInfo.vendorUuid );
-         
+        
+         cout << "AddPurchase: SendListOfProductsToClientAndAsset" << endl;
          SendListOfProductsToClientAndAsset( m_connectionId );
          return true;
       }
@@ -766,12 +783,15 @@ bool     ConnectionToUser:: AddPurchase( const PacketAddPurchaseEntry* purchase 
 bool     ConnectionToUser:: StoreUserPurchases( const PacketListOfUserAggregatePurchases* deviceReportedPurchases )// only works for self
 {
    int numItems = deviceReportedPurchases->purchases.size();
-   if( numItems )
+   cout << " ************************ " << endl;
+   cout << " user purchases reported for user: " << m_userName << " : " << m_userUuid << endl;
+   if( numItems == 0 )
    {
-      cout << " ************************ " << endl;
-      cout << " user purchases reported: " << endl;
-      
+      cout << "   None" << endl;
    }
+
+   bool resendUserPurchaseList = false;
+
    for( int i=0; i< numItems; i++ )
    {
       const PurchaseEntry& purchaseEntry = deviceReportedPurchases->purchases[i];
@@ -799,38 +819,23 @@ bool     ConnectionToUser:: StoreUserPurchases( const PacketListOfUserAggregateP
             AddItemToProductTable( purchaseEntry );
          }
 
-         StoreOffProductInUserRecord ( originalProductNameIndex, purchaseEntry.productUuid, purchaseEntry.quantity );
-        /* int userProductIndex = DiplodocusLogin::ProductNotFound;
-         if( purchaseEntry.productUuid.size() )
+         if( StoreOffProductInUserRecord ( originalProductNameIndex, purchaseEntry.productUuid, purchaseEntry.quantity ) )
          {
-            // the order of the next two lines matters a lot.
-            userProductIndex = FindProductVendorUuid( purchaseEntry.productUuid );
-            AddProductVendorUuid( purchaseEntry.productUuid );// we're gonna save the name, regardless. The device told us about the purchase.
+            resendUserPurchaseList = true;
          }
-
-         //**  find the item in the user record and add it to the db if not **
-         if( originalProductNameIndex != DiplodocusLogin::ProductNotFound )// the user doesn't have the record, but the rest of the DB does.
-         {
-            ProductInfo productInfo;
-            bool result = userManager->GetProductByIndex( originalProductNameIndex, productInfo );
-            if( result == true )
-            {
-               const string& productUuid = productInfo.uuid;
-               WriteProductToUserRecord( m_userUuid, productUuid, 1, purchaseEntry.quantity, "", "" );
-               AddToProductsOwned( productInfo.productId, productInfo.lookupName, productUuid, purchaseEntry.quantity, productInfo.vendorUuid );
-            }
-         }*/
-         
       }
       cout << "  " << i << ":   title: " << purchaseEntry.name << endl;
       
    }
-   if( numItems )
-   {
-      cout << " ************************ " << endl;
-   }
 
-   SendListOfProductsToClientAndAsset( m_connectionId );
+   cout << " ************************ " << endl;
+
+
+   if( resendUserPurchaseList )
+   {
+      cout << "StoreUserPurchases: SendListOfProductsToClientAndAsset" << endl;
+      SendListOfProductsToClientAndAsset( m_connectionId );
+   }
 
    return true;
 }
@@ -863,22 +868,25 @@ bool     ConnectionToUser:: CanProductBePurchasedMultipleTimes( const ProductInf
 
 //---------------------------------------------------------------
 
-void     ConnectionToUser:: StoreOffProductInUserRecord ( int userManagerIndex, 
+bool     ConnectionToUser:: StoreOffProductInUserRecord ( int userManagerIndex, 
                                                          const string& productUuid, 
                                                          float numPurchased)
 {
-   if( numPurchased == 0 )
-      return;
+   if( numPurchased <= 0 )
+   {
+      cout << "Quantity listed as too low... must be at least 1. Rejected entry: " << productUuid << endl;
+      return false;
+   }
 
    int userProductIndex = DiplodocusLogin::ProductNotFound;
    if( productUuid.size() )
    {
       // the order of the next two lines matters a lot.
       userProductIndex = FindProductVendorUuid( productUuid ); 
-      if( userProductIndex == DiplodocusLogin::ProductNotFound )
+    /*  if( userProductIndex == DiplodocusLogin::ProductNotFound )
       {
          AddProductVendorUuid( productUuid );// we're gonna save the name, regardless.
-      }
+      }*/
    }   
 
    //**  find the item in the user record and add it to the db if not **
@@ -895,9 +903,11 @@ void     ConnectionToUser:: StoreOffProductInUserRecord ( int userManagerIndex,
             const string& productUuid = productInfo.uuid;
             WriteProductToUserRecord( m_userUuid, productUuid, 1.0, numPurchased, "", "" );
             AddToProductsOwned( productInfo.productId, productInfo.lookupName, productUuid, numPurchased, productInfo.vendorUuid );
+            return true;
          }
       }
    }
+   return false;
 }
 
 //---------------------------------------------------------------
@@ -990,6 +1000,7 @@ void     ConnectionToUser:: WriteProductToUserRecord( const string& userUuid, co
 
 void     ConnectionToUser:: StoreListOfUsersProductsFromDB( PacketDbQueryResult* dbResult, bool shouldAddLoggedInProduct )
 {
+   cout << "StoreListOfUsersProductsFromDB" << endl;
    bool  didFindGameProduct = false;
 
    ConnectionToUser* userWhoGetsProducts = this;
@@ -1013,6 +1024,9 @@ void     ConnectionToUser:: StoreListOfUsersProductsFromDB( PacketDbQueryResult*
    int   numProducts = dbResult->GetBucket().size();
    numProducts = numProducts;
 
+   int index = 0;
+
+   cout << "** products from DB ** " << endl;
    while( it != enigma.end() )
    {
       UserOwnedProductSimpleTable::row       row = *it++;
@@ -1023,6 +1037,9 @@ void     ConnectionToUser:: StoreListOfUsersProductsFromDB( PacketDbQueryResult*
       float  quantity = boost::lexical_cast< float> ( row[ TableUserOwnedProductSimple::Column_quantity ] );
       string productVendorUuid =                      row[ TableUserOwnedProductSimple::Column_filter_name ];
 
+      cout << index << ") vendorUuid:    " << productVendorUuid << endl;
+      cout << "   productUuid:        " << productUuid << endl;
+      cout << "   string lookup name: " << stringLookupName << endl;
       if( m_gameProductId == productId )
       {
          didFindGameProduct = true;
@@ -1033,13 +1050,16 @@ void     ConnectionToUser:: StoreListOfUsersProductsFromDB( PacketDbQueryResult*
       {
          loadedConnection->AddToProductsOwned( productId, stringLookupName, productUuid, quantity, productVendorUuid );
       }
+      index++;
    }
+   cout << "** end products from DB ** " << endl;
 
    if( didFindGameProduct == false && shouldAddLoggedInProduct == true && loadedForSelf == true )
    {
       AddCurrentlyLoggedInProductToUserPurchases();
    }
 
+   cout << "StoreListOfUsersProductsFromDB: SendListOfProductsToClientAndAsset" << endl;
    userWhoGetsProducts->SendListOfProductsToClientAndAsset( m_connectionId );
 
    if( loadedForSelf == false )
@@ -1138,6 +1158,7 @@ bool     ConnectionToUser:: HandleCheat_AddProduct( const string& productName )
       if( loadedConnection )
       {
          loadedConnection->AddToProductsOwned( productInfo.productId, productInfo.lookupName, productInfo.uuid, 1, productInfo.vendorUuid );
+         cout << "HandleCheat_AddProduct: SendListOfProductsToClientAndAsset" << endl;
          loadedConnection->SendListOfProductsToClientAndAsset( m_connectionId );
       }
    }
@@ -1233,19 +1254,20 @@ void     ConnectionToUser:: PackOtherUserProfileRequestAndSendToClient( U32 m_co
 
 void     ConnectionToUser:: ClearAllProductsOwned()
 {
+   cout << "ClearAllProductsOwned for user " << m_userName << ":" << m_userUuid << endl;
    productsOwned.clear();
    productVendorUuids.clear();
 }
 
 //-----------------------------------------------------------------
 
-void     ConnectionToUser:: AddToProductsOwned( int productDbId, const string& lookupName, const string& productUuid, float quantity, const string& vendorUuid  )
+bool     ConnectionToUser:: AddToProductsOwned( int productDbId, const string& lookupName, const string& productUuid, float quantity, const string& vendorUuid  )
 {
-
    map< U32, ProductBrief >::iterator it = productsOwned.find( productDbId );
    if( it != productsOwned.end() )
    {
       it->second.quantity += quantity;
+      return false;
    }
    else
    {
@@ -1259,6 +1281,7 @@ void     ConnectionToUser:: AddToProductsOwned( int productDbId, const string& l
       productsOwned.insert( pair< U32, ProductBrief > ( productDbId, brief ) );
 
       AddProductVendorUuid( vendorUuid );
+      return true;
    }
 }
 

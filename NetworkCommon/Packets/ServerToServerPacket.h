@@ -54,6 +54,7 @@ public:
 
    string      serverName;
    string      serverAddress;
+   string      externalIpAddress;
    U32         serverId;
    U16         serverPort;
    U32         gameInstanceId;// used to filter game packets

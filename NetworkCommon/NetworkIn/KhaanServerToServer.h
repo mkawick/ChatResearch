@@ -25,6 +25,7 @@ public:
 
    string   GetServerName() const { return m_serverName; }
    string   GetServerAddress() const { return m_serverAddress; }
+   const string& GetExternalIpAddress() const { return m_externalIpAddress; }
    U32      GetServerId() const { return m_serverId; }
    U16      GetServerPort() const { return m_serverPort; }
    bool     IsGameServer() const { return m_isGameServer; }
@@ -43,6 +44,7 @@ protected:
 
    string      m_serverName;
    string      m_serverAddress;
+   string      m_externalIpAddress;
    U32         m_serverId;
    U16         m_serverPort;
    bool        m_isGameServer;

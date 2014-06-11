@@ -44,6 +44,8 @@ void  PrintInstructions()
    cout << "    listen.address    - what is the ipaddress that this app should be using;" << endl;
    cout << "                        usually localhost or null" << endl;
    cout << "    listen.port       - listen on which port" << endl;
+   cout << "    external.ip.address - the public facing ipaddress. Leave blank for" << endl;
+   cout << "                          internal-only networks" << endl;
 
    cout << " ------ all of the following parameters are optional. --------" << endl;
    
@@ -91,6 +93,7 @@ int main( int argc, const char* argv[] )
 
    string loadBalancerPortString = "9502";
    string loadBalancerAddressString = "localhost";
+   string externalIpAddressString = "localhost";
 
    string listenPortString = "9500";
    string listenAddressString = "localhost";
@@ -137,6 +140,8 @@ int main( int argc, const char* argv[] )
 
    parser.FindValue( "balancer.port", loadBalancerPortString );
    parser.FindValue( "balancer.address", loadBalancerAddressString );
+
+   parser.FindValue( "external.ip.address", externalIpAddressString );
 
    parser.FindValue( "listen.port", listenPortString );
    parser.FindValue( "listen.address", listenAddressString );
@@ -250,9 +255,14 @@ int main( int argc, const char* argv[] )
    cout << serverName << endl;
    cout << "Server stack version " << ServerStackVersion << endl;
    cout << "ServerId " << serverId << endl;
+   cout << "External ip address: " << externalIpAddressString << endl;
    cout << "------------------------------------------------------------------" << endl << endl << endl;
 
    DiplodocusGateway* gatewayServer = new DiplodocusGateway( serverName, serverId );
+   if( externalIpAddressString.size() )
+   {
+      gatewayServer->SetExternalIpAddress( externalIpAddressString );
+   }
    gatewayServer->SetGatewayType( PacketServerIdentifier::GatewayType_Normal );
    if( assetOnly == true || assetBlock == false )
    {

@@ -35,7 +35,7 @@ DiplodocusAsset :: ~DiplodocusAsset()
 void     DiplodocusAsset::ServerWasIdentified( IChainedInterface* khaan )
 {
    BasePacket* packet = NULL;
-   PackageForServerIdentification( m_serverName, m_localIpAddress, m_serverId, m_listeningPort, m_gameProductId, m_isGame, m_isControllerApp, true, m_gatewayType, &packet );
+   PackageForServerIdentification( m_serverName, m_localIpAddress, m_externalIpAddress, m_serverId, m_listeningPort, m_gameProductId, m_isGame, m_isControllerApp, true, m_gatewayType, &packet );
   /* khaan->AddOutputChainData( packet, 0 );
    m_serversNeedingUpdate.push_back( static_cast<InputChainType*>( khaan )->GetServerId() );*/
    ChainedType* localKhaan = static_cast< ChainedType* >( khaan );

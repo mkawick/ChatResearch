@@ -36,6 +36,7 @@ bool  PacketServerIdentifier::SerializeIn( const U8* data, int& bufferOffset )
    BasePacket::SerializeIn( data, bufferOffset );
    Serialize::In( data, bufferOffset, serverName );
    Serialize::In( data, bufferOffset, serverAddress );
+   Serialize::In( data, bufferOffset, externalIpAddress );
    Serialize::In( data, bufferOffset, serverId );
    Serialize::In( data, bufferOffset, serverPort );
    Serialize::In( data, bufferOffset, gameInstanceId );   
@@ -51,6 +52,7 @@ bool  PacketServerIdentifier::SerializeOut( U8* data, int& bufferOffset ) const
    BasePacket::SerializeOut( data, bufferOffset );
    Serialize::Out( data, bufferOffset, serverName );
    Serialize::Out( data, bufferOffset, serverAddress );
+   Serialize::Out( data, bufferOffset, externalIpAddress );
    Serialize::Out( data, bufferOffset, serverId );
    Serialize::Out( data, bufferOffset, serverPort );
    Serialize::Out( data, bufferOffset, gameInstanceId );
@@ -152,7 +154,7 @@ bool  PacketServerJobWrapper::SerializeOut( U8* data, int& bufferOffset ) const
 
 ///////////////////////////////////////////////////////////////
 
-bool  PackageForServerIdentification( const string& serverName, const string& ipAddress, U32 serverId, U16 serverPort, U8 gameProductId, bool isGameServer, bool isController, bool requiresWrapper, U8 gatewayType, BasePacket** packet )
+bool  PackageForServerIdentification( const string& serverName, const string& ipAddress, const string& externalIpAddress, U32 serverId, U16 serverPort, U8 gameProductId, bool isGameServer, bool isController, bool requiresWrapper, U8 gatewayType, BasePacket** packet )
 {
    PacketServerIdentifier* serverIdPacket = new PacketServerIdentifier;
    serverIdPacket->serverName = serverName;
@@ -163,6 +165,7 @@ bool  PackageForServerIdentification( const string& serverName, const string& ip
    serverIdPacket->isController = isController;
    serverIdPacket->gatewayType = gatewayType;
    serverIdPacket->gameProductId = gameProductId;
+   serverIdPacket->externalIpAddress = externalIpAddress;
 
    if( requiresWrapper )
    {

@@ -139,7 +139,7 @@ FruitadensServerToServer*     PrepS2SOutwardConnection( const string& ipaddress,
 
    remoteServer->AddInputChain( diplodocus );
 
-   remoteServer->NotifyEndpointOfIdentification( serverName, localAddress, serverId, localPort, gameProductId, false, false, true, (U8)34 );
+   remoteServer->NotifyEndpointOfIdentification( serverName, localAddress, serverId, localPort, gameProductId, false, false, true, (U8)34, "" );
    cout << "Remote server: " << ipaddress << ":" << port << endl;
    remoteServer->Connect( ipaddress.c_str(), port );
    remoteServer->Resume();

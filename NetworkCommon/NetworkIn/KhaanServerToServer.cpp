@@ -257,6 +257,7 @@ void  KhaanServerToServer :: SaveOffServerIdentification( const PacketServerIden
    m_isGameServer = packet->isGameServer;
    m_isController = packet->isController;
    m_gatewayType = packet->gatewayType;
+   m_externalIpAddress = packet->externalIpAddress;
    U8 gameProductId = packet->gameProductId;
 
    cout << "---------  Connected as S2S server to " << m_serverName << "  ------------------" << endl;
@@ -264,6 +265,10 @@ void  KhaanServerToServer :: SaveOffServerIdentification( const PacketServerIden
    cout << "    Time stamp: " << GetDateInUTC() << endl;
    cout << "    type " << static_cast<U32>( gameProductId ) << " -- server ID = " << m_serverId << endl;
    cout << "    isGame = " << boolalpha << m_isGameServer << ", isController : " << m_isController << noboolalpha << endl;
+   if( m_externalIpAddress.size() )
+   {
+      cout << "    has external ip address: " << m_externalIpAddress << endl;
+   }
    cout << "------------------------------------------------------" << endl;
 
    ChainLinkIteratorType itOutputs = m_listOfOutputs.begin();

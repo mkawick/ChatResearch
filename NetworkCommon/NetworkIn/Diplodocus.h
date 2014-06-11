@@ -78,6 +78,8 @@ public:
    bool           IsGameServer() const { return m_isGame; }
    void           SetGatewayType( U8 gateway_type ) { m_gatewayType = gateway_type; }
    U8             GetGatewayType() const { return m_gatewayType; }
+   void           SetExternalIpAddress( const string& ipAddr ) { m_externalIpAddress = ipAddr; }
+   string         GetExternalIpAddress() { return m_externalIpAddress; }
 
    const string&  GetServerName() const { return m_serverName; }
    U32            GetServerId() const { return m_serverId; }
@@ -151,6 +153,7 @@ protected:
    ServerType              m_serverType;// just used for logging and topology purposes.
    U32                     m_connectionIdGateway;
    string                  m_serverName; // just used for id
+   string                  m_externalIpAddress;
 
    time_t                  m_timeOfLastTitleUpdate;
    time_t                  m_uptime;

@@ -281,13 +281,46 @@ bool     DiplodocusLoadBalancer::AddInputChainData( BasePacket* packet, U32 conn
 
 //-----------------------------------------------------------------------------------------
 
+bool  IsOnSameNetwork( const string& myNetwork, const string& potentialMatch )
+{
+   std::size_t  found= myNetwork.find( '.' );
+   if (found == std::string::npos)
+   {
+      std::cout << "IsOnSameNetwork::Bad network IP Address: " << myNetwork << '\n';
+      return false;
+   }
+   found ++;// advance
+   found= myNetwork.find( '.', found );
+   if( found == std::string::npos )
+   {
+      std::cout << "IsOnSameNetwork::Bad network IP Address: " << myNetwork << '\n';
+      return false;
+   }
+
+   int compareValue = strncmp( myNetwork.c_str(), potentialMatch.c_str(), found );
+   if( compareValue == 0 )
+      return true;
+   return false;
+}
+
+//-----------------------------------------------------------------------------------------
+
 void     DiplodocusLoadBalancer::HandleRerouteRequest( U32 connectionId )
 {
    ConnectionMapIterator connIt = m_connectionMap.find( connectionId );
    if( connIt != m_connectionMap.end() )
    {
-      PacketRerouteRequestResponse* response = new PacketRerouteRequestResponse;
+      cout << "Telling user about the following connection destinations" << endl;
+      connIt->second->GetIPAddress();
       list< GatewayInfo >::iterator it = m_gatewayRoutes.begin();
+
+      bool useLocalAddress = true;
+      if( IsOnSameNetwork( it->address, inet_ntoa( connIt->second->GetIPAddress().sin_addr ) ) )
+         useLocalAddress = true;
+      else
+         useLocalAddress = false;
+
+      PacketRerouteRequestResponse* response = new PacketRerouteRequestResponse;
       //bool  hasFoundViableGateway = false;
 
       while( it != m_gatewayRoutes.end() )
@@ -295,8 +328,14 @@ void     DiplodocusLoadBalancer::HandleRerouteRequest( U32 connectionId )
          if( it->isConnected == true )
          {
             PacketRerouteRequestResponse::Address address;
-            address.address = it->address;
+            if( useLocalAddress )
+               address.address = it->address;
+            else
+               address.address = it->externalIpAddress;
+
             address.port = it->port;
+
+            cout << "addr( " << address.address << " ) : port( " << address.port << " )" << endl;
             
             if( it->type == GatewayInfo::Type_Normal )
             {
@@ -392,6 +431,8 @@ DiplodocusLoadBalancer::FindGateway( const string& ipAddress, U16 port, U32 serv
             return it;
          }
       }
+      if( it->externalIpAddress == ipAddress ) 
+         return it;
       it++;
    }
 
@@ -407,6 +448,7 @@ void     DiplodocusLoadBalancer::NewServerConnection( const PacketServerIdentifi
    {
       it->serverId = gatewayInfo->serverId;
       it->port = gatewayInfo->serverPort;
+      it->externalIpAddress = gatewayInfo->externalIpAddress;
       it->isVerified = true;
       it->isConnected = true;
       return;
@@ -416,6 +458,7 @@ void     DiplodocusLoadBalancer::NewServerConnection( const PacketServerIdentifi
    AddGatewayAddress( gatewayInfo->serverAddress, gatewayInfo->serverPort );
    it = FindGateway( gatewayInfo->serverAddress, gatewayInfo->serverPort );
    it->serverId = gatewayInfo->serverId;
+   it->externalIpAddress = gatewayInfo->externalIpAddress;
    it->port = gatewayInfo->serverPort;
    it->isVerified = true;
    it->isConnected = true;

@@ -543,7 +543,7 @@ FruitadensServer :: FruitadensServer( const char* name, bool processOnlyOneIncom
 
 //-----------------------------------------------------------------------------
 
-void     FruitadensServer :: NotifyEndpointOfIdentification( const string& serverName, const string& serverAddress, U32 serverId, U16 serverPort, U8 gameProductId, bool isGameServer, bool isController, bool requiresWrapper, U8 gatewayType )
+void     FruitadensServer :: NotifyEndpointOfIdentification( const string& serverName, const string& serverAddress, U32 serverId, U16 serverPort, U8 gameProductId, bool isGameServer, bool isController, bool requiresWrapper, U8 gatewayType, const string& externalIpAddress )
 {
    m_areLocalIdentifyingParamsSet = true;
    m_localServerName = serverName;
@@ -555,6 +555,7 @@ void     FruitadensServer :: NotifyEndpointOfIdentification( const string& serve
    m_localIsController = isController;
    m_localRequiresWrapper = requiresWrapper;
    m_gatewayType = gatewayType;
+   m_externalIpAddress = externalIpAddress;
 
    //PackageLocalServerIdentificationToSend();
 }
@@ -584,6 +585,7 @@ bool     FruitadensServer::PackageLocalServerIdentificationToSend()
    BasePacket* packet = NULL;
    PackageForServerIdentification( m_localServerName, 
                                    m_localIpAddress, 
+                                   m_externalIpAddress,
                                    m_localServerId, 
                                    m_localServerPort, 
                                    m_localGameProductId, 

@@ -474,4 +474,4 @@ public:
 ///////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////
 
-bool  PackageForServerIdentification( const string& serverName, const string& ipAddress, U32 serverId, U16 serverPort, U8 gameProductId, bool isGameServer, bool isController, bool requiresWrapper, U8 gatewayType, BasePacket** packet );
+bool  PackageForServerIdentification( const string& serverName, const string& ipAddress, const string& externalIpAddress, U32 serverId, U16 serverPort, U8 gameProductId, bool isGameServer, bool isController, bool requiresWrapper, U8 gatewayType, BasePacket** packet );

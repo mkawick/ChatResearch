@@ -78,7 +78,7 @@ struct ConnectionToUser
    bool     UpdateProfile( const PacketUpdateSelfProfile* updateProfileRequest );
    void     AddItemToProductTable( const PurchaseEntry& purchaseEntry );
    bool     HandleAdminRequestUserProfile( const PacketDbQueryResult* dbResult );
-   void     StoreOffProductInUserRecord ( int userManagerIndex, const string& productUuid, float numPurchased );
+   bool     StoreOffProductInUserRecord ( int userManagerIndex, const string& productUuid, float numPurchased );
 
    bool     LoginResult( const PacketDbQueryResult* dbResult );
 
@@ -170,7 +170,7 @@ protected:
    void     PackOtherUserProfileRequestAndSendToClient( U32 connectionId );
 
    void     ClearAllProductsOwned();
-   void     AddToProductsOwned( int productDbId, const string& productName, const string& productUuid, float quantity, const string& vendorUuid );
+   bool     AddToProductsOwned( int productDbId, const string& productName, const string& productUuid, float quantity, const string& vendorUuid );
    void     SendListOfProductsToClientAndAsset( U32 connectionId );
    void     SendListOfOwnedProductsToClient( U32 connectionId );
    void     TellContactServerToReloadUserProfile();

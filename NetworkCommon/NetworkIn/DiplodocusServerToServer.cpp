@@ -105,7 +105,7 @@ bool   DiplodocusServerToServer::AddInputChainData( BasePacket* packet, U32 conn
 void  DiplodocusServerToServer::ServerWasIdentified( IChainedInterface* khaan )
 {
    BasePacket* packet = NULL;
-   PackageForServerIdentification( m_serverName, m_localIpAddress, m_serverId, m_listeningPort, m_gameProductId, m_isGame, m_isControllerApp, true, m_gatewayType, &packet );
+   PackageForServerIdentification( m_serverName, m_localIpAddress, m_externalIpAddress, m_serverId, m_listeningPort, m_gameProductId, m_isGame, m_isControllerApp, true, m_gatewayType, &packet );
    ChainedType* localKhaan = static_cast< ChainedType* >( khaan );
    localKhaan->AddOutputChainData( packet, 0 );
    LockMutex();
@@ -125,6 +125,8 @@ void  DiplodocusServerToServer::ServerWasIdentified( IChainedInterface* khaan )
    idPacket->isGameServer =   ks2s->IsGameServer();
    idPacket->isController =   ks2s->IsController();
    idPacket->gatewayType   =  ks2s->GetGatewayType();
+   idPacket->externalIpAddress = ks2s->GetExternalIpAddress();
+
    CreateJob( ks2s, idPacket );
 }
 

@@ -768,7 +768,8 @@ return_type* PrepConnection( const string& remoteIpaddress, U16 remotePort, cons
 
    //bool isGame = localServer->IsGameServer();
    serverOut->NotifyEndpointOfIdentification( localServer->GetServerName(), localServer->GetIpAddress(), localServer->GetServerId(), localServer->GetPort(), 
-                                             gameProductId, localServer->IsGameServer(), localServer->IsControllerApp(), requiresS2SWrapper, localServer->GetGatewayType() );
+                                             gameProductId, localServer->IsGameServer(), localServer->IsControllerApp(), requiresS2SWrapper, 
+                                             localServer->GetGatewayType(), localServer->GetExternalIpAddress() );
    cout << "server (" << remoteServerName << "): " << remoteIpaddress << ":" << remotePort << endl;
    serverOut->Connect( remoteIpaddress.c_str(), remotePort );
    serverOut->Resume();

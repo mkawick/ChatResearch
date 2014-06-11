@@ -27,6 +27,7 @@ struct GatewayInfo
 
    U32      serverId;
    string   address;
+   string   externalIpAddress;
    U16      port;
    Type     type;
    int      currentLoad;
