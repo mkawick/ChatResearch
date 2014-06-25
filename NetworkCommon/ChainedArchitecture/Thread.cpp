@@ -10,8 +10,13 @@
 #include <memory.h>
 #include <iostream>
 
-#include "../Platform.h"
+#include "../ServerConstants.h"
 
+#if PLATFORM == PLATFORM_WINDOWS
+#pragma warning( disable:4996 )
+#endif
+
+#include "../Platform.h"
 #include "Thread.h"
 using namespace std;
 using namespace Threading;

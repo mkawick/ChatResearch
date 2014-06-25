@@ -98,10 +98,10 @@ public:
    bool  SerializeIn( const U8* data, int& bufferOffset );
    bool  SerializeOut( U8* data, int& bufferOffset ) const;
 
-   string   deviceName; 
-   string   deviceId;
-   string   assignedUuid;
-   U8       platformId;
+   string      deviceName; 
+   string      deviceId;
+   UuidString  assignedUuid;
+   U8          platformId;
 };
 
 ///////////////////////////////////////////////////////////////
@@ -114,7 +114,7 @@ public:
    bool  SerializeIn( const U8* data, int& bufferOffset );
    bool  SerializeOut( U8* data, int& bufferOffset ) const;
 
-   string   deviceUuid;
+   UuidString  deviceUuid;
 };
 
 ///////////////////////////////////////////////////////////////
@@ -127,7 +127,7 @@ public:
    bool  SerializeIn( const U8* data, int& bufferOffset );
    bool  SerializeOut( U8* data, int& bufferOffset ) const;
 
-   string   deviceUuid;
+   UuidString  deviceUuid;
    string   deviceName;
    bool     isEnabled;
    int      iconId;
@@ -144,7 +144,7 @@ public:
    bool  SerializeIn( const U8* data, int& bufferOffset );
    bool  SerializeOut( U8* data, int& bufferOffset ) const;
 
-   string         userUuid;
+   UuidString  userUuid;
    U32            userId;
    int            gameType;
    unsigned int   gameId;
@@ -204,7 +204,7 @@ public:
    bool  SerializeIn( const U8* data, int& bufferOffset );
    bool  SerializeOut( U8* data, int& bufferOffset ) const;
 
-   string      deviceUuid;
+   UuidString  deviceUuid;
 };
 
 ///////////////////////////////////////////////////////////////
@@ -217,7 +217,7 @@ public:
    bool  SerializeIn( const U8* data, int& bufferOffset );
    bool  SerializeOut( U8* data, int& bufferOffset ) const;
 
-   string      deviceUuid;
+   UuidString  deviceUuid;
    bool        success;
 };
 

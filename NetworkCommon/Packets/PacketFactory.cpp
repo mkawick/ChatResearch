@@ -246,6 +246,16 @@ bool  PacketFactory::ParseLogin( const U8* bufferIn, int& bufferOffset, const Ba
             *packetOut = SerializeIn< PacketPrepareForUserLogout >( bufferIn, bufferOffset );
          }
          return true;
+      case PacketLogin::LoginType_ThrottleUsersConnection:
+         {
+            *packetOut = SerializeIn< PacketLoginThrottlePackets >( bufferIn, bufferOffset );
+         }
+         return true;
+      case PacketLogin::LoginType_DebugThrottleUsersConnection:
+         {
+            *packetOut = SerializeIn< PacketLoginDebugThrottleUserPackets >( bufferIn, bufferOffset );
+         }
+         return true;
       case PacketLogin::LoginType_CreateAccount:
          {
             *packetOut = SerializeIn< PacketCreateAccount >( bufferIn, bufferOffset );
@@ -256,7 +266,6 @@ bool  PacketFactory::ParseLogin( const U8* bufferIn, int& bufferOffset, const Ba
             *packetOut = SerializeIn< PacketCreateAccountResponse >( bufferIn, bufferOffset );
          }
          return true;
-
       case PacketLogin::LoginType_RequestListOfPurchases:
          {
             *packetOut = SerializeIn< PacketListOfUserPurchasesRequest >( bufferIn, bufferOffset );

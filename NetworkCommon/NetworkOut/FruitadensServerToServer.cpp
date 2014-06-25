@@ -4,6 +4,7 @@ using namespace std;
 
 #if PLATFORM == PLATFORM_WINDOWS
 #include <winsock2.h>
+#pragma warning( disable:4996 )
 
 #elif PLATFORM == PLATFORM_MAC || PLATFORM == PLATFORM_UNIX
 

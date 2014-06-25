@@ -119,9 +119,13 @@ bool ConvertToString( T value, std::string& InputString, int radix = 10 )
       return true;
    }
    bool positive = true;
-   if( value < 0 )
+   //if( boost::is_signed( value ) )
+   //if( std::is_signed( value ) )
    {
-      positive = false;
+      if( value < 0 )
+      {
+         positive = false;
+      }
    }
    if( radix == 10 )
    {
@@ -155,7 +159,7 @@ bool ConvertToString( T value, std::string& InputString, int radix = 10 )
          else
          {
             ins[0] -= 10;
-            ins[0] = lookup[ (int) ins ];// cast for compiler warning only
+            ins[0] = lookup[ (int) ins[0] ];// cast for compiler warning only
          }
          
          std::string addition = ins;

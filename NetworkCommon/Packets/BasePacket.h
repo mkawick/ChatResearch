@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CommonTypes.h"
+#include "../General/FixedLengthString.h"
 #include <string>
 #include <vector>
 #include <list>
@@ -260,7 +261,7 @@ public:
    bool  SerializeIn( const U8* data, int& bufferOffset );
    bool  SerializeOut( U8* data, int& bufferOffset ) const;
 
-   string   uuid;
+   UuidString   uuid;
    string   username;
 };
 
@@ -272,7 +273,7 @@ public:
    bool  SerializeIn( const U8* data, int& bufferOffset ) { return PacketUserStateChange::SerializeIn( data, bufferOffset ); }
    bool  SerializeOut( U8* data, int& bufferOffset ) const { return PacketUserStateChange::SerializeOut( data, bufferOffset ); }
 
-   string   uuid;
+   UuidString   uuid;
    string   username;
 };
 
@@ -284,7 +285,7 @@ public:
    bool  SerializeIn( const U8* data, int& bufferOffset ) { return PacketUserStateChange::SerializeIn( data, bufferOffset ); }
    bool  SerializeOut( U8* data, int& bufferOffset ) const { return PacketUserStateChange::SerializeOut( data, bufferOffset ); }
 
-   string   uuid;
+   UuidString   uuid;
    string   username;
 };
 

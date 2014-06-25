@@ -6,6 +6,11 @@
 #include <iostream>
 
 #include "../ServerConstants.h"
+
+#if PLATFORM == PLATFORM_WINDOWS
+#pragma warning( disable:4996 )
+#endif
+
 #include "../Packets/BasePacket.h"
 #include "../Packets/ServerToServerPacket.h"
 #include "../Packets/PacketFactory.h"

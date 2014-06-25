@@ -24,12 +24,12 @@ public:
 
    void  Clear();
 
-   string   tournamentName;
-   string   tournamentUuid;
-   string   beginDate;
-   string   endDate;
-   int      timePerRound;
-   int      timeUnitsPerRound;
+   string      tournamentName;
+   UuidString  tournamentUuid;
+   string      beginDate;
+   string      endDate;
+   int         timePerRound;
+   int         timeUnitsPerRound;
   /* string   description;
    int      price;   /// lookup from products table
    bool     userCanEnter; // basically a first pass at approving a user's entry into the tournament. More of a first-pass denial.
@@ -90,7 +90,7 @@ public:
 
    string   message;
    string   senderName;
-   string   senderUuid;
+   UuidString  senderUuid;
    int      type;
 };
 
@@ -129,7 +129,7 @@ public:
    bool  SerializeIn( const U8* data, int& bufferOffset );
    bool  SerializeOut( U8* data, int& bufferOffset ) const;
 
-   string   tournamentUuid;
+   UuidString  tournamentUuid;
 };
 
 ///////////////////////////////////////////////////////////////////
@@ -155,7 +155,7 @@ public:
    bool  SerializeIn( const U8* data, int& bufferOffset );
    bool  SerializeOut( U8* data, int& bufferOffset ) const;
 
-   string   tournamentUuid;
+   UuidString  tournamentUuid;
 };
 
 ///////////////////////////////////////////////////////////////////
@@ -180,7 +180,7 @@ public:
    bool  SerializeIn( const U8* data, int& bufferOffset );
    bool  SerializeOut( U8* data, int& bufferOffset ) const;
 
-   string      tournamentUuid;
+   UuidString  tournamentUuid;
 };
 
 ///////////////////////////////////////////////////////////////////
@@ -194,7 +194,7 @@ public:
    bool  SerializeIn( const U8* data, int& bufferOffset );
    bool  SerializeOut( U8* data, int& bufferOffset ) const;
 
-   string      tournamentUuid; 
+   UuidString  tournamentUuid; 
    int         result;
 };
 ///////////////////////////////////////////////////////////////////
@@ -209,9 +209,9 @@ public:
    bool  SerializeIn( const U8* data, int& bufferOffset );
    bool  SerializeOut( U8* data, int& bufferOffset ) const;
 
-   string      userUuid;
-   string      tournamentUuid;
-   string      exchangeUuid;
+   UuidString  userUuid;
+   UuidString  tournamentUuid;
+   UuidString  exchangeUuid;
    string      uniqueTransactionId; // fill this in with some unique value that you need
    int         numTicketsRequired;
 };

@@ -9,6 +9,12 @@ using boost::format;
 
 #include "../NetworkCommon/Database/StringLookup.h"
 
+#include "../NetworkCommon/ServerConstants.h"
+
+#if PLATFORM == PLATFORM_WINDOWS
+#pragma warning( disable:4996 )
+#endif
+
 #include "../NetworkCommon/Packets/ServerToServerPacket.h"
 #include "../NetworkCommon/Packets/GamePacket.h"
 #include "../NetworkCommon/Packets/DbPacket.h"
@@ -164,6 +170,12 @@ bool     DiplodocusLogin:: AddInputChainData( BasePacket* packet, U32 connection
             {
                PacketUpdateSelfProfile* updateProfileRequest = static_cast<PacketUpdateSelfProfile*>( actualPacket );
                UpdateProfile( userConnectionId, updateProfileRequest );
+            }
+            break;
+         case PacketLogin::LoginType_DebugThrottleUsersConnection:
+            {
+               PacketLoginDebugThrottleUserPackets* throttleRequest = static_cast<PacketLoginDebugThrottleUserPackets*>( actualPacket );
+               ThrottleUser( userConnectionId, throttleRequest );
             }
             break;
          case PacketLogin::LoginType_EchoToServer:
@@ -1130,8 +1142,15 @@ bool     DiplodocusLogin:: HandleRequestListOfProducts( U32 connectionId, Packet
       return false;
    }
 
+   int numProductsPerPacket = 15;
    PacketRequestListOfProductsResponse* response = new PacketRequestListOfProductsResponse();
    response->platformId = purchaseRequest->platformId;
+   
+   int totalCount = m_productList.size();
+
+   response->products.SetIndexParams( 0, totalCount );
+   int   numPacketsSent = 0;
+
    ProductList::iterator it = m_productList.begin();
    while( it != m_productList.end() )
    {
@@ -1139,11 +1158,39 @@ bool     DiplodocusLogin:: HandleRequestListOfProducts( U32 connectionId, Packet
       ProductBriefPacketed brief;
       brief.uuid = pi.uuid;
       brief.vendorUuid = pi.vendorUuid;
-      brief.quantity = pi.quantity;
+
+      if( pi.parentId )
+      {
+         ProductInfo parent;
+         GetProductByProductId( pi.parentId, parent );// reuse this local variable
+         brief.parentUuid = parent.uuid;
+      }
+      brief.iconName = pi.iconName;
+      brief.productType = pi.productType;
+
       response->products.push_back( brief );
+      if( response->products.size() == numProductsPerPacket )
+      {
+         numPacketsSent++;
+         SendPacketToGateway( response, connectionId );
+         if( numPacketsSent* numProductsPerPacket < totalCount )
+         {
+            response = new PacketRequestListOfProductsResponse();
+            response->platformId = purchaseRequest->platformId;
+            response->products.SetIndexParams( numPacketsSent* numProductsPerPacket, totalCount );
+         }
+         else
+         {
+            response = NULL;
+            break;
+         }
+      }
    }
 
-   SendPacketToGateway( response, connectionId );
+   if( response != NULL )
+   {
+      SendPacketToGateway( response, connectionId );
+   }
    return true;
 }
 
@@ -1161,12 +1208,31 @@ bool  DiplodocusLogin:: RequestOthersProfile( U32 connectionId, const PacketRequ
    return connection->RequestOthersProfile( profileRequest );
 }
 
+//---------------------------------------------------------------
+
+bool  DiplodocusLogin::ThrottleUser( U32 userConnectionId, const PacketLoginDebugThrottleUserPackets* throttleRequest )
+{
+   ConnectionToUser* connection = GetUserConnection( userConnectionId );
+   if( connection == NULL || connection->status != ConnectionToUser::LoginStatus_LoggedIn )
+   {
+      Log( "Login server.ThrottleUser: major problem logged in user", 4 );
+      return false;
+   }
+
+   int delay = throttleRequest->level;
+   if( delay > 20 )
+      delay = 20;// arbitrary value equal to 10 seconds.
+   delay *= 500; // milliseconds;
+   PacketLoginThrottlePackets* throttler = new PacketLoginThrottlePackets;
+   throttler->delayBetweenPacketsMs = delay;
+   return SendPacketToGateway( throttler, userConnectionId );
+}
 
 //---------------------------------------------------------------
 
-bool     DiplodocusLogin::EchoHandler( U32 connectionId )
+bool     DiplodocusLogin::EchoHandler( U32 userConnectionId )
 {
-   ConnectionToUser* connection = GetUserConnection( connectionId );
+   ConnectionToUser* connection = GetUserConnection( userConnectionId );
    if( connection == NULL || connection->status != ConnectionToUser::LoginStatus_LoggedIn )
    {
       //Log( "Login server.RequestProfile: major problem logged in user", 4 );
@@ -1962,6 +2028,7 @@ void     DiplodocusLogin:: StoreAllProducts( const PacketDbQueryResult* dbResult
 
       productDefn.productType  = boost::lexical_cast< int >( temp );
       
+      productDefn.iconName =  row[ TableProduct::Column_icon_lookup ];
 
       m_productList.push_back( productDefn );
    }
@@ -2156,7 +2223,7 @@ void     DiplodocusLogin:: LoadInitializationData()
    dbQuery->meta =         "";
    dbQuery->serverLookup = 0;
 
-   dbQuery->query = "SELECT * FROM product";
+   dbQuery->query = "SELECT * FROM product WHERE product_type=1 OR product_type=2";
 
    AddQueryToOutput( dbQuery );
 }

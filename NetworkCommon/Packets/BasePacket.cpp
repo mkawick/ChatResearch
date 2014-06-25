@@ -1,6 +1,11 @@
 // BasePacket.cpp
 
+
 #include "../ServerConstants.h"
+#if PLATFORM == PLATFORM_WINDOWS
+#pragma warning( disable:4996 )
+#endif
+
 #include "BasePacket.h"
 #include "Serialize.h"
 #include "PacketFactory.h"
@@ -8,7 +13,7 @@
 #include <assert.h>
 
 
-const U8   GlobalNetworkProtocolVersion = 27;
+const U8   GlobalNetworkProtocolVersion = 30;
 
 #ifdef _MEMORY_TEST_
 int BasePacket::m_counter = 0;

@@ -1,3 +1,9 @@
+#include "../NetworkCommon/ServerConstants.h"
+
+#if PLATFORM == PLATFORM_WINDOWS
+#pragma warning( disable:4996 )
+#endif
+
 #include "UserLookupManager.h"
 
 DiplodocusContact* UserLookupManager::m_contactMain = NULL;

@@ -1,3 +1,9 @@
+#include "../NetworkCommon/ServerConstants.h"
+
+#if PLATFORM == PLATFORM_WINDOWS
+#pragma warning( disable:4996 )
+#endif
+
 #include "UserConnection.h"
 
 #include <string>
@@ -65,7 +71,7 @@ void  UserConnection::RequestAllDevicesForUser()
    dbQuery->lookup =       QueryType_DeviceList;
    dbQuery->serverLookup = m_userInfo.userId;
    dbQuery->query = "SELECT * FROM user_device WHERE user_uuid='";
-   dbQuery->query += m_userInfo.uuid;
+   dbQuery->query += m_userInfo.uuid.c_str();
    dbQuery->query += "'";
 
    //cout << dbQuery->query << endl;
@@ -83,7 +89,7 @@ void  UserConnection::RequestAllDeviceNotification()
    dbQuery->lookup =       QueryType_DevicePerGameList;
    dbQuery->serverLookup = m_userInfo.userId;
    dbQuery->query = "SELECT * FROM user_device_notification WHERE user_device_id IN ( select id from user_device where user_uuid='";
-   dbQuery->query += m_userInfo.uuid;
+   dbQuery->query += m_userInfo.uuid.c_str();
    dbQuery->query += "')";
 
    //cout << dbQuery->query << endl;
@@ -322,7 +328,7 @@ void     UserConnection::RegisterNewDevice( const PacketNotification_RegisterDev
    string newDeviceUuid = GenerateUUID( xorValue );
 
    string query( "INSERT INTO user_device VALUES( DEFAULT, '");
-   query += m_userInfo.uuid;
+   query += m_userInfo.uuid.c_str();
    query += "', '";
    query += newDeviceUuid;
    query += "', x'";
@@ -446,7 +452,7 @@ void  UserConnection::UpdateDevice( const PacketNotification_UpdateDevice* updat
 
    bool deviceFound = false;
    U32   userDeviceId = 0;
-   const string& uuid = updateDevicePacket->deviceUuid;
+   const string uuid = updateDevicePacket->deviceUuid.c_str();
 
    RegisteredDeviceIterator deviceIt = FindDeviceByUuid( uuid );
    if( deviceIt == m_deviceList.end() )
@@ -456,7 +462,7 @@ void  UserConnection::UpdateDevice( const PacketNotification_UpdateDevice* updat
       text += " tried to update a device but it could not be found ";
       text += updateDevicePacket->deviceName;
       text += ", ";
-      text += updateDevicePacket->deviceUuid;
+      text += updateDevicePacket->deviceUuid.c_str();
       text += " but the device does not exist in UserConnection";
       m_mainThread->Log( text, 1 );
       m_mainThread->SendErrorToClient( m_userInfo.connectionId, PacketErrorReport::ErrorType_Notification_DeviceIdIncorrect );
@@ -472,7 +478,7 @@ void  UserConnection::UpdateDevice( const PacketNotification_UpdateDevice* updat
       text += " tried to update a device but it could not be found ";
       text += updateDevicePacket->deviceName;
       text += ", ";
-      text += updateDevicePacket->deviceUuid;
+      text += updateDevicePacket->deviceUuid.c_str();
       text += " but the device does not exist in UserConnection";
       m_mainThread->Log( text, 1 );
       return;
@@ -486,7 +492,7 @@ void  UserConnection::UpdateDevice( const PacketNotification_UpdateDevice* updat
       text += " tried to update a device but the enabled record could not be found ";
       text += updateDevicePacket->deviceName;
       text += ", ";
-      text += updateDevicePacket->deviceUuid;
+      text += updateDevicePacket->deviceUuid.c_str();
       text += " but the device does not exist in UserConnection";
       m_mainThread->Log( text, 1 );
       m_mainThread->SendErrorToClient( m_userInfo.connectionId, PacketErrorReport::ErrorType_Notification_DeviceIdIncorrect );
@@ -620,7 +626,7 @@ void        UserConnection::RemoveDevice( const PacketNotification_RemoveDevice*
    cout << "Remove device" << endl;
    PacketNotification_RemoveDeviceResponse* response = new PacketNotification_RemoveDeviceResponse;
    response->success = false;
-   const string& lookupUuid = removal->deviceUuid;
+   const string lookupUuid = removal->deviceUuid.c_str();
    response->deviceUuid = lookupUuid;
 
    RegisteredDeviceIterator deviceIt = m_deviceList.begin();
@@ -637,7 +643,7 @@ void        UserConnection::RemoveDevice( const PacketNotification_RemoveDevice*
          dbQuery->lookup =       QueryType_DeleteDevice;
          dbQuery->serverLookup = m_userInfo.userId;
          dbQuery->query = "DELETE FROM user_device WHERE user_uuid='";
-         dbQuery->query += m_userInfo.uuid; // a little extra validation
+         dbQuery->query += m_userInfo.uuid.c_str(); // a little extra validation
          dbQuery->query += "' AND id='";
          dbQuery->query += boost::lexical_cast<string> ( userDeviceId );
          dbQuery->query += "'";

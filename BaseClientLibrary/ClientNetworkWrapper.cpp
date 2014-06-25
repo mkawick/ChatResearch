@@ -1,3 +1,9 @@
+#include "../NetworkCommon/ServerConstants.h"
+
+#if PLATFORM == PLATFORM_WINDOWS
+#pragma warning( disable:4996 )
+#endif
+
 #include "ClientNetworkWrapper.h"
 
 #include "../NetworkCommon/Utils/Utils.h"
@@ -25,8 +31,9 @@ struct GameData
 ///////////////////////////////////////////////////////////////////////////////////
 //------------------------------------------------------------
 
-ClientNetworkWrapper::ClientNetworkWrapper( U8 gameProductId, bool processOnlyOneIncommingPacketPerLoop  ): //PacketHandlerInterface()
+ClientNetworkWrapper::ClientNetworkWrapper( U8 gameProductId, bool connectToAssetServer ): //PacketHandlerInterface()
       m_gameProductId( gameProductId ), 
+      m_connectToAssetServer( false ),
       m_isLoggingIn( false ),
       m_isLoggedIn( false ),
       m_connectionId( 0 ), 
@@ -82,13 +89,15 @@ bool     ClientNetworkWrapper::IsConnected( bool isMainServer ) const
 {
    if( isMainServer )
    {
-      if( m_requiresGatewayDiscovery )
+      if( m_requiresGatewayDiscovery == true )
          return false;
       return m_fruitadens[ ConnectionNames_Main ]->IsConnected();
    }
    else
    {
-      return m_fruitadens[ ConnectionNames_Asset ]->IsConnected();
+      if( m_connectToAssetServer == true )
+         return m_fruitadens[ ConnectionNames_Asset ]->IsConnected();
+      return false;
    }
 }
 
@@ -112,20 +121,27 @@ void  ClientNetworkWrapper::Init( const char* serverDNS )
       Disconnect();
    }
 
+   
    m_wasCallbackForReadyToBeginSent = false;
    
 
-   if( serverDNS && strlen( serverDNS ) > 5 )// arbitrary, but guaranteed to be a minimum requirement 
+   if( serverDNS && strlen( serverDNS ) > 5 )// arbitrary 5, but guaranteed to be a minimum requirement 
    {
       m_loadBalancerDns = serverDNS;
    }
 
-   // we user this connection for talking to the load banacer temporily
-   string tempName( "LoadBalancer" );
-   m_fruitadens[ 0 ]->SetName( tempName );
-   m_fruitadens[ 0 ]->Connect( m_loadBalancerDns.c_str(), m_loadBalancerPort );
-   m_fruitadens[ 0 ]->RegisterPacketHandlerInterface( this );
-   //ReconnectAfterTalkingToLoadBalancer();
+   if( m_requiresGatewayDiscovery )
+   {
+      // we user this connection for talking to the load banacer temporily
+      string tempName( "LoadBalancer" );
+      m_fruitadens[ 0 ]->SetName( tempName );
+      m_fruitadens[ 0 ]->Connect( m_loadBalancerDns.c_str(), m_loadBalancerPort );
+      m_fruitadens[ 0 ]->RegisterPacketHandlerInterface( this );
+   }
+   else
+   {
+      ReconnectAfterTalkingToLoadBalancer();
+   }
 }
 
 
@@ -135,9 +151,13 @@ void     ClientNetworkWrapper::ReconnectAfterTalkingToLoadBalancer()
    {
       for( int i=0; i< ConnectionNames_Num; i++ )
       {
+         if( m_connectToAssetServer == false && 
+            i == ConnectionNames_Asset )
+            continue;
+
          if( m_serverIpAddress[i].size() == 0 )
          {
-            cout << "Missing server address entry" << endl;
+            cout << "Missing server address entry.. cannot connect" << endl;
             continue;
          }
          m_fruitadens[i]->RegisterPacketHandlerInterface( this );
@@ -158,6 +178,10 @@ void     ClientNetworkWrapper::Disconnect()
    {
       for( int i=0; i< ConnectionNames_Num; i++ )
       {
+         if( m_connectToAssetServer == false && 
+            i == ConnectionNames_Asset )
+            continue;
+
          m_fruitadens[ i ]->RegisterPacketHandlerInterface( NULL );
          m_fruitadens[ i ]->Disconnect();
       }     
@@ -227,7 +251,7 @@ void  ClientNetworkWrapper::Exit()
    while( m_notifications.size() )
    {
       const QueuedNotification& qn = m_notifications.front();
-      SerializedKeyValueVector< string >::const_KVIterator keyValueIt = qn.genericKeyValuePairs.begin();
+      //SerializedKeyValueVector< string >::const_KVIterator keyValueIt = qn.genericKeyValuePairs.begin();
       PacketCleaner cleaner( qn.packet );
 
       delete [] qn.genericData;
@@ -844,6 +868,7 @@ bool  ClientNetworkWrapper::RequestLogin( const string& userName, const string& 
    m_attemptedUsername = userName;
 
    m_isLoggingIn = true;
+
    if( m_requiresGatewayDiscovery == false &&
       SerializePacketOut( login ) == true )
    {
@@ -934,6 +959,20 @@ bool  ClientNetworkWrapper::RequestProfile( const string userName )//if empty, p
    return true;
 }
 
+//-----------------------------------------------------------------------------
+
+bool  ClientNetworkWrapper::ThrottleConnection( U8 level )
+{
+   if( IsConnected() == false )
+   {
+      return false;
+   }
+   PacketLoginDebugThrottleUserPackets throttle;
+   throttle.level = level;
+   SerializePacketOut( &throttle );
+
+   return true;
+}
 //-----------------------------------------------------------------------------
 
 void  ClientNetworkWrapper::FillProfileChangeRequest( PacketUpdateSelfProfile& profile ) const 
@@ -1175,13 +1214,65 @@ bool  ClientNetworkWrapper::GetAvailableProduct( int index, ProductBriefPacketed
 {
    if( index < 0 || index >= m_products.size() )
    {
-      product.quantity = -1;
+      //product.quantity = -1;
       product.vendorUuid.clear();
       return false;
    }
 
    product = m_products[index];
    return true;
+}
+
+//-----------------------------------------------------------------------------
+
+bool  ClientNetworkWrapper::FindProductByVendorUuid( const string& vendorUuid, ProductBriefPacketed& product ) const
+{
+   if( vendorUuid.size() == 0 )
+   {
+      product.vendorUuid.clear();
+      product.uuid.clear();
+      return false;
+   }
+
+
+   int num = m_products.size();
+   for( int i=0; i<num; i++ )
+   {
+      const ProductBriefPacketed& pb = m_products[i];
+      if( pb.vendorUuid == vendorUuid )
+      {
+         product = pb;
+         return true;
+      }
+   }
+
+   return false;
+}
+
+//-----------------------------------------------------------------------------
+
+bool  ClientNetworkWrapper::FindProduct( const string& uuid, ProductBriefPacketed& product ) const
+{
+   if( uuid.size() == 0 )
+   {
+      product.vendorUuid.clear();
+      product.uuid.clear();
+      return false;
+   }
+
+
+   int num = m_products.size();
+   for( int i=0; i<num; i++ )
+   {
+      const ProductBriefPacketed& pb = m_products[i];
+      if( pb.uuid == uuid )
+      {
+         product = pb;
+         return true;
+      }
+   }
+
+   return false;
 }
 
 //-----------------------------------------------------------------------------
@@ -1198,6 +1289,20 @@ bool  ClientNetworkWrapper::RequestListOfProducts() const
    return true;
 }
 
+//-----------------------------------------------------------------------------
+/*
+bool  ClientNetworkWrapper::RequestListOfProducts() const
+{
+   if( IsConnected() == false )
+   {
+      return false;
+   }
+   PacketRequestListOfProducts products;
+   SerializePacketOut( &products );
+
+   return true;
+}
+*/
 //-----------------------------------------------------------------------------
 
 bool  ClientNetworkWrapper::RequestListOfProductsInStore() const
@@ -2520,9 +2625,13 @@ bool     ClientNetworkWrapper::SerializePacketOut( BasePacket* packet ) const
    m_beginTime = GetCurrentMilliseconds();
 
    U8 type = packet->packetType;
-   if( type == PacketType_Asset && m_fruitadens[ ConnectionNames_Asset ]->IsConnected() )
+   if( type == PacketType_Asset ) 
    {
-      return m_fruitadens[ ConnectionNames_Asset ]->SendPacket( buffer, offset );
+      if( m_connectToAssetServer == true && 
+         m_fruitadens[ ConnectionNames_Asset ]->IsConnected() == true )
+         return m_fruitadens[ ConnectionNames_Asset ]->SendPacket( buffer, offset );
+      else 
+         return false;
    }
    else
    {
@@ -2538,7 +2647,7 @@ bool     ClientNetworkWrapper::SerializePacketOut( BasePacket* packet ) const
 
 void      ClientNetworkWrapper::Update()
 {
-    if( IsConnected() == false )
+   if( IsConnected() == false )
    {
       if( m_requiresGatewayDiscovery == true )
          return;
@@ -2552,6 +2661,7 @@ void      ClientNetworkWrapper::Update()
 
 void     ClientNetworkWrapper::BoostThreadPerformance( ConnectionNames whichConnection )
 {
+   assert( whichConnection < ConnectionNames_Num );
    m_fruitadens[ whichConnection ]->SetSleepTime( m_boostedSleepTime );
    m_fruitadens[ whichConnection ]->SetPriority( Threading::CAbstractThread:: ePriorityHigh );
    m_isThreadPerformanceBoosted[ whichConnection ] = true;
@@ -2560,6 +2670,7 @@ void     ClientNetworkWrapper::BoostThreadPerformance( ConnectionNames whichConn
 
 void     ClientNetworkWrapper::RestoreNormalThreadPerformance( ConnectionNames whichConnection )
 {
+   assert( whichConnection < ConnectionNames_Num );
    m_fruitadens[ whichConnection ]->SetSleepTime( m_normalSleepTime );
    m_isThreadPerformanceBoosted[ whichConnection ] = false;
    m_fruitadens[ whichConnection ]->SetPriority( Threading::CAbstractThread:: ePriorityNormal );
@@ -2567,6 +2678,7 @@ void     ClientNetworkWrapper::RestoreNormalThreadPerformance( ConnectionNames w
 
 void     ClientNetworkWrapper::ExpireThreadPerformanceBoost( ConnectionNames whichConnection )
 {
+   assert( whichConnection < ConnectionNames_Num );
    if( m_isThreadPerformanceBoosted[ whichConnection ] == true )
    {
       time_t currentTime;// expire after 5 seconds.
@@ -2757,7 +2869,7 @@ bool     ClientNetworkWrapper::HandlePacketReceived( BasePacket* packetIn )
                   if( login->wasLoginSuccessful == true )
                   {
                      m_userName = login->userName;
-                     m_uuid = login->uuid;
+                     m_uuid = login->uuid.c_str();
                      //m_email = login->email;
                      m_connectionId = login->connectionId;
                      m_lastLoggedOutTime = login->lastLogoutTime;
@@ -2825,7 +2937,6 @@ bool     ClientNetworkWrapper::HandlePacketReceived( BasePacket* packetIn )
                {
                   PacketRequestListOfProductsResponse* packet = static_cast<PacketRequestListOfProductsResponse*>( packetIn );
                   HandleListOfProducts( packet );
-                  Notification( ClientSideNetworkCallback::NotificationType_ListOfAvailableProducts );
                }
                break;
             case PacketLogin::LoginType_RequestOtherUserProfileResponse:
@@ -2898,7 +3009,7 @@ bool     ClientNetworkWrapper::HandlePacketReceived( BasePacket* packetIn )
                cout << "You received a message: " << endl;
                PacketChatToClient* chat = static_cast<PacketChatToClient*>( packetIn );
                cout << " *** from: " << chat->userName;
-               cout << "     message: " << chat->message << endl;
+               cout << "     message: " << chat->message.c_str() << endl;
 
                SerializedKeyValueVector< string > strings;
                strings.insert( "message", chat->message );
@@ -3193,7 +3304,7 @@ bool     ClientNetworkWrapper::HandlePacketReceived( BasePacket* packetIn )
             {
                PacketNotification_RegisterDeviceResponse* response = 
                   static_cast<PacketNotification_RegisterDeviceResponse*>( packetIn );
-               m_thisDeviceUuid = response->deviceUuid;
+               m_thisDeviceUuid = response->deviceUuid.c_str();
                
                Notification( ClientSideNetworkCallback::NotificationType_DeviceIDUpdated );
             }
@@ -3391,11 +3502,11 @@ void     ClientNetworkWrapper::HandleInvitationAccepted( const PacketContact_Inv
 
    if( packet->fromUsername == m_userName )
    {
-      RemoveInvitationFromSent( packet->invitationUuid );
+      RemoveInvitationFromSent( packet->invitationUuid.c_str() );
    }
    else
    {
-      RemoveInvitationFromReceived( packet->invitationUuid );
+      RemoveInvitationFromReceived( packet->invitationUuid.c_str() );
    }
 }
 
@@ -3437,8 +3548,29 @@ void     ClientNetworkWrapper::HandleListOfProducts( const PacketRequestListOfPr
 {
    cout << " HandleListOfProducts: " << endl;
    cout << " Num found: " << packet->products.size() << endl;
-   Threading::MutexLock    locker( m_notificationMutex );
-   m_products = packet->products;
+   ///Threading::MutexLock    locker( m_notificationMutex );
+
+   U16 firstIndex = packet->products.GetFirstIndex();
+   U16 totalCount = packet->products.GetTotalCount();
+   U16 numProdctsInCurrentList = packet->products.size();
+   m_notificationMutex.lock();
+   if( packet->products.GetFirstIndex() == 0 )
+   {
+      m_products.clear();
+   }
+   
+   int numToAdd = packet->products.size();
+   for( int i=0; i<numToAdd; i++ )
+   {
+      m_products.push_back( packet->products[i] );
+   }
+   m_notificationMutex.unlock();
+   if( firstIndex + numProdctsInCurrentList >= totalCount) // We are at the end of the list
+   {
+      Notification( ClientSideNetworkCallback::NotificationType_ListOfAvailableProducts );
+   }
+
+   //m_products = packet->products;
 }
 
 void     ClientNetworkWrapper::HandleBeingAddedByServerToChatChannel( const PacketChatUserAddedToChatChannelFromGameServer* chat )
@@ -3461,7 +3593,7 @@ void     ClientNetworkWrapper::HandleBeingAddedByServerToChatChannel( const Pack
    if( found == false )
    {
       ChatChannel newChannel;
-      newChannel.uuid = chat->channelUuid;
+      newChannel.uuid = chat->channelUuid.c_str();
       newChannel.channelName = chat->gameName;
       newChannel.gameInstanceId = chat->gameId;
       newChannel.channelDetails= chat->gameName;
@@ -3498,19 +3630,19 @@ void     ClientNetworkWrapper::HandleAddUserToChatChannel( const PacketChatAddUs
 
    if( packet->success == true )
    {
-      AddUserToChatChannel( packet->channelUuid, packet->userUuid, packet->userName );
+      AddUserToChatChannel( packet->channelUuid.c_str(), packet->userUuid.c_str(), packet->userName );
    }
 }
 
 void     ClientNetworkWrapper::HandleRemoveUserFromChatChannel( const PacketChatRemoveUserFromChatChannelResponse* packet )
 {
-   cout << " HandleRemoveUserFromChatChannel: channel uuid: " << packet->chatChannelUuid << " , userUuid = " << packet->userUuid  << endl;
+   cout << " HandleRemoveUserFromChatChannel: channel uuid: " << packet->chatChannelUuid.c_str() << " , userUuid = " << packet->userUuid  << endl;
              
    Threading::MutexLock    locker( m_notificationMutex );
 
    if( packet->success == true )
    {
-      RemoveUserfromChatChannel( packet->chatChannelUuid, packet->userUuid );
+      RemoveUserfromChatChannel( packet->chatChannelUuid.c_str(), packet->userUuid.c_str() );
    }
 }
 
@@ -3674,7 +3806,7 @@ void     ClientNetworkWrapper::HandleChatChannelUpdate( BasePacket* packetIn )
       while( channelIt != channels.end() )
       {
          ChatChannel newChannel;
-         newChannel.uuid = channelIt->value.channelUuid;
+         newChannel.uuid = channelIt->value.channelUuid.c_str();
          newChannel.channelName = channelIt->value.channelName;
          newChannel.gameProductId = channelIt->value.gameProduct;
          newChannel.gameInstanceId = channelIt->value.gameId;

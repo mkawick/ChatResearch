@@ -14,7 +14,7 @@ namespace Mber
 
 void  ChatChannel::Print()
 {
-   U8 productId = gameProductId;
+   //U8 productId = gameProductId;
    int numUsers = userList.size();
    cout << "** channel name= " << channelName << endl;
    cout << "   num users " << numUsers << endl;

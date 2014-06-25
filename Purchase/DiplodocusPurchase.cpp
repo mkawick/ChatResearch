@@ -220,7 +220,7 @@ bool     DiplodocusPurchase::ConnectUser( PacketPrepareForUserLogin* loginPacket
 
       UserTicket ut;
       ut.userName =        loginPacket->userName;
-      ut.uuid =            loginPacket->uuid;
+      ut.uuid =            loginPacket->uuid.c_str();
       ut.userTicket =      loginPacket->loginKey;
       ut.connectionId =    loginPacket->connectionId;
       ut.gameProductId =   loginPacket->gameProductId;
@@ -282,7 +282,7 @@ bool     DiplodocusPurchase::StoreUserProductsOwned( PacketListOfUserProductsS2S
 
 bool     DiplodocusPurchase::HandlePurchaseRequest( const PacketTournament_PurchaseTournamentEntry* packet, U32 connectionId )
 {
-   U64 hashForUser = GenerateUniqueHash( packet->userUuid );
+   U64 hashForUser = GenerateUniqueHash( packet->userUuid.c_str() );
 
    Threading::MutexLock locker( m_mutex );
    UAADMapIterator it = m_userTickets.find( hashForUser );

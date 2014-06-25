@@ -3,6 +3,11 @@
 #include <assert.h>
 
 #include "../ServerConstants.h"
+
+#if PLATFORM == PLATFORM_WINDOWS
+#pragma warning( disable:4996 )
+#endif
+
 #include "../DataTypes.h"
 
 #include "../Utils/CommandLineParser.h"

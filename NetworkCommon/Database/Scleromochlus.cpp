@@ -1,3 +1,9 @@
+#include "../ServerConstants.h"
+
+#if PLATFORM == PLATFORM_WINDOWS
+#pragma warning( disable:4996 )
+#endif
+
 #include "Scleromochlus.h"
 
 struct DbJobMockData : public Database::DbJobBase

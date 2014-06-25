@@ -146,19 +146,26 @@ template < typename type >
 class SerializedVector
 {
 public:
+   SerializedVector() { clear(); }
    bool  SerializeIn( const U8* data, int& bufferOffset );
    bool  SerializeOut( U8* data, int& bufferOffset ) const;
 
    // helper functions
    void           push_back( type value ) { m_data.push_back( value ); }
    int            size() const { return static_cast< int >( m_data.size() ); }
-   void           clear() { m_data.clear(); }
+   void           clear() { m_data.clear(); listIndex = 0, listCount = 0; }
    const type&    operator[]( int index ) { return m_data[ index ]; }
    const type&    operator[]( int index ) const { return m_data[ index ]; }
-   bool  remove( U32 index ) { if ( index <0 || index >= m_data.size() ) return false; m_data.erase( m_data.begin() + index ); return true; }
+   bool  remove( U32 index ) { if ( index >= m_data.size() ) return false; m_data.erase( m_data.begin() + index ); return true; }
 
+   //------------ tracking variables, mostly for packetization ------------------
+   void                    SetIndexParams( U16 firstIndex = 0, U16 totaltCount = 0 ) { listIndex = firstIndex, listCount = totaltCount; }
+   U16                     GetFirstIndex() const { return listIndex; }
+   U16                     GetTotalCount() const { return listCount; }
 protected:
    vector< type >    m_data;
+   U16   listIndex;// this list will be sent in pieces
+   U16   listCount;
 };
 
 ///////////////////////////////////////////////////////////////
@@ -180,30 +187,3 @@ bool  SerializedKeyValueVector<type>::erase( KVIterator iter )
 }
 
 ////////////////////////////////////////////////////////
-
-template< int length>
-class FixedLengthString
-{
-public:
-   FixedLengthString <length> ();
-   FixedLengthString <length> ( const FixedLengthString <length>& rhs );
-   FixedLengthString <length> ( const char* text );   
-
-   FixedLengthString <length>& operator = ( const FixedLengthString <length>& rhs );
-   FixedLengthString <length>& operator = ( const char* rhs );
-
-   operator const char* ();
-
-   bool operator == ( const FixedLengthString <length>& rhs ) const;
-   bool operator == ( const char* rhs ) const;
-
-   unsigned int size() const { return length; }
-private:
-   char buffer [length+1];// store the terminating 0
-};
-
-typedef FixedLengthString< 16 > UuidString;
-
-////////////////////////////////////////////////////////
-
-#include "CommonTypes.inl"

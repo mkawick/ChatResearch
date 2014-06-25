@@ -9,18 +9,19 @@ using namespace std;
 
 struct ProductInfo
 {
-   ProductInfo() : productId( 0 ), productType( 0 ), quantity( 0 ), parentId( 0 ) {}
+   ProductInfo() : productId( 0 ), productType( 0 ), parentId( 0 ) {}
    int      productId;
    string   uuid;
    string   name;
    string   vendorUuid;
    string   Begindate;
    string   lookupName;
+   string   iconName;
    int      productType;
    int      parentId;
 
    double   price;
-   float    quantity;
+   //float    quantity;
 };
 
 //-----------------------------------------------------------------------------------------

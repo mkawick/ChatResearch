@@ -10,21 +10,20 @@
 // this setup is based on this:
 // http://www.nitecon.com/tutorials-articles/develop/cpp/c-mysql-beginner-tutorial/
 
+#include "../ServerConstants.h"
 
-#include "../Platform.h"
+#if PLATFORM == PLATFORM_WINDOWS
+#pragma warning( disable:4996 )
+#pragma comment( lib, "libmysql.lib" )
+#endif
+
+
 
 #include <boost/type_traits.hpp>
 #include <boost/algorithm/string/replace.hpp>
 #include <boost/lexical_cast.hpp>
 #include <iostream>
 #include <memory.h>
-
-#if PLATFORM == PLATFORM_WINDOWS
-
-#pragma warning( disable:4996)
-#pragma comment( lib, "libmysql.lib" )
-#endif
-
 
 #include "../Logging/server_log.h"
 #include "../DataTypes.h"

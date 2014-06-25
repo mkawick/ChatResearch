@@ -23,6 +23,9 @@ public:
    void     SetLanguageId( U8 languageId );
 
    void     SetGateway( DiplodocusGateway* gateway ) { m_gateway = gateway; }
+   void     ThrottleConnection( U32 timeoutMs ) { m_timeoutMs = timeoutMs; }
+
+   bool	Update();
 
 private:
    
@@ -42,6 +45,8 @@ private:
    int                  m_adminLevel;
    U8                   m_languageId;
    DiplodocusGateway*   m_gateway;
+   U32                  m_timeoutMs;
+   U32                  m_lastSentToClientTimestamp;
 
    void  PreCleanup();
    bool	OnDataReceived( unsigned char* data, int length );

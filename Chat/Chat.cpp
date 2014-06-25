@@ -5,13 +5,16 @@
 #include <list>
 #include <vector>
 
+
+#include "../NetworkCommon/ServerConstants.h"
+
+#if PLATFORM == PLATFORM_WINDOWS
+#pragma warning( disable:4996 )
+#endif
+
 #include "../NetworkCommon/Platform.h"
 #include "../NetworkCommon/Version.h"
 #include "../NetworkCommon/Utils/CommandLineParser.h"
-
-#if PLATFORM == PLATFORM_WINDOWS
-#pragma warning (disable:4996)
-#endif
 
 #include <assert.h>
 

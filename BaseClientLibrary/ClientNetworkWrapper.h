@@ -38,7 +38,7 @@ namespace Mber
 class ClientNetworkWrapper  : public PacketHandlerInterface
 {
 public:
-   ClientNetworkWrapper( U8 gameProductId, bool processOnlyOneIncommingPacketPerLoop = false );
+   ClientNetworkWrapper( U8 gameProductId, bool connectToAssetServer = true );
    ~ClientNetworkWrapper();
 
    void     EnableMultithreadedCallbackSystem();
@@ -76,6 +76,7 @@ public:
    bool     GetBlockGroupInvitations() const { return m_blockGroupInvitations; }      
 
    bool     RequestProfile( const string userName ); //if empty, profile for currently logged in user is used. For other users, you must have admin
+   bool     ThrottleConnection( U8 level );
    bool     RequestOtherUserInGameProfile( const string& userName ); // friends, games list, etc
    bool     RequestChatChannelList();
 
@@ -167,7 +168,9 @@ public:
    bool     PurchaseEntryIntoTournament( const string& tournamentUuid );
 
    int      GetNumAvailableProducts() const { return m_products.size(); }
-   bool     GetAvailableProduct( int index, ProductBriefPacketed& purchase ) const; // not complete
+   bool     GetAvailableProduct( int index, ProductBriefPacketed& product ) const; // not complete
+   bool     FindProductByVendorUuid( const string& vendorUuid, ProductBriefPacketed& product ) const;
+   bool     FindProduct( const string& uuid, ProductBriefPacketed& product ) const;
 
    //------------------------- asset -------------------------------
    bool     RequestListOfAssetCategories();
@@ -294,6 +297,7 @@ protected:
    SerializedVector< PurchaseEntry >            m_purchases;
 
    U8                                        m_gameProductId;
+   bool                                      m_connectToAssetServer;
    bool                                      m_isLoggingIn;
    bool                                      m_isLoggedIn;
    bool                                      m_isCreatingAccount;
@@ -304,7 +308,7 @@ protected:
 
    mutable U32                               m_beginTime, m_endTime;
    bool                                      m_wasCallbackForReadyToBeginSent;
-   bool                                      m_requiresGatewayDiscovery;
+   bool                                      m_requiresGatewayDiscovery;   
 
    MBerNotifierList                          m_callbacks;
    RawDataAccumulator                        m_rawDataBuffer;

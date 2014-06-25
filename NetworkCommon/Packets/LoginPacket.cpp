@@ -155,7 +155,6 @@ bool  PurchaseEntry::SerializeIn( const U8* data, int& bufferOffset )
    Serialize::In( data, bufferOffset, name );
    Serialize::In( data, bufferOffset, quantity );
    Serialize::In( data, bufferOffset, productUuid );
-   Serialize::In( data, bufferOffset, parentUuid );
 
    return true;
 }
@@ -165,7 +164,7 @@ bool  PurchaseEntry::SerializeOut( U8* data, int& bufferOffset ) const
    Serialize::Out( data, bufferOffset, name );
    Serialize::Out( data, bufferOffset, quantity );
    Serialize::Out( data, bufferOffset, productUuid );
-   Serialize::Out( data, bufferOffset, parentUuid );
+
    return true;
 }
 ///////////////////////////////////////////////////////////////
@@ -174,7 +173,9 @@ bool  ProductBriefPacketed::SerializeIn( const U8* data, int& bufferOffset )
 {
    Serialize::In( data, bufferOffset, uuid );
    Serialize::In( data, bufferOffset, vendorUuid );
-   Serialize::In( data, bufferOffset, quantity );
+   Serialize::In( data, bufferOffset, productType );
+   Serialize::In( data, bufferOffset, parentUuid );
+   Serialize::In( data, bufferOffset, iconName );   
 
    return true;
 }
@@ -183,7 +184,9 @@ bool  ProductBriefPacketed::SerializeOut( U8* data, int& bufferOffset ) const
 {
    Serialize::Out( data, bufferOffset, uuid );
    Serialize::Out( data, bufferOffset, vendorUuid );
-   Serialize::Out( data, bufferOffset, quantity );
+   Serialize::Out( data, bufferOffset, productType );
+   Serialize::Out( data, bufferOffset, parentUuid );
+   Serialize::Out( data, bufferOffset, iconName );   
 
    return true;
 }
@@ -331,6 +334,42 @@ bool  PacketPrepareForUserLogout::SerializeOut( U8* data, int& bufferOffset ) co
    Serialize::Out( data, bufferOffset, uuid );
    Serialize::Out( data, bufferOffset, connectionId );
    Serialize::Out( data, bufferOffset, wasDisconnectedByError );
+
+   return true;
+}
+
+///////////////////////////////////////////////////////////////
+
+bool  PacketLoginThrottlePackets::SerializeIn( const U8* data, int& bufferOffset )
+{
+   BasePacket::SerializeIn( data, bufferOffset );
+   Serialize::In( data, bufferOffset, delayBetweenPacketsMs );
+
+   return true;
+}
+
+bool  PacketLoginThrottlePackets::SerializeOut( U8* data, int& bufferOffset ) const
+{
+   BasePacket::SerializeOut( data, bufferOffset );
+   Serialize::Out( data, bufferOffset, delayBetweenPacketsMs );
+
+   return true;
+}
+
+///////////////////////////////////////////////////////////////
+
+bool  PacketLoginDebugThrottleUserPackets::SerializeIn( const U8* data, int& bufferOffset )
+{
+   BasePacket::SerializeIn( data, bufferOffset );
+   Serialize::In( data, bufferOffset, level );
+
+   return true;
+}
+
+bool  PacketLoginDebugThrottleUserPackets::SerializeOut( U8* data, int& bufferOffset ) const
+{
+   BasePacket::SerializeOut( data, bufferOffset );
+   Serialize::Out( data, bufferOffset, level );
 
    return true;
 }

@@ -125,9 +125,9 @@ public:
    bool  SerializeIn( const U8* data, int& bufferOffset );
    bool  SerializeOut( U8* data, int& bufferOffset ) const;
 
-   string   userUuid; 
-   string   inviteGroup;
-   string   message;
+   UuidString  userUuid; 
+   string      inviteGroup;
+   string      message;
 };
 
 ///////////////////////////////////////////////////////////////

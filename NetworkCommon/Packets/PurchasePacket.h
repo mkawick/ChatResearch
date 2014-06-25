@@ -6,15 +6,15 @@
 
 struct PurchaseInfo
 {
-   string   exchangeUuid;
+   UuidString  exchangeUuid;
    string   exchangeTitle;
    string   exchangeDescription;
 
-   string   productSourceUuid;
+   UuidString  productSourceUuid;
    string   productSourceName;
    int      quantityRequiredSource;
 
-   string   productDestUuid;
+   UuidString  productDestUuid;
    string   productDestName;
    int      quantityGivenDest;
 
@@ -121,7 +121,7 @@ public:
    bool  SerializeIn( const U8* data, int& bufferOffset );
    bool  SerializeOut( U8* data, int& bufferOffset ) const;
 
-   string   purchaseUuid;
+   UuidString  purchaseUuid;
 };
 
 ///////////////////////////////////////////////////////////////
@@ -134,7 +134,7 @@ public:
    bool  SerializeIn( const U8* data, int& bufferOffset );
    bool  SerializeOut( U8* data, int& bufferOffset ) const;
 
-   string   purchaseUuid;
+   UuidString  purchaseUuid;
    bool     success;
 };
 

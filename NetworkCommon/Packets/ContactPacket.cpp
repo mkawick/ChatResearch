@@ -4,6 +4,12 @@
 #include <iostream>
 #include <iomanip>
 
+#include "../ServerConstants.h"
+
+#if PLATFORM == PLATFORM_WINDOWS
+#pragma warning( disable:4996 )
+#endif
+
 #include "ContactPacket.h"
 using namespace std;
 

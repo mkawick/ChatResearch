@@ -430,7 +430,7 @@ bool     DiplodocusAsset::ConnectUser( PacketPrepareForUserLogin* loginPacket )
 
       UserTicket ut;
       ut.userName =        loginPacket->userName;
-      ut.uuid =            loginPacket->uuid;
+      ut.uuid =            loginPacket->uuid.c_str();
       ut.userTicket =      loginPacket->loginKey;
       ut.connectionId =    0;
       ut.gameProductId =   loginPacket->gameProductId;

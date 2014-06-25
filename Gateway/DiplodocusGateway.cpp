@@ -586,49 +586,65 @@ void  DiplodocusGateway::HandlePacketToKhaan( KhaanGateway* khaan, BasePacket* p
 
    PrintDebugText( "HandlePacketToKhaan" );
    U32 connectionId = khaan->GetConnectionId();
-   if( packet->packetType == PacketType_Login && 
-       packet->packetSubType == PacketLogin::LoginType_InformGatewayOfLoginStatus )
-   {
-      PacketCleaner cleaner( packet );
-      PacketLoginToGateway* finishedLogin = static_cast< PacketLoginToGateway* >( packet );
-      if( finishedLogin->wasLoginSuccessful )
+   bool  packetHandled = false;
+   if( packet->packetType == PacketType_Login )
+   { 
+      if( packet->packetSubType == PacketLogin::LoginType_InformGatewayOfLoginStatus )
       {
-         khaan->AuthorizeConnection();
-         khaan->SetAdminLevelOperations( finishedLogin->adminLevel );
-         khaan->SetLanguageId( finishedLogin->languageId );
-
-         PacketLoginToClient* clientNotify = new PacketLoginToClient;
-         clientNotify->wasLoginSuccessful = finishedLogin->wasLoginSuccessful;
-         clientNotify->uuid = finishedLogin->uuid;
-         clientNotify->userName = finishedLogin->userName;
-         clientNotify->lastLogoutTime = finishedLogin->lastLogoutTime;
-         clientNotify->connectionId = connectionId;
-         clientNotify->loginKey = finishedLogin->loginKey;
-         packet = clientNotify;
-
-         TrackCountStats( StatTrackingConnections::StatTracking_UserLoginSuccess, 1, 0 );
-      }
-      else
-      {
-         PrintDebugText( "HandlePacketToKhaan:: MarkForDeletion", 2 );
-         khaan->DenyAllFutureData();
-         TrackCountStats( StatTracking_ForcedDisconnect, 1, 0 );
-
-         ConnectionMapIterator it = m_connectionMap.find( connectionId );
-         if( it != m_connectionMap.end() )
+         PacketCleaner cleaner( packet );
+         PacketLoginToGateway* finishedLogin = static_cast< PacketLoginToGateway* >( packet );
+         if( finishedLogin->wasLoginSuccessful )
          {
-            PacketLogoutToClient* logoutPacket = new PacketLogoutToClient;
-            //logoutPacket->wasDisconnectedByError = true;
-            packet = logoutPacket;
+            khaan->AuthorizeConnection();
+            khaan->SetAdminLevelOperations( finishedLogin->adminLevel );
+            khaan->SetLanguageId( finishedLogin->languageId );
 
-            KhaanGatewayWrapper& khaanWrapper = it->second;
-            time_t currentTime;
-            time( &currentTime );
-            khaanWrapper.MarkForDeletion( currentTime );
+            PacketLoginToClient* clientNotify = new PacketLoginToClient;
+            clientNotify->wasLoginSuccessful = finishedLogin->wasLoginSuccessful;
+            clientNotify->uuid = finishedLogin->uuid;
+            clientNotify->userName = finishedLogin->userName;
+            clientNotify->lastLogoutTime = finishedLogin->lastLogoutTime;
+            clientNotify->connectionId = connectionId;
+            clientNotify->loginKey = finishedLogin->loginKey;
+            packet = clientNotify;
+
+            TrackCountStats( StatTrackingConnections::StatTracking_UserLoginSuccess, 1, 0 );
+            packetHandled = true;
          }
-         
-         connectionId = 0;
+         else
+         {
+            PrintDebugText( "HandlePacketToKhaan:: MarkForDeletion", 2 );
+            khaan->DenyAllFutureData();
+            TrackCountStats( StatTracking_ForcedDisconnect, 1, 0 );
+
+            ConnectionMapIterator it = m_connectionMap.find( connectionId );
+            if( it != m_connectionMap.end() )
+            {
+               PacketLogoutToClient* logoutPacket = new PacketLogoutToClient;
+               //logoutPacket->wasDisconnectedByError = true;
+               packet = logoutPacket;
+
+               KhaanGatewayWrapper& khaanWrapper = it->second;
+               time_t currentTime;
+               time( &currentTime );
+               khaanWrapper.MarkForDeletion( currentTime );
+               packetHandled = true;
+            }
+
+            connectionId = 0;
+         }
       }
+      else if( packet->packetSubType == PacketLogin::LoginType_ThrottleUsersConnection )
+      {
+         packetHandled = true;
+         PacketLoginThrottlePackets* throttler = static_cast< PacketLoginThrottlePackets* >( packet );
+         khaan->ThrottleConnection( throttler->delayBetweenPacketsMs );
+      }
+   }
+
+   if( packetHandled == false )
+   {
+      
    }
 
    if( m_printPacketTypes )

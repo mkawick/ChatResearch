@@ -2,6 +2,11 @@
 // ChatPacket.cpp
 
 #include "../ServerConstants.h"
+
+#if PLATFORM == PLATFORM_WINDOWS
+#pragma warning( disable:4996 )
+#endif
+
 #include "Serialize.h"
 #include "BasePacket.h"
 #include "ChatPacket.h"

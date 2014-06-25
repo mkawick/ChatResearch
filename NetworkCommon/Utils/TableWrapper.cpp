@@ -1,3 +1,10 @@
+
+#include "../ServerConstants.h"
+
+#if PLATFORM == PLATFORM_WINDOWS
+#pragma warning( disable:4996 )
+#endif
+
 #include "TableWrapper.h"
 
 const char* const TableUser::column_names[] = 

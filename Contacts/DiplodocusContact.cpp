@@ -674,7 +674,7 @@ bool     DiplodocusContact::ConnectUser( PacketPrepareForUserLogin* loginPacket 
 
       UserInfo ui;
       ui.userName =        loginPacket->userName;
-      ui.uuid =            loginPacket->uuid;
+      ui.uuid =            loginPacket->uuid.c_str();
       ui.apple_id = "";
       ui.connectionId =    connectionId;
       ui.gameProductId =   loginPacket->gameProductId;

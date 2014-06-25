@@ -319,6 +319,7 @@ struct ChatHistoryLookupData
    string   channelUuid;
    string   startingTimestamp;
    int      startingIndex;
+   int      numRecordsRequested;
 };
 
 void     ChatUser::QueryChatChannelHistory( const string& channelUuid, int numRecords, int startingIndex, const string& startingTimestamp  )
@@ -338,6 +339,7 @@ void     ChatUser::QueryChatChannelHistory( const string& channelUuid, int numRe
       numRecords = 1;
    if( numRecords > 100 )
       numRecords = 100;
+   numRecords++;// always request 1 extra to use as a sentinel
 
    if( startingIndex < 0 )
       startingIndex = 0;
@@ -377,6 +379,7 @@ void     ChatUser::QueryChatChannelHistory( const string& channelUuid, int numRe
    extras->channelUuid = channelUuid;
    extras->startingIndex = startingIndex;
    extras->startingTimestamp = startingTimestamp;
+   extras->numRecordsRequested = numRecords;
    dbQuery->customData = extras;
 
    m_chatServer->AddQueryToOutput( dbQuery, m_connectionId );
@@ -410,6 +413,7 @@ void     ChatUser::QueryChatP2PHistory( const string& userUuid, int numRecords, 
       numRecords = 1;
    if( numRecords > 100 )
       numRecords = 100;
+   numRecords++;// always request 1 extra to use as a sentinel
 
    if( startingIndex < 0 )
       startingIndex = 0;
@@ -456,6 +460,8 @@ void     ChatUser::QueryChatP2PHistory( const string& userUuid, int numRecords, 
    extras->userUuid = userUuid;
    extras->startingIndex = startingIndex;
    extras->startingTimestamp = startingTimestamp;
+   extras->numRecordsRequested = numRecords;
+
    dbQuery->customData = extras;
 
    m_chatServer->AddQueryToOutput( dbQuery, m_connectionId );
@@ -658,7 +664,7 @@ void     ChatUser::SendChatChannelHistoryToClient( const PacketDbQueryResult * d
    ChatHistoryLookupData* extras = reinterpret_cast<ChatHistoryLookupData*> ( dbResult->customData  );
    if( extras )
    {
-      SendChatHistoryToClientCommon( dbResult->bucket, extras->userUuid , extras->channelUuid, extras->startingTimestamp, extras->startingIndex );
+      SendChatHistoryToClientCommon( dbResult->bucket, extras->userUuid , extras->channelUuid, extras->startingTimestamp, extras->startingIndex, extras->numRecordsRequested );
       delete extras;
    }   
 }
@@ -676,64 +682,91 @@ void     ChatUser::SendChatp2pHistoryToClient( PacketDbQueryResult * dbResult )
    ChatHistoryLookupData* extras = reinterpret_cast<ChatHistoryLookupData*> ( dbResult->customData  );
    if( extras )
    {
-      SendChatHistoryToClientCommon( dbResult->bucket, extras->userUuid , extras->channelUuid, extras->startingTimestamp, extras->startingIndex );
+      SendChatHistoryToClientCommon( dbResult->bucket, extras->userUuid , extras->channelUuid, extras->startingTimestamp, extras->startingIndex, extras->numRecordsRequested );
       delete extras;
    }   
 }
 
 //---------------------------------------------------------------
 
-void     ChatUser::SendChatHistoryToClientCommon( const DynamicDataBucket& bucket, const string& userUuid, const string& chatChannelUuid, const string& startingTimestamp, int startingIndex )
+void     ChatUser::SendChatHistoryToClientCommon( const DynamicDataBucket& bucket, const string& userUuid, const string& chatChannelUuid, const string& startingTimestamp, int startingIndex, int numExpected )
 {
    SimpleChatTable              enigma( bucket );
    const int maxNumMessagesPerPacket = 20;
    PacketChatHistoryResult* result = new PacketChatHistoryResult;
-   result->userUuid = userUuid;
-   result->chatChannelUuid = chatChannelUuid;
-   result->startingIndex = startingIndex;
-   result->startingTimestamp = startingTimestamp;
+   result->userUuid =            userUuid;
+   result->chatChannelUuid =     chatChannelUuid;
+   result->startingIndex =       startingIndex;
+   result->startingTimestamp =   startingTimestamp;
 
+   int countPackaged = 0;
    SimpleChatTable::iterator    it = enigma.begin();
-   while( it != enigma.end() )
+   bool sendSentinel = true;
+   if( it != enigma.end() )
    {
-      ChatTable::row       row = *it++;
-      ChatEntry            entry;
-      entry.message =      row[ SimpleChat::Column_text ];
-      entry.userName =     row[ SimpleChat::Column_user_name ];
-      entry.useruuid =     row[ SimpleChat::Column_user_uuid ];
-      entry.timestamp =    row[ SimpleChat::Column_timestamp ];
-      entry.userTempId = m_chatRoomManager->GetUserId( entry.useruuid );
-
-      const string& gameTurn = row[ SimpleChat::Column_game_turn ];
-
-      if( gameTurn.size() && gameTurn != "NULL" ) // can be ""
+      int numMessages = enigma.size();      
+      if( numMessages < numExpected ) // 0
       {
-         entry.gameTurn =  boost::lexical_cast< int >( gameTurn );
+         sendSentinel = true;// this means that we don't have any more records
       }
       else
       {
-         entry.gameTurn  = 0;
+         sendSentinel = false;
       }
-     
-      result->chat.push_back( entry );
-      // send once we have so many items
-      if( ( result->chat.size() % maxNumMessagesPerPacket) == 0 )
+      if( numMessages > 1 )
       {
-         SendMessageToClient( result );
-         if( it != enigma.end() )
+         numMessages --;// we don't want the last item which is used as a sentinel.         
+      }
+
+      for( int i=0; i<numMessages; i++ ) //countPackaged
+      {
+         ChatTable::row       row = *it++;
+         ChatEntry            entry;
+         entry.message =      row[ SimpleChat::Column_text ];
+         entry.userName =     row[ SimpleChat::Column_user_name ];
+         entry.useruuid =     row[ SimpleChat::Column_user_uuid ];
+         entry.timestamp =    row[ SimpleChat::Column_timestamp ];
+         entry.userTempId = m_chatRoomManager->GetUserId( entry.useruuid );
+
+         const string& gameTurn = row[ SimpleChat::Column_game_turn ];
+
+         if( gameTurn.size() && gameTurn != "NULL" ) // can be ""
          {
-            result = new PacketChatHistoryResult;
-            result->userUuid = userUuid;
-            result->chatChannelUuid = chatChannelUuid;
+            entry.gameTurn =  boost::lexical_cast< int >( gameTurn );
          }
-         else 
+         else
          {
-            result = NULL;
+            entry.gameTurn  = 0;
+         }
+        
+         result->chat.push_back( entry );
+         countPackaged ++;
+
+         // send once we have so many items
+         if( ( result->chat.size() % maxNumMessagesPerPacket) == 0 )
+         {
+            SendMessageToClient( result );
+            if( i != numMessages-1 )
+            {
+               result = new PacketChatHistoryResult;
+               result->userUuid = userUuid;
+               result->chatChannelUuid = chatChannelUuid;
+            }
+            else 
+            {
+               result = NULL;
+            }
          }
       }
    }
-   // send the 'residual'
-   if( result )//&& result->chat.size() )
+
+   if( sendSentinel == true )
+   {
+      ChatEntry            entry;// empty record
+      result->chat.push_back( entry );
+   }
+
+   if( result )
    {
       SendMessageToClient( result );
    }

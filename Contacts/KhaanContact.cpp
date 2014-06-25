@@ -1,6 +1,12 @@
 #include <iostream>
 #include <memory.h>
 
+#include "../NetworkCommon/ServerConstants.h"
+
+#if PLATFORM == PLATFORM_WINDOWS
+#pragma warning( disable:4996 )
+#endif
+
 #include "../NetworkCommon/Packets/PacketFactory.h"
 #include "../NetworkCommon/Packets/BasePacket.h"
 #include "../NetworkCommon/Packets/GamePacket.h"

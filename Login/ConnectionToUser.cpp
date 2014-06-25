@@ -654,7 +654,7 @@ void     ConnectionToUser:: SendListOfOwnedProductsToClient( U32 m_connectionId 
       PurchaseEntry pe;
       pe.name = pb.localizedName;
       pe.quantity = pb.quantity;
-      if( pb.productDbId || pe.name.size() == 0 )// fix up potentially bad data
+      if( pb.productDbId )//|| pe.name.size() == 0 )// fix up potentially bad data
       {
          ProductInfo pi;
          userManager->GetProductByProductId( pb.productDbId, pi );
@@ -663,11 +663,11 @@ void     ConnectionToUser:: SendListOfOwnedProductsToClient( U32 m_connectionId 
             //userManager->GetProductByProductId( pb.productDbId, pi );
             pe.name = userManager->GetStringLookup()->GetString( pi.lookupName, m_languageId );
          }
-         if( pi.parentId != 0 )
+       /**  if( pi.parentId != 0 )
          {
             userManager->GetProductByProductId( pi.parentId, pi );// reuse this local variable
             pe.parentUuid = pi.uuid;
-         }
+         }*/
          
       }
       if( pe.name == "bunk01" ||
@@ -718,7 +718,7 @@ bool     ConnectionToUser:: AddPurchase( const PacketAddPurchaseEntry* purchase 
    if( m_adminLevel > 0 )
    {
       ProductInfo productInfo;
-      string productUuid = purchase->productUuid;
+      string productUuid = purchase->productUuid.c_str();
       bool success = userManager->FindProductByUuid( productUuid, productInfo );
       if( success == false )
       {
@@ -742,7 +742,7 @@ bool     ConnectionToUser:: AddPurchase( const PacketAddPurchaseEntry* purchase 
          return true;
       }
 
-      string userUuid =    purchase->userUuid;
+      string userUuid =    purchase->userUuid.c_str();
       string userEmail =   purchase->userEmail;
       string userName =    purchase->userName;
 
@@ -850,7 +850,7 @@ void  ConnectionToUser:: AddItemToProductTable( const PurchaseEntry& purchaseEnt
    std::transform( pi.vendorUuid.begin(), pi.vendorUuid.end(), pi.vendorUuid.begin(), ::tolower );
    // productUuid .. I don't know what to do with this.
    //pi.price = purchaseEntry.number_price;
-   pi.quantity = purchaseEntry.quantity;
+   //pi.quantity = purchaseEntry.quantity;
 
    productsWaitingForInsertionToDb.push_back( pi );
    //productsOwned.insert( pi );
@@ -1220,6 +1220,9 @@ void     ConnectionToUser:: PackOtherUserProfileRequestAndSendToClient( U32 m_co
 
    response->basicProfile.insert( "name", m_userName );
    response->basicProfile.insert( "uuid", m_userUuid );
+   response->basicProfile.insert( "motto", m_userMotto );
+   ///userManager->GetStringLookup()->GetString( lookupName, m_languageId );
+   //response->basicProfile.insert( "language",  );
    response->basicProfile.insert( "show_win_loss_record", boost::lexical_cast< string >( m_showWinLossRecord  ? 1:0 ) );
    response->basicProfile.insert( "time_zone", boost::lexical_cast< string >( m_timeZone ) );
 
@@ -1300,14 +1303,14 @@ bool     ConnectionToUser:: RequestProfile( const PacketRequestUserProfile* prof
       return false;
    }
 
-   UserConnectionMapIterator  it = FindUser( profileRequest->userEmail, profileRequest->uuid, profileRequest->userName );
+   UserConnectionMapIterator  it = FindUser( profileRequest->userEmail, profileRequest->uuid.c_str(), profileRequest->userName );
    if( it != adminUserData.end() )
    {
       it->second.PackUserProfileRequestAndSendToClient( m_connectionId );
       return true;
    }
 
-   RequestProfile( profileRequest->userEmail, profileRequest->uuid, profileRequest->userName, true );
+   RequestProfile( profileRequest->userEmail, profileRequest->uuid.c_str(), profileRequest->userName, true );
 
    return false;
 }
@@ -1392,7 +1395,7 @@ bool     ConnectionToUser:: UpdateProfile( const PacketUpdateUserProfile* update
       it++;
    }*/
 
-   UserConnectionMapIterator  it = FindUser( updateProfileRequest->email, updateProfileRequest->userUuid, updateProfileRequest->userName );
+   UserConnectionMapIterator  it = FindUser( updateProfileRequest->email, updateProfileRequest->userUuid.c_str(), updateProfileRequest->userName );
    if( it != adminUserData.end() )
    {
       it->second.SaveUpdatedProfile( updateProfileRequest, m_adminLevel, true );

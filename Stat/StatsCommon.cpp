@@ -3,6 +3,13 @@
 #include <boost/random.hpp>
 #include <boost/generator_iterator.hpp>
 
+#include "../NetworkCommon/ServerConstants.h"
+
+#if PLATFORM == PLATFORM_WINDOWS
+#pragma warning( disable:4996 )
+#endif
+
+
 #include "../NetworkCommon/Packets/PacketFactory.h"
 #include "../NetworkCommon/Packets/StatPacket.h"
 #include "StatsCommon.h"

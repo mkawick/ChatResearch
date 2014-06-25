@@ -81,8 +81,8 @@ public:
    bool  SerializeIn( const U8* data, int& bufferOffset );
    bool  SerializeOut( U8* data, int& bufferOffset ) const;
 
-   string   name;
-   string   uuid;
+   string      name;
+   UuidString  uuid;
 };
       
 ///////////////////////////////////////////////////////////////
@@ -95,7 +95,7 @@ public:
    bool  SerializeIn( const U8* data, int& bufferOffset );
    bool  SerializeOut( U8* data, int& bufferOffset ) const;
 
-   string   uuid;
+   UuidString  uuid;
 };
 
 ///////////////////////////////////////////////////////////////
@@ -109,7 +109,7 @@ public:
    bool  SerializeOut( U8* data, int& bufferOffset ) const;
 
    string   name;
-   string   uuid;
+   UuidString  uuid;
 };
 
 ///////////////////////////////////////////////////////////////
@@ -122,8 +122,8 @@ public:
    bool  SerializeIn( const U8* data, int& bufferOffset );
    bool  SerializeOut( U8* data, int& bufferOffset ) const;
 
-   string   userUuid;
-   string   gameUuid;
+   UuidString  userUuid;
+   UuidString  gameUuid;
 };
 
 ///////////////////////////////////////////////////////////////
@@ -137,7 +137,7 @@ public:
    bool  SerializeOut( U8* data, int& bufferOffset ) const;
 
    string   name;
-   string   uuid;
+   UuidString  uuid;
 };
       
 ///////////////////////////////////////////////////////////////
@@ -150,8 +150,8 @@ public:
    bool  SerializeIn( const U8* data, int& bufferOffset );
    bool  SerializeOut( U8* data, int& bufferOffset ) const;
 
-   string   userUuid;
-   string   gameUuid;
+   UuidString  userUuid;
+   UuidString  gameUuid;
 };
 
 ///////////////////////////////////////////////////////////////
@@ -165,8 +165,8 @@ public:
    bool  SerializeOut( U8* data, int& bufferOffset ) const;
 
    string   userName;
-   string   userUuid;
-   string   gameUuid;
+   UuidString  userUuid;
+   UuidString  gameUuid;
 };
 
 ///////////////////////////////////////////////////////////////
@@ -179,8 +179,8 @@ public:
    bool  SerializeIn( const U8* data, int& bufferOffset );
    bool  SerializeOut( U8* data, int& bufferOffset ) const;
 
-   string   userUuid;
-   string   gameUuid;
+   UuidString  userUuid;
+   UuidString  gameUuid;
 };
 
 ///////////////////////////////////////////////////////////////
@@ -193,8 +193,8 @@ public:
    bool  SerializeIn( const U8* data, int& bufferOffset );
    bool  SerializeOut( U8* data, int& bufferOffset ) const;
 
-   string   userUuid;
-   string   gameUuid;
+   UuidString  userUuid;
+   UuidString  gameUuid;
    bool     wasSuccessful;
 };
 
@@ -208,8 +208,8 @@ public:
    bool  SerializeIn( const U8* data, int& bufferOffset );
    bool  SerializeOut( U8* data, int& bufferOffset ) const;
 
-   string   userUuid;
-   string   gameUuid;
+   UuidString  userUuid;
+   UuidString  gameUuid;
 };
 
 ///////////////////////////////////////////////////////////////
@@ -222,9 +222,9 @@ public:
    bool  SerializeIn( const U8* data, int& bufferOffset );
    bool  SerializeOut( U8* data, int& bufferOffset ) const;
 
-   string   userUuid;
-   string   gameUuid;
-   bool     wasSuccessful;
+   UuidString  userUuid;
+   UuidString  gameUuid;
+   bool           wasSuccessful;
 };
 
 ///////////////////////////////////////////////////////////////
@@ -237,7 +237,7 @@ public:
    bool  SerializeIn( const U8* data, int& bufferOffset );
    bool  SerializeOut( U8* data, int& bufferOffset ) const;
 
-   string   gameUuid;
+   UuidString  gameUuid;
 };
 
 ///////////////////////////////////////////////////////////////
@@ -250,8 +250,8 @@ public:
    bool  SerializeIn( const U8* data, int& bufferOffset );
    bool  SerializeOut( U8* data, int& bufferOffset ) const;
 
-   string   gameUuid;
-   int      currentTurn;
+   UuidString  gameUuid;
+   int            currentTurn;
 };
 
 ///////////////////////////////////////////////////////////////
@@ -301,8 +301,8 @@ public:
    bool  SerializeIn( const U8* data, int& bufferOffset );
    bool  SerializeOut( U8* data, int& bufferOffset ) const;
 
-   string   gameName;
-   string   gameUuid;
+   string         gameName;
+   UuidString  gameUuid;
    SerializedKeyValueVector< string >   users; // game details?
 };
 
@@ -320,7 +320,7 @@ struct WinLoss
                hoursLogged( 0 ),
                minutesLogged( 0 )
    {}
-   string   gameUuid;
+   UuidString  gameUuid;
    bool     isPrivate;
    int      wins;
    int      losses;
@@ -345,8 +345,8 @@ public:
    bool  SerializeIn( const U8* data, int& bufferOffset );
    bool  SerializeOut( U8* data, int& bufferOffset ) const;
 
-   string   userUuid;   
-   string   gameUuid;
+   UuidString  userUuid;   
+   UuidString  gameUuid;
 };
 
 ///////////////////////////////////////////////////////////////
@@ -359,8 +359,8 @@ public:
    bool  SerializeIn( const U8* data, int& bufferOffset );
    bool  SerializeOut( U8* data, int& bufferOffset ) const;
 
-   string   userUuid;
-   WinLoss  winLoss;
+   UuidString  userUuid;
+   WinLoss        winLoss;
 };
 
 ///////////////////////////////////////////////////////////////
@@ -443,7 +443,7 @@ public:
    bool  SerializeIn( const U8* data, int& bufferOffset ); // allocates memory
    bool  SerializeOut( U8* data, int& bufferOffset ) const;
 
-   string   userUuid;
+   UuidString  userUuid;
    U8       notificationType;
    string   additionalText;
 

@@ -7,6 +7,12 @@
 #include <boost/lexical_cast.hpp>
 using boost::format;
 
+#include "../NetworkCommon/ServerConstants.h"
+
+#if PLATFORM == PLATFORM_WINDOWS
+#pragma warning( disable:4996 )
+#endif
+
 #include "ChatRoomManager.h"
 #include "../NetworkCommon/Packets/BasePacket.h"
 #include "../NetworkCommon/Packets/ChatPacket.h"
@@ -402,7 +408,10 @@ bool     ChatRoomManager::GetChatRooms( const string& userUuid, ChannelFullKeyVa
    {
       const list< stringhash >& listOfChannels = userIter->second.channels;// cache this pointer (optimization)
       int numChannels = listOfChannels.size();
-      availableChannels.reserve( numChannels );
+      int numToReserve = numChannels;
+      if( numToReserve == 0 )
+         numToReserve = 1;
+      availableChannels.reserve( numToReserve );
 
       list< stringhash >::const_iterator it = listOfChannels.begin();
       while( it != listOfChannels.end() )
@@ -1137,7 +1146,7 @@ bool     ChatRoomManager::UserSendsChatToChannel( const string& senderUuid, cons
 
 bool     ChatRoomManager::RequestChatRoomInfo( const PacketChatListAllMembersInChatChannel* packet, U32 connectionId )
 {
-   const string& channelUuid = packet->chatChannelUuid;
+   const string& channelUuid = packet->chatChannelUuid.c_str();
    stringhash channelHash = GenerateUniqueHash( channelUuid );
 
    ChannelMapIterator channelIter = m_channelMap.find( channelHash );
@@ -1278,7 +1287,7 @@ bool     ChatRoomManager::SetUserPreferences( const string& userUuid, bool block
 bool     ChatRoomManager::AddUserToRoom( const PacketChatAddUserToChatChannelGameServer* request )
 {
    U32 gameInstanceId = request->gameInstanceId;
-   const string& addedUserUuid = request->userUuid; // user to remove
+   const string addedUserUuid = request->userUuid.c_str(); // user to remove
 
    string errorText = " AddUserToRoom: Game server ";
    errorText += boost::lexical_cast< string >( request->gameInstanceId );
@@ -1616,7 +1625,7 @@ bool     ChatRoomManager::RemoveRoomAndMarkRoomInDB( const string& channelUuid )
 bool     ChatRoomManager::RemoveUserFromRoom( const PacketChatRemoveUserFromChatChannelGameServer* request )
 {
    U32 gameInstanceId = request->gameInstanceId;
-   const string& userUuid = request->userUuid; // user to remove
+   const string userUuid = request->userUuid.c_str(); // user to remove
 
    PacketChatRemoveUserFromChatChannelGameServerResponse* response = new PacketChatRemoveUserFromChatChannelGameServerResponse;
    response->gameId = request->gameId;
@@ -1821,7 +1830,7 @@ void     ChatRoomManager::QueryAllChatUsers( int startIndex, int numToFetch )
    string 
    queryString = "SELECT user_name, uuid, users.user_id, user_profile.block_contact_invitations, user_profile.block_group_invitations ";
    queryString += "FROM users INNER JOIN user_profile ON users.user_id=user_profile.user_id ";
-   queryString += "WHERE user_email IS NOT NULL LIMIT ";
+   queryString += "WHERE user_email IS NOT NULL AND users.active=1 LIMIT ";
 
    queryString += boost::lexical_cast< string >( startIndex );
    queryString += ",";

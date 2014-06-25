@@ -36,6 +36,8 @@ public:
       LoginType_RequestOtherUserProfileResponse,
       LoginType_UpdateSelfProfile,
       LoginType_UpdateSelfProfileResponse,
+      LoginType_ThrottleUsersConnection,
+      LoginType_DebugThrottleUsersConnection,
       LoginType_UserUpdateProfile
    };
 public:
@@ -44,7 +46,7 @@ public:
    bool  SerializeIn( const U8* data, int& bufferOffset );
    bool  SerializeOut( U8* data, int& bufferOffset ) const;
 
-   string   uuid;
+   UuidString uuid;
    string   userName;
    
    string   loginKey;
@@ -172,19 +174,21 @@ struct PurchaseEntry
    //string   productStoreId;
    float    quantity;
    string   productUuid;
-   string   parentUuid;
 };
 
 struct ProductBriefPacketed
 {
-   ProductBriefPacketed(): quantity( 0 )  {}
+   ProductBriefPacketed() : productType( GameProductType_Game )  {}
 
    bool  SerializeIn( const U8* data, int& bufferOffset );
    bool  SerializeOut( U8* data, int& bufferOffset ) const;
 
-   string   uuid;
-   string   vendorUuid;
-   float    quantity;
+   UuidString  uuid;
+   UuidString  vendorUuid; // e.g. summonerwars.mv.bund.pt2
+   UuidString  parentUuid;
+   //float    quantity;
+   int      productType;
+   string   iconName;
 };
 
 //--------------------------------
@@ -197,7 +201,7 @@ public:
    bool  SerializeIn( const U8* data, int& bufferOffset );
    bool  SerializeOut( U8* data, int& bufferOffset ) const;
 
-   string   userUuid;
+   UuidString  userUuid;
    int      platformId;
 };
 
@@ -213,12 +217,12 @@ public:
    bool  SerializeOut( U8* data, int& bufferOffset ) const;
 
    // the beneficiary's data
-   string         userUuid; 
+   UuidString     userUuid; 
    string         userEmail;
    string         userName;
 
    
-   string         productUuid;
+   UuidString     productUuid;
    string         adminNotes;
    int            platformId; // for which platforms is this item. 0=all. -1=none
    int            quantity;
@@ -248,7 +252,7 @@ public:
    bool  SerializeIn( const U8* data, int& bufferOffset );
    bool  SerializeOut( U8* data, int& bufferOffset ) const;
    
-   string         uuid;
+   UuidString     uuid;
    U32            connectionId;
    StringBucket   products;
 };
@@ -282,9 +286,36 @@ public:
    bool  SerializeIn( const U8* data, int& bufferOffset );
    bool  SerializeOut( U8* data, int& bufferOffset ) const;
 
-   string uuid;
+   UuidString  uuid;
    U32   connectionId;
    bool  wasDisconnectedByError;
+};
+
+///////////////////////////////////////////////////////////////
+
+class PacketLoginThrottlePackets : public PacketLogin
+{
+public:
+   PacketLoginThrottlePackets() : PacketLogin( PacketType_Login, PacketLogin::LoginType_ThrottleUsersConnection ) {}
+
+   bool  SerializeIn( const U8* data, int& bufferOffset );
+   bool  SerializeOut( U8* data, int& bufferOffset ) const;
+
+   U32      connectionId;
+   U32      delayBetweenPacketsMs;
+};
+
+///////////////////////////////////////////////////////////////
+
+class PacketLoginDebugThrottleUserPackets : public PacketLogin
+{
+public:
+   PacketLoginDebugThrottleUserPackets() : PacketLogin( PacketType_Login, PacketLogin::LoginType_DebugThrottleUsersConnection ) {}
+
+   bool  SerializeIn( const U8* data, int& bufferOffset );
+   bool  SerializeOut( U8* data, int& bufferOffset ) const;
+
+   U8       level;
 };
 
 ///////////////////////////////////////////////////////////////
@@ -299,7 +330,7 @@ public:
    bool  SerializeIn( const U8* data, int& bufferOffset );
    bool  SerializeOut( U8* data, int& bufferOffset ) const;
 
-   string   uuid;// you can use any of these fields or all.
+   UuidString  uuid;// you can use any of these fields or all.
    string   userEmail;
    string   userName;
 };
@@ -329,7 +360,7 @@ public:
    string   userName;
    string   passwordHash;
    string   email;
-   string   userUuid;
+   UuidString  userUuid;
    string   lastLoginTime;
    string   loggedOutTime;
    string   motto;
@@ -367,7 +398,7 @@ public:
    string   userName;
    string   passwordHash;
    string   email;
-   string   userUuid;
+   UuidString  userUuid;
    int      adminLevel;
    int      languageId;
 
@@ -385,7 +416,7 @@ public:
    bool  SerializeIn( const U8* data, int& bufferOffset );
    bool  SerializeOut( U8* data, int& bufferOffset ) const;
 
-   string   uuid;// you can use any of these fields or all.
+   UuidString  uuid;// you can use any of these fields or all.
    bool     success;
 };
 

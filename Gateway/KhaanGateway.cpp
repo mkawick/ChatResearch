@@ -21,7 +21,9 @@ KhaanGateway::KhaanGateway( int id, bufferevent* be ):
       m_logoutPacketSent( false ),
       m_adminLevel( 0 ),
       m_languageId( 0 ),
-      m_gateway( NULL )
+      m_gateway( NULL ),
+      m_timeoutMs( 0 ),
+      m_lastSentToClientTimestamp( 0 )
 {
    m_randomNumberOfPacketsBeforeLogin = 30 + rand() % 20;
    SendThroughLibEvent( true );
@@ -76,6 +78,50 @@ void  KhaanGateway::PreCleanup()
          m_gateway->TrackCountStats( StatTrackingConnections::StatTracking_UsersLostConnection, 1, 0 );
       }
    }
+}
+
+//-----------------------------------------------------------------------------
+
+bool	KhaanGateway :: Update()
+{
+   UpdateInwardPacketList();
+
+   // begin throttling output
+   bool  shouldUpdateOutward = false;
+   if( m_timeoutMs == 0 )
+   {
+      shouldUpdateOutward = true;
+   }
+   else
+   {
+      U32 currentTime = GetCurrentMilliseconds();
+
+      U32 diffTime = currentTime - m_lastSentToClientTimestamp;
+      if( diffTime >= m_timeoutMs )
+      {
+         shouldUpdateOutward = true;
+         m_lastSentToClientTimestamp = currentTime;
+      }
+   }
+
+   if( shouldUpdateOutward == true )
+   {
+      UpdateOutwardPacketList();
+   }
+   // end throttling output
+
+   // I think that this makes sense
+   CleanupAllEvents();
+
+   if( m_packetsOut.size() || m_packetsIn.size() )// we didn't finish
+   {
+      string loggingText = "Remaining packet out count: ";
+      loggingText += boost::lexical_cast< string >( m_packetsOut.size() );
+      Log( loggingText );
+      return false;
+   }
+
+   return true;
 }
 
 //-----------------------------------------------------------------------------------------

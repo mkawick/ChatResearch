@@ -123,7 +123,7 @@ public:
 
    string   message;
    string   senderName;
-   string   senderUuid;
+   UuidString  senderUuid;
    int      type;
 };
 
@@ -228,9 +228,9 @@ public:
    bool  SerializeIn( const U8* data, int& bufferOffset );
    bool  SerializeOut( U8* data, int& bufferOffset ) const;
 
-   string userName;// one or the other
-   string uuid;
-   string message;
+   string      userName;// one or the other
+   UuidString  uuid;
+   string      message;
 };
 
 class PacketContact_InviteSentNotification : public PacketContact
@@ -264,7 +264,7 @@ public:
    bool  SerializeIn( const U8* data, int& bufferOffset );
    bool  SerializeOut( U8* data, int& bufferOffset ) const;
 
-   string contactUuid;
+   UuidString  contactUuid;
    string message;
 };
 
@@ -278,7 +278,7 @@ public:
    bool  SerializeIn( const U8* data, int& bufferOffset );
    bool  SerializeOut( U8* data, int& bufferOffset ) const;
 
-   string   invitationUuid;
+   UuidString  invitationUuid;
 };
 
 class PacketContact_AcceptInvite : public PacketContact
@@ -289,7 +289,7 @@ public:
    bool  SerializeIn( const U8* data, int& bufferOffset );
    bool  SerializeOut( U8* data, int& bufferOffset ) const;
 
-   string   invitationUuid;
+   UuidString  invitationUuid;
 };
 
 
@@ -303,7 +303,7 @@ public:
 
    string   fromUsername;
    string   toUsername;
-   string   invitationUuid;
+   UuidString  invitationUuid;
    string   message;
    bool     wasAccepted;
 };
@@ -317,7 +317,7 @@ public:
    bool  SerializeIn( const U8* data, int& bufferOffset );
    bool  SerializeOut( U8* data, int& bufferOffset ) const;
 
-   string   invitationUuid;
+   UuidString  invitationUuid;
    string   message;
 };
 
@@ -332,7 +332,7 @@ public:
    bool  SerializeOut( U8* data, int& bufferOffset ) const;
 
    string userName;
-   string uuid;
+   UuidString  uuid;
 };
 
 ///////////////////////////////////////////////////////////////////
@@ -371,7 +371,7 @@ public:
    bool  SerializeIn( const U8* data, int& bufferOffset );
    bool  SerializeOut( U8* data, int& bufferOffset ) const;
 
-   string         uuid;
+  UuidString      uuid;
    FriendInfo     friendInfo;
 };
 
@@ -385,7 +385,7 @@ public:
    bool  SerializeIn( const U8* data, int& bufferOffset );
    bool  SerializeOut( U8* data, int& bufferOffset ) const;
 
-   string         uuid;
+   UuidString     uuid;
    FriendInfo     friendInfo;
 };
 

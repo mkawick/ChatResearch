@@ -68,3 +68,14 @@ enum LanguageList // corresponds to the db-language table
    LanguageList_chinese,
    LanguageList_count
 };
+
+enum GameProductType 
+{
+   GameProductType_Game = 1,
+   GameProductType_Dlc,  
+   GameProductType_Consumable,
+   GameProductType_Entry, // not necessarily tournaments
+   GameProductType_currency,
+   GameProductType_TournamentEntry,  
+   GameProductType_NUM_TYPES 
+};

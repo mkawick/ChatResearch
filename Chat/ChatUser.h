@@ -70,7 +70,7 @@ private:
 
    void              QueryChatP2PHistory( const string& userUuid, int numRecords, int startingIndex, const string& startingTimestamp );
    void              SendChatp2pHistoryToClient( PacketDbQueryResult * dbResult );
-   void              SendChatHistoryToClientCommon ( const DynamicDataBucket& bucket, const string& userUuid, const string& chatChannelUuid, const string& startingTimestamp, int startingIndex );
+   void              SendChatHistoryToClientCommon ( const DynamicDataBucket& bucket, const string& userUuid, const string& chatChannelUuid, const string& startingTimestamp, int startingIndex, int numExpected );
 
    void              RequestProfileInfo();
    void              GetAllChatHistroySinceLastLogin();

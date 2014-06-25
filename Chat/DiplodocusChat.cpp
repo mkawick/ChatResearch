@@ -49,7 +49,7 @@ void  DiplodocusChat :: Init()
    ChatRoomManager::Set( this );
    m_chatRoomManager = new ChatRoomManager();
    m_chatRoomManager->SetDbIdentifier( 1 );
-   m_chatRoomManager->Init();
+   //m_chatRoomManager->Init();
 
    InvitationManager::Set( this );
    InvitationManager::Set( m_chatRoomManager );
@@ -341,7 +341,7 @@ bool     DiplodocusChat::HandleLoginPacket( BasePacket* packet, U32 connectionId
             else
             {
                string str = "Log user out failed: user not found. userUuid: ";
-               str += pPacket->uuid;
+               str += pPacket->uuid.c_str();
                Log( str, 4 );
             }
             UnlockMutex();

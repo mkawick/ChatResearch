@@ -6,6 +6,12 @@
 #include <boost/lexical_cast.hpp>
 using boost::format;
 
+#include "../NetworkCommon/ServerConstants.h"
+
+#if PLATFORM == PLATFORM_WINDOWS
+#pragma warning( disable:4996 )
+#endif
+
 #include "../NetworkCommon/Utils/CommandLineParser.h"
 #include "../NetworkCommon/Packets/BasePacket.h"
 #include "../NetworkCommon/Packets/LoginPacket.h"
@@ -779,7 +785,7 @@ void  UserContact::RemoveInvitationSent( const string& invitationUuid )
 
 bool     UserContact::InviteUser( const PacketContact_InviteContact* packet )
 {
-   const string& inviteeUuid = packet->uuid;
+   const string inviteeUuid = packet->uuid.c_str();
    const string& inviteeName = packet->userName;
    const string& message = packet->message;
    
@@ -899,7 +905,7 @@ bool  UserContact::AcceptInvitation( const PacketContact_AcceptInvite* packet )/
 
    dbQuery->query = "SELECT * FROM users INNER JOIN friend_pending ON users.user_id=friend_pending.inviter_id WHERE friend_pending.uuid='%s'";
 
-   dbQuery->escapedStrings.insert( packet->invitationUuid );
+   dbQuery->escapedStrings.insert( packet->invitationUuid.c_str() );
 
    m_contactServer->AddQueryToOutput( dbQuery );
 
@@ -918,7 +924,7 @@ bool  UserContact::DeclineInvitation( const PacketContact_DeclineInvitation* pac
 
    dbQuery->query = "SELECT * FROM users INNER JOIN friend_pending ON users.user_id=friend_pending.inviter_id WHERE friend_pending.uuid='%s'";
 
-   dbQuery->escapedStrings.insert( packet->invitationUuid );
+   dbQuery->escapedStrings.insert( packet->invitationUuid.c_str() );
 
    m_contactServer->AddQueryToOutput( dbQuery );
    return true;
@@ -929,7 +935,7 @@ bool  UserContact::DeclineInvitation( const PacketContact_DeclineInvitation* pac
 bool  UserContact::RemoveSentInvitation( const PacketContact_RemoveInvitation* packet )
 {
    bool found = false;
-   const string& invitationUuid = packet->invitationUuid;
+   const string invitationUuid = packet->invitationUuid.c_str();
 
    // verify that the sent invite is valid
    vector< P2PInvitation >::iterator  it = m_invitationsOut.begin();
@@ -1040,7 +1046,7 @@ bool  UserContact::PerformSearch( const PacketContact_SearchForUser* packet )
 
 bool  UserContact::RemoveContact( const PacketContact_ContactRemove* packet )
 {
-   const string& contactUuid = packet->contactUuid;
+   const string contactUuid = packet->contactUuid.c_str();
    const string& message = packet->message;
 
    bool found = false;
@@ -1123,7 +1129,7 @@ bool  UserContact::EchoHandler()
 bool  UserContact::AddNotationToContact( const PacketContact_SetNotationOnUser* notationPacket )
 {
    // validate that this is one of your contacts
-   const string& contactUuid = notationPacket->uuid;
+   const string contactUuid = notationPacket->uuid.c_str();
 
    bool  found = false;
    U32   friendId = 0;

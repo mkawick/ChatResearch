@@ -2,6 +2,12 @@
 
 #include <iostream>
 
+#include "../ServerConstants.h"
+
+#if PLATFORM == PLATFORM_WINDOWS
+#pragma warning( disable:4996 )
+#endif
+
 #include "../Packets/PacketFactory.h"
 #include "../Packets/BasePacket.h"
 #include "../Packets/GamePacket.h"

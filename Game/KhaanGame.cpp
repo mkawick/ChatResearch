@@ -3,6 +3,13 @@
 #include <iostream>
 
 #include "KhaanGame.h"
+
+#include "../NetworkCommon/ServerConstants.h"
+
+#if PLATFORM == PLATFORM_WINDOWS
+#pragma warning( disable:4996 )
+#endif
+
 #include "DiplodocusGame.h"
 #include "../NetworkCommon/Packets/PacketFactory.h"
 #include "../NetworkCommon/Packets/GamePacket.h"

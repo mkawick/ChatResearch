@@ -232,7 +232,7 @@ void   DiplodocusGame::HandleUserRequestedTournamentInfo( BasePacket* packet, U3
          if( m_callbacks )
          {
             const PacketTournament_RequestTournamentDetails* tournamentRequest = static_cast< PacketTournament_RequestTournamentDetails* > ( packet );
-            m_callbacks->UserWantsTournamentDetails( connectionId, tournamentRequest->tournamentUuid );
+            m_callbacks->UserWantsTournamentDetails( connectionId, tournamentRequest->tournamentUuid.c_str() );
          }
       }
       break;
@@ -241,7 +241,7 @@ void   DiplodocusGame::HandleUserRequestedTournamentInfo( BasePacket* packet, U3
          if( m_callbacks )
          {
             const PacketTournament_UserRequestsEntryInTournament* tournamentRequest = static_cast< PacketTournament_UserRequestsEntryInTournament* > ( packet );
-            m_callbacks->UserWantsAListOfTournamentEntrants( connectionId, tournamentRequest->tournamentUuid );
+            m_callbacks->UserWantsAListOfTournamentEntrants( connectionId, tournamentRequest->tournamentUuid.c_str() );
          }
       }
       break;
@@ -250,7 +250,7 @@ void   DiplodocusGame::HandleUserRequestedTournamentInfo( BasePacket* packet, U3
          if( m_callbacks )
          {
             const PacketTournament_UserRequestsEntryInTournament* tournamentRequest = static_cast< PacketTournament_UserRequestsEntryInTournament* > ( packet );
-            m_callbacks->UserWantsToJoinTournament( connectionId, tournamentRequest->tournamentUuid );
+            m_callbacks->UserWantsToJoinTournament( connectionId, tournamentRequest->tournamentUuid.c_str() );
          }
       }
       break;
@@ -607,7 +607,7 @@ void     DiplodocusGame::ConnectUser( const PacketPrepareForUserLogin* loginPack
    {
       UserInfo ui;
       ui.userName =        loginPacket->userName;
-      ui.uuid =            loginPacket->uuid;
+      ui.uuid =            loginPacket->uuid.c_str();
       ui.apple_id = "";
       ui.connectionId =    connectionId;
       ui.gameProductId =   loginPacket->gameProductId;

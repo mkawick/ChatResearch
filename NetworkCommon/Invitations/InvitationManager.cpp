@@ -254,7 +254,7 @@ bool     InvitationManager::InviteUserToChatRoom( const PacketInvitation_InviteU
    }
 
    //UsersChatRoomList userInChatRoom( invitationPacket->userUuid );
-   string inviteeName = m_groupLookup->GetUserName( invitationPacket->userUuid );
+   string inviteeName = m_groupLookup->GetUserName( invitationPacket->userUuid.c_str() );
    if( inviteeName.size() == 0 )
    {
       m_mainServer->SendErrorToClient( connectionId, PacketErrorReport::ErrorType_UserUnknown );
@@ -267,7 +267,7 @@ bool     InvitationManager::InviteUserToChatRoom( const PacketInvitation_InviteU
       return false;
    }
 
-   if( IsThereAlreadyAnInvitationToThisGroupInvolvingTheseTwoUsers( invitationPacket->userUuid, senderUuid, invitationPacket->inviteGroup ) )
+   if( IsThereAlreadyAnInvitationToThisGroupInvolvingTheseTwoUsers( invitationPacket->userUuid.c_str(), senderUuid, invitationPacket->inviteGroup ) )
    {
       PacketInvitation_InviteUserResponse* response = new PacketInvitation_InviteUserResponse;
       response->succeeded = false;
@@ -287,7 +287,7 @@ bool     InvitationManager::InviteUserToChatRoom( const PacketInvitation_InviteU
    invite.groupUuid = invitationPacket->inviteGroup;
    invite.invitationUuid = invitationUuid;
 
-   invite.inviteeUuid = invitationPacket->userUuid;
+   invite.inviteeUuid = invitationPacket->userUuid.c_str();
    invite.inviterUuid = senderUuid;
    invite.message = invitationPacket->message;
    invite.type = invitationPacket->invitationType;//Invitation::InvitationType_ChatRoom;
@@ -308,11 +308,11 @@ bool     InvitationManager::InviteUserToChatRoom( const PacketInvitation_InviteU
    SendMessageToClient( response, connectionId );
 
    U32 receivedConnectionId = 0;
-   m_mainServer->GetUserConnectionId( invitationPacket->userUuid, receivedConnectionId );
+   m_mainServer->GetUserConnectionId( invitationPacket->userUuid.c_str(), receivedConnectionId );
    // notify recipient of the new invitation received.
    if( receivedConnectionId != 0 )
    {
-      SendUserHisInvitations <PacketInvitation_GetListOfInvitationsResponse> ( m_invitationMap, IsUserInThisInvitation, invitationPacket->userUuid, receivedConnectionId );
+      SendUserHisInvitations <PacketInvitation_GetListOfInvitationsResponse> ( m_invitationMap, IsUserInThisInvitation, invitationPacket->userUuid.c_str(), receivedConnectionId );
      /* PacketInvitation_InviteUserResponse* response = new PacketInvitation_InviteUserResponse;
       response->succeeded = true;
       response->newInvitationUuid = invitationUuid;

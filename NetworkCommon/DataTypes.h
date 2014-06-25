@@ -48,5 +48,6 @@ enum PlatformType
    Platform_xbox,
    Platform_blackberry,
    Platform_wii,
+   Platform_phone,
    Platform_count
 };

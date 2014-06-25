@@ -7,6 +7,8 @@ bool  SerializedVector< type >::SerializeIn( const U8* data, int& bufferOffset )
 {
    int num = static_cast< int >( m_data.size() );
    Serialize::In( data, bufferOffset, num );
+   Serialize::In( data, bufferOffset, listIndex );
+   Serialize::In( data, bufferOffset, listCount );
 
    for( int i=0; i<num; i++ )
    {
@@ -23,6 +25,8 @@ bool  SerializedVector< type >::SerializeOut( U8* data, int& bufferOffset ) cons
 {
    int num = static_cast< int >( m_data.size() );
    Serialize::Out( data, bufferOffset, num );
+   Serialize::Out( data, bufferOffset, listIndex );
+   Serialize::Out( data, bufferOffset, listCount );
 
    typename std::vector< type > :: const_iterator  it = m_data.begin();
    while( it != m_data.end() )
