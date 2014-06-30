@@ -9,19 +9,26 @@
 #include "Platform.h"
 
 #if PLATFORM == PLATFORM_WINDOWS
-#pragma comment( lib, "ws2_32.lib" )
+   #if _MSC_VER < 1500
+   //#include <windows.h>
+   #include <winsock2.h>
+   #endif
 
-#if (_MSC_VER == 1400) // 2005
-#pragma comment( lib, "libevent2005.lib")
-#elif  !defined ( CUSTOM_LIBEVENT ) // (_MSC_VER == 1500) // 2008
-#pragma comment( lib, "libevent.lib")
-#endif
+   #include <ws2tcpip.h>
 
-#pragma warning( disable : 4996 )
+   #pragma comment( lib, "ws2_32.lib" )
+
+   #if (_MSC_VER == 1400) // 2005
+   #pragma comment( lib, "libevent2005.lib")
+   #elif  !defined ( CUSTOM_LIBEVENT ) // (_MSC_VER == 1500) // 2008
+   #pragma comment( lib, "libevent.lib")
+   #endif
+
+   #pragma warning( disable : 4996 )
 #else
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <arpa/inet.h>
+   #include <sys/socket.h>
+   #include <netinet/in.h>
+   #include <arpa/inet.h>
 #endif
 
 
@@ -123,4 +130,63 @@ void GetLocalIpAddress( char* buffer, size_t buflen )
    }
    struct in_addr **localAddrList = (struct in_addr **)hostLocal->h_addr_list;   
    strncpy( buffer, (char *)inet_ntoa(*localAddrList[0]), buflen );
+}
+
+bool IsPortBusy( int port )
+{
+   int ListenSocket = INVALID_SOCKET;
+
+   char portBuffer [256];
+   itoa( port, portBuffer, 10 );
+
+   struct addrinfo *result = NULL;
+   struct addrinfo hints;
+
+   ZeroMemory(&hints, sizeof(hints));
+   hints.ai_family = AF_INET;
+   hints.ai_socktype = SOCK_STREAM;
+   hints.ai_protocol = IPPROTO_TCP;
+   hints.ai_flags = AI_PASSIVE;
+
+   // Resolve the server address and port
+   int iResult = getaddrinfo(NULL, portBuffer, &hints, &result);
+   if( iResult != 0 ) 
+   {
+     cout << "getaddrinfo failed with error: " << iResult << endl;
+     return true;
+   }
+
+   // Create a SOCKET for connecting to server
+   ListenSocket = socket( result->ai_family, result->ai_socktype, result->ai_protocol );
+   if( ListenSocket == INVALID_SOCKET) 
+   {
+      cout << "Failed to create socket" << endl;
+      freeaddrinfo(result);
+      return 1;
+   }
+
+   // Setup the TCP listening socket
+   iResult = bind( ListenSocket, result->ai_addr, (int)result->ai_addrlen);
+   if( iResult == SOCKET_ERROR ) 
+   {
+      cout << "Failed to bind socket" << endl;
+      freeaddrinfo(result);
+      closesocket( ListenSocket );
+      return true;
+   }
+
+   freeaddrinfo(result);
+
+   int NumConnections = 5;
+   iResult = listen( ListenSocket, NumConnections );
+   if( iResult == SOCKET_ERROR ) 
+   {
+      cout << "Failed to listen to socket" << endl;
+      closesocket( ListenSocket );
+      return true;
+   }
+
+   closesocket( ListenSocket );
+
+   return false;
 }

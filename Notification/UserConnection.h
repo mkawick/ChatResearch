@@ -20,6 +20,8 @@ struct UserDeviceNotifications
    int      gameType;
    bool     isEnabled;
    string   deviceId;
+   string   audioFile;
+   U8       repeatFrequencyInHours;
 };
 
 class NotificationMainThread;

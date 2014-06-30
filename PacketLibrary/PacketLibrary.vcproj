@@ -323,6 +323,14 @@
 				>
 			</File>
 			<File
+				RelativePath="..\NetworkCommon\General\FixedLengthString.h"
+				>
+			</File>
+			<File
+				RelativePath="..\NetworkCommon\General\FixedLengthString.inl"
+				>
+			</File>
+			<File
 				RelativePath="..\NetworkCommon\Packets\GamePacket.h"
 				>
 			</File>

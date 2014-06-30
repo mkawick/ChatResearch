@@ -1,6 +1,6 @@
 #pragma once
 
-// DiplodocusGateway.h
+// MainGatewayThread.h
 #include <deque>
 #include <list>
 using namespace std;
@@ -15,14 +15,40 @@ class BasePacket;
 class PacketStat;
 class Fruitadens;
 class FruitadensGateway;
-typedef vector< FruitadensGateway* > OutputConnectorList;
+
+////////////////////////////////////////////////////////////////////////////////////
+/*
+class ServerConnectionState
+{
+public:
+   ServerConnectionState():
+                        m_recentlyConnected( false ),
+                        m_recentlyDisconnected( false ){}
+
+
+   void  Disconnect() { m_recentlyConnected = true; }
+   void  ClearDisconnect() { m_recentlyConnected = false; }
+   void  Connect() { m_recentlyDisconnected = true; }
+   void  ClearConnect() { m_recentlyDisconnected = false; }
+
+private:
+   bool  m_recentlyConnected;
+   bool  m_recentlyDisconnected;
+};
+*/
+typedef vector< FruitadensGateway* >  OutputConnectorList;
 typedef vector< OutputConnectorList > ListOfOutputLists;
+
+////////////////////////////////////////////////////////////////////////////////////
 
 class KhaanGatewayWrapper
 {
 public:
-   KhaanGatewayWrapper( KhaanGateway* connector) : m_connector( connector ), m_markedForDeleteTime( 0 ){}
-   KhaanGateway*      m_connector;
+   KhaanGatewayWrapper( KhaanGateway* connector) : 
+                        m_connector( connector ), 
+                        m_markedForDeleteTime( 0 ){}
+
+   KhaanGateway*        m_connector;
    time_t               m_markedForDeleteTime;
 public:
    void     MarkForDeletion( time_t& time ) { m_markedForDeleteTime = time; }
@@ -42,7 +68,7 @@ private:
 
 ////////////////////////////////////////////////////////////////////////////////////
 
-class DiplodocusGateway : public Diplodocus< KhaanGateway >, public StatTrackingConnections
+class MainGatewayThread : public Diplodocus< KhaanGateway >, public StatTrackingConnections
 {
 public: 
    typedef Diplodocus< KhaanGateway > ChainedType;
@@ -50,8 +76,8 @@ public:
    //-----------------------------------------
 
 public:
-   DiplodocusGateway( const string& serverName, U32 serverId );
-   ~DiplodocusGateway();
+   MainGatewayThread( const string& serverName, U32 serverId );
+   ~MainGatewayThread();
    void           Init();
 
    void           AllowUnauthenticatedConnections() { m_connectionsRequireAuthentication = false; }
@@ -70,6 +96,11 @@ public:
    void           TrackCountStats( StatTracking stat, float value, int sub_category );
 
    //-----------------------------------------------------
+
+   void           OutputConnected( IChainedInterface * );
+   void           OutputRemovalInProgress( IChainedInterface * chainedOutput );
+
+   //-----------------------------------------------------
 private:
    
    void           InputConnected( IChainedInterface * );
@@ -77,12 +108,14 @@ private:
    void           SortOutgoingPackets();
 
    void           HandlePacketToKhaan( KhaanGateway* khaan, BasePacket* packet );
+   void           BroadcastPacketToAllUsers( const string& errorText, int errorState, int param1, int param2, U8 matchingGameId );
    
    void           MoveClientBoundPacketsFromTempToKhaan();
 
    void           HandleReroutRequest( U32 connectionId );
    void           UpdateAllClientConnections();
    void           AddClientConnectionNeedingUpdate( U32 id );
+   void           CheckOnServerStatusChanges();
 
    //int            MainLoop_InputProcessing();
    //int            MainLoop_OutputProcessing();
@@ -109,8 +142,8 @@ private:
    typedef pair< int, KhaanGatewayWrapper >   ConnectionPair;
    typedef ConnectionMap::iterator        ConnectionMapIterator;
 
-   ListOfOutputLists          m_orderedOutputPacketHandlers;
 
+   ListOfOutputLists          m_orderedOutputPacketHandlers;
 
    U32                        m_connectionIdTracker;   
    std::deque< BasePacket* >  m_clientBoundTempStorage;
@@ -126,6 +159,11 @@ private:
    bool                       m_printPacketTypes;
    bool                       m_printFunctionNames;
    bool                       m_connectionsRequireAuthentication;
+
+   bool                       m_isServerDownForMaintenence;
+   bool                       m_hasInformedConnectedClientsThatServerIsDownForMaintenence;
+   time_t                     m_scheduledMaintnenceBegins;
+   time_t                     m_scheduledMaintnenceEnd;
 
    string                     m_rerouteAddress;
    U16                        m_reroutePort;

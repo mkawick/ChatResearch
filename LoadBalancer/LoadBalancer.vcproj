@@ -372,6 +372,18 @@
 					>
 				</File>
 			</Filter>
+			<Filter
+				Name="General"
+				>
+				<File
+					RelativePath="..\NetworkCommon\General\FixedLengthString.h"
+					>
+				</File>
+				<File
+					RelativePath="..\NetworkCommon\General\FixedLengthString.inl"
+					>
+				</File>
+			</Filter>
 		</Filter>
 		<File
 			RelativePath=".\ReadMe.txt"

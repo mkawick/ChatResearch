@@ -39,17 +39,7 @@ NotificationMainThread::NotificationMainThread( const string& serverName, U32 se
 {
    time( &m_lastNotificationCheck_TimeStamp );
    m_lastNotificationCheck_TimeStamp = ZeroOutMinutes( m_lastNotificationCheck_TimeStamp );
-   SetSleepTime( 100 );
-
-   SSL_library_init();
-   SSL_load_error_strings();
-   OpenSSL_add_all_algorithms();
-
-   NotifyIosInit(); // this does not work. I discovered a failure.. 
-   NotifyAndroidInit(); 
-
-
-
+   SetSleepTime( 100 ); 
 }
 
 NotificationMainThread :: ~NotificationMainThread()
@@ -58,6 +48,17 @@ NotificationMainThread :: ~NotificationMainThread()
    NotifyAndroidUninit();
 }
 
+void     NotificationMainThread :: Init( const string& iosCertFile, const string& iosKeyFile )
+{
+   SSL_library_init();
+   SSL_load_error_strings();
+   OpenSSL_add_all_algorithms();
+
+   Diplodocus::Init();
+   
+   NotifyIosInit( iosCertFile.c_str(), iosKeyFile.c_str() ); 
+   NotifyAndroidInit(); 
+}
 ///////////////////////////////////////////////////////////////////
 
 void     NotificationMainThread::ServerWasIdentified( IChainedInterface* khaan )
@@ -273,6 +274,102 @@ bool     NotificationMainThread::DisconnectUser( const PacketPrepareForUserLogou
 
 //---------------------------------------------------------------
 
+void  NotificationMainThread::RunQueryAndNotification( Database::Deltadromeus* database, 
+                              unsigned int user_id,
+                              unsigned int game_type,
+                              unsigned int game_id, 
+                              int   badge_count,
+                              int   notificationType,
+                              const char*   additionalText,
+                              bool  shouldSetupResendNotifications )
+{
+   if( database != NULL )
+   {
+      /*
+      SELECT user_device.device_id, user_device.platformId, user_device.id, user_device_notification.audio_file, user_device_notification.repeat_frequency_in_hours  
+      FROM user_device JOIN user_device_notification ON user_device.id=user_device_notification.user_device_id WHERE user_device.user_id='16464' AND 
+      user_device_notification.game_type='5' AND user_device_notification.is_enabled='1' AND user_device.is_enabled='1'
+      */
+      string query( "SELECT user_device.device_id, user_device.platformId, user_device.id, user_device_notification.audio_file, user_device_notification.repeat_frequency_in_hours ");
+      query += " FROM user_device JOIN user_device_notification "
+                     "ON user_device.id=user_device_notification.user_device_id WHERE user_device.user_id='";
+      query += boost::lexical_cast< string  >( user_id );
+      query += "' AND user_device_notification.game_type='";
+      query += boost::lexical_cast< string  >( game_type );
+      query += "' AND user_device_notification.is_enabled='1' ";
+      query += "AND user_device.is_enabled='1'";
+
+      //cout << query << endl;
+
+
+      MYSQL *mysql = database->GetDbHandle();
+
+      int ret = mysql_query( mysql, query.c_str() );
+      if (ret != 0)
+      {
+         cout << "Error " << mysql_error(mysql)
+              << " (code " << ret << ") executing DB query: \""
+              << query << "\"" << endl;
+         cout << "        error: " << mysql_error(mysql) << endl;
+         return;
+      }
+
+      MYSQL_RES *res = mysql_store_result(mysql);
+      if( res != NULL )
+      {
+         MYSQL_ROW row;
+         for( row = mysql_fetch_row(res); row; row = mysql_fetch_row(res) )
+         {
+            if( row[0] == NULL )
+            {
+               continue;
+            }
+
+            unsigned int device_platform;
+            sscanf( row[1], "%u", &device_platform );
+
+            unsigned int device_id;
+            sscanf( row[2], "%u", &device_id );
+
+            char audioFile[60];
+            audioFile[0] = 0;
+            if( row[3] != NULL )
+            {
+               sscanf( row[3], "%s", audioFile );
+            }
+
+            unsigned int repeatFrequencyInHours;
+            sscanf( row[4], "%u", &repeatFrequencyInHours );
+
+
+            if( device_platform == 1 ) // iOS
+            {
+               NotifyUserDirect_iOS( user_id, 
+                  (const unsigned char*)row[0], 
+                  game_type, 
+                  game_id, 
+                  badge_count,
+                  audioFile, 
+                  (GameNotification)notificationType,
+                  additionalText );
+
+               if( shouldSetupResendNotifications == true &&
+                  repeatFrequencyInHours > 0 )
+               {
+                  SetupUserNotificationResend( user_id, game_type, device_id, 60 * repeatFrequencyInHours );
+               }
+            }
+         }
+         mysql_free_result(res);
+      }
+
+      //NotifyUser(unwrappedPacket->userId, unwrappedPacket->gameType, unwrappedPacket->gameId,
+      //            (GameNotification)unwrappedPacket->notificationType, unwrappedPacket->additionalText.c_str());
+   }
+}
+
+//---------------------------------------------------------------
+
 bool     NotificationMainThread::HandleNotification( const PacketNotification_SendNotification* unwrappedPacket )
 {
    // it's very unlikely that this user is loaded already. It's probably best to just look up the user's devices and send notifications.
@@ -285,10 +382,19 @@ bool     NotificationMainThread::HandleNotification( const PacketNotification_Se
 
    StoreLastUserNotification( user_id, game_type, game_id, unwrappedPacket->notificationType, unwrappedPacket->additionalText );
 
-   if( m_database != NULL )
+   RunQueryAndNotification( m_database, 
+                              user_id,
+                              game_type,
+                              game_id, 
+                              badge_count,
+                              unwrappedPacket->notificationType,
+                              unwrappedPacket->additionalText.c_str(),
+                              true );
+ /*  if( m_database != NULL )
    {
-      string query( "SELECT user_device.device_id, user_device.platformId, user_device.id FROM user_device JOIN user_device_notification "
-                     "ON user_device.id=user_device_notification.user_device_id WHERE user_device.user_id='");
+      string query( "SELECT user_device.device_id, user_device.platformId, user_device.id, user_device_notification.audio_file, user_device_notification.repeat_frequency_in_hours ");
+      query += " FROM user_device JOIN user_device_notification "
+                     "ON user_device.id=user_device_notification.user_device_id WHERE user_device.user_id='";
       query += boost::lexical_cast< string  >( user_id );
       query += "' AND user_device_notification.game_type='";
       query += boost::lexical_cast< string  >( game_type );
@@ -297,29 +403,6 @@ bool     NotificationMainThread::HandleNotification( const PacketNotification_Se
 
       //cout << query << endl;
 
-      /*
-      // we're going to assume that this new entry works fine. There is the potential for a uuid conflict, so we'll need to build that later.
-      ExtendedRegisteredDevice* rd = new ExtendedRegisteredDevice;
-         rd->userDeviceId =  0;// we need to look this up
-         rd->name =      registerDevice->deviceName;
-         rd->uuid =      newDeviceUuid;
-         rd->iconId =    1;
-         rd->deviceId =  registerDevice->deviceId;
-         rd->platformId = registerDevice->platformId;
-         rd->isEnabled =  true;
-
-      PacketDbQuery* dbQuery = new PacketDbQuery;
-      dbQuery->id =           m_userInfo.connectionId;
-      dbQuery->meta =         newDeviceUuid;
-      dbQuery->lookup =       QueryType_InsertDevice;
-      dbQuery->serverLookup = registerDevice->platformId;
-      dbQuery->query =        query;
-      dbQuery->customData  = rd;
-
-      m_mainThread->AddQueryToOutput( dbQuery );
-      */
-
-      //g_NotificationMYSQL = m_database->GetDbHandle();
 
       MYSQL *mysql = m_database->GetDbHandle();
 
@@ -350,11 +433,28 @@ bool     NotificationMainThread::HandleNotification( const PacketNotification_Se
             unsigned int device_id;
             sscanf( row[2], "%u", &device_id );
 
+            char audioFile[60];
+            sscanf( row[3], "%s", audioFile );
+
+            unsigned int repeatFrequencyInHours;
+            sscanf( row[4], "%u", &repeatFrequencyInHours );
+
+
             if( device_platform == 1 ) // iOS
             {
-               NotifyUserDirect_iOS( user_id, (const unsigned char*)row[0], game_type, game_id, badge_count,
-                  (GameNotification)unwrappedPacket->notificationType, unwrappedPacket->additionalText.c_str() );
-               SetupUserNotificationResend( user_id, game_type, device_id, 60 );
+               NotifyUserDirect_iOS( user_id, 
+                  (const unsigned char*)row[0], 
+                  game_type, 
+                  game_id, 
+                  badge_count,
+                  audioFile, 
+                  (GameNotification)unwrappedPacket->notificationType,
+                  unwrappedPacket->additionalText.c_str() );
+
+               if( repeatFrequencyInHours )
+               {
+                  SetupUserNotificationResend( user_id, game_type, device_id, 60 * repeatFrequencyInHours );
+               }
             }
          }
          mysql_free_result(res);
@@ -362,7 +462,7 @@ bool     NotificationMainThread::HandleNotification( const PacketNotification_Se
 
       //NotifyUser(unwrappedPacket->userId, unwrappedPacket->gameType, unwrappedPacket->gameId,
       //            (GameNotification)unwrappedPacket->notificationType, unwrappedPacket->additionalText.c_str());
-   }
+   }*/
 
    //
    return false;
@@ -400,13 +500,23 @@ void     NotificationMainThread::PeriodicCheckForNewNotifications()
          itt->second.lastNotificationTime = currentTime;
          itt->second.resendNotificationDelay = 0;
 
+         
          unsigned int user_id = itt->first.userId;
          unsigned int game_type = itt->first.gameType;
          unsigned int game_id = itt->second.lastNotificationGameId;
 
          int badge_count = itt->second.notificationCount;
 
-         if( m_database != NULL )
+         RunQueryAndNotification( m_database, 
+                              user_id,
+                              game_type,
+                              game_id, 
+                              badge_count,
+                              itt->second.lastNotificationType, 
+                              itt->second.lastNotificationText.c_str(),
+                              false );
+
+         /*if( m_database != NULL )
          {
             string query( "SELECT user_device.device_id, user_device.platformId, user_device.id FROM user_device JOIN user_device_notification "
                            "ON user_device.id=user_device_notification.user_device_id WHERE user_device.user_id='");
@@ -417,30 +527,6 @@ void     NotificationMainThread::PeriodicCheckForNewNotifications()
             query += "AND user_device.is_enabled='1'";
 
             //cout << query << endl;
-
-            /*
-            // we're going to assume that this new entry works fine. There is the potential for a uuid conflict, so we'll need to build that later.
-            ExtendedRegisteredDevice* rd = new ExtendedRegisteredDevice;
-               rd->userDeviceId =  0;// we need to look this up
-               rd->name =      registerDevice->deviceName;
-               rd->uuid =      newDeviceUuid;
-               rd->iconId =    1;
-               rd->deviceId =  registerDevice->deviceId;
-               rd->platformId = registerDevice->platformId;
-               rd->isEnabled =  true;
-
-            PacketDbQuery* dbQuery = new PacketDbQuery;
-            dbQuery->id =           m_userInfo.connectionId;
-            dbQuery->meta =         newDeviceUuid;
-            dbQuery->lookup =       QueryType_InsertDevice;
-            dbQuery->serverLookup = registerDevice->platformId;
-            dbQuery->query =        query;
-            dbQuery->customData  = rd;
-
-            m_mainThread->AddQueryToOutput( dbQuery );
-            */
-
-            //g_NotificationMYSQL = m_database->GetDbHandle();
 
             MYSQL *mysql = m_database->GetDbHandle();
 
@@ -479,7 +565,7 @@ void     NotificationMainThread::PeriodicCheckForNewNotifications()
                }
                mysql_free_result(res);
             }
-         }
+         }*/
       }
 
    }

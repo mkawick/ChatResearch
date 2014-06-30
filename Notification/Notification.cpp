@@ -17,6 +17,7 @@ using boost::format;
 #include "../NetworkCommon/Utils/CommandLineParser.h"
 #include "../NetworkCommon/DataTypes.h"
 #include "../NetworkCommon/Utils/Utils.h"
+#include "../NetworkCommon/NetworkUtils.h"
 
 #include "../NetworkCommon/Daemon/Daemonizer.h"
 #include "../NetworkCommon/Logging/server_log.h"
@@ -61,6 +62,11 @@ void  PrintInstructions()
    cout << "    db.password       - database password" << endl;
    cout << "    db.schema         - database schema-table collection" << endl;
 
+   cout << "    ios.keyfile       - file and path to ios keyfile" << endl;
+   cout << "    ios.certfile      - file and path to ios cert" << endl;
+/*   cout << "    android.certfile  - file and path to android cert" << endl;
+   cout << "    amazon.certfile   - file and path to amazon cert" << endl;*/
+
    cout << " -h, -help, -? for help " << endl;
 }
 
@@ -74,11 +80,12 @@ int main( int argc, const char* argv[] )
 
    string serverName = "Notification Server";
 
-   string listenPort = "7900";    // this connection is for consistency, it may not be used at all
+   string listenPortString = "7900";    // this connection is for consistency, it may not be used at all
    string listenAddress = "localhost";
 
    string listenForS2SPort = "7902";
    string listenForS2SAddress = "localHost";
+   string iosCertFile, iosKeyFile;
 
    //---------------------------------------
 
@@ -92,7 +99,7 @@ int main( int argc, const char* argv[] )
    
    parser.FindValue( "server.name", serverName );
 
-   parser.FindValue( "listen.port", listenPort );
+   parser.FindValue( "listen.port", listenPortString );
    parser.FindValue( "listen.address", listenAddress );
 
    parser.FindValue( "s2s.port", listenForS2SPort );
@@ -110,12 +117,18 @@ int main( int argc, const char* argv[] )
    parser.FindValue( "db.password", dbPassword );
    parser.FindValue( "db.schema", dbSchema );
 
+   parser.FindValue( "ios.certfile", iosCertFile );
+   parser.FindValue( "ios.keyfile", iosKeyFile );
+ /*  parser.FindValue( "android.certfile", dbPassword );
+   //parser.FindValue( "android.certfile", dbPassword );
+   parser.FindValue( "amazon.certfile", dbSchema );*/
 
-   int listenPortAddress = 7900, dbPortAddress = 3306, listenS2SPort= 7902;
+
+   int listenPort = 7900, dbPortAddress = 3306, listenS2SPort= 7902;
    try 
    {
       listenS2SPort = boost::lexical_cast<int>( listenForS2SPort );
-      listenPortAddress = boost::lexical_cast<int>( listenPort );
+      listenPort = boost::lexical_cast<int>( listenPortString );
       dbPortAddress = boost::lexical_cast<int>( dbPortString );
    } 
    catch( boost::bad_lexical_cast const& ) 
@@ -145,23 +158,41 @@ int main( int argc, const char* argv[] )
    cout << "ServerId " << serverId << endl;
    cout << "------------------------------------------------------------------" << endl << endl << endl;
 
-   NotificationMainThread*    notificationServer = new NotificationMainThread( serverName, serverId );
-   notificationServer->SetupListening( listenPortAddress );
+   InitializeSockets();
+   bool isBusy = IsPortBusy( listenPort ) | IsPortBusy( listenS2SPort );
+   ShutdownSockets();
 
-   DiplodocusServerToServer* s2s = new DiplodocusServerToServer( serverName, serverId, 0, ServerType_Notification );
-   s2s->SetupListening( listenS2SPort );
+   if( isBusy == false )
+   {
+      NotificationMainThread*    notificationServer = new NotificationMainThread( serverName, serverId );
+      notificationServer->SetupListening( listenPort );
+
+      DiplodocusServerToServer* s2s = new DiplodocusServerToServer( serverName, serverId, 0, ServerType_Notification );
+      s2s->SetupListening( listenS2SPort );
+      
+      //----------------------------------------------------------------
+      
+      notificationServer->Init( iosCertFile, iosKeyFile );
+
+      s2s->AddOutputChain( notificationServer );
+      notificationServer->AddOutputChain( delta );
+
+      s2s->Resume();
+      notificationServer->Run();
+   }
+   else
+   {
+      cout << "***********************************************" << endl;
+      cout << " error: that server port is busy " << endl;
+      cout << "  port: " << listenPort << endl;
+      //cout << "  port: " << listenS2SPort << endl;
+      cout << " Note: you may have an instance already running" << endl;
+      cout << "        we must exit now" << endl;
+      cout << "***********************************************" << endl;
+      cout << endl << "Press any key to exit" << endl;
+      getch();
+   }
    
-   //----------------------------------------------------------------
-   
-   notificationServer->Init();
-
-   s2s->AddOutputChain( notificationServer );
-   notificationServer->AddOutputChain( delta );
-
-   s2s->Resume();
-   notificationServer->Run();
-
-   getch();
 	return 0;
 }
 

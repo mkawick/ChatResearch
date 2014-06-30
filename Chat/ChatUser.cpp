@@ -354,19 +354,20 @@ void     ChatUser::QueryChatChannelHistory( const string& channelUuid, int numRe
    queryString += " FROM chat_message AS chat, users WHERE chat.user_id_sender=users.uuid AND ";
    queryString += "chat_channel_id='%s'";
 
+   if( startingTimestamp.size() != 0 )
+   {
+      queryString += " AND timestamp<'%s' ";
+   }
+
    string limitString = " ORDER BY chat.timestamp DESC LIMIT ";
-   if( startingTimestamp.size() == 0 )
+   if( startingIndex != 0 )
    {
-      queryString += limitString;
-      queryString += boost::lexical_cast< string >( startingIndex );
-      queryString += ",";
+      limitString += boost::lexical_cast< string >( startingIndex );
+      limitString += ",";
    }
-   else
-   {
-      queryString += "AND timestamp<'%s' ";
-      queryString += limitString;
-   }
-   queryString += boost::lexical_cast< string >( numRecords );
+   limitString += boost::lexical_cast< string >( numRecords );
+
+   queryString += limitString;
 
    dbQuery->query = queryString;
    dbQuery->escapedStrings.insert( channelUuid );
@@ -709,14 +710,12 @@ void     ChatUser::SendChatHistoryToClientCommon( const DynamicDataBucket& bucke
       {
          sendSentinel = true;// this means that we don't have any more records
       }
-      else
+      else // ( numMessages == numExpected )
       {
          sendSentinel = false;
+         numMessages --;// we don't want the last item which is used as a sentinel.
       }
-      if( numMessages > 1 )
-      {
-         numMessages --;// we don't want the last item which is used as a sentinel.         
-      }
+
 
       for( int i=0; i<numMessages; i++ ) //countPackaged
       {

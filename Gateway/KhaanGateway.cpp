@@ -9,7 +9,7 @@ using boost::format;
 #include "../NetworkCommon/Utils/CommandLineParser.h"
 
 #include "KhaanGateway.h"
-#include "DiplodocusGateway.h"
+#include "MainGatewayThread.h"
 
 //-----------------------------------------------------------------------------------------
 
@@ -23,7 +23,8 @@ KhaanGateway::KhaanGateway( int id, bufferevent* be ):
       m_languageId( 0 ),
       m_gateway( NULL ),
       m_timeoutMs( 0 ),
-      m_lastSentToClientTimestamp( 0 )
+      m_lastSentToClientTimestamp( 0 ),
+      m_gameId( 0 )
 {
    m_randomNumberOfPacketsBeforeLogin = 30 + rand() % 20;
    SendThroughLibEvent( true );
@@ -86,29 +87,10 @@ bool	KhaanGateway :: Update()
 {
    UpdateInwardPacketList();
 
-   // begin throttling output
-   bool  shouldUpdateOutward = false;
-   if( m_timeoutMs == 0 )
-   {
-      shouldUpdateOutward = true;
-   }
-   else
-   {
-      U32 currentTime = GetCurrentMilliseconds();
-
-      U32 diffTime = currentTime - m_lastSentToClientTimestamp;
-      if( diffTime >= m_timeoutMs )
-      {
-         shouldUpdateOutward = true;
-         m_lastSentToClientTimestamp = currentTime;
-      }
-   }
-
-   if( shouldUpdateOutward == true )
+   if( ShouldDelayOutput() == false )
    {
       UpdateOutwardPacketList();
    }
-   // end throttling output
 
    // I think that this makes sense
    CleanupAllEvents();
@@ -122,6 +104,43 @@ bool	KhaanGateway :: Update()
    }
 
    return true;
+}
+
+void     KhaanGateway :: SetupOutputDelayTimestamp()
+{
+   if( m_timeoutMs == 0 )
+      return;
+
+   U32 currentTime = GetCurrentMilliseconds();
+
+   U32 diffTime = currentTime - m_lastSentToClientTimestamp;
+   if( diffTime < m_timeoutMs && m_packetsOut.size() )// do not keep increasing the delay if you are already waiting to send back data
+   {
+      return;
+   }
+
+   m_lastSentToClientTimestamp = currentTime;
+}
+
+bool  KhaanGateway :: ShouldDelayOutput()
+{
+   if( m_timeoutMs == 0 )
+   {
+      return false;
+   }
+ 
+   U32 currentTime = GetCurrentMilliseconds();
+
+   U32 diffTime = currentTime - m_lastSentToClientTimestamp;
+   if( diffTime >= m_timeoutMs )
+   {
+      
+      m_lastSentToClientTimestamp = currentTime;
+      return false;
+   }
+
+   return true;
+
 }
 
 //-----------------------------------------------------------------------------------------
@@ -253,6 +272,7 @@ bool	KhaanGateway::OnDataReceived( unsigned char* data, int length )
             if( IsWhiteListedIn( packetIn ) || HasPermission( packetIn ) )
             {
                m_gateway->AddInputChainData( packetIn, m_connectionId );
+               SetupOutputDelayTimestamp();
             }
             else
             {
@@ -342,6 +362,7 @@ bool  KhaanGateway::TrackInwardPacketType( const BasePacket* packet )
    switch( packet->packetType )
    {
       case PacketType_Gameplay:
+         m_gameId = packet->gameProductId;
          //m_gateway->TrackCountStats( StatTrackingConnections::StatTracking_GamePacketsSentToGame, 1, packet->gameProductId );
       return true;
    }

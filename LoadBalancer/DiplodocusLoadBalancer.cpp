@@ -313,44 +313,45 @@ void     DiplodocusLoadBalancer::HandleRerouteRequest( U32 connectionId )
       cout << "Telling user about the following connection destinations" << endl;
       connIt->second->GetIPAddress();
       list< GatewayInfo >::iterator it = m_gatewayRoutes.begin();
-
-      bool useLocalAddress = true;
-      if( IsOnSameNetwork( it->address, inet_ntoa( connIt->second->GetIPAddress().sin_addr ) ) )
-         useLocalAddress = true;
-      else
-         useLocalAddress = false;
-
       PacketRerouteRequestResponse* response = new PacketRerouteRequestResponse;
-      //bool  hasFoundViableGateway = false;
-
-      while( it != m_gatewayRoutes.end() )
+      if( it != m_gatewayRoutes.end() )
       {
-         if( it->isConnected == true )
+         bool useLocalAddress = true;
+         if( IsOnSameNetwork( it->address, inet_ntoa( connIt->second->GetIPAddress().sin_addr ) ) )
+            useLocalAddress = true;
+         else
+            useLocalAddress = false;
+         //bool  hasFoundViableGateway = false;
+
+         while( it != m_gatewayRoutes.end() )
          {
-            PacketRerouteRequestResponse::Address address;
-            if( useLocalAddress )
-               address.address = it->address;
-            else
-               address.address = it->externalIpAddress;
-
-            address.port = it->port;
-
-            cout << "addr( " << address.address << " ) : port( " << address.port << " )" << endl;
-            
-            if( it->type == GatewayInfo::Type_Normal )
+            if( it->isConnected == true )
             {
-               address.name = "normal gateway";
-               address.whichLocationId = PacketRerouteRequestResponse::LocationId_Gateway;
-            }
-            else
-            {
-               address.name = "asset gateway";
-               address.whichLocationId = PacketRerouteRequestResponse::LocationId_Asset; 
-            }
+               PacketRerouteRequestResponse::Address address;
+               if( useLocalAddress )
+                  address.address = it->address;
+               else
+                  address.address = it->externalIpAddress;
 
-            response->locations.push_back( address );
+               address.port = it->port;
+
+               cout << "addr( " << address.address << " ) : port( " << address.port << " )" << endl;
+               
+               if( it->type == GatewayInfo::Type_Normal )
+               {
+                  address.name = "normal gateway";
+                  address.whichLocationId = PacketRerouteRequestResponse::LocationId_Gateway;
+               }
+               else
+               {
+                  address.name = "asset gateway";
+                  address.whichLocationId = PacketRerouteRequestResponse::LocationId_Asset; 
+               }
+
+               response->locations.push_back( address );
+            }
+            it++;
          }
-         it++;
       }
 
       KhaanConnector* khaan = connIt->second;

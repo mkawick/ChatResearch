@@ -2120,16 +2120,6 @@ void     DiplodocusLogin:: StoreListOfUsersProductsFromDB( U32 connectionId, Pac
    {
       connection->StoreListOfUsersProductsFromDB( dbResult, m_autoAddProductFromWhichUsersLogin );
    }
-
-   RequestListOfProductsFromClient( connectionId );
-}
-
-//---------------------------------------------------------------
-
-void     DiplodocusLogin:: RequestListOfProductsFromClient( U32 connectionId )
-{
-   PacketListOfUserPurchasesRequest* purchaseRequest = new PacketListOfUserPurchasesRequest;
-   SendPacketToGateway( purchaseRequest, connectionId );
 }
 
 //---------------------------------------------------------------

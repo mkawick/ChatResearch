@@ -32,6 +32,8 @@ public:
    NotificationMainThread( const string& serverName, U32 serverId );
    ~NotificationMainThread();
 
+   void     Init( const string& iosCertFile, const string& iosKeyFile );
+
    bool     AddInputChainData( BasePacket* packet, U32 connectionId );
    bool     AddOutputChainData( BasePacket* packet, U32 connectionId );
    bool     SendMessageToClient( BasePacket* packet, U32 connectionId );
@@ -46,6 +48,14 @@ private:
    bool     ConnectUser( const PacketPrepareForUserLogin* loginPacket );
    bool     DisconnectUser( const PacketPrepareForUserLogout* unwrappedPacket );
    bool     HandleNotification( const PacketNotification_SendNotification* unwrappedPacket );
+   void     RunQueryAndNotification( Database::Deltadromeus* database, 
+                              unsigned int user_id,
+                              unsigned int game_type,
+                              unsigned int game_id, 
+                              int   badge_count,
+                              int   notificationType,
+                              const char*   additionalText,
+                              bool  shouldSetupResendNotifications );
    
    void     PeriodicCheckForNewNotifications();
 

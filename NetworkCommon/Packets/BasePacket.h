@@ -61,6 +61,7 @@ public:
       BasePacket_CommsHandshake,
       BasePacket_RerouteRequest,
       BasePacket_RerouteRequestResponse,
+      BasePacket_QOS
    };
 public:
    BasePacket( int packet_type = PacketType_Base, int packet_sub_type = BasePacket_Type ) :
@@ -160,6 +161,33 @@ public:
    SerializedVector< Address > locations;
 };
 
+///////////////////////////////////////////////////////////////
+
+class Packet_QOS_ReportToClient : public BasePacket
+{
+public:
+   Packet_QOS_ReportToClient(): BasePacket( PacketType_Base, BasePacket::BasePacket_QOS ),
+               errorState( ErrorState_None ) {}
+
+   bool  SerializeIn( const U8* data, int& bufferOffset );
+   bool  SerializeOut( U8* data, int& bufferOffset ) const;
+
+   enum ErrorState
+   {
+      ErrorState_None,
+      ErrorState_ServerWillBeDownForMaintenence,
+      ErrorState_ServerIsDownForMaintenence,
+      ErrorState_ServerIsNotAvailable,
+      ErrorState_ServerIsAvailable,
+      ErrorState_GameIsUp,
+      ErrorState_GameIsDown
+   };
+
+   string   errorText;
+   int      errorState;
+   int      param1;
+   int      param2;
+};
 
 ///////////////////////////////////////////////////////////////
 

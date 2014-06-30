@@ -196,6 +196,9 @@ void  UserConnection::StoreDevicesPerGameList( const PacketDbQueryResult* dbResu
       dn.gameType =                          boost::lexical_cast< int  >( row[ TableUserDeviceNotifications::Column_game_type ] );
       dn.isEnabled =                         boost::lexical_cast< bool >( row[ TableUserDeviceNotifications::Column_is_enabled ] );
       dn.deviceId =                          row[ TableUserDeviceNotifications::Column_device_id ];
+
+      dn.audioFile =                         row[ TableUserDeviceNotifications::Column_audio_file ];
+      dn.repeatFrequencyInHours =            boost::lexical_cast< int  >( row[ TableUserDeviceNotifications::Column_repeat_frequency_in_hours ] );
       if( dn.deviceId == "null" )
          dn.deviceId.clear();
 
@@ -243,12 +246,12 @@ bool  UserConnection::HandleRequestFromClient( const BasePacket* packet )
                RemoveDevice( removal );
             }
             break;
-        /* case PacketNotification::NotificationType_EnableDevice:
+       /*  case PacketNotification::GamePacketType_Notification: 
             {
+               const PacketGame_Notification* removal = static_cast< const PacketGame_Notification* >( packet );
+               UserRequestedNotification( removal );
             }
-            break;
-         case PacketNotification::
-         //   NotificationType_EnableDeviceResponse,*/
+            break;*/
          }
       }
       break;
@@ -327,7 +330,7 @@ void     UserConnection::RegisterNewDevice( const PacketNotification_RegisterDev
    U32 xorValue = GetCurrentMilliseconds();
    string newDeviceUuid = GenerateUUID( xorValue );
 
-   string query( "INSERT INTO user_device VALUES( DEFAULT, '");
+ /*  string query( "INSERT INTO user_device VALUES( DEFAULT, '");
    query += m_userInfo.uuid.c_str();
    query += "', '";
    query += newDeviceUuid;
@@ -337,9 +340,22 @@ void     UserConnection::RegisterNewDevice( const PacketNotification_RegisterDev
    query += boost::lexical_cast< string  >( (int) registerDevice->platformId );
    query += "', '";
    query += boost::lexical_cast< string  >( m_userInfo.userId );
-   query += "', '1', DEFAULT )";// is_enabled, date
+   query += "', '1', DEFAULT )";// is_enabled, date*/
 
-   //cout << query << endl;
+   string query( "INSERT INTO user_device ( user_uuid, device_uuid, device_id, name, icon_id, platformId, user_id, is_enabled )" );
+   query += " VALUES( '";
+   query += m_userInfo.uuid.c_str();
+   query += "', '";
+   query += newDeviceUuid;
+   query += "', x'";
+   query += devicetoa( (const unsigned char*)registerDevice->deviceId.c_str(), registerDevice->deviceId.size() );
+   query += "', '%s', '1', '"; // device name, icon id
+   query += boost::lexical_cast< string  >( (int) registerDevice->platformId );
+   query += "', '";
+   query += boost::lexical_cast< string  >( m_userInfo.userId );
+   query += "', '1' )";// is_enabled*/
+
+   cout << query << endl;
 
    // we're going to assume that this new entry works fine. There is the potential for a uuid conflict, so we'll need to build that later.
    ExtendedRegisteredDevice* rd = new ExtendedRegisteredDevice;
@@ -409,15 +425,29 @@ void  UserConnection::CreateEnabledNotificationEntry( const PacketDbQueryResult*
 // we do not make all of the same error checks here... it's too costly and assumed to have already have been performed
 void  UserConnection::CreateNewDeviceNotificationEntry( U32 userDeviceId, U32 gameType, const string& deviceId )
 {
-   string query( "INSERT INTO user_device_notification VALUES( DEFAULT, ");
+ /*  string query( "INSERT INTO user_device_notification VALUES( DEFAULT, ");
    query += boost::lexical_cast< string  >( userDeviceId );
    query += ", ";
    query += boost::lexical_cast< string  >( gameType );
    query += ", 1, DEFAULT, x'";
    query += devicetoa( (const unsigned char*)deviceId.c_str(), deviceId.size() );
-   query += "')";// is enabled, timestamp
+   query += "')";// is enabled, timestamp*/
 
    //cout << query << endl;
+
+ /*  INSERT INTO table_name (user_device_id,game_type,is_enabled,time_changed, device_id)
+   VALUES (value1,value2,value3,...);*/
+
+   string query( "INSERT INTO user_device_notification ( user_device_id, game_type, is_enabled, device_id) " );
+   query += " VALUES( ";
+   query += boost::lexical_cast< string  >( userDeviceId );
+   query += ", ";
+   query += boost::lexical_cast< string  >( gameType );
+   query += ", 1, x'";
+   query += devicetoa( (const unsigned char*)deviceId.c_str(), deviceId.size() );
+   query += "')";
+
+   cout << query << endl;
 
    PacketDbQuery* dbQuery = new PacketDbQuery;
    dbQuery->id =           m_userInfo.connectionId;
@@ -502,6 +532,8 @@ void  UserConnection::UpdateDevice( const PacketNotification_UpdateDevice* updat
    // update
    deviceIt->iconId = updateDevicePacket->iconId;
    deviceIt->name = updateDevicePacket->deviceName;
+   deviceEnabledIt->audioFile = updateDevicePacket->audioFile.c_str();
+   deviceEnabledIt->repeatFrequencyInHours = updateDevicePacket->repeatFrequencyInHours;
    
    //deviceIt->isEnabled = updateDevicePacket->isEnabled; << this is the "general" isEnabled.
 
@@ -556,8 +588,10 @@ void  UserConnection::UpdateDbRecordForDevice( U32 id )
 
    string query2( "UPDATE user_device_notification SET is_enabled=");
    query2 += boost::lexical_cast< string  >( deviceEnabledIt->isEnabled );
+   query2 += ", audio_file='%s', repeat_frequency_in_hours=";
+   query2 += boost::lexical_cast< string  >( (int) (deviceEnabledIt->repeatFrequencyInHours) );
 
-   query2 += " where id=";// is enabled, timestamp
+   query2 += " WHERE id=";// is enabled, timestamp
    query2 += boost::lexical_cast< string  >( deviceEnabledIt->id );
    
    //----------------------------
@@ -569,6 +603,8 @@ void  UserConnection::UpdateDbRecordForDevice( U32 id )
    dbQuery->serverLookup = userDeviceId;
    dbQuery->query =        query2;
    dbQuery->isFireAndForget = true;
+
+   dbQuery->escapedStrings.insert( deviceEnabledIt->audioFile );
 
    m_mainThread->AddQueryToOutput( dbQuery );
 }
@@ -605,12 +641,14 @@ void        UserConnection::RequestDevicesList( const PacketNotification_Request
       if( deviceNotificationIter != m_deviceEnabledList.end() )
       {
          RegisteredDevice rd;
-         rd.iconId = deviceIt->iconId;
-         rd.isEnabled = deviceNotificationIter->isEnabled;
-         rd.name = deviceIt->name;
-         rd.platformId = deviceIt->platformId;
-         rd.productId = deviceNotificationIter->gameType;
-         rd.uuid = deviceIt->uuid;
+         rd.iconId =                   deviceIt->iconId;
+         rd.isEnabled =                deviceNotificationIter->isEnabled;
+         rd.name =                     deviceIt->name;
+         rd.platformId =               deviceIt->platformId;
+         rd.productId =                deviceNotificationIter->gameType;
+         rd.audioFile =                deviceNotificationIter->audioFile;
+         rd.repeatFrequencyInHours =   deviceNotificationIter->repeatFrequencyInHours;
+         rd.uuid =                     deviceIt->uuid;
          response->devices.push_back( rd );
       }
       deviceIt++;
@@ -680,7 +718,13 @@ void        UserConnection::RemoveDevice( const PacketNotification_RemoveDevice*
    SendMessageToClient( response );
    RequestDevicesList( NULL );
 }
+/*
+//------------------------------------------------------------
 
+void        UserConnection::UserRequestedNotification( const PacketGame_Notification* notification )
+{
+}
+*/
 //------------------------------------------------------------
 //------------------------------------------------------------
 

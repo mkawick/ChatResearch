@@ -2,7 +2,7 @@
 #include "Khaan.h"
 
 #include <assert.h>
-//#include "Platform.h"
+#include "../NetworkUtils.h"
 #include "../Packets/BasePacket.h"
 #include "../Packets/PacketFactory.h"
 #include "../Packets/PacketFactory.h"
@@ -616,14 +616,6 @@ void     Diplodocus< InputChain, OutputChain >::SendServerIdentification()
 
 //------------------------------------------------------------------------------------------
 //------------------------------------------------------------------------------------------
-
-template< typename InputChain, typename OutputChain >
-void  Diplodocus< InputChain, OutputChain >::OutputConnected( IChainedInterface * chainedOutput )
-{
-   if( chainedOutput == NULL )
-      return;
-}
-
 //------------------------------------------------------------------------------
 
 template< typename InputChain, typename OutputChain >

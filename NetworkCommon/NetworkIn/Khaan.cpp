@@ -6,6 +6,7 @@
 #include <iostream>
 
 #include "../ServerConstants.h"
+#include "../NetworkUtils.h"
 
 #if PLATFORM == PLATFORM_WINDOWS
 #pragma warning( disable:4996 )

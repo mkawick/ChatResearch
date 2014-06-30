@@ -218,6 +218,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\NetworkCommon\NetworkUtils.h"
+				>
+			</File>
+			<File
 				RelativePath="..\NetworkCommon\Platform.h"
 				>
 			</File>
@@ -418,6 +422,18 @@
 				</File>
 				<File
 					RelativePath="..\NetworkCommon\Stat\StatTrackingConnections.h"
+					>
+				</File>
+			</Filter>
+			<Filter
+				Name="General"
+				>
+				<File
+					RelativePath="..\NetworkCommon\General\FixedLengthString.h"
+					>
+				</File>
+				<File
+					RelativePath="..\NetworkCommon\General\FixedLengthString.inl"
 					>
 				</File>
 			</Filter>

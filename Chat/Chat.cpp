@@ -22,10 +22,10 @@
 #include <boost/format.hpp>
 using boost::format;
 
-
 #include "../NetworkCommon/NetworkIn/Diplodocus.h"
 #include "../NetworkCommon/NetworkIn/DiplodocusServerToServer.h"
 #include "../NetworkCommon/Daemon/Daemonizer.h"
+#include "../NetworkCommon/NetworkUtils.h"
 
 #include "DiplodocusChat.h"
 
@@ -73,7 +73,7 @@ int main( int argc, const char* argv[] )
    CommandLineParser    parser( argc, argv );
 
    string serverName = "Chat Server";
-   string listenPort = "7400";
+   string listenPortString = "7400";
    string listenAddress = "localhost";
 
    string listenForS2SPort = "7402";
@@ -104,7 +104,7 @@ int main( int argc, const char* argv[] )
 
    parser.FindValue( "server.name", serverName );
 
-   parser.FindValue( "listen.port", listenPort );
+   parser.FindValue( "listen.port", listenPortString );
    parser.FindValue( "listen.address", listenAddress );
 
    parser.FindValue( "s2s.port", listenForS2SPort );
@@ -113,13 +113,13 @@ int main( int argc, const char* argv[] )
    parser.FindValue( "stat.port", statPortString );
    parser.FindValue( "stat.address", statIpAddressString );
 
-   int   listenPortAddress = 7400, 
+   int   listenPort = 7400, 
          dbPortAddress = 3306,
          statPort = 7802, 
          listenS2SPort = 7402;
    try 
    {
-      listenPortAddress = boost::lexical_cast<int>( listenPort );
+      listenPort = boost::lexical_cast<int>( listenPortString );
       statPort = boost::lexical_cast<int>( statPortString );
       dbPortAddress = boost::lexical_cast<int>( dbPortString );
       listenS2SPort = boost::lexical_cast<int>( listenForS2SPort );
@@ -149,23 +149,42 @@ int main( int argc, const char* argv[] )
    cout << "Db " << dbIpAddress << ":" << dbPortAddress << endl;
    cout << "------------------------------------------------------------------" << endl << endl << endl;
 
-   DiplodocusChat*    middleware = new DiplodocusChat( serverName, serverId );
-   middleware->SetupListening( listenPortAddress );
+   //--------------------------------------------------------------
 
-   DiplodocusServerToServer* s2s = new DiplodocusServerToServer( serverName, serverId, 0, ServerType_Chat );
-   s2s->SetupListening( listenS2SPort );
+   InitializeSockets();
+   bool isBusy = IsPortBusy( listenPort ) | IsPortBusy( listenS2SPort );
+   ShutdownSockets();
 
-   PrepConnection< FruitadensServer, DiplodocusChat > ( statIpAddressString, statPort, "stat", middleware, ServerType_Stat, true );
-   
-   //----------------------------------------------------------------
-   
-   middleware->AddOutputChain( delta );
-   s2s->AddOutputChain( middleware );
+   if( isBusy == false )
+   {
+      DiplodocusChat*    middleware = new DiplodocusChat( serverName, serverId );
+      middleware->SetupListening( listenPort );
 
-   middleware->Init();
-   middleware->Run();
+      DiplodocusServerToServer* s2s = new DiplodocusServerToServer( serverName, serverId, 0, ServerType_Chat );
+      s2s->SetupListening( listenS2SPort );
 
-   getch();
+      PrepConnection< FruitadensServer, DiplodocusChat > ( statIpAddressString, statPort, "stat", middleware, ServerType_Stat, true );
+      
+      //----------------------------------------------------------------
+      
+      middleware->AddOutputChain( delta );
+      s2s->AddOutputChain( middleware );
+
+      middleware->Init();
+      middleware->Run();
+   }
+   else
+   {
+      cout << "***********************************************" << endl;
+      cout << " error: that server port is busy " << endl;
+      cout << "  port: " << listenPort << endl;
+      cout << "  port: " << listenS2SPort << endl;
+      cout << " Note: you may have an instance already running" << endl;
+      cout << "        we must exit now" << endl;
+      cout << "***********************************************" << endl;
+      cout << endl << "Press any key to exit" << endl;
+      getch();
+   }
 	return 0;
 }
 

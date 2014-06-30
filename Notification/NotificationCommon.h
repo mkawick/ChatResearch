@@ -39,6 +39,8 @@ public:
       Column_is_enabled,
       Column_time_last_changed,
       Column_device_id,
+      Column_audio_file,
+      Column_repeat_frequency_in_hours,
       Column_end
    };
    static const char* const column_names[];

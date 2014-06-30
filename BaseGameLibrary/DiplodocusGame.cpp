@@ -209,7 +209,7 @@ void  DiplodocusGame::SendNotification( const PacketGame_Notification* notificat
 {
    if( m_callbacks )
    {
-      m_callbacks->UserWantsNotifiction( connectionId, notification->notificationType, notification->additionalText );
+      m_callbacks->UserWantsNotification( connectionId, notification->notificationType, notification->additionalText );
    }
 }
 

@@ -104,7 +104,6 @@ public:
 
    bool           SendErrorToClient( U32 connectionId, PacketErrorReport::ErrorType error, int subType = 0 );
 
-   void           OutputConnected( IChainedInterface * );
    void           NotifyFinishedRemoving( IChainedInterface* obj );
 
    //---------------------------------------------

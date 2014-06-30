@@ -182,7 +182,7 @@ public:
 
    bool     RegisterDevice( const string& playdekUuid, const string& deviceName, PlatformType platformId, const string& vendorProvidedDeviceId );// platformId = Platform_ios ); 
    bool     RequestListOfDevicesForThisGame( int platformId = Platform_ios );
-   bool     ChangeDevice( const string& deviceUuid, const string& deviceNewName, bool isEnabled, int iconId );
+   bool     ChangeDevice( const string& deviceUuid, const string& deviceNewName, const string& audioFileToPlay, bool isEnabled, int iconId, int repeatFrequencyInHours );
    int      GetNumDevices() const { return m_devices.size(); }
    bool     GetDevice( int index, RegisteredDevice& device ) const;
    bool     RemoveDevice( const string& deviceUuid ) const;

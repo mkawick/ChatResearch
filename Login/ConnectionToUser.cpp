@@ -55,6 +55,7 @@ ConnectionToUser:: ConnectionToUser( const string& name, const string& pword, co
                      m_marketingOptOut( false ),
                      m_showGenderProfile( false ),
                      m_isSavingUserProfile( false ),
+                     m_hasRequestedPurchasesFromClient( false ),
                      m_displayOnlineStatusToOtherUsers( false ),
                      m_blockContactInvitations( false ),
                      m_blockGroupInvitations( false )
@@ -846,7 +847,7 @@ void  ConnectionToUser:: AddItemToProductTable( const PurchaseEntry& purchaseEnt
 {
    ProductInfo pi;
    pi.name = purchaseEntry.name;
-   pi.vendorUuid = purchaseEntry.productUuid;
+   pi.vendorUuid = purchaseEntry.productUuid.c_str();
    std::transform( pi.vendorUuid.begin(), pi.vendorUuid.end(), pi.vendorUuid.begin(), ::tolower );
    // productUuid .. I don't know what to do with this.
    //pi.price = purchaseEntry.number_price;
@@ -1066,7 +1067,22 @@ void     ConnectionToUser:: StoreListOfUsersProductsFromDB( PacketDbQueryResult*
    {
       userWhoGetsProducts->PackOtherUserProfileRequestAndSendToClient( m_connectionId );
    }
+
+   if( m_hasRequestedPurchasesFromClient == false )
+   {
+      m_hasRequestedPurchasesFromClient = true;
+      RequestListOfProductsFromClient();
+   }
 }
+
+//---------------------------------------------------------------
+
+void     ConnectionToUser:: RequestListOfProductsFromClient()
+{
+   PacketListOfUserPurchasesRequest* purchaseRequest = new PacketListOfUserPurchasesRequest;
+   userManager->SendPacketToGateway( purchaseRequest, m_connectionId );
+}
+
 
 //---------------------------------------------------------------
 

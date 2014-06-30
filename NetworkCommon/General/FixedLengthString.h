@@ -1,3 +1,6 @@
+// FixedLengthString.h
+
+#pragma once
 
 #include "../ServerConstants.h"
 
@@ -51,6 +54,8 @@ protected:
 
 typedef FixedLengthString< 128 > FixedString128;
 typedef FixedLengthString<  80 > FixedString80;
+typedef FixedLengthString<  60 > FixedString60;
+typedef FixedLengthString<  32 > FixedString32;
 typedef FixedLengthString<  16 > FixedString16;
 typedef FixedLengthString<  16 > UuidString;
 

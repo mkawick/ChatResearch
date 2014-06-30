@@ -4,7 +4,7 @@
 
 #include "GatewayCommon.h"
 
-class DiplodocusGateway;
+class MainGatewayThread;
 //-----------------------------------------------------------------------------
 
 class FruitadensGateway : public FruitadensServer
@@ -24,7 +24,7 @@ private:
    int      MainLoop_InputProcessing();
    void     FindGateway();
 
-   DiplodocusGateway* m_gateway;
+   MainGatewayThread* m_gateway;
 };
 
 //-----------------------------------------------------------------------------

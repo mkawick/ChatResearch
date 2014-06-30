@@ -13,6 +13,8 @@ bool  RegisteredDevice::SerializeIn( const U8* data, int& bufferOffset )
    Serialize::In( data, bufferOffset, iconId );
    Serialize::In( data, bufferOffset, productId );
    Serialize::In( data, bufferOffset, platformId );
+   Serialize::In( data, bufferOffset, audioFile );
+   Serialize::In( data, bufferOffset, repeatFrequencyInHours );
    return true;
 }
 
@@ -24,6 +26,8 @@ bool  RegisteredDevice::SerializeOut( U8* data, int& bufferOffset ) const
    Serialize::Out( data, bufferOffset, iconId );
    Serialize::Out( data, bufferOffset, productId );
    Serialize::Out( data, bufferOffset, platformId );
+   Serialize::Out( data, bufferOffset, audioFile );
+   Serialize::Out( data, bufferOffset, repeatFrequencyInHours );
    return true;
 }
 
@@ -156,6 +160,8 @@ bool  PacketNotification_UpdateDevice::SerializeIn( const U8* data, int& bufferO
    Serialize::In( data, bufferOffset, isEnabled );
    Serialize::In( data, bufferOffset, iconId );
    Serialize::In( data, bufferOffset, gameType );
+   Serialize::In( data, bufferOffset, audioFile );
+   Serialize::In( data, bufferOffset, repeatFrequencyInHours );
 
    return true;
 }
@@ -168,6 +174,8 @@ bool  PacketNotification_UpdateDevice::SerializeOut( U8* data, int& bufferOffset
    Serialize::Out( data, bufferOffset, isEnabled );
    Serialize::Out( data, bufferOffset, iconId );
    Serialize::Out( data, bufferOffset, gameType );
+   Serialize::Out( data, bufferOffset, audioFile );
+   Serialize::Out( data, bufferOffset, repeatFrequencyInHours );
 
    return true;
 }

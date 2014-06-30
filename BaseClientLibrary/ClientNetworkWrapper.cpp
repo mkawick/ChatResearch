@@ -7,6 +7,7 @@
 #include "ClientNetworkWrapper.h"
 
 #include "../NetworkCommon/Utils/Utils.h"
+#include "../NetworkCommon/NetworkUtils.h"
 #include "../NetworkCommon/Packets/CheatPacket.h"
 #include "../NetworkCommon/Packets/PacketFactory.h"
 #include "../NetworkCommon/ChainedArchitecture/Thread.h"
@@ -440,6 +441,13 @@ void     ClientNetworkWrapper::UpdateNotifications()
                U16 status = boost::lexical_cast< U16>( qn.genericKeyValuePairs.find( "status" ) );
                string text = qn.genericKeyValuePairs.find( "text" );
                notify->OnError( code, status, text.c_str() );
+            }
+            break;
+         case ClientSideNetworkCallback::NotificationType_QOS_ServiceChange:
+            {
+               Packet_QOS_ReportToClient* qosReport = static_cast< Packet_QOS_ReportToClient * > ( qn.packet );
+
+               notify->QosChange( qosReport->errorText, qosReport->errorState, qosReport->param1, qosReport->param2 );
             }
             break;
          case ClientSideNetworkCallback::NotificationType_UserLogin:
@@ -2520,12 +2528,14 @@ bool     ClientNetworkWrapper::RequestListOfDevicesForThisGame( int platformId )
 
 //-----------------------------------------------------------------------------
 
-bool     ClientNetworkWrapper::ChangeDevice( const string& deviceUuid, const string& deviceNewName, bool isEnabled, int iconId )
+bool     ClientNetworkWrapper::ChangeDevice(  const string& deviceUuid, const string& deviceNewName, const string& audioFileToPlay, bool isEnabled, int iconId, int repeatFrequencyInHours )
 {
    PacketNotification_UpdateDevice update;
    update.deviceUuid = deviceUuid;//m_thisDeviceUuid;
    update.deviceName = deviceNewName;
    update.isEnabled = isEnabled;
+   update.audioFile = audioFileToPlay;
+   update.repeatFrequencyInHours = repeatFrequencyInHours;
    update.iconId = iconId;
    update.gameType = m_gameProductId;
 
@@ -2772,6 +2782,21 @@ bool     ClientNetworkWrapper::HandlePacketReceived( BasePacket* packetIn )
                LoadBalancedNewAddress( unwrappedPacket );
             }
             break;
+         case BasePacket::BasePacket_QOS:
+            {
+               Packet_QOS_ReportToClient* qosReport = static_cast< Packet_QOS_ReportToClient * > ( packetIn );
+
+               //LoadBalancedNewAddress( unwrappedPacket );
+             /*  cout << "Server connection state has changed" << endl;
+               cout << " error text: " << qosReport->errorText << endl;
+               cout << " error errorState: " << qosReport->errorState << endl;
+               cout << " error param1: " << qosReport->param1 << endl;
+               cout << " error param2: " << qosReport->param2 << endl;*/
+
+               Notification( ClientSideNetworkCallback::NotificationType_QOS_ServiceChange, qosReport );
+               cleaner.Clear();// do not cleanup this packe
+            }
+            break;
          }
       }
       break;
@@ -2974,11 +2999,11 @@ bool     ClientNetworkWrapper::HandlePacketReceived( BasePacket* packetIn )
       break;
       case PacketType_Purchase:
          {
-            assert( 0 ); // disabled
-           /* switch( packetIn->packetSubType )
+            //assert( 0 ); // disabled
+            switch( packetIn->packetSubType )
             {
                
-            /*case PacketPurchase::PurchaseType_BuyResponse:
+            case PacketPurchase::PurchaseType_BuyResponse:
                {
                   PacketPurchase_BuyResponse* purchase = static_cast<PacketPurchase_BuyResponse*>( packetIn );
                   for( list< ClientSideNetworkCallback* >::iterator it = m_callbacks.begin(); it != m_callbacks.end(); ++it )
@@ -2996,7 +3021,7 @@ bool     ClientNetworkWrapper::HandlePacketReceived( BasePacket* packetIn )
                   }
                }
                break;
-            }*/
+            }
 
          }
          break;

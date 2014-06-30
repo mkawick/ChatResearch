@@ -180,10 +180,6 @@
 			UniqueIdentifier="{4FC737F1-C7A5-4376-A066-2A32D752A2FF}"
 			>
 			<File
-				RelativePath=".\DiplodocusGateway.cpp"
-				>
-			</File>
-			<File
 				RelativePath=".\ErrorCodeLookup.cpp"
 				>
 			</File>
@@ -199,16 +195,16 @@
 				RelativePath=".\KhaanGateway.cpp"
 				>
 			</File>
+			<File
+				RelativePath=".\MainGatewayThread.cpp"
+				>
+			</File>
 		</Filter>
 		<Filter
 			Name="Header Files"
 			Filter="h;hpp;hxx;hm;inl;inc;xsd"
 			UniqueIdentifier="{93995380-89BD-4b04-88EB-625FBE52EBFB}"
 			>
-			<File
-				RelativePath=".\DiplodocusGateway.h"
-				>
-			</File>
 			<File
 				RelativePath=".\ErrorCodeLookup.h"
 				>
@@ -223,6 +219,10 @@
 			</File>
 			<File
 				RelativePath=".\KhaanGateway.h"
+				>
+			</File>
+			<File
+				RelativePath=".\MainGatewayThread.h"
 				>
 			</File>
 		</Filter>
@@ -390,6 +390,18 @@
 				</File>
 				<File
 					RelativePath="..\NetworkCommon\Stat\StatTrackingConnections.h"
+					>
+				</File>
+			</Filter>
+			<Filter
+				Name="General"
+				>
+				<File
+					RelativePath="..\NetworkCommon\General\FixedLengthString.h"
+					>
+				</File>
+				<File
+					RelativePath="..\NetworkCommon\General\FixedLengthString.inl"
 					>
 				</File>
 			</Filter>

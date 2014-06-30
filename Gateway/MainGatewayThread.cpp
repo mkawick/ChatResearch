@@ -1,4 +1,4 @@
-// DiplodocusGateway.cpp
+// MainGatewayThread.cpp
 
 #include <boost/format.hpp>
 #include <boost/lexical_cast.hpp>
@@ -15,7 +15,7 @@ using boost::format;
 //#include "../NetworkCommon/ChainedArchitecture/ChainedInterface.h"
 
 #include "FruitadensGateway.h"
-#include "DiplodocusGateway.h"
+#include "MainGatewayThread.h"
 #include "ErrorCodeLookup.h"
 
 //#define VERBOSE
@@ -23,11 +23,13 @@ using boost::format;
 //-----------------------------------------------------------------------------------------
 //-----------------------------------------------------------------------------------------
 
-DiplodocusGateway::DiplodocusGateway( const string& serverName, U32 serverId ) : Diplodocus< KhaanGateway > ( serverName, serverId, 0, ServerType_Gateway ), StatTrackingConnections(),
+MainGatewayThread::MainGatewayThread( const string& serverName, U32 serverId ) : Diplodocus< KhaanGateway > ( serverName, serverId, 0, ServerType_Gateway ), StatTrackingConnections(),
                                           m_connectionIdTracker( 12 ),
                                           m_printPacketTypes( false ),
                                           m_printFunctionNames( false ),
-                                          m_reroutePort( 0 )
+                                          m_reroutePort( 0 ),
+                                          m_isServerDownForMaintenence( false ),
+                                          m_hasInformedConnectedClientsThatServerIsDownForMaintenence( false )
 {
    SetSleepTime( 16 );// 30 fps
    SetSendHelloPacketOnLogin( true );
@@ -38,16 +40,16 @@ DiplodocusGateway::DiplodocusGateway( const string& serverName, U32 serverId ) :
    m_orderedOutputPacketHandlers.reserve( PacketType_Num );
 }
 
-DiplodocusGateway::~DiplodocusGateway()
+MainGatewayThread::~MainGatewayThread()
 {
 }
 
-void     DiplodocusGateway::Init()
+void     MainGatewayThread::Init()
 {
    OrderOutputs();
 }
 
-void   DiplodocusGateway::NotifyFinishedAdding( IChainedInterface* obj ) 
+void   MainGatewayThread::NotifyFinishedAdding( IChainedInterface* obj ) 
 {
    //obj->
    if( m_printFunctionNames )
@@ -59,11 +61,11 @@ void   DiplodocusGateway::NotifyFinishedAdding( IChainedInterface* obj )
 
 //-----------------------------------------------------------------------------------------
 
-U32      DiplodocusGateway::GetNextConnectionId()
+U32      MainGatewayThread::GetNextConnectionId()
 {
    if( m_printFunctionNames )
    {
-      FileLog( "DiplodocusGateway::GetNextConnectionId" );
+      FileLog( "MainGatewayThread::GetNextConnectionId" );
    }
    Threading::MutexLock locker( m_inputChainListMutex );
    m_connectionIdTracker ++;
@@ -78,11 +80,11 @@ U32      DiplodocusGateway::GetNextConnectionId()
 
 //-----------------------------------------------------------------------------------------
 
-bool  DiplodocusGateway::AddInputChainData( BasePacket* packet, U32 connectionId ) // coming from the client-side socket
+bool  MainGatewayThread::AddInputChainData( BasePacket* packet, U32 connectionId ) // coming from the client-side socket
 {
    if( m_printFunctionNames )
    {
-      FileLog( "DiplodocusGateway::AddInputChainData" );
+      FileLog( "MainGatewayThread::AddInputChainData" );
    }
    PrintDebugText( "AddInputChainData", 1);
    ConnectionMapIterator connIt = m_connectionMap.find( connectionId );
@@ -123,7 +125,7 @@ bool  DiplodocusGateway::AddInputChainData( BasePacket* packet, U32 connectionId
 
 //-----------------------------------------------------------------------------------------
 /*
-void     DiplodocusGateway::HandleReroutRequest( U32 connectionId )
+void     MainGatewayThread::HandleReroutRequest( U32 connectionId )
 {
    ConnectionMapIterator connIt = m_connectionMap.find( connectionId );
    if( connIt != m_connectionMap.end() )
@@ -146,11 +148,11 @@ void     DiplodocusGateway::HandleReroutRequest( U32 connectionId )
 
 //-----------------------------------------------------------------------------------------
 
-void     DiplodocusGateway::InputConnected( IChainedInterface * chainedInput )
+void     MainGatewayThread::InputConnected( IChainedInterface * chainedInput )
 {
    if( m_printFunctionNames )
    {
-      FileLog( "DiplodocusGateway::InputConnected" );
+      FileLog( "MainGatewayThread::InputConnected" );
    }
    KhaanGateway* khaan = static_cast< KhaanGateway* >( chainedInput );
    string currentTime = GetDateInUTC();
@@ -184,11 +186,11 @@ void     DiplodocusGateway::InputConnected( IChainedInterface * chainedInput )
 
 //-----------------------------------------------------------------------------------------
 
-void     DiplodocusGateway::InputRemovalInProgress( IChainedInterface * chainedInput )
+void     MainGatewayThread::InputRemovalInProgress( IChainedInterface * chainedInput )
 {
    if( m_printFunctionNames )
    {
-      FileLog( "DiplodocusGateway::InputRemovalInProgress" );
+      FileLog( "MainGatewayThread::InputRemovalInProgress" );
    }
    KhaanGateway* khaan = static_cast< KhaanGateway* >( chainedInput );
    string currentTime = GetDateInUTC();
@@ -226,9 +228,165 @@ void     DiplodocusGateway::InputRemovalInProgress( IChainedInterface * chainedI
    //m_connectionMap.erase( connectionId );
 }
 
+//-----------------------------------------------------
+
+void     MainGatewayThread::CheckOnServerStatusChanges()
+{
+   ChainLinkIteratorType itOutput = m_listOfOutputs.begin();
+   while( itOutput != m_listOfOutputs.end() )
+   {
+      IChainedInterface* outputPtr = (*itOutput).m_interface;
+      FruitadensGateway* fruity = static_cast< FruitadensGateway* >( outputPtr );
+      itOutput++;
+      if( fruity->IsRecentlyDisconnected() == true )
+      {
+         fruity->ClearRecentlyDisconnectedFlag();
+         ServerType serverType = fruity->GetConnectedServerType();
+
+         // some services are important, some are not
+         if( 
+            serverType == ServerType_Gateway || 
+            serverType == ServerType_Login ||
+            //serverType == ServerType_Tournament ||
+            serverType == ServerType_Chat ||
+            serverType == ServerType_Contact ||
+            serverType == ServerType_Login ||
+            serverType == ServerType_Notification 
+            )
+         {
+            BroadcastPacketToAllUsers( "Server is down", Packet_QOS_ReportToClient::ErrorState_ServerIsNotAvailable, serverType, 0, 0 );
+         }
+         else if( serverType == ServerType_GameInstance ) // special case.
+         {
+            BroadcastPacketToAllUsers( "Server is down", Packet_QOS_ReportToClient::ErrorState_GameIsDown, serverType, fruity->GetGameProductId(), fruity->GetGameProductId() );
+         }
+      }
+      else if( fruity->IsRecentlyConnected() == true )
+      {
+         fruity->ClearRecentlyConnectedFlag();
+         ServerType serverType = fruity->GetConnectedServerType();
+
+         if( 
+            serverType == ServerType_Gateway || 
+            serverType == ServerType_Login ||
+            //serverType == ServerType_Tournament ||
+            serverType == ServerType_Chat ||
+            serverType == ServerType_Contact ||
+            serverType == ServerType_Login ||
+            serverType == ServerType_Notification 
+            )
+         {
+            BroadcastPacketToAllUsers( "Server is up", Packet_QOS_ReportToClient::ErrorState_ServerIsAvailable, serverType, 0, 0 );
+         }
+         else if( serverType == ServerType_GameInstance ) // special case.
+         {
+            BroadcastPacketToAllUsers( "Server is up", Packet_QOS_ReportToClient::ErrorState_GameIsUp, serverType, fruity->GetGameProductId(), fruity->GetGameProductId() );
+         }
+      }
+   }
+
+   //---------------------------------------------------
+   if( m_isServerDownForMaintenence == true && 
+      m_hasInformedConnectedClientsThatServerIsDownForMaintenence == false)
+   {
+   }
+}
+
+//-----------------------------------------------------
+
+void     MainGatewayThread::OutputConnected( IChainedInterface * chainPtr )
+{
+   FruitadensGateway* fruity = static_cast< FruitadensGateway* >( chainPtr );
+   ServerType serverType = fruity->GetConnectedServerType();
+
+  /* if( 
+      serverType == ServerType_Gateway || 
+      serverType == ServerType_Login ||
+      //serverType == ServerType_Tournament ||
+      serverType == ServerType_Chat ||
+      serverType == ServerType_Contact ||
+      serverType == ServerType_Login ||
+      serverType == ServerType_Notification 
+      )
+   {
+      BroadcastPacketToAllUsers( "Server is up", Packet_QOS_ReportToClient::ErrorState_ServerIsAvailable, serverType, 0, 0 );
+   }
+   else if( serverType == ServerType_GameInstance ) // special case.
+   {
+      BroadcastPacketToAllUsers( "Server is up", Packet_QOS_ReportToClient::ErrorState_GameIsUp, serverType, fruity->GetGameProductId(), fruity->GetGameProductId() );
+   }*/
+
+   
+  /* OutputConnectorList& listOfOutputs = m_orderedOutputPacketHandlers[ packetType ];
+   OutputConnectorList::iterator it = listOfOutputs.begin();
+   while( it != listOfOutputs.end() )
+   {
+      ServerConnectionState& scs = *it++;
+      U32 unusedParam = -1;
+      if( scs.Server()->AddOutputChainData( packet, unusedParam ) == true )
+      {
+         return true;
+      }
+   }*/
+}
+
+void     MainGatewayThread::OutputRemovalInProgress( IChainedInterface * chainPtr )
+{
+   FruitadensGateway* fruity = static_cast< FruitadensGateway* >( chainPtr );
+   ServerType serverType = fruity->GetConnectedServerType();
+   
+   // some services are important, some are not
+  /* if( 
+      serverType == ServerType_Gateway || 
+      serverType == ServerType_Login ||
+      //serverType == ServerType_Tournament ||
+      serverType == ServerType_Chat ||
+      serverType == ServerType_Contact ||
+      serverType == ServerType_Login ||
+      serverType == ServerType_Notification 
+      )
+   {
+      BroadcastPacketToAllUsers( "Server is down", Packet_QOS_ReportToClient::ErrorState_ServerIsNotAvailable, serverType, 0, 0 );
+   }
+   else if( serverType == ServerType_GameInstance ) // special case.
+   {
+      BroadcastPacketToAllUsers( "Server is down", Packet_QOS_ReportToClient::ErrorState_GameIsDown, serverType, fruity->GetGameProductId(), fruity->GetGameProductId() );
+   }*/
+}
+
+//-----------------------------------------------------
+
+void     MainGatewayThread::BroadcastPacketToAllUsers( const string& errorText, int errorState, int param1, int param2, U8 matchingGameId )
+{
+   //m_inputChainListMutex.lock();
+   Threading::MutexLock locker( m_inputChainListMutex );
+   ConnectionMapIterator nextIt = m_connectionMap.begin();
+   while( nextIt != m_connectionMap.end() )
+   {
+      ConnectionMapIterator connIt = nextIt++;
+      KhaanGatewayWrapper& khaanWrapper = connIt->second;
+      KhaanGateway* khaan = connIt->second.m_connector;
+      if( khaan == NULL )
+         continue;
+
+      if( matchingGameId != 0 )
+      {
+         if( matchingGameId != khaan->GetLastGameConnectedTo() )
+            continue;
+      }
+
+      Packet_QOS_ReportToClient* packet = new Packet_QOS_ReportToClient();
+      packet->errorState = errorState;
+      packet->errorText = errorText;
+      packet->param1 = param1;
+      packet->param2 = param2;
+
+      HandlePacketToKhaan( khaan, packet );
+   }
+}
 //-----------------------------------------------------------------------------------------
 
-void     DiplodocusGateway::PrintFunctionNames( bool printingOn ) 
+void     MainGatewayThread::PrintFunctionNames( bool printingOn ) 
 {
    m_printFunctionNames = printingOn; 
    cout << "Gateway side function name printing is ";
@@ -245,7 +403,7 @@ void     DiplodocusGateway::PrintFunctionNames( bool printingOn )
 
 //-----------------------------------------------------------------------------------------
 
-void     DiplodocusGateway::PrintPacketTypes( bool printingOn ) 
+void     MainGatewayThread::PrintPacketTypes( bool printingOn ) 
 {
    m_printPacketTypes = printingOn; 
    cout << "Gateway side packet printing is ";
@@ -261,11 +419,11 @@ void     DiplodocusGateway::PrintPacketTypes( bool printingOn )
 
 //-----------------------------------------------------------------------------------------
 
-void     DiplodocusGateway::SetupReroute( const string& address, U16 port )
+void     MainGatewayThread::SetupReroute( const string& address, U16 port )
 {
    if( m_printFunctionNames )
    {
-      FileLog( "DiplodocusGateway::SetupReroute" );
+      FileLog( "MainGatewayThread::SetupReroute" );
    }
    m_rerouteAddress = address;
    m_reroutePort = port;
@@ -277,19 +435,20 @@ void     DiplodocusGateway::SetupReroute( const string& address, U16 port )
 
 //-----------------------------------------------------------------------------------------
 
-void     DiplodocusGateway::TrackCountStats( StatTracking stat, float value, int sub_category )
+void     MainGatewayThread::TrackCountStats( StatTracking stat, float value, int sub_category )
 {
    StatTrackingConnections::TrackCountStats( m_serverName, m_serverId, stat, value, sub_category );
 }
 
 //-----------------------------------------------------------------------------------------
 
-bool     DiplodocusGateway::OrderOutputs()
+bool     MainGatewayThread::OrderOutputs()
 {
    if( m_printFunctionNames )
    {
-      FileLog( "DiplodocusGateway::OrderOutputs" );
+      FileLog( "MainGatewayThread::OrderOutputs" );
    }
+
    if( m_orderedOutputPacketHandlers.size() > 0 )
       return false;
 
@@ -314,11 +473,11 @@ bool     DiplodocusGateway::OrderOutputs()
 
 //-----------------------------------------------------------------------------------------
 
-bool     DiplodocusGateway::PushPacketToProperOutput( BasePacket* packet )
+bool     MainGatewayThread::PushPacketToProperOutput( BasePacket* packet )
 {
    if( m_printFunctionNames )
    {
-      FileLog( "DiplodocusGateway::PushPacketToProperOutput" );
+      FileLog( "MainGatewayThread::PushPacketToProperOutput" );
    }
 
    U32 packetType = packet->packetType;
@@ -332,7 +491,7 @@ bool     DiplodocusGateway::PushPacketToProperOutput( BasePacket* packet )
 
    assert( packetType < m_orderedOutputPacketHandlers.size() );
 
-   const OutputConnectorList& listOfOutputs = m_orderedOutputPacketHandlers[ packetType ];
+   OutputConnectorList& listOfOutputs = m_orderedOutputPacketHandlers[ packetType ];
    //assert( listOfOutputs.size() > 0 ); // this should be where we look through our list for a match
 
    if( listOfOutputs.size() == 0 )
@@ -350,7 +509,7 @@ bool     DiplodocusGateway::PushPacketToProperOutput( BasePacket* packet )
       return false;
    }
 
-   OutputConnectorList::const_iterator it = listOfOutputs.begin();
+   OutputConnectorList::iterator it = listOfOutputs.begin();
    while( it != listOfOutputs.end() )
    {
       FruitadensGateway* fruity = *it++;
@@ -369,11 +528,11 @@ bool     DiplodocusGateway::PushPacketToProperOutput( BasePacket* packet )
 
 //-----------------------------------------------------------------------------------------
 
-void     DiplodocusGateway::SortOutgoingPackets()
+void     MainGatewayThread::SortOutgoingPackets()
 {
    if( m_printFunctionNames )
    {
-      FileLog( "DiplodocusGateway::SortOutgoingPackets" );
+      FileLog( "MainGatewayThread::SortOutgoingPackets" );
    }
 
    m_inputChainListMutex.lock();
@@ -395,11 +554,11 @@ void     DiplodocusGateway::SortOutgoingPackets()
 
 //-----------------------------------------------------------------------------------------
 
-int       DiplodocusGateway::CallbackFunction()
+int       MainGatewayThread::CallbackFunction()
 {
    if( m_printFunctionNames )
    {
-      FileLog( "DiplodocusGateway::CallbackFunction" );
+      FileLog( "MainGatewayThread::CallbackFunction" );
    }
 
    CommonUpdate();
@@ -414,7 +573,8 @@ int       DiplodocusGateway::CallbackFunction()
    MoveClientBoundPacketsFromTempToKhaan();
    UpdateAllClientConnections();
 
-   
+   CheckOnServerStatusChanges();
+
    if( m_packetsToBeSentInternally.size() == 0 )
       return 0;
 
@@ -425,11 +585,11 @@ int       DiplodocusGateway::CallbackFunction()
 
 //-----------------------------------------------------------------------------------------
 
-void  DiplodocusGateway::CleanupOldConnections()
+void  MainGatewayThread::CleanupOldConnections()
 {
    if( m_printFunctionNames )
    {
-      FileLog( "DiplodocusGateway::CleanupOldConnections" );
+      FileLog( "MainGatewayThread::CleanupOldConnections" );
    }
    // cleanup old connections
    time_t currentTime;
@@ -455,11 +615,11 @@ void  DiplodocusGateway::CleanupOldConnections()
 
 //-----------------------------------------------------------------------------------------
 
-void  DiplodocusGateway::RunHourlyAverages()
+void  MainGatewayThread::RunHourlyAverages()
 {
    if( m_printFunctionNames )
    {
-      FileLog( "DiplodocusGateway::RunHourlyAverages" );
+      FileLog( "MainGatewayThread::RunHourlyAverages" );
    }
 
    if( m_connectionMap.size() == 0 )
@@ -496,11 +656,11 @@ void  DiplodocusGateway::RunHourlyAverages()
 
 //-----------------------------------------------------------------------------------------
 
-void  DiplodocusGateway::SendStatsToLoadBalancer()
+void  MainGatewayThread::SendStatsToLoadBalancer()
 {
    if( m_printFunctionNames )
    {
-      FileLog( "DiplodocusGateway::SendStatsToLoadBalancer" );
+      FileLog( "MainGatewayThread::SendStatsToLoadBalancer" );
    }
 
    time_t currentTime;
@@ -545,11 +705,11 @@ void  DiplodocusGateway::SendStatsToLoadBalancer()
 
 //-----------------------------------------------------------------------------------------
 
-bool  DiplodocusGateway::AddOutputChainData( BasePacket* packet, U32 serverType )
+bool  MainGatewayThread::AddOutputChainData( BasePacket* packet, U32 serverType )
 {
    if( m_printFunctionNames )
    {
-      FileLog( "DiplodocusGateway::AddOutputChainData" );
+      FileLog( "MainGatewayThread::AddOutputChainData" );
    }
 
    PrintDebugText( "AddOutputChainData" ); 
@@ -577,11 +737,11 @@ bool  DiplodocusGateway::AddOutputChainData( BasePacket* packet, U32 serverType 
 //-----------------------------------------------------------------------------------------
 
 // assuming that everything is thread protected at this point
-void  DiplodocusGateway::HandlePacketToKhaan( KhaanGateway* khaan, BasePacket* packet )
+void  MainGatewayThread::HandlePacketToKhaan( KhaanGateway* khaan, BasePacket* packet )
 {
    if( m_printFunctionNames )
    {
-      FileLog( "DiplodocusGateway::HandlePacketToKhaan" );
+      FileLog( "MainGatewayThread::HandlePacketToKhaan" );
    }
 
    PrintDebugText( "HandlePacketToKhaan" );
@@ -670,11 +830,11 @@ void  DiplodocusGateway::HandlePacketToKhaan( KhaanGateway* khaan, BasePacket* p
 
 //-----------------------------------------------------------------------------------------
 
-void  DiplodocusGateway::AddClientConnectionNeedingUpdate( U32 connectionId )
+void  MainGatewayThread::AddClientConnectionNeedingUpdate( U32 connectionId )
 {
    if( m_printFunctionNames )
    {
-      FileLog( "DiplodocusGateway::AddClientConnectionNeedingUpdate" );
+      FileLog( "MainGatewayThread::AddClientConnectionNeedingUpdate" );
    }
 
    ConnectionIdQueue::iterator it = m_connectionsNeedingUpdate.begin();
@@ -688,11 +848,11 @@ void  DiplodocusGateway::AddClientConnectionNeedingUpdate( U32 connectionId )
 
 //-----------------------------------------------------------------------------------------
 
-void  DiplodocusGateway::MoveClientBoundPacketsFromTempToKhaan()
+void  MainGatewayThread::MoveClientBoundPacketsFromTempToKhaan()
 {
    if( m_printFunctionNames )
    {
-      FileLog( "DiplodocusGateway::MoveClientBoundPacketsFromTempToKhaan" );
+      FileLog( "MainGatewayThread::MoveClientBoundPacketsFromTempToKhaan" );
       FileLog( "MainLoop_OutputProcessing" );
    }
 
@@ -757,11 +917,11 @@ void  DiplodocusGateway::MoveClientBoundPacketsFromTempToKhaan()
    }
 }
 
-void  DiplodocusGateway::UpdateAllClientConnections()
+void  MainGatewayThread::UpdateAllClientConnections()
 {
    if( m_printFunctionNames )
    {
-      FileLog( "DiplodocusGateway::UpdateAllClientConnections" );
+      FileLog( "MainGatewayThread::UpdateAllClientConnections" );
    }
 
    m_inputChainListMutex.lock();
@@ -785,7 +945,7 @@ void  DiplodocusGateway::UpdateAllClientConnections()
 
 //-----------------------------------------------------------------------------------------
 /*
-int   DiplodocusGateway::MainLoop_OutputProcessing()
+int   MainGatewayThread::MainLoop_OutputProcessing()
 {
    // mutex is locked already
 

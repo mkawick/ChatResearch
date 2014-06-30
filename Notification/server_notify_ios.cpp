@@ -1,5 +1,6 @@
 
 #include <map>
+#include <iostream>
 
 // MYSQL on Win32 requires winsock to be included first
 #include "server_comms.h"
@@ -73,6 +74,10 @@ static GameInfo s_GameInfos[] =
    { NULL, NULL, 0, 0, 0, GAME_INFO_SANDBOX },  // GAME_SELECT_PENNYARCADE
    { NULL, NULL, 0, 0, 0, GAME_INFO_SANDBOX },  // GAME_SELECT_INFINITECITY
 };
+
+
+static char certFileStringBuffer[ maxFileBufferLen ];
+static char keyFileStringBuffer[ maxFileBufferLen ];
 static int s_GameInfoCount = sizeof(s_GameInfos) / sizeof(s_GameInfos[0]);
 
 static bool s_ApnIsInitialized = false;
@@ -374,19 +379,63 @@ static bool apnConnect()
 // notification type specific functions
 // ------
 
-static bool sendTurnNotification(const unsigned char *deviceId, unsigned int userId, int gameType, unsigned int gameId, int badge, const char *opponent)
+int  PrepPayload( char* payload, const char* notificationTypeString, unsigned int userId, int gameType, unsigned int gameId, int badge, const char* audioFile, const char * opponent )
 {
+   bool  useDefaultAudioFile = true;
+   string temp( "{\"aps\":{\"alert\":{\"loc-key\":\"GAME_NOTIFY_TURN\",\"loc-args\":[\"%s\"]},\"badge\":%d,\"sound\":\"");
+   if( audioFile != NULL )
+   {
+      if( strlen( audioFile ) > 0 )
+      {
+         temp += audioFile;
+         useDefaultAudioFile = false;
+      }
+   }
+   if( useDefaultAudioFile == true )
+   {
+      temp += NOTIFY_ALERT_SOUND;
+   }
+   temp += "\"},\"game\":%d,\"user\":%d}";
+
+   // assumption about the string length here : MAX_PAYLOAD_SIZE
+   return STRPRINTF(payload, MAX_PAYLOAD_SIZE, temp.c_str(), opponent, badge, gameId, userId);
+}
+
+static bool sendTurnNotification(const unsigned char *deviceId, unsigned int userId, int gameType, unsigned int gameId, int badge, const char* audioFile, const char *opponent )
+{
+   cout<< "sendTurnNotification" << endl;
    char payload[MAX_PAYLOAD_SIZE];
-   int payloadLen;
 
    if (!opponent || !*opponent)
    {
       opponent = "Someone";
    }
 
-   payloadLen = STRPRINTF(payload, sizeof(payload),
+   int payloadLen = PrepPayload( payload, "GAME_NOTIFY_TURN", userId, gameType, gameId, badge, audioFile, opponent );
+
+  /* 
+
+   bool  useDefaultAudioFile = true;
+   string temp( "{\"aps\":{\"alert\":{\"loc-key\":\"GAME_NOTIFY_TURN\",\"loc-args\":[\"%s\"]},\"badge\":%d,\"sound\":\"");
+   if( audioFile != NULL )
+   {
+      if( strlen( audioFile ) > 0 )
+      {
+         temp += audioFile;
+         useDefaultAudioFile = false;
+      }
+   }
+   if( useDefaultAudioFile == true )
+   {
+      temp += NOTIFY_ALERT_SOUND;
+   }
+   temp += "\"},\"game\":%d,\"user\":%d}";
+
+   STRPRINTF(payload, sizeof(payload), temp.c_str(), opponent, badge, gameId, userId);*/
+
+  /* payloadLen = STRPRINTF(payload, sizeof(payload),
       "{\"aps\":{\"alert\":{\"loc-key\":\"GAME_NOTIFY_TURN\",\"loc-args\":[\"%s\"]},\"badge\":%d,\"sound\":\"" NOTIFY_ALERT_SOUND "\"},"
-      "\"game\":%d,\"user\":%d}", opponent, badge, gameId, userId);
+      "\"game\":%d,\"user\":%d}", opponent, badge, gameId, userId);*/
 
    if (!sendNotification(s_GameInfos[gameType].ssl, deviceId, payload, payloadLen))
    {
@@ -397,19 +446,22 @@ static bool sendTurnNotification(const unsigned char *deviceId, unsigned int use
    return true;
 }
 
-static bool sendInviteNotification(const unsigned char *deviceId, unsigned int userId, int gameType, unsigned int gameId, int badge, const char *opponent)
+static bool sendInviteNotification(const unsigned char *deviceId, unsigned int userId, int gameType, unsigned int gameId, int badge, const char* audioFile, const char *opponent )
 {
+   cout<< "sendInviteNotification" << endl;
    char payload[MAX_PAYLOAD_SIZE];
-   int payloadLen;
+   //int payloadLen;
 
    if (!opponent || !*opponent)
    {
       opponent = "Someone";
    }
 
-   payloadLen = STRPRINTF(payload, sizeof(payload),
+   int payloadLen = PrepPayload( payload, "GAME_NOTIFY_INVITE", userId, gameType, gameId, badge, audioFile, opponent );
+
+  /* payloadLen = STRPRINTF(payload, sizeof(payload),
       "{\"aps\":{\"alert\":{\"loc-key\":\"GAME_NOTIFY_INVITE\",\"loc-args\":[\"%s\"]},\"badge\":%d,\"sound\":\"" NOTIFY_ALERT_SOUND "\"},"
-      "\"game\":%d,\"user\":%d}", opponent, badge, gameId, userId);
+      "\"game\":%d,\"user\":%d}", opponent, badge, gameId, userId);*/
 
    if (!sendNotification(s_GameInfos[gameType].ssl, deviceId, payload, payloadLen))
    {
@@ -420,19 +472,22 @@ static bool sendInviteNotification(const unsigned char *deviceId, unsigned int u
    return true;
 }
 
-static bool sendGameReadyNotification(const unsigned char *deviceId, unsigned int userId, int gameType, unsigned int gameId, int badge, const char *opponent)
+static bool sendGameReadyNotification(const unsigned char *deviceId, unsigned int userId, int gameType, unsigned int gameId, int badge, const char* audioFile, const char *opponent )
 {
+   cout<< "sendGameReadyNotification" << endl;
    char payload[MAX_PAYLOAD_SIZE];
-   int payloadLen;
+   //int payloadLen;
 
    if (!opponent || !*opponent)
    {
       opponent = "Someone";
    }
 
-   payloadLen = STRPRINTF(payload, sizeof(payload),
+ /*  payloadLen = STRPRINTF(payload, sizeof(payload),
       "{\"aps\":{\"alert\":{\"loc-key\":\"GAME_NOTIFY_READY\",\"loc-args\":[\"%s\"]},\"badge\":%d,\"sound\":\"" NOTIFY_ALERT_SOUND "\"},"
-      "\"game\":%d,\"user\":%d}", opponent, badge, gameId, userId);
+      "\"game\":%d,\"user\":%d}", opponent, badge, gameId, userId);*/
+
+   int payloadLen = PrepPayload( payload, "GAME_NOTIFY_READY", userId, gameType, gameId, badge, audioFile, opponent );
 
    if (!sendNotification(s_GameInfos[gameType].ssl, deviceId, payload, payloadLen))
    {
@@ -443,19 +498,22 @@ static bool sendGameReadyNotification(const unsigned char *deviceId, unsigned in
    return true;
 }
 
-static bool sendGameEndedNotification(const unsigned char *deviceId, unsigned int userId, int gameType, unsigned int gameId, int badge, const char *opponent)
+static bool sendGameEndedNotification(const unsigned char *deviceId, unsigned int userId, int gameType, unsigned int gameId, int badge, const char* audioFile, const char *opponent )
 {
+   cout<< "sendGameEndedNotification" << endl;
    char payload[MAX_PAYLOAD_SIZE];
-   int payloadLen;
+   //int payloadLen;
 
    if (!opponent || !*opponent)
    {
       opponent = "Someone";
    }
 
-   payloadLen = STRPRINTF(payload, sizeof(payload),
+ /*  payloadLen = STRPRINTF(payload, sizeof(payload),
       "{\"aps\":{\"alert\":{\"loc-key\":\"GAME_NOTIFY_FINISHED\",\"loc-args\":[\"%s\"]},\"badge\":%d,\"sound\":\"" NOTIFY_ALERT_SOUND "\"},"
-      "\"game\":%d,\"user\":%d}", opponent, badge, gameId, userId);
+      "\"game\":%d,\"user\":%d}", opponent, badge, gameId, userId);*/
+   int payloadLen = PrepPayload( payload, "GAME_NOTIFY_FINISHED", userId, gameType, gameId, badge, audioFile, opponent );
+
 
    if (!sendNotification(s_GameInfos[gameType].ssl, deviceId, payload, payloadLen))
    {
@@ -523,8 +581,12 @@ bool  getUserDeviceIos( unsigned int userId, int gameType, unsigned char* buffer
    return found;
 }
 */
+/*
+#include <direct.h>
+#include <stdlib.h>
+#include <stdio.h>*/
 
-bool NotifyIosInit()
+bool NotifyIosInit( const char* certFile, const char* keyFile )
 {
    s_ApnIsInitialized = true;
 
@@ -533,6 +595,18 @@ bool NotifyIosInit()
       if (!s_GameInfos[i].cert)
       {
          continue;
+      }
+
+      if( certFile != NULL && strlen( certFile ) > 2 )// copy to global buffer
+      {
+         STRCPY( certFileStringBuffer, maxFileBufferLen, certFile );
+         //cout << "current dir = " << _getcwd(NULL, 0) << endl;
+         s_GameInfos[i].cert = certFileStringBuffer;
+      }
+      if( keyFile != NULL && strlen( keyFile ) > 2 )// copy to global buffer
+      {
+         STRCPY( keyFileStringBuffer, maxFileBufferLen, keyFile );
+         s_GameInfos[i].key = keyFileStringBuffer;
       }
 
       // open SSL connection
@@ -591,7 +665,7 @@ void NotifyIosUninit()
    //s_PendingNotifications.clear();
 }
 
-bool notifyUserIos( const unsigned char* deviceId, unsigned int userId, int gameType, unsigned int gameId, int badgeId, GameNotification notification, va_list args)
+bool notifyUserIos( const unsigned char* deviceId, unsigned int userId, int gameType, unsigned int gameId, int badgeId, const char* audioFile, GameNotification notification, va_list args)
 {
    if (!s_ApnIsInitialized)
    {
@@ -611,13 +685,13 @@ bool notifyUserIos( const unsigned char* deviceId, unsigned int userId, int game
    switch (notification)
    {
    case gnTurn:
-      return sendTurnNotification( deviceId, userId, gameType, gameId, badgeId, va_arg(args, char *));
+      return sendTurnNotification( deviceId, userId, gameType, gameId, badgeId, audioFile, va_arg(args, char *));
    case gnInvite:
-      return sendInviteNotification( deviceId, userId, gameType, gameId, badgeId, va_arg(args, char *));
+      return sendInviteNotification( deviceId, userId, gameType, gameId, badgeId, audioFile, va_arg(args, char *));
    case gnReady:
-      return sendGameReadyNotification( deviceId, userId, gameType, gameId, badgeId, va_arg(args, char *));
+      return sendGameReadyNotification( deviceId, userId, gameType, gameId, badgeId, audioFile, va_arg(args, char *));
    case gnEnded:
-      return sendGameEndedNotification( deviceId, userId, gameType, gameId, badgeId, va_arg(args, char *));
+      return sendGameEndedNotification( deviceId, userId, gameType, gameId, badgeId, audioFile, va_arg(args, char *));
    }
 
    return false;
@@ -723,7 +797,7 @@ bool NotifyUser( unsigned int userId, int gameType, unsigned int gameId, GameNot
 */
 
 bool NotifyUserDirect_iOS( unsigned int userId, const unsigned char *deviceId, int gameType,
-                          unsigned int gameId, int badge_count, GameNotification notification, ... )
+                          unsigned int gameId, int badge_count, const char* audioFile, GameNotification notification, ... )
 {
    //LogMessage(LOG_PRIO_INFO, "NotifyUserDirect_iOS: %s\n", devicetoa(deviceId));
 
@@ -732,7 +806,7 @@ bool NotifyUserDirect_iOS( unsigned int userId, const unsigned char *deviceId, i
    va_list args;
    va_start(args, notification);
 
-   bool ret = notifyUserIos( deviceId, userId, gameType, gameId, badge_count, notification, args);
+   bool ret = notifyUserIos( deviceId, userId, gameType, gameId, badge_count, audioFile, notification, args);
 
    va_end(args);
 

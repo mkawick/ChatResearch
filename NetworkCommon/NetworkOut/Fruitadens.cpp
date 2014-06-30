@@ -3,6 +3,7 @@
 #include "../ServerConstants.h"
 #include "../Packets/Serialize.h"
 #include "../Utils/Utils.h"
+#include "../NetworkUtils.h"
 
 #include <iostream>
 #include <iomanip>
@@ -323,6 +324,8 @@ void  Fruitadens::SocketHasDisconnectedDuringRecv( int error_number )
    cout << "attempting a reconnect" << endl;
    cout << "***********************************************************" << endl;
    closesocket( m_clientSocket );
+
+   InitialDisconnectionCallback();
    HasBeenDisconnectedCallback(); // tell higher layers
    m_clientSocket = SOCKET_ERROR;
    CreateSocket();
@@ -534,10 +537,12 @@ FruitadensServer :: FruitadensServer( const char* name, bool processOnlyOneIncom
                               m_localServerId( 0 ),
                               m_localServerPort( 0 ),
                               m_localGameProductId( 0 ),
+                              m_gatewayType( 0 ),
                               m_localIsGameServer( false ),
                               m_localIsController( false ),
                               m_localRequiresWrapper( true ),
-                              m_gatewayType( 0 )
+                              m_recentlyConnected( false ),
+                              m_recentlyDisconnected( false )
 {
 }
 
@@ -573,6 +578,25 @@ void     FruitadensServer::InitialConnectionCallback()
    }
 
    PackageLocalServerIdentificationToSend();
+
+   m_recentlyDisconnected = false;
+   m_recentlyConnected = true;
+}
+
+//-----------------------------------------------------------------------------
+
+void     FruitadensServer::InitialDisconnectionCallback()
+{
+   ChainLinkIteratorType   itInputs = m_listOfInputs.begin();
+   while( itInputs != m_listOfInputs.end() )
+   {
+      IChainedInterface* inputPtr = itInputs->m_interface;
+      inputPtr->OutputRemovalInProgress( this );
+      itInputs++;
+   }
+
+   m_recentlyDisconnected = true;
+   m_recentlyConnected = false;
 }
 
 //-------------------------------------------------------------------------

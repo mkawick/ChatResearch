@@ -123,6 +123,7 @@ struct ConnectionToUser
    bool                    m_blockGroupInvitations;
 
    bool                    m_isSavingUserProfile;
+   bool                    m_hasRequestedPurchasesFromClient;
    /*
    address1
    address2
@@ -174,6 +175,7 @@ protected:
    void     SendListOfProductsToClientAndAsset( U32 connectionId );
    void     SendListOfOwnedProductsToClient( U32 connectionId );
    void     TellContactServerToReloadUserProfile();
+   void     RequestListOfProductsFromClient();
 
    UserConnectionMapIterator FindUser( const string& email, const string& userUuid, const string& userName );
    

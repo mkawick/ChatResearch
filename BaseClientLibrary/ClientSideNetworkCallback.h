@@ -78,6 +78,7 @@ public:
    virtual void  TournamentPurchaseResult( const string& tournamentUuid, int result ) const {}
 
    virtual void  OnError( int code, int subCode, const char* text = NULL ){}
+   virtual void  QosChange( const string& text, int errorCode, int param1, int param2 ){}
 
    virtual void  PurchaseSuccess( const string& purchaseUuid, bool success ){}
    virtual void  ProductsForSale( const SerializedKeyValueVector< PurchaseInfo >& thingsToBuy ) {}
@@ -151,6 +152,7 @@ public:
       NotificationType_TournamentPurchaseResult,
 
       NotificationType_OnError,
+      NotificationType_QOS_ServiceChange,
 
       NotificationType_PurchaseSuccess,
       NotificationType_ProductsForSale,

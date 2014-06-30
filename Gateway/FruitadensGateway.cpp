@@ -17,7 +17,7 @@ using boost::format;
 #include <assert.h>
 
 #include "FruitadensGateway.h"
-#include "DiplodocusGateway.h"
+#include "MainGatewayThread.h"
 
 //-----------------------------------------------------------------------------------------
 
@@ -44,7 +44,7 @@ void  FruitadensGateway::FindGateway()
       ChainLinkIteratorType itInput = m_listOfInputs.begin();
       if( itInput != m_listOfInputs.end() )// only one input currently supported.
       {
-         m_gateway = static_cast< DiplodocusGateway*> ( (*itInput).m_interface );
+         m_gateway = static_cast< MainGatewayThread*> ( (*itInput).m_interface );
       }
    }
 }

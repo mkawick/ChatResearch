@@ -184,7 +184,7 @@ struct ProductBriefPacketed
    bool  SerializeOut( U8* data, int& bufferOffset ) const;
 
    UuidString  uuid;
-   UuidString  vendorUuid; // e.g. summonerwars.mv.bund.pt2
+   FixedString80  vendorUuid; // e.g. summonerwars.mv.bund.pt2
    UuidString  parentUuid;
    //float    quantity;
    int      productType;

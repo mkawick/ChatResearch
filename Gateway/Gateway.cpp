@@ -15,11 +15,12 @@ using boost::format;
 #include "../NetworkCommon/Utils/Utils.h"
 #include "../NetworkCommon/Utils/CommandLineParser.h"
 #include "../NetworkCommon/Packets/ServerToServerPacket.h"
+#include "../NetworkCommon/NetworkUtils.h"
 
 #include "../NetworkCommon/Daemon/Daemonizer.h"
 
 #include "KhaanGateway.h"
-#include "DiplodocusGateway.h"
+#include "MainGatewayThread.h"
 #include "FruitadensGateway.h"
 #include "../NetworkCommon/NetworkOut/FruitadensServerToServer.h"
 
@@ -258,57 +259,73 @@ int main( int argc, const char* argv[] )
    cout << "External ip address: " << externalIpAddressString << endl;
    cout << "------------------------------------------------------------------" << endl << endl << endl;
 
-   DiplodocusGateway* gatewayServer = new DiplodocusGateway( serverName, serverId );
-   if( externalIpAddressString.size() )
+   InitializeSockets();
+   bool isBusy = IsPortBusy( listenPort );
+   ShutdownSockets();
+
+   if( isBusy == false )
    {
-      gatewayServer->SetExternalIpAddress( externalIpAddressString );
+      MainGatewayThread* gatewayServer = new MainGatewayThread( serverName, serverId );
+      if( externalIpAddressString.size() )
+      {
+         gatewayServer->SetExternalIpAddress( externalIpAddressString );
+      }
+      gatewayServer->SetGatewayType( PacketServerIdentifier::GatewayType_Normal );
+      if( assetOnly == true || assetBlock == false )
+      {
+         gatewayServer->SetGatewayType( PacketServerIdentifier::GatewayType_Asset );
+      }
+      gatewayServer->SetAsGame( false );
+      gatewayServer->PrintPacketTypes( printPackets );
+      gatewayServer->PrintFunctionNames( printFunctions );
+      gatewayServer->SetupListening( listenPort );
+
+      if( assetOnly == true )
+      {
+         gatewayServer->AllowUnauthenticatedConnections();
+         cout << " Asset only server does not require authentication " << endl;
+      }
+      //gatewayServer->SetupReroute( rerouteAddressString, reroutePort );
+      
+      
+      //--------------------------------------------------------------
+
+      if( assetOnly == false )
+      {
+         ConnectToMultipleGames< FruitadensGateway, MainGatewayThread > ( parser, gatewayServer, true );
+
+         PrepConnection< FruitadensGateway, MainGatewayThread > ( chatIpAddressString,          chatPort,         "chat",           gatewayServer, ServerType_Chat, true );
+         PrepConnection< FruitadensGateway, MainGatewayThread > ( loginIpAddressString,         loginPort,        "logon",          gatewayServer, ServerType_Login, true );
+         PrepConnection< FruitadensGateway, MainGatewayThread > ( contactIpAddressString,       contactPort,      "contact",        gatewayServer, ServerType_Contact, true );
+         PrepConnection< FruitadensGateway, MainGatewayThread > ( purchaseIpAddressString,      purchasePort,     "purchase",       gatewayServer, ServerType_Purchase, true );
+         PrepConnection< FruitadensGateway, MainGatewayThread > ( statIpAddressString,          statPort,         "stat",           gatewayServer, ServerType_Stat, true );
+         PrepConnection< FruitadensGateway, MainGatewayThread > ( notificationIpAddressString,  notificationPort, "notification",   gatewayServer, ServerType_Notification, true );
+      
+      }
+      if( assetBlock == false )
+      {
+         PrepConnection< FruitadensGateway, MainGatewayThread > ( assetDeliveryIpAddressString, assetPort,        "asset",          gatewayServer, ServerType_Asset, true );
+      }
+
+      cout << "---------------------------- finished connecting ----------------------------" << endl;
+
+      FruitadensServerToServer* connection = PrepConnection< FruitadensServerToServer, MainGatewayThread > ( loadBalancerAddressString, balancerPort,    "balancer",       gatewayServer, ServerType_LoadBalancer, false );
+      
+      gatewayServer->Init();
+      gatewayServer->Resume();   
+      gatewayServer->Run();
    }
-   gatewayServer->SetGatewayType( PacketServerIdentifier::GatewayType_Normal );
-   if( assetOnly == true || assetBlock == false )
+   else
    {
-      gatewayServer->SetGatewayType( PacketServerIdentifier::GatewayType_Asset );
+      cout << "***********************************************" << endl;
+      cout << " error: that server port is busy " << endl;
+      cout << "  port: " << listenPort << endl;
+      cout << " Note: you may have an instance already running" << endl;
+      cout << "        we must exit now" << endl;
+      cout << "***********************************************" << endl;
+      cout << endl << "Press any key to exit" << endl;
+      getch();
    }
-   gatewayServer->SetAsGame( false );
-   gatewayServer->PrintPacketTypes( printPackets );
-   gatewayServer->PrintFunctionNames( printFunctions );
-   gatewayServer->SetupListening( listenPort );
-
-   if( assetOnly == true )
-   {
-      gatewayServer->AllowUnauthenticatedConnections();
-      cout << " Asset only server does not require authentication " << endl;
-   }
-   //gatewayServer->SetupReroute( rerouteAddressString, reroutePort );
-   
-   
-   //--------------------------------------------------------------
-
-   if( assetOnly == false )
-   {
-      ConnectToMultipleGames< FruitadensGateway, DiplodocusGateway > ( parser, gatewayServer, true );
-
-      PrepConnection< FruitadensGateway, DiplodocusGateway > ( chatIpAddressString,          chatPort,         "chat",           gatewayServer, ServerType_Chat, true );
-      PrepConnection< FruitadensGateway, DiplodocusGateway > ( loginIpAddressString,         loginPort,        "logon",          gatewayServer, ServerType_Login, true );
-      PrepConnection< FruitadensGateway, DiplodocusGateway > ( contactIpAddressString,       contactPort,      "contact",        gatewayServer, ServerType_Contact, true );
-      PrepConnection< FruitadensGateway, DiplodocusGateway > ( purchaseIpAddressString,      purchasePort,     "purchase",       gatewayServer, ServerType_Purchase, true );
-      PrepConnection< FruitadensGateway, DiplodocusGateway > ( statIpAddressString,          statPort,         "stat",           gatewayServer, ServerType_Stat, true );
-      PrepConnection< FruitadensGateway, DiplodocusGateway > ( notificationIpAddressString,  notificationPort, "notification",   gatewayServer, ServerType_Notification, true );
-   
-   }
-   if( assetBlock == false )
-   {
-      PrepConnection< FruitadensGateway, DiplodocusGateway > ( assetDeliveryIpAddressString, assetPort,        "asset",          gatewayServer, ServerType_Asset, true );
-   }
-
-   cout << "---------------------------- finished connecting ----------------------------" << endl;
-
-   FruitadensServerToServer* connection = PrepConnection< FruitadensServerToServer, DiplodocusGateway > ( loadBalancerAddressString, balancerPort,    "balancer",       gatewayServer, ServerType_LoadBalancer, false );
-   
-   gatewayServer->Init();
-   gatewayServer->Resume();   
-   gatewayServer->Run();
-
-   getch();
    
 	return 0;
 }

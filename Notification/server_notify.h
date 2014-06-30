@@ -1,6 +1,8 @@
 #ifndef H_SERVER_NOTIFY_H
 #define H_SERVER_NOTIFY_H
 
+const int maxFileBufferLen = 256;
+
 enum GameNotification
 {
    gnTurn,
@@ -10,7 +12,7 @@ enum GameNotification
 };
 
 // initialize the iOS push notification system
-bool NotifyIosInit();
+bool NotifyIosInit( const char* certFile = NULL, const char* keyFile = NULL );
 
 // uninitialize the iOS push notification system
 void NotifyIosUninit();
@@ -39,7 +41,8 @@ bool notifyUserAndroid( const unsigned char* deviceId, unsigned int userId, int 
 
 bool NotifyUserDirect_iOS( unsigned int userId, const unsigned char *deviceId,
                           int gameType, unsigned int gameId,
-                          int badge_count, GameNotification notification, ... );
+                          int badge_count, const char* audioFile, 
+                          GameNotification notification, ... );
 
 //-----------------------------------------------------
 

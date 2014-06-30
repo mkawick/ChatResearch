@@ -13,7 +13,7 @@
 #include <assert.h>
 
 
-const U8   GlobalNetworkProtocolVersion = 30;
+const U8   GlobalNetworkProtocolVersion = 34;
 
 #ifdef _MEMORY_TEST_
 int BasePacket::m_counter = 0;
@@ -264,6 +264,30 @@ bool  PacketErrorReport::SerializeOut( U8* data, int& bufferOffset ) const
    Serialize::Out( data, bufferOffset, errorCode );
    Serialize::Out( data, bufferOffset, statusInfo );
    Serialize::Out( data, bufferOffset, text );
+
+   return true;
+}
+
+///////////////////////////////////////////////////////////////
+
+bool  Packet_QOS_ReportToClient::SerializeIn( const U8* data, int& bufferOffset )
+{
+   BasePacket::SerializeIn( data, bufferOffset );
+   Serialize::In( data, bufferOffset, errorText );
+   Serialize::In( data, bufferOffset, errorState );
+   Serialize::In( data, bufferOffset, param1 );
+   Serialize::In( data, bufferOffset, param2 );
+
+   return true;
+}
+
+bool  Packet_QOS_ReportToClient::SerializeOut( U8* data, int& bufferOffset ) const
+{
+   BasePacket::SerializeOut( data, bufferOffset );
+   Serialize::Out( data, bufferOffset, errorText );
+   Serialize::Out( data, bufferOffset, errorState );
+   Serialize::Out( data, bufferOffset, param1 );
+   Serialize::Out( data, bufferOffset, param2 );
 
    return true;
 }

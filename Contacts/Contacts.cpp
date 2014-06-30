@@ -21,6 +21,7 @@ using boost::format;
 #include "../NetworkCommon/Database/Deltadromeus.h"
 #include "../NetworkCommon/Daemon/Daemonizer.h"
 #include "../NetworkCommon/NetworkIn/DiplodocusServerToServer.h"
+#include "../NetworkCommon/NetworkUtils.h"
 
 #if PLATFORM == PLATFORM_WINDOWS
 #pragma warning (disable:4996)
@@ -68,7 +69,7 @@ int main( int argc, const char* argv[] )
 	CommandLineParser    parser( argc, argv );
    string serverName = "Contact Server";
    
-   string listenPort = "7500";
+   string listenPortString = "7500";
    string listenAddress = "localhost";
 
    string listenForS2SPort = "7502";
@@ -87,7 +88,7 @@ int main( int argc, const char* argv[] )
    
    parser.FindValue( "server.name", serverName );
 
-   parser.FindValue( "listen.port", listenPort );
+   parser.FindValue( "listen.port", listenPortString );
    parser.FindValue( "listen.address", listenAddress );
 
    parser.FindValue( "s2s.port", listenForS2SPort );
@@ -102,13 +103,13 @@ int main( int argc, const char* argv[] )
    parser.FindValue( "stat.port", statPortString );
    parser.FindValue( "stat.address", statIpAddressString );
 
-   int   listenPortAddress = 7500, 
+   int   listenPort = 7500, 
          dbPortAddress = 3306, 
          statPort = 7802, 
          listenS2SPort = 7502;
    try 
    {
-      listenPortAddress = boost::lexical_cast<int>( listenPort );
+      listenPort = boost::lexical_cast<int>( listenPortString );
       statPort = boost::lexical_cast<int>( statPortString );
       dbPortAddress = boost::lexical_cast<int>( dbPortString );
       listenS2SPort = boost::lexical_cast<int>( listenForS2SPort );
@@ -138,26 +139,46 @@ int main( int argc, const char* argv[] )
    cout << "ServerId " << serverId << endl;
    cout << "Db " << dbIpAddress << ":" << dbPortAddress << endl;
    cout << "------------------------------------------------------------------" << endl << endl << endl;
+   //--------------------------------------------------------------
 
-   DiplodocusContact*    contactServer = new DiplodocusContact( serverName, serverId );
-   contactServer->AddOutputChain( delta );
+   InitializeSockets();
+   bool isBusy = IsPortBusy( listenPort ) | IsPortBusy( listenS2SPort );
+   ShutdownSockets();
 
-   contactServer->SetupListening( listenPortAddress );
+   if( isBusy == false )
+   {
+      DiplodocusContact*    contactServer = new DiplodocusContact( serverName, serverId );
+      contactServer->AddOutputChain( delta );
 
-   DiplodocusServerToServer* s2s = new DiplodocusServerToServer( serverName, serverId, 0, ServerType_Contact );
-   s2s->SetupListening( listenS2SPort );
+      contactServer->SetupListening( listenPort );
 
-   PrepConnection< FruitadensServer, DiplodocusContact > ( statIpAddressString, statPort, "stat", contactServer, ServerType_Stat, true );
-   
-   //----------------------------------------------------------------
+      DiplodocusServerToServer* s2s = new DiplodocusServerToServer( serverName, serverId, 0, ServerType_Contact );
+      s2s->SetupListening( listenS2SPort );
 
-   s2s->AddOutputChain( contactServer );
+      PrepConnection< FruitadensServer, DiplodocusContact > ( statIpAddressString, statPort, "stat", contactServer, ServerType_Stat, true );
+      
+      //----------------------------------------------------------------
 
-   contactServer->Init();
+      s2s->AddOutputChain( contactServer );
 
-   contactServer->Run();
+      contactServer->Init();
 
-   getch();
+      contactServer->Run();
+   }
+   else
+   {
+      cout << "***********************************************" << endl;
+      cout << " error: that server port is busy " << endl;
+      cout << "  port: " << listenPort << endl;
+      cout << "  port: " << listenS2SPort << endl;
+      cout << " Note: you may have an instance already running" << endl;
+      cout << "        we must exit now" << endl;
+      cout << "***********************************************" << endl;
+      cout << endl << "Press any key to exit" << endl;
+      getch();
+   }
+
+   return 0;
 }
 
 ////////////////////////////////////////////////////////////////////////

@@ -190,7 +190,7 @@ private:
    
    void     StoreListOfUsersProductsFromDB( U32 connectionId, PacketDbQueryResult* dbResult );
    bool     UpdateProductFilterName( int index, string newFilterName );
-   void     RequestListOfProductsFromClient( U32 connectionId );
+   
    void     SendListOfPurchasesToUser( U32 connectionId, PacketDbQueryResult* dbResult );
 
    //---------------------------------------------------------------

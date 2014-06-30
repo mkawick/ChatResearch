@@ -21,6 +21,7 @@ using boost::format;
 #endif
 
 #include "../Platform.h"
+#include "../NetworkUtils.h"
 #include "../DataTypes.h"
 #include "../Packets/Serialize.h"
 #include "../Utils/OsLevelUtils.h"

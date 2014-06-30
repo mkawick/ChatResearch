@@ -192,6 +192,11 @@ bool  PacketFactory::ParseBasePacket( const U8* bufferIn, int& bufferOffset, con
             *packetOut = SerializeIn< PacketRerouteRequestResponse >( bufferIn, bufferOffset );
          }
          return true;
+      case BasePacket::BasePacket_QOS:
+         {
+            *packetOut = SerializeIn< Packet_QOS_ReportToClient >( bufferIn, bufferOffset );
+         }
+         return true;
    }
    return false;
 }

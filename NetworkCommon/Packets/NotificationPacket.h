@@ -9,7 +9,9 @@ struct RegisteredDevice
 {
 public:
    string   uuid;
-   string   name;   
+   string   name;
+   string   audioFile;
+   U8       repeatFrequencyInHours;
    bool     isEnabled;
    U32      iconId;
    U8       productId;
@@ -122,16 +124,23 @@ public:
 class PacketNotification_UpdateDevice : public PacketNotification
 {
 public:
-   PacketNotification_UpdateDevice() : PacketNotification( PacketType_Notification, NotificationType_UpdateDevice ){  }
+   PacketNotification_UpdateDevice() : PacketNotification( PacketType_Notification, NotificationType_UpdateDevice ),
+                  repeatFrequencyInHours( 0 ), 
+                  isEnabled( true ), 
+                  iconId( 0 ), 
+                  gameType( GameProductId_SUMMONWAR ) 
+   {}
 
    bool  SerializeIn( const U8* data, int& bufferOffset );
    bool  SerializeOut( U8* data, int& bufferOffset ) const;
 
-   UuidString  deviceUuid;
-   string   deviceName;
-   bool     isEnabled;
-   int      iconId;
-   int      gameType;
+   UuidString        deviceUuid;
+   string            deviceName;
+   FixedString60     audioFile;
+   U8                repeatFrequencyInHours;
+   bool              isEnabled;
+   int               iconId;
+   int               gameType;
 };
 
 ///////////////////////////////////////////////////////////////

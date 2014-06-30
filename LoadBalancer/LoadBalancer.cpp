@@ -16,6 +16,7 @@ using boost::format;
 #include "../NetworkCommon/Utils/Utils.h"
 #include "../NetworkCommon/Utils/CommandLineParser.h"
 #include "../NetworkCommon/Packets/ServerToServerPacket.h"
+#include "../NetworkCommon/NetworkUtils.h"
 
 #include "KhaanConnector.h"
 #include "DiplodocusLoadBalancer.h"
@@ -99,41 +100,60 @@ int main( int argc, const char* argv[] )
    cout << "ServerId " << serverId << endl;
    cout << "------------------------------------------------------------------" << endl << endl << endl;
 
-   DiplodocusLoadBalancer* loadBalancer = new DiplodocusLoadBalancer( serverName, serverId );
-   loadBalancer->SetGatewayType( PacketServerIdentifier::GatewayType_None );
-   loadBalancer->SetAsGame( false );
+   //--------------------------------------------------------------
 
+   InitializeSockets();
+   bool isBusy = IsPortBusy( listenPort ) | IsPortBusy( listenS2SPort );
+   ShutdownSockets();
 
-   vector< string >::iterator it = params.begin();
-   while( it != params.end() )
+   if( isBusy == false )
    {
-      string str = *it++;
-      string address, value;
-      //parser.SeparateStringIntoKeyValue( str, address, value );
-      vector< string > values;
-      parser.SeparateStringIntoValues( str, values, 3 );
+      DiplodocusLoadBalancer* loadBalancer = new DiplodocusLoadBalancer( serverName, serverId );
+      loadBalancer->SetGatewayType( PacketServerIdentifier::GatewayType_None );
+      loadBalancer->SetAsGame( false );
 
-      address = values[0];
-      string type = values[2];
-      U16 port = boost::lexical_cast< U16 >( values[1] );
-      loadBalancer->AddGatewayAddress( address, port );
+
+      vector< string >::iterator it = params.begin();
+      while( it != params.end() )
+      {
+         string str = *it++;
+         string address, value;
+         //parser.SeparateStringIntoKeyValue( str, address, value );
+         vector< string > values;
+         parser.SeparateStringIntoValues( str, values, 3 );
+
+         address = values[0];
+         string type = values[2];
+         U16 port = boost::lexical_cast< U16 >( values[1] );
+         loadBalancer->AddGatewayAddress( address, port );
+      }
+      
+      
+      cout << "---------------------------- finished connecting ----------------------------" << endl;
+
+      loadBalancer->SetupListening( listenPort );
+
+      DiplodocusServerToServer* s2s = new DiplodocusServerToServer( serverName, serverId, 0, ServerType_LoadBalancer );
+      s2s->SetupListening( listenS2SPort );
+      s2s->AddOutputChain( loadBalancer );
+
+      loadBalancer->Init();
+
+      loadBalancer->Resume();   
+      loadBalancer->Run();
    }
-   
-   
-   cout << "---------------------------- finished connecting ----------------------------" << endl;
-
-   loadBalancer->SetupListening( listenPort );
-
-   DiplodocusServerToServer* s2s = new DiplodocusServerToServer( serverName, serverId, 0, ServerType_LoadBalancer );
-   s2s->SetupListening( listenS2SPort );
-   s2s->AddOutputChain( loadBalancer );
-
-   loadBalancer->Init();
-
-   loadBalancer->Resume();   
-   loadBalancer->Run();
-
-   getch();
+   else
+   {
+      cout << "***********************************************" << endl;
+      cout << " error: that server port is busy " << endl;
+      cout << "  port: " << listenPort << endl;
+      cout << "  port: " << listenS2SPort << endl;
+      cout << " Note: you may have an instance already running" << endl;
+      cout << "        we must exit now" << endl;
+      cout << "***********************************************" << endl;
+      cout << endl << "Press any key to exit" << endl;
+      getch();
+   }
    
 	return 0;
 }

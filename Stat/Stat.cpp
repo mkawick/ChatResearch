@@ -17,6 +17,7 @@ using boost::format;
 #include "../NetworkCommon/Utils/CommandLineParser.h"
 #include "../NetworkCommon/DataTypes.h"
 #include "../NetworkCommon/Utils/Utils.h"
+#include "../NetworkCommon/NetworkUtils.h"
 
 #include "../NetworkCommon/Daemon/Daemonizer.h"
 #include "../NetworkCommon/Logging/server_log.h"
@@ -82,7 +83,7 @@ int main( int argc, const char* argv[] )
 
    string serverName = "Stat Server";
 
-   string listenPort = "7800";    // this connection is for consistency, it may not be used at all
+   string listenPortString = "7800";    // this connection is for consistency, it may not be used at all
    string listenAddress = "localhost";
 
    string listenForS2SPort = "7802";
@@ -100,7 +101,7 @@ int main( int argc, const char* argv[] )
    
    parser.FindValue( "server.name", serverName );
 
-   parser.FindValue( "listen.port", listenPort );
+   parser.FindValue( "listen.port", listenPortString );
    parser.FindValue( "listen.address", listenAddress );
 
    parser.FindValue( "s2s.port", listenForS2SPort );
@@ -119,11 +120,11 @@ int main( int argc, const char* argv[] )
    parser.FindValue( "db.schema", dbSchema );
 
 
-   int listenPortAddress = 7800, dbPortAddress = 3306, listenS2SPort= 7802;
+   int listenPort = 7800, dbPortAddress = 3306, listenS2SPort= 7802;
    try 
    {
       listenS2SPort = boost::lexical_cast<int>( listenForS2SPort );
-      listenPortAddress = boost::lexical_cast<int>( listenPort );
+      listenPort = boost::lexical_cast<int>( listenPortString );
       dbPortAddress = boost::lexical_cast<int>( dbPortString );
    } 
    catch( boost::bad_lexical_cast const& ) 
@@ -153,23 +154,41 @@ int main( int argc, const char* argv[] )
    cout << "ServerId " << serverId << endl;
    cout << "------------------------------------------------------------------" << endl << endl << endl;
 
-   DiplodocusStat*    statServer = new DiplodocusStat( serverName, serverId );
-   statServer->SetupListening( listenPortAddress );
+   InitializeSockets();
+   bool isBusy = IsPortBusy( listenPort ) | IsPortBusy( listenS2SPort );
+   ShutdownSockets();
 
-   DiplodocusServerToServer* s2s = new DiplodocusServerToServer( serverName, serverId, 0, ServerType_Stat );
-   s2s->SetupListening( listenS2SPort );
-   
-   //----------------------------------------------------------------
-   
-   statServer->Init();
+   if( isBusy == false )
+   {
+      DiplodocusStat*    statServer = new DiplodocusStat( serverName, serverId );
+      statServer->SetupListening( listenPort );
 
-   s2s->AddOutputChain( statServer );
-   statServer->AddOutputChain( delta );
+      DiplodocusServerToServer* s2s = new DiplodocusServerToServer( serverName, serverId, 0, ServerType_Stat );
+      s2s->SetupListening( listenS2SPort );
+      
+      //----------------------------------------------------------------
+      
+      statServer->Init();
 
-   s2s->Resume();
-   statServer->Run();
+      s2s->AddOutputChain( statServer );
+      statServer->AddOutputChain( delta );
 
-   getch();
+      s2s->Resume();
+      statServer->Run();
+   }
+   else
+   {
+      cout << "***********************************************" << endl;
+      cout << " error: that server port is busy " << endl;
+      cout << "  port: " << listenPort << endl;
+      cout << "  port: " << listenS2SPort << endl;
+      cout << " Note: you may have an instance already running" << endl;
+      cout << "        we must exit now" << endl;
+      cout << "***********************************************" << endl;
+      cout << endl << "Press any key to exit" << endl;
+      getch();
+   }
+	return 0;
 }
 
 ////////////////////////////////////////////////////////////////////////

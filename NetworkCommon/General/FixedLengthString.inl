@@ -21,7 +21,10 @@ bool  FixedLengthString <str_length>:: operator == ( const char * str ) const
 { return isEqual( str, false ); }
 
 template < int str_length >
-bool  FixedLengthString <str_length>:: operator == ( const FixedLengthString& rhs ) const { return isEqual( rhs.buffer, false ); }
+bool  FixedLengthString <str_length>:: operator == ( const FixedLengthString& rhs ) const
+{
+   return this->isEqual( rhs.buffer, false );
+}
 
 template < int str_length >
 const FixedLengthString <str_length>&		

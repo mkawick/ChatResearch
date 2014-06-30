@@ -17,6 +17,7 @@ using boost::format;
 #include "../NetworkCommon/Utils/CommandLineParser.h"
 #include "../NetworkCommon/DataTypes.h"
 #include "../NetworkCommon/Utils/Utils.h"
+#include "../NetworkCommon/NetworkUtils.h"
 
 #include "../NetworkCommon/Daemon/Daemonizer.h"
 #include "../NetworkCommon/Logging/server_log.h"
@@ -72,7 +73,7 @@ int main( int argc, const char* argv[] )
 
    string serverName = "Purchase Server";
 
-   string listenPort = "7700";
+   string listenPortString = "7700";
    string listenAddress = "localhost";
 
    string listenForS2SPort = "7702";
@@ -82,7 +83,7 @@ int main( int argc, const char* argv[] )
    
    parser.FindValue( "server.name", serverName );
 
-   parser.FindValue( "listen.port", listenPort );
+   parser.FindValue( "listen.port", listenPortString );
    parser.FindValue( "listen.address", listenAddress );
 
    parser.FindValue( "s2s.port", listenForS2SPort );
@@ -101,11 +102,11 @@ int main( int argc, const char* argv[] )
    parser.FindValue( "db.schema", dbSchema );
 
 
-   int listenPortAddress = 7700, dbPortAddress = 3306, listenS2SPort = 7702;
+   int listenPort = 7700, dbPortAddress = 3306, listenS2SPort = 7702;
    try 
    {
       listenS2SPort = boost::lexical_cast<int>( listenForS2SPort );
-      listenPortAddress = boost::lexical_cast<int>( listenPort );
+      listenPort = boost::lexical_cast<int>( listenPortString );
       dbPortAddress = boost::lexical_cast<int>( dbPortString );
    } 
    catch( boost::bad_lexical_cast const& ) 
@@ -136,23 +137,41 @@ int main( int argc, const char* argv[] )
    cout << "ServerId " << serverId << endl;
    cout << "------------------------------------------------------------------" << endl << endl << endl;
 
-   DiplodocusPurchase*    purchaseServer = new DiplodocusPurchase( serverName, serverId );
-   purchaseServer->SetupListening( listenPortAddress );
+   InitializeSockets();
+   bool isBusy = IsPortBusy( listenPort ) | IsPortBusy( listenS2SPort );
+   ShutdownSockets();
 
-   DiplodocusServerToServer* s2s = new DiplodocusServerToServer( serverName, serverId, 0, ServerType_Purchase );
-   s2s->SetupListening( listenS2SPort );
-   
-   //----------------------------------------------------------------
-   
-   purchaseServer->Init();
+   if( isBusy == false )
+   {
+      DiplodocusPurchase*    purchaseServer = new DiplodocusPurchase( serverName, serverId );
+      purchaseServer->SetupListening( listenPort );
 
-   s2s->AddOutputChain( purchaseServer );
-   purchaseServer->AddOutputChain( delta );
+      DiplodocusServerToServer* s2s = new DiplodocusServerToServer( serverName, serverId, 0, ServerType_Purchase );
+      s2s->SetupListening( listenS2SPort );
+      
+      //----------------------------------------------------------------
+      
+      purchaseServer->Init();
 
-   s2s->Resume();
-   purchaseServer->Run();
+      s2s->AddOutputChain( purchaseServer );
+      purchaseServer->AddOutputChain( delta );
 
-   getch();
+      s2s->Resume();
+      purchaseServer->Run();
+   }
+   else
+   {
+      cout << "***********************************************" << endl;
+      cout << " error: that server port is busy " << endl;
+      cout << "  port: " << listenPort << endl;
+      cout << "  port: " << listenS2SPort << endl;
+      cout << " Note: you may have an instance already running" << endl;
+      cout << "        we must exit now" << endl;
+      cout << "***********************************************" << endl;
+      cout << endl << "Press any key to exit" << endl;
+      getch();
+   }
+	return 0;
 }
 
 ////////////////////////////////////////////////////////////////////////

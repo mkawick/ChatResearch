@@ -22,6 +22,7 @@ using boost::format;
 
 #include "../NetworkCommon/Database/Deltadromeus.h"
 #include "../NetworkCommon/Packets/ServerToServerPacket.h"
+#include "../NetworkCommon/NetworkUtils.h"
 
 #include "../NetworkCommon/Daemon/Daemonizer.h"
 
@@ -67,8 +68,8 @@ void  PrintInstructions()
    cout << "    listen.address    - what is the ipaddress that this app should be using;" << endl;
    cout << "                        usually localhost or null" << endl;
    cout << "    listen.port       - listen on which port" << endl;
-   cout << "    s2s.address       - where is the for gateway, login and others" << endl;
-   cout << "    s2s.port          - where is the port for gateway, login and others" << endl;
+  // cout << "    s2s.address       - where is the for gateway, login and others" << endl;
+   //cout << "    s2s.port          - where is the port for gateway, login and others" << endl;
    
    cout << "    db.address        - database ipaddress" << endl;
    cout << "    db.port           - database port" << endl;
@@ -246,31 +247,48 @@ int main( int argc, const char* argv[] )
    cout << "   flag: autoAddLoginProduct = " << std::boolalpha << autoAddLoginProduct << endl;
    cout << "------------------------------------------------------------------" << endl << endl << endl;
 
-   DiplodocusLogin* loginServer = new DiplodocusLogin( serverName, serverId );
-   loginServer->SetAsControllerApp( false );
-   loginServer->SetGatewayType( PacketServerIdentifier::GatewayType_None );
-   loginServer->SetAsGame( false );
+   InitializeSockets();
+   bool isBusy = IsPortBusy( listenPort );
+   ShutdownSockets();
 
-   loginServer->AddOutputChain( delta );
-   loginServer->SetupListening( listenPort );
-   loginServer->AutoAddTheProductFromWhichYouLogin( autoAddLoginProduct );
-   
-   //----------------------------------
+   if( isBusy == false )
+   {
+      DiplodocusLogin* loginServer = new DiplodocusLogin( serverName, serverId );
+      loginServer->SetAsControllerApp( false );
+      loginServer->SetGatewayType( PacketServerIdentifier::GatewayType_None );
+      loginServer->SetAsGame( false );
 
-   PrepConnection< FruitadensLogin, DiplodocusLogin > ( chatIpAddressString, chatPort, "chat", loginServer, ServerType_Chat, true );
-   PrepConnection< FruitadensLogin, DiplodocusLogin > ( contactIpAddressString, contactPort, "contact", loginServer, ServerType_Contact, true );
-   PrepConnection< FruitadensLogin, DiplodocusLogin > ( assetIpAddressString, assetPort, "asset", loginServer, ServerType_Asset, true );
-   PrepConnection< FruitadensLogin, DiplodocusLogin > ( purchaseIpAddressString, purchasePort, "purchase", loginServer, ServerType_Purchase, true );
-   PrepConnection< FruitadensLogin, DiplodocusLogin > ( statIpAddressString, statPort, "stat", loginServer, ServerType_Stat, true );
-   PrepConnection< FruitadensLogin, DiplodocusLogin > ( notificationIpAddressString, notificationPort, "notification", loginServer, ServerType_Notification, true );
-   
-   ConnectToMultipleGames< FruitadensLogin, DiplodocusLogin > ( parser, loginServer, true );
+      loginServer->AddOutputChain( delta );
+      loginServer->SetupListening( listenPort );
+      loginServer->AutoAddTheProductFromWhichYouLogin( autoAddLoginProduct );
+      
+      //----------------------------------
 
-   loginServer->Init();
-   loginServer->Resume();
-   loginServer->Run();
+      PrepConnection< FruitadensLogin, DiplodocusLogin > ( chatIpAddressString, chatPort, "chat", loginServer, ServerType_Chat, true );
+      PrepConnection< FruitadensLogin, DiplodocusLogin > ( contactIpAddressString, contactPort, "contact", loginServer, ServerType_Contact, true );
+      PrepConnection< FruitadensLogin, DiplodocusLogin > ( assetIpAddressString, assetPort, "asset", loginServer, ServerType_Asset, true );
+      PrepConnection< FruitadensLogin, DiplodocusLogin > ( purchaseIpAddressString, purchasePort, "purchase", loginServer, ServerType_Purchase, true );
+      PrepConnection< FruitadensLogin, DiplodocusLogin > ( statIpAddressString, statPort, "stat", loginServer, ServerType_Stat, true );
+      PrepConnection< FruitadensLogin, DiplodocusLogin > ( notificationIpAddressString, notificationPort, "notification", loginServer, ServerType_Notification, true );
+      
+      ConnectToMultipleGames< FruitadensLogin, DiplodocusLogin > ( parser, loginServer, true );
 
-   getch();
+      loginServer->Init();
+      loginServer->Resume();
+      loginServer->Run();
+   }
+   else
+   {
+      cout << "***********************************************" << endl;
+      cout << " error: that server port is busy " << endl;
+      cout << "  port: " << listenPort << endl;
+      //cout << "  port: " << listenS2SPort << endl;
+      cout << " Note: you may have an instance already running" << endl;
+      cout << "        we must exit now" << endl;
+      cout << "***********************************************" << endl;
+      cout << endl << "Press any key to exit" << endl;
+      getch();
+   }
    
 	return 0;
 }

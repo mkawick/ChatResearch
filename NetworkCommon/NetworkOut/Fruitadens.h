@@ -78,6 +78,7 @@ protected:
    virtual bool   HandlePacketReceived( BasePacket* packetIn );
 
    virtual void   InitialConnectionCallback() {} // this will be invoked on every reconnect 
+   virtual void   InitialDisconnectionCallback() {}
 
    virtual void   InheritedUpdate() {}
 
@@ -128,8 +129,15 @@ public:
    void        NotifyEndpointOfIdentification( const string& serverName, const string& serverAddress, U32 serverId, U16 serverPort, U8 gameProductId, bool isGameServer, bool isController, bool requiresWrapper, U8 gatewayType, const string& externalIpAddress );
 
    void        InitialConnectionCallback();
+   void        InitialDisconnectionCallback();
 
    bool        IsGameServer() const { return m_localIsGameServer; }
+   U8          GetGameProductId() const { return m_localGameProductId; }
+
+   bool        IsRecentlyConnected() const { return m_recentlyConnected; }
+   bool        IsRecentlyDisconnected() const { return m_recentlyDisconnected; }
+   void        ClearRecentlyConnectedFlag() { m_recentlyConnected = false; }
+   void        ClearRecentlyDisconnectedFlag() { m_recentlyDisconnected = false; }
 
 protected:
 
@@ -142,10 +150,15 @@ protected:
    U32         m_localServerId;
    U16         m_localServerPort;
    U8          m_localGameProductId;
+   U8          m_gatewayType;
+
    bool        m_localIsGameServer;
    bool        m_localIsController;
    bool        m_localRequiresWrapper;
-   U8          m_gatewayType;
+   
+
+   bool        m_recentlyConnected;
+   bool        m_recentlyDisconnected;
 };
 
 //-------------------------------------------------------------------------

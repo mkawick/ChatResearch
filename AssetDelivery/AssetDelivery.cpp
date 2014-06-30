@@ -13,7 +13,7 @@ using namespace std;
 #include "AssetCommon.h"
 #include "DiplodocusAsset.h"
 #include "../NetworkCommon/NetworkIn/DiplodocusServerToServer.h"
-
+#include "../NetworkCommon/NetworkUtils.h"
 
 #if PLATFORM == PLATFORM_WINDOWS
 #include <conio.h>
@@ -59,7 +59,7 @@ int main( int argc, const char* argv[] )
 	CommandLineParser    parser( argc, argv );
 
    string serverName = "Asset Server";
-   string listenPort = "7300";
+   string listenPortString = "7300";
    string listenAddress = "localhost";
 
    string listenForS2SPort = "7302";
@@ -72,7 +72,7 @@ int main( int argc, const char* argv[] )
 
    parser.FindValue( "server.name", serverName );
 
-   parser.FindValue( "listen.port", listenPort );
+   parser.FindValue( "listen.port", listenPortString );
    parser.FindValue( "listen.address", listenAddress );
 
    parser.FindValue( "s2s.port", listenForS2SPort );
@@ -81,11 +81,11 @@ int main( int argc, const char* argv[] )
    parser.FindValue( "asset.dictionary", assetDictionary );
    parser.FindValue( "asset.path", assetPath );
 
-   int listenPortAddress = 7300, listenS2SPort = 7302;
+   int listenPort = 7300, listenS2SPort = 7302;
    try 
    {
       listenS2SPort = boost::lexical_cast<int>( listenForS2SPort );
-      listenPortAddress = boost::lexical_cast<int>( listenPort );
+      listenPort = boost::lexical_cast<int>( listenPortString );
    } 
    catch( boost::bad_lexical_cast const& ) 
    {
@@ -106,22 +106,41 @@ int main( int argc, const char* argv[] )
    cout << "Asset path " << assetPath << endl;
    cout << "------------------------------------------------------------------" << endl << endl << endl;
 
-   DiplodocusAsset*    assetServer = new DiplodocusAsset( serverName, serverId );
-   assetServer->SetupListening( listenPortAddress );
-   assetServer->SetIniFilePath( assetPath, assetDictionary );
+   InitializeSockets();
+   bool isBusy = IsPortBusy( listenPort ) | IsPortBusy( listenS2SPort );
+   ShutdownSockets();
 
-   DiplodocusServerToServer* s2s = new DiplodocusServerToServer( serverName, serverId, 0, ServerType_Asset );
-   s2s->SetupListening( listenS2SPort );
-   
-   //----------------------------------------------------------------
-   
-   assetServer->Init();
+   if( isBusy == false )
+   {
+      DiplodocusAsset*    assetServer = new DiplodocusAsset( serverName, serverId );
+      assetServer->SetupListening( listenPort );
+      assetServer->SetIniFilePath( assetPath, assetDictionary );
 
-   s2s->AddOutputChain( assetServer );
+      DiplodocusServerToServer* s2s = new DiplodocusServerToServer( serverName, serverId, 0, ServerType_Asset );
+      s2s->SetupListening( listenS2SPort );
+      
+      //----------------------------------------------------------------
+      
+      assetServer->Init();
 
-   assetServer->Run();
+      s2s->AddOutputChain( assetServer );
 
-   getch();
+      assetServer->Run();
+   }
+   else
+   {
+      cout << "***********************************************" << endl;
+      cout << " error: that server port is busy " << endl;
+      cout << "  port: " << listenPort << endl;
+      cout << "  port: " << listenS2SPort << endl;
+      cout << " Note: you may have an instance already running" << endl;
+      cout << "        we must exit now" << endl;
+      cout << "***********************************************" << endl;
+      cout << endl << "Press any key to exit" << endl;
+      getch();
+   }
+
+   return 0;
 }
 
 ////////////////////////////////////////////////////////////////////////
