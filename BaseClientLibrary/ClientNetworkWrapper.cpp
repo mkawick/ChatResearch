@@ -701,18 +701,23 @@ void     ClientNetworkWrapper::UpdateNotifications()
                notify->DeviceRemoved( channelUuid, success );
             }
             break;
-            
+         case ClientSideNetworkCallback::NotificationType_ProductsForSale:
+            {                  
+               PacketPurchase_RequestListOfSalesResponse* purchase = 
+                  static_cast<PacketPurchase_RequestListOfSalesResponse*>( qn.packet );
 
-            /*   case ClientSideNetworkCallback::NotificationType_ServerRequestsListOfUserPurchases:
-            {
-               notify->ServerRequestsListOfUserPurchases();
+               notify->ProductsForSale( purchase->thingsForSale );
             }
-            break;*/
-            /*   case ClientSideNetworkCallback::NotificationType_ServerRequestsListOfUserPurchases:
-            {
-               notify->ServerRequestsListOfUserPurchases();
+            break;
+         case ClientSideNetworkCallback::NotificationType_PurchaseSuccess:
+            {                  
+               PacketPurchase_BuyResponse* purchase = 
+                  static_cast<PacketPurchase_BuyResponse*>( qn.packet );
+
+               notify->PurchaseSuccess( purchase->purchaseUuid, purchase->success );
             }
-            break;*/
+            break;
+
          }
       }
 
@@ -3006,19 +3011,15 @@ bool     ClientNetworkWrapper::HandlePacketReceived( BasePacket* packetIn )
             case PacketPurchase::PurchaseType_BuyResponse:
                {
                   PacketPurchase_BuyResponse* purchase = static_cast<PacketPurchase_BuyResponse*>( packetIn );
-                  for( list< ClientSideNetworkCallback* >::iterator it = m_callbacks.begin(); it != m_callbacks.end(); ++it )
-                  {
-                     (*it)->PurchaseSuccess( purchase->purchaseUuid, purchase->success );
-                  }
+                  Notification( ClientSideNetworkCallback::NotificationType_PurchaseSuccess, purchase );
+                  cleaner.Clear();// do not cleanup this packet
                }
                break;
             case PacketPurchase::PurchaseType_RequestListOfSalesResponse:
                {
                   PacketPurchase_RequestListOfSalesResponse* purchase = static_cast<PacketPurchase_RequestListOfSalesResponse*>( packetIn );
-                  for( list< ClientSideNetworkCallback* >::iterator it = m_callbacks.begin(); it != m_callbacks.end(); ++it )
-                  {
-                     (*it)->ProductsForSale( purchase->thingsForSale );
-                  }
+                  Notification( ClientSideNetworkCallback::NotificationType_ProductsForSale, purchase );
+                  cleaner.Clear();// do not cleanup this packet
                }
                break;
             }

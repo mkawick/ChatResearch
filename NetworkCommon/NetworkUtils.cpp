@@ -31,9 +31,11 @@
    #include <arpa/inet.h>
 #endif
 
-
+#include <stdio.h>
+#include <stdlib.h>
 #include "DataTypes.h"
 #include "Packets/Serialize.h"
+#include "Utils/Utils.h"
 using namespace std;
 
 // prototypes
@@ -134,15 +136,14 @@ void GetLocalIpAddress( char* buffer, size_t buflen )
 
 bool IsPortBusy( int port )
 {
-   int ListenSocket = INVALID_SOCKET;
-
    char portBuffer [256];
-   itoa( port, portBuffer, 10 );
+   sprintf( portBuffer, "%d", port );
+   //itoa( port, portBuffer, 10 );
 
    struct addrinfo *result = NULL;
    struct addrinfo hints;
 
-   ZeroMemory(&hints, sizeof(hints));
+   memset(&hints, 0, sizeof(hints));
    hints.ai_family = AF_INET;
    hints.ai_socktype = SOCK_STREAM;
    hints.ai_protocol = IPPROTO_TCP;
@@ -157,8 +158,8 @@ bool IsPortBusy( int port )
    }
 
    // Create a SOCKET for connecting to server
-   ListenSocket = socket( result->ai_family, result->ai_socktype, result->ai_protocol );
-   if( ListenSocket == INVALID_SOCKET) 
+   int ListenSocket = socket( result->ai_family, result->ai_socktype, result->ai_protocol );
+   if( ListenSocket == SOCKET_ERROR) 
    {
       cout << "Failed to create socket" << endl;
       freeaddrinfo(result);

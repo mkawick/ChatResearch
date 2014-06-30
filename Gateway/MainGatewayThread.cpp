@@ -232,6 +232,7 @@ void     MainGatewayThread::InputRemovalInProgress( IChainedInterface * chainedI
 
 void     MainGatewayThread::CheckOnServerStatusChanges()
 {
+   m_outputChainListMutex.lock();
    ChainLinkIteratorType itOutput = m_listOfOutputs.begin();
    while( itOutput != m_listOfOutputs.end() )
    {
@@ -250,7 +251,7 @@ void     MainGatewayThread::CheckOnServerStatusChanges()
             //serverType == ServerType_Tournament ||
             serverType == ServerType_Chat ||
             serverType == ServerType_Contact ||
-            serverType == ServerType_Login ||
+            serverType == ServerType_Purchase ||
             serverType == ServerType_Notification 
             )
          {
@@ -272,7 +273,7 @@ void     MainGatewayThread::CheckOnServerStatusChanges()
             //serverType == ServerType_Tournament ||
             serverType == ServerType_Chat ||
             serverType == ServerType_Contact ||
-            serverType == ServerType_Login ||
+            serverType == ServerType_Purchase ||
             serverType == ServerType_Notification 
             )
          {
@@ -285,6 +286,7 @@ void     MainGatewayThread::CheckOnServerStatusChanges()
       }
    }
 
+   m_outputChainListMutex.unlock();
    //---------------------------------------------------
    if( m_isServerDownForMaintenence == true && 
       m_hasInformedConnectedClientsThatServerIsDownForMaintenence == false)
@@ -564,7 +566,12 @@ int       MainGatewayThread::CallbackFunction()
    CommonUpdate();
 
    SendStatsToLoadBalancer();
-   StatTrackingConnections::SendStatsToStatServer( m_listOfOutputs, m_serverName, m_serverId, m_serverType );
+
+   m_outputChainListMutex.lock();
+   BaseOutputContainer tempContainer = m_listOfOutputs;
+   m_outputChainListMutex.unlock();
+   StatTrackingConnections::SendStatsToStatServer( tempContainer, m_serverName, m_serverId, m_serverType );
+   
 
    CleanupOldConnections();
 
@@ -673,9 +680,14 @@ void  MainGatewayThread::SendStatsToLoadBalancer()
 
       TrackCountStats( StatTracking_UserTotalCount, static_cast<float>( num ), 0 );
 
+      m_outputChainListMutex.lock();
+      BaseOutputContainer tempContainer = m_listOfOutputs;
+      m_outputChainListMutex.unlock();
+
+      // we'll keep this because we may be connected to multiple load balancers
       bool statsSent = false;
-      ChainLinkIteratorType itOutput = m_listOfOutputs.begin();
-      while( itOutput != m_listOfOutputs.end() )
+      ChainLinkIteratorType itOutput = tempContainer.begin();
+      while( itOutput != tempContainer.end() )
       {
          IChainedInterface* outputPtr = (*itOutput).m_interface;
          FruitadensGateway* fruity = static_cast< FruitadensGateway* >( outputPtr );
