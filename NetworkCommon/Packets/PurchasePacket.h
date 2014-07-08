@@ -55,6 +55,9 @@ struct PurchaseInfo
 
 struct PurchaseServerDebitItem
 {
+   PurchaseServerDebitItem() : numToDebit( 0 ){}
+   PurchaseServerDebitItem( const PurchaseServerDebitItem& rhs ):numToDebit( rhs.numToDebit ), productUuidToSpend( rhs.productUuidToSpend ) {}
+   PurchaseServerDebitItem( const string& uuid, int num ):numToDebit( num ), productUuidToSpend( uuid ) {}
    bool  SerializeIn( const U8* data, int& bufferOffset );
    bool  SerializeOut( U8* data, int& bufferOffset ) const;
 

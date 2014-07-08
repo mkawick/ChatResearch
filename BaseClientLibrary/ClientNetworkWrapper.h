@@ -161,6 +161,7 @@ public:
    bool     RequestListOfMberProducts() const; // just things that you can buy in our store
    bool     RequestListOfPurchases( const string userUuid = "" ) const;
    bool     MakePurchase( const string& exchangeUuid ) const;
+   bool     VerifyVendorPurchase( const string& purchaseItemId, int quantity, const string& transactionId, const string& receipt, int platformId = Platform_ios ) const;
    bool     UserHasMadePurchase( const string& vendorProductUuid, const string& receipt, int platformId = Platform_ios  ) const;
 
    int      GetNumPurchases() const { return m_purchases.size(); }

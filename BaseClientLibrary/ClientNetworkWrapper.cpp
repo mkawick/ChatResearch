@@ -1384,6 +1384,19 @@ bool  ClientNetworkWrapper::MakePurchase( const string& exchangeUuid ) const
    return true;
 }
 
+bool  ClientNetworkWrapper::VerifyVendorPurchase( const string& purchaseItemId, int quantity, const string& transactionId, const string& receipt, int platformId ) const
+{
+   if( IsConnected() == false )
+   {
+      return false;
+   }
+  /* PacketPurchase_Buy purchase;
+   purchase.purchaseUuid = exchangeUuid;
+   SerializePacketOut( &purchase );*/
+
+   return true;
+}
+
 //-----------------------------------------------------------------------------
 
 bool  ClientNetworkWrapper::UserHasMadePurchase( const string& vendorProductUuid, const string& receipt, int platformId ) const
