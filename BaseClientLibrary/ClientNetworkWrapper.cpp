@@ -435,6 +435,23 @@ void     ClientNetworkWrapper::UpdateNotifications()
                notify->SearchForUserResultsAvailable();
             }
             break;
+
+         case ClientSideNetworkCallback::NotificationType_TournamentListAvalable:
+            {
+               notify->TournamentListAvalable();
+            }
+            break;
+         case ClientSideNetworkCallback::NotificationType_TournamentPurchaseResult:
+            {
+               //SerializedKeyValueVector< InvitationInfo >::const_KVIterator it = kvVector.begin();
+               // string from = keyValueIt->value; ++keyValueIt;
+               //string to = keyValueIt->value; ++keyValueIt;
+               string tournamentUuid = keyValueIt->value; ++keyValueIt;
+               int result = boost::lexical_cast< U32 >( keyValueIt->value );
+               notify->TournamentPurchaseResult( tournamentUuid, result );
+            }
+            break;
+
          case ClientSideNetworkCallback::NotificationType_OnError:
             {
                U32 code = boost::lexical_cast< U16>( qn.genericKeyValuePairs.find( "code" ) );
@@ -1290,7 +1307,7 @@ bool  ClientNetworkWrapper::FindProduct( const string& uuid, ProductBriefPackete
 
 //-----------------------------------------------------------------------------
 
-bool  ClientNetworkWrapper::RequestListOfProducts() const
+bool  ClientNetworkWrapper::RequestListOfAppStoreProducts() const
 {
    if( IsConnected() == false )
    {
@@ -1318,7 +1335,7 @@ bool  ClientNetworkWrapper::RequestListOfProducts() const
 */
 //-----------------------------------------------------------------------------
 
-bool  ClientNetworkWrapper::RequestListOfProductsInStore() const
+bool  ClientNetworkWrapper::RequestListOfMberProducts() const
 {
    if( IsConnected() == false )
    {
@@ -1369,6 +1386,21 @@ bool  ClientNetworkWrapper::MakePurchase( const string& exchangeUuid ) const
 
 //-----------------------------------------------------------------------------
 
+bool  ClientNetworkWrapper::UserHasMadePurchase( const string& vendorProductUuid, const string& receipt, int platformId ) const
+{
+   if( IsConnected() == false )
+   {
+      return false;
+   }
+ /*  PacketPurchase_Buy purchase;
+   purchase.purchaseUuid = exchangeUuid;
+   SerializePacketOut( &purchase );*/
+
+   return true;
+}
+
+//-----------------------------------------------------------------------------
+
 bool  ClientNetworkWrapper::RequestListOfTournaments()
 {
    if( IsConnected() == false )
@@ -1399,7 +1431,7 @@ bool  ClientNetworkWrapper::GetPurchase( int index, PurchaseEntry& purchase ) co
 
 //-----------------------------------------------------------------------------
 
-bool  ClientNetworkWrapper::PurchaseEntryIntoTournament( const string& tournamentUuid )
+bool  ClientNetworkWrapper::PurchaseEntryIntoTournament( const string& tournamentUuid, const vector<PurchaseServerDebitItem>& listOfDebitItems, const string& customDeck )
 {
    if( IsConnected() == false )
    {
@@ -1408,6 +1440,13 @@ bool  ClientNetworkWrapper::PurchaseEntryIntoTournament( const string& tournamen
 
    PacketTournament_UserRequestsEntryInTournament entry;
    entry.tournamentUuid = tournamentUuid;
+   entry.customDeck = customDeck;
+
+   int num = listOfDebitItems.size();
+   for( int i=0; i<num; i++ )
+   {
+      entry.itemsToSpend.push_back( listOfDebitItems[i] );
+   }
 
    SerializePacketOut( &entry );
 
@@ -2631,12 +2670,17 @@ bool     ClientNetworkWrapper::SendCheat( const string& cheatText )
 
 bool     ClientNetworkWrapper::SerializePacketOut( BasePacket* packet ) const 
 {
-   U8 buffer[ MaxBufferSize ];
-   int offset = 0;
+   U8 buffer[ MaxBufferSize*20 ];
 
    packet->gameInstanceId = m_selectedGame;
    packet->gameProductId = m_gameProductId;
+
+   int offset = 2;
    packet->SerializeOut( buffer, offset );
+   U16 size = offset-2;
+   int headerOffset = 0;
+   Serialize::Out( buffer, headerOffset, size );
+
    m_beginTime = GetCurrentMilliseconds();
 
    U8 type = packet->packetType;
@@ -3373,7 +3417,7 @@ bool     ClientNetworkWrapper::HandlePacketReceived( BasePacket* packetIn )
          }
       }
       break;
-     /* case PacketType_Tournament:
+      case PacketType_Tournament:
       {
          switch( packetIn->packetSubType )
          {
@@ -3381,6 +3425,8 @@ bool     ClientNetworkWrapper::HandlePacketReceived( BasePacket* packetIn )
             {
                PacketTournament_RequestListOfTournamentsResponse* response = 
                   static_cast<PacketTournament_RequestListOfTournamentsResponse*>( packetIn );
+
+               Threading::MutexLock    locker( m_notificationMutex );
                m_availableTournaments.clear();
 
                SerializedKeyValueVector< TournamentInfo >::KeyValueVectorIterator it = response->tournaments.begin();
@@ -3392,10 +3438,7 @@ bool     ClientNetworkWrapper::HandlePacketReceived( BasePacket* packetIn )
                }
                if( m_availableTournaments.size() )
                {
-                  for( list< ClientSideNetworkCallback* >::iterator it = m_callbacks.begin(); it != m_callbacks.end(); ++it )
-                  {
-                     (*it)->TournamentListAvalable();
-                  }
+                  Notification( ClientSideNetworkCallback::NotificationType_TournamentListAvalable );
                }
                else
                {
@@ -3408,15 +3451,16 @@ bool     ClientNetworkWrapper::HandlePacketReceived( BasePacket* packetIn )
                PacketTournament_UserRequestsEntryInTournamentResponse* response = 
                   static_cast<PacketTournament_UserRequestsEntryInTournamentResponse*>( packetIn );
               
-               for( list< ClientSideNetworkCallback* >::iterator it = m_callbacks.begin(); it != m_callbacks.end(); ++it )
-               {
-                  (*it)->TournamentPurchaseResult( response->tournamentUuid, response->result );
-               }
+               SerializedKeyValueVector< string > strings;
+               strings.insert( "tournamentUuid", response->tournamentUuid );
+               strings.insert( "success", boost::lexical_cast< string >( response->result ) );
+
+               Notification( ClientSideNetworkCallback::NotificationType_TournamentPurchaseResult, strings );
             }
             break;
          }
       }
-      break;*/
+      break;
    }
 
    return true;

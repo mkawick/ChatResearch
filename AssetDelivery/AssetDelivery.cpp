@@ -101,6 +101,7 @@ int main( int argc, const char* argv[] )
    cout << serverName << ":" << endl;
    //cout << "Version " << version << endl;
    cout << "Server stack version " << ServerStackVersion << endl;
+   cout << "Network protocol version: " << (int)GlobalNetworkProtocolVersion << endl;
    cout << "ServerId " << serverId << endl;
    cout << "Asset file " << assetDictionary << endl;
    cout << "Asset path " << assetPath << endl;

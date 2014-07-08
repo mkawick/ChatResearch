@@ -94,8 +94,8 @@ void  PrintInstructions()
    cout << "    purchase.address  - purchase server ipaddress" << endl;
    cout << "    purchase.port     - purchase server port" << endl;
 
-   cout << "    stat.address      - stat server ipaddress" << endl;
-   cout << "    stat.port         - stat server port" << endl;
+   cout << "    analytics.address - analytics server ipaddress" << endl;
+   cout << "    analytics.port    - analytics server port" << endl;
 
    cout << "    notification.address - when a user registers a device..." << endl;
    cout << "    notification.port - when a user registers a device..." << endl;
@@ -134,8 +134,8 @@ int main( int argc, const char* argv[] )
    string purchasePortString = "7702";
    string purchaseIpAddressString = "localhost";
 
-   string statPortString = "7802";
-   string statIpAddressString = "localhost";
+   string analyticsPortString = "7802";
+   string analyticsIpAddressString = "localhost";
 
    string notificationPortString = "7902";
    string notificationIpAddressString = "localhost";
@@ -168,8 +168,8 @@ int main( int argc, const char* argv[] )
    parser.FindValue( "purchase.port", assetPortString );
    parser.FindValue( "purchase.address", assetIpAddressString );
 
-   parser.FindValue( "stat.port", statPortString );
-   parser.FindValue( "stat.address", statIpAddressString );
+   parser.FindValue( "analytics.port", analyticsPortString );
+   parser.FindValue( "analytics.address", analyticsIpAddressString );
 
    parser.FindValue( "notification.port", notificationPortString );
    parser.FindValue( "notification.address", notificationIpAddressString );
@@ -195,7 +195,7 @@ int main( int argc, const char* argv[] )
          contactPort=7502, 
          assetPort=7302, 
          purchasePort=7702, 
-         statPort = 7802, 
+         analyticsPort = 7802, 
          notificationPort = 7902;
    bool autoAddLoginProduct = true;
 
@@ -207,7 +207,7 @@ int main( int argc, const char* argv[] )
        assetPort = boost::lexical_cast<int>( assetPortString );
        chatPort = boost::lexical_cast<int>( chatPortString );
        contactPort = boost::lexical_cast<int>( contactPortString );
-       statPort = boost::lexical_cast<int>( statPortString );
+       analyticsPort = boost::lexical_cast<int>( analyticsPortString );
        notificationPort = boost::lexical_cast<int>( notificationPortString );
 
        std::transform( autoAddLoginProductString.begin(), autoAddLoginProductString.end(), autoAddLoginProductString.begin(), ::tolower );
@@ -240,10 +240,10 @@ int main( int argc, const char* argv[] )
    U32 serverId = (U32)serverUniqueHashValue;
 
    cout << serverName << endl;
-   //cout << "Version " << ServerStackVersion << endl;
    cout << "Server stack version " << ServerStackVersion << endl;
    cout << "ServerId " << serverId << endl;
    cout << "Db " << dbIpAddress << ":" << dbPortAddress << endl;
+   cout << "Network protocol version: " << (int)GlobalNetworkProtocolVersion << endl;
    cout << "   flag: autoAddLoginProduct = " << std::boolalpha << autoAddLoginProduct << endl;
    cout << "------------------------------------------------------------------" << endl << endl << endl;
 
@@ -264,12 +264,12 @@ int main( int argc, const char* argv[] )
       
       //----------------------------------
 
-      PrepConnection< FruitadensLogin, DiplodocusLogin > ( chatIpAddressString, chatPort, "chat", loginServer, ServerType_Chat, true );
-      PrepConnection< FruitadensLogin, DiplodocusLogin > ( contactIpAddressString, contactPort, "contact", loginServer, ServerType_Contact, true );
-      PrepConnection< FruitadensLogin, DiplodocusLogin > ( assetIpAddressString, assetPort, "asset", loginServer, ServerType_Asset, true );
-      PrepConnection< FruitadensLogin, DiplodocusLogin > ( purchaseIpAddressString, purchasePort, "purchase", loginServer, ServerType_Purchase, true );
-      PrepConnection< FruitadensLogin, DiplodocusLogin > ( statIpAddressString, statPort, "stat", loginServer, ServerType_Stat, true );
-      PrepConnection< FruitadensLogin, DiplodocusLogin > ( notificationIpAddressString, notificationPort, "notification", loginServer, ServerType_Notification, true );
+      PrepConnection< FruitadensLogin, DiplodocusLogin > ( chatIpAddressString, chatPort,                   "chat",           loginServer, ServerType_Chat, true );
+      PrepConnection< FruitadensLogin, DiplodocusLogin > ( contactIpAddressString, contactPort,             "contact",        loginServer, ServerType_Contact, true );
+      PrepConnection< FruitadensLogin, DiplodocusLogin > ( assetIpAddressString, assetPort,                 "asset",          loginServer, ServerType_Asset, true );
+      PrepConnection< FruitadensLogin, DiplodocusLogin > ( purchaseIpAddressString, purchasePort,           "purchase",       loginServer, ServerType_Purchase, true );
+      PrepConnection< FruitadensLogin, DiplodocusLogin > ( analyticsIpAddressString, analyticsPort,         "analytics",           loginServer, ServerType_Analytics, true );
+      PrepConnection< FruitadensLogin, DiplodocusLogin > ( notificationIpAddressString, notificationPort,   "notification",   loginServer, ServerType_Notification, true );
       
       ConnectToMultipleGames< FruitadensLogin, DiplodocusLogin > ( parser, loginServer, true );
 

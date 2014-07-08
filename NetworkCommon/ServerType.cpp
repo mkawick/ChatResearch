@@ -36,12 +36,14 @@ const char* GetServerTypeName( ServerType type )
       return "Purchase";
    case ServerType_LoadBalancer:
       return "Load balancer";
-   case ServerType_Stat:
-      return "Stat";
+   case ServerType_Analytics:
+      return "Analytics";
    case ServerType_Test:
       return "Test";
    case ServerType_Notification:
       return "Notification";
+   case ServerType_PlayerStats:
+      return "PlayerStats";
    case ServerType_Count:
       return "Number of server... this is an error";
    }

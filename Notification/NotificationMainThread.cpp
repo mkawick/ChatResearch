@@ -451,11 +451,19 @@ bool     NotificationMainThread::HandleNotification( const PacketNotification_Se
                   (GameNotification)unwrappedPacket->notificationType,
                   unwrappedPacket->additionalText.c_str() );
 
-               if( repeatFrequencyInHours )
-               {
-                  SetupUserNotificationResend( user_id, game_type, device_id, 60 * repeatFrequencyInHours );
-               }
             }
+            else if( device_platform == 2 ) // Android
+            {
+               NotifyUserDirect_Android( user_id, (const unsigned char*)row[0], game_type, game_id, badge_count,
+                  (GameNotification)unwrappedPacket->notificationType, unwrappedPacket->additionalText.c_str() );
+            }
+
+
+            if( repeatFrequencyInHours )
+            {
+               SetupUserNotificationResend( user_id, game_type, device_id, 60 * repeatFrequencyInHours );
+            }
+            //SetupUserNotificationResend( user_id, game_type, device_id, 60 );
          }
          mysql_free_result(res);
       }
@@ -562,6 +570,12 @@ void     NotificationMainThread::PeriodicCheckForNewNotifications()
                      NotifyUserDirect_iOS( user_id, (const unsigned char*)row[0], game_type, game_id, badge_count,
                         (GameNotification)itt->second.lastNotificationType, itt->second.lastNotificationText );
                   }
+                  else if( device_platform == 2 ) // Android
+                  {
+                     NotifyUserDirect_Android( user_id, (const unsigned char*)row[0], game_type, game_id, badge_count,
+                        (GameNotification)itt->second.lastNotificationType, itt->second.lastNotificationText );
+                  }
+
                }
                mysql_free_result(res);
             }

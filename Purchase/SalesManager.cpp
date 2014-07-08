@@ -4,6 +4,7 @@
 #include <time.h>
 #include <iostream>
 #include <string>
+#include <set>
 using namespace std;
 
 #include <boost/format.hpp>
@@ -81,6 +82,27 @@ string   FormatInsertIntoUserJoinProduct( const string& userUuid, const string& 
    return query;
 }
 
+string OpenMultipleInsertsSimple()
+{
+   return string( "INSERT INTO user_join_product (user_uuid, product_id, num_purchased) VALUES");
+};
+
+string   FormatInsertIntoUserJoinProductSimple( const string& userUuid, const string& productUuid, int count, int index )
+{
+   string query;
+   if( index >0 )
+      query = ",";
+   query += "('";
+   query += userUuid;
+   query += "', '";
+   query += productUuid;
+   query += "',";
+   query += boost::lexical_cast< string > ( count );    // << notice the negative value here
+   query += ")";
+   
+   return query;
+}
+
 //---------------------------------------------------------------
 
 bool     SalesManager::HandleResult( const PacketDbQueryResult* dbResult )
@@ -120,7 +142,7 @@ bool     SalesManager::HandleResult( const PacketDbQueryResult* dbResult )
       return true;
    }
 
-   if( lookupType == DiplodocusPurchase::QueryType_VerifyThatUserHasEnoughMoney )
+   if( lookupType == DiplodocusPurchase::QueryType_VerifyThatUserHasEnoughMoney1 )
    {
       PurchaseTracking* purchaseTracking = static_cast< PurchaseTracking* >( dbResult->customData );
       bool doesPlayerHaveEnoughMoney = false;
@@ -201,7 +223,121 @@ bool     SalesManager::HandleResult( const PacketDbQueryResult* dbResult )
       return true;
    }
 
+   if( lookupType == DiplodocusPurchase::QueryType_VerifyThatUserHasEnoughMoney2 ) // purchase completion... report back to the client that all went well.
+   {
+      PurchaseTracking* purchaseTracking = static_cast< PurchaseTracking* >( dbResult->customData );
+   
+      VerifyThatUserHasEnoughMoneyForEntry2( dbResult );
+      //delete purchaseTracking;
+
+    /*  PurchaseTracking* purchaseTracking = static_cast< PurchaseTracking* >( dbResult->customData );
+      PacketPurchase_BuyResponse* packet = new PacketPurchase_BuyResponse;
+      packet->purchaseUuid = purchaseTracking->exchangeUuid;
+
+      if( dbResult->successfulQuery == true )
+      {
+         m_parent->SendErrorToClient( purchaseTracking->connectionId, PacketErrorReport::ErrorType_Purchase_Success );
+         SendTournamentPurchaseResultBackToServer( purchaseTracking->fromOtherServerId, purchaseTracking->fromOtherServerTransactionId, PacketErrorReport::ErrorType_Purchase_Success );
+         packet->success = true;
+      }
+      else
+      {
+         packet->success = false;
+      }
+
+      m_parent->SendPacketToGateway( packet, purchaseTracking->connectionId );
+
+      m_usersBeingServiced.erase( purchaseTracking->userUuid );
+      delete purchaseTracking;*/
+
+      return true;
+   }
+
    return false;
+}
+
+//---------------------------------------------------------------
+
+void     SalesManager::VerifyThatUserHasEnoughMoneyForEntry2( const PacketDbQueryResult* dbResult )
+{
+   PurchaseTracking* purchaseTracking = static_cast< PurchaseTracking* >( dbResult->customData );
+   
+   if( dbResult->successfulQuery == false )
+   {
+      m_parent->SendErrorToClient( purchaseTracking->connectionId, PacketErrorReport::ErrorType_Purchase_UserDoesNotHaveEnoughToTrade );
+      SendTournamentPurchaseResultBackToServer( purchaseTracking->fromOtherServerId, purchaseTracking->fromOtherServerTransactionId, PacketErrorReport::ErrorType_Purchase_UserDoesNotHaveEnoughToTrade );
+      delete purchaseTracking;
+      m_usersBeingServiced.erase( purchaseTracking->userUuid );
+      return;
+   }
+
+   // verify that the user has enough of these items.
+   bool doesPlayerHaveEnoughMoney = false;
+
+   KeyValueParser            enigma( dbResult->bucket );
+   KeyValueParser::iterator  it = enigma.begin();
+   if( it != enigma.end() )
+   {
+      doesPlayerHaveEnoughMoney = true;
+      while( it != enigma.end() )
+      {
+         KeyValueParser::row row = *it++;
+
+         string productId = row[ TableKeyValue::Column_key ];
+         string count = row[ TableKeyValue::Column_value ];
+         int num = 0;
+         if( count != "null" )
+         {
+            num = boost::lexical_cast< int >( count );
+         }
+
+         if( num <= GetItemNumToDebit( purchaseTracking->itemsToSpend, productId ) )
+         {
+            doesPlayerHaveEnoughMoney = false;
+            break;
+         }
+      }
+   }
+   else
+   {
+      doesPlayerHaveEnoughMoney = false;
+   }
+
+
+   if( doesPlayerHaveEnoughMoney == true )
+   {
+      PacketDbQuery* dbQuery = new PacketDbQuery;
+      dbQuery->id = 0;
+      dbQuery->lookup = DiplodocusPurchase::QueryType_PerformPurchase;
+
+      string queryOpen = OpenMultipleInsertsSimple();
+      string middle;
+
+      int numItems = purchaseTracking->itemsToSpend.size();
+      for( int i=0; i< numItems; i++ )
+      {
+         const PurchaseServerDebitItem& item = purchaseTracking->itemsToSpend[i];
+         
+         middle += FormatInsertIntoUserJoinProductSimple( purchaseTracking->userUuid, item.productUuidToSpend, -( item.numToDebit ), i );
+      }
+      string queryClose = CloseMultipleInserts();
+      string query = queryOpen + middle + queryClose;
+
+      dbQuery->customData = purchaseTracking; // do not delete this data
+      dbQuery->query = query;
+      m_parent->AddQueryToOutput( dbQuery );
+   }
+   else
+   {
+      m_parent->SendErrorToClient( purchaseTracking->connectionId, PacketErrorReport::ErrorType_Purchase_UserDoesNotHaveEnoughToTrade );
+      SendTournamentPurchaseResultBackToServer( purchaseTracking->fromOtherServerId, purchaseTracking->fromOtherServerTransactionId, PacketErrorReport::ErrorType_Purchase_UserDoesNotHaveEnoughToTrade );
+      m_usersBeingServiced.erase( purchaseTracking->userUuid );
+      delete purchaseTracking;
+   }
+
+  /* PurchaseTracking* purchaseTracking = static_cast< PurchaseTracking* >( dbResult->customData );
+   PacketPurchase_BuyResponse* packet = new PacketPurchase_BuyResponse;
+   packet->purchaseUuid = purchaseTracking->exchangeUuid;*/
 }
 
 //---------------------------------------------------------------
@@ -361,7 +497,7 @@ bool     SalesManager::PerformSale( const string& purchaseUuid, const UserTicket
 
    PacketDbQuery* dbQuery = new PacketDbQuery;
    dbQuery->id = 0;
-   dbQuery->lookup = DiplodocusPurchase::QueryType_VerifyThatUserHasEnoughMoney;
+   dbQuery->lookup = DiplodocusPurchase::QueryType_VerifyThatUserHasEnoughMoney1;
 
    dbQuery->query = "SELECT SUM( num_purchased ) FROM user_join_product WHERE user_uuid='";
    dbQuery->query += userPurchasing.uuid;
@@ -370,6 +506,133 @@ bool     SalesManager::PerformSale( const string& purchaseUuid, const UserTicket
    dbQuery->query += "';";
    dbQuery->customData = purchaseLookup;
    m_parent->AddQueryToOutput( dbQuery );
+
+   return true;
+}
+
+
+//---------------------------------------------------------------
+
+bool     SalesManager::PerformSale( const SerializedVector< PurchaseServerDebitItem >& itemsToSpend, const UserTicket& userPurchasing, U32 serverIdentifier, string serverTransactionUuid )
+{
+   if( itemsToSpend.size() == 0 )
+   {
+      m_parent->SendErrorToClient( userPurchasing.connectionId, PacketErrorReport::ErrorType_Purchase_NoTradeItemsSpecified );
+      SendTournamentPurchaseResultBackToServer( serverIdentifier, serverTransactionUuid, PacketErrorReport::ErrorType_Purchase_NoTradeItemsSpecified );
+      return false;
+   }
+
+   if( m_usersBeingServiced.find( userPurchasing.uuid ) != m_usersBeingServiced.end() )
+   {
+      m_parent->SendErrorToClient( userPurchasing.connectionId, PacketErrorReport::ErrorType_Purchase_StoreBusy );
+      SendTournamentPurchaseResultBackToServer( serverIdentifier, serverTransactionUuid, PacketErrorReport::ErrorType_Purchase_StoreBusy );
+      return false;
+   }
+
+   //---------------------------------
+   set< string > validationList;
+   int num = itemsToSpend.size();
+   for( int i=0; i<num; i++ )
+   {
+      if( validationList.find( itemsToSpend[i].productUuidToSpend ) != validationList.end() )
+      {
+         m_parent->SendErrorToClient( userPurchasing.connectionId, PacketErrorReport::ErrorType_Purchase_DuplicateItemsForPayment );
+         SendTournamentPurchaseResultBackToServer( serverIdentifier, serverTransactionUuid, PacketErrorReport::ErrorType_Purchase_DuplicateItemsForPayment );
+         return false;
+      }
+      validationList.insert( itemsToSpend[i].productUuidToSpend );
+   }
+   
+   //---------------------------------
+
+   m_usersBeingServiced.insert( userPurchasing.uuid );
+
+   PurchaseTracking* purchaseLookup = new PurchaseTracking;
+   purchaseLookup->userUuid = userPurchasing.uuid;
+   purchaseLookup->connectionId = userPurchasing.connectionId;
+   purchaseLookup->fromOtherServerId = serverIdentifier;
+   purchaseLookup->fromOtherServerTransactionId = serverTransactionUuid;
+   purchaseLookup->itemsToSpend = itemsToSpend;
+
+   PacketDbQuery* dbQuery = new PacketDbQuery;
+   dbQuery->id = 0;
+   dbQuery->lookup = DiplodocusPurchase::QueryType_VerifyThatUserHasEnoughMoney2;
+
+   dbQuery->query = "SELECT product_id, SUM( num_purchased ) FROM user_join_product WHERE user_uuid='";
+   dbQuery->query += userPurchasing.uuid;
+   dbQuery->query += "' AND product_id IN (";
+   for( int i=0; i<num; i++ )
+   {
+      dbQuery->query += "'";
+      dbQuery->query += itemsToSpend[i].productUuidToSpend.c_str();
+      if( i < num-1 ) // not at the end of the list
+         dbQuery->query += "',";
+   }
+   dbQuery->query += "');";
+   dbQuery->customData = purchaseLookup;
+   m_parent->AddQueryToOutput( dbQuery );
+
+   // 
+   //SELECT product_id, sum( num_purchased )  FROM user_join_product  WHERE user_uuid="user3" AND product_id in ("junk", "e470dcd77589f180", "266e95b03f7fe77b" ) GROUP BY product_id;
+ 
+   
+   /*  ExchangeEntry ee;
+   if( FindItem( purchaseUuid, ee ) == false )
+   {
+      m_parent->SendErrorToClient( userPurchasing.connectionId, PacketErrorReport::ErrorType_Purchase_BadPurchaseId );
+      SendTournamentPurchaseResultBackToServer( serverIdentifier, serverTransactionUuid, PacketErrorReport::ErrorType_Purchase_BadPurchaseId );
+      return false;
+   }
+
+   if( m_usersBeingServiced.find( userPurchasing.uuid ) != m_usersBeingServiced.end() )
+   {
+      m_parent->SendErrorToClient( userPurchasing.connectionId, PacketErrorReport::ErrorType_Purchase_StoreBusy );
+      SendTournamentPurchaseResultBackToServer( serverIdentifier, serverTransactionUuid, PacketErrorReport::ErrorType_Purchase_StoreBusy );
+      return false;
+   }
+
+   if( ee.beginDate.size() > 1 )
+   {
+      int secondsUntil = GetDiffTimeFromRightNow( ee.beginDate.c_str() );
+      if( secondsUntil < 0 )
+      {
+         m_parent->SendErrorToClient( userPurchasing.connectionId, PacketErrorReport::ErrorType_Purchase_TimePeriodHasNotBegunYet );
+         SendTournamentPurchaseResultBackToServer( serverIdentifier, serverTransactionUuid, PacketErrorReport::ErrorType_Purchase_TimePeriodHasNotBegunYet );
+         return false;
+      }
+   }
+   if( ee.endDate.size() > 1 )
+   {
+      int secondsUntil = GetDiffTimeFromRightNow( ee.endDate.c_str() );
+      if( secondsUntil > 0 )
+      {
+         m_parent->SendErrorToClient( userPurchasing.connectionId, PacketErrorReport::ErrorType_Purchase_TimePeriodHasExpired );
+         SendTournamentPurchaseResultBackToServer( serverIdentifier, serverTransactionUuid, PacketErrorReport::ErrorType_Purchase_TimePeriodHasExpired );
+         return false;
+      }
+   }
+
+   m_usersBeingServiced.insert( userPurchasing.uuid );
+
+   PurchaseTracking* purchaseLookup = new PurchaseTracking;
+   purchaseLookup->userUuid = userPurchasing.uuid;
+   purchaseLookup->exchangeUuid = purchaseUuid;
+   purchaseLookup->connectionId = userPurchasing.connectionId;
+   purchaseLookup->fromOtherServerId = serverIdentifier;
+   purchaseLookup->fromOtherServerTransactionId = serverTransactionUuid;
+   
+
+   PacketDbQuery* dbQuery = new PacketDbQuery;
+   dbQuery->id = 0;
+   dbQuery->lookup = DiplodocusPurchase::QueryType_VerifyThatUserHasEnoughMoney;
+
+   dbQuery->query = "SELECT SUM( num_purchased ) FROM user_join_product WHERE user_uuid='";
+   dbQuery->query += userPurchasing.uuid;
+   dbQuery->query += "' AND product_id='";
+   dbQuery->query += ee.sourceUuid;
+   dbQuery->query += "';";
+   dbQuery->customData = purchaseLookup;
+   m_parent->AddQueryToOutput( dbQuery );*/
 
    return true;
 }

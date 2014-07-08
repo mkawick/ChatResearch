@@ -19,6 +19,9 @@ public:
 
    //void     UpdateUuidForUser( const string& userId, bool updateCreateAccountTableToo, const string& columnId, const string additionalHashText = "" );
    void     UpdateUuidForTempUser( const string& recordId, const string additionalHashText = "" );
+   void     UpdateUuidForUser( const string& recordId, const string additionalHashText );
+
+   void     UseUserTable( bool useUserTable = true ){ m_useUserTable = useUserTable; }
 
    string   GenerateUuid();
 
@@ -31,6 +34,7 @@ private:
    
 
    bool     m_isServicingBlankUUID;
+   bool     m_useUserTable;
 
    list  < string > m_unusedUuids;
    int      m_numberPendingUuids;

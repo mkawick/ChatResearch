@@ -22,7 +22,11 @@ struct UserAccountLookup
 
 ///////////////////////////////////////////////////////////////////////////////////////////
 
-BlankUUIDQueryHandler::BlankUUIDQueryHandler( U32 id, Queryer* parent, string& query ) : ParentType( id, 20, parent ), m_isServicingBlankUUID( false ), m_numberPendingUuids( 0 )
+BlankUUIDQueryHandler::BlankUUIDQueryHandler( U32 id, Queryer* parent, string& query ) : 
+                                             ParentType( id, 20, parent ), 
+                                             m_isServicingBlankUUID( false ), 
+                                             m_numberPendingUuids( 0 ), 
+                                             m_useUserTable( false )
 {
    m_queryString = query;
 }
@@ -68,7 +72,10 @@ bool     BlankUUIDQueryHandler::HandleResult( const PacketDbQueryResult* dbResul
 
          cout << "User id replaced = " << userId << endl;
 
-         UpdateUuidForTempUser( userId, email );
+         if( m_useUserTable )
+            UpdateUuidForUser( userId, email );
+         else
+            UpdateUuidForTempUser( userId, email );
       }
 
       if( addedUuids )
@@ -164,7 +171,8 @@ void     BlankUUIDQueryHandler::GenerateAListOfAvailableUUIDS()
       const int numToGenerate = 100;
       for( int i=0; i<numToGenerate; i++ )
       {
-         string uuid = GenerateUUID( 0 );
+         time_t currentTime = time(0);
+         string uuid = GenerateUUID( static_cast<U32>( currentTime ) );
          PacketDbQuery* dbQuery = new PacketDbQuery;
          dbQuery->id = 0;
          dbQuery->lookup = StatusUpdate::QueryType_DoesUuidExist;
@@ -195,7 +203,7 @@ void     BlankUUIDQueryHandler::UpdateUuidForTempUser( const string& recordId, c
 {
    if( recordId.size() == 0 || recordId == "0" )
    {
-      string message = "Accounts::UpdateUuidForUser userId is null\n";
+      string message = "Accounts::UpdateUuidForTempUser userId is null\n";
       //LogMessage( LOG_PRIO_ERR, message.c_str() );
       cout << message << endl;
       return;
@@ -212,6 +220,36 @@ void     BlankUUIDQueryHandler::UpdateUuidForTempUser( const string& recordId, c
    string queryString = "UPDATE user_temp_new_user SET uuid='";
    queryString += uuid;
    queryString += "' WHERE id='";
+   queryString += recordId;
+   queryString += "';";
+   dbQuery->query = queryString;
+
+   m_parent->AddQueryToOutput( dbQuery );
+}
+
+//---------------------------------------------------------------
+
+void     BlankUUIDQueryHandler::UpdateUuidForUser( const string& recordId, const string additionalHashText )
+{
+   if( recordId.size() == 0 || recordId == "0" )
+   {
+      string message = "Accounts::UpdateUuidForUser userId is null\n";
+      //LogMessage( LOG_PRIO_ERR, message.c_str() );
+      cout << message << endl;
+      return;
+   }
+
+   string uuid = GenerateUuid();
+
+   //PrepQueryToLookupUuid();
+   PacketDbQuery* dbQuery = new PacketDbQuery;
+   dbQuery->id = 0;
+   dbQuery->lookup = m_queryType;
+   dbQuery->isFireAndForget = true;
+
+   string queryString = "UPDATE users SET uuid='";
+   queryString += uuid;
+   queryString += "' WHERE user_id='";
    queryString += recordId;
    queryString += "';";
    dbQuery->query = queryString;

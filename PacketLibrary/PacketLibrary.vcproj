@@ -213,6 +213,10 @@
 			UniqueIdentifier="{4FC737F1-C7A5-4376-A066-2A32D752A2FF}"
 			>
 			<File
+				RelativePath="..\NetworkCommon\Packets\AnalyticsPacket.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\NetworkCommon\Packets\AssetPacket.cpp"
 				>
 			</File>
@@ -273,10 +277,6 @@
 				>
 			</File>
 			<File
-				RelativePath="..\NetworkCommon\Packets\StatPacket.cpp"
-				>
-			</File>
-			<File
 				RelativePath="..\NetworkCommon\Packets\TournamentPacket.cpp"
 				>
 			</File>
@@ -286,6 +286,10 @@
 			Filter="h;hpp;hxx;hm;inl;inc;xsd"
 			UniqueIdentifier="{93995380-89BD-4b04-88EB-625FBE52EBFB}"
 			>
+			<File
+				RelativePath="..\NetworkCommon\Packets\AnalyticsPacket.h"
+				>
+			</File>
 			<File
 				RelativePath="..\NetworkCommon\Packets\AssetPacket.h"
 				>
@@ -360,10 +364,6 @@
 			</File>
 			<File
 				RelativePath="..\NetworkCommon\Packets\ServerToServerPacket.h"
-				>
-			</File>
-			<File
-				RelativePath="..\NetworkCommon\Packets\StatPacket.h"
 				>
 			</File>
 			<File

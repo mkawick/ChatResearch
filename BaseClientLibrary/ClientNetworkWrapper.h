@@ -157,15 +157,16 @@ public:
 
    //--------------------------------------------------------------
    // ********************   Purchases/Products   *******************
-   bool     RequestListOfProducts() const; // everything
-   bool     RequestListOfProductsInStore() const; // just things that you can buy in our store
+   bool     RequestListOfAppStoreProducts() const; // everything
+   bool     RequestListOfMberProducts() const; // just things that you can buy in our store
    bool     RequestListOfPurchases( const string userUuid = "" ) const;
    bool     MakePurchase( const string& exchangeUuid ) const;
+   bool     UserHasMadePurchase( const string& vendorProductUuid, const string& receipt, int platformId = Platform_ios  ) const;
 
    int      GetNumPurchases() const { return m_purchases.size(); }
    bool     GetPurchase( int index, PurchaseEntry& purchase ) const;
    bool     RequestListOfTournaments();
-   bool     PurchaseEntryIntoTournament( const string& tournamentUuid );
+   bool     PurchaseEntryIntoTournament( const string& tournamentUuid, const vector<PurchaseServerDebitItem>& listOfDebitItems, const string& customDeck );
 
    int      GetNumAvailableProducts() const { return m_products.size(); }
    bool     GetAvailableProduct( int index, ProductBriefPacketed& product ) const; // not complete

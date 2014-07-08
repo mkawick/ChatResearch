@@ -2,7 +2,7 @@
 #pragma once
 
 #include "../Packets/BasePacket.h"
-#include "../Packets/StatPacket.h"
+#include "../Packets/AnalyticsPacket.h"
 
 #include "../NetworkOut/Fruitadens.h"
 #include "../ChainedArchitecture/ChainedInterface.h"
@@ -49,20 +49,20 @@ public:
    StatTrackingConnections();
 
    Threading::Mutex     m_statMutex;
-   deque< PacketStat* > m_stats;
+   deque< PacketAnalytics* > m_stats;
    time_t         m_timeoutSendStatServerStats;
    static const U32 timeoutSendStatServerStats = 60;
 
    //void           TrackStats( StatTracking stat, float value );
    void           TrackCountStats( const string& serverName, int ServerId, StatTracking stat, float value, int sub_category );
-   void           TrackStats( const string& serverName, int ServerId, const string& statName, U16 stat, float value, PacketStat::StatType type );
+   void           TrackStats( const string& serverName, int ServerId, const string& statName, U16 stat, float value, PacketAnalytics::StatType type );
 
    template <typename type >
    void           SendStatsToStatServer( std::list<type>&, const string& serverName, U32 serverId, ServerType m_serverType );
 
 private:
    void           SendStatsToStatServer( Fruitadens*, const string& serverName, U32 serverId, ServerType m_serverType );// meant to be invoked periodically
-   void           GetStatString( U16 statId, PacketStat* packet );
+   void           GetStatString( U16 statId, PacketAnalytics* packet );
 };
 
 
@@ -87,7 +87,7 @@ void     StatTrackingConnections::SendStatsToStatServer( std::list< type >& list
       {
          IChainedInterface* outputPtr = (*itOutput).m_interface;
          fruity = static_cast< Fruitadens* >( outputPtr );
-         if( fruity->GetConnectedServerType() == ServerType_Stat )
+         if( fruity->GetConnectedServerType() == ServerType_Analytics )
          {
             break;
          }

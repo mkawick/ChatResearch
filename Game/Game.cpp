@@ -94,9 +94,9 @@ int main(int argc, const char* argv[])
    U32 serverId = (U32)serverUniqueHashValue;
 
    cout << serverName << ":" << endl;
-   //cout << "Version " << ServerStackVersion << endl;
    cout << "Server stack version " << ServerStackVersion << endl;
    cout << "ServerId " << serverId << endl;
+   cout << "Network protocol version: " << (int)GlobalNetworkProtocolVersion << endl;
    cout << "------------------------------------------------------------------" << endl << endl << endl;
 
    //----------------------------------------------------------------

@@ -40,8 +40,9 @@ private:
 
    virtual void  CreateJob( const KhaanServerToServer* khaan, BasePacket* packet );
 
+   void	   UpdateAllConnections();
    void     SendJobsToUpperLayers();
-   int   CallbackFunction();
+   int      CallbackFunction();
 
    deque< PacketServerJobWrapper* >    m_unprocessedJobs;
    deque<U32>     m_serversNeedingUpdate;

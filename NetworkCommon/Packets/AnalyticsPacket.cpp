@@ -1,8 +1,8 @@
-#include "StatPacket.h"
+#include "AnalyticsPacket.h"
 
 ///////////////////////////////////////////////////////////////
 
-bool  PacketStat::SerializeIn( const U8* data, int& bufferOffset )
+bool  PacketAnalytics::SerializeIn( const U8* data, int& bufferOffset )
 {
    BasePacket::SerializeIn( data, bufferOffset );
    
@@ -18,7 +18,7 @@ bool  PacketStat::SerializeIn( const U8* data, int& bufferOffset )
    return true;
 }
 
-bool  PacketStat::SerializeOut( U8* data, int& bufferOffset ) const
+bool  PacketAnalytics::SerializeOut( U8* data, int& bufferOffset ) const
 {
    BasePacket::SerializeOut( data, bufferOffset );
    

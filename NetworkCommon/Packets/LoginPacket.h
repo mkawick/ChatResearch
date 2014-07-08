@@ -171,7 +171,6 @@ struct PurchaseEntry
    bool  SerializeOut( U8* data, int& bufferOffset ) const;
 
    string   name;
-   //string   productStoreId;
    float    quantity;
    string   productUuid;
 };
@@ -183,12 +182,11 @@ struct ProductBriefPacketed
    bool  SerializeIn( const U8* data, int& bufferOffset );
    bool  SerializeOut( U8* data, int& bufferOffset ) const;
 
-   UuidString  uuid;
+   UuidString     uuid;
    FixedString80  vendorUuid; // e.g. summonerwars.mv.bund.pt2
-   UuidString  parentUuid;
-   //float    quantity;
-   int      productType;
-   string   iconName;
+   UuidString     parentUuid;
+   int            productType;
+   string         iconName;
 };
 
 //--------------------------------

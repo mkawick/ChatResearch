@@ -87,7 +87,7 @@ public:
    virtual bool	OnDataReceived( unsigned char* data, int length );
 
    virtual void   UpdateInwardPacketList();// this class doesn't do much with the data. It's up to the derived classes to decide what to do with it
-   virtual void   UpdateOutwardPacketList();
+   virtual int    UpdateOutwardPacketList();
 
    virtual bool   TrackInwardPacketType( const BasePacket* packet ) { return false; }
    virtual bool   TrackOutwardPacketType( const BasePacket* packet ) { return false; }

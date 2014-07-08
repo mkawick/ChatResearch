@@ -156,6 +156,8 @@ int main( int argc, const char* argv[] )
    cout << serverName << ":" << endl;
    cout << "Server stack version " << ServerStackVersion << endl;
    cout << "ServerId " << serverId << endl;
+   cout << "Db " << dbIpAddress << ":" << dbPortAddress << endl;
+   cout << "Network protocol version: " << (int)GlobalNetworkProtocolVersion << endl;
    cout << "------------------------------------------------------------------" << endl << endl << endl;
 
    InitializeSockets();

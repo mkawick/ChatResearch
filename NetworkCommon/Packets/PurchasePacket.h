@@ -53,6 +53,19 @@ struct PurchaseInfo
 
 ///////////////////////////////////////////////////////////////////
 
+struct PurchaseServerDebitItem
+{
+   bool  SerializeIn( const U8* data, int& bufferOffset );
+   bool  SerializeOut( U8* data, int& bufferOffset ) const;
+
+   int         numToDebit;
+   UuidString  productUuidToSpend;
+};
+
+int   GetItemNumToDebit( const SerializedVector< PurchaseServerDebitItem >& itemsToSpend, const string& uuid );
+
+///////////////////////////////////////////////////////////////////
+
 class PacketPurchase : public BasePacket 
 {
 public:

@@ -2,7 +2,7 @@
 <VisualStudioProject
 	ProjectType="Visual C++"
 	Version="9.00"
-	Name="Stat"
+	Name="Analytics"
 	ProjectGUID="{5F4F1B30-68FE-446C-A8C7-527518266278}"
 	RootNamespace="Stat"
 	Keyword="Win32Proj"
@@ -178,19 +178,19 @@
 			UniqueIdentifier="{4FC737F1-C7A5-4376-A066-2A32D752A2FF}"
 			>
 			<File
-				RelativePath=".\DiplodocusStat.cpp"
+				RelativePath=".\Analytics.cpp"
 				>
 			</File>
 			<File
-				RelativePath=".\KhaanStat.cpp"
+				RelativePath=".\AnalyticsCommon.cpp"
 				>
 			</File>
 			<File
-				RelativePath=".\Stat.cpp"
+				RelativePath=".\AnalyticsMainLoop.cpp"
 				>
 			</File>
 			<File
-				RelativePath=".\StatsCommon.cpp"
+				RelativePath=".\ConnectorAnalytics.cpp"
 				>
 			</File>
 		</Filter>
@@ -200,15 +200,15 @@
 			UniqueIdentifier="{93995380-89BD-4b04-88EB-625FBE52EBFB}"
 			>
 			<File
-				RelativePath=".\DiplodocusStat.h"
+				RelativePath=".\AnalyticsCommon.h"
 				>
 			</File>
 			<File
-				RelativePath=".\KhaanStat.h"
+				RelativePath=".\AnalyticsMainLoop.h"
 				>
 			</File>
 			<File
-				RelativePath=".\StatsCommon.h"
+				RelativePath=".\ConnectorAnalytics.h"
 				>
 			</File>
 		</Filter>

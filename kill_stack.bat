@@ -20,7 +20,7 @@ taskkill /f /im GatewayServer.exe
 
 taskkill /f /im LoadBalancer.exe
 
-taskkill /f /im StatServer.exe
+taskkill /f /im AnalyticsServer.exe
 
 taskkill /f /im NotificationServer.exe
 

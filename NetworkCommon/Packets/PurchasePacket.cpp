@@ -65,6 +65,37 @@ bool  PurchaseInfo::SerializeOut( U8* data, int& bufferOffset ) const
 
 ///////////////////////////////////////////////////////////////
 
+bool  PurchaseServerDebitItem::SerializeIn( const U8* data, int& bufferOffset )
+{
+   Serialize::In( data, bufferOffset, numToDebit );
+   Serialize::In( data, bufferOffset, productUuidToSpend );
+
+   return true;
+}
+
+bool  PurchaseServerDebitItem::SerializeOut( U8* data, int& bufferOffset ) const
+{
+   Serialize::Out( data, bufferOffset, numToDebit );
+   Serialize::Out( data, bufferOffset, productUuidToSpend );
+
+   return true;
+}
+
+
+int   GetItemNumToDebit( const SerializedVector< PurchaseServerDebitItem >& itemsToSpend, const string& uuid )
+{
+   int num = itemsToSpend.size();
+   for( int i=0; i<num; i++ )
+   {
+      if( itemsToSpend[i].productUuidToSpend == uuid )
+         return itemsToSpend[i].numToDebit;
+   }
+
+   return 0;
+}
+
+///////////////////////////////////////////////////////////////
+
 bool  PacketPurchase_TestNotification::SerializeIn( const U8* data, int& bufferOffset )
 { 
    PacketPurchase::SerializeIn( data, bufferOffset );

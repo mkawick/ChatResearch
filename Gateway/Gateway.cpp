@@ -65,8 +65,8 @@ void  PrintInstructions()
    cout << "    purchase.address  - purchase server ipaddress" << endl;
    cout << "    purchase.port     - purchase server port" << endl;
 
-   cout << "    stat.address      - stat server ipaddress" << endl;
-   cout << "    stat.port         - stat server port" << endl;
+   cout << "    analytics.address - analytics server ipaddress" << endl;
+   cout << "    analytics.port    - analytics server port" << endl;
 
    cout << "    notification.address- notification server ipaddress" << endl;
    cout << "    notification.port - notification server port" << endl;
@@ -117,8 +117,8 @@ int main( int argc, const char* argv[] )
    //string rerouteAddressString = "";
    //string reroutePortString = "";
 
-   string statPortString = "7802";
-   string statIpAddressString = "localhost";
+   string analyticsPortString = "7802";
+   string analyticsIpAddressString = "localhost";
 
    string notificationPortString = "7900";
    string notificationIpAddressString = "localhost";
@@ -168,8 +168,8 @@ int main( int argc, const char* argv[] )
    //parser.FindValue( "reroute.port", reroutePortString );
    //parser.FindValue( "reroute.address", rerouteAddressString );
 
-   parser.FindValue( "stat.port", statPortString );
-   parser.FindValue( "stat.address", statIpAddressString );
+   parser.FindValue( "analytics.port", analyticsPortString );
+   parser.FindValue( "analytics.address", analyticsIpAddressString );
 
    parser.FindValue( "print.functions", printFunctionsString );
    parser.FindValue( "print.packets", printPacketTypes );
@@ -190,7 +190,7 @@ int main( int argc, const char* argv[] )
          loginPort = 7600,
          purchasePort = 7700,
          notificationPort = 7900,
-         statPort = 7802,
+         analyticsPort = 7802,
          listenPort = 9600;
 
    U16 reroutePort = 0;
@@ -206,7 +206,7 @@ int main( int argc, const char* argv[] )
       chatPort =           boost::lexical_cast<int>( chatPortString );
       contactPort =        boost::lexical_cast<int>( contactPortString );
       loginPort =          boost::lexical_cast<int>( loginPortString );
-      statPort =           boost::lexical_cast<int>( statPortString );
+      analyticsPort =      boost::lexical_cast<int>( analyticsPortString );
       purchasePort =       boost::lexical_cast<int>( purchasePortString );
       notificationPort =   boost::lexical_cast<U16>( notificationPort );      
       listenPort =         boost::lexical_cast<int>( listenPortString );
@@ -257,6 +257,7 @@ int main( int argc, const char* argv[] )
    cout << "Server stack version " << ServerStackVersion << endl;
    cout << "ServerId " << serverId << endl;
    cout << "External ip address: " << externalIpAddressString << endl;
+   cout << "Network protocol version: " << (int)GlobalNetworkProtocolVersion << endl;
    cout << "------------------------------------------------------------------" << endl << endl << endl;
 
    InitializeSockets();
@@ -298,7 +299,7 @@ int main( int argc, const char* argv[] )
          PrepConnection< FruitadensGateway, MainGatewayThread > ( loginIpAddressString,         loginPort,        "logon",          gatewayServer, ServerType_Login, true );
          PrepConnection< FruitadensGateway, MainGatewayThread > ( contactIpAddressString,       contactPort,      "contact",        gatewayServer, ServerType_Contact, true );
          PrepConnection< FruitadensGateway, MainGatewayThread > ( purchaseIpAddressString,      purchasePort,     "purchase",       gatewayServer, ServerType_Purchase, true );
-         PrepConnection< FruitadensGateway, MainGatewayThread > ( statIpAddressString,          statPort,         "stat",           gatewayServer, ServerType_Stat, true );
+         PrepConnection< FruitadensGateway, MainGatewayThread > ( analyticsIpAddressString,     analyticsPort,         "analytics",      gatewayServer, ServerType_Analytics, true );
          PrepConnection< FruitadensGateway, MainGatewayThread > ( notificationIpAddressString,  notificationPort, "notification",   gatewayServer, ServerType_Notification, true );
       
       }

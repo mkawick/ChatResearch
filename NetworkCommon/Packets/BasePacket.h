@@ -36,12 +36,14 @@ enum PacketType
    PacketType_Cheat,
    PacketType_Purchase,
    PacketType_Tournament,
-   PacketType_Stat,
+   PacketType_Analytics,
    PacketType_Notification,
    PacketType_Invitation,
+   PacketType_UserStats,
    PacketType_Num
 };
 
+const char* GetPacketTypename( PacketType type );
 
 ///////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////
@@ -442,8 +444,8 @@ public:
       ErrorType_Purchase_AllPurchasingIsClosedRightNow =       808,
       ErrorType_Purchase_Success =                             809,
       ErrorType_Purchase_ProductUnknown =                      810,
-      ErrorType_Purchase_unknown1,
-      ErrorType_Purchase_unknown2,
+      ErrorType_Purchase_NoTradeItemsSpecified =               811,
+      ErrorType_Purchase_DuplicateItemsForPayment =            812,
 
       ErrorType_TournamentPurchase_Result_PurchasePending =    900,// you are already waiting for a purchase to complete.
       ErrorType_TournamentPurchase_Result_TooManyPlayers =     901,

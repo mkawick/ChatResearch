@@ -52,8 +52,8 @@ void  PrintInstructions()
    cout << "    s2s.address       - where is the load balancer" << endl;
    cout << "    s2s.port          - load balancer" << endl;
    
-   cout << "    stat.address      - stat server ipaddress" << endl;
-   cout << "    stat.port         - stat server port" << endl;
+   cout << "    analytics.address - analytics server ipaddress" << endl;
+   cout << "    analytics.port    - analytics server port" << endl;
    
    cout << "    db.address        - database ipaddress" << endl;
    cout << "    db.port           - database port" << endl;
@@ -85,8 +85,8 @@ int main( int argc, const char* argv[] )
    string dbPassword = "password";
    string dbSchema = "playdek";
 
-   string statPortString = "7802";
-   string statIpAddressString = "localhost";
+   string analyticsPortString = "7802";
+   string analyticsIpAddressString = "localhost";
 
    //--------------------------------------------------------------
 
@@ -110,17 +110,17 @@ int main( int argc, const char* argv[] )
    parser.FindValue( "s2s.port", listenForS2SPort );
    parser.FindValue( "s2s.address", listenForS2SAddress );
 
-   parser.FindValue( "stat.port", statPortString );
-   parser.FindValue( "stat.address", statIpAddressString );
+   parser.FindValue( "analytics.port", analyticsPortString );
+   parser.FindValue( "analytics.address", analyticsIpAddressString );
 
    int   listenPort = 7400, 
          dbPortAddress = 3306,
-         statPort = 7802, 
+         analyticsPort = 7802, 
          listenS2SPort = 7402;
    try 
    {
       listenPort = boost::lexical_cast<int>( listenPortString );
-      statPort = boost::lexical_cast<int>( statPortString );
+      analyticsPort = boost::lexical_cast<int>( analyticsPortString );
       dbPortAddress = boost::lexical_cast<int>( dbPortString );
       listenS2SPort = boost::lexical_cast<int>( listenForS2SPort );
    } 
@@ -147,6 +147,7 @@ int main( int argc, const char* argv[] )
    cout << "Server stack version " << ServerStackVersion << endl;
    cout << "ServerId " << serverId << endl;
    cout << "Db " << dbIpAddress << ":" << dbPortAddress << endl;
+   cout << "Network protocol version: " << (int)GlobalNetworkProtocolVersion << endl;
    cout << "------------------------------------------------------------------" << endl << endl << endl;
 
    //--------------------------------------------------------------
@@ -163,7 +164,7 @@ int main( int argc, const char* argv[] )
       DiplodocusServerToServer* s2s = new DiplodocusServerToServer( serverName, serverId, 0, ServerType_Chat );
       s2s->SetupListening( listenS2SPort );
 
-      PrepConnection< FruitadensServer, DiplodocusChat > ( statIpAddressString, statPort, "stat", middleware, ServerType_Stat, true );
+      PrepConnection< FruitadensServer, DiplodocusChat > ( analyticsIpAddressString, analyticsPort, "analytics", middleware, ServerType_Analytics, true );
       
       //----------------------------------------------------------------
       

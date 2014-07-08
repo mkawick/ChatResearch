@@ -1,4 +1,4 @@
-// DiplodocusStat.cpp
+// AnalyticsMainLoop.cpp
 
 #include <iostream>
 #include <time.h>
@@ -13,11 +13,11 @@ using namespace std;
 
 #include "../NetworkCommon/Packets/ServerToServerPacket.h"
 #include "../NetworkCommon/Packets/PacketFactory.h"
-#include "../NetworkCommon/Packets/StatPacket.h"
+#include "../NetworkCommon/Packets/AnalyticsPacket.h"
 
 
-#include "DiplodocusStat.h"
-#include "StatsCommon.h"
+#include "AnalyticsMainLoop.h"
+#include "AnalyticsCommon.h"
 
 #include "../NetworkCommon/Database/StringLookup.h"
 
@@ -25,7 +25,7 @@ using namespace std;
 ///////////////////////////////////////////////////////////////////
 
 
-DiplodocusStat::DiplodocusStat( const string& serverName, U32 serverId ): Diplodocus< KhaanStat >( serverName, serverId, 0,  ServerType_Stat )
+DiplodocusStat::DiplodocusStat( const string& serverName, U32 serverId ): Diplodocus< KhaanStat >( serverName, serverId, 0,  ServerType_Analytics )
 {
    time( &m_lastDbWriteTimeStamp );
    m_lastDbWriteTimeStamp = ZeroOutMinutes( m_lastDbWriteTimeStamp );
@@ -92,11 +92,11 @@ bool  DiplodocusStat::HandlePacketFromOtherServer( BasePacket* packet, U32 conne
 
    U8 packetType = unwrappedPacket->packetType;
    
-   if( packetType == PacketType_Stat )
+   if( packetType == PacketType_Analytics )
    {
       PacketCleaner cleaner( unwrappedPacket );
 
-      PacketStat* statPacket = static_cast< PacketStat* >( unwrappedPacket );
+      PacketAnalytics* statPacket = static_cast< PacketAnalytics* >( unwrappedPacket );
 
       cout << "***********************************************"      << endl;
       cout << "* stat packet contents *" << endl;
@@ -128,13 +128,13 @@ void     DiplodocusStat::PeriodicWriteToDB()
    {
       m_lastDbWriteTimeStamp = ZeroOutMinutes( currentTime );// advance the hour.
    
-      HistoricalStats::iterator historyIt = m_history.begin();
+      HistoricalAnalyisList::iterator historyIt = m_history.begin();
       while( historyIt != m_history.end() )
       {
-         const StatPacketList& list = historyIt->second;
+         const AnalyticsPacketList& list = historyIt->second;
          historyIt++;
 
-         const PacketStat& statPacket = *list.begin();
+         const PacketAnalytics& statPacket = *list.begin();
 
          CalculatedStats means = CalcStats( list );
 

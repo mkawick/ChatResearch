@@ -66,7 +66,10 @@ void     DiplodocusPurchase::ServerWasIdentified( IChainedInterface* khaan )
    //m_serversNeedingUpdate.push_back( static_cast<InputChainType*>( khaan )->GetServerId() );
    ChainedType* localKhaan = static_cast< ChainedType* >( khaan );
    localKhaan->AddOutputChainData( packet, 0 );
-   m_serversNeedingUpdate.push_back( localKhaan->GetServerId() );
+   U32 chainId = localKhaan->GetChainedId();
+   //U32 connId = localKhaan->GetConnectionId();
+   //U32 serverId = localKhaan->GetServerId();
+   m_clientsNeedingUpdate.push_back( chainId );
 }
 // 
 

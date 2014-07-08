@@ -20,7 +20,7 @@
 #include "NotificationPacket.h"
 #include "PurchasePacket.h"
 #include "ServerToServerPacket.h"
-#include "StatPacket.h"
+#include "AnalyticsPacket.h"
 #include "TournamentPacket.h"
 
 using namespace std;
@@ -107,9 +107,9 @@ bool	PacketFactory::Parse( const U8* bufferIn, int& bufferOffset, BasePacket** p
       {
          return ParsePurchase( bufferIn, bufferOffset, &firstPassParse, packetOut );
       }
-   case PacketType_Stat:
+   case PacketType_Analytics:
       {
-         return ParseStat( bufferIn, bufferOffset, &firstPassParse, packetOut );
+         return ParseAnalytics( bufferIn, bufferOffset, &firstPassParse, packetOut );
       }
    case PacketType_Tournament:
       {
@@ -1102,9 +1102,9 @@ bool     PacketFactory::ParsePurchase( const U8* bufferIn, int& bufferOffset, co
 
 //-----------------------------------------------------------------------------------------
 
-bool     PacketFactory::ParseStat( const U8* bufferIn, int& bufferOffset, const BasePacket* firstPassParse, BasePacket** packetOut ) const
+bool     PacketFactory::ParseAnalytics( const U8* bufferIn, int& bufferOffset, const BasePacket* firstPassParse, BasePacket** packetOut ) const
 {
-   *packetOut = SerializeIn< PacketStat >( bufferIn, bufferOffset );
+   *packetOut = SerializeIn< PacketAnalytics >( bufferIn, bufferOffset );
    return true;
 }
 

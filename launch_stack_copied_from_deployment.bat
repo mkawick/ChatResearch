@@ -1,5 +1,5 @@
 pushd C:\projects\SummonWar\main\
-start C:\projects\SummonWar\main\WorkArea/game_serverD.exe listen.port=21000 db.address=10.16.4.44 db.port=3306 db.username=incinerator db.password=Cm8235 db.schema=playdek s2s.port=21002  chat.port=7402
+start C:\projects\SummonWar\main\WorkArea/game_serverD.exe listen.port=21000 db.address=10.16.4.44 db.port=3306 db.username=incinerator db.password=Cm8235 db.schema=playdek s2s.port=21002  chat.port=7402 purchase.port=7702
 popd
 
 start C:\projects\Mber\ServerStack\Debug/LoadBalancer.exe  listen.port=9500 s2s.port=9502
@@ -30,7 +30,7 @@ start C:\projects\Mber\ServerStack\Debug/NotificationServer.exe listen.port=7900
 
 ping -n 1 -w 1000 127.0.0.1 > nul
 	
-start C:\projects\Mber\ServerStack\Debug/StatServer.exe listen.port=7800 s2s.port=7802 db.address=10.16.4.44 db.port=3306 db.username=incinerator db.password=Cm8235 
+start C:\projects\Mber\ServerStack\Debug/AnalyticsServer.exe listen.port=7800 s2s.port=7802 db.address=10.16.4.44 db.port=3306 db.username=incinerator db.password=Cm8235 
 
 
 REM start ./debug/GameServer.exe db.port=16384 listen.port=21000

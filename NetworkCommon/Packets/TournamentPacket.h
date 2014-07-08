@@ -2,7 +2,7 @@
 #pragma once
 
 #include "BasePacket.h"
-
+#include "PurchasePacket.h"
 
 ///////////////////////////////////////////////////////////////////
 
@@ -46,6 +46,7 @@ public:
    bool     isOnline;*/
 };
 
+///////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////
 
 class PacketTournament : public BasePacket 
@@ -170,6 +171,7 @@ public:
 
    SerializedKeyValueVector< string > entrants;
 };
+
 ///////////////////////////////////////////////////////////////////
 
 class PacketTournament_UserRequestsEntryInTournament : public PacketTournament
@@ -180,7 +182,9 @@ public:
    bool  SerializeIn( const U8* data, int& bufferOffset );
    bool  SerializeOut( U8* data, int& bufferOffset ) const;
 
-   UuidString  tournamentUuid;
+   UuidString                                      tournamentUuid;
+   FixedString60                                   customDeck;
+   SerializedVector< PurchaseServerDebitItem >     itemsToSpend;
 };
 
 ///////////////////////////////////////////////////////////////////
@@ -197,7 +201,6 @@ public:
    UuidString  tournamentUuid; 
    int         result;
 };
-///////////////////////////////////////////////////////////////////
 
 ///////////////////////////////////////////////////////////////
 
@@ -210,10 +213,9 @@ public:
    bool  SerializeOut( U8* data, int& bufferOffset ) const;
 
    UuidString  userUuid;
-   UuidString  tournamentUuid;
-   UuidString  exchangeUuid;
    string      uniqueTransactionId; // fill this in with some unique value that you need
-   int         numTicketsRequired;
+
+   SerializedVector< PurchaseServerDebitItem > itemsToSpend;
 };
 
 ///////////////////////////////////////////////////////////////////

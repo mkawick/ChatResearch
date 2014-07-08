@@ -1,15 +1,15 @@
 #pragma once
-
+// AnalyticsMainLoop.h
 
 #include "../NetworkCommon/NetworkIn/Diplodocus.h"
 #include "../NetworkCommon/Database/QueryHandler.h"
-#include "../NetworkCommon/Packets/StatPacket.h"
+#include "../NetworkCommon/Packets/AnalyticsPacket.h"
 
-#include "KhaanStat.h"
+#include "ConnectorAnalytics.h"
 
 #include <deque>
 using namespace std;
-#include "StatsCommon.h"
+#include "AnalyticsCommon.h"
 
 // averaging
 // time averaging (average value based on the gap time)
@@ -56,7 +56,7 @@ private:
 
    time_t                  m_lastDbWriteTimeStamp;
    static const int        timeoutDBWriteStatisics = 60 * 60;// one hour
-   HistoricalStats         m_history;
+   HistoricalAnalyisList   m_history;
 };
 
 ///////////////////////////////////////////////////////////////////

@@ -668,7 +668,7 @@ void     ConnectionToUser:: SendListOfOwnedProductsToClient( U32 m_connectionId 
          {
             userManager->GetProductByProductId( pi.parentId, pi );// reuse this local variable
             pe.parentUuid = pi.uuid;
-         }*/
+         }*/ 
          
       }
       if( pe.name == "bunk01" ||
@@ -809,7 +809,6 @@ bool     ConnectionToUser:: StoreUserPurchases( const PacketListOfUserAggregateP
       {
          if( purchaseEntry.productUuid.size() == 0 )
          {
-            //cout << "   ***Invalid product id...title: " << purchaseEntry.productUuid << "   price: " << purchaseEntry.price <<  "   number price: " << purchaseEntry.number_price << endl;
             cout << "   ***Invalid product id...title: " << purchaseEntry.productUuid << "   name: " << purchaseEntry.name << endl;
             userManager->SendErrorToClient( m_connectionId, PacketErrorReport::ErrorType_Purchase_ProductUnknown ); 
             continue;
@@ -904,12 +903,28 @@ bool     ConnectionToUser:: StoreOffProductInUserRecord ( int userManagerIndex,
             const string& productUuid = productInfo.uuid;
             WriteProductToUserRecord( m_userUuid, productUuid, 1.0, numPurchased, "", "" );
             AddToProductsOwned( productInfo.productId, productInfo.lookupName, productUuid, numPurchased, productInfo.vendorUuid );
+
+            AddConversionProductsToUserPurchases( productInfo );
             return true;
          }
       }
    }
    return false;
 }
+
+
+void     ConnectionToUser:: AddConversionProductsToUserPurchases( const ProductInfo& productInfo )
+{
+   if( productInfo.convertsToProductId == 0 || productInfo.convertsToQuantity == 0 )
+      return;
+
+   ProductInfo productInfoLookup;
+   if( userManager->GetProductByProductId( productInfo.convertsToProductId, productInfoLookup ) == false )
+      return;
+   //originalProductNameIndex = userManager->FindProductByName( purchaseEntry.name );
+   StoreOffProductInUserRecord ( productInfo.convertsToProductId, productInfoLookup.uuid, static_cast< float >( productInfo.convertsToQuantity ) );
+}
+
 
 //---------------------------------------------------------------
 

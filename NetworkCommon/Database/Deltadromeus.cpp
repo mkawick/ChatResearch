@@ -545,7 +545,9 @@ int     Deltadromeus::CallbackFunction()
             if( m_jobsInProgress.size() > 0 )
             {
                LogEverything( "DB has more jobs to start " );
+               m_mutex.lock();
                DbJobBase* currentJob = m_jobsInProgress.front();
+               m_mutex.unlock(); 
                currentJob->SubmitQuery( m_DbConnection, m_dbName );
             }
             else

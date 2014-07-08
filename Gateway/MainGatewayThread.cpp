@@ -9,7 +9,7 @@ using boost::format;
 #include "../NetworkCommon/Packets/ServerToServerPacket.h"
 #include "../NetworkCommon/Packets/LoginPacket.h"
 #include "../NetworkCommon/Packets/PacketFactory.h"
-#include "../NetworkCommon/Packets/StatPacket.h"
+#include "../NetworkCommon/Packets/AnalyticsPacket.h"
 #include "../NetworkCommon/Utils/CommandLineParser.h"
 #include "../NetworkCommon/Logging/server_log.h"
 //#include "../NetworkCommon/ChainedArchitecture/ChainedInterface.h"
@@ -38,6 +38,13 @@ MainGatewayThread::MainGatewayThread( const string& serverName, U32 serverId ) :
    m_timestampSendStatServerStatisics = m_timestampSendConnectionStatisics;
 
    m_orderedOutputPacketHandlers.reserve( PacketType_Num );
+/*
+   int dbgFlag = ::_CrtSetDbgFlag(_CRTDBG_REPORT_FLAG);  
+    dbgFlag |= _CRTDBG_ALLOC_MEM_DF;  
+    dbgFlag |= _CRTDBG_CHECK_CRT_DF;  
+    dbgFlag |= _CRTDBG_LEAK_CHECK_DF;  
+    _CrtSetDbgFlag(dbgFlag); 
+*/
 }
 
 MainGatewayThread::~MainGatewayThread()
@@ -86,6 +93,8 @@ bool  MainGatewayThread::AddInputChainData( BasePacket* packet, U32 connectionId
    {
       FileLog( "MainGatewayThread::AddInputChainData" );
    }
+   cout << "Packet to servers: " << (int)packet->packetType << ":" << (int)packet->packetSubType << endl;
+
    PrintDebugText( "AddInputChainData", 1);
    ConnectionMapIterator connIt = m_connectionMap.find( connectionId );
    if( connIt != m_connectionMap.end() )
@@ -104,21 +113,29 @@ bool  MainGatewayThread::AddInputChainData( BasePacket* packet, U32 connectionId
 
       if( m_printPacketTypes )
       {
-         string printer = "Packet to servers: ";
-         printer += (int)packet->packetType;
+         int type = ( packet->packetType );
+         const char* packetTypeName = GetPacketTypename( (PacketType)type );
+
+         cout << "to servers Packet: " << packetTypeName << " " << type << ":" << (int)packet->packetSubType << endl;
+      
+        /* string printer = "Packet to servers: ";
+         printer += packetTypeName;
          printer += ":";
          printer += (int)packet->packetSubType;
          FileLog( printer.c_str() );
+         cout << printer.c_str() << endl;*/
       }
 
       Threading::MutexLock locker( m_inputChainListMutex );
       m_packetsToBeSentInternally.push_back( wrapper );
+      cout << "    Packet to servers: true" << endl;
       return true;
    }
    else
    {
       PacketFactory factory;
       factory.CleanupPacket( packet );// it dies here. we should log this and try to disconnect the user
+      cout << "    Packet to servers: false" << endl;
       return false;
    }
 }
@@ -300,60 +317,12 @@ void     MainGatewayThread::OutputConnected( IChainedInterface * chainPtr )
 {
    FruitadensGateway* fruity = static_cast< FruitadensGateway* >( chainPtr );
    ServerType serverType = fruity->GetConnectedServerType();
-
-  /* if( 
-      serverType == ServerType_Gateway || 
-      serverType == ServerType_Login ||
-      //serverType == ServerType_Tournament ||
-      serverType == ServerType_Chat ||
-      serverType == ServerType_Contact ||
-      serverType == ServerType_Login ||
-      serverType == ServerType_Notification 
-      )
-   {
-      BroadcastPacketToAllUsers( "Server is up", Packet_QOS_ReportToClient::ErrorState_ServerIsAvailable, serverType, 0, 0 );
-   }
-   else if( serverType == ServerType_GameInstance ) // special case.
-   {
-      BroadcastPacketToAllUsers( "Server is up", Packet_QOS_ReportToClient::ErrorState_GameIsUp, serverType, fruity->GetGameProductId(), fruity->GetGameProductId() );
-   }*/
-
-   
-  /* OutputConnectorList& listOfOutputs = m_orderedOutputPacketHandlers[ packetType ];
-   OutputConnectorList::iterator it = listOfOutputs.begin();
-   while( it != listOfOutputs.end() )
-   {
-      ServerConnectionState& scs = *it++;
-      U32 unusedParam = -1;
-      if( scs.Server()->AddOutputChainData( packet, unusedParam ) == true )
-      {
-         return true;
-      }
-   }*/
 }
 
 void     MainGatewayThread::OutputRemovalInProgress( IChainedInterface * chainPtr )
 {
    FruitadensGateway* fruity = static_cast< FruitadensGateway* >( chainPtr );
    ServerType serverType = fruity->GetConnectedServerType();
-   
-   // some services are important, some are not
-  /* if( 
-      serverType == ServerType_Gateway || 
-      serverType == ServerType_Login ||
-      //serverType == ServerType_Tournament ||
-      serverType == ServerType_Chat ||
-      serverType == ServerType_Contact ||
-      serverType == ServerType_Login ||
-      serverType == ServerType_Notification 
-      )
-   {
-      BroadcastPacketToAllUsers( "Server is down", Packet_QOS_ReportToClient::ErrorState_ServerIsNotAvailable, serverType, 0, 0 );
-   }
-   else if( serverType == ServerType_GameInstance ) // special case.
-   {
-      BroadcastPacketToAllUsers( "Server is down", Packet_QOS_ReportToClient::ErrorState_GameIsDown, serverType, fruity->GetGameProductId(), fruity->GetGameProductId() );
-   }*/
 }
 
 //-----------------------------------------------------
@@ -459,8 +428,12 @@ bool     MainGatewayThread::OrderOutputs()
       m_orderedOutputPacketHandlers.push_back( OutputConnectorList() );
       OutputConnectorList& listOfOutputs = m_orderedOutputPacketHandlers[ packetType ];
 
-      ChainLinkIteratorType itOutput = m_listOfOutputs.begin();
-      while( itOutput != m_listOfOutputs.end() )
+      m_outputChainListMutex.lock();
+      BaseOutputContainer tempContainer = m_listOfOutputs;
+      m_outputChainListMutex.unlock();
+
+      ChainLinkIteratorType itOutput = tempContainer.begin();
+      while( itOutput != tempContainer.end() )
       {
          FruitadensGateway* fg = static_cast<FruitadensGateway*>( (*itOutput).m_interface );
          if( fg->AcceptsPacketType( packetType ) == true )
@@ -580,7 +553,7 @@ int       MainGatewayThread::CallbackFunction()
    MoveClientBoundPacketsFromTempToKhaan();
    UpdateAllClientConnections();
 
-   CheckOnServerStatusChanges();
+   //CheckOnServerStatusChanges();
 
    if( m_packetsToBeSentInternally.size() == 0 )
       return 0;
@@ -755,78 +728,43 @@ void  MainGatewayThread::HandlePacketToKhaan( KhaanGateway* khaan, BasePacket* p
    {
       FileLog( "MainGatewayThread::HandlePacketToKhaan" );
    }
+     // cout << "Packet to client: " << (int)packet->packetType << ":" << (int)packet->packetSubType << endl;
 
    PrintDebugText( "HandlePacketToKhaan" );
    U32 connectionId = khaan->GetConnectionId();
-   bool  packetHandled = false;
+   //bool  packetHandled = false;
    if( packet->packetType == PacketType_Login )
    { 
+      if( packet->packetType == PacketLogin::LoginType_InformClientOfLoginStatus)
+      {
+         cout << "Stopping" << endl;
+      }
       if( packet->packetSubType == PacketLogin::LoginType_InformGatewayOfLoginStatus )
       {
+         BasePacket* tempPacket = HandlePlayerLoginStatus( khaan, packet );  
          PacketCleaner cleaner( packet );
-         PacketLoginToGateway* finishedLogin = static_cast< PacketLoginToGateway* >( packet );
-         if( finishedLogin->wasLoginSuccessful )
-         {
-            khaan->AuthorizeConnection();
-            khaan->SetAdminLevelOperations( finishedLogin->adminLevel );
-            khaan->SetLanguageId( finishedLogin->languageId );
-
-            PacketLoginToClient* clientNotify = new PacketLoginToClient;
-            clientNotify->wasLoginSuccessful = finishedLogin->wasLoginSuccessful;
-            clientNotify->uuid = finishedLogin->uuid;
-            clientNotify->userName = finishedLogin->userName;
-            clientNotify->lastLogoutTime = finishedLogin->lastLogoutTime;
-            clientNotify->connectionId = connectionId;
-            clientNotify->loginKey = finishedLogin->loginKey;
-            packet = clientNotify;
-
-            TrackCountStats( StatTrackingConnections::StatTracking_UserLoginSuccess, 1, 0 );
-            packetHandled = true;
-         }
-         else
-         {
-            PrintDebugText( "HandlePacketToKhaan:: MarkForDeletion", 2 );
-            khaan->DenyAllFutureData();
-            TrackCountStats( StatTracking_ForcedDisconnect, 1, 0 );
-
-            ConnectionMapIterator it = m_connectionMap.find( connectionId );
-            if( it != m_connectionMap.end() )
-            {
-               PacketLogoutToClient* logoutPacket = new PacketLogoutToClient;
-               //logoutPacket->wasDisconnectedByError = true;
-               packet = logoutPacket;
-
-               KhaanGatewayWrapper& khaanWrapper = it->second;
-               time_t currentTime;
-               time( &currentTime );
-               khaanWrapper.MarkForDeletion( currentTime );
-               packetHandled = true;
-            }
-
-            connectionId = 0;
-         }
+         packet = tempPacket;
       }
       else if( packet->packetSubType == PacketLogin::LoginType_ThrottleUsersConnection )
       {
-         packetHandled = true;
+         //PacketCleaner cleaner( packet );
+         //packetHandled = true;
          PacketLoginThrottlePackets* throttler = static_cast< PacketLoginThrottlePackets* >( packet );
          khaan->ThrottleConnection( throttler->delayBetweenPacketsMs );
+         PacketCleaner cleaner( packet );
       }
-   }
-
-   if( packetHandled == false )
-   {
-      
    }
 
    if( m_printPacketTypes )
    {
-      //cout << "Packet to client: " << (int)packet->packetType << ":" << (int)packet->packetSubType << endl;
-      string printer = "Packet to client: ";
-      printer += (int)packet->packetType;
+      int type = ( packet->packetType );
+      const char* packetTypeName = GetPacketTypename( (PacketType)type );
+      cout << "To client  packet: " << packetTypeName << " " << type << " :" << (int)packet->packetSubType << endl;
+     /* string printer = "Packet to client: ";
+      printer += packetTypeName;
       printer += ":";
       printer += (int)packet->packetSubType;
-      FileLog( printer.c_str() );
+      FileLog( printer.c_str() );*/
    }
    if( packet->packetType == PacketType_ErrorReport )
    {
@@ -839,6 +777,56 @@ void  MainGatewayThread::HandlePacketToKhaan( KhaanGateway* khaan, BasePacket* p
    AddClientConnectionNeedingUpdate( connectionId );
 }
 
+//-----------------------------------------------------------------------------------------
+
+BasePacket*  MainGatewayThread::HandlePlayerLoginStatus( KhaanGateway* khaan, BasePacket* packet )
+{
+   U32 connectionId = khaan->GetConnectionId();
+   
+   PacketLoginToGateway* finishedLogin = static_cast< PacketLoginToGateway* >( packet );
+   if( finishedLogin->wasLoginSuccessful )
+   {
+      khaan->AuthorizeConnection();
+      khaan->SetAdminLevelOperations( finishedLogin->adminLevel );
+      khaan->SetLanguageId( finishedLogin->languageId );
+
+      PacketLoginToClient* clientNotify = new PacketLoginToClient;
+      clientNotify->wasLoginSuccessful = finishedLogin->wasLoginSuccessful;
+      clientNotify->uuid = finishedLogin->uuid;
+      clientNotify->userName = finishedLogin->userName;
+      clientNotify->lastLogoutTime = finishedLogin->lastLogoutTime;
+      clientNotify->connectionId = connectionId;
+      clientNotify->loginKey = finishedLogin->loginKey;
+      packet = clientNotify;
+
+      TrackCountStats( StatTrackingConnections::StatTracking_UserLoginSuccess, 1, 0 );
+      //packetHandled = true;
+   }
+   else
+   {
+      PrintDebugText( "HandlePacketToKhaan:: MarkForDeletion", 2 );
+      khaan->DenyAllFutureData();
+      TrackCountStats( StatTracking_ForcedDisconnect, 1, 0 );
+
+      ConnectionMapIterator it = m_connectionMap.find( connectionId );
+      if( it != m_connectionMap.end() )
+      {
+         PacketLogoutToClient* logoutPacket = new PacketLogoutToClient;
+         //logoutPacket->wasDisconnectedByError = true;
+         packet = logoutPacket;
+
+         KhaanGatewayWrapper& khaanWrapper = it->second;
+         time_t currentTime;
+         time( &currentTime );
+         khaanWrapper.MarkForDeletion( currentTime );
+         //packetHandled = true;
+      }
+
+      connectionId = 0;
+   }
+
+   return packet;
+}
 
 //-----------------------------------------------------------------------------------------
 
@@ -886,6 +874,7 @@ void  MainGatewayThread::MoveClientBoundPacketsFromTempToKhaan()
          delete wrapper;
          bool  handled = false;
 
+         m_inputChainListMutex.lock();
          SocketToConnectionMapIterator it = m_connectionToSocketMap.find( connectionId );
          if( it != m_connectionToSocketMap.end() )
          {
@@ -900,6 +889,7 @@ void  MainGatewayThread::MoveClientBoundPacketsFromTempToKhaan()
                handled = true;
             }
          }
+         m_inputChainListMutex.unlock();
          if( handled == false )
          {
             factory.CleanupPacket( dataPacket );

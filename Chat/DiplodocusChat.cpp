@@ -13,7 +13,7 @@ using namespace std;
 #include "../NetworkCommon/Packets/ChatPacket.h"
 #include "../NetworkCommon/Packets/InvitationPacket.h"
 #include "../NetworkCommon/Packets/LoginPacket.h"
-#include "../NetworkCommon/Packets/StatPacket.h"
+#include "../NetworkCommon/Packets/AnalyticsPacket.h"
 
 #include <boost/format.hpp>
 #include <boost/lexical_cast.hpp>

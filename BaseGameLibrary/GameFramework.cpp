@@ -44,8 +44,11 @@ GameFramework::GameFramework( const char* name, const char* shortName, U8 gamePr
    m_chatServerPort = 7402;
    m_chatServerAddress = "localhost";
 
-   m_statServerPort = 7802;
-   m_statServerAddress = "localhost";
+   m_analyticsServerPort = 7802;
+   m_analyticsServerAddress = "localhost";
+
+   m_purchaseServerPort = 7702;
+   m_purchaseServerAddress = "localhost";
 
    m_notificationServerPort = 7902;
    m_notificationServerAddress = "localhost";
@@ -93,10 +96,10 @@ void  GameFramework::SetupDefaultListeningPort( U16 port )
 
 //-----------------------------------------------------
 
-void  GameFramework::SetupDefaultStatConnection( const string& address, U16 port )
+void  GameFramework::SetupDefaultAnalyticsConnection( const string& address, U16 port )
 {
-   m_statServerPort = port;
-   m_statServerAddress = address;
+   m_analyticsServerPort = port;
+   m_analyticsServerAddress = address;
 }
 
 //-----------------------------------------------------
@@ -106,6 +109,15 @@ void  GameFramework::SetupDefaultChatConnection( const string& address, U16 port
    m_chatServerPort = port;
    m_chatServerAddress = address;
 }
+
+//-----------------------------------------------------
+
+void  GameFramework::SetupDefaultPurchaseConnection( const string& address, U16 port )
+{
+   m_purchaseServerPort = port;
+   m_purchaseServerAddress = address;
+}
+
 
 //-----------------------------------------------------
 
@@ -158,9 +170,10 @@ void  GameFramework::AddPacketTypeToServer( const string& serverName, PacketType
 void  GameFramework::UseCommandlineOverrides( int argc, const char* argv[] )
 {
    string   gatewayListenPort;
-   string   statPort;
+   string   analyticsPort;
    string   chatPort;
    string   notificationPort;
+   string   purchasePort;
    string   listenForS2SPort;
    string   dbPort;
 
@@ -168,9 +181,10 @@ void  GameFramework::UseCommandlineOverrides( int argc, const char* argv[] )
    try // these really can't throw, but to be consistent
    {
       gatewayListenPort = boost::lexical_cast<string>( m_listenPort );
-      statPort = boost::lexical_cast<string>( m_statServerPort );
+      analyticsPort = boost::lexical_cast<string>( m_analyticsServerPort );
       chatPort = boost::lexical_cast<string>( m_chatServerPort );
       notificationPort = boost::lexical_cast<string>( m_notificationServerPort );
+      purchasePort = boost::lexical_cast<string>( m_purchaseServerPort );
       listenForS2SPort = boost::lexical_cast<string>( m_listenForS2SPort );
       dbPort = boost::lexical_cast<string>( m_dbPort );
    }
@@ -187,8 +201,8 @@ void  GameFramework::UseCommandlineOverrides( int argc, const char* argv[] )
    parser.FindValue( "listen.port", gatewayListenPort );
    parser.FindValue( "listen.address", m_serverAddress );   
 
-   parser.FindValue( "stat.port", statPort );
-   parser.FindValue( "stat.address", m_statServerAddress );
+   parser.FindValue( "analytics.port", analyticsPort );
+   parser.FindValue( "analytics.address", m_analyticsServerAddress );
 
    parser.FindValue( "chat.port", chatPort );
    parser.FindValue( "chat.address", m_chatServerAddress );
@@ -196,8 +210,11 @@ void  GameFramework::UseCommandlineOverrides( int argc, const char* argv[] )
    parser.FindValue( "notification.port", notificationPort );
    parser.FindValue( "notification.address", m_notificationServerAddress );
 
+   parser.FindValue( "purchase.port", purchasePort );
+   parser.FindValue( "purchase.address", m_purchaseServerAddress );
+
    parser.FindValue( "s2s.port", listenForS2SPort );
-   parser.FindValue( "s2s.address", m_listenForS2SAddress );
+   parser.FindValue( "s2s.address", m_listenForS2SAddress );   
 
    parser.FindValue( "db.port", dbPort );
    parser.FindValue( "db.address", m_dbIpAddress );
@@ -208,9 +225,10 @@ void  GameFramework::UseCommandlineOverrides( int argc, const char* argv[] )
    try 
    {
       m_listenPort = boost::lexical_cast<int>( gatewayListenPort );
-      m_statServerPort = boost::lexical_cast<int>( statPort );
+      m_analyticsServerPort = boost::lexical_cast<int>( analyticsPort );
       m_chatServerPort = boost::lexical_cast<int>( chatPort );
       m_notificationServerPort = boost::lexical_cast<int>( notificationPort );
+      m_purchaseServerPort = boost::lexical_cast<int>( purchasePort );
       m_listenForS2SPort = boost::lexical_cast<int>( listenForS2SPort );
       
       m_dbPort = boost::lexical_cast<int>( dbPort );
@@ -259,15 +277,40 @@ bool     GameFramework::SendChatData( BasePacket* packet )
 
 bool     GameFramework::SendToAnotherServer( BasePacket* packet )  // this could notmally go through the Diplodocus Game. We are bypassing that and simplifying as a result.
 {
-   //int packetType = packet->packetType;
+   int packetType = packet->packetType;
 
    vector< S2SConnectionSetupData >::iterator it = m_serverConnections.begin();
    while( it != m_serverConnections.end() )
    {
-      if( it->s2sCommunication && 
-         it->s2sCommunication->AddOutputChainData( packet, 0 ) == true )
+      bool found = false;
+      vector< PacketType >::iterator findTypeIt =  it->packetType.begin();
+      while( findTypeIt !=  it->packetType.end() )
       {
-         return true;
+         if( *findTypeIt++ == packetType )
+         {
+            found = true;
+            break;
+         }
+      }
+      FruitadensServerToServer*   fruity = it->s2sCommunication;
+      if( found==true && fruity )
+      {
+         PacketServerToServerWrapper* wrapper = new PacketServerToServerWrapper;
+         wrapper->gameInstanceId = m_serverId;
+         wrapper->gameProductId = m_gameProductId;
+         wrapper->serverId = m_serverId;
+         wrapper->pPacket = packet;
+
+         if( fruity->AddOutputChainData( wrapper, 0 ) == true )
+         {
+            return true;
+         }
+         else
+         {
+            PacketFactory factory;
+            packet = wrapper;
+            factory.CleanupPacket( packet );
+         }
       }
       it++;
    }
@@ -309,7 +352,7 @@ bool  GameFramework::SendPacketToGateway( BasePacket* packet, U32 connectionId )
 
 //-----------------------------------------------------
 
-void  GameFramework::SendStat( const string& statName, U16 integerIdentifier, float value, PacketStat::StatType type )
+void  GameFramework::SendStat( const string& statName, U16 integerIdentifier, float value, PacketAnalytics::StatType type )
 {
    GetGame()->TrackStats( m_serverName, m_serverId, statName, integerIdentifier, value, type );
 }
@@ -420,6 +463,7 @@ bool  GameFramework::Run()
    cout << "ServerId: " << GetServerId() << endl;
    cout << "Product Id: " << (int) GetGameProductId() << endl;
    cout << "Db: " << m_dbIpAddress << ":" << m_dbPort << endl;
+   cout << "Network protocol version: " << (int)GlobalNetworkProtocolVersion << endl;
    cout << "------------------------------------------------------------------" << endl << endl << endl;
 
    //----------------------------------------------------------------
@@ -448,7 +492,21 @@ bool  GameFramework::Run()
    s2s->SetupListening( m_listenForS2SPort );
    s2s->AddOutputChain( m_connectionManager );
 
-   PrepConnection< FruitadensServerToServer, DiplodocusGame > ( m_statServerAddress, m_statServerPort, "stat", m_connectionManager, ServerType_Stat, true, GetGameProductId() );
+   //m_serverConnections.push_back( s2sConnection );
+   PrepConnection< FruitadensServerToServer, DiplodocusGame > ( m_analyticsServerAddress, m_analyticsServerPort, "analytics", m_connectionManager, ServerType_Analytics, true, GetGameProductId() );
+
+   FruitadensServerToServer* purchase = PrepConnection< FruitadensServerToServer, DiplodocusGame > ( m_purchaseServerAddress, m_purchaseServerPort, "purchase", m_connectionManager, ServerType_Purchase, true );
+   S2SConnectionSetupData serverConn;
+   serverConn.s2sCommunication =    purchase;
+   serverConn.address =             m_purchaseServerAddress;
+   serverConn.serverName =          purchase->GetName();
+   serverConn.port =                m_purchaseServerPort;
+   serverConn.serverType =          ServerType_Purchase;
+   serverConn.packetType.push_back( PacketType_Purchase );
+   serverConn.packetType.push_back( PacketType_Tournament );
+   purchase->AddToOutwardFilters( PacketType_Purchase );
+   purchase->AddToOutwardFilters( PacketType_Tournament );
+   m_serverConnections.push_back( serverConn );
 
    m_chatServer = PrepConnection< FruitadensServerToServer, DiplodocusGame > ( m_chatServerAddress, m_chatServerPort, "chat", m_connectionManager, ServerType_Chat, true );
    m_chatServer->AddToOutwardFilters( PacketType_Chat );
@@ -475,8 +533,16 @@ void     GameFramework::SetupS2SConnections( const string& address, U16 port )
    vector< S2SConnectionSetupData >::iterator it = m_serverConnections.begin();
    while( it != m_serverConnections.end() )
    {
+      FruitadensServerToServer* serverComm = NULL;
       S2SConnectionSetupData& setup = *it++;
-      FruitadensServerToServer* serverComm = PrepConnection< FruitadensServerToServer, DiplodocusGame > ( address, port, "game", m_connectionManager, ServerType_GameInstance, true );      
+      if( setup.s2sCommunication == NULL )
+      {
+         serverComm = PrepConnection< FruitadensServerToServer, DiplodocusGame > ( address, port, "game", m_connectionManager, ServerType_GameInstance, true );
+      }
+      else 
+      {
+         serverComm = setup.s2sCommunication;
+      }
 
       vector< PacketType >::iterator packetTypeIt = setup.packetType.begin();
       while( packetTypeIt != setup.packetType.end() )

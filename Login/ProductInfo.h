@@ -9,7 +9,11 @@ using namespace std;
 
 struct ProductInfo
 {
-   ProductInfo() : productId( 0 ), productType( 0 ), parentId( 0 ) {}
+   ProductInfo() : productId( 0 ), 
+                  productType( 0 ), 
+                  parentId( 0 ),
+                  convertsToProductId( 0 ),
+                  convertsToQuantity( 0 ){}
    int      productId;
    string   uuid;
    string   name;
@@ -21,6 +25,9 @@ struct ProductInfo
    int      parentId;
 
    double   price;
+
+   int      convertsToProductId;
+   int      convertsToQuantity;
    //float    quantity;
 };
 

@@ -17,10 +17,11 @@ enum  ServerType
    ServerType_Contact,
    ServerType_Purchase,
    ServerType_LoadBalancer,
-   ServerType_Stat,
+   ServerType_Analytics,
    ServerType_Test,
    ServerType_Starter,
    ServerType_Notification,
+   ServerType_PlayerStats,
    ServerType_Count // << end of list
 };
 

@@ -15,9 +15,9 @@ StatTrackingConnections :: StatTrackingConnections() : m_timeoutSendStatServerSt
 {
 }
 
-void  StatTrackingConnections :: GetStatString( U16 statId, PacketStat* packet )
+void  StatTrackingConnections :: GetStatString( U16 statId, PacketAnalytics* packet )
 {
-   packet->statType = PacketStat::StatType_Accumulator;
+   packet->statType = PacketAnalytics::StatType_Accumulator;
    switch( statId )
    {
    case StatTracking_BadPacketVersion:
@@ -39,11 +39,11 @@ void  StatTrackingConnections :: GetStatString( U16 statId, PacketStat* packet )
 
    case StatTracking_UserAverageTimeOnline:
       packet->statName = "user.aggregate.timeonline";
-      packet->statType = PacketStat::StatType_SimpleValue;
+      packet->statType = PacketAnalytics::StatType_SimpleValue;
       break;
    case StatTracking_UserTotalTimeOnline:
       packet->statName = "user.aggregate.timeonline";
-      packet->statType = PacketStat::StatType_SimpleValue;
+      packet->statType = PacketAnalytics::StatType_SimpleValue;
       break;
 
    case StatTracking_GamePacketsSentToGame:
@@ -54,16 +54,16 @@ void  StatTrackingConnections :: GetStatString( U16 statId, PacketStat* packet )
       break;
    case StatTracking_NumUsersOnline:
       packet->statName = "gateway.num_users_current";
-      packet->statType = PacketStat::StatType_SimpleValue;
+      packet->statType = PacketAnalytics::StatType_SimpleValue;
       break;
    case StatTracking_UserTotalCount:
       packet->statName = "gateway.num_users_total";
-      packet->statType = PacketStat::StatType_SimpleValue;
+      packet->statType = PacketAnalytics::StatType_SimpleValue;
       break;
 
    case StatTracking_SuccessfulLogins:
       packet->statName = "login.users_logged_in";
-      packet->statType = PacketStat::StatType_SimpleValue;
+      packet->statType = PacketAnalytics::StatType_SimpleValue;
       break;
    case StatTracking_PurchaseMade:
       packet->statName = "purchase.purchases_made";
@@ -76,7 +76,7 @@ void  StatTrackingConnections :: GetStatString( U16 statId, PacketStat* packet )
       break;
    case StatTracking_UsersAverageTimePerGame:
       packet->statName = "game.average_login_time";
-      packet->statType = PacketStat::StatType_SimpleValue;
+      packet->statType = PacketAnalytics::StatType_SimpleValue;
       break;
    case StatTracking_UsersPlayedMultipleGames:
       packet->statName = "login.user_played_multiple_games";
@@ -86,12 +86,12 @@ void  StatTrackingConnections :: GetStatString( U16 statId, PacketStat* packet )
       break;
    case StatTracking_UniquesUsersPerDay:
       packet->statName = "gateway.unique_users_per_day";
-      packet->statType = PacketStat::StatType_SimpleValue;
+      packet->statType = PacketAnalytics::StatType_SimpleValue;
       break;
 
    case StatTracking_ChatNumberOfChatsSentPerHour:
       packet->statName = "chat.num_total_chats_sent_per_hour";
-      packet->statType = PacketStat::StatType_SimpleValue;
+      packet->statType = PacketAnalytics::StatType_SimpleValue;
       break;
    case StatTracking_ChatNumberOfChannelChatsSentPerHour:
       packet->statName = "chat.num_channel_chats_sent_per_hour";
@@ -101,12 +101,12 @@ void  StatTrackingConnections :: GetStatString( U16 statId, PacketStat* packet )
       break;
    case StatTracking_ChatNumberOfChatChannelChangesPerHour:
       packet->statName = "chat.num_chat_channel_mods_per_hour";
-      packet->statType = PacketStat::StatType_SimpleValue;
+      packet->statType = PacketAnalytics::StatType_SimpleValue;
       break;
 
    case StatTracking_ContactNumberSearchesForUserPerformed:
       packet->statName = "contact.searches_for_user_per_day";
-      packet->statType = PacketStat::StatType_SimpleValue;
+      packet->statType = PacketAnalytics::StatType_SimpleValue;
       break;
    case StatTracking_ContactNumInvitesSentPerDay:
       packet->statName = "contact.invites_sent_per_day";
@@ -116,7 +116,7 @@ void  StatTrackingConnections :: GetStatString( U16 statId, PacketStat* packet )
       break;
    case StatTracking_ContactRejectedInvitesPerDay:
       packet->statName = "contact.invites_rejected_per_day";
-      packet->statType = PacketStat::StatType_SimpleValue;
+      packet->statType = PacketAnalytics::StatType_SimpleValue;
       break;
    }
 
@@ -125,7 +125,7 @@ void  StatTrackingConnections :: GetStatString( U16 statId, PacketStat* packet )
 /*
 void     StatTrackingConnections::TrackStats( StatTracking stat, float value )
 {
-   PacketStat* packet = new PacketStat;
+   PacketAnalytics* packet = new PacketAnalytics;
    packet->serverReporting = "gateway";
    GetStatString( stat, packet );
    packet->value = value;
@@ -138,7 +138,7 @@ void     StatTrackingConnections::TrackStats( StatTracking stat, float value )
 
 void  StatTrackingConnections::TrackCountStats( const string& serverName, int ServerId, StatTracking stat, float value, int sub_category )
 {
-   PacketStat* packet = new PacketStat;
+   PacketAnalytics* packet = new PacketAnalytics;
    packet->serverReporting = serverName;
    packet->category = ServerId;
    packet->subCategory = sub_category;
@@ -154,9 +154,9 @@ void  StatTrackingConnections::TrackCountStats( const string& serverName, int Se
 
 //-----------------------------------------------------------------------------------------
 
-void     StatTrackingConnections::TrackStats( const string& serverName, int ServerId, const string& statName, U16 stat, float value, PacketStat::StatType type )
+void     StatTrackingConnections::TrackStats( const string& serverName, int ServerId, const string& statName, U16 stat, float value, PacketAnalytics::StatType type )
 {
-   PacketStat* packet = new PacketStat;
+   PacketAnalytics* packet = new PacketAnalytics;
    packet->serverReporting = serverName;
    packet->statName = statName;
    packet->category = ServerId;
@@ -177,7 +177,7 @@ void     StatTrackingConnections::TrackStats( const string& serverName, int Serv
 void     StatTrackingConnections::SendStatsToStatServer( Fruitadens* fruity, const string& serverName, U32 serverId, ServerType serverType )
 {
    m_statMutex.lock();
-   deque< PacketStat* > localQueue = m_stats;
+   deque< PacketAnalytics* > localQueue = m_stats;
    m_stats.clear();
    m_statMutex.unlock();
 
@@ -186,7 +186,7 @@ void     StatTrackingConnections::SendStatsToStatServer( Fruitadens* fruity, con
    {
       while( localQueue.size() )
       {         
-         PacketStat* packet = static_cast< PacketStat* >( localQueue.front() );
+         PacketAnalytics* packet = static_cast< PacketAnalytics* >( localQueue.front() );
          localQueue.pop_front();
 
          packet->serverReporting = serverName;

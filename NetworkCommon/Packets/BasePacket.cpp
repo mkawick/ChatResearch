@@ -13,11 +13,89 @@
 #include <assert.h>
 
 
-const U8   GlobalNetworkProtocolVersion = 34;
+const U8   GlobalNetworkProtocolVersion = 36;
 
 #ifdef _MEMORY_TEST_
 int BasePacket::m_counter = 0;
 #endif
+
+///////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////
+
+const char* GetPacketTypename( PacketType type )
+{
+   switch( type )
+   {
+   case PacketType_Base:
+      return "Base";
+
+   case PacketType_Login:
+      return "Login";
+
+   case PacketType_Chat:
+      return "Chat";
+
+   case PacketType_UserInfo:
+      return "UserInfo";
+
+   case PacketType_Contact:
+      return "Contact";
+
+   case PacketType_Asset:
+      return "Asset";
+
+   case PacketType_UserStateChange: // from server to client, usually
+      return "User state change";
+
+   case PacketType_DbQuery:
+      return "DbQuery";
+
+   case PacketType_Gameplay:
+      return "Gameplay";
+
+   case PacketType_GatewayWrapper:
+      return "GW wrapper";
+
+   case PacketType_ServerToServerWrapper:
+      return "S2S Wrapper";
+
+   case PacketType_ServerJobWrapper:
+      return "Server job wrapper";
+
+   case PacketType_ServerInformation:
+      return "Server info";
+
+   case PacketType_GatewayInformation: // user logged out, prepare to shutdown, etc.
+      return "GW info";
+
+   case PacketType_ErrorReport:
+      return "Error";
+
+   case PacketType_Cheat:
+      return "Cheat";
+
+   case PacketType_Purchase:
+      return "Purchase";
+
+   case PacketType_Tournament:
+      return "Tournament";
+
+   case PacketType_Analytics:
+      return "Analytics";
+
+   case PacketType_Notification:
+      return "Notification";
+
+   case PacketType_Invitation:
+      return "Invitation";
+
+   case PacketType_UserStats:
+      return "UserStats";
+
+   default:
+      return "";
+   }
+}
 
 ///////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////

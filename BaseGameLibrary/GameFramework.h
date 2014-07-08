@@ -6,7 +6,7 @@ using namespace std;
 
 #include "../NetworkCommon/DataTypes.h"
 #include "../NetworkCommon/Packets/BasePacket.h"
-#include "../NetworkCommon/Packets/StatPacket.h"
+#include "../NetworkCommon/Packets/AnalyticsPacket.h"
 
 #include "GameCallbacks.h"
 
@@ -50,8 +50,9 @@ public:
    void  SetupDefaultDatabaseConnection( const string& serverAddress, U16 port, const string& username,const string& password, const string& dbSchemaName );
    void  SetupDefaultListeningPort( U16 port );
 
-   void  SetupDefaultStatConnection( const string& address, U16 port );
+   void  SetupDefaultAnalyticsConnection( const string& address, U16 port );
    void  SetupDefaultChatConnection( const string& address, U16 port );
+   void  GameFramework::SetupDefaultPurchaseConnection( const string& address, U16 port );
    void  SetupDefaultNotificationConnection( const string& address, U16 port );
    void  SetupDefaultS2S( const string& address, U16 port );
    void  SetupConnectionToAnotherServer( const string& address, const string& serverName, U16 port, ServerType serverType, PacketType packetType );
@@ -76,7 +77,7 @@ public:
    bool     InformClientWhoThisServerIs( U32 connectionId );
    bool     SendPacketToGateway( BasePacket* packet, U32 connectionId );
 
-   void     SendStat( const string& statName, U16 integerIdentifier, float value, PacketStat::StatType type );
+   void     SendStat( const string& statName, U16 integerIdentifier, float value, PacketAnalytics::StatType type );
    void     SendNotification( const string& userUuid, U32 userId, int notificationType, const string& additionalText );
    void     SendPushNotification( U32 userId, int gameType, unsigned int gameId, int notificationType, const string& additionalText );
    void     UpdatePushNotificationCount( U32 userId, int gameType, int notificationCount );
@@ -110,8 +111,11 @@ private:
    // default connection values
    U16            m_listenPort;
 
-   U16            m_statServerPort;
-   string         m_statServerAddress;
+   U16            m_analyticsServerPort;
+   string         m_analyticsServerAddress;
+
+   U16            m_purchaseServerPort;
+   string         m_purchaseServerAddress;
 
    U16            m_chatServerPort;
    string         m_chatServerAddress;

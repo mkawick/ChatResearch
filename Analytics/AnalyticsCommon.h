@@ -27,11 +27,11 @@ public:
 
 ///////////////////////////////////////////////////
 
-typedef list< PacketStat >              StatPacketList;
-typedef map< string, StatPacketList >   HistoricalStats;
-typedef pair< string, StatPacketList >  StatInsert;
+typedef list< PacketAnalytics >         AnalyticsPacketList;
+typedef map< string, AnalyticsPacketList >   HistoricalAnalyisList;
+typedef pair< string, AnalyticsPacketList >  AnalyticsInsert;
 
 ///////////////////////////////////////////////////
 
-void  AddStatUtil( HistoricalStats& stats, PacketStat& stat );
-CalculatedStats  CalcStats( const StatPacketList& stats );
+void  AddStatUtil( HistoricalAnalyisList& stats, PacketAnalytics& stat );
+CalculatedStats  CalcStats( const AnalyticsPacketList& stats );

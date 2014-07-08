@@ -1,4 +1,4 @@
-// Stat.cpp : Defines the entry point for the console application.
+// Analytics.cpp : Defines the entry point for the console application.
 //
 
 #include <iostream>
@@ -27,7 +27,7 @@ using boost::format;
 
 #include "../NetworkCommon/Daemon/Daemonizer.h"
 
-#include "DiplodocusStat.h"
+#include "AnalyticsMainLoop.h"
 
 #if PLATFORM == PLATFORM_WINDOWS
 #include <conio.h>
@@ -44,17 +44,17 @@ using boost::format;
 
 void  PrintInstructions()
 {
-   cout << "Stat Server:" << endl;
+   cout << "Analytics Server:" << endl;
    cout << "* This may be the simplest server that we have. It only accepts" << endl;
-   cout << "* connections on the s2s endpoint and then saves off the stats." << endl;
-   cout << "* Once per hour on the hour, it writes all stats to the db." << endl;
-   cout << "* After writing the stats once per hour, the stats are cleared." << endl;
-   cout << "* All stats arriving have a particular format which are then used" << endl;
-   cout << "* for future lookup (key-value indexing) and all future stat-posts" << endl;
+   cout << "* connections on the s2s endpoint and then saves off the analytics." << endl;
+   cout << "* Once per hour on the hour, it writes all analytics to the db." << endl;
+   cout << "* After writing the analytics once per hour, the analytics are cleared." << endl;
+   cout << "* All analytics arriving have a particular format which are then used" << endl;
+   cout << "* for future lookup (key-value indexing) and all future analytics-posts" << endl;
    cout << "* add to or modify that data. You may write as often as you see fit." << endl;   
 
-   cout << "Stat takes the following parameters using this format:" << endl;
-   cout << "> stat_server param1=localhost param1.extension='path' ... " << endl;
+   cout << "analytics takes the following parameters using this format:" << endl;
+   cout << "> analytics_server param1=localhost param1.extension='path' ... " << endl;
 
    cout << endl << endl;
    cout << ": params are as follows:" << endl;
@@ -77,11 +77,11 @@ void  PrintInstructions()
 
 int main( int argc, const char* argv[] )
 {
-   daemonize( "stat_serverd" );
+   daemonize( "analytics_serverd" );
 
 	CommandLineParser    parser( argc, argv );
 
-   string serverName = "Stat Server";
+   string serverName = "Analytics Server";
 
    string listenPortString = "7800";    // this connection is for consistency, it may not be used at all
    string listenAddress = "localhost";
@@ -152,6 +152,8 @@ int main( int argc, const char* argv[] )
    cout << serverName << ":" << endl;
    cout << "Server stack version " << ServerStackVersion << endl;
    cout << "ServerId " << serverId << endl;
+   cout << "Db " << dbIpAddress << ":" << dbPortAddress << endl;
+   cout << "Network protocol version: " << (int)GlobalNetworkProtocolVersion << endl;
    cout << "------------------------------------------------------------------" << endl << endl << endl;
 
    InitializeSockets();
@@ -163,7 +165,7 @@ int main( int argc, const char* argv[] )
       DiplodocusStat*    statServer = new DiplodocusStat( serverName, serverId );
       statServer->SetupListening( listenPort );
 
-      DiplodocusServerToServer* s2s = new DiplodocusServerToServer( serverName, serverId, 0, ServerType_Stat );
+      DiplodocusServerToServer* s2s = new DiplodocusServerToServer( serverName, serverId, 0, ServerType_Analytics );
       s2s->SetupListening( listenS2SPort );
       
       //----------------------------------------------------------------

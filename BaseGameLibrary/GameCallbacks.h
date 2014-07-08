@@ -2,6 +2,7 @@
 #pragma once
 
 #include "../NetworkCommon/Packets/ContactPacket.h"
+#include "../NetworkCommon/Packets/PurchasePacket.h"
 
 class GameFramework;
 //////////////////////////////////////////////////////////
@@ -39,7 +40,7 @@ public:
 
    // tournament stuff
    // the following may only remain as a testing interfaces
-   virtual bool   UserWantsToJoinTournament( U32 connectionId, const string& tournamentUuid ) { return false; }
+   virtual bool   UserWantsToJoinTournament( U32 connectionId, const string& tournamentUuid, const SerializedVector< PurchaseServerDebitItem >& itemsToSpend, const char* customDeck, void* meta = NULL ) { return false; }
    virtual bool   UserWantsAListOfTournaments( U32 connectionId ) { return false; }
    
    // see PacketTournament_PurchaseTournamentEntryResponse

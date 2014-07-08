@@ -108,6 +108,7 @@ private:
    void           SortOutgoingPackets();
 
    void           HandlePacketToKhaan( KhaanGateway* khaan, BasePacket* packet );
+   BasePacket*    HandlePlayerLoginStatus(  KhaanGateway* khaan, BasePacket* packet );
    void           BroadcastPacketToAllUsers( const string& errorText, int errorState, int param1, int param2, U8 matchingGameId );
    
    void           MoveClientBoundPacketsFromTempToKhaan();

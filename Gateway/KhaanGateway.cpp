@@ -24,12 +24,13 @@ KhaanGateway::KhaanGateway( int id, bufferevent* be ):
       m_gateway( NULL ),
       m_timeoutMs( 0 ),
       m_lastSentToClientTimestamp( 0 ),
-      m_gameId( 0 )
+      m_gameId( 0 ),
+      m_isExpectingMoreDataInPreviousPacket( false )
 {
    m_randomNumberOfPacketsBeforeLogin = 30 + rand() % 20;
    SendThroughLibEvent( true );
 
-   //SetOutboudBufferSize( 1600 ); /// slower outbound buffer sending
+   SetOutboudBufferSize( 7600 ); /// slower outbound buffer sending
 }
 
 //-----------------------------------------------------------------------------------------
@@ -203,6 +204,66 @@ bool  KhaanGateway::IsHandshaking( const BasePacket* packetIn )
 
 //-----------------------------------------------------------------------------------------
 
+bool  KhaanGateway::HandleInwardSerializedPacket( U8* data, int& offset )
+{
+   bool result = false;
+   BasePacket* packetIn;
+
+   PacketFactory parser;
+   try 
+   {
+      result = parser.Parse( data, offset, &packetIn );
+      if( packetIn != NULL )
+      {
+         TrackInwardPacketType( packetIn );
+      }
+   }
+   catch( ... )
+   {
+      Log( "parsing in KhaanGateway threw an exception" );
+      DenyAllFutureData ();
+      return false;
+   }
+
+   if( result == true )
+   {
+      bool packetCleanupRequired = false;
+      if( m_authorizedConnection == false )
+      {
+         if( IsHandshaking( packetIn ) == true )
+         {
+            packetCleanupRequired = true;
+         }
+      }
+      if( packetCleanupRequired == false )// we still have work to do
+      {
+         if( IsWhiteListedIn( packetIn ) || HasPermission( packetIn ) )
+         {
+            m_gateway->AddInputChainData( packetIn, m_connectionId );
+            SetupOutputDelayTimestamp();
+         }
+         else
+         {
+            FlushReadBuffer();// apparently bad data, let's prevent buffer overruns, etc
+            packetCleanupRequired = true;
+         }
+      }
+
+      if( packetCleanupRequired )
+      {
+         parser.CleanupPacket( packetIn );
+      }
+   }
+   else
+   {
+      FlushReadBuffer();// apparently bad data, let's prevent buffer overruns, etc
+      return false;;
+   }
+
+   return true;
+}
+//-----------------------------------------------------------------------------------------
+
 bool	KhaanGateway::OnDataReceived( unsigned char* data, int length )
 {
    if( m_denyAllFutureData == true )
@@ -210,10 +271,6 @@ bool	KhaanGateway::OnDataReceived( unsigned char* data, int length )
       FlushReadBuffer();
       return false;
    }
-
-   BasePacket* packetIn;
-   int offset = 0;
-   PacketFactory parser;
 
    if( length > MaximumInputBufferSize )// special case
    {
@@ -231,66 +288,70 @@ bool	KhaanGateway::OnDataReceived( unsigned char* data, int length )
          return false;
       }*/
 
+      U16 size = 0;
+      int offset = 0;
+      Serialize::In( data, offset, size );
+      if( size > length )
+      { 
+         cout << "error on Gateway receiving packet info" << endl;
+         cout << "size : " << size << " > length : " << length << endl;
+      }
+      assert( size <= length );
+
       if( IsPacketSafe( data, offset ) == false )
       {
          return false;
+      }      
+   }
+
+   int offset = 0;
+   if( m_isExpectingMoreDataInPreviousPacket )
+   {
+      int numBytesToCopy = length;
+      if( m_expectedBytesReceivedSoFar + numBytesToCopy < m_expectedBytes )
+      {
+         // here we can only store the data and then return because we still do 
+         // not have the full packet yet.
+         memcpy( m_tempBuffer+m_expectedBytesReceivedSoFar, data, numBytesToCopy );
+         m_expectedBytesReceivedSoFar += numBytesToCopy;
+         return false;
+      }
+      else if( m_expectedBytesReceivedSoFar + length > m_expectedBytes )
+      {
+         numBytesToCopy = m_expectedBytes - m_expectedBytesReceivedSoFar;
+         memcpy( m_tempBuffer + m_expectedBytesReceivedSoFar, data, numBytesToCopy );
+         m_expectedBytesReceivedSoFar = m_expectedBytes;
+
+         // we have more bytes as part of a following packet following.
+         data += numBytesToCopy;// offset the pointer.. everything should be magical after this
+         length -= numBytesToCopy; // this may mean setting up another partial packet.
+         int tempOffset = 0;
+         HandleInwardSerializedPacket( m_tempBuffer, tempOffset );
       }
       
-   }   
+      m_isExpectingMoreDataInPreviousPacket = false;
+   }
 
    bool result = false;
+   
+   //BasePacket* packetIn;
    // catch bad packets, buffer over runs, or other badly formed data.
    while( offset < length )
    {
-      try 
+      /// before we parse, let's pull off the first two bytes
+      U16 size = 0;
+      Serialize::In( data, offset, size );
+      if( offset + size > length )
       {
-         result = parser.Parse( data, offset, &packetIn );
-         if( packetIn != NULL )
-         {
-            TrackInwardPacketType( packetIn );
-         }
-      }
-      catch( ... )
-      {
-         Log( "parsing in KhaanGateway threw an exception" );
-         DenyAllFutureData ();
-         break;
+         m_isExpectingMoreDataInPreviousPacket = true;
+         m_expectedBytes = size;
+
+         m_expectedBytesReceivedSoFar = length - offset;
+         memcpy( m_tempBuffer, data+offset, m_expectedBytesReceivedSoFar );
+         return false;
       }
 
-      if( result == true )
-      {
-         bool packetCleanupRequired = false;
-         if( m_authorizedConnection == false )
-         {
-            if( IsHandshaking( packetIn ) == true )
-            {
-               packetCleanupRequired = true;
-            }
-         }
-         if( packetCleanupRequired == false )// we still have work to do
-         {
-            if( IsWhiteListedIn( packetIn ) || HasPermission( packetIn ) )
-            {
-               m_gateway->AddInputChainData( packetIn, m_connectionId );
-               SetupOutputDelayTimestamp();
-            }
-            else
-            {
-               FlushReadBuffer();// apparently bad data, let's prevent buffer overruns, etc
-               packetCleanupRequired = true;
-            }
-         }
-
-         if( packetCleanupRequired )
-         {
-            parser.CleanupPacket( packetIn );
-         }
-      }
-      else
-      {
-         FlushReadBuffer();// apparently bad data, let's prevent buffer overruns, etc
-         break;
-      }
+      HandleInwardSerializedPacket( data, offset );
    }
    return true;
 }
@@ -343,9 +404,8 @@ bool  KhaanGateway::IsWhiteListedIn( const BasePacket* packet ) const
       return false;
    case PacketType_Purchase:
       return true;
-  /* case PacketType_Tournament:
-      return true;*/
-      //return true;
+   case PacketType_Tournament:
+      return true;
    case PacketType_Notification:
       return true;
    case PacketType_Invitation:

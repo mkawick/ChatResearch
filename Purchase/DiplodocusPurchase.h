@@ -34,8 +34,10 @@ public:
    {
       QueryType_ExchangeRateLookup,
       QueryType_LoadAllProducts,
-      QueryType_VerifyThatUserHasEnoughMoney,
+      QueryType_VerifyThatUserHasEnoughMoney1,
+      QueryType_VerifyThatUserHasEnoughMoney2,
       QueryType_PerformPurchase,
+      QueryType_PerformPurchase2,
       QueryType_ProductLookup,
       QueryType_SalesLookup,
       QueryType_Count

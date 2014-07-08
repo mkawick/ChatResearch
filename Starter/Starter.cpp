@@ -51,8 +51,8 @@ void  PrintInstructions()
    cout << "    s2s.address       - where is the load balancer" << endl;
    cout << "    s2s.port          - load balancer" << endl;
    
-   cout << "    stat.address      - stat server ipaddress" << endl;
-   cout << "    stat.port         - stat server port" << endl;
+   cout << "    analytics.address - analytics server ipaddress" << endl;
+   cout << "    analytics.port    - analytics server port" << endl;
    
    cout << "    db.address        - database ipaddress" << endl;
    cout << "    db.port           - database port" << endl;
@@ -146,6 +146,7 @@ int main( int argc, const char* argv[] )
    cout << "Server stack version " << ServerStackVersion << endl;
    cout << "ServerId " << serverId << endl;
    cout << "Db " << dbIpAddress << ":" << dbPortAddress << endl;
+   cout << "Network protocol version: " << (int)GlobalNetworkProtocolVersion << endl;
    cout << "------------------------------------------------------------------" << endl << endl << endl;
 
    StarterMainThread*    middleware = new StarterMainThread( serverName, serverId );
@@ -154,7 +155,7 @@ int main( int argc, const char* argv[] )
    DiplodocusServerToServer* s2s = new DiplodocusServerToServer( serverName, serverId, 0, ServerType_Starter );
    s2s->SetupListening( listenS2SPort );
 
-   PrepConnection< FruitadensServer, StarterMainThread > ( statIpAddressString, statPort, "stat", middleware, ServerType_Stat, true );
+   PrepConnection< FruitadensServer, StarterMainThread > ( statIpAddressString, statPort, "analytics", middleware, ServerType_Analytics, true );
    
    //----------------------------------------------------------------
    

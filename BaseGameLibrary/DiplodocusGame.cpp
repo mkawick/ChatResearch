@@ -181,6 +181,7 @@ bool   DiplodocusGame::AddInputChainData( BasePacket* packet, U32 connectionId )
       else if( packetType == PacketType_Tournament )
       {
          HandleUserRequestedTournamentInfo( unwrappedPacket, connectionIdToUse );
+         return true;
       }
       else
       {
@@ -250,7 +251,7 @@ void   DiplodocusGame::HandleUserRequestedTournamentInfo( BasePacket* packet, U3
          if( m_callbacks )
          {
             const PacketTournament_UserRequestsEntryInTournament* tournamentRequest = static_cast< PacketTournament_UserRequestsEntryInTournament* > ( packet );
-            m_callbacks->UserWantsToJoinTournament( connectionId, tournamentRequest->tournamentUuid.c_str() );
+            m_callbacks->UserWantsToJoinTournament( connectionId, tournamentRequest->tournamentUuid.c_str(), tournamentRequest->itemsToSpend, tournamentRequest->customDeck, NULL );
          }
       }
       break;

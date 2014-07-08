@@ -47,15 +47,20 @@ private:
    bool                 m_authorizedConnection;
    bool                 m_denyAllFutureData;
    bool                 m_logoutPacketSent;
+   bool                 m_isExpectingMoreDataInPreviousPacket;
+   int                  m_expectedBytesReceivedSoFar;
+   int                  m_expectedBytes;
    int                  m_adminLevel;
    U8                   m_languageId;
    MainGatewayThread*   m_gateway;
    U32                  m_timeoutMs;
    U32                  m_lastSentToClientTimestamp;
    U8                   m_gameId;
+   U8                   m_tempBuffer[ 12 * 1024 ];
 
    void  PreCleanup();
    bool	OnDataReceived( unsigned char* data, int length );
+   bool  HandleInwardSerializedPacket( U8* data, int& offset );
 };
 
 //--------------------------------------------------------------

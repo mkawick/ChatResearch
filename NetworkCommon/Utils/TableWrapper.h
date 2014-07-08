@@ -452,6 +452,8 @@ public:
       Column_name_string,
       Column_icon_lookup,
       Column_parent_id,
+      Column_converts_to_product_id,
+      Column_converts_to_quantity,
       Column_end
    };
 };

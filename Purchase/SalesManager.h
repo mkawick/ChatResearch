@@ -3,6 +3,7 @@
 #include "../NetworkCommon/Utils/Utils.h"
 #include "../NetworkCommon/Utils/TableWrapper.h"
 #include "../NetworkCommon/Database/QueryHandler.h"
+#include "../NetworkCommon/Packets/TournamentPacket.h"
 
 #include "DiplodocusPurchase.h"
 #include "UserAccountPurchase.h"
@@ -90,6 +91,8 @@ public:
 
    U32      fromOtherServerId;
    string   fromOtherServerTransactionId;
+
+   SerializedVector< PurchaseServerDebitItem > itemsToSpend;
 };
 
 //------------------------------------------------------------
@@ -132,6 +135,7 @@ public:
 
    bool     GetListOfItemsForSale( PacketPurchase_RequestListOfSalesResponse* packet, int userLanguageIndex = 1 );// english
    bool     PerformSale( const string& purchaseUuid, const UserTicket& userPurchasing, U32 serverIdentifier = 0, string serverTransactionUuid = "" );
+   bool     PerformSale( const SerializedVector< PurchaseServerDebitItem >& itemsToSpend, const UserTicket& userPurchasing, U32 serverIdentifier, string serverTransactionUuid = "" );
 
    int      GetProductType( const string& uuid );
 
@@ -144,6 +148,7 @@ private:
 
    bool     RequestAllProducts();
    bool     SendTournamentPurchaseResultBackToServer( U32 serverIdentifier, string serverTransactionUuid, int result );
+   void     VerifyThatUserHasEnoughMoneyForEntry2( const PacketDbQueryResult* dbResult );
 
    bool     m_isServicingExchangeRates;
    bool     m_isInitializing, m_hasSendProductRequest;

@@ -68,6 +68,17 @@ bool	KhaanConnector::OnDataReceived( unsigned char* data, int length )
    // catch bad packets, buffer over runs, or other badly formed data.
    while( offset < length )
    {
+      /// before we parse, let's pull off the first two bytes
+      U16 size = 0;
+      Serialize::In( data, offset, size );
+
+      if( size > length )
+      { 
+         cout << "error on Gateway receiving packet info" << endl;
+         cout << "size : " << size << " > length : " << length << endl;
+      }
+      assert( size <= length );
+
       try 
       {
          result = parser.Parse( data, offset, &packetIn );

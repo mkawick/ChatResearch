@@ -1,4 +1,4 @@
-// StatsCommon.cpp
+// AnalyticsCommon.cpp
 
 #include <boost/random.hpp>
 #include <boost/generator_iterator.hpp>
@@ -11,23 +11,24 @@
 
 
 #include "../NetworkCommon/Packets/PacketFactory.h"
-#include "../NetworkCommon/Packets/StatPacket.h"
-#include "StatsCommon.h"
+#include "../NetworkCommon/Packets/AnalyticsPacket.h"
+#include "AnalyticsCommon.h"
 
 ///////////////////////////////////////////////////
 
-void  AddStatUtil( HistoricalStats& stats, PacketStat& stat )
+void  AddStatUtil( HistoricalAnalyisList& stats, PacketAnalytics& stat )
 {
-   HistoricalStats::iterator it = stats.find( stat.statName );
+   HistoricalAnalyisList::iterator it = stats.find( stat.statName );
    if( it == stats.end() )
    {
-      stats.insert( StatInsert( string( stat.statName ), StatPacketList() ) );
+      AnalyticsInsert ai( string( stat.statName ), AnalyticsPacketList() );
+      stats.insert( ai );
       it = stats.find( stat.statName );
    }
    it->second.push_back( stat );
 }
 
-CalculatedStats  CalcStats( const StatPacketList& stats )
+CalculatedStats  CalcStats( const AnalyticsPacketList& stats )
 {
    double numEntries = static_cast< double >( stats.size() );
    if( numEntries == 0.0 )
@@ -40,7 +41,7 @@ CalculatedStats  CalcStats( const StatPacketList& stats )
 
    string minTime = "2120-12-12 00:00:00", maxTime = "1967-04-27 00:00:00";
    
-   StatPacketList::const_iterator it = stats.begin();
+   AnalyticsPacketList::const_iterator it = stats.begin();
    while( it != stats.end() )
    {
       float value = it->value;
@@ -83,7 +84,7 @@ CalculatedStats  CalcStats( const StatPacketList& stats )
    stat.minValue = min;
    stat.maxValue = max;
 
-   if( stats.begin()->statType == PacketStat::StatType_Accumulator )
+   if( stats.begin()->statType == PacketAnalytics::StatType_Accumulator )
    {
       stat.mean = static_cast< float >( mean );
    }

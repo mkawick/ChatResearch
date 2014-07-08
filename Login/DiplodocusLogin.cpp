@@ -1159,6 +1159,11 @@ bool     DiplodocusLogin:: HandleRequestListOfProducts( U32 connectionId, Packet
       brief.uuid = pi.uuid;
       brief.vendorUuid = pi.vendorUuid;
 
+     /* if( pi.productType != GameProductType_Game && 
+         pi.productType != GameProductType_Dlc && 
+         pi.productType != GameProductType_Consumable )
+         continue;*/
+
       if( pi.parentId )
       {
          ProductInfo parent;
@@ -1998,12 +2003,12 @@ void     DiplodocusLogin:: StoreAllProducts( const PacketDbQueryResult* dbResult
       ProductTable::row       row = *it++;
 
       ProductInfo productDefn;
-      productDefn.uuid =                 row[ TableProduct::Column_uuid ];
-      productDefn.name =                 row[ TableProduct::Column_name ];
-      int id = boost::lexical_cast< int >( row[ TableProduct::Column_id ] );
-      productDefn.vendorUuid =           row[ TableProduct::Column_vendor_uuid ];
+      productDefn.uuid =                  row[ TableProduct::Column_uuid ];
+      productDefn.name =                  row[ TableProduct::Column_name ];
+      int id =                            boost::lexical_cast< int >( row[ TableProduct::Column_id ] );
+      productDefn.vendorUuid =            row[ TableProduct::Column_vendor_uuid ];
 
-      string productId = row[ TableProduct::Column_product_id ];
+      string productId =                  row[ TableProduct::Column_product_id ];
       if( productId == "NULL" || productId.size() == 0 || productId == "0" ||
          productDefn.vendorUuid.size() == 0 )
       {
@@ -2015,20 +2020,22 @@ void     DiplodocusLogin:: StoreAllProducts( const PacketDbQueryResult* dbResult
       std::transform( lowercase_productUUID.begin(), lowercase_productUUID.end(), lowercase_productUUID.begin(), ::tolower );
       productDefn.vendorUuid = lowercase_productUUID;
 
-      productDefn.productId  = boost::lexical_cast< int >( productId );
+      productDefn.productId  =            boost::lexical_cast< int >( productId );
       
       
-      productDefn.Begindate =            row[ TableProduct::Column_begin_date ];
-      productDefn.lookupName =           row[ TableProduct::Column_name_string ];
+      productDefn.Begindate =             row[ TableProduct::Column_begin_date ];
+      productDefn.lookupName =            row[ TableProduct::Column_name_string ];
       string temp = row[ TableProduct::Column_product_type ];
       if( temp == "" )
          temp = "0";
 
-      productDefn.parentId =  boost::lexical_cast< int >( row[ TableProduct::Column_parent_id ] );
+      productDefn.parentId =              boost::lexical_cast< int >( row[ TableProduct::Column_parent_id ] );
 
-      productDefn.productType  = boost::lexical_cast< int >( temp );
+      productDefn.productType  =          boost::lexical_cast< int >( temp );
       
-      productDefn.iconName =  row[ TableProduct::Column_icon_lookup ];
+      productDefn.iconName =              row[ TableProduct::Column_icon_lookup ];
+      productDefn.convertsToProductId =   boost::lexical_cast< int >( row[ TableProduct::Column_converts_to_product_id ] );
+      productDefn.convertsToQuantity =    boost::lexical_cast< int >( row[ TableProduct::Column_converts_to_quantity ] );
 
       m_productList.push_back( productDefn );
    }
@@ -2048,21 +2055,21 @@ void     DiplodocusLogin:: StoreSingleProduct( const PacketDbQueryResult* dbResu
    //if( it != enigma.end() )
    {
       ProductInfo productDefn;
-      productDefn.productId  = boost::lexical_cast< int >( row[ TableProduct::Column_product_id ] );
-      productDefn.uuid =                 row[ TableProduct::Column_uuid ];
-      productDefn.name =                 row[ TableProduct::Column_name ];
-      productDefn.vendorUuid =           row[ TableProduct::Column_vendor_uuid ];
+      productDefn.productId  =            boost::lexical_cast< int >( row[ TableProduct::Column_product_id ] );
+      productDefn.uuid =                  row[ TableProduct::Column_uuid ];
+      productDefn.name =                  row[ TableProduct::Column_name ];
+      productDefn.vendorUuid =            row[ TableProduct::Column_vendor_uuid ];
       std::string lowercase_productUUID = productDefn.vendorUuid; 
       std::transform( lowercase_productUUID.begin(), lowercase_productUUID.end(), lowercase_productUUID.begin(), ::tolower );
       productDefn.vendorUuid = lowercase_productUUID;
 
-      productDefn.Begindate =            row[ TableProduct::Column_begin_date ];
-      productDefn.lookupName =           row[ TableProduct::Column_name_string ];
+      productDefn.Begindate =             row[ TableProduct::Column_begin_date ];
+      productDefn.lookupName =            row[ TableProduct::Column_name_string ];
 
-      string temp = row[ TableProduct::Column_product_type ];
+      string temp =                       row[ TableProduct::Column_product_type ];
       if( temp == "" )
          temp = "0";
-      productDefn.productType  = boost::lexical_cast< int >( temp );
+      productDefn.productType  =          boost::lexical_cast< int >( temp );
       
       vendorUuid = productDefn.vendorUuid;
       filterUuid = productDefn.uuid;
@@ -2143,9 +2150,10 @@ void     DiplodocusLogin:: AddNewProductToDb( const PurchaseEntry& product )
    cout << " name: " << product.name << endl;
    cout << " UUID: " << newUuid << endl;
 
-   dbQuery->query = "INSERT INTO product VALUES( DEFAULT, 0, '";// new products haven an id of 0
+   dbQuery->query = "INSERT INTO product (product_id, uuid, name, filter_name, first_available) ";
+   dbQuery->query += "VALUES( 0, '";// new products haven an id of 0
    dbQuery->query += newUuid;
-   dbQuery->query += "', '%s', '%s', UTC_TIMESTAMP(), 0, DEFAULT, DEFAULT, DEFAULT, DEFAULT)";
+   dbQuery->query += "', '%s', '%s', UTC_TIMESTAMP())";
 
    dbQuery->escapedStrings.insert( product.name );
    dbQuery->escapedStrings.insert( lowercase_productUuidname );
@@ -2213,7 +2221,7 @@ void     DiplodocusLogin:: LoadInitializationData()
    dbQuery->meta =         "";
    dbQuery->serverLookup = 0;
 
-   dbQuery->query = "SELECT * FROM product WHERE product_type=1 OR product_type=2";
+   dbQuery->query = "SELECT * FROM product";
 
    AddQueryToOutput( dbQuery );
 }

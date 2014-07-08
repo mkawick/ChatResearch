@@ -86,8 +86,8 @@ string  ErrorCodeLookup::GetString( int id )
       case PacketErrorReport::ErrorType_Purchase_AllPurchasingIsClosedRightNow:        return string( "Purchase AllPurchasingIsClosedRightNow" );
       case PacketErrorReport::ErrorType_Purchase_Success:                              return string( "Purchase Success" );
       case PacketErrorReport::ErrorType_Purchase_ProductUnknown:                       return string( "Purchase: product is unknown" );
-      case PacketErrorReport::ErrorType_Purchase_unknown1:                             return string( "Purchase_unknown1" );
-      case PacketErrorReport::ErrorType_Purchase_unknown2:                             return string( "Purchase_unknown2" );
+      case PacketErrorReport::ErrorType_Purchase_NoTradeItemsSpecified:                return string( "Purchase: no items are specified for payment" );
+      case PacketErrorReport::ErrorType_Purchase_DuplicateItemsForPayment:             return string( "Purchase: duplicate items in purchase request" );
       case PacketErrorReport::ErrorType_TournamentPurchase_Result_PurchasePending:     return string( "TournamentPurchase_Result_PurchasePending" );
       case PacketErrorReport::ErrorType_TournamentPurchase_Result_TooManyPlayers:      return string( "TournamentPurchase_Result_TooManyPlayers" );
       case PacketErrorReport::ErrorType_TournamentPurchase_Result_RequirementsNotMet:  return string( "TournamentPurchase_Result_RequirementsNotMet" );

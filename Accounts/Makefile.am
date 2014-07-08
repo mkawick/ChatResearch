@@ -18,6 +18,7 @@ ResetPasswordQueryHandler.cpp \
 ../NetworkCommon/Database/Deltadromeus.cpp \
 ../NetworkCommon/Database/QueryHandler.cpp \
 ../NetworkCommon/NetworkOut/Fruitadens.cpp \
+../NetworkCommon/Packets/AnalyticsPacket.cpp \
 ../NetworkCommon/Packets/AssetPacket.cpp \
 ../NetworkCommon/Packets/BasePacket.cpp \
 ../NetworkCommon/Packets/ChatPacket.cpp \
@@ -33,7 +34,6 @@ ResetPasswordQueryHandler.cpp \
 ../NetworkCommon/Packets/PurchasePacket.cpp \
 ../NetworkCommon/Packets/Serialize.cpp \
 ../NetworkCommon/Packets/ServerToServerPacket.cpp \
-../NetworkCommon/Packets/StatPacket.cpp \
 ../NetworkCommon/Packets/TournamentPacket.cpp \
 ../NetworkCommon/Utils/CommandLineParser.cpp \
 ../NetworkCommon/Utils/OsLevelUtils.cpp \

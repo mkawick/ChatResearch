@@ -211,10 +211,10 @@ int	Khaan :: SendData( const U8* buffer, int length )
 
 //------------------------------------------------------------------------------
 
-void	Khaan :: UpdateOutwardPacketList()
+int	Khaan :: UpdateOutwardPacketList()
 {
    if( m_packetsOut.size() == 0 )
-      return;
+      return 0;
 
    int length;
    int numPacketsPackaged = 0;
@@ -224,14 +224,16 @@ void	Khaan :: UpdateOutwardPacketList()
    PacketFactory factory;
 
    int totalBytesLeftToWrite = m_maxBytesToSend;
+   U16 sizeOfLastWrite;
+   int sizeOfHeader = sizeof( sizeOfLastWrite );
+   int sizeSent = 0;
 
    // todo, plan for the degenerate case where a single packet is over 2k
    m_outputChainListMutex.lock();
    while( m_packetsOut.size() ) 
    {
       offset = 0;
-      U16 sizeOfLastWrite;
-      int sizeOfHeader = sizeof( sizeOfLastWrite );
+      
       length = sizeOfHeader;// reserve space
 
       BasePacket* packet = m_packetsOut.front();      
@@ -244,16 +246,19 @@ void	Khaan :: UpdateOutwardPacketList()
       totalBytesLeftToWrite -= length;
       if( totalBytesLeftToWrite < 0 )
          break;
+      sizeSent += length + sizeOfHeader;
 
       sizeOfLastWrite = length - sizeOfHeader;
       Serialize::Out( m_outboundBuffer, offset, sizeOfLastWrite );// write in the size
 
       SendData( m_outboundBuffer, length );
       m_packetsOut.pop_front();
-      TrackOutwardPacketType( packet );
+      TrackOutwardPacketType( packet ); 
       factory.CleanupPacket( packet );
    }
    m_outputChainListMutex.unlock();   
+
+   return sizeSent;
 }
 
 //---------------------------------------------------------------
@@ -317,26 +322,60 @@ void     Khaan :: RegisterToReceiveNetworkTraffic()
 // Called by libevent when there is data to read.
 void     Khaan :: OnDataAvailable( struct bufferevent* bufferEventObj, void* arg )
 {
-   const U32   MaxBufferSize = 12*1024;// allowing for massive, reads that should never happen
-   
-   Khaan*      This = (Khaan*) arg;
-   U8          data[ MaxBufferSize ];
-   size_t      numBytesReceived;
+   struct evbuffer *input = bufferevent_get_input( bufferEventObj );
+   size_t readLength = evbuffer_get_length( input );
 
+   const U32   MaxBufferSize = 12*1024;// allowing for massive, reads that should never happen
+   Khaan*      This = (Khaan*) arg;
+   if( This == NULL )
+      return;
+   
+   if( readLength > MaxBufferSize ) // this is highly unlikely
+   {
+      U8* tempBuffer = new U8 [ readLength ];
+
+      size_t      numBytesReceived = bufferevent_read( bufferEventObj, tempBuffer, readLength );
+      This->OnDataReceived( tempBuffer, static_cast< int>( readLength ) );
+
+      delete [] tempBuffer;
+      
+   }
+   else
+   {
+      U8          dataBuffer[ MaxBufferSize ];
+      size_t      numBytesReceived, totalBytes = 0;
+
+      do
+      {
+         numBytesReceived = bufferevent_read( bufferEventObj, dataBuffer+totalBytes, sizeof( dataBuffer ) );
+         totalBytes += numBytesReceived;
+      } while( numBytesReceived > 0 );
+      
+      
+      if( totalBytes )
+      {
+         This->OnDataReceived( dataBuffer, static_cast< int>( totalBytes ) );
+      }
+   }
    /* Read 12k at a time and send it to all connected clients. */
-   while( 1 )
+  /* while( 1 )
    {
       numBytesReceived = bufferevent_read( bufferEventObj, data, sizeof( data ) );
       if( numBytesReceived <= 0 ) // nothing received
       {
          break;
       }
+      if( numBytesReceived >= MaxBufferSize )
+      {
+         cout << "** Major problem ** too much data" << endl;
+         assert( 0 );
+      }
 
       if( This )
       {
          This->OnDataReceived( data, static_cast< int>( numBytesReceived ) );
       }
-   }
+   }*/
 }
 
 //---------------------------------------------------------------

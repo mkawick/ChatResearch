@@ -208,7 +208,8 @@ bool  DiplodocusServerToServer::AddOutputChainData( BasePacket* packet, U32 conn
             // we will swallow this in either case and so we delete the packets if the khaan does not use it.
             if( khaan->AddOutputChainData( s2swrapper, 0 ) == true )
             {
-               m_clientsNeedingUpdate.push_back( connectionId );
+               m_clientsNeedingUpdate.push_back( khaan->GetChainedId() );
+               //m_clientsNeedingUpdate.push_back( connectionId );
             }
             else
             {
@@ -226,6 +227,54 @@ bool  DiplodocusServerToServer::AddOutputChainData( BasePacket* packet, U32 conn
 
    //assert( 0 );// we should not have arrived here.
    return false;
+}
+
+
+void	DiplodocusServerToServer::UpdateAllConnections()
+{
+   // the potential exists for this queue to be updated while we are working on it
+   // this is alright as long as we pull from the front and push onto the back as this list is non-persistent
+
+   deque< U32 > localQueue;
+
+   {// creating local scope
+      Threading::MutexLock locker( m_mutex );
+      if( m_clientsNeedingUpdate.size() == 0 )// no locking a mutex if you don't need to do it.
+         return;
+
+      localQueue = m_clientsNeedingUpdate;
+      m_clientsNeedingUpdate.clear();
+   }
+
+   
+   while( localQueue.size() )// threads can remove themselves.
+   {
+      U32 id = localQueue.front();
+      localQueue.pop_front();
+
+      ClientMapIterator it = m_connectedClients.end();
+      if( m_connectedClients.size() )// preventing removal crashes.
+      {
+         it = m_connectedClients.find( id );
+         if( it == m_connectedClients.end() )
+         {
+            while( it != m_connectedClients.end() )
+            {
+               KhaanServerToServer* khaan = static_cast< KhaanServerToServer* >( it->second );
+               
+               if( khaan->GetServerId() == id )
+                  break;
+               it++;
+            }
+         }
+      }
+      
+      if( it != m_connectedClients.end() )
+      {
+         InputChainType* connection = it->second;
+         connection->Update();
+      }
+   }
 }
 
 //---------------------------------------------------------------

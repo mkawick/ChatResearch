@@ -44,9 +44,20 @@ StatusUpdate::StatusUpdate( const string& serverName, U32 serverId ) : Queryer()
    m_checkOnOldEmailsTimer -= OneDay; // always check on launch.. no waiting 24 hours.
    m_expireOldAccountRequestsTimer -= OneDay;
 
-   string queryForBlankUUIDs = "SELECT id, user_email FROM user_temp_new_user WHERE uuid IS NULL OR uuid='0' LIMIT 30";
+   string BlankUUIDWhereClause = " WHERE uuid IS NULL OR uuid='0' LIMIT 30";
+   string BlankUUIDSelectClause = "SELECT id, user_email FROM user_temp_new_user";
+   bool testingUsers = false;// might be commandline controlled... 
+   if( testingUsers == true )
+   {
+      BlankUUIDSelectClause = "SELECT user_id, user_email FROM users";
+   }
+   string queryForBlankUUIDs =  BlankUUIDSelectClause + BlankUUIDWhereClause;
    m_blankUuidHandler = new BlankUUIDQueryHandler( QueryType_UserFindBlankUUID, this, queryForBlankUUIDs );
    m_blankUuidHandler->SetPeriodicty( timeoutBlankUUIDTimer );
+   if( testingUsers == true )
+   {
+      m_blankUuidHandler->UseUserTable( true );
+   }
 
    string queryForBlankProfiles = "SELECT user_id FROM users WHERE (user_email IS NOT NULL OR user_confirmation_date IS NOT NULL) AND user_id NOT IN (SELECT user_id FROM user_profile) LIMIT 200";
    m_blankUserProfileHandler = new BlankUserProfileHandler( QueryType_UserFindBlankUserProfile, this, queryForBlankProfiles );

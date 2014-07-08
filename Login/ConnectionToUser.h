@@ -79,6 +79,7 @@ struct ConnectionToUser
    void     AddItemToProductTable( const PurchaseEntry& purchaseEntry );
    bool     HandleAdminRequestUserProfile( const PacketDbQueryResult* dbResult );
    bool     StoreOffProductInUserRecord ( int userManagerIndex, const string& productUuid, float numPurchased );
+   void     AddConversionProductsToUserPurchases( const ProductInfo& productInfo );
 
    bool     LoginResult( const PacketDbQueryResult* dbResult );
 

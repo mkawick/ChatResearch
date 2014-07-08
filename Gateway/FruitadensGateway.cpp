@@ -122,9 +122,9 @@ bool     FruitadensGateway::AcceptsPacketType( U32 packetType ) const
          }
       }
       break;
-   case ServerType_Stat:
+   case ServerType_Analytics:
       {
-         if( packetType == PacketType_Stat )
+         if( packetType == PacketType_Analytics )
          {
             return true;
          }
@@ -249,9 +249,9 @@ bool FruitadensGateway::FilterOutwardPacket( BasePacket* packet ) const
             }
          }
          break;
-      case ServerType_Stat:
+      case ServerType_Analytics:
          {
-            if( packetType == PacketType_Stat )
+            if( packetType == PacketType_Analytics )
             {
                return true;
             }
@@ -302,7 +302,7 @@ int  FruitadensGateway::MainLoop_OutputProcessing()
 
    if( m_packetsReadyToSend.size() > 0 )
    {
-      U8 buffer[ MaxBufferSize ];
+      U8 buffer[ MaxBufferSize * 6 ];
       int dangerZone = MaxBufferSize * 3/4;// 25%
       int offset = 0;
       PacketFactory factory;

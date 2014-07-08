@@ -1,4 +1,4 @@
-// StatPacket.h
+// AnalyticsPacket.h
 #pragma once
 
 #include "BasePacket.h"
@@ -6,7 +6,7 @@
 
 ///////////////////////////////////////////////////////////////////
 
-class PacketStat : public BasePacket 
+class PacketAnalytics : public BasePacket 
 {
 public:
    enum StatType
@@ -15,7 +15,7 @@ public:
       StatType_SimpleValue
    };
 public:
-   PacketStat( int packet_type = PacketType_Stat, int packet_sub_type = 0 ) : 
+   PacketAnalytics( int packet_type = PacketType_Analytics, int packet_sub_type = 0 ) : 
                BasePacket( packet_type, packet_sub_type ),
                category( 0 ),
                subCategory( 0 ),
