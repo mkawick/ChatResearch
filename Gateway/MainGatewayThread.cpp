@@ -29,7 +29,9 @@ MainGatewayThread::MainGatewayThread( const string& serverName, U32 serverId ) :
                                           m_printFunctionNames( false ),
                                           m_reroutePort( 0 ),
                                           m_isServerDownForMaintenence( false ),
-                                          m_hasInformedConnectedClientsThatServerIsDownForMaintenence( false )
+                                          m_hasInformedConnectedClientsThatServerIsDownForMaintenence( false ),
+                                          m_scheduledMaintnenceEnd( 0 ),
+                                          m_scheduledMaintnenceBegins( 0 )
 {
    SetSleepTime( 16 );// 30 fps
    SetSendHelloPacketOnLogin( true );
@@ -197,8 +199,8 @@ void     MainGatewayThread::InputConnected( IChainedInterface * chainedInput )
 
    //khaan->SendThroughLibEvent( true );
 
-   Threading::MutexLock locker( m_inputChainListMutex );
-   AddClientConnectionNeedingUpdate( newId );
+   //Threading::MutexLock locker( m_inputChainListMutex );
+   //AddClientConnectionNeedingUpdate( newId );
 }
 
 //-----------------------------------------------------------------------------------------
@@ -251,7 +253,10 @@ void     MainGatewayThread::CheckOnServerStatusChanges()
 {
    m_outputChainListMutex.lock();
    ChainLinkIteratorType itOutput = m_listOfOutputs.begin();
-   while( itOutput != m_listOfOutputs.end() )
+   BaseOutputContainer tempOutputContainer = m_listOfOutputs;
+   m_outputChainListMutex.unlock();
+
+   while( itOutput != tempOutputContainer.end() )
    {
       IChainedInterface* outputPtr = (*itOutput).m_interface;
       FruitadensGateway* fruity = static_cast< FruitadensGateway* >( outputPtr );
@@ -303,7 +308,7 @@ void     MainGatewayThread::CheckOnServerStatusChanges()
       }
    }
 
-   m_outputChainListMutex.unlock();
+   
    //---------------------------------------------------
    if( m_isServerDownForMaintenence == true && 
       m_hasInformedConnectedClientsThatServerIsDownForMaintenence == false)
@@ -706,9 +711,12 @@ bool  MainGatewayThread::AddOutputChainData( BasePacket* packet, U32 serverType 
       U32 id = wrapper->connectionId;
 
       //cout << "packet to client stored" << endl;
-      Threading::MutexLock locker( m_inputChainListMutex );
+      //Threading::MutexLock locker( m_inputChainListMutex );
+      m_inputChainListMutex.lock();
       m_clientBoundTempStorage.push_back( packet );
-      AddClientConnectionNeedingUpdate( id );
+      m_inputChainListMutex.unlock();
+
+      //AddClientConnectionNeedingUpdate( id );
       
    }
    else
@@ -773,8 +781,8 @@ void  MainGatewayThread::HandlePacketToKhaan( KhaanGateway* khaan, BasePacket* p
    }
    khaan->AddOutputChainData( packet );
 
-   Threading::MutexLock locker( m_inputChainListMutex );
-   AddClientConnectionNeedingUpdate( connectionId );
+   //Threading::MutexLock locker( m_inputChainListMutex );
+   //AddClientConnectionNeedingUpdate( connectionId );
 }
 
 //-----------------------------------------------------------------------------------------
@@ -832,6 +840,7 @@ BasePacket*  MainGatewayThread::HandlePlayerLoginStatus( KhaanGateway* khaan, Ba
 
 void  MainGatewayThread::AddClientConnectionNeedingUpdate( U32 connectionId )
 {
+   return;
    if( m_printFunctionNames )
    {
       FileLog( "MainGatewayThread::AddClientConnectionNeedingUpdate" );
@@ -927,7 +936,7 @@ void  MainGatewayThread::UpdateAllClientConnections()
    }
 
    m_inputChainListMutex.lock();
-   m_connectionsNeedingUpdate.clear();
+   //m_connectionsNeedingUpdate.clear();
 
    ConnectionMapIterator connIt = m_connectionMap.begin();
    while( connIt != m_connectionMap.end() )

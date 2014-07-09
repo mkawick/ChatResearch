@@ -348,6 +348,12 @@ bool  PacketFactory::ParseLogin( const U8* bufferIn, int& bufferOffset, const Ba
             *packetOut = SerializeIn< PacketUserUpdateProfile >( bufferIn, bufferOffset );
          }
          return true;
+
+      case PacketLogin::LoginType_UserListOfPurchasesWasUpdated:
+         {
+            *packetOut = SerializeIn< PacketListOfUserPurchasesUpdated >( bufferIn, bufferOffset );
+         }
+         return true;
    }
 
    return false;
@@ -1096,7 +1102,18 @@ bool     PacketFactory::ParsePurchase( const U8* bufferIn, int& bufferOffset, co
          *packetOut = SerializeIn< PacketPurchase_RequestListOfSalesResponse >( bufferIn, bufferOffset );
       }
       return true;
+   case PacketPurchase::PurchaseType_ValidatePurchaseReceipt:
+      {
+         *packetOut = SerializeIn< PacketPurchase_ValidatePurchaseReceipt >( bufferIn, bufferOffset );
+      }
+      return true;
+   case PacketPurchase::PurchaseType_ValidatePurchaseReceiptResponse:
+      {
+         *packetOut = SerializeIn< PacketPurchase_ValidatePurchaseReceiptResponse >( bufferIn, bufferOffset );
+      }
+      return true;
    }
+   
    return false;
 }
 

@@ -72,7 +72,7 @@ DiplodocusLogin:: DiplodocusLogin( const string& serverName, U32 serverId )  :
 void     DiplodocusLogin:: ServerWasIdentified( IChainedInterface* khaan )
 {
    BasePacket* packet = NULL;
-   PackageForServerIdentification( m_serverName, m_localIpAddress, m_externalIpAddress, m_serverId, m_listeningPort, m_gameProductId, m_isGame, m_isControllerApp, true, m_gatewayType, &packet );
+   PackageForServerIdentification( m_serverName, m_localIpAddress, m_externalIpAddress, m_serverId, m_serverType, m_listeningPort, m_gameProductId, m_isGame, m_isControllerApp, true, m_gatewayType, &packet );
    ChainedType* localKhaan = static_cast< ChainedType* >( khaan );
    localKhaan->AddOutputChainData( packet, 0 );
    m_clientsNeedingUpdate.push_back( localKhaan->GetChainedId() );
@@ -181,6 +181,13 @@ bool     DiplodocusLogin:: AddInputChainData( BasePacket* packet, U32 connection
          case PacketLogin::LoginType_EchoToServer:
             {
                EchoHandler( userConnectionId );
+            }
+            break;
+
+         case PacketLogin::LoginType_UserListOfPurchasesWasUpdated:
+            {
+               PacketListOfUserPurchasesUpdated* userInventory = static_cast<PacketListOfUserPurchasesUpdated*>( actualPacket );
+               RequestListOfPurchasesUpdate( userInventory );
             }
             break;
          
@@ -1076,6 +1083,21 @@ bool   DiplodocusLogin:: RequestListOfPurchases( U32 connectionId, const PacketL
 
 //---------------------------------------------------------------
 
+bool   DiplodocusLogin:: RequestListOfPurchasesUpdate( const PacketListOfUserPurchasesUpdated* userInventory )
+{
+   ConnectionToUser* connection = GetUserConnection( userInventory->userConnectionId );
+   if( connection == NULL || connection->status != ConnectionToUser::LoginStatus_LoggedIn )
+   {
+      Log( "Login server.RequestListOfPurchases: major problem logged in user", 4 );
+      return false;
+   }
+
+   return connection->RequestListOfPurchases( userInventory->userUuid );
+}
+
+
+//---------------------------------------------------------------
+
 bool   DiplodocusLogin:: AddPurchase( U32 connectionId, const PacketAddPurchaseEntry* purchase )
 {
    ConnectionToUser* connection = GetUserConnection( connectionId );
@@ -1742,6 +1764,32 @@ void     DiplodocusLogin:: UpdateUserRecord( CreateAccountResultsAggregator* agg
 
 //---------------------------------------------------------------
 
+bool  DiplodocusLogin::HandlePacketFromOtherServer( BasePacket* packet, U32 connectionId )// not thread safe
+{
+   U8 packetType = packet->packetType;
+   U8 subType = packet->packetSubType;
+
+   switch( packetType )
+   {
+      case PacketType_Login:
+      {
+         switch( subType )
+         {
+         case PacketLogin::LoginType_UserListOfPurchasesWasUpdated:
+            {
+               PacketListOfUserPurchasesUpdated* userInventory = static_cast<PacketListOfUserPurchasesUpdated*>( packet );
+               RequestListOfPurchasesUpdate( userInventory );
+            }
+            break;
+         }
+      }
+      break;
+   }
+   return false;
+}
+
+//---------------------------------------------------------------
+
 // data going out can go only a few directions
 // coming from the DB, we can have a result or possibly a different packet meant for a single chat UserConnection
 // otherwise, coming from a UserConnection, to go out, it will already be packaged as a Gateway Wrapper and then 
@@ -1751,6 +1799,24 @@ bool     DiplodocusLogin::AddOutputChainData( BasePacket* packet, U32 connection
    if( packet->packetType == PacketType_ServerJobWrapper )
    {
       return HandlePacketToOtherServer( packet, connectionId );
+   }
+
+   if( packet->packetType == PacketType_ServerToServerWrapper )
+   {
+      PacketServerToServerWrapper* wrapper = static_cast< PacketServerToServerWrapper* >( packet );
+
+      U32 connectedServerId = wrapper->serverId;
+      if( connectionId == m_serverId || connectionId == 0 )// outgoing... we are send it
+      {
+         return HandlePacketToOtherServer( wrapper, connectionId );
+      }
+      else
+      {
+         HandlePacketFromOtherServer( wrapper->pPacket, connectionId );
+         PacketFactory factory;
+         factory.CleanupPacket( packet );
+         return true;
+      }
    }
 
    if( packet->packetType == PacketType_DbQuery )

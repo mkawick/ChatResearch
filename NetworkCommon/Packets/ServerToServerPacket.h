@@ -58,6 +58,7 @@ public:
    U32         serverId;
    U16         serverPort;
    U32         gameInstanceId;// used to filter game packets
+   U8          serverType;
    bool        isGameServer;
    bool        isController;
    U8          gatewayType;

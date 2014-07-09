@@ -126,7 +126,7 @@ class FruitadensServer : public Fruitadens
 {
 public:
    FruitadensServer( const char* name, bool processOnlyOneIncommingPacketPerLoop = false );
-   void        NotifyEndpointOfIdentification( const string& serverName, const string& serverAddress, U32 serverId, U16 serverPort, U8 gameProductId, bool isGameServer, bool isController, bool requiresWrapper, U8 gatewayType, const string& externalIpAddress );
+   void        NotifyEndpointOfIdentification( const string& serverName, const string& serverAddress, U32 serverId, U8 serverType, U16 serverPort, U8 gameProductId, bool isGameServer, bool isController, bool requiresWrapper, U8 gatewayType, const string& externalIpAddress );
 
    void        InitialConnectionCallback();
    void        InitialDisconnectionCallback();
@@ -151,6 +151,7 @@ protected:
    U16         m_localServerPort;
    U8          m_localGameProductId;
    U8          m_gatewayType;
+   U8          m_localServerType;
 
    bool        m_localIsGameServer;
    bool        m_localIsController;

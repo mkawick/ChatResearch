@@ -166,6 +166,7 @@ public:
 
    int      GetNumPurchases() const { return m_purchases.size(); }
    bool     GetPurchase( int index, PurchaseEntry& purchase ) const;
+   bool     GetPurchasesByType( vector< PurchaseEntry >& purchases, GameProductType type = GameProductType_TournamentEntry );
    bool     RequestListOfTournaments();
    bool     PurchaseEntryIntoTournament( const string& tournamentUuid, const vector<PurchaseServerDebitItem>& listOfDebitItems, const string& customDeck );
 

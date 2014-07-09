@@ -63,7 +63,7 @@ void     DiplodocusContact::Init()
 void     DiplodocusContact::ServerWasIdentified( IChainedInterface* khaan )
 {
    BasePacket* packet = NULL;
-   PackageForServerIdentification( m_serverName, m_localIpAddress, m_externalIpAddress, m_serverId, m_listeningPort, m_gameProductId, m_isGame, m_isControllerApp, true, m_gatewayType, &packet );
+   PackageForServerIdentification( m_serverName, m_localIpAddress, m_externalIpAddress, m_serverId, m_serverType, m_listeningPort, m_gameProductId, m_isGame, m_isControllerApp, true, m_gatewayType, &packet );
 
    InputChainType* localKhaan = static_cast< InputChainType* >( khaan );
    localKhaan->AddOutputChainData( packet, 0 );

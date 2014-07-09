@@ -287,7 +287,11 @@ bool  UserContact::HandleDbQueryResult( const PacketDbQueryResult* dbResult )
             ui.userName =         row[ TableUser_PlusAvatarIconId::Column_name ];
             ui.uuid =             row[ TableUser_PlusAvatarIconId::Column_uuid ];
             ui.email =            row[ TableUser_PlusAvatarIconId::Column_email ];
-            ui.avatarId =         boost::lexical_cast< U32 >( row[ TableUser_PlusAvatarIconId::Column_avatar_id ] );
+            string avatarId =    row[ TableUser_PlusAvatarIconId::Column_avatar_id ];
+            if( avatarId.size() == 0 || avatarId == "NULL")
+               avatarId = "0";
+
+            ui.avatarId =         boost::lexical_cast< U32 >( avatarId );
             ui.favorite =         boost::lexical_cast< bool >( row[ TableUser_PlusAvatarIconId::Column_favorite ] );
             ui.note =             row[ TableUser_PlusAvatarIconId::Column_note ];
 

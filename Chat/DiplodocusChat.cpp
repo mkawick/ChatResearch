@@ -211,7 +211,7 @@ string      DiplodocusChat::GetUserName( const string& uuid )
 void     DiplodocusChat::ServerWasIdentified( IChainedInterface* khaan )
 {
    BasePacket* packet = NULL;
-   PackageForServerIdentification( m_serverName, m_localIpAddress, m_externalIpAddress, m_serverId, m_listeningPort, m_gameProductId, m_isGame, m_isControllerApp, true, m_gatewayType, &packet );
+   PackageForServerIdentification( m_serverName, m_localIpAddress, m_externalIpAddress, m_serverId, m_serverType, m_listeningPort, m_gameProductId, m_isGame, m_isControllerApp, true, m_gatewayType, &packet );
    ChainedType* localKhaan = static_cast< ChainedType* >( khaan );
    localKhaan->AddOutputChainData( packet, 0 );
    m_clientsNeedingUpdate.push_back( localKhaan->GetServerId() );

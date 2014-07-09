@@ -1444,6 +1444,29 @@ bool  ClientNetworkWrapper::GetPurchase( int index, PurchaseEntry& purchase ) co
 
 //-----------------------------------------------------------------------------
 
+bool  ClientNetworkWrapper::GetPurchasesByType( vector< PurchaseEntry >& purchases, GameProductType productType )
+{
+   int num = m_purchases.size();
+   for( int i=0; i<num; i++ )
+   {
+      const string& uuid = m_purchases[i].productUuid;
+      ProductBriefPacketed brief;
+      if( FindProduct( uuid, brief ) == true )
+      {
+         if( brief.productType == productType )
+         {
+            purchases.push_back( m_purchases[i] );
+         }
+      }
+   }
+   if( purchases.size() )
+      return true;
+
+   return false;
+}
+
+//-----------------------------------------------------------------------------
+
 bool  ClientNetworkWrapper::PurchaseEntryIntoTournament( const string& tournamentUuid, const vector<PurchaseServerDebitItem>& listOfDebitItems, const string& customDeck )
 {
    if( IsConnected() == false )
@@ -2816,7 +2839,7 @@ bool     ClientNetworkWrapper::HandlePacketReceived( BasePacket* packetIn )
 {
    PacketCleaner cleaner( packetIn );
 
-   cout << "Packet type " << packetIn->packetType << endl;
+   cout << "Packet type " << (U32) (packetIn->packetType) << endl;
    if( packetIn->packetType == 9 )
    {
       cout << "Type 9 met" << endl;
@@ -3469,6 +3492,11 @@ bool     ClientNetworkWrapper::HandlePacketReceived( BasePacket* packetIn )
                strings.insert( "success", boost::lexical_cast< string >( response->result ) );
 
                Notification( ClientSideNetworkCallback::NotificationType_TournamentPurchaseResult, strings );
+
+               if( response->result == PacketErrorReport::ErrorType_Purchase_Success )
+               {
+
+               }
             }
             break;
          }

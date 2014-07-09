@@ -260,6 +260,7 @@ void  KhaanServerToServer :: SaveOffServerIdentification( const PacketServerIden
    m_serverAddress = packet->serverAddress;
    m_serverId = packet->serverId;
    m_serverPort = packet->serverPort;
+   m_serverType = packet->serverType; 
    m_isGameServer = packet->isGameServer;
    m_isController = packet->isController;
    m_gatewayType = packet->gatewayType;

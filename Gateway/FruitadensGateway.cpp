@@ -58,7 +58,7 @@ bool     FruitadensGateway::AcceptsPacketType( U32 packetType ) const
    {
       return true;
    }
-   switch(  m_serverType )
+   switch( m_serverType )
    {
    case ServerType_GameInstance:
       {

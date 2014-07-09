@@ -18,6 +18,7 @@ using namespace std;
 #include "../NetworkCommon/Packets/PurchasePacket.h"
 #include "../NetworkCommon/Packets/ServerToServerPacket.h"
 #include "../NetworkCommon/Packets/TournamentPacket.h"
+#include "../NetworkCommon/Packets/LoginPacket.h"
 //#include "../NetworkCommon/Utils/TableWrapper.h"
 #include <boost/lexical_cast.hpp>
 
@@ -216,6 +217,11 @@ bool     SalesManager::HandleResult( const PacketDbQueryResult* dbResult )
       }
 
       m_parent->SendPacketToGateway( packet, purchaseTracking->connectionId );
+
+      PacketListOfUserPurchasesUpdated* purchasesUpdate = new PacketListOfUserPurchasesUpdated;
+      purchasesUpdate->userUuid = purchaseTracking->userUuid;
+      purchasesUpdate->userConnectionId = purchaseTracking->connectionId;
+      m_parent->SendPacketToLoginServer( purchasesUpdate, purchaseTracking->connectionId );
 
       m_usersBeingServiced.erase( purchaseTracking->userUuid );
       delete purchaseTracking;

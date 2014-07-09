@@ -17,6 +17,7 @@ using namespace std;
 #include "../NetworkCommon/Packets/TournamentPacket.h"
 
 #include "../NetworkCommon/Database/StringLookup.h"
+#include "../NetworkCommon/NetworkIn/DiplodocusServerToServer.h"
 
 #include <iostream>
 #include <time.h>
@@ -61,7 +62,7 @@ DiplodocusPurchase :: ~DiplodocusPurchase()
 void     DiplodocusPurchase::ServerWasIdentified( IChainedInterface* khaan )
 {
    BasePacket* packet = NULL;
-   PackageForServerIdentification( m_serverName, m_localIpAddress, m_externalIpAddress, m_serverId, m_listeningPort, m_gameProductId, m_isGame, m_isControllerApp, true, m_gatewayType, &packet );
+   PackageForServerIdentification( m_serverName, m_localIpAddress, m_externalIpAddress, m_serverId, m_serverType, m_listeningPort, m_gameProductId, m_isGame, m_isControllerApp, true, m_gatewayType, &packet );
    //khaan->AddOutputChainData( packet, 0 );
    //m_serversNeedingUpdate.push_back( static_cast<InputChainType*>( khaan )->GetServerId() );
    ChainedType* localKhaan = static_cast< ChainedType* >( khaan );
@@ -394,7 +395,38 @@ bool     DiplodocusPurchase::AddOutputChainData( BasePacket* packet, U32 connect
    return false;
 }
 
-//---------------------------------------------------------------
+/////////////////////////////////////////////////////////////////
+
+bool  DiplodocusPurchase::SendPacketToLoginServer( BasePacket* packet, U32 connectionId )
+{
+   PacketServerJobWrapper* wrapper = new PacketServerJobWrapper();
+
+   wrapper->serverId =  m_serverId;
+   wrapper->pPacket = packet;
+   wrapper->jobId = 0;
+
+   ChainLinkIteratorType itInputs = m_listOfInputs.begin();
+   if( itInputs != m_listOfInputs.end() )// only one output currently supported.
+   {
+      ChainLink & chainedInput = *itInputs;
+      DiplodocusServerToServer* diplodocusS2s = static_cast< DiplodocusServerToServer* >( chainedInput.m_interface );
+      U32 serverId = diplodocusS2s->FindServerIdByType( ServerType_Login );
+      if( diplodocusS2s->AddOutputChainData( wrapper, serverId ) == true )
+      {
+         return true;
+      }
+   }
+
+
+   PacketFactory factory;
+   packet = wrapper;
+   factory.CleanupPacket( packet );
+   
+
+   return false;
+}
+
+/////////////////////////////////////////////////////////////////
 
 void     DiplodocusPurchase::AddServerNeedingUpdate( U32 serverId )
 {

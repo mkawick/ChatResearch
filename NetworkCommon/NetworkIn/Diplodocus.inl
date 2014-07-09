@@ -148,12 +148,10 @@ bool  Diplodocus< InputChain, OutputChain >::PushInputEvent( ThreadEvent* te )
    switch( te->type )
    {
    case ThreadEvent_NeedsService:
-      LockMutex();
-      m_clientsNeedingUpdate.push_back( id );
-      UnlockMutex();
+      MarkConnectionAsNeedingUpdate( id );
       return true;
    case ThreadEvent_DataAvailable:
-      //m_clientsNeedingUpdate.push_back( id );
+      //MarkConnectionAsNeedingUpdate( id );
       return true;
    }
 
@@ -225,9 +223,7 @@ bool     Diplodocus< InputChain, OutputChain >::SendPacketToGateway( BasePacket*
       InputChainType* connection = static_cast< InputChainType* >( chainedInput.m_interface );
       if( connection->AddOutputChainData( wrapper, connectionId ) == true )
       {
-         LockMutex();
-         m_clientsNeedingUpdate.push_back( connection->GetChainedId() );
-         UnlockMutex();
+         MarkConnectionAsNeedingUpdate( connection->GetChainedId() );
          return true;
       }
    }
@@ -459,16 +455,15 @@ void  Diplodocus< InputChain, OutputChain >::MarkAllConnectionsAsNeedingUpdate( 
 template< typename InputChain, typename OutputChain >
 void  Diplodocus< InputChain, OutputChain >::MarkConnectionAsNeedingUpdate( int chainId )
 {
-   LockMutex();
+   Threading::MutexLock locker( m_mutex );
 
    deque< U32 >::iterator it = m_clientsNeedingUpdate.begin();
    while( it != m_clientsNeedingUpdate.end() )
    {
-      if( *it == chainId ) 
+      if( *it++ == chainId ) 
          return;
    }
    m_clientsNeedingUpdate.push_back( chainId );
-   UnlockMutex();
 }
 
 //---------------------------------------------------------------
@@ -554,12 +549,19 @@ void	Diplodocus< InputChain, OutputChain >::UpdateAllConnections()
    deque< U32 > localQueue;
 
    {// creating local scope
-      Threading::MutexLock locker( m_mutex );
-      if( m_clientsNeedingUpdate.size() == 0 )// no locking a mutex if you don't need to do it.
-         return;
-
-      localQueue = m_clientsNeedingUpdate;
-      m_clientsNeedingUpdate.clear();
+      LockMutex();
+      if( m_clientsNeedingUpdate.size() > 0 )// no locking a mutex if you don't need to do it.
+      {
+        /* deque< U32 >::iterator it = m_clientsNeedingUpdate.begin();
+         while( it != m_clientsNeedingUpdate.end() )
+         {
+            U32 id = *it++;
+            localQueue.push_back( id );
+         }*/
+         localQueue = m_clientsNeedingUpdate;
+         m_clientsNeedingUpdate.clear();
+      }
+      UnlockMutex();
    }
 
    
@@ -740,7 +742,7 @@ bool  SendRawData( const U8* data, int size, int dataType, int maxPacketSize, U3
 ////////////////////////////////////////////////////////////////////////
 
 template <typename return_type, typename type >
-return_type* PrepConnection( const string& remoteIpaddress, U16 remotePort, const string& remoteServerName, type* localServer, ServerType serverType, bool requiresS2SWrapper, U32 gameProductId = 0 )
+return_type* PrepConnection( const string& remoteIpaddress, U16 remotePort, const string& remoteServerName, type* localServer, ServerType remoteServerType, bool requiresS2SWrapper, U32 gameProductId = 0 )
 {
    string serverOutputText = localServer->GetServerName();
    serverOutputText += " to ";
@@ -753,13 +755,16 @@ return_type* PrepConnection( const string& remoteIpaddress, U16 remotePort, cons
       serverOutputText += "remote server";
    }
    return_type* serverOut = new return_type( serverOutputText.c_str() );
-   serverOut->SetConnectedServerType( serverType );
+   serverOut->SetConnectedServerType( remoteServerType );
    serverOut->SetServerUniqueId( localServer->GetServerId() );
 
    serverOut->AddInputChain( localServer );
 
    //bool isGame = localServer->IsGameServer();
-   serverOut->NotifyEndpointOfIdentification( localServer->GetServerName(), localServer->GetIpAddress(), localServer->GetServerId(), localServer->GetPort(), 
+   //ServerType serverType = localServer->GetServerType();
+   //U8 type = static_cast< U8 >( serverType );
+   serverOut->NotifyEndpointOfIdentification( localServer->GetServerName(), localServer->GetIpAddress(), localServer->GetServerId(), 
+                                             localServer->GetServerType(), localServer->GetPort(), 
                                              gameProductId, localServer->IsGameServer(), localServer->IsControllerApp(), requiresS2SWrapper, 
                                              localServer->GetGatewayType(), localServer->GetExternalIpAddress() );
    cout << "server (" << remoteServerName << "): " << remoteIpaddress << ":" << remotePort << endl;

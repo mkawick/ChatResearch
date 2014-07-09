@@ -156,17 +156,6 @@ bool     UserAccountPurchase::MakePurchase( const PacketTournament_PurchaseTourn
 
    bool success = m_salesManager->PerformSale( packet->itemsToSpend, m_userTicket, connectionId, packet->uniqueTransactionId );
    success = success;// warnings
-   // we need to find the most appropriate sale. The tournament uuid will have a list 
-  /* packet->tournamentUuid;
-   packet->userUuid;
-   packet->exchangeUuid;
-
-   bool success = m_salesManager->PerformSale( packet->purchaseUuid, m_userTicket );*/
-
-   /*packet->numTicketsRequired;
-   packet->se
-   bool success = m_salesManager->PerformSale( packet->exchangeUuid.c_str(), m_userTicket, connectionId, packet->uniqueTransactionId );
-   success = success;// warnings*/
 
    return true;
 }

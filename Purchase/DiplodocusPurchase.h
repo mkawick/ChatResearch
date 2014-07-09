@@ -51,6 +51,7 @@ public:
 
    bool                    AddInputChainData( BasePacket* packet, U32 connectionId );
    bool                    AddOutputChainData( BasePacket* packet, U32 connectionId );
+   bool                    SendPacketToLoginServer( BasePacket* packet, U32 connectionId );
 
    bool                    AddQueryToOutput( PacketDbQuery* packet );
 

@@ -82,8 +82,10 @@ public:
       PurchaseType_Buy,
       PurchaseType_BuyResponse,
       PurchaseType_RequestListOfSales,
-      PurchaseType_RequestListOfSalesResponse
+      PurchaseType_RequestListOfSalesResponse,
 
+      PurchaseType_ValidatePurchaseReceipt,
+      PurchaseType_ValidatePurchaseReceiptResponse
    };
 
 public:
@@ -178,5 +180,38 @@ public:
    SerializedKeyValueVector< PurchaseInfo >   thingsForSale;
 };
 
+///////////////////////////////////////////////////////////////
+
+class PacketPurchase_ValidatePurchaseReceipt : public PacketPurchase
+{
+public:
+   PacketPurchase_ValidatePurchaseReceipt() : PacketPurchase( PacketType_Purchase, PurchaseType_ValidatePurchaseReceipt ){  }
+
+   bool  SerializeIn( const U8* data, int& bufferOffset );
+   bool  SerializeOut( U8* data, int& bufferOffset ) const;
+
+   string   purchaseItemId;
+   int      quantity;
+   string   transactionId;
+   string   receipt;
+   int      platformId;// = Platform_ios
+};
+
+///////////////////////////////////////////////////////////////
+
+class PacketPurchase_ValidatePurchaseReceiptResponse : public PacketPurchase
+{
+public:
+   PacketPurchase_ValidatePurchaseReceiptResponse() : PacketPurchase( PacketType_Purchase, PurchaseType_ValidatePurchaseReceiptResponse ){  }
+
+   bool  SerializeIn( const U8* data, int& bufferOffset );
+   bool  SerializeOut( U8* data, int& bufferOffset ) const;
+
+   //SerializedKeyValueVector< PurchaseInfo >   thingsForSale;
+
+   int      errorCode;// 0 = none or success
+   string   transactionId;
+};
+      
 ///////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////

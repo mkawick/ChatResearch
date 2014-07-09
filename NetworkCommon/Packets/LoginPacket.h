@@ -38,7 +38,8 @@ public:
       LoginType_UpdateSelfProfileResponse,
       LoginType_ThrottleUsersConnection,
       LoginType_DebugThrottleUsersConnection,
-      LoginType_UserUpdateProfile
+      LoginType_UserUpdateProfile,
+      LoginType_UserListOfPurchasesWasUpdated
    };
 public:
    PacketLogin( int packet_type = PacketType_Login, int packet_sub_type = LoginType_Login ): BasePacket( packet_type, packet_sub_type ) {}
@@ -538,6 +539,20 @@ public:
 
    int      avatarIconId;
    bool     success;
+};
+
+///////////////////////////////////////////////////////////////
+
+class PacketListOfUserPurchasesUpdated : public BasePacket
+{
+public:
+   PacketListOfUserPurchasesUpdated(): BasePacket( PacketType_Login, PacketLogin::LoginType_UserListOfPurchasesWasUpdated ) {}
+   
+   bool  SerializeIn( const U8* data, int& bufferOffset );
+   bool  SerializeOut( U8* data, int& bufferOffset ) const;
+
+   UuidString  userUuid;
+   U32         userConnectionId;
 };
 
 ///////////////////////////////////////////////////////////////

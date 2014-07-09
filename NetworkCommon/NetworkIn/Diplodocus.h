@@ -85,6 +85,7 @@ public:
    U32            GetServerId() const { return m_serverId; }
    U8             GetGameProductId() const { return m_gameProductId; }
    const string&  GetIpAddress() const { return m_localIpAddress; }
+   ServerType     GetServerType() const { return m_serverType; }
 
    void           SetupListening( int port );
    U16            GetPort() const { return m_listeningPort; }

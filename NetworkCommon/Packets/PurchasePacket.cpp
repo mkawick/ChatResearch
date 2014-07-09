@@ -188,3 +188,49 @@ bool  PacketPurchase_RequestListOfSalesResponse::SerializeOut( U8* data, int& bu
 
 ///////////////////////////////////////////////////////////////
 
+bool  PacketPurchase_ValidatePurchaseReceipt::SerializeIn( const U8* data, int& bufferOffset )
+{ 
+   PacketPurchase::SerializeIn( data, bufferOffset );
+   Serialize::In( data, bufferOffset, purchaseItemId );
+   Serialize::In( data, bufferOffset, quantity );
+   Serialize::In( data, bufferOffset, transactionId );
+   Serialize::In( data, bufferOffset, receipt );
+   Serialize::In( data, bufferOffset, platformId );
+
+   return true; 
+}
+
+bool  PacketPurchase_ValidatePurchaseReceipt::SerializeOut( U8* data, int& bufferOffset ) const 
+{ 
+   PacketPurchase::SerializeOut( data, bufferOffset );
+   Serialize::Out( data, bufferOffset, purchaseItemId );
+   Serialize::Out( data, bufferOffset, quantity );
+   Serialize::Out( data, bufferOffset, transactionId );
+   Serialize::Out( data, bufferOffset, receipt );
+   Serialize::Out( data, bufferOffset, platformId );
+
+   return true; 
+}
+
+///////////////////////////////////////////////////////////////
+
+bool  PacketPurchase_ValidatePurchaseReceiptResponse::SerializeIn( const U8* data, int& bufferOffset )
+{ 
+   PacketPurchase::SerializeIn( data, bufferOffset );
+   Serialize::In( data, bufferOffset, errorCode );
+   Serialize::In( data, bufferOffset, transactionId );
+
+   return true; 
+}
+
+bool  PacketPurchase_ValidatePurchaseReceiptResponse::SerializeOut( U8* data, int& bufferOffset ) const 
+{ 
+   PacketPurchase::SerializeOut( data, bufferOffset );
+   Serialize::Out( data, bufferOffset, errorCode );
+   Serialize::Out( data, bufferOffset, transactionId );
+
+   return true; 
+}
+
+///////////////////////////////////////////////////////////////
+

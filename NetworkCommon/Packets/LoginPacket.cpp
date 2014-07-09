@@ -681,3 +681,23 @@ bool  PacketUpdateSelfProfileResponse::SerializeOut( U8* data, int& bufferOffset
 }
 
 ///////////////////////////////////////////////////////////////
+
+bool  PacketListOfUserPurchasesUpdated::SerializeIn( const U8* data, int& bufferOffset )
+{ 
+   BasePacket::SerializeIn( data, bufferOffset );
+   Serialize::In( data, bufferOffset, userUuid );
+   Serialize::In( data, bufferOffset, userConnectionId );
+
+   return true; 
+}
+
+bool  PacketListOfUserPurchasesUpdated::SerializeOut( U8* data, int& bufferOffset ) const 
+{ 
+   BasePacket::SerializeOut( data, bufferOffset );
+   Serialize::Out( data, bufferOffset, userUuid );
+   Serialize::Out( data, bufferOffset, userConnectionId );
+
+   return true; 
+}
+
+///////////////////////////////////////////////////////////////

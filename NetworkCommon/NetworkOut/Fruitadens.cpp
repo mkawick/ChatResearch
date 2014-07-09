@@ -434,10 +434,10 @@ bool  Fruitadens::HandlePacketReceived( BasePacket* packetIn )
       PacketServerToServerWrapper* wrapper = static_cast< PacketServerToServerWrapper* >( packetIn );
 
       // ** note this reset
-      packetIn = wrapper->pPacket;
+      BasePacket* contentPacket = wrapper->pPacket;
       bool handled2SPacket = false;
       // ** note
-      switch( packetIn->packetType )
+      switch( contentPacket->packetType )
       {
       case PacketType_ServerInformation:
          {
@@ -463,9 +463,9 @@ bool  Fruitadens::HandlePacketReceived( BasePacket* packetIn )
       }
 
 
-      if( handled2SPacket || packetIn == NULL ) 
+      if( handled2SPacket || contentPacket == NULL ) 
       {
-         factory.CleanupPacket( packetIn );
+         factory.CleanupPacket( contentPacket );
          return true;
       }
       // or we fall through
@@ -477,7 +477,7 @@ bool  Fruitadens::HandlePacketReceived( BasePacket* packetIn )
    while( itInput != m_listOfInputs.end() )// only one input currently supported.
    {
       ChainType* inputPtr = static_cast< ChainType*> ( (*itInput).m_interface );
-      if( inputPtr->AddOutputChainData( packetIn ) == true )
+      if( inputPtr->AddOutputChainData( packetIn, m_connectedServerId ) == true )
       {
          return true;
       }
@@ -548,13 +548,14 @@ FruitadensServer :: FruitadensServer( const char* name, bool processOnlyOneIncom
 
 //-----------------------------------------------------------------------------
 
-void     FruitadensServer :: NotifyEndpointOfIdentification( const string& serverName, const string& serverAddress, U32 serverId, U16 serverPort, U8 gameProductId, bool isGameServer, bool isController, bool requiresWrapper, U8 gatewayType, const string& externalIpAddress )
+void     FruitadensServer :: NotifyEndpointOfIdentification( const string& serverName, const string& serverAddress, U32 serverId, U8 serverType, U16 serverPort, U8 gameProductId, bool isGameServer, bool isController, bool requiresWrapper, U8 gatewayType, const string& externalIpAddress )
 {
    m_areLocalIdentifyingParamsSet = true;
    m_localServerName = serverName;
    m_localIpAddress = serverAddress;
    m_localServerId = serverId;
    m_localServerPort = serverPort;
+   m_localServerType = (ServerType) serverType;
    m_localGameProductId = gameProductId;
    m_localIsGameServer = isGameServer;
    m_localIsController = isController;
@@ -611,6 +612,7 @@ bool     FruitadensServer::PackageLocalServerIdentificationToSend()
                                    m_localIpAddress, 
                                    m_externalIpAddress,
                                    m_localServerId, 
+                                   m_localServerType,
                                    m_localServerPort, 
                                    m_localGameProductId, 
                                    m_localIsGameServer, 

@@ -229,7 +229,7 @@ int	Khaan :: UpdateOutwardPacketList()
    int sizeSent = 0;
 
    // todo, plan for the degenerate case where a single packet is over 2k
-   m_outputChainListMutex.lock();
+   //m_outputChainListMutex.lock();
    while( m_packetsOut.size() ) 
    {
       offset = 0;
@@ -256,7 +256,7 @@ int	Khaan :: UpdateOutwardPacketList()
       TrackOutwardPacketType( packet ); 
       factory.CleanupPacket( packet );
    }
-   m_outputChainListMutex.unlock();   
+   //m_outputChainListMutex.unlock();   
 
    return sizeSent;
 }
@@ -275,9 +275,9 @@ bool Khaan :: AddOutputChainData( BasePacket* packet, U32 filingData )
    if( m_criticalFailure )
       return false;
 
-   m_outputChainListMutex.lock();
+  // m_outputChainListMutex.lock();
    m_packetsOut.push_back( packet );
-   m_outputChainListMutex.unlock();
+  // m_outputChainListMutex.unlock();
    return true; 
 }
 

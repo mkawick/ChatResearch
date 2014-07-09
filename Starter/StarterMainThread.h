@@ -25,7 +25,6 @@ public:
    bool     AddInputChainData( BasePacket* packet, U32 connectionId );
    bool     AddOutputChainData( BasePacket* packet, U32 connectionId );
    bool     SendMessageToClient( BasePacket* packet, U32 connectionId );
-
 private:
    int      MainLoop_InputProcessing();
    int      MainLoop_OutputProcessing();

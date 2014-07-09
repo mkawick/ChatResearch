@@ -38,6 +38,7 @@ bool  PacketServerIdentifier::SerializeIn( const U8* data, int& bufferOffset )
    Serialize::In( data, bufferOffset, serverAddress );
    Serialize::In( data, bufferOffset, externalIpAddress );
    Serialize::In( data, bufferOffset, serverId );
+   Serialize::In( data, bufferOffset, serverType );
    Serialize::In( data, bufferOffset, serverPort );
    Serialize::In( data, bufferOffset, gameInstanceId );   
    Serialize::In( data, bufferOffset, isGameServer );
@@ -54,6 +55,7 @@ bool  PacketServerIdentifier::SerializeOut( U8* data, int& bufferOffset ) const
    Serialize::Out( data, bufferOffset, serverAddress );
    Serialize::Out( data, bufferOffset, externalIpAddress );
    Serialize::Out( data, bufferOffset, serverId );
+   Serialize::Out( data, bufferOffset, serverType );
    Serialize::Out( data, bufferOffset, serverPort );
    Serialize::Out( data, bufferOffset, gameInstanceId );
    Serialize::Out( data, bufferOffset, isGameServer );
@@ -154,13 +156,14 @@ bool  PacketServerJobWrapper::SerializeOut( U8* data, int& bufferOffset ) const
 
 ///////////////////////////////////////////////////////////////
 
-bool  PackageForServerIdentification( const string& serverName, const string& ipAddress, const string& externalIpAddress, U32 serverId, U16 serverPort, U8 gameProductId, bool isGameServer, bool isController, bool requiresWrapper, U8 gatewayType, BasePacket** packet )
+bool  PackageForServerIdentification( const string& serverName, const string& ipAddress, const string& externalIpAddress, U32 serverId, U8 serverType, U16 serverPort, U8 gameProductId, bool isGameServer, bool isController, bool requiresWrapper, U8 gatewayType, BasePacket** packet )
 {
    PacketServerIdentifier* serverIdPacket = new PacketServerIdentifier;
    serverIdPacket->serverName = serverName;
    serverIdPacket->serverAddress = ipAddress;
    serverIdPacket->serverId = serverId;
    serverIdPacket->serverPort = serverPort;
+   serverIdPacket->serverType = serverType;
    serverIdPacket->isGameServer = isGameServer;
    serverIdPacket->isController = isController;
    serverIdPacket->gatewayType = gatewayType;

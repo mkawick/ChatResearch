@@ -32,6 +32,7 @@ public:
    void     InputConnected( IChainedInterface* khaan );
    void     InputRemovalInProgress( IChainedInterface* khaan );
 
+   U32      FindServerIdByType( U32 type );
    //---------------------------------------------------
 
    void     ServerWasIdentified( IChainedInterface* khaan );
@@ -40,7 +41,7 @@ private:
 
    virtual void  CreateJob( const KhaanServerToServer* khaan, BasePacket* packet );
 
-   void	   UpdateAllConnections();
+   //void	   UpdateAllConnections();
    void     SendJobsToUpperLayers();
    int      CallbackFunction();
 

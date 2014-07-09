@@ -34,7 +34,8 @@ DiplodocusServerToServer::~DiplodocusServerToServer()
 {
 }
 
-//---------------------------------------------------------------
+
+//////////////////////////////////////////////////////////////////////////
 
 void  DiplodocusServerToServer::InputConnected( IChainedInterface* khaan ) 
 {
@@ -46,14 +47,31 @@ void  DiplodocusServerToServer::InputConnected( IChainedInterface* khaan )
    // we can basically ignore this until we have more into like connection info
 }
 
-//---------------------------------------------------------------
+
+//////////////////////////////////////////////////////////////////////////
 
 void  DiplodocusServerToServer::InputRemovalInProgress( IChainedInterface* khaan )
 {
    // remove all pending jobs.
 }
 
-//---------------------------------------------------------------
+U32   DiplodocusServerToServer::FindServerIdByType( U32 type )
+{
+   ChainLinkIteratorType itInputs = m_listOfInputs.begin();
+   while( itInputs != m_listOfInputs.end() )
+   {
+      ChainLink& chainedInput = *itInputs++;
+
+      IChainedInterface* interfacePtr = chainedInput.m_interface;
+      KhaanServerToServer* khaan = static_cast< KhaanServerToServer* >( interfacePtr );
+      if( khaan->GetServerType() == type )
+         return khaan->GetServerId();
+   }
+   return 0;
+}
+
+
+//////////////////////////////////////////////////////////////////////////
 
 // this will always be data coming from other servers or at least from the outside in.
 bool   DiplodocusServerToServer::AddInputChainData( BasePacket* packet, U32 connectionId ) 
@@ -105,37 +123,40 @@ bool   DiplodocusServerToServer::AddInputChainData( BasePacket* packet, U32 conn
    return true;
 }
 
-//---------------------------------------------------------------
+
+//////////////////////////////////////////////////////////////////////////
 
 void  DiplodocusServerToServer::ServerWasIdentified( IChainedInterface* khaan )
 {
    BasePacket* packet = NULL;
-   PackageForServerIdentification( m_serverName, m_localIpAddress, m_externalIpAddress, m_serverId, m_listeningPort, m_gameProductId, m_isGame, m_isControllerApp, true, m_gatewayType, &packet );
+   PackageForServerIdentification( m_serverName, m_localIpAddress, m_externalIpAddress, m_serverId, m_serverType, m_listeningPort, m_gameProductId, m_isGame, m_isControllerApp, true, m_gatewayType, &packet );
    ChainedType* localKhaan = static_cast< ChainedType* >( khaan );
    localKhaan->AddOutputChainData( packet, 0 );
-   LockMutex();
-   m_clientsNeedingUpdate.push_back( localKhaan->GetServerId() );
-   UnlockMutex();
+
+   MarkConnectionAsNeedingUpdate( localKhaan->GetChainedId() );
 
    // bubble this identifying info up to the next layer.
 
    KhaanServerToServer* ks2s = static_cast< KhaanServerToServer*> ( khaan );
    PacketServerIdentifier* idPacket = new PacketServerIdentifier;
 
-   idPacket->serverName =     ks2s->GetServerName();
-   idPacket->serverAddress =  ks2s->GetServerAddress();
-   idPacket->serverId =       ks2s->GetServerId();
-   idPacket->serverPort =     ks2s->GetServerPort();
-   idPacket->gameInstanceId =  0;
-   idPacket->isGameServer =   ks2s->IsGameServer();
-   idPacket->isController =   ks2s->IsController();
-   idPacket->gatewayType   =  ks2s->GetGatewayType();
+   idPacket->serverName =        ks2s->GetServerName();
+   idPacket->serverAddress =     ks2s->GetServerAddress();
+   idPacket->serverId =          ks2s->GetServerId();
+   idPacket->serverPort =        ks2s->GetServerPort();
+   idPacket->serverType =        ks2s->GetServerType();
+   idPacket->gameInstanceId =    0;
+   idPacket->isGameServer =      ks2s->IsGameServer();
+   idPacket->isController =      ks2s->IsController();
+   idPacket->gatewayType   =     ks2s->GetGatewayType();
    idPacket->externalIpAddress = ks2s->GetExternalIpAddress();
+   
 
    CreateJob( ks2s, idPacket );
 }
 
-//---------------------------------------------------------------
+
+//////////////////////////////////////////////////////////////////////////
 
 void  DiplodocusServerToServer::CreateJob( const KhaanServerToServer* khaan, BasePacket* packet )
 {
@@ -183,7 +204,7 @@ void     DiplodocusServerToServer::SendJobsToUpperLayers()
    }
 }
 
-//---------------------------------------------------------------
+//////////////////////////////////////////////////////////////////////////
 
 bool  DiplodocusServerToServer::AddOutputChainData( BasePacket* packet, U32 connectionId ) 
 {
@@ -208,8 +229,7 @@ bool  DiplodocusServerToServer::AddOutputChainData( BasePacket* packet, U32 conn
             // we will swallow this in either case and so we delete the packets if the khaan does not use it.
             if( khaan->AddOutputChainData( s2swrapper, 0 ) == true )
             {
-               m_clientsNeedingUpdate.push_back( khaan->GetChainedId() );
-               //m_clientsNeedingUpdate.push_back( connectionId );
+               MarkConnectionAsNeedingUpdate( khaan->GetChainedId() );
             }
             else
             {
@@ -229,55 +249,7 @@ bool  DiplodocusServerToServer::AddOutputChainData( BasePacket* packet, U32 conn
    return false;
 }
 
-
-void	DiplodocusServerToServer::UpdateAllConnections()
-{
-   // the potential exists for this queue to be updated while we are working on it
-   // this is alright as long as we pull from the front and push onto the back as this list is non-persistent
-
-   deque< U32 > localQueue;
-
-   {// creating local scope
-      Threading::MutexLock locker( m_mutex );
-      if( m_clientsNeedingUpdate.size() == 0 )// no locking a mutex if you don't need to do it.
-         return;
-
-      localQueue = m_clientsNeedingUpdate;
-      m_clientsNeedingUpdate.clear();
-   }
-
-   
-   while( localQueue.size() )// threads can remove themselves.
-   {
-      U32 id = localQueue.front();
-      localQueue.pop_front();
-
-      ClientMapIterator it = m_connectedClients.end();
-      if( m_connectedClients.size() )// preventing removal crashes.
-      {
-         it = m_connectedClients.find( id );
-         if( it == m_connectedClients.end() )
-         {
-            while( it != m_connectedClients.end() )
-            {
-               KhaanServerToServer* khaan = static_cast< KhaanServerToServer* >( it->second );
-               
-               if( khaan->GetServerId() == id )
-                  break;
-               it++;
-            }
-         }
-      }
-      
-      if( it != m_connectedClients.end() )
-      {
-         InputChainType* connection = it->second;
-         connection->Update();
-      }
-   }
-}
-
-//---------------------------------------------------------------
+//////////////////////////////////////////////////////////////////////////
 
 int   DiplodocusServerToServer::CallbackFunction()
 {
@@ -311,5 +283,7 @@ int   DiplodocusServerToServer::CallbackFunction()
 
    return 1;
 }
-//---------------------------------------------------------------
-//---------------------------------------------------------------
+
+//////////////////////////////////////////////////////////////////////////
+
+//////////////////////////////////////////////////////////////////////////

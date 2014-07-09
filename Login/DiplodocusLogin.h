@@ -159,6 +159,7 @@ private:
    //void     UpdateUserRecordToMatchingGamekitHash( const CreateAccountResultsAggregator* aggregator );
 
    //--------------------------------------------
+   bool     HandlePacketFromOtherServer( BasePacket* packet, U32 connectionId );
    bool     HandleUserLoginResult( U32 connectionId, const PacketDbQueryResult* dbResult );
    bool     HandleAdminRequestUserProfile( U32 connectionId, const PacketDbQueryResult* dbResult );
    //bool     HandleUserProfileFromDb( U32 connectionId, PacketDbQueryResult* dbResult );
@@ -177,6 +178,7 @@ private:
 
    bool     StoreUserPurchases( U32 connectionId, const PacketListOfUserAggregatePurchases* purchase );
    bool     RequestListOfPurchases( U32 connectionId, const PacketListOfUserPurchasesRequest* purchase );
+   bool     RequestListOfPurchasesUpdate( const PacketListOfUserPurchasesUpdated* userInventory );
    bool     AddPurchase( U32 userConnectionId, const PacketAddPurchaseEntry* addPurchase );
    bool     RequestProfile( U32 connectionId, const PacketRequestUserProfile* profileRequest );
    bool     UpdateProfile( U32 connectionId, const PacketUpdateUserProfile* profileRequest );
