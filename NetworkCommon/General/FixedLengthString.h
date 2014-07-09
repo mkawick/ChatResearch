@@ -34,7 +34,7 @@ public:
 
    const char* c_str() const { return buffer; }
    operator	const char* () const { return buffer; }
-   operator	const U8* () const { return reinterpret_cast<U8*>( buffer ); }
+   operator	const U8* () const { return reinterpret_cast<const U8*>( buffer ); }
 
    //operator	string () { return string( buffer ); }
    operator	const string () const { return string( buffer ); }
