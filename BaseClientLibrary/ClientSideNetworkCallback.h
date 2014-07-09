@@ -82,6 +82,7 @@ public:
 
    virtual void  PurchaseSuccess( const string& purchaseUuid, bool success ){}
    virtual void  ProductsForSale( const SerializedKeyValueVector< PurchaseInfo >& thingsToBuy ) {}
+   virtual void  PurchaseReceiptResponse( const string& transactionId, int errorCode ) {}
 
    virtual void  UpdatedDeviceID() {}
    virtual void  ListOfDevicesUpdated() {}
@@ -156,6 +157,7 @@ public:
 
       NotificationType_PurchaseSuccess,
       NotificationType_ProductsForSale,
+      NotificationType_PurchaseReceiptResponse,
       NotificationType_DeviceIDUpdated,
       NotificationType_ListOfDevicesUpdated,
       NotificationType_DeviceRemoved,

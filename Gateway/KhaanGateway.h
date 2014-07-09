@@ -56,7 +56,7 @@ private:
    U32                  m_timeoutMs;
    U32                  m_lastSentToClientTimestamp;
    U8                   m_gameId;
-   U8                   m_tempBuffer[ 12 * 1024 ];
+   U8                   m_tempBuffer[ MaxBufferSize ];
 
    void  PreCleanup();
    bool	OnDataReceived( unsigned char* data, int length );

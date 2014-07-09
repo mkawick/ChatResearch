@@ -114,9 +114,9 @@ protected:
    U8*                  m_receiveBuffer;
    PacketHandlerInterface*    m_packetHandlerInterface;
 
-   enum { OverflowBufferSize = 12*1024 };
+   //enum { OverflowBufferSize = 12*1024 };
 
-   U8       m_overflowBuffer[ OverflowBufferSize ];
+   U8       m_overflowBuffer[ MaxBufferSize ];
    int      m_bytesInOverflow;
 };
 

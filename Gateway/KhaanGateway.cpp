@@ -328,6 +328,15 @@ bool	KhaanGateway::OnDataReceived( unsigned char* data, int length )
          int tempOffset = 0;
          HandleInwardSerializedPacket( m_tempBuffer, tempOffset );
       }
+      else
+      {
+         memcpy( m_tempBuffer + m_expectedBytesReceivedSoFar, data, length );
+         int tempOffset = 0;
+         HandleInwardSerializedPacket( m_tempBuffer, tempOffset );
+         m_expectedBytes = 0;
+         m_expectedBytesReceivedSoFar = 0;
+         length = 0;
+      }
       
       m_isExpectingMoreDataInPreviousPacket = false;
    }

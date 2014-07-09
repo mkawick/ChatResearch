@@ -735,6 +735,14 @@ void     ClientNetworkWrapper::UpdateNotifications()
             }
             break;
 
+         case  ClientSideNetworkCallback::NotificationType_PurchaseReceiptResponse:
+            {
+               PacketPurchase_ValidatePurchaseReceiptResponse* purchase = 
+                  static_cast<PacketPurchase_ValidatePurchaseReceiptResponse*>( qn.packet );
+               notify->PurchaseReceiptResponse( purchase->transactionId, purchase->errorCode );
+            }
+            break;
+
          }
       }
 
@@ -1390,9 +1398,14 @@ bool  ClientNetworkWrapper::VerifyVendorPurchase( const string& purchaseItemId, 
    {
       return false;
    }
-  /* PacketPurchase_Buy purchase;
-   purchase.purchaseUuid = exchangeUuid;
-   SerializePacketOut( &purchase );*/
+   PacketPurchase_ValidatePurchaseReceipt receiptPacket;
+   receiptPacket.purchaseItemId = purchaseItemId;
+   receiptPacket.quantity = quantity;
+   receiptPacket.transactionId = transactionId;
+   receiptPacket.receipt = receipt;
+   receiptPacket.platformId = platformId;
+
+   SerializePacketOut( &receiptPacket );
 
    return true;
 }
@@ -3099,6 +3112,13 @@ bool     ClientNetworkWrapper::HandlePacketReceived( BasePacket* packetIn )
                {
                   PacketPurchase_RequestListOfSalesResponse* purchase = static_cast<PacketPurchase_RequestListOfSalesResponse*>( packetIn );
                   Notification( ClientSideNetworkCallback::NotificationType_ProductsForSale, purchase );
+                  cleaner.Clear();// do not cleanup this packet
+               }
+               break;
+            case PacketPurchase::PurchaseType_ValidatePurchaseReceiptResponse:
+               {
+                  PacketPurchase_ValidatePurchaseReceiptResponse* purchase = static_cast<PacketPurchase_ValidatePurchaseReceiptResponse*>( packetIn );
+                  Notification( ClientSideNetworkCallback::NotificationType_PurchaseReceiptResponse, purchase );
                   cleaner.Clear();// do not cleanup this packet
                }
                break;

@@ -58,7 +58,7 @@ Fruitadens :: Fruitadens( const char* name, bool processOnlyOneIncommingPacketPe
    m_name = name;
    memset( &m_ipAddress, 0, sizeof( m_ipAddress ) );
 
-   m_receiveBufferSize = 1024 * 128;// 128k
+   m_receiveBufferSize = MaxBufferSize * 4;// 128k
 
    m_receiveBuffer = new U8[ m_receiveBufferSize ];
 }

@@ -144,8 +144,8 @@ void  Khaan :: SetOutboudBufferSize( U32 size )
 {
    if( size < 1024 )
       size = 1024;
-   if( size > 12*1024 )
-      size = 12*1024;
+   if( size > MaxBufferSize )
+      size = MaxBufferSize;
 
    m_maxBytesToSend = size;
    delete [] m_outboundBuffer;

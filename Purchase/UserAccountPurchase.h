@@ -29,6 +29,7 @@ class PacketPurchase_RequestListOfSales;
 class StringBucket;
 class SalesManager;
 class PacketTournament_PurchaseTournamentEntry;
+class PacketPurchase_ValidatePurchaseReceipt;
 
 ///////////////////////////////////////////////////////////////////
 
@@ -75,6 +76,7 @@ private:
    bool              MakePurchase( const PacketPurchase_Buy* packet );   
    bool              GetListOfItemsForSale( const PacketPurchase_RequestListOfSales* packet );
    bool              EchoHandler();
+   bool              HandleReceipt( const PacketPurchase_ValidatePurchaseReceipt* packet );
 
    bool              PerformTournamentPurchase();
 

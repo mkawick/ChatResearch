@@ -101,6 +101,9 @@ bool     UserAccountPurchase::HandleRequestFromClient( const PacketPurchase* pac
 
    case PacketPurchase::PurchaseType_EchoToServer:
       return EchoHandler();
+
+   case PacketPurchase::PurchaseType_ValidatePurchaseReceipt:
+      return HandleReceipt( static_cast< const PacketPurchase_ValidatePurchaseReceipt* >( packet ));
    }
 
    return false;
@@ -131,6 +134,27 @@ bool  UserAccountPurchase::EchoHandler()
    PacketGatewayWrapper* wrapper = new PacketGatewayWrapper;
    wrapper->SetupPacket( echo, m_userTicket.connectionId );
 
+   m_purchaseManager->AddOutputChainData( wrapper, m_userTicket.connectionId );
+
+   return true;
+}
+
+//---------------------------------------------------------------
+
+bool  UserAccountPurchase::HandleReceipt( const PacketPurchase_ValidatePurchaseReceipt* receiptPacket )
+{
+   cout << "User purchase receipt" << endl;
+   cout <<  "  purchaseItemId: " << receiptPacket->purchaseItemId << endl;
+   cout <<  "  quantity      : " << receiptPacket->quantity << endl;
+   cout <<  "  transactionId : " << receiptPacket->transactionId << endl;
+   cout <<  "  platformId    : " << receiptPacket->platformId << endl;
+   cout <<  "  receipt       : " << receiptPacket->receipt << endl;
+
+   PacketPurchase_ValidatePurchaseReceiptResponse* response = new PacketPurchase_ValidatePurchaseReceiptResponse;
+   response->transactionId = receiptPacket->transactionId;
+   response->errorCode = rand() % 1;
+   PacketGatewayWrapper* wrapper = new PacketGatewayWrapper;
+   wrapper->SetupPacket( response, m_userTicket.connectionId );
    m_purchaseManager->AddOutputChainData( wrapper, m_userTicket.connectionId );
 
    return true;
