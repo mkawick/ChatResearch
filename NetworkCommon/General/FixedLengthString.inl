@@ -113,10 +113,17 @@ bool operator==(const string& lhs, const FixedLengthString <str_length>& rhs)
 }
 
 template < int str_length >
+bool operator==(const char* lhs, const FixedLengthString <str_length>& rhs)
+{ 
+   return rhs.operator == ( lhs );
+}
+
+template < int str_length >
 std::ostream& operator<<(std::ostream& os, const FixedLengthString <str_length>& str )
 {
    std::cout << str.c_str();
    return os;
 }
+
 
 ////////////////////////////////////////////////////////
