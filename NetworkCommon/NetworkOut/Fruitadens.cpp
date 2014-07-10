@@ -505,6 +505,18 @@ bool  Fruitadens :: SendPacket( const U8* buffer, int length ) const
 {
    if( m_isConnected && ( length > 0 ) && m_clientSocket != SOCKET_ERROR )
    {
+#ifdef TwoByteProtocol
+      U16 len = static_cast< U16 >( length );
+      try
+      {
+         nBytes = static_cast< int >( send( m_clientSocket, reinterpret_cast<const char*>( &len ), sizeof( U16 ), MSG_NOSIGNAL ) ); // we aren't handling sigpipe errors here so don't send them (crash/exit since we dont handle them)
+      }
+      catch(...)
+      {
+         nBytes = SOCKET_ERROR;
+      }
+#endif
+
       int nBytes = SOCKET_ERROR;
       try
       {

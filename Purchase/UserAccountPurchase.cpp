@@ -9,7 +9,7 @@ using namespace std;
 #include "../NetworkCommon/Utils/CommandLineParser.h"
 
 #include "UserAccountPurchase.h"
-#include "DiplodocusPurchase.h"
+#include "PurchaseMainThread.h"
 
 #include "../NetworkCommon/Packets/GamePacket.h"
 #include "../NetworkCommon/Packets/PurchasePacket.h"
@@ -19,7 +19,13 @@ using namespace std;
 ///////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////
 
-UserAccountPurchase::UserAccountPurchase( const UserTicket& ticket ) : m_userTicket( ticket ), m_status( Status_initial_login ), m_readyForCleanup( false ), m_purchaseManager( NULL )
+UserAccountPurchase::UserAccountPurchase( const UserTicket& ticket ) : 
+                     m_userTicket( ticket ), 
+                     m_status( Status_initial_login ), 
+                     m_readyForCleanup( false ), 
+                     m_purchaseManager( NULL ),
+                     m_salesManager( NULL ),
+                     m_purchaseReceiptManager( NULL )
 {
 }
 
@@ -177,7 +183,7 @@ bool  UserAccountPurchase::HandleReceipt( const PacketPurchase_ValidatePurchaseR
 
    PacketPurchase_ValidatePurchaseReceiptResponse* response = new PacketPurchase_ValidatePurchaseReceiptResponse;
    response->transactionId = receiptPacket->transactionId;
-   response->errorCode = rand() % 1;
+   response->errorCode = rand() % 2;
    PacketGatewayWrapper* wrapper = new PacketGatewayWrapper;
    wrapper->SetupPacket( response, m_userTicket.connectionId );
    m_purchaseManager->AddOutputChainData( wrapper, m_userTicket.connectionId );

@@ -2719,7 +2719,7 @@ bool     ClientNetworkWrapper::SendCheat( const string& cheatText )
 
 bool     ClientNetworkWrapper::SerializePacketOut( BasePacket* packet ) const 
 {
-   U8 buffer[ MaxBufferSize*20 ];
+   U8 buffer[ MaxBufferSize ];
 
    packet->gameInstanceId = m_selectedGame;
    packet->gameProductId = m_gameProductId;

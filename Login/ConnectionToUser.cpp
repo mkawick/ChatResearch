@@ -436,7 +436,7 @@ bool  ConnectionToUser::FinalizeLogout()
    m_isLoggingOut = false;
    m_isReadyToBeCleanedUp = true;
 
-   cout << "User logout at " << GetDateInUTC() << endl;
+   cout << "User "<< m_userName << ":" << m_userUuid << " logout at " << GetDateInUTC() << endl;
 
    //userManager->SendPacketToGateway( logout, m_connectionId );
    return userManager->AddQueryToOutput( dbQuery );
@@ -1269,7 +1269,7 @@ void     ConnectionToUser:: PackOtherUserProfileRequestAndSendToClient( U32 m_co
       if( userManager->FindProductByUuid( uuid, returnPi ) )
       {
          int type = returnPi.productType;
-         if( type == DiplodocusLogin::ProductType_game || type == DiplodocusLogin::ProductType_deck_expansion )
+         if( type == GameProductType_Game || type == GameProductType_Dlc )
          {
             if( it->second.quantity > 0 )
             {

@@ -1,3 +1,5 @@
+// PurchaseMainThread.h
+
 #pragma once
 
 
@@ -5,6 +7,7 @@
 #include "../NetworkCommon/Database/QueryHandler.h"
 
 #include "SalesManager.h"
+#include "PurchaseReceiptManager.h"
 #include "UserAccountPurchase.h"
 #include "KhaanPurchase.h"
 
@@ -20,6 +23,7 @@ class PacketPrepareForUserLogout;
 class PacketListOfUserProductsS2S;
 class SalesManager;
 class StringLookup;
+class PurchaseReceiptManager;
 class PacketTournament_PurchaseTournamentEntry;
 
 ///////////////////////////////////////////////////////////////////
@@ -40,6 +44,8 @@ public:
       QueryType_PerformPurchase2,
       QueryType_ProductLookup,
       QueryType_SalesLookup,
+      QueryType_ReceiptInsert,
+      QueryType_ReceiptLookup,
       QueryType_Count
    };
 
@@ -57,6 +63,7 @@ public:
 
    const SalesManager*     GetSalesOrganizer() const { return m_salesManager; }
    const StringLookup*     GetStringLookup() const { return m_stringLookup; }
+   const PurchaseReceiptManager* GetReceiptManager() const { return m_purchaseReceiptManager; }
 
 private:
    bool                    HandlePacketFromOtherServer( BasePacket* packet, U32 connectionId );
@@ -76,6 +83,7 @@ private:
    deque< U32 >                     m_serversNeedingUpdate;
    UAADMap                          m_userTickets;
    SalesManager*                    m_salesManager;
+   PurchaseReceiptManager*          m_purchaseReceiptManager;
    StringLookup*                    m_stringLookup;
 };
 

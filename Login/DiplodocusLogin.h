@@ -84,15 +84,6 @@ public:
 
       QueryType_ProductStringLookup
    };
-
-   enum ProductType  // this is also maintained in the purchase server
-   {
-      ProductType_game,
-      ProductType_deck_expansion,
-      ProductType_consumable,
-      ProductType_ticket,
-      ProductType_money
-   };
    enum 
    {
       ProductNotFound = -1

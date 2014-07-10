@@ -5,7 +5,7 @@
 #include "../NetworkCommon/Database/QueryHandler.h"
 #include "../NetworkCommon/Packets/TournamentPacket.h"
 
-#include "DiplodocusPurchase.h"
+#include "PurchaseMainThread.h"
 #include "UserAccountPurchase.h"
 
 
@@ -120,16 +120,6 @@ class SalesManager : public QueryHandler< DiplodocusPurchase* >
 public: 
    typedef QueryHandler< DiplodocusPurchase* > ParentType;
 public:
-   enum ProductType // this is also maintained in the login sever
-   {
-      ProductType_game = 1,
-      ProductType_deck_expansion,
-      ProductType_consumable,
-      ProductType_ticket,
-      ProductType_money,
-      ProductType_tournament_entry
-   };
-public:
    SalesManager( U32 id, ParentQueryerPtr parent, string& query, bool runQueryImmediately );
    bool     HandleResult( const PacketDbQueryResult* dbResult );
 
@@ -158,4 +148,5 @@ private:
    map< string, Product >  m_productMapByUuid;
    typedef pair< string, Product >  ProductUuidPair;
 };
+
 ///////////////////////////////////////////////////////////////////////////////////////////

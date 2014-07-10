@@ -38,6 +38,7 @@ public:
 protected:
    void  PreCleanup();
 
+   bool           HandleInwardSerializedPacket( U8* data, int& offset );
    void	         UpdateInwardPacketList();
    void           RequestUpdate();
    virtual bool   PassPacketOn( BasePacket* serverId, U32 connectionId );// this is good to override

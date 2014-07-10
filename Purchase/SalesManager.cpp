@@ -20,7 +20,6 @@ using namespace std;
 #include "../NetworkCommon/Packets/TournamentPacket.h"
 #include "../NetworkCommon/Packets/LoginPacket.h"
 //#include "../NetworkCommon/Utils/TableWrapper.h"
-#include <boost/lexical_cast.hpp>
 
 using namespace std;
 

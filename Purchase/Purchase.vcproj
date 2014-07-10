@@ -178,15 +178,19 @@
 			UniqueIdentifier="{4FC737F1-C7A5-4376-A066-2A32D752A2FF}"
 			>
 			<File
-				RelativePath=".\DiplodocusPurchase.cpp"
-				>
-			</File>
-			<File
 				RelativePath=".\KhaanPurchase.cpp"
 				>
 			</File>
 			<File
 				RelativePath=".\Purchase.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\PurchaseMainThread.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\PurchaseReceiptManager.cpp"
 				>
 			</File>
 			<File
@@ -204,11 +208,15 @@
 			UniqueIdentifier="{93995380-89BD-4b04-88EB-625FBE52EBFB}"
 			>
 			<File
-				RelativePath=".\DiplodocusPurchase.h"
+				RelativePath=".\KhaanPurchase.h"
 				>
 			</File>
 			<File
-				RelativePath=".\KhaanPurchase.h"
+				RelativePath=".\PurchaseMainThread.h"
+				>
+			</File>
+			<File
+				RelativePath=".\PurchaseReceiptManager.h"
 				>
 			</File>
 			<File

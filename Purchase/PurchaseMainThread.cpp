@@ -1,4 +1,4 @@
-// DiplodocusPurchase.cpp
+// PurchaseMainThread.cpp
 
 #include <string>
 using namespace std;
@@ -8,7 +8,7 @@ using namespace std;
 
 #include "../NetworkCommon/Utils/CommandLineParser.h"
 
-#include "DiplodocusPurchase.h"
+#include "PurchaseMainThread.h"
 
 #include "../NetworkCommon/Packets/ServerToServerPacket.h"
 #include "../NetworkCommon/Packets/AssetPacket.h"
@@ -41,10 +41,16 @@ DiplodocusPurchase::DiplodocusPurchase( const string& serverName, U32 serverId )
    exchangeQuery += " FROM playdek.product_exchange_rate AS pe";
    exchangeQuery += " INNER JOIN product p1 on pe.product_source_id=p1.product_id";
    exchangeQuery += " INNER JOIN product p2 on pe.product_dest_id=p2.product_id ";
+
+   string ReceiptQuery = "SELECT * FROM playdek.purchase_receipts WHERE validated_result=0 ORDER BY num_attempts_to_validate ASC;";
    
    const int FiveMinutes = 60 * 5;
    m_salesManager = new SalesManager( QueryType_ExchangeRateLookup, this, exchangeQuery, true );
    m_salesManager->SetPeriodicty( FiveMinutes ); //
+
+   const int TwentySeconds = 20;
+   m_purchaseReceiptManager = new PurchaseReceiptManager( QueryType_ReceiptLookup, this, ReceiptQuery, true );
+   m_purchaseReceiptManager->SetPeriodicty( TwentySeconds ); //
 
    vector< string > stringCategories;
    stringCategories.push_back( string( "product" ) );
@@ -133,6 +139,7 @@ bool     DiplodocusPurchase::AddInputChainData( BasePacket* packet, U32 connecti
                found = true;
                break;
             }
+            it++;
          }
          if( found == false )
          {
@@ -234,6 +241,7 @@ bool     DiplodocusPurchase::ConnectUser( PacketPrepareForUserLogin* loginPacket
       UserAccountPurchase user( ut );
       user.SetServer( this );
       user.SetSalesManager( m_salesManager );
+      user.SetReceiptManager( m_purchaseReceiptManager );
 
       m_mutex.lock();
       m_userTickets.insert( UAADPair( hashForUser, user ) );
@@ -364,6 +372,10 @@ bool     DiplodocusPurchase::AddOutputChainData( BasePacket* packet, U32 connect
          {
             wasHandled = true;
          }
+         else if( m_purchaseReceiptManager->HandleResult( dbResult ) == true )
+         {
+            wasHandled = true;
+         }
          else if( m_stringLookup->HandleResult( dbResult ) == true )
          {
             wasHandled = true;
@@ -472,6 +484,7 @@ int      DiplodocusPurchase::CallbackFunction()
    time_t currentTime;
    time( &currentTime );
    m_salesManager->Update( currentTime );
+   m_purchaseReceiptManager->Update( currentTime );
    m_stringLookup->Update( currentTime );
 
 

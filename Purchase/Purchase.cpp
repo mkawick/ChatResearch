@@ -26,7 +26,7 @@ using boost::format;
 #include "../NetworkCommon/Database/Deltadromeus.h"
 #include "../NetworkCommon/Daemon/Daemonizer.h"
 
-#include "DiplodocusPurchase.h"
+#include "PurchaseMainThread.h"
 
 
 

@@ -25,66 +25,87 @@ using boost::format;
 ///////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////
 
-bool	KhaanServerToServer :: OnDataReceived( unsigned char* data, int length )
+bool  KhaanServerToServer::HandleInwardSerializedPacket( U8* data, int& offset )
 {
    BasePacket* packetIn = NULL;
-   int offset = 0;
    PacketFactory factory;
 
-   while( offset < length )
+   if( factory.Parse( data, offset, &packetIn ) == true )
    {
-      if( factory.Parse( data, offset, &packetIn ) == true )
+      int packetType = packetIn->packetType;
+      if( packetType != PacketType_GatewayWrapper &&
+          packetType != PacketType_GatewayInformation &&
+          packetType != PacketType_ServerToServerWrapper )
       {
-         int packetType = packetIn->packetType;
-         if( packetType != PacketType_GatewayWrapper &&
-             packetType != PacketType_GatewayInformation &&
-             packetType != PacketType_ServerToServerWrapper )
-         {
-            assert( 0 );
-         }
-         
+         assert( 0 );
+      }
+      
 #ifdef VERBOSE
-         cout<<  " KhaanServerToServer :: OnDataReceived( p=" << packetType << ":" << packetIn->packetSubType << ")"<< endl;
+      cout<<  " KhaanServerToServer :: OnDataReceived( p=" << packetType << ":" << packetIn->packetSubType << ")"<< endl;
 #endif
 
-         m_inputChainListMutex.lock();
-         m_packetsIn.push_back( packetIn );
-         m_inputChainListMutex.unlock();
-         RequestUpdate();
-      } 
-      else
+      m_inputChainListMutex.lock();
+      m_packetsIn.push_back( packetIn );
+      m_inputChainListMutex.unlock();
+      RequestUpdate();
+   } 
+   else
+   {
+      const int maxStrLen = 200;
+      char temp[ maxStrLen+1 ];
+      int strLength = offset;
+      if( strLength > maxStrLen )
+         strLength = maxStrLen;
+
+      memcpy( temp, data, strLength );
+      temp[ maxStrLen ] = 0;
+
+      cout << "**************************************************" << endl;
+      cout << "*************** critical failure *****************" << endl;
+      cout << "Cannot parse packet: " << temp << " len=" << offset << endl;
+      cout << hex << "[" << endl;
+
+      for(int i=0; i< strLength; i += 20 )
       {
-         const int maxStrLen = 200;
-         char temp[ maxStrLen+1 ];
-         int strLength = length;
-         if( strLength > maxStrLen )
-            strLength = maxStrLen;
+         int remaining = strLength - i;
+         if ( remaining > 10 )
+            remaining = 10;
 
-         memcpy( temp, data, strLength );
-         temp[ maxStrLen ] = 0;
-
-         cout << "**************************************************" << endl;
-         cout << "*************** critical failure *****************" << endl;
-         cout << "Cannot parse packet: " << temp << " len=" << length << endl;
-         cout << hex << "[" << endl;
-
-         for(int i=0; i< strLength; i += 20 )
+         for( int j=0; j<remaining; j++ )
          {
-            int remaining = strLength - i;
-            if ( remaining > 10 )
-               remaining = 10;
-
-            for( int j=0; j<remaining; j++ )
-            {
-               cout << temp[ i+j ] << " ";
-            }
-            cout << endl;
+            cout << temp[ i+j ] << " ";
          }
-         cout << "]" << dec << endl;
-         cout << "**************************************************" << endl;
-         cout << "**************************************************" << endl;
-         offset = length;// break out of loop.
+         cout << endl;
       }
+      cout << "]" << dec << endl;
+      cout << "**************************************************" << endl;
+      cout << "**************************************************" << endl;
+      //offset = length;// break out of loop.
+   }
+   return true;
+}
+
+bool	KhaanServerToServer :: OnDataReceived( U8* data, int length )
+{
+   int offset = 0;
+   while( offset < length )
+   {
+
+#ifdef TwoByteProtocol
+      U16 size = 0;
+      Serialize::In( data, offset, size );
+
+      if( size > length )
+      { 
+         cout << "error on Gateway receiving packet info" << endl;
+         cout << "size : " << size << " > length : " << length << endl;
+      }
+      assert( size <= length );
+#endif
+
+      //U16 size = 0;
+      //Serialize::In( data, offset, size );
+      HandleInwardSerializedPacket( data, offset );
    }
 
    return true;

@@ -28,6 +28,7 @@ class PacketPurchase_Buy;
 class PacketPurchase_RequestListOfSales;
 class StringBucket;
 class SalesManager;
+class PurchaseReceiptManager;
 class PacketTournament_PurchaseTournamentEntry;
 class PacketPurchase_ValidatePurchaseReceipt;
 
@@ -60,6 +61,8 @@ public:
 
    void              SetServer( DiplodocusPurchase* assetManager ) { m_purchaseManager = assetManager; }
    void              SetSalesManager( SalesManager* manager ) { m_salesManager = manager; }
+   void              SetReceiptManager( PurchaseReceiptManager* manager ) { m_purchaseReceiptManager = manager; }
+   
    bool              HandleRequestFromClient( const PacketPurchase* packet ); 
    bool              MakePurchase( const PacketTournament_PurchaseTournamentEntry* packet, U32 connectionId );
 
@@ -85,6 +88,7 @@ private:
    bool              m_readyForCleanup;
    DiplodocusPurchase*  m_purchaseManager;
    SalesManager*     m_salesManager;
+   PurchaseReceiptManager* m_purchaseReceiptManager;
 
    time_t            m_logoutTime;
    set< string >     m_productFilterNames;
