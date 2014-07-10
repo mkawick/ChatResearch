@@ -1,8 +1,12 @@
 #include <ctype.h>
-#include "NotificationSender.h"
-
 #include <sstream>
 #include <iostream>
+
+#if PLATFORM == PLATFORM_WINDOWS
+#pragma warning( disable:4996 )// stupid api rewrite warnings
+#endif
+
+
 #include <boost/format.hpp>
 #include <boost/algorithm/string.hpp>
 #include <boost/tokenizer.hpp>
@@ -11,9 +15,14 @@
 using boost::format;
 #include <curl/curl.h>
 
+#include "NotificationSender.h"
+
+#include "../General/server_log.h"
 
 static string   printResponseData; //will hold the response text
 
+// libs to include
+// ../Debug/PacketLibrary.lib ws2_32.lib Secur32.lib ssleay32MTd.lib libeay32MTd.lib curllib.lib
 
 /////////////////////////////////////////////////////////////////////////////////////
 
@@ -175,11 +184,16 @@ bool  GoogleAndroidNotificationSender::Notify( const string& deviceId, const str
    CURL *curl;
    CURLcode res = CURL_LAST;
 
-   curl_global_init( CURL_GLOBAL_DEFAULT );
+   //curl_global_init( CURL_GLOBAL_DEFAULT );
+   curl_global_init( CURL_GLOBAL_NOTHING );
 
    bool returnCode = false;
    curl = curl_easy_init();
-   if( curl ) 
+   if( curl == NULL )
+   {
+      LogMessage(LOG_PRIO_ERR, "curl_easy_init() failed: %s\n", curl_easy_strerror(res) );
+   }
+   else
    {
       string website = m_notificationUrl; 
 
@@ -192,16 +206,20 @@ bool  GoogleAndroidNotificationSender::Notify( const string& deviceId, const str
       struct curl_slist* curlStringList=NULL;
       int numHeaders = headers.size();
       
-      cout << "Headers: {";
+      //cout << "Headers: {";
+      //LogMessage(LOG_PRIO_DEBUG, "Headers:\n" );
       for( int i=0; i<numHeaders; i++ )
       {
          curlStringList = curl_slist_append( curlStringList, headers[i].c_str() );
-         cout << headers[i] << "," << endl;
+         //cout << headers[i] << "," << endl;
+         //LogMessage(LOG_PRIO_DEBUG, "    %s\n", headers[i].c_str() );
       }
 
-      cout << "}" << endl;
-      cout << "json: " << json << endl;
-      cout << "json length: " << json.size() << endl;
+      //cout << "}" << endl;
+      //cout << "json: " << json << endl;
+      //LogMessage(LOG_PRIO_DEBUG, "json:  \'%s\'\n", json.c_str() );
+      //cout << "json length: " << json.size() << endl;
+      //LogMessage(LOG_PRIO_DEBUG, "json length:  %d\n", json.size() );
 
       //------------------------------------------------
 
@@ -220,20 +238,26 @@ bool  GoogleAndroidNotificationSender::Notify( const string& deviceId, const str
       }
       else
       {
-         fprintf(stderr, "curl_easy_perform() failed: %s\n", curl_easy_strerror(res));
+         //fprintf(stderr, "curl_easy_perform() failed: %s\n", curl_easy_strerror(res));
+         LogMessage(LOG_PRIO_ERR, "curl_easy_perform() failed: %s\n", curl_easy_strerror(res) );
          returnCode = false;
       }
 
       long code = 0;
       curl_easy_getinfo ( curl, CURLINFO_RESPONSE_CODE, &code );
 
-      cout << "http return code was:" << code << endl;
+      //cout << "http return code was:" << code << endl;
+      //LogMessage(LOG_PRIO_DEBUG, "http return code was:  %d\n", code );
 
-      cout << endl << printResponseData << endl;
+      //cout << endl << printResponseData << endl;
+      //LogMessage(LOG_PRIO_DEBUG, "response:  %s\n", printResponseData.c_str() );
+
       curl_easy_cleanup( curl );
    }
 
    curl_global_cleanup();
+
+   printResponseData.clear();
 
    return returnCode;
 }
@@ -287,12 +311,17 @@ bool     AmazonAndroidNotificationSender::RequestAuthorizationKey( const string&
    CURL *curl;
    CURLcode res = CURL_LAST;
 
-   curl_global_init( CURL_GLOBAL_DEFAULT );
+   //curl_global_init( CURL_GLOBAL_DEFAULT );
+   curl_global_init( CURL_GLOBAL_NOTHING );
 
    resultWithKey.clear();
    bool returnCode = false;
    curl = curl_easy_init();
-   if(curl) 
+   if( curl == NULL )
+   {
+      LogMessage(LOG_PRIO_ERR, "curl_easy_init() failed: %s\n", curl_easy_strerror(res) );
+   }
+   else
    {
       vector< string > headers;
       headers.push_back( "Host: api.amazon.com" );
@@ -306,22 +335,26 @@ bool     AmazonAndroidNotificationSender::RequestAuthorizationKey( const string&
       struct curl_slist* curlStringList=NULL;
       int numHeaders = headers.size();
       
-      cout << "Headers: {";
+      //cout << "Headers: {";
+      //LogMessage(LOG_PRIO_DEBUG, "Headers:\n" );
       for( int i=0; i<numHeaders; i++ )
       {
          curlStringList = curl_slist_append( curlStringList, headers[i].c_str() );
-         cout << headers[i] << "," << endl;
+         //cout << headers[i] << "," << endl;
+         //LogMessage(LOG_PRIO_DEBUG, "    %s\n", headers[i].c_str() );
       }
 
-      cout << "}" << endl;
-      cout << "body: " << body << endl;
-      cout << "body length: " << body.size() << endl;
+      //cout << "}" << endl;
+      //cout << "body: " << body << endl;
+      //LogMessage(LOG_PRIO_DEBUG, "body:  \'%s\'\n", body.c_str() );
+      //cout << "body length: " << body.size() << endl;
+      //LogMessage(LOG_PRIO_DEBUG, "body length: %d\n", body.size() );
 
       //------------------------------------------------
 
       curl_easy_setopt( curl, CURLOPT_URL, url.c_str() );
       curl_easy_setopt( curl, CURLOPT_HTTPHEADER, curlStringList );
-      curl_easy_setopt( curl, CURLOPT_SSL_VERIFYPEER, FALSE ); // --insecure or -k
+      curl_easy_setopt( curl, CURLOPT_SSL_VERIFYPEER, false ); // --insecure or -k
       curl_easy_setopt( curl, CURLOPT_POST, true );
       
       curl_easy_setopt( curl, CURLOPT_POSTFIELDS, body.c_str() );
@@ -336,16 +369,20 @@ bool     AmazonAndroidNotificationSender::RequestAuthorizationKey( const string&
       }
       else
       {
-         fprintf(stderr, "curl_easy_perform() failed: %s\n", curl_easy_strerror(res));
+         //fprintf(stderr, "curl_easy_perform() failed: %s\n", curl_easy_strerror(res));
+         LogMessage(LOG_PRIO_ERR, "curl_easy_perform() failed: %s\n", curl_easy_strerror(res) );
          returnCode = false;
       }
 
       long code = 0;
       curl_easy_getinfo ( curl, CURLINFO_RESPONSE_CODE, &code );
 
-      cout << "http return code was:" << code << endl;
+      //cout << "http return code was:" << code << endl;
+      //LogMessage(LOG_PRIO_DEBUG, "http return code was:  %d\n", code );
 
-      cout << endl << printResponseData << endl;
+      //cout << endl << printResponseData << endl;
+      //LogMessage(LOG_PRIO_DEBUG, "response:  %s\n", printResponseData.c_str() );
+
       curl_easy_cleanup( curl );
    }
 
@@ -355,6 +392,7 @@ bool     AmazonAndroidNotificationSender::RequestAuthorizationKey( const string&
    {
       resultWithKey = printResponseData;
    }
+   printResponseData.clear();
 
    return returnCode;
 }
@@ -367,11 +405,16 @@ bool  AmazonAndroidNotificationSender::Notify( const string& deviceId, const str
    CURL *curl;
    CURLcode res = CURL_LAST;
 
-   curl_global_init( CURL_GLOBAL_DEFAULT );
+   //curl_global_init( CURL_GLOBAL_DEFAULT );
+   curl_global_init( CURL_GLOBAL_NOTHING );
 
    bool returnCode = false;
    curl = curl_easy_init();
-   if(curl) 
+   if( curl == NULL )
+   {
+      LogMessage(LOG_PRIO_ERR, "curl_easy_init() failed: %s\n", curl_easy_strerror(res) );
+   }
+   else
    {
       string   finalUrl = m_notificationUrl;
       boost::replace_first( finalUrl, "%s", deviceId );
@@ -397,25 +440,30 @@ bool  AmazonAndroidNotificationSender::Notify( const string& deviceId, const str
       struct curl_slist* curlStringList=NULL;
       int numHeaders = headers.size();
       
-      cout << "Headers: {";
+      //cout << "Headers: {";
+      //LogMessage(LOG_PRIO_DEBUG, "Headers:\n" );
       for( int i=0; i<numHeaders; i++ )
       {
          curlStringList = curl_slist_append( curlStringList, headers[i].c_str() );
-         cout << headers[i] << "," << endl;
+         //cout << headers[i] << "," << endl;
+         //LogMessage(LOG_PRIO_DEBUG, "    %s\n", headers[i].c_str() );
       }
 
       //--------------------------------------------------------
 
-      cout << "Destination: " << finalUrl << endl;
-      cout << "}" << endl;
-      cout << "body: " << body << endl;
-      cout << "body length: " << body.size() << endl;
+      //cout << "Destination: " << finalUrl << endl;
+      //LogMessage(LOG_PRIO_DEBUG, "Destination:  \'%s\'\n", finalUrl.c_str() );
+      //cout << "}" << endl;
+      //cout << "body: " << body << endl;
+      //LogMessage(LOG_PRIO_DEBUG, "body:  \'%s\'\n", body.c_str() );
+      //cout << "body length: " << body.size() << endl;
+      //LogMessage(LOG_PRIO_DEBUG, "body length: %d\n", body.size() );
 
       //------------------------------------------------
 
       curl_easy_setopt( curl, CURLOPT_URL, finalUrl.c_str() );
       curl_easy_setopt( curl, CURLOPT_HTTPHEADER, curlStringList );
-      curl_easy_setopt( curl, CURLOPT_SSL_VERIFYPEER, FALSE ); // --insecure or -k
+      curl_easy_setopt( curl, CURLOPT_SSL_VERIFYPEER, false ); // --insecure or -k
       curl_easy_setopt( curl, CURLOPT_POST, true );
       
       curl_easy_setopt( curl, CURLOPT_POSTFIELDS, body.c_str() );
@@ -430,20 +478,26 @@ bool  AmazonAndroidNotificationSender::Notify( const string& deviceId, const str
       }
       else
       {
-         fprintf(stderr, "curl_easy_perform() failed: %s\n", curl_easy_strerror(res));
+         //fprintf(stderr, "curl_easy_perform() failed: %s\n", curl_easy_strerror(res));
+         LogMessage(LOG_PRIO_ERR, "curl_easy_perform() failed: %s\n", curl_easy_strerror(res) );
          returnCode = false;
       }
 
       long code = 0;
       curl_easy_getinfo ( curl, CURLINFO_RESPONSE_CODE, &code );
 
-      cout << "http return code was:" << code << endl;
+      //cout << "http return code was:" << code << endl;
+      //LogMessage(LOG_PRIO_DEBUG, "http return code was:  %d\n", code );
 
-      cout << endl << printResponseData << endl;
+      //cout << endl << printResponseData << endl;
+      //LogMessage(LOG_PRIO_DEBUG, "response:  %s\n", printResponseData.c_str() );
+
       curl_easy_cleanup( curl );
    }
 
    curl_global_cleanup();
+
+   printResponseData.clear();
 
    return returnCode;
 }
@@ -455,9 +509,24 @@ bool  AmazonAndroidNotificationSender::SendNotification( const string& deviceId,
    time_t currentTime;
    time( &currentTime );
    bool timeExpired = false;
-   if( m_timeLastAuthKeyRequested == 0 ||
-      difftime( m_timeLastAuthKeyRequested, currentTime ) > m_numSecondsUntilExpires )
+   if( m_timeLastAuthKeyRequested == 0 )
+   {
       timeExpired = true;
+   }
+   else
+   {
+      //double timeSinceLastAuthKey = difftime( currentTime, m_timeLastAuthKeyRequested );
+      //LogMessage(LOG_PRIO_DEBUG, "    timeSinceLastAuthKey:      %.2f\n", (float)timeSinceLastAuthKey );
+      //LogMessage(LOG_PRIO_DEBUG, "    m_numSecondsUntilExpires:  %d\n", m_numSecondsUntilExpires );
+
+      unsigned int elapsedSeconds = (unsigned int)(currentTime - m_timeLastAuthKeyRequested);
+      //LogMessage(LOG_PRIO_DEBUG, "    timeSinceLastAuthKey:      %d\n", elapsedSeconds );
+      //LogMessage(LOG_PRIO_DEBUG, "    m_numSecondsUntilExpires:  %d\n", m_numSecondsUntilExpires );
+      if( elapsedSeconds >= m_numSecondsUntilExpires )
+      {
+         timeExpired = true;
+      }
+   }
 
    if( timeExpired || m_errorState == 1 )
    {
@@ -474,13 +543,17 @@ bool  AmazonAndroidNotificationSender::SendNotification( const string& deviceId,
          KeyValueMap :: iterator accessIt = mapOfStrings.find( "access_token" );
          if( expireIt != mapOfStrings.end() && accessIt != mapOfStrings.end() )
          {
+            //LogMessage(LOG_PRIO_DEBUG, "    expires_in: %s\n", expireIt->second.c_str() );
             m_numSecondsUntilExpires = boost::lexical_cast< int >( expireIt->second ) - 15;// fudge factor, because this can take a while to complete
+            //LogMessage(LOG_PRIO_DEBUG, "    m_numSecondsUntilExpires:  %d\n", m_numSecondsUntilExpires );
             m_authKey = accessIt->second;
          }
       }
       else
       {
          m_errorState = 1;// I don't know what to do about this. We should retry really.
+         m_numSecondsUntilExpires = 0;
+         m_timeLastAuthKeyRequested = 0;
          return false;
       }
    }

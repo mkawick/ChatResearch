@@ -18,7 +18,7 @@ using namespace std;
 //#include "server_gamedata.h"
 //#include "server_log.h"
 //#include "string_funcs.h"
-#include "NotificationSender.h"
+#include "../NetworkCommon/ExternalApis/NotificationSender.h"
 
 
 #include <boost/format.hpp>
@@ -26,16 +26,17 @@ using boost::format;
 
 typedef map< string, string>  KeyValueMap;
 typedef pair< string, string>  KeyValuePair;
-string   printResponseData; //will hold the url's contents
+//string   printResponseData; //will hold the url's contents
 
 //static string  authKey              = "AIzaSyD-KJoLqlrgnGipT5lqFUeQu4YojgqWgTA";
 static string  NOTIFY_ALERT_SOUND   = "PlaydekNotification.ogg";
 GoogleAndroidNotificationSender* googleAndroidSender = NULL;
 AmazonAndroidNotificationSender* amazonSender = NULL;
-const int maxAndroidDeviceStringId = 1200; 
+//const int maxAndroidDeviceStringId = 1200; 
 
 /////////////////////////////////////////////////////////////////////////////////////
 
+/*
 void devicetoa( const unsigned char *device, unsigned char* outputBuffer )
 {
    //static char devstr[maxAndroidDeviceStringId];
@@ -48,9 +49,10 @@ void devicetoa( const unsigned char *device, unsigned char* outputBuffer )
    }
    outputBuffer[len*2]=0;
 }
+*/
 
 /////////////////////////////////////////////////////////////////////////////////////
-
+/*
 size_t   WriteCallback(char* buf, size_t size, size_t nmemb, void* up)
 { 
    //callback must have this declaration
@@ -66,6 +68,7 @@ size_t   WriteCallback(char* buf, size_t size, size_t nmemb, void* up)
    }
    return num; //tell curl how many bytes we handled
 }
+*/
 
 /////////////////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////////////////
@@ -93,6 +96,7 @@ void StandardMessageSetup( KeyValueMap& dataMap, unsigned int userId, int gameTy
 
 // ------
 
+/*
 // returns the device ID of the given user, or NULL if it cannot be found.
 // the pointer returned is valid until the next call to getUserDevice.
 bool getUserDeviceAndroid( unsigned int userId, int gameType, unsigned char* buffer, int buffersize )
@@ -129,6 +133,7 @@ bool getUserDeviceAndroid( unsigned int userId, int gameType, unsigned char* buf
 
    return found;
 }
+*/
 
 void  NotifyAndroidInit()
 {
@@ -144,6 +149,7 @@ void NotifyAndroidUninit()
    delete amazonSender;
 }
 
+/*
 bool NotifyAndroidSetUserDevice(unsigned int userId, int gameType, const unsigned char *deviceId)
 {
 #if USE_MYSQL_DATABASE
@@ -181,6 +187,7 @@ bool NotifyAndroidSetUserDevice(unsigned int userId, int gameType, const unsigne
 
    return true;
 }
+*/
 
 bool notifyUserAndroid( const unsigned char* deviceIdStr, unsigned int userId, int gameType, unsigned int gameId, int badgeId, GameNotification notification, va_list args)
 {   
@@ -226,4 +233,21 @@ bool notifyUserAndroid( const unsigned char* deviceIdStr, unsigned int userId, i
    }
 
    return false;
+}
+
+bool NotifyUserDirect_Android( unsigned int userId, const unsigned char *deviceId, int gameType,
+                          unsigned int gameId, int badge_count, GameNotification notification, ... )
+{
+   //LogMessage(LOG_PRIO_INFO, "NotifyUserDirect_iOS: %s\n", devicetoa(deviceId));
+
+   //int badge_count = CalculateBadgeNumberFromPendingNotifications( userId, gameType );
+
+   va_list args;
+   va_start(args, notification);
+
+   bool ret = notifyUserAndroid( deviceId, userId, gameType, gameId, badge_count, notification, args);
+
+   va_end(args);
+
+   return ret;
 }

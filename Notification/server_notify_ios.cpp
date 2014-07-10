@@ -12,7 +12,7 @@
 
 //#include "server_database.h"
 //#include "server_gamedata.h"
-#include "server_log.h"
+#include "../NetworkCommon/General/server_log.h"
 #include "string_funcs.h"
 
 using namespace std;

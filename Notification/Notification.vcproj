@@ -437,28 +437,32 @@
 					>
 				</File>
 			</Filter>
+			<Filter
+				Name="ExternalApis"
+				>
+				<File
+					RelativePath="..\NetworkCommon\ExternalApis\NotificationSender.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\NetworkCommon\ExternalApis\NotificationSender.h"
+					>
+				</File>
+			</Filter>
 		</Filter>
 		<Filter
 			Name="CopiedFromSW"
 			>
 			<File
-				RelativePath=".\NotificationSender.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\NotificationSender.h"
-				>
-			</File>
-			<File
 				RelativePath=".\server_comms.h"
 				>
 			</File>
 			<File
-				RelativePath=".\server_log.cpp"
+				RelativePath="..\NetworkCommon\General\server_log.cpp"
 				>
 			</File>
 			<File
-				RelativePath=".\server_log.h"
+				RelativePath="..\NetworkCommon\General\server_log.h"
 				>
 			</File>
 			<File

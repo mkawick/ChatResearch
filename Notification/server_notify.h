@@ -33,16 +33,19 @@ void NotifyIosUninit();
 
 void NotifyAndroidInit();
 void NotifyAndroidUninit();
-bool NotifyAndroidSetUserDevice(unsigned int userId, int gameType, const unsigned char *deviceId);
-bool  getUserDeviceAndroid( unsigned int userId, int gameType, unsigned char* buffer, int bufferSize );
+//bool NotifyAndroidSetUserDevice(unsigned int userId, int gameType, const unsigned char *deviceId);
+//bool  getUserDeviceAndroid( unsigned int userId, int gameType, unsigned char* buffer, int bufferSize );
 
 // for android, there is nothing to initialize
-bool notifyUserAndroid( const unsigned char* deviceId, unsigned int userId, int gameType, unsigned int gameId, int badgeId, GameNotification notification, va_list args);
+//bool notifyUserAndroid( const unsigned char* deviceId, unsigned int userId, int gameType, unsigned int gameId, int badgeId, GameNotification notification, va_list args);
 
 bool NotifyUserDirect_iOS( unsigned int userId, const unsigned char *deviceId,
                           int gameType, unsigned int gameId,
                           int badge_count, const char* audioFile, 
                           GameNotification notification, ... );
+bool NotifyUserDirect_Android( unsigned int userId, const unsigned char *deviceId,
+                              int gameType, unsigned int gameId,
+                              int badge_count, GameNotification notification, ... );
 
 //-----------------------------------------------------
 

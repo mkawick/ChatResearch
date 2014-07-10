@@ -30,15 +30,15 @@ public: // utils
    std::string    url_encode( const std::string& str );
    
 protected:
-   time_t   m_timeLastAuthKeyRequested;
-   int      m_numSecondsUntilExpires;
-   int      m_errorState;
-   string   m_authKey; 
-   string   m_clientId;
-   string   m_clientKey;
-   string   m_applicationId;
-   string   m_authRequestUrl;
-   string   m_notificationUrl;
+   time_t         m_timeLastAuthKeyRequested;
+   unsigned int   m_numSecondsUntilExpires;
+   int            m_errorState;
+   string         m_authKey; 
+   string         m_clientId;
+   string         m_clientKey;
+   string         m_applicationId;
+   string         m_authRequestUrl;
+   string         m_notificationUrl;
 
    bool  ParseListOfItems( std::vector< std::string >& listOfStuff, std::string text, const char* delimiter = "=:", const char* charsToRemove = NULL );
    void  ParseIntoKeyValue( map< string, string >& result, string& text );

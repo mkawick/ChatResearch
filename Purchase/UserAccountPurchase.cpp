@@ -148,7 +148,32 @@ bool  UserAccountPurchase::HandleReceipt( const PacketPurchase_ValidatePurchaseR
    cout <<  "  quantity      : " << receiptPacket->quantity << endl;
    cout <<  "  transactionId : " << receiptPacket->transactionId << endl;
    cout <<  "  platformId    : " << receiptPacket->platformId << endl;
-   cout <<  "  receipt       : " << receiptPacket->receipt << endl;
+
+   const string& temp = receiptPacket->receipt;
+   
+   int maxStrLen = 200;
+   int strLength = temp.size();
+   cout <<  "  receipt length: " << strLength << endl;
+
+   if( strLength > maxStrLen )
+      strLength = maxStrLen;
+   
+
+   cout << "   receipt overview + [" << hex << endl;
+
+   for(int i=0; i< strLength; i += 20 )
+   {
+      int remaining = strLength - i;
+      if ( remaining > 10 )
+         remaining = 10;
+
+      for( int j=0; j<remaining; j++ )
+      {
+         cout << temp[ i+j ] << " ";
+      }
+      cout << endl;
+   }
+   cout << "]" << dec << endl;
 
    PacketPurchase_ValidatePurchaseReceiptResponse* response = new PacketPurchase_ValidatePurchaseReceiptResponse;
    response->transactionId = receiptPacket->transactionId;
