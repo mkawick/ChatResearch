@@ -30,7 +30,7 @@ SalesManager::SalesManager( U32 id, ParentQueryerPtr parent, string& query, bool
                               m_isInitializing( true ),
                               m_hasSendProductRequest( false )
 {
-   m_queryString = query;
+   SetQuery( query );
 }
 
 void     SalesManager::Update( time_t currentTime )
@@ -87,7 +87,7 @@ string OpenMultipleInsertsSimple()
    return string( "INSERT INTO user_join_product (user_uuid, product_id, num_purchased) VALUES");
 };
 
-string   FormatInsertIntoUserJoinProductSimple( const string& userUuid, const string& productUuid, int count, int index )
+string   FormatInsertIntoUserJoinProductSimple( const string& userUuid, const string& productUuid, int count, int index = 0 )
 {
    string query;
    if( index >0 )
@@ -217,10 +217,7 @@ bool     SalesManager::HandleResult( const PacketDbQueryResult* dbResult )
 
       m_parent->SendPacketToGateway( packet, purchaseTracking->connectionId );
 
-      PacketListOfUserPurchasesUpdated* purchasesUpdate = new PacketListOfUserPurchasesUpdated;
-      purchasesUpdate->userUuid = purchaseTracking->userUuid;
-      purchasesUpdate->userConnectionId = purchaseTracking->connectionId;
-      m_parent->SendPacketToLoginServer( purchasesUpdate, purchaseTracking->connectionId );
+      NotifyLoginToReloadUserInvertory( purchaseTracking->userUuid, purchaseTracking->connectionId );
 
       m_usersBeingServiced.erase( purchaseTracking->userUuid );
       delete purchaseTracking;
@@ -233,32 +230,33 @@ bool     SalesManager::HandleResult( const PacketDbQueryResult* dbResult )
       PurchaseTracking* purchaseTracking = static_cast< PurchaseTracking* >( dbResult->customData );
    
       VerifyThatUserHasEnoughMoneyForEntry2( dbResult );
-      //delete purchaseTracking;
+      return true;
+   }
 
-    /*  PurchaseTracking* purchaseTracking = static_cast< PurchaseTracking* >( dbResult->customData );
-      PacketPurchase_BuyResponse* packet = new PacketPurchase_BuyResponse;
-      packet->purchaseUuid = purchaseTracking->exchangeUuid;
-
-      if( dbResult->successfulQuery == true )
+   if( lookupType ==DiplodocusPurchase:: QueryType_PerformInventoryAddition )
+   {
+      const string& userUuid = dbResult->meta;
+      m_usersBeingServiced.erase( userUuid );
+      if( dbResult->successfulQuery )
       {
-         m_parent->SendErrorToClient( purchaseTracking->connectionId, PacketErrorReport::ErrorType_Purchase_Success );
-         SendTournamentPurchaseResultBackToServer( purchaseTracking->fromOtherServerId, purchaseTracking->fromOtherServerTransactionId, PacketErrorReport::ErrorType_Purchase_Success );
-         packet->success = true;
+         UserAccountPurchase* user = NULL;
+         if( m_parent->GetUser( userUuid, user ) == true )
+         {
+            NotifyLoginToReloadUserInvertory( userUuid, user->GetUserTicket().connectionId );
+         }
       }
-      else
-      {
-         packet->success = false;
-      }
-
-      m_parent->SendPacketToGateway( packet, purchaseTracking->connectionId );
-
-      m_usersBeingServiced.erase( purchaseTracking->userUuid );
-      delete purchaseTracking;*/
-
       return true;
    }
 
    return false;
+}
+
+void     SalesManager::NotifyLoginToReloadUserInvertory( const string& userUuid, U32 connectionId )
+{
+   PacketListOfUserPurchasesUpdated* purchasesUpdate = new PacketListOfUserPurchasesUpdated;
+   purchasesUpdate->userUuid = userUuid;
+   purchasesUpdate->userConnectionId = connectionId;
+   m_parent->SendPacketToLoginServer( purchasesUpdate, connectionId );
 }
 
 //---------------------------------------------------------------
@@ -642,6 +640,64 @@ bool     SalesManager::PerformSale( const SerializedVector< PurchaseServerDebitI
    return true;
 }
 
+bool     SalesManager::PerformSimpleInventoryAddition( const string& userUuid, string productUuid, int count, bool translateFromIAP )
+{
+   if( m_usersBeingServiced.find( userUuid ) != m_usersBeingServiced.end() )
+   {
+      cout << "Error: SalesManager::PerformSimpleInventoryAddition " << endl;
+      cout << "user already being serviced and cannot add inventory item " << endl;
+      cout << " User uuid: " << userUuid << endl;
+      return false;
+   }
+
+   if( translateFromIAP == true )
+   {
+      bool  translated = false;
+      ProductMapByUuidIterator it = m_productMapByUuid.find( productUuid );
+      if( it != m_productMapByUuid.end() )
+      {
+         const Product& product = it->second;
+         if( product.convertsToQuantity != 0 
+               && product.convertsToProductId != 0 )
+         {
+            it = m_productMapByUuid.begin();
+            while( it != m_productMapByUuid.end() )
+            {
+               if( it->second.productId == product.convertsToProductId )
+               {
+                  productUuid = it->second.uuid;
+                  count *= product.convertsToQuantity; // this probably needs a better solution
+                  translated = true;
+                  break;
+               }
+               it++;
+            }
+         }
+      }
+      if( translated == false )
+      {
+         return false;
+      }
+   }
+   m_usersBeingServiced.insert( userUuid );
+   PacketDbQuery* dbQuery = new PacketDbQuery;
+   dbQuery->id = 0;
+   dbQuery->lookup = DiplodocusPurchase::QueryType_PerformInventoryAddition;
+   dbQuery->meta = userUuid;
+
+   string queryOpen = OpenMultipleInsertsSimple();
+   string middle = FormatInsertIntoUserJoinProductSimple( userUuid, productUuid, count );
+
+   string queryClose = CloseMultipleInserts();
+   string query = queryOpen + middle + queryClose;
+
+   //dbQuery->customData = purchaseTracking; // do not delete this data
+   dbQuery->query = query;
+   m_parent->AddQueryToOutput( dbQuery ); 
+
+   return true;
+}
+
 //---------------------------------------------------------------
 
 int      SalesManager::GetProductType( const string& uuid )
@@ -655,39 +711,19 @@ int      SalesManager::GetProductType( const string& uuid )
    return it->second.productType;
 }
 
-//---------------------------------------------------------------
-/*
-void     SalesManager::CreateBlankProfile( const string& user_id, int productId )
+bool     SalesManager::GetProduct( const string& uuid, Product& product )
 {
-   if( user_id.size() == 0 || user_id == "0" )
+   map< string, Product >::iterator it = m_productMapByUuid.find( uuid );
+   if( it == m_productMapByUuid.end() )
    {
-      string message = "Accounts::CreateBlankProfile userId is 0\n";
-      cout << message << endl;
-      return;
+      return false;
    }
 
-   PacketDbQuery* dbQuery = new PacketDbQuery;
-   dbQuery->id = 0;
-   dbQuery->lookup = m_queryType;
-   dbQuery->isFireAndForget = true;
-
-   dbQuery->query = "INSERT INTO user_profile VALUES( '";
-   dbQuery->query += user_id;
-   dbQuery->query += "', DEFAULT, DEFAULT, DEFAULT, DEFAULT, DEFAULT, DEFAULT, DEFAULT, DEFAULT, DEFAULT, DEFAULT, DEFAULT, DEFAULT, DEFAULT, DEFAULT, DEFAULT, DEFAULT, ";
-   if( productId == 0 )
-   {
-      dbQuery->query += "DEFAULT";
-   }
-   else
-   {
-      dbQuery->query += boost::lexical_cast< string >( productId );
-   }
-
-   dbQuery->query += ")";
-
-   m_parent->AddQueryToOutput( dbQuery );
+   product = it->second;
+   return  true;
 }
-*/
+
+//---------------------------------------------------------------
 
 ///////////////////////////////////////////////////////////////////////////////////////////
 
@@ -736,6 +772,9 @@ Product&    Product::operator = ( ProductTable::row  row )
    productType =        boost::lexical_cast< int > ( row[ TableProduct::Column_product_type ] );
    nameStringLookup =   row[ TableProduct::Column_name_string ];
    iconLookup =         row[ TableProduct::Column_icon_lookup ];
+   parentId =           boost::lexical_cast< int > ( row[ TableProduct::Column_parent_id ] );
+   convertsToProductId =boost::lexical_cast< int > ( row[ TableProduct::Column_converts_to_product_id ] );
+   convertsToQuantity = boost::lexical_cast< int > ( row[ TableProduct::Column_converts_to_quantity] );
 
    return *this;
 }

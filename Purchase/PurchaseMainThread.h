@@ -41,6 +41,7 @@ public:
       QueryType_VerifyThatUserHasEnoughMoney1,
       QueryType_VerifyThatUserHasEnoughMoney2,
       QueryType_PerformPurchase,
+      QueryType_PerformInventoryAddition,
       QueryType_PerformPurchase2,
       QueryType_ProductLookup,
       QueryType_SalesLookup,
@@ -64,6 +65,8 @@ public:
    const SalesManager*     GetSalesOrganizer() const { return m_salesManager; }
    const StringLookup*     GetStringLookup() const { return m_stringLookup; }
    const PurchaseReceiptManager* GetReceiptManager() const { return m_purchaseReceiptManager; }
+
+   bool                    GetUser( const string& uuid, UserAccountPurchase*& user );
 
 private:
    bool                    HandlePacketFromOtherServer( BasePacket* packet, U32 connectionId );

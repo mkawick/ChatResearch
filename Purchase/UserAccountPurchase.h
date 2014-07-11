@@ -83,15 +83,15 @@ private:
 
    bool              PerformTournamentPurchase();
 
-   UserTicket        m_userTicket;
-   Status            m_status;
-   bool              m_readyForCleanup;
-   DiplodocusPurchase*  m_purchaseManager;
-   SalesManager*     m_salesManager;
-   PurchaseReceiptManager* m_purchaseReceiptManager;
+   UserTicket                 m_userTicket;
+   Status                     m_status;
+   bool                       m_readyForCleanup;
+   DiplodocusPurchase*        m_purchaseManager;
+   SalesManager*              m_salesManager;
+   PurchaseReceiptManager*    m_purchaseReceiptManager;
 
-   time_t            m_logoutTime;
-   set< string >     m_productFilterNames;
+   time_t                     m_logoutTime;
+   set< string >              m_productFilterNames;
 };
 
 ///////////////////////////////////////////////////////////////////

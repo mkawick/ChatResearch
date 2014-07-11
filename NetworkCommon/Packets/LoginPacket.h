@@ -452,12 +452,13 @@ public:
 class PacketRequestOtherUserProfile : public BasePacket
 {
 public:
-   PacketRequestOtherUserProfile() : BasePacket( PacketType_Login, PacketLogin::LoginType_RequestOtherUserProfile ) {}
+   PacketRequestOtherUserProfile() : BasePacket( PacketType_Login, PacketLogin::LoginType_RequestOtherUserProfile ), fullProfile( false ) {}
 
    bool  SerializeIn( const U8* data, int& bufferOffset );
    bool  SerializeOut( U8* data, int& bufferOffset ) const;
 
    string   userName;
+   bool     fullProfile;
 };
 
 ///////////////////////////////////////////////////////////////

@@ -560,6 +560,8 @@ bool  PacketRequestOtherUserProfile::SerializeIn( const U8* data, int& bufferOff
 { 
    BasePacket::SerializeIn( data, bufferOffset );
    Serialize::In( data, bufferOffset, userName );
+   Serialize::In( data, bufferOffset, fullProfile );
+
 
    return true; 
 }
@@ -568,6 +570,7 @@ bool  PacketRequestOtherUserProfile::SerializeOut( U8* data, int& bufferOffset )
 { 
    BasePacket::SerializeOut( data, bufferOffset );
    Serialize::Out( data, bufferOffset, userName );
+   Serialize::Out( data, bufferOffset, fullProfile );
 
    return true; 
 }

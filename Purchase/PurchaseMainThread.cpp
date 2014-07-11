@@ -162,6 +162,20 @@ bool     DiplodocusPurchase::AddInputChainData( BasePacket* packet, U32 connecti
    return false;
 }
 
+bool  DiplodocusPurchase::GetUser( const string& uuid, UserAccountPurchase*& user )
+{
+   U64 hashForUser = GenerateUniqueHash( uuid );
+
+   Threading::MutexLock locker( m_mutex );
+   UAADMapIterator it = m_userTickets.find( hashForUser );
+   if( it != m_userTickets.end() )// user may be reloggin and such.. no biggie.. just ignore
+   {
+      user = &it->second;
+      return true;
+   }
+   return false;
+}
+
 //---------------------------------------------------------------
 
 bool  DiplodocusPurchase::HandlePacketFromOtherServer( BasePacket* packet, U32 connectionId )// not thread safe

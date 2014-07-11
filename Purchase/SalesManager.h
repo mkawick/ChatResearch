@@ -109,6 +109,9 @@ public:
    int      productType;
    string   nameStringLookup;
    string   iconLookup;
+   int      parentId;
+   int      convertsToProductId;
+   int      convertsToQuantity;
 
    Product& operator = ( ProductTable::row  row );
 };
@@ -127,7 +130,9 @@ public:
    bool     PerformSale( const string& purchaseUuid, const UserTicket& userPurchasing, U32 serverIdentifier = 0, string serverTransactionUuid = "" );
    bool     PerformSale( const SerializedVector< PurchaseServerDebitItem >& itemsToSpend, const UserTicket& userPurchasing, U32 serverIdentifier, string serverTransactionUuid = "" );
 
+   bool     PerformSimpleInventoryAddition( const string& userUuid, string productUuid, int count, bool translateFromIAP = false );
    int      GetProductType( const string& uuid );
+   bool     GetProduct( const string& uuid, Product& product );
 
    void     Update( time_t currentTime );
 
@@ -139,13 +144,15 @@ private:
    bool     RequestAllProducts();
    bool     SendTournamentPurchaseResultBackToServer( U32 serverIdentifier, string serverTransactionUuid, int result );
    void     VerifyThatUserHasEnoughMoneyForEntry2( const PacketDbQueryResult* dbResult );
+   void     NotifyLoginToReloadUserInvertory( const string& userUuid, U32 connectionId );
 
-   bool     m_isServicingExchangeRates;
-   bool     m_isInitializing, m_hasSendProductRequest;
-   vector< ExchangeEntry > exchangeRates;
-   set< string >           m_usersBeingServiced;
+   bool                             m_isServicingExchangeRates;
+   bool                             m_isInitializing, m_hasSendProductRequest;
+   vector< ExchangeEntry >          exchangeRates;
+   set< string >                    m_usersBeingServiced;
 
-   map< string, Product >  m_productMapByUuid;
+   map< string, Product >           m_productMapByUuid;
+   typedef map< string, Product >::iterator ProductMapByUuidIterator;
    typedef pair< string, Product >  ProductUuidPair;
 };
 

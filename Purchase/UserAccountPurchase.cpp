@@ -181,12 +181,16 @@ bool  UserAccountPurchase::HandleReceipt( const PacketPurchase_ValidatePurchaseR
    }
    cout << "]" << dec << endl;
 
+   bool  success = false;
+   if( m_purchaseReceiptManager )
+   {
+      success = m_purchaseReceiptManager->WriteReceipt( receiptPacket, m_userTicket.userId, m_userTicket.uuid );
+   }
+
    PacketPurchase_ValidatePurchaseReceiptResponse* response = new PacketPurchase_ValidatePurchaseReceiptResponse;
    response->transactionId = receiptPacket->transactionId;
-   response->errorCode = rand() % 2;
-   PacketGatewayWrapper* wrapper = new PacketGatewayWrapper;
-   wrapper->SetupPacket( response, m_userTicket.connectionId );
-   m_purchaseManager->AddOutputChainData( wrapper, m_userTicket.connectionId );
+   response->errorCode = ( success != true ) ;// 0 means things went well. 1 means bad
+   m_purchaseManager->SendPacketToGateway( response, m_userTicket.connectionId );
 
    return true;
 }

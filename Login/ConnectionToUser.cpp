@@ -65,6 +65,7 @@ ConnectionToUser:: ConnectionToUser( const string& name, const string& pword, co
 
 bool  ConnectionToUser::HandleAdminRequestUserProfile( const PacketDbQueryResult* dbResult )
 {
+   std::auto_ptr<bool> isFullProfile ( static_cast< bool* >( dbResult->customData ) );
    string lookupKey = dbResult->meta;
    map< string, ConnectionToUser>:: iterator it = adminUserData.find( lookupKey );
    if( it != adminUserData.end() )
@@ -83,11 +84,10 @@ bool  ConnectionToUser::HandleAdminRequestUserProfile( const PacketDbQueryResult
          {
             conn.PackUserProfileRequestAndSendToClient( m_connectionId );
          }
-         /*else
+         if( *isFullProfile )
          {
-            
-         }*/
-         RequestListOfPurchases( conn.m_userUuid );
+            RequestListOfPurchases( conn.m_userUuid );
+         }
       }
       else
       {
@@ -1341,7 +1341,7 @@ bool     ConnectionToUser:: RequestProfile( const PacketRequestUserProfile* prof
       return true;
    }
 
-   RequestProfile( profileRequest->userEmail, profileRequest->uuid.c_str(), profileRequest->userName, true );
+   RequestProfile( profileRequest->userEmail, profileRequest->uuid.c_str(), profileRequest->userName, true, true );
 
    return false;
 }
@@ -1350,14 +1350,14 @@ bool     ConnectionToUser:: RequestProfile( const PacketRequestUserProfile* prof
 
 bool     ConnectionToUser:: RequestOthersProfile( const PacketRequestOtherUserProfile* profileRequest )
 {
-   RequestProfile( profileRequest->userName, profileRequest->userName, profileRequest->userName, false );
+   RequestProfile( profileRequest->userName, profileRequest->userName, profileRequest->userName, false, profileRequest->fullProfile );
 
    return true;
 }
 
 //-----------------------------------------------------------------
 
-void     ConnectionToUser:: RequestProfile( const string& email, const string& uuid, const string& name, bool asAdmin )
+void     ConnectionToUser:: RequestProfile( const string& email, const string& uuid, const string& name, bool asAdmin, bool fullProfile )
 {
    string requestId = CreateLookupKey( email, uuid, name  );
   // submit request for user profile with this connection id
@@ -1366,6 +1366,7 @@ void     ConnectionToUser:: RequestProfile( const string& email, const string& u
    dbQuery->lookup =       DiplodocusLogin::QueryType_AdminRequestUserProfile;
    dbQuery->meta =         boost::lexical_cast<string>( GenerateUniqueHash( requestId ) );
    dbQuery->serverLookup = asAdmin;
+   dbQuery->customData  = new bool(fullProfile);
 
    // possible bug here... change this to only user username
    string temp = "SELECT * FROM users JOIN user_profile ON users.user_id=user_profile.user_id WHERE users.user_email='%s' OR users.uuid='%s' OR users.user_name='%s' LIMIT 1";

@@ -1050,7 +1050,7 @@ bool  ClientNetworkWrapper::RequestChangeAvatarId( int newId ) const
 
 //-----------------------------------------------------------------------------
 
-bool  ClientNetworkWrapper::RequestOtherUserInGameProfile( const string& userName ) // friends, games list, etc
+bool  ClientNetworkWrapper::RequestOtherUserInGameProfile( const string& userName, bool fullProfile ) // friends, games list, etc
 {
    if( IsConnected() == false || userName.size() == 0 )
    {
@@ -1058,6 +1058,7 @@ bool  ClientNetworkWrapper::RequestOtherUserInGameProfile( const string& userNam
    }
    PacketRequestOtherUserProfile request;
    request.userName = userName;
+   request.fullProfile = fullProfile;
 
    SerializePacketOut( &request );
 

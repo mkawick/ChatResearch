@@ -1,5 +1,8 @@
 #pragma once
 
+#include <deque>
+using namespace std;
+
 #include "../NetworkCommon/Utils/Utils.h"
 #include "../NetworkCommon/Utils/TableWrapper.h"
 #include "../NetworkCommon/Database/QueryHandler.h"
@@ -8,6 +11,8 @@
 #include "PurchaseMainThread.h"
 
 class DiplodocusPurchase;
+class SalesManager;
+class PacketPurchase_ValidatePurchaseReceipt;
 
 //------------------------------------------------------------
 
@@ -46,20 +51,27 @@ enum ValidatedResults
    ValidatedResults_valid
 };
 //------------------------------------------------------------
-/*
-class PurchaseTracking
+
+class PurchaseReceiptTracking
 {
 public:
-   string   userUuid;
-   string   exchangeUuid;
-   
-   U32      connectionId;
+   PurchaseReceiptTracking();
+   PurchaseReceiptTracking& operator = ( PurchaseReceiptParser::row  row );
 
-   U32      fromOtherServerId;
-   string   fromOtherServerTransactionId;
-
-   SerializedVector< PurchaseServerDebitItem > itemsToSpend;
-};*/
+   U32      index;
+   U32      user_id;
+   string   user_uuid;
+   string   transaction_id;
+   string   date_received;
+   string   receipt;
+   U64      receipt_hash;
+   U32      platform_id;
+   string   product_purchased;
+   U32      product_purchased_count;
+   U32      num_attempts_to_validate;
+   string   date_last_validation_attempt;
+   U8       validated_result;
+};
 
 //------------------------------------------------------------
 
@@ -75,30 +87,24 @@ public:
    PurchaseReceiptManager( U32 id, ParentQueryerPtr parent, string& query, bool runQueryImmediately );
    bool     HandleResult( const PacketDbQueryResult* dbResult );
 
- /*  bool     GetListOfItemsForSale( PacketPurchase_RequestListOfSalesResponse* packet, int userLanguageIndex = 1 );// english
-   bool     PerformSale( const string& purchaseUuid, const UserTicket& userPurchasing, U32 serverIdentifier = 0, string serverTransactionUuid = "" );
-   bool     PerformSale( const SerializedVector< PurchaseServerDebitItem >& itemsToSpend, const UserTicket& userPurchasing, U32 serverIdentifier, string serverTransactionUuid = "" );
+   void     SetSalesManager( SalesManager* manager ) { m_salesManager = manager; }
 
-   int      GetProductType( const string& uuid );*/
+   bool     WriteReceipt( const PacketPurchase_ValidatePurchaseReceipt* receipt, U32 userId, const string& userUuid );
 
    void     Update( time_t currentTime );
 
 private:
 
-  /* bool     FindItem( const string& exchangeUuid, ExchangeEntry& ee );
-   string   LookupString( const string& name, int languageId );
+   void     ValidateReceipts();
 
-   bool     RequestAllProducts();
-   bool     SendTournamentPurchaseResultBackToServer( U32 serverIdentifier, string serverTransactionUuid, int result );
-   void     VerifyThatUserHasEnoughMoneyForEntry2( const PacketDbQueryResult* dbResult );*/
+   void     AddProductToUserInventory( const string& productUuid, int quantity, const string& userUuid );
 
-   bool     m_isServicingReceipts;
-   bool     m_isInitializing, m_hasSendProductRequest;
-//   vector< ExchangeEntry > exchangeRates;
-   set< string >           m_usersBeingServiced;
+   bool                                m_isServicingReceipts;
+   bool                                m_isInitializing, m_hasSendProductRequest;
+   deque< PurchaseReceiptTracking >    m_receiptsToValidate;
+   set< string >                       m_usersBeingServiced;
 
-   //map< string, Product >  m_productMapByUuid;
-   //typedef pair< string, Product >  ProductUuidPair;
+   SalesManager*                       m_salesManager;
 };
 
 ///////////////////////////////////////////////////////////////////////////////////////////

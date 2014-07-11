@@ -73,7 +73,7 @@ struct ConnectionToUser
 
    bool     RequestProfile( const PacketRequestUserProfile* profileRequest );
    bool     RequestOthersProfile( const PacketRequestOtherUserProfile* profileRequest );
-   void     RequestProfile( const string& email, const string& uuid, const string& name, bool asAdmin );
+   void     RequestProfile( const string& email, const string& uuid, const string& name, bool asAdmin, bool isFullProfile );
    bool     UpdateProfile( const PacketUpdateUserProfile* updateProfileRequest );
    bool     UpdateProfile( const PacketUpdateSelfProfile* updateProfileRequest );
    void     AddItemToProductTable( const PurchaseEntry& purchaseEntry );
