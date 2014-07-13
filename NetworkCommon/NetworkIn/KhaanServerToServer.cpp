@@ -25,7 +25,7 @@ using boost::format;
 ///////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////
 
-bool  KhaanServerToServer::HandleInwardSerializedPacket( U8* data, int& offset )
+bool  KhaanServerToServer::HandleInwardSerializedPacket( const U8* data, int& offset )
 {
    BasePacket* packetIn = NULL;
    PacketFactory factory;
@@ -86,7 +86,7 @@ bool  KhaanServerToServer::HandleInwardSerializedPacket( U8* data, int& offset )
    return true;
 }
 
-bool	KhaanServerToServer :: OnDataReceived( U8* data, int length )
+bool	KhaanServerToServer :: OnDataReceived( const U8* data, int length )
 {
    int offset = 0;
    if( m_isExpectingMoreDataInPreviousPacket )

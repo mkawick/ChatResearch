@@ -78,8 +78,8 @@ public:
    bool  SerializeOut( U8* data, int& bufferOffset ) const;
 
    FixedString80  message;
-   UuidString  channelUuid;
-   UuidString  userUuid;
+   UuidString     channelUuid;
+   UuidString     userUuid;
    U16            gameTurn;
 };
 

@@ -47,6 +47,7 @@ public:
       QueryType_SalesLookup,
       QueryType_ReceiptInsert,
       QueryType_ReceiptLookup,
+      QueryType_PurchaseAdminSettings,
       QueryType_Count
    };
 
@@ -70,6 +71,9 @@ public:
    bool                    GetUser( const string& uuid, UserAccountPurchase*& user );
 
 private:
+   void                    RequestAdminSettings();
+   void                    HandleAdminSettings( const PacketDbQueryResult* dbResult );
+
    bool                    HandlePacketFromOtherServer( BasePacket* packet, U32 connectionId );
    bool                    ConnectUser( PacketPrepareForUserLogin* loginPacket );
    bool                    DisconnectUser( PacketPrepareForUserLogout* loginPacket );
@@ -89,6 +93,8 @@ private:
    SalesManager*                    m_salesManager;
    PurchaseReceiptManager*          m_purchaseReceiptManager;
    StringLookup*                    m_stringLookup;
+   bool                             m_hasRequestedAdminSettings;
+   bool                             m_isWaitingForAdminSettings;
 };
 
 ///////////////////////////////////////////////////////////////////

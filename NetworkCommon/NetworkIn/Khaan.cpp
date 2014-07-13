@@ -36,7 +36,8 @@ Khaan :: Khaan() : ChainedInterface< BasePacket* >(),
                   m_outboundBuffer( NULL ),
                   m_isExpectingMoreDataInPreviousPacket( false ),
                   m_expectedBytesReceivedSoFar( 0 ),
-                  m_expectedBytes( 0 )
+                  m_expectedBytes( 0 ),
+                  m_isInTelnetMode( false )
 {
    SetOutboudBufferSize( MaxBufferSize + 1024 );
 }
@@ -50,7 +51,8 @@ Khaan ::Khaan( int socketId, bufferevent* be, int connectionId ) : ChainedInterf
                                                                   m_outboundBuffer( NULL ),
                                                                   m_isExpectingMoreDataInPreviousPacket( false ),
                                                                   m_expectedBytesReceivedSoFar( 0 ),
-                                                                  m_expectedBytes( 0 )
+                                                                  m_expectedBytes( 0 ),
+                                                                  m_isInTelnetMode( false )
 {
    SetConnectionId( connectionId );
    SetOutboudBufferSize( MaxBufferSize + 1024 );
@@ -96,7 +98,7 @@ void	Khaan :: SetIPAddress( const sockaddr_in& addr )
 //-----------------------------------------------------------------------------
 //-----------------------------------------------------------------------------
 
-bool	Khaan :: OnDataReceived( unsigned char* data, int length )
+bool	Khaan :: OnDataReceived( const U8* data, int length )
 {
    if( m_criticalFailure )
       return false;
@@ -212,7 +214,37 @@ int	Khaan :: SendData( const U8* buffer, int length )
 
 
    return send( m_socketId, (const char* )buffer, length, 0 );
+}
 
+
+bool  Khaan :: HandleTelnetModeData( const U8* data, int length )
+{
+   // eventually, we will add specialized commands and handling. 
+   // now, we just echo.
+   SendData( data, length );
+
+   if( *data == 3 || // ctrl-c
+      *data == 27 ) // escape
+   {
+      string notice( "\r\nTELNET->exit()\r\n");
+      SendData( reinterpret_cast< const U8* >( notice.c_str() ), notice.size() );
+      CloseConnection();
+   }
+   return true;
+}
+
+//------------------------------------------------------------------------------
+
+void  Khaan::SendTelnetInstructions()
+{
+   string notice( "\r\n->TELNET\r\n");
+   SendData( reinterpret_cast< const U8* >( notice.c_str() ), notice.size() );
+   notice = "  *** you have entered telnet mode.            *** \r\n";
+   SendData( reinterpret_cast< const U8* >( notice.c_str() ), notice.size() );
+   notice = "  *** all things that you type will be echoed. *** \r\n";
+   SendData( reinterpret_cast< const U8* >( notice.c_str() ), notice.size() );
+   notice = "  *** crl-c and esc both exit.                 ***\r\n";
+   SendData( reinterpret_cast< const U8* >( notice.c_str() ), notice.size() );
 }
 
 //------------------------------------------------------------------------------

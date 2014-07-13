@@ -35,6 +35,7 @@ bool  FriendInfo::SerializeIn( const U8* data, int& bufferOffset )
 {
    Serialize::In( data, bufferOffset, userName );
    Serialize::In( data, bufferOffset, notesAboutThisUser );
+   Serialize::In( data, bufferOffset, motto );
    Serialize::In( data, bufferOffset, avatarId );
    Serialize::In( data, bufferOffset, isOnline );
    Serialize::In( data, bufferOffset, markedAsFavorite );
@@ -46,6 +47,7 @@ bool  FriendInfo::SerializeOut( U8* data, int& bufferOffset ) const
 {
    Serialize::Out( data, bufferOffset, userName );
    Serialize::Out( data, bufferOffset, notesAboutThisUser );
+   Serialize::Out( data, bufferOffset, motto );
    Serialize::Out( data, bufferOffset, avatarId );
    Serialize::Out( data, bufferOffset, isOnline );
    Serialize::Out( data, bufferOffset, markedAsFavorite );

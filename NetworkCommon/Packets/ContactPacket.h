@@ -19,6 +19,7 @@ struct UserInfo
    U32      id;
    bool     favorite;
    string   note;
+   string   motto;
 };
 
 ///////////////////////////////////////////////////////////////////
@@ -28,8 +29,9 @@ class FriendInfo     //string userUuid.. will be stored by id using uuid
 public:
    FriendInfo(): avatarId( 0 ), isOnline( false ) {}
    FriendInfo( const string& name, int avatar, bool online ): userName( name ), avatarId( avatar ), isOnline( online )  {}
-   FriendInfo( const string& name, int avatar, bool online, bool favorite, const string& notes ): 
+   FriendInfo( const string& name, const string& _motto, int avatar, bool online, bool favorite, const string& notes ): 
             userName( name ), 
+            motto( _motto ),
             avatarId( avatar ), 
             isOnline( online ),
             markedAsFavorite( favorite ),
@@ -38,11 +40,12 @@ public:
    bool  SerializeIn( const U8* data, int& bufferOffset );
    bool  SerializeOut( U8* data, int& bufferOffset ) const;
 
-   string   userName;
-   string   notesAboutThisUser;
-   int      avatarId;
-   bool     isOnline;
-   bool     markedAsFavorite;
+   string            userName;
+   FixedString128    notesAboutThisUser;
+   FixedString32     motto;
+   int               avatarId;
+   bool              isOnline;
+   bool              markedAsFavorite;
 };
 
 class InvitationInfo // string   uuid; .. stored in the associated container

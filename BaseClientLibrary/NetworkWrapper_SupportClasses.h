@@ -54,6 +54,7 @@ public:
    string   userName;
    string   UUID;
    string   notesAboutThisUser;
+   string   motto;
    U32      avatarId; 
    bool     isOnline;
    bool     markedAsFavorite;

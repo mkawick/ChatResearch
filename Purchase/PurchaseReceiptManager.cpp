@@ -97,21 +97,24 @@ bool     PurchaseReceiptManager::HandleResult( const PacketDbQueryResult* dbResu
    {
       //SetValueOnExit< bool >           setter( m_isServicingReceipts, false );// due to multiple exit points...
 
-      PurchaseReceiptParser            enigma( dbResult->bucket );
-      PurchaseReceiptParser::iterator  it = enigma.begin();
-      if( enigma.m_bucket.size() > 0 )
+      if( m_endpointValidation.size() != 0 )
       {
-         
-     /*    cout << "PurchaseReceiptManager:" << endl;
-         cout << " Successful query = " << m_queryString << endl;
-         cout << "No receipts to service " << endl;*/
-      }  
-      while( it != enigma.end() )
-      {
-         PurchaseReceiptTracking prt;
-         prt = *it++;
-         // send HTTP requests to apple for each of these.
-         m_receiptsToValidate.push_back( prt );
+         PurchaseReceiptParser            enigma( dbResult->bucket );
+         PurchaseReceiptParser::iterator  it = enigma.begin();
+         if( enigma.m_bucket.size() > 0 )
+         {
+            
+        /*    cout << "PurchaseReceiptManager:" << endl;
+            cout << " Successful query = " << m_queryString << endl;
+            cout << "No receipts to service " << endl;*/
+         }  
+         while( it != enigma.end() )
+         {
+            PurchaseReceiptTracking prt;
+            prt = *it++;
+            // send HTTP requests to apple for each of these.
+            m_receiptsToValidate.push_back( prt );
+         }
       }
       return true;
    }

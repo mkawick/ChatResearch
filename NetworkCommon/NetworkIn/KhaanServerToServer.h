@@ -11,7 +11,7 @@ public:
    KhaanServerToServer() : Khaan( 0, NULL ), m_serverId( 0 ), m_serverType( 0 ), m_isGameServer( false ), m_isController( false ), m_gatewayType( PacketServerIdentifier::GatewayType_None ) {}
    KhaanServerToServer( int id, bufferevent* be ) : Khaan( id, be ), m_serverId( 0 ), m_serverType( 0 ), m_isGameServer( false ), m_isController( false ), m_gatewayType( PacketServerIdentifier::GatewayType_None )  {}
 
-   bool	   OnDataReceived( unsigned char* data, int length );
+   bool	   OnDataReceived( const U8* data, int length );
 
    
    void     SetServerName( const string& name ) { m_serverName = name; }
@@ -38,7 +38,7 @@ public:
 protected:
    void  PreCleanup();
 
-   bool           HandleInwardSerializedPacket( U8* data, int& offset );
+   bool           HandleInwardSerializedPacket( const U8* data, int& offset );
    void	         UpdateInwardPacketList();
    void           RequestUpdate();
    virtual bool   PassPacketOn( BasePacket* serverId, U32 connectionId );// this is good to override

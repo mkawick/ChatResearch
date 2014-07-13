@@ -145,7 +145,7 @@ bool  KhaanGateway :: ShouldDelayOutput()
 
 //-----------------------------------------------------------------------------------------
 
-bool  KhaanGateway::IsPacketSafe( unsigned char* data, int& offset)
+bool  KhaanGateway::IsPacketSafe( const U8* data, int& offset)
 {
    PacketFactory parser;
    // before we parse, which is potentially dangerous, we will do a quick check
@@ -203,7 +203,7 @@ bool  KhaanGateway::IsHandshaking( const BasePacket* packetIn )
 
 //-----------------------------------------------------------------------------------------
 
-bool  KhaanGateway::HandleInwardSerializedPacket( U8* data, int& offset )
+bool  KhaanGateway::HandleInwardSerializedPacket( const U8* data, int& offset )
 {
    bool result = false;
    BasePacket* packetIn;
@@ -261,10 +261,24 @@ bool  KhaanGateway::HandleInwardSerializedPacket( U8* data, int& offset )
 
    return true;
 }
+
+
 //-----------------------------------------------------------------------------------------
 
-bool	KhaanGateway::OnDataReceived( unsigned char* data, int length )
+bool	KhaanGateway::OnDataReceived( const U8* data, int length )
 {
+   if( m_isInTelnetMode== false && length < BasePacket::GetSize() )// why not sizeof? Because of the virtual pointer
+      //&& m_authorizedConnection )
+   {
+      m_isInTelnetMode = true;
+      SendTelnetInstructions();
+   }
+
+   if( m_isInTelnetMode == true )
+   {
+      return HandleTelnetModeData( data, length );
+   }
+
    if( m_denyAllFutureData == true )
    {
       FlushReadBuffer();

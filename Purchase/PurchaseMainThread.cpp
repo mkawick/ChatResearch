@@ -27,7 +27,9 @@ using namespace std;
 ///////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////
 
-DiplodocusPurchase::DiplodocusPurchase( const string& serverName, U32 serverId ): Diplodocus< KhaanPurchase >( serverName, serverId, 0,  ServerType_Purchase )
+DiplodocusPurchase::DiplodocusPurchase( const string& serverName, U32 serverId ): Diplodocus< KhaanPurchase >( serverName, serverId, 0,  ServerType_Purchase ), 
+                              m_isWaitingForAdminSettings( false ),
+                              m_hasRequestedAdminSettings( false )
                                          
 {
     //time( &m_lastTimeStamp );
@@ -57,6 +59,8 @@ DiplodocusPurchase::DiplodocusPurchase( const string& serverName, U32 serverId )
    stringCategories.push_back( string( "product" ) );
    stringCategories.push_back( string( "sale" ) );
    m_stringLookup = new StringLookup( QueryType_ProductLookup, this, stringCategories );
+
+   RequestAdminSettings();
 }
 
 DiplodocusPurchase :: ~DiplodocusPurchase()
@@ -79,7 +83,48 @@ void     DiplodocusPurchase::ServerWasIdentified( IChainedInterface* khaan )
    //U32 serverId = localKhaan->GetServerId();
    m_clientsNeedingUpdate.push_back( chainId );
 }
-// 
+
+
+//---------------------------------------------------------------
+
+void     DiplodocusPurchase::RequestAdminSettings()
+{
+   PacketDbQuery* dbQuery = new PacketDbQuery;
+   dbQuery->id = 0;
+   dbQuery->lookup = QueryType_PurchaseAdminSettings;
+   dbQuery->query = "SELECT * FROM admin_purchase";
+
+   m_isWaitingForAdminSettings = true;
+
+   AddQueryToOutput( dbQuery );
+}
+
+//---------------------------------------------------------------
+
+void     DiplodocusPurchase::HandleAdminSettings( const PacketDbQueryResult* dbResult )
+{
+   KeyValueParser              enigma( dbResult->bucket );
+   KeyValueParser::iterator    it = enigma.begin();
+
+   string   enpoint;
+   
+   while( it != enigma.end() )
+   {
+      KeyValueParser::row      row = *it++;
+      string setting =         row[ TableKeyValue::Column_key ];
+      string value =           row[ TableKeyValue::Column_value ];
+
+      if( setting == "vendor.receipt_validation.apple" )
+      {
+         const string& endpoint = value;
+         m_purchaseReceiptManager->SetValidationEndpoint( endpoint );
+      }
+   }
+
+   m_isWaitingForAdminSettings = false;
+}
+
+//---------------------------------------------------------------
 
 //---------------------------------------------------------------
 /*
@@ -339,7 +384,10 @@ bool     DiplodocusPurchase::AddQueryToOutput( PacketDbQuery* packet )
       itOutputs++;
    }
 
-   delete packet;/// normally, we'd leave this up to the invoker to cleanup. 
+   PacketFactory factory;
+   BasePacket* delPacket = packet;
+   factory.CleanupPacket( delPacket );
+   //delete packet;/// normally, we'd leave this up to the invoker to cleanup. 
    return false;
 }
 
@@ -394,6 +442,18 @@ bool     DiplodocusPurchase::AddOutputChainData( BasePacket* packet, U32 connect
          else if( m_stringLookup->HandleResult( dbResult ) == true )
          {
             wasHandled = true;
+         }
+         else
+         {
+            switch( dbResult->lookup )
+            {
+            case QueryType_PurchaseAdminSettings:
+               {
+                  HandleAdminSettings( dbResult );
+                  wasHandled = true;
+               }
+               break;
+            }
          }
 
          if( wasHandled == true )
@@ -472,6 +532,13 @@ void     DiplodocusPurchase::AddServerNeedingUpdate( U32 serverId )
 
 int      DiplodocusPurchase::CallbackFunction()
 {
+   if( m_hasRequestedAdminSettings == false )
+   {
+      RequestAdminSettings();
+      m_hasRequestedAdminSettings = true;
+      return 0;
+   }
+
    while( m_serversNeedingUpdate.size() )
    {
       Threading::MutexLock locker( m_mutex );

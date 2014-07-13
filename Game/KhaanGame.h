@@ -11,7 +11,7 @@ public:
    KhaanGame() : Khaan( 0, NULL ), m_isGameServer( false ), m_isController( 0 )  {}
    KhaanGame( int id, bufferevent* be ) : Khaan( id, be ), m_isGameServer( false ), m_isController( 0 ) {}
 
-   bool	OnDataReceived( unsigned char* data, int length );
+   bool	OnDataReceived( const U8* data, int length );
 
 private:
    string      m_serverName;

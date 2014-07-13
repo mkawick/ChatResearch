@@ -84,7 +84,7 @@ public:
 
    //void           SetupLibeventCallbacks( event_base* libEvent, int socket );
    void           RegisterToReceiveNetworkTraffic();
-   virtual bool	OnDataReceived( unsigned char* data, int length );
+   virtual bool	OnDataReceived( const U8* data, int length );
 
    virtual void   UpdateInwardPacketList();// this class doesn't do much with the data. It's up to the derived classes to decide what to do with it
    virtual int    UpdateOutwardPacketList();
@@ -104,6 +104,9 @@ protected:
    void           FlushReadBuffer();
    void           CloseConnection();
 
+   bool           HandleTelnetModeData( const U8* data, int length );
+   void           SendTelnetInstructions();
+
 protected:
 	U32				m_socketId;
 	bufferevent*	m_bufferEvent;
@@ -118,6 +121,7 @@ protected:
 
    U8*            m_outboundBuffer;
 
+   bool           m_isInTelnetMode;
    bool           m_isExpectingMoreDataInPreviousPacket;
    int            m_expectedBytesReceivedSoFar;
    int            m_expectedBytes;

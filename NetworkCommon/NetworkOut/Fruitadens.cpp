@@ -76,9 +76,9 @@ bool        Fruitadens :: AddOutputChainData( BasePacket* packet, U32 filingData
    if( FilterOutwardPacket( packet ) == false )
       return false;
 
-   m_mutex.lock();
+   m_outputChainListMutex.lock();
    m_packetsReadyToSend.push_back( packet );
-   m_mutex.unlock();
+   m_outputChainListMutex.unlock();
 
    return true;
 }
@@ -384,10 +384,8 @@ int  Fruitadens::MainLoop_OutputProcessing()
       return 0;
    }
 
-   m_mutex.lock();
-   PacketQueue tempQueue = m_packetsReadyToSend;
+   PacketQueue tempQueue = m_packetsReadyToSend;// already thread protected... m_outputChainListMutex
    m_packetsReadyToSend.clear();
-   m_mutex.unlock();
 
    if( tempQueue.size() > 0 )
    {
@@ -402,20 +400,6 @@ int  Fruitadens::MainLoop_OutputProcessing()
          factory.CleanupPacket( packet );
       }
    }
-
-  /* if( m_packetsReadyToSend.size() > 0 )
-   {
-      m_mutex.lock();
-      while( m_packetsReadyToSend.size() )
-      {
-         BasePacket* packet = m_packetsReadyToSend.front();
-         SerializePacketOut( packet );
-         m_packetsReadyToSend.pop_front();
-
-         delete packet;// can we move this out of the lock area?
-      }
-      m_mutex.unlock();
-   }*/
 
    InheritedUpdate();
 

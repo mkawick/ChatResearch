@@ -41,7 +41,7 @@ KhaanConnector::~KhaanConnector(void)
 
 //-----------------------------------------------------------------------------------------
 
-bool	KhaanConnector::OnDataReceived( unsigned char* data, int length )
+bool	KhaanConnector::OnDataReceived( const U8* data, int length )
 {
    if( m_denyAllFutureData == true )
    {

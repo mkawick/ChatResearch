@@ -37,6 +37,7 @@ public:
       Column_avatar_id,
       Column_favorite,
       Column_note,
+      Column_motto,
       Column_end
    };
    static const char* const column_names[];
@@ -119,7 +120,7 @@ void  UserContact::PrepFriendQuery()
    dbQuery->meta =         "";
    dbQuery->lookup =       QueryType_Friends;
    dbQuery->serverLookup = m_userInfo.id;
-   string query = "SELECT users.user_id, users.user_name, users.uuid, users.user_email, users.language_id, users.active, profile.mber_avatar, friends.favorite, friends.note ";
+   string query = "SELECT users.user_id, users.user_name, users.uuid, users.user_email, users.language_id, users.active, profile.mber_avatar, friends.favorite, friends.note, profile.motto ";
    query += "FROM users INNER JOIN user_profile AS profile ON users.user_id=profile.user_id ";
    query += "INNER JOIN friends ON users.user_id=friends.userid2 ";
    query += "WHERE friends.userId1=";
@@ -294,6 +295,7 @@ bool  UserContact::HandleDbQueryResult( const PacketDbQueryResult* dbResult )
             ui.avatarId =         boost::lexical_cast< U32 >( avatarId );
             ui.favorite =         boost::lexical_cast< bool >( row[ TableUser_PlusAvatarIconId::Column_favorite ] );
             ui.note =             row[ TableUser_PlusAvatarIconId::Column_note ];
+            ui.motto =            row[ TableUser_PlusAvatarIconId::Column_motto ];
 
             if( ui.note == "NULL" )
                ui.note.clear();
@@ -591,7 +593,7 @@ bool     UserContact::GetListOfContacts()
 
       const UserContact* testUser = m_contactServer->GetUser( ui.id );
       bool isLoggedIn = testUser != NULL;
-      packet->friends.insert( ui.uuid, FriendInfo( ui.userName, ui.avatarId, isLoggedIn, ui.favorite, ui.note ) );
+      packet->friends.insert( ui.uuid, FriendInfo( ui.userName, ui.motto, ui.avatarId, isLoggedIn, ui.favorite, ui.note ) );
    }
    
    m_contactServer->SendPacketToGateway( packet, m_connectionId );
@@ -1159,7 +1161,7 @@ bool  UserContact::AddNotationToContact( const PacketContact_SetNotationOnUser* 
 
    // update these
    it->favorite = notationPacket->friendInfo.markedAsFavorite;
-   it->note = notationPacket->friendInfo.notesAboutThisUser;
+   it->note = notationPacket->friendInfo.notesAboutThisUser.c_str();
 
    PacketDbQuery* dbQuery = new PacketDbQuery;
    dbQuery->id =           m_connectionId;

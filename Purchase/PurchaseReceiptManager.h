@@ -58,19 +58,19 @@ public:
    PurchaseReceiptTracking();
    PurchaseReceiptTracking& operator = ( PurchaseReceiptParser::row  row );
 
-   U32      index;
-   U32      user_id;
-   string   user_uuid;
-   string   transaction_id;
-   string   date_received;
-   string   receipt;
-   U64      receipt_hash;
-   U32      platform_id;
-   string   product_purchased;
-   U32      product_purchased_count;
-   U32      num_attempts_to_validate;
-   string   date_last_validation_attempt;
-   U8       validated_result;
+   U32         index;
+   U32         user_id;
+   string      user_uuid;
+   string      transaction_id;
+   string      date_received;
+   string      receipt;
+   U64         receipt_hash;
+   U32         platform_id;
+   string      product_purchased;
+   U32         product_purchased_count;
+   U32         num_attempts_to_validate;
+   string      date_last_validation_attempt;
+   U8          validated_result;
 };
 
 //------------------------------------------------------------
@@ -93,6 +93,8 @@ public:
 
    void     Update( time_t currentTime );
 
+   void     SetValidationEndpoint( const string& http ) { m_endpointValidation = http; }
+
 private:
 
    void     ValidateReceipts();
@@ -103,6 +105,7 @@ private:
    bool                                m_isInitializing, m_hasSendProductRequest;
    deque< PurchaseReceiptTracking >    m_receiptsToValidate;
    set< string >                       m_usersBeingServiced;
+   string                              m_endpointValidation;
 
    SalesManager*                       m_salesManager;
 };

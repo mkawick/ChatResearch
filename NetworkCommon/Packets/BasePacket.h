@@ -100,6 +100,8 @@ cout << "BasePacket ~count: " << m_counter << endl;
 #ifdef _MEMORY_TEST_
    static int      m_counter;
 #endif
+
+   static int   GetSize() { return sizeof( BasePacket ) - sizeof( long*); }
 };
 
 ///////////////////////////////////////////////////////////////

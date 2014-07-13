@@ -33,15 +33,15 @@ public:
 
 private:
    
-   bool  IsWhiteListedIn( const BasePacket* packet ) const;
-   bool  HasPermission( const BasePacket* packet ) const;
-   bool  HandleGatewayPackets( const BasePacket* packet ) const;
-   bool  IsPacketSafe( unsigned char* data, int& offset);
-   bool  IsHandshaking( const BasePacket* packetIn );
-   bool  TrackInwardPacketType( const BasePacket* packet ); // based on base class
-   bool  TrackOutwardPacketType( const BasePacket* packet );
-   void  SetupOutputDelayTimestamp();
-   bool  ShouldDelayOutput();
+   bool     IsWhiteListedIn( const BasePacket* packet ) const;
+   bool     HasPermission( const BasePacket* packet ) const;
+   bool     HandleGatewayPackets( const BasePacket* packet ) const;
+   bool     IsPacketSafe( const U8* data, int& offset);
+   bool     IsHandshaking( const BasePacket* packetIn );
+   bool     TrackInwardPacketType( const BasePacket* packet ); // based on base class
+   bool     TrackOutwardPacketType( const BasePacket* packet );
+   void     SetupOutputDelayTimestamp();
+   bool     ShouldDelayOutput();
 
    U32                  m_numPacketsReceivedBeforeAuth;
    U32                  m_randomNumberOfPacketsBeforeLogin;
@@ -56,8 +56,8 @@ private:
    U8                   m_gameId;
    
    void  PreCleanup();
-   bool	OnDataReceived( unsigned char* data, int length );
-   bool  HandleInwardSerializedPacket( U8* data, int& offset );
+   bool	OnDataReceived( const U8* data, int length );
+   bool  HandleInwardSerializedPacket( const U8* data, int& offset );
 };
 
 //--------------------------------------------------------------

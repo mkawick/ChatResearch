@@ -19,8 +19,13 @@
 
 ///////////////////////////////////////////////////////////////////
 
-bool	KhaanGame::OnDataReceived( unsigned char* data, int length )
+bool	KhaanGame::OnDataReceived( const U8* data, int length )
 {
+   if( length > 2*1024 )
+   {
+      cout << "base game has not been extended to large data packets yet." << endl;
+      assert( 0 );
+   }
    BasePacket* packetIn;
    int offset = 0;
    PacketFactory parser;

@@ -153,12 +153,11 @@ int main( int argc, const char* argv[] )
       
       //----------------------------------------------------------------
       
-      purchaseServer->Init();
-
       s2s->AddOutputChain( purchaseServer );
       purchaseServer->AddOutputChain( delta );
-
       s2s->Resume();
+
+      purchaseServer->Init();
       purchaseServer->Run();
    }
    else

@@ -55,7 +55,7 @@ ClientNetworkWrapper::ClientNetworkWrapper( U8 gameProductId, bool connectToAsse
       m_wasCallbackForReadyToBeginSent( false ),
       m_requiresGatewayDiscovery( true )
 {
-   m_loadBalancerDns = "gateway.internal.playdekgames.com"; // just the default
+   m_loadBalancerDns = "you.have.not.initialized.the.library.properly.com"; // just the default
    InitializeSockets();
 
    for( int i=0; i< ConnectionNames_Num; i++ )
@@ -161,6 +161,12 @@ void     ClientNetworkWrapper::ReconnectAfterTalkingToLoadBalancer()
             cout << "Missing server address entry.. cannot connect" << endl;
             continue;
          }
+         if( i == ConnectionNames_Asset )
+            cout << "Asset";
+         else
+            cout << "Main";
+
+         cout << " Server address[" << i <<"] = " << m_serverIpAddress[i].c_str() << ":" << m_serverConnectionPort[i] << endl;
          m_fruitadens[i]->RegisterPacketHandlerInterface( this );
          m_fruitadens[i]->Connect( m_serverIpAddress[i].c_str(), m_serverConnectionPort[i] );
       }
@@ -3546,12 +3552,14 @@ void     ClientNetworkWrapper::HandleListOfContacts( const PacketContact_GetList
    while( it != packet->friends.end() )
    {
       BasicUser bu;
-      bu.isOnline = it->value.isOnline;
-      bu.userName = it->value.userName;
+      const FriendInfo& fi = it->value;
+      bu.isOnline = fi.isOnline;
+      bu.userName = fi.userName;
       bu.UUID = it->key;
-      bu.avatarId = it->value.avatarId;
-      bu.notesAboutThisUser = it->value.notesAboutThisUser;
-      bu.markedAsFavorite = it->value.markedAsFavorite;
+      bu.avatarId = fi.avatarId;
+      bu.notesAboutThisUser = fi.notesAboutThisUser.c_str();
+      bu.motto = fi.motto.c_str();
+      bu.markedAsFavorite = fi.markedAsFavorite;
 
       m_contacts.insert( it->key, bu );
       it++;

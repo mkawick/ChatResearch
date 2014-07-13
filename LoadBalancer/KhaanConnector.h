@@ -17,7 +17,7 @@ public:
    ~KhaanConnector();
 
    void     SetGateway( DiplodocusLoadBalancer* loadBalancer ) { m_loadBalancer = loadBalancer; }
-   bool	   OnDataReceived( unsigned char* data, int length );
+   bool	   OnDataReceived( const U8* data, int length );
 
 private:
    
