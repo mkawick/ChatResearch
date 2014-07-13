@@ -24,8 +24,7 @@ KhaanGateway::KhaanGateway( int id, bufferevent* be ):
       m_gateway( NULL ),
       m_timeoutMs( 0 ),
       m_lastSentToClientTimestamp( 0 ),
-      m_gameId( 0 ),
-      m_isExpectingMoreDataInPreviousPacket( false )
+      m_gameId( 0 )
 {
    m_randomNumberOfPacketsBeforeLogin = 30 + rand() % 20;
    SendThroughLibEvent( true );

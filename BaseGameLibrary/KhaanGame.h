@@ -20,6 +20,7 @@ public:
    KhaanGame() : KhaanServerToServer(){}//, m_mainInterfacePtr( NULL )  {}
    KhaanGame( int id, bufferevent* be ) : KhaanServerToServer( id, be ) {}//, m_mainInterfacePtr( NULL ) {}
 
+   const char* GetClassName() const { return "KhaanGame"; }
    //bool  OnDataReceived( unsigned char* data, int length );
 private:
 

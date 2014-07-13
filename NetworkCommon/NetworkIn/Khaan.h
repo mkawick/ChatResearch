@@ -118,6 +118,12 @@ protected:
 
    U8*            m_outboundBuffer;
 
+   bool           m_isExpectingMoreDataInPreviousPacket;
+   int            m_expectedBytesReceivedSoFar;
+   int            m_expectedBytes;
+   U8             m_tempBuffer[ MaxBufferSize ];
+
+
    deque< BasePacket* > m_packetsOut;
    deque< BasePacket* > m_packetsIn;//ToBeProcessed;
 };

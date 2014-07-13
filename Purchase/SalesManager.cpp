@@ -42,6 +42,12 @@ void     SalesManager::Update( time_t currentTime )
          m_hasSendProductRequest = true;
          RequestAllProducts();
       }
+      else
+      {
+         if( m_lastTimeStamp == 0 &&
+               difftime( currentTime, m_lastTimeStamp ) > 15 )/// bad initialization... retry.
+            m_hasSendProductRequest = false;
+      }
    }
    else
    {
@@ -130,6 +136,7 @@ bool     SalesManager::HandleResult( const PacketDbQueryResult* dbResult )
 
    if( lookupType == DiplodocusPurchase::QueryType_LoadAllProducts )
    {
+      cout << "product list loaded" << endl;
       ProductTable         enigma( dbResult->bucket );
       ProductTable::iterator  it = enigma.begin();
       while( it != enigma.end() )
@@ -139,6 +146,7 @@ bool     SalesManager::HandleResult( const PacketDbQueryResult* dbResult )
          m_productMapByUuid.insert( ProductUuidPair( p.uuid, p ) );
       }
       m_isInitializing = false;
+      cout << "Final size was: " << m_productMapByUuid.size() << endl;
       return true;
    }
 
@@ -347,6 +355,7 @@ void     SalesManager::VerifyThatUserHasEnoughMoneyForEntry2( const PacketDbQuer
 
 bool     SalesManager::RequestAllProducts()
 {
+   cout << "Loading initial product list" << endl;
    PacketDbQuery* dbQuery = new PacketDbQuery;
    dbQuery->id = 0;
    dbQuery->lookup = DiplodocusPurchase::QueryType_LoadAllProducts;

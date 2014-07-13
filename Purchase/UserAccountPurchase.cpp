@@ -219,5 +219,17 @@ bool     UserAccountPurchase::MakePurchase( const PacketTournament_PurchaseTourn
    return true;
 }
 
+//------------------------------------------------------------------------------------------------
+
+bool     UserAccountPurchase::MakeRefund( const PacketTournament_PurchaseTournamentEntryRefund* packet, U32 connectionId )
+{
+   assert( m_salesManager != NULL || m_userTicket.connectionId == 0 );
+
+   //bool success = m_salesManager->PerformSale( packet->itemsToSpend, m_userTicket, connectionId, packet->uniqueTransactionId );
+   //success = success;// warnings
+
+   return true;
+}
+
 
 //------------------------------------------------------------------------------------------------

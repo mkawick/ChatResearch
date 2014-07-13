@@ -237,7 +237,8 @@ public:
    bool  SerializeIn( const U8* data, int& bufferOffset );
    bool  SerializeOut( U8* data, int& bufferOffset ) const;
    
-   int   platformId;
+   int      platformId;
+   string   userUuid;
    SerializedVector< PurchaseEntry > purchases;
 };
 

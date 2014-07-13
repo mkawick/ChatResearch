@@ -54,6 +54,10 @@ protected:
    bool        m_isGameServer;
    bool        m_isController;
    U8          m_gatewayType;
+
+  /* bool                 m_isExpectingMoreDataInPreviousPacket;
+   int                  m_expectedBytesReceivedSoFar;
+   int                  m_expectedBytes;*/
 };
 
 //////////////////////////////////////////////////////////////////////////////////

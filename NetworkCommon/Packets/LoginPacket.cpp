@@ -249,6 +249,8 @@ bool  PacketListOfUserAggregatePurchases::SerializeIn( const U8* data, int& buff
 {
    BasePacket::SerializeIn( data, bufferOffset );
    Serialize::In( data, bufferOffset, platformId );
+   Serialize::In( data, bufferOffset, userUuid );
+   
    Serialize::In( data, bufferOffset, purchases );
 
    return true;
@@ -258,6 +260,8 @@ bool  PacketListOfUserAggregatePurchases::SerializeOut( U8* data, int& bufferOff
 {
    BasePacket::SerializeOut( data, bufferOffset );
    Serialize::Out( data, bufferOffset, platformId );
+   Serialize::Out( data, bufferOffset, userUuid );
+
    Serialize::Out( data, bufferOffset, purchases );
 
    return true;

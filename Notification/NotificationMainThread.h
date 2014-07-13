@@ -31,6 +31,7 @@ public:
 public:
    NotificationMainThread( const string& serverName, U32 serverId );
    ~NotificationMainThread();
+   const char*             GetClassName() const { return "NotificationMainThread"; }
 
    void     Init( const string& iosCertFile, const string& iosKeyFile );
 

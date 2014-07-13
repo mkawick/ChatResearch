@@ -33,7 +33,8 @@ struct ReceiptTempData: public PacketPurchase_ValidatePurchaseReceipt
 
 PurchaseReceiptManager::PurchaseReceiptManager( U32 id, ParentQueryerPtr parent, string& query, bool runQueryImmediately ) : ParentType( id, 20, parent, runQueryImmediately ),
                               m_isServicingReceipts( false ),
-                              m_isInitializing( true )
+                              m_isInitializing( true ),
+                              m_salesManager( NULL )
                               /*,
                               m_hasSendProductRequest( false )*/
 {
@@ -101,9 +102,9 @@ bool     PurchaseReceiptManager::HandleResult( const PacketDbQueryResult* dbResu
       if( enigma.m_bucket.size() > 0 )
       {
          
-         cout << "PurchaseReceiptManager:" << endl;
+     /*    cout << "PurchaseReceiptManager:" << endl;
          cout << " Successful query = " << m_queryString << endl;
-         cout << "No receipts to service " << endl;
+         cout << "No receipts to service " << endl;*/
       }  
       while( it != enigma.end() )
       {
@@ -116,12 +117,17 @@ bool     PurchaseReceiptManager::HandleResult( const PacketDbQueryResult* dbResu
    }
    if( lookupType == DiplodocusPurchase::QueryType_ReceiptInsert )
    {
+      ReceiptTempData* data = static_cast< ReceiptTempData* >( dbResult->customData );
       if( dbResult->successfulQuery == true )
       {
+         cout << "successful receipt additions" << endl;
       }
       else
       {
+         cout << "receipt additions failed" << endl;
       }
+      delete data;
+      return true;
    }
 
    // m_salesManager
@@ -144,22 +150,22 @@ bool  PurchaseReceiptManager::WriteReceipt( const PacketPurchase_ValidatePurchas
 
    if( userId == 0 )
       return false;
-   if( userUuid.size() < 10 )
+   if( userUuid.size() < 2 )
       return false;
 
    string productUuid = receipt->purchaseItemId;
 
    stringhash lookupHash = GenerateUniqueHash( receipt->receipt );
 
-   string insertQuery = "INSERT INTO playdek.purchase_receipts (user_id, user_uuid, transaction_id, receipt, receipt_hash, platform_id, product_purchased, product_purchased_count ) VALUES( ";
+   string insertQuery = "INSERT INTO playdek.purchase_receipts (user_id, user_uuid, transaction_id, receipt, receipt_hash, platform_id, product_purchased_uuid, product_purchased_count ) VALUES( ";
 
    insertQuery += boost::lexical_cast< string >( userId );
    insertQuery += ", '%s', '%s', '%s', ";
    insertQuery += boost::lexical_cast< string >( lookupHash );
    insertQuery += ", ";
-   insertQuery += receipt->platformId;
+   insertQuery += boost::lexical_cast< string >( receipt->platformId );
    insertQuery += ", '%s', "; // product id
-   insertQuery += receipt->quantity;
+   insertQuery += boost::lexical_cast< string >( receipt->quantity );
    insertQuery += ");";
    //1, "38cabbad2461e678", "AABBCCDDEEFFGGHH", "a long receipt which is filled with garbage", 12234456, 1, "fe78c73d96db90cf", 1
 
@@ -169,7 +175,7 @@ bool  PurchaseReceiptManager::WriteReceipt( const PacketPurchase_ValidatePurchas
    dbQuery->lookup = DiplodocusPurchase::QueryType_ReceiptInsert;
 
    ReceiptTempData* data = new ReceiptTempData;
-   data->operator =( receipt );
+   (*data) = ( receipt );
    dbQuery->customData = data;
    //dbQuery->isFireAndForget = true;
 
@@ -181,7 +187,10 @@ bool  PurchaseReceiptManager::WriteReceipt( const PacketPurchase_ValidatePurchas
 
    m_parent->AddQueryToOutput( dbQuery );
 
-   m_salesManager->PerformSimpleInventoryAddition( userUuid, productUuid, receipt->quantity, true );
+   if( m_salesManager )
+   {
+      m_salesManager->PerformSimpleInventoryAddition( userUuid, productUuid, receipt->quantity, true );
+   }
 
    return true;
 }

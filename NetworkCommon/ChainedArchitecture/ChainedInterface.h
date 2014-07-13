@@ -50,6 +50,10 @@ protected:
 public:
    ChainedInterface();
 
+   virtual const char*    GetClassName() const { return "ChainedInterface"; }
+   bool           DoesNameMatch( const char* name ) const { return strcmp( GetClassName(), name ) == 0; }
+
+
    U32            GetChainedId() const { return m_chainId; }
    U32				GetConnectionId() const { return m_connectionId; }
 	void	         SetConnectionId( int connectionId ) { m_connectionId = connectionId; }

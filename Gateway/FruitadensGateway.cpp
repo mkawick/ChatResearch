@@ -300,26 +300,23 @@ int  FruitadensGateway::MainLoop_OutputProcessing()
       return 0;
    }
 
-   if( m_packetsReadyToSend.size() > 0 )
+   m_mutex.lock();
+   PacketQueue tempQueue = m_packetsReadyToSend;
+   m_packetsReadyToSend.clear();
+   m_mutex.unlock();
+
+   if( tempQueue.size() > 0 )
    {
-      U8 buffer[ MaxBufferSize * 6 ];
-      int dangerZone = MaxBufferSize * 3/4;// 25%
-      int offset = 0;
-      PacketFactory factory;
-      
-      m_mutex.lock();
-      while( m_packetsReadyToSend.size() && offset < dangerZone )
+      PacketFactory factory;      
+      while( tempQueue.size() )
       {
-         BasePacket* packet = m_packetsReadyToSend.front();
-         m_packetsReadyToSend.pop_front();
+         BasePacket* packet = tempQueue.front();
+         tempQueue.pop_front();
          
-         packet->SerializeOut( buffer, offset );
+         SerializePacketOut( packet );
 
          factory.CleanupPacket( packet );
       }
-      m_mutex.unlock();
-
-      SendPacket( buffer, offset );
    }
 
    return 0;

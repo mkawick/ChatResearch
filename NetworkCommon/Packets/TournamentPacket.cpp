@@ -202,3 +202,48 @@ bool  PacketTournament_PurchaseTournamentEntryResponse::SerializeOut( U8* data, 
 }
 
 ///////////////////////////////////////////////////////////////
+
+///////////////////////////////////////////////////////////////
+
+bool  PacketTournament_PurchaseTournamentEntryRefund::SerializeIn( const U8* data, int& bufferOffset )
+{
+   PacketTournament::SerializeIn( data, bufferOffset );
+   Serialize::In( data, bufferOffset, userUuid );
+   Serialize::In( data, bufferOffset, uniqueTransactionId );
+   itemsToSpend.SerializeIn( data, bufferOffset );
+
+   return true;
+}
+
+bool  PacketTournament_PurchaseTournamentEntryRefund::SerializeOut( U8* data, int& bufferOffset ) const
+{
+   PacketTournament::SerializeOut( data, bufferOffset );
+   Serialize::Out( data, bufferOffset, userUuid );
+   Serialize::Out( data, bufferOffset, uniqueTransactionId );
+   itemsToSpend.SerializeOut( data, bufferOffset );
+
+   return true;
+}
+
+///////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////
+
+bool  PacketTournament_PurchaseTournamentEntryRefundResponse::SerializeIn( const U8* data, int& bufferOffset )
+{
+   PacketTournament::SerializeIn( data, bufferOffset );
+   Serialize::In( data, bufferOffset, uniqueTransactionId );
+   Serialize::In( data, bufferOffset, result );
+
+   return true;
+}
+
+bool  PacketTournament_PurchaseTournamentEntryRefundResponse::SerializeOut( U8* data, int& bufferOffset ) const
+{
+   PacketTournament::SerializeOut( data, bufferOffset );
+   Serialize::Out( data, bufferOffset, uniqueTransactionId );
+   Serialize::Out( data, bufferOffset, result );
+
+   return true;
+}
+
+///////////////////////////////////////////////////////////////

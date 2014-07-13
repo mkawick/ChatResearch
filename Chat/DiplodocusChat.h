@@ -29,6 +29,7 @@ public:
 
 public:
    DiplodocusChat( const string& serverName, U32 serverId );
+   const char* GetClassName() const { return "DiplodocusChat"; }
    void     Init();
 
    void     ChatChannelManagerNeedsUpdate() { m_chatRoomManagerNeedsUpdate = true; }

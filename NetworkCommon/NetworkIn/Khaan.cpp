@@ -33,7 +33,10 @@ Khaan :: Khaan() : ChainedInterface< BasePacket* >(),
                   m_timeOfConnection( 0 ),
                   m_useLibeventToSend( true ),
                   m_criticalFailure( false ),
-                  m_outboundBuffer( NULL )
+                  m_outboundBuffer( NULL ),
+                  m_isExpectingMoreDataInPreviousPacket( false ),
+                  m_expectedBytesReceivedSoFar( 0 ),
+                  m_expectedBytes( 0 )
 {
    SetOutboudBufferSize( MaxBufferSize + 1024 );
 }
@@ -44,7 +47,10 @@ Khaan ::Khaan( int socketId, bufferevent* be, int connectionId ) : ChainedInterf
                                                                   m_timeOfConnection( 0 ),
                                                                   m_useLibeventToSend( true ),
                                                                   m_criticalFailure( false ),
-                                                                  m_outboundBuffer( NULL )
+                                                                  m_outboundBuffer( NULL ),
+                                                                  m_isExpectingMoreDataInPreviousPacket( false ),
+                                                                  m_expectedBytesReceivedSoFar( 0 ),
+                                                                  m_expectedBytes( 0 )
 {
    SetConnectionId( connectionId );
    SetOutboudBufferSize( MaxBufferSize + 1024 );

@@ -384,7 +384,26 @@ int  Fruitadens::MainLoop_OutputProcessing()
       return 0;
    }
 
-   if( m_packetsReadyToSend.size() > 0 )
+   m_mutex.lock();
+   PacketQueue tempQueue = m_packetsReadyToSend;
+   m_packetsReadyToSend.clear();
+   m_mutex.unlock();
+
+   if( tempQueue.size() > 0 )
+   {
+      PacketFactory factory;      
+      while( tempQueue.size() )
+      {
+         BasePacket* packet = tempQueue.front();
+         tempQueue.pop_front();
+         
+         SerializePacketOut( packet );
+
+         factory.CleanupPacket( packet );
+      }
+   }
+
+  /* if( m_packetsReadyToSend.size() > 0 )
    {
       m_mutex.lock();
       while( m_packetsReadyToSend.size() )
@@ -393,15 +412,10 @@ int  Fruitadens::MainLoop_OutputProcessing()
          SerializePacketOut( packet );
          m_packetsReadyToSend.pop_front();
 
-     /*    if( packet->packetType == PacketType_GatewayWrapper )
-         {
-            PacketGatewayWrapper* wrapper = static_cast< PacketGatewayWrapper* >( packet );
-            delete wrapper->pPacket;
-         }*/
          delete packet;// can we move this out of the lock area?
       }
       m_mutex.unlock();
-   }
+   }*/
 
    InheritedUpdate();
 
@@ -493,9 +507,13 @@ bool  Fruitadens::HandlePacketReceived( BasePacket* packetIn )
 bool  Fruitadens :: SerializePacketOut( const BasePacket* packet )
 {
    U8 buffer[ MaxBufferSize ];
-   int offset = 0;
-
+   
+   int   offset = 2;
    packet->SerializeOut( buffer, offset );
+   U16   size = offset-2;
+   int   headerOffset = 0;
+   Serialize::Out( buffer, headerOffset, size );
+
    return SendPacket( buffer, offset );
 }
 
@@ -505,7 +523,7 @@ bool  Fruitadens :: SendPacket( const U8* buffer, int length ) const
 {
    if( m_isConnected && ( length > 0 ) && m_clientSocket != SOCKET_ERROR )
    {
-#ifdef TwoByteProtocol
+/*//#ifdef TwoByteProtocol
       U16 len = static_cast< U16 >( length );
       try
       {
@@ -515,7 +533,7 @@ bool  Fruitadens :: SendPacket( const U8* buffer, int length ) const
       {
          nBytes = SOCKET_ERROR;
       }
-#endif
+//#endif*/
 
       int nBytes = SOCKET_ERROR;
       try

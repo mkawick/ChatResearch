@@ -166,6 +166,8 @@ public:
 
    int      GetNumPurchases() const { return m_purchases.size(); }
    bool     GetPurchase( int index, PurchaseEntry& purchase ) const;
+   int      GetNumPurchasesOtherUser() const { return m_otherUsersPurchases.size(); }
+   bool     GetPurchaseOtherUser( int index, PurchaseEntry& purchase ) const;
    bool     GetPurchasesByType( vector< PurchaseEntry >& purchases, GameProductType type = GameProductType_TournamentEntry );
    bool     RequestListOfTournaments();
    bool     PurchaseEntryIntoTournament( const string& tournamentUuid, const vector<PurchaseServerDebitItem>& listOfDebitItems, const string& customDeck );
@@ -298,6 +300,8 @@ protected:
    GameList                                     m_gameList;
 
    SerializedVector< PurchaseEntry >            m_purchases;
+   string                                       m_otherUserPurchaseUuid;
+   SerializedVector< PurchaseEntry >            m_otherUsersPurchases;
 
    U8                                        m_gameProductId;
    bool                                      m_connectToAssetServer;
@@ -433,7 +437,7 @@ public:
 class NetworkLayerExtended: public ClientNetworkWrapper
 {
 public:
-   NetworkLayerExtended( U8 gameProductId, bool processOnlyOneIncommingPacketPerLoop = false ) : ClientNetworkWrapper( gameProductId, processOnlyOneIncommingPacketPerLoop ){}
+   NetworkLayerExtended( U8 gameProductId, bool connectToAssetServer ) : ClientNetworkWrapper( gameProductId, connectToAssetServer ){}
    
    bool  HandlePacketReceived( BasePacket* packetIn );
    void  SendAssetEcho();

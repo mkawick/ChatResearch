@@ -21,6 +21,7 @@ public:
 
 private:
    
+   const char* GetClassName() const { return "KhaanConnector"; }
    bool  IsWhiteListedIn( const BasePacket* packet ) const;
 
    DiplodocusLoadBalancer*    m_loadBalancer;

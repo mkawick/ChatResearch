@@ -57,6 +57,7 @@ class DiplodocusLoadBalancer :  public Diplodocus< KhaanConnector >
 public:
    DiplodocusLoadBalancer( const string& serverName, U32 serverId );
    ~DiplodocusLoadBalancer();
+   const char* GetClassName() const { return "DiplodocusLoadBalancer"; }
 
    void     AddGatewayAddress( const string& address, U16 port );
 

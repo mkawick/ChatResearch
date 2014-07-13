@@ -378,13 +378,16 @@ int   DiplodocusGame::CallbackFunction()
       while( itInputs != m_listOfInputs.end() )
       {
          ChainLink& chainedInput = *itInputs++;
-         IChainedInterface* interfacePtr = chainedInput.m_interface;
-         KhaanGame* khaan = static_cast< KhaanGame* >( interfacePtr );
-         if( khaan->GetServerId() == serverId )
+         ChainedInterface* interfacePtr = static_cast< ChainedInterface* >( chainedInput.m_interface );  
+         if( interfacePtr->DoesNameMatch( "KhaanGame" ) )
          {
-            if( khaan->Update() == false )
+            KhaanGame* khaan = static_cast< KhaanGame* >( interfacePtr );
+            if( khaan->GetServerId() == serverId )
             {
-               m_serversNeedingUpdate.push_back( serverId );
+               if( khaan->Update() == false )
+               {
+                  m_serversNeedingUpdate.push_back( serverId );
+               }
             }
          }
       }

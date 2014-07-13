@@ -12,6 +12,7 @@ class FruitadensGateway : public FruitadensServer
 public:
    FruitadensGateway( const char* name );
    ~FruitadensGateway();
+   const char* GetClassName() const { return "FruitadensGateway"; }
 
    bool     AcceptsPacketType( U32 type ) const;
 

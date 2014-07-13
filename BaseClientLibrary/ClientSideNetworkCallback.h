@@ -28,7 +28,7 @@ public:
    virtual void  ListOfAvailableProducts() {}
    // this list of purchases will not have localized names for products, especially on other players' products. 
    // make sure to request the list of available products first.
-   virtual void  ListOfAggregateUserPurchases() {}
+   virtual void  ListOfAggregateUserPurchases( const string& userUuid ) {}
 
    virtual void  UserDemographics( const string& username, const Demographics& userDemographics ) {}
    virtual void  UserWinLoss( const string& username, const WinLoss& userWinLoss ) {}

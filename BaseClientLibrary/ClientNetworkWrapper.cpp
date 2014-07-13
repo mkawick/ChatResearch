@@ -34,7 +34,7 @@ struct GameData
 
 ClientNetworkWrapper::ClientNetworkWrapper( U8 gameProductId, bool connectToAssetServer ): //PacketHandlerInterface()
       m_gameProductId( gameProductId ), 
-      m_connectToAssetServer( false ),
+      m_connectToAssetServer( connectToAssetServer ),
       m_isLoggingIn( false ),
       m_isLoggedIn( false ),
       m_connectionId( 0 ), 
@@ -487,7 +487,8 @@ void     ClientNetworkWrapper::UpdateNotifications()
             break;
          case ClientSideNetworkCallback::NotificationType_ListOfAggregateUserPurchases:
             {
-               notify->ListOfAggregateUserPurchases();
+               string userUuid = keyValueIt->value; 
+               notify->ListOfAggregateUserPurchases( userUuid );
             }
             break;
          case ClientSideNetworkCallback::NotificationType_UserProfileResponse:
@@ -1454,6 +1455,19 @@ bool  ClientNetworkWrapper::GetPurchase( int index, PurchaseEntry& purchase ) co
    purchase = m_purchases[index];
    return true;
 
+}
+
+bool  ClientNetworkWrapper::GetPurchaseOtherUser( int index, PurchaseEntry& purchase ) const
+{
+   if( index < 0 || index >= m_otherUsersPurchases.size() )
+   {
+      purchase.quantity = -1;
+      purchase.name = "";
+      return false;
+   }
+
+   purchase = m_otherUsersPurchases[index];
+   return true;
 }
 
 //-----------------------------------------------------------------------------
@@ -2720,16 +2734,8 @@ bool     ClientNetworkWrapper::SendCheat( const string& cheatText )
 
 bool     ClientNetworkWrapper::SerializePacketOut( BasePacket* packet ) const 
 {
-   U8 buffer[ MaxBufferSize ];
-
    packet->gameInstanceId = m_selectedGame;
    packet->gameProductId = m_gameProductId;
-
-   int offset = 2;
-   packet->SerializeOut( buffer, offset );
-   U16 size = offset-2;
-   int headerOffset = 0;
-   Serialize::Out( buffer, headerOffset, size );
 
    m_beginTime = GetCurrentMilliseconds();
 
@@ -2738,7 +2744,7 @@ bool     ClientNetworkWrapper::SerializePacketOut( BasePacket* packet ) const
    {
       if( m_connectToAssetServer == true && 
          m_fruitadens[ ConnectionNames_Asset ]->IsConnected() == true )
-         return m_fruitadens[ ConnectionNames_Asset ]->SendPacket( buffer, offset );
+         return m_fruitadens[ ConnectionNames_Asset ]->SerializePacketOut( packet );
       else 
          return false;
    }
@@ -2747,7 +2753,7 @@ bool     ClientNetworkWrapper::SerializePacketOut( BasePacket* packet ) const
       // for initial callbacks, we may not be connected
       //assert( m_fruitadens[ ConnectionNames_Main ]->IsConnected() );
       // TODO.. branch on asset requests.. otherwise, main
-      return m_fruitadens[ ConnectionNames_Main ]->SendPacket( buffer, offset );
+      return m_fruitadens[ ConnectionNames_Main ]->SerializePacketOut( packet );
    }
 }
 
@@ -3029,7 +3035,7 @@ bool     ClientNetworkWrapper::HandlePacketReceived( BasePacket* packetIn )
                {
                   PacketListOfUserAggregatePurchases* packet = static_cast<PacketListOfUserAggregatePurchases*>( packetIn );
                   HandleListOfAggregatePurchases( packet );
-                  Notification( ClientSideNetworkCallback::NotificationType_ListOfAggregateUserPurchases );
+                  Notification( ClientSideNetworkCallback::NotificationType_ListOfAggregateUserPurchases, packet->userUuid );
                }
                break;
             case PacketLogin::LoginType_RequestUserProfileResponse:
@@ -3671,9 +3677,20 @@ void     ClientNetworkWrapper::HandleListOfAggregatePurchases( const PacketListO
 {
    cout << " HandleListOfAggregatePurchases: " << endl;
    cout << " Num found: " << packet->purchases.size() << endl;
+   cout << " user: " << packet->userUuid << endl;
    Threading::MutexLock    locker( m_notificationMutex );
 
-   m_purchases = packet->purchases;
+   if( m_uuid.size() == 0 )
+      m_uuid = packet->userUuid; // correcting for occassional order of packets arriving.
+   if( packet->userUuid == m_uuid )
+   {
+      m_purchases = packet->purchases;
+   }
+   else
+   {
+      m_otherUsersPurchases = packet->purchases;
+      m_otherUserPurchaseUuid = packet->userUuid;
+   }
 }
 
 void     ClientNetworkWrapper::HandleListOfProducts( const PacketRequestListOfProductsResponse* packet )

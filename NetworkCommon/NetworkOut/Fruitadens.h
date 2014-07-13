@@ -46,6 +46,7 @@ public:
 
    void        SetName( std::string& name ) { m_name = name; }
    std::string GetName() const { return m_name; }
+   const char* GetClassName() const { return "Fruitadens"; }
 
    void        RegisterPacketHandlerInterface( PacketHandlerInterface* handler ) { m_packetHandlerInterface = handler; }
 

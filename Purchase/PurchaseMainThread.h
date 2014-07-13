@@ -53,6 +53,7 @@ public:
 public:
    DiplodocusPurchase( const string& serverName, U32 serverId );
    ~DiplodocusPurchase();
+   const char*             GetClassName() const { return "DiplodocusPurchase"; }
 
    void                    ServerWasIdentified( IChainedInterface* khaan );// callback really
 

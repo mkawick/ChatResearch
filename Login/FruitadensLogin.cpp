@@ -104,6 +104,38 @@ int  FruitadensLogin::MainLoop_OutputProcessing()
       return 0;
    }
 
+   m_mutex.lock();
+   PacketQueue tempQueue = m_packetsReadyToSend;
+   m_packetsReadyToSend.clear();
+   m_mutex.unlock();
+
+   if( tempQueue.size() > 0 )
+   {
+      PacketFactory factory;      
+      while( tempQueue.size() )
+      {
+         BasePacket* packet = tempQueue.front();
+         tempQueue.pop_front();
+         
+         //SerializePacketOut( packet );
+
+         
+         if( packet->packetType == PacketType_ServerToServerWrapper )         
+         {
+            SerializePacketOut( packet );
+         }
+         else
+         {
+            PacketServerToServerWrapper wrapper;
+            wrapper.serverId = m_serverId;
+            wrapper.pPacket = packet;
+            SerializePacketOut( &wrapper );
+         }
+
+         factory.CleanupPacket( packet );
+      }
+   }
+/*
    if( m_packetsReadyToSend.size() > 0 )
    {
       PacketFactory factory;
@@ -129,7 +161,7 @@ int  FruitadensLogin::MainLoop_OutputProcessing()
       }
       m_mutex.unlock();
    }
-
+*/
    return 0;
 }
 

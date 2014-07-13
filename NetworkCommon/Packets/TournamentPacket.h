@@ -71,6 +71,9 @@ public:
 
       TournamentType_PurchaseTournamentEntry, // server to server request
       TournamentType_PurchaseTournamentEntryResponse,
+
+      TournamentType_PurchaseTournamentEntryRefund, // server to server request
+      TournamentType_PurchaseTournamentEntryRefundResponse,
    };
 public:
    PacketTournament( int packet_type = PacketType_Tournament, int packet_sub_type = TournamentType_Base ) : BasePacket( packet_type, packet_sub_type ) {}
@@ -231,6 +234,39 @@ public:
 
    string      uniqueTransactionId; /// returned to the transaction server
    int         result;
+};
+
+///////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////
+
+class PacketTournament_PurchaseTournamentEntryRefund : public PacketTournament
+{
+public:
+   PacketTournament_PurchaseTournamentEntryRefund() : PacketTournament( PacketType_Tournament, TournamentType_PurchaseTournamentEntryRefund ){  }
+   
+   bool  SerializeIn( const U8* data, int& bufferOffset );
+   bool  SerializeOut( U8* data, int& bufferOffset ) const;
+
+   UuidString  userUuid;
+   string      uniqueTransactionId; // fill this in with some unique value that you need
+
+   SerializedVector< PurchaseServerDebitItem > itemsToSpend;
+};
+
+///////////////////////////////////////////////////////////////////
+
+class PacketTournament_PurchaseTournamentEntryRefundResponse : public PacketTournament
+{
+public:
+   PacketTournament_PurchaseTournamentEntryRefundResponse() : PacketTournament( PacketType_Tournament, TournamentType_PurchaseTournamentEntryRefundResponse ),
+               result( PacketErrorReport::ErrorType_Purchase_Success ){  }
+   
+   bool  SerializeIn( const U8* data, int& bufferOffset );
+   bool  SerializeOut( U8* data, int& bufferOffset ) const;
+
+   string      uniqueTransactionId; /// returned to the transaction server
+   int         result;
+ 
 };
 
 ///////////////////////////////////////////////////////////////////

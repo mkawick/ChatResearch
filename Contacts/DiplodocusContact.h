@@ -26,6 +26,7 @@ public:
 
 public:
    DiplodocusContact( const string& serverName, U32 serverId );
+   const char* GetClassName() const { return "DiplodocusContact"; }
    void     Init();
 
    void     ServerWasIdentified( IChainedInterface* khaan );

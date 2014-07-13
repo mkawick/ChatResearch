@@ -1171,6 +1171,16 @@ bool     PacketFactory::ParseTournament( const U8* bufferIn, int& bufferOffset, 
          *packetOut = SerializeIn< PacketTournament_PurchaseTournamentEntryResponse >( bufferIn, bufferOffset );
       }
       return true;
+   case PacketTournament::TournamentType_PurchaseTournamentEntryRefund:
+      {
+         *packetOut = SerializeIn< PacketTournament_PurchaseTournamentEntryRefund >( bufferIn, bufferOffset );
+      }
+      return true;
+   case PacketTournament::TournamentType_PurchaseTournamentEntryRefundResponse:
+      {
+         *packetOut = SerializeIn< PacketTournament_PurchaseTournamentEntryRefundResponse >( bufferIn, bufferOffset );
+      }
+      return true;
    default:
       assert( 0 );
    }

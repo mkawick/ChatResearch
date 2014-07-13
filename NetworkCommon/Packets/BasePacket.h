@@ -70,6 +70,8 @@ public:
       packetType( packet_type ),
       packetSubType( packet_sub_type ),
       versionNumber( GlobalNetworkProtocolVersion ),
+      gameProductId( 0 ),
+      //packetSize( 0 ),
       gameInstanceId( 0 )
       {
 #ifdef _MEMORY_TEST_
@@ -93,6 +95,7 @@ cout << "BasePacket ~count: " << m_counter << endl;
    U8       packetSubType;
    U8       versionNumber;
    U8       gameProductId;
+   //U16      packetSize;
    U32      gameInstanceId;
 #ifdef _MEMORY_TEST_
    static int      m_counter;

@@ -47,7 +47,9 @@ DiplodocusLogin:: DiplodocusLogin( const string& serverName, U32 serverId )  :
                   m_numFailedLogins( 0 ),
                   m_numSuccessfulLogins( 0 ),
                   m_totalUserLoginSeconds( 0 ),
-                  m_totalNumLogouts( 0 )
+                  m_totalNumLogouts( 0 ),
+                  m_printPacketTypes( false ),
+                  m_printFunctionNames( false )
 {
    SetSleepTime( 19 );
    LogOpen();
@@ -66,11 +68,28 @@ DiplodocusLogin:: DiplodocusLogin( const string& serverName, U32 serverId )  :
    m_timestampDailyStatServerStatisics = ZeroOutHours( m_timestampDailyStatServerStatisics );
 }
 
+void           DiplodocusLogin:: PrintPacketTypes( bool printingOn )
+{
+   m_printPacketTypes = printingOn;
+   if( printingOn == true )
+   {
+      cout << "Not functioning" << endl;
+      assert(0);
+   }
+}
 
+void          DiplodocusLogin::  PrintFunctionNames( bool printingOn )
+{
+   m_printFunctionNames = printingOn;
+}
 //---------------------------------------------------------------
 
 void     DiplodocusLogin:: ServerWasIdentified( IChainedInterface* khaan )
 {
+   if( m_printFunctionNames )
+   {
+      cout << "fn: " << __FUNCTION__ << endl;
+   }
    BasePacket* packet = NULL;
    PackageForServerIdentification( m_serverName, m_localIpAddress, m_externalIpAddress, m_serverId, m_serverType, m_listeningPort, m_gameProductId, m_isGame, m_isControllerApp, true, m_gatewayType, &packet );
    ChainedType* localKhaan = static_cast< ChainedType* >( khaan );
@@ -82,6 +101,10 @@ void     DiplodocusLogin:: ServerWasIdentified( IChainedInterface* khaan )
 
 bool     DiplodocusLogin:: AddInputChainData( BasePacket* packet, U32 connectionId )
 {
+   if( m_printFunctionNames )
+   {
+      cout << "fn: " << __FUNCTION__ << endl;
+   }
    // all packets coming in should be from the gateway only through s2s connections.
    // this is already multi threaded, so putting threading protections here is duplicative.
 
@@ -214,6 +237,11 @@ bool     DiplodocusLogin:: AddInputChainData( BasePacket* packet, U32 connection
 
 bool     DiplodocusLogin:: AddQueryToOutput( PacketDbQuery* packet )
 {
+   if( m_printFunctionNames )
+   {
+      cout << "fn: " << __FUNCTION__ << endl;
+   }
+
    ChainLinkIteratorType itOutputs = m_listOfOutputs.begin();
    while( itOutputs != m_listOfOutputs.end() )// only one output currently supported.
    {
@@ -233,9 +261,15 @@ bool     DiplodocusLogin:: AddQueryToOutput( PacketDbQuery* packet )
 
 bool     DiplodocusLogin:: LogUserIn( const string& userName, const string& password, const string& loginKey, U8 gameProductId, U32 connectionId )
 {
-   cout << endl << "***********************" << endl;
-   cout << "attempt to login user: "<< userName << ", pwHash:" << password << " for game id=" << (int) gameProductId << " and conn: " << connectionId << endl;
-   cout << "***********************" << endl;
+   if( m_printFunctionNames )
+   {
+      cout << "fn: " << __FUNCTION__ << endl;
+
+      cout << endl << "***********************" << endl;
+      cout << "attempt to login user: "<< userName << ", pwHash:" << password << " for game id=" << (int) gameProductId << " and conn: " << connectionId << endl;
+      cout << "***********************" << endl;
+   }
+   
    if( IsUserConnectionValid( connectionId ) )
    {
       // should we boot this user for hacking? Or is it bad code?
@@ -346,6 +380,10 @@ bool     DiplodocusLogin:: LogUserIn( const string& userName, const string& pass
 
 bool  DiplodocusLogin:: LoadUserAccount( const string& userName, const string& password, const string& loginKey, U8 gameProductId, U32 connectionId )
 {
+   if( m_printFunctionNames )
+   {
+      cout << "fn: " << __FUNCTION__ << endl;
+   }
    ConnectionToUser conn( userName, password, loginKey );
    conn.m_gameProductId = gameProductId;
    conn.m_connectionId = connectionId;
@@ -358,6 +396,10 @@ bool  DiplodocusLogin:: LoadUserAccount( const string& userName, const string& p
 
 bool  DiplodocusLogin:: SetupQueryForLogin( const string& userName, const string& password, U8 gameProductId, U32 connectionId )
 {
+   if( m_printFunctionNames )
+   {
+      cout << "fn: " << __FUNCTION__ << endl;
+   }
    //*********************************************************************************
    // perhaps some validation here is in order like is this user valid based on the key
    //*********************************************************************************
@@ -379,6 +421,10 @@ bool  DiplodocusLogin:: SetupQueryForLogin( const string& userName, const string
 
 bool     DiplodocusLogin:: HandleUserLoginResult( U32 connectionId, const PacketDbQueryResult* dbResult )
 {
+   if( m_printFunctionNames )
+   {
+      cout << "fn: " << __FUNCTION__ << endl;
+   }
    ConnectionToUser* connection = GetUserConnection( connectionId );
    if( connection )
    {
@@ -475,6 +521,10 @@ bool     DiplodocusLogin:: HandleUserLoginResult( U32 connectionId, const Packet
 
 bool     DiplodocusLogin:: HandleAdminRequestUserProfile( U32 connectionId, const PacketDbQueryResult* dbResult )
 {
+   if( m_printFunctionNames == true )
+   {
+      cout << "fn: " << __FUNCTION__ << endl;
+   }
    ConnectionToUser* connection = GetUserConnection( connectionId );
    if( connection )
    {
@@ -488,6 +538,10 @@ bool     DiplodocusLogin:: HandleAdminRequestUserProfile( U32 connectionId, cons
 
 bool     DiplodocusLogin:: LogUserOut( U32 connectionId, bool wasDisconnectedByError )
 {
+   if( m_printFunctionNames == true )
+   {
+      cout << "fn: " << __FUNCTION__ << endl;
+   }
    ConnectionToUser* connection = GetUserConnection( connectionId );
    if( connection )
    {
@@ -505,6 +559,10 @@ bool     DiplodocusLogin:: LogUserOut( U32 connectionId, bool wasDisconnectedByE
 
 void     DiplodocusLogin:: FinalizeLogout( U32 connectionId, bool wasDisconnectedByError )
 {
+   if( m_printFunctionNames == true )
+   {
+      cout << "fn: " << __FUNCTION__ << endl;
+   }
    ConnectionToUser* connection = GetUserConnection( connectionId );
    if( connection )
    {
@@ -538,6 +596,10 @@ void     DiplodocusLogin:: FinalizeLogout( U32 connectionId, bool wasDisconnecte
 
 bool  DiplodocusLogin:: IsUserConnectionValid( U32 connectionId )
 {
+   if( m_printFunctionNames == true )
+   {
+      cout << "fn: " << __FUNCTION__ << endl;
+   }
    Threading::MutexLock locker( m_inputChainListMutex );
    UserConnectionMapConstIterator it = m_userConnectionMap.find( connectionId );
    if( it != m_userConnectionMap.end() )
@@ -547,6 +609,11 @@ bool  DiplodocusLogin:: IsUserConnectionValid( U32 connectionId )
 
 ConnectionToUser*     DiplodocusLogin:: GetUserConnection( U32 connectionId )
 {
+   if( m_printFunctionNames == true )
+   {
+      cout << "fn: " << __FUNCTION__ << endl;
+   }
+
    Threading::MutexLock locker( m_inputChainListMutex );
    UserConnectionMapIterator it = m_userConnectionMap.find( connectionId );
    if( it != m_userConnectionMap.end() )
@@ -558,6 +625,10 @@ ConnectionToUser*     DiplodocusLogin:: GetUserConnection( U32 connectionId )
 
 void    DiplodocusLogin:: ReinsertUserConnection( int oldIndex, int newIndex )
 {
+   if( m_printFunctionNames == true )
+   {
+      cout << "fn: " << __FUNCTION__ << endl;
+   }
    Threading::MutexLock locker( m_inputChainListMutex );
     UserConnectionMapIterator it = m_userConnectionMap.find( oldIndex );
     if( it != m_userConnectionMap.end() )
@@ -569,6 +640,11 @@ void    DiplodocusLogin:: ReinsertUserConnection( int oldIndex, int newIndex )
 
 bool     DiplodocusLogin:: AddUserConnection( DiplodocusLogin:: UserConnectionPair pair )
 {
+   if( m_printFunctionNames == true )
+   {
+      cout << "fn: " << __FUNCTION__ << endl;
+   }
+
    Threading::MutexLock locker( m_inputChainListMutex );
    pair.second.SetManager( this );
    m_userConnectionMap.insert( pair );
@@ -577,6 +653,11 @@ bool     DiplodocusLogin:: AddUserConnection( DiplodocusLogin:: UserConnectionPa
 
 bool     DiplodocusLogin:: RemoveUserConnection( U32 connectionId )
 {
+   if( m_printFunctionNames == true )
+   {
+      cout << "fn: " << __FUNCTION__ << endl;
+   }
+
    Threading::MutexLock locker( m_inputChainListMutex );
    UserConnectionMapIterator it = m_userConnectionMap.find( connectionId );
    if( it != m_userConnectionMap.end() )
@@ -604,6 +685,10 @@ void     DiplodocusLogin:: RemoveOldConnections()
       if( connection.IsReadyToBeCleanedUp() == true && // do not remove in the middle of logging out
          connection.m_loggedOutTime != 0 )
       {
+      /*   if( m_printFunctionNames == true )
+         {
+            cout << "fn: " << __FUNCTION__ << endl;
+         }*/
          const int normalExpireTime = 3; // seconds
          if( difftime( testTimer, connection.m_loggedOutTime ) >= normalExpireTime )
          {
@@ -618,6 +703,11 @@ void     DiplodocusLogin:: RemoveOldConnections()
 
 U32     DiplodocusLogin:: FindUserAlreadyInGame( const string& userName, U8 gameProductId )
 {
+   if( m_printFunctionNames == true )
+   {
+      cout << "fn: " << __FUNCTION__ << endl;
+   }
+
    Threading::MutexLock locker( m_inputChainListMutex );
 
    UserConnectionMapIterator it = m_userConnectionMap.begin();
@@ -641,6 +731,11 @@ U32     DiplodocusLogin:: FindUserAlreadyInGame( const string& userName, U8 game
 
 void     DiplodocusLogin:: TellUserThatAccountAlreadyMatched( const CreateAccountResultsAggregator* aggregator )
 {
+   if( m_printFunctionNames == true )
+   {
+      cout << "fn: " << __FUNCTION__ << endl;
+   }
+
    if( aggregator->GetMatchingRecordType( CreateAccountResultsAggregator::MatchingRecord_Name ) )
    {
       SendErrorToClient( aggregator->GetConnectionId(), PacketErrorReport::ErrorType_CreateFailed_DuplicateUsername );  // E_NETWORK_DUPLICATE_USERNAME
@@ -657,6 +752,11 @@ void     DiplodocusLogin:: TellUserThatAccountAlreadyMatched( const CreateAccoun
 
 void DiplodocusLogin:: UpdateUserAccount( const CreateAccountResultsAggregator* aggregator )
 {
+   if( m_printFunctionNames == true )
+   {
+      cout << "fn: " << __FUNCTION__ << endl;
+   }
+
    U32 user_id = 0;
    if( aggregator->m_userRecordMatchingGKHash != 0 )
    {
@@ -739,6 +839,11 @@ void DiplodocusLogin:: UpdateUserAccount( const CreateAccountResultsAggregator* 
 
 void     DiplodocusLogin:: CreateNewPendingUserAccount( const CreateAccountResultsAggregator* aggregator, bool setGameKitHashToNUll )
 {
+   if( m_printFunctionNames == true )
+   {
+      cout << "fn: " << __FUNCTION__ << endl;
+   }
+
    string query = "INSERT INTO user_temp_new_user (user_name, user_name_match, user_pw_hash, user_email, user_gamekit_hash, game_id, language_id) "
                                  "VALUES ('%s', '%s', '%s', '%s', '%s', '%s', '%s')";
 
@@ -775,6 +880,11 @@ void     DiplodocusLogin:: CreateNewPendingUserAccount( const CreateAccountResul
 
 void     DiplodocusLogin:: UpdatePendingUserRecord( const CreateAccountResultsAggregator* aggregator )
 {
+   if( m_printFunctionNames == true )
+   {
+      cout << "fn: " << __FUNCTION__ << endl;
+   }
+
    string query = "UPDATE user_temp_new_user SET user_name='%s', user_name_match='%s', "
          "user_pw_hash='%s', user_email='%s', user_gamekit_hash='%s', game_id='%s', "
          "language_id='%s', was_email_sent='0', lookup_key=NULL, flagged_as_invalid='0' WHERE id='";
@@ -810,6 +920,11 @@ void     DiplodocusLogin:: UpdatePendingUserRecord( const CreateAccountResultsAg
 
 void     DiplodocusLogin:: CreateNewUserAccount( const CreateAccountResultsAggregator* aggregator, bool setGkHashTo0 )
 {
+   if( m_printFunctionNames == true )
+   {
+      cout << "fn: " << __FUNCTION__ << endl;
+   }
+
    U32 hash = static_cast<U32>( GenerateUniqueHash( boost::lexical_cast< string >( aggregator->GetConnectionId() ) + aggregator->m_useremail ) );
 
    string newUuid = GenerateUUID( GetCurrentMilliseconds() + hash );
@@ -854,6 +969,11 @@ void     DiplodocusLogin:: CreateNewUserAccount( const CreateAccountResultsAggre
 
 bool        DiplodocusLogin:: CreateUserAccount( U32 connectionId, const string& email, const string& password, const string& userName, const string& deviceAccountId, const string& deviceId, U8 languageId, U8 gameProductId )
 {
+   if( m_printFunctionNames == true )
+   {
+      cout << "fn: " << __FUNCTION__ << endl;
+   }
+
    if( IsUserConnectionValid( connectionId ) )
    {
       string str = "ERROR: Login server, user attempted to create a second account while logged in, userName: ";
@@ -949,6 +1069,11 @@ bool        DiplodocusLogin:: CreateUserAccount( U32 connectionId, const string&
 
 int         DiplodocusLogin:: FindProductByName( const string& name )
 {
+   if( m_printFunctionNames == true )
+   {
+      cout << "fn: " << __FUNCTION__ << endl;
+   }
+
    std::string lowercase_productUUID = name; 
    std::transform( lowercase_productUUID.begin(), lowercase_productUUID.end(), lowercase_productUUID.begin(), ::tolower );
 
@@ -968,6 +1093,11 @@ int         DiplodocusLogin:: FindProductByName( const string& name )
 
 bool        DiplodocusLogin:: FindProductByLookupName( const string& lookupName, ProductInfo& productDefn )
 {
+   if( m_printFunctionNames == true )
+   {
+      cout << "fn: " << __FUNCTION__ << endl;
+   }
+
    ProductList::iterator it = m_productList.begin();
    while( it != m_productList.end() )
    {
@@ -983,6 +1113,11 @@ bool        DiplodocusLogin:: FindProductByLookupName( const string& lookupName,
 
 bool        DiplodocusLogin:: FindProductByUuid( const string& uuid, ProductInfo& returnPi  )
 {
+   if( m_printFunctionNames == true )
+   {
+      cout << "fn: " << __FUNCTION__ << endl;
+   }
+
    vector< ProductInfo >::iterator it = m_productList.begin();
    while( it != m_productList.end() )
    {
@@ -999,6 +1134,11 @@ bool        DiplodocusLogin:: FindProductByUuid( const string& uuid, ProductInfo
 
 int        DiplodocusLogin:: FindProductByVendorUuid( const string& vendorUuid )
 {
+   if( m_printFunctionNames == true )
+   {
+      cout << "fn: " << __FUNCTION__ << endl;
+   }
+
    std::string lowercase_productUUID = vendorUuid; 
    std::transform( lowercase_productUUID.begin(), lowercase_productUUID.end(), lowercase_productUUID.begin(), ::tolower );
 
@@ -1018,6 +1158,11 @@ int        DiplodocusLogin:: FindProductByVendorUuid( const string& vendorUuid )
 
 bool        DiplodocusLogin:: GetProductByIndex( int index, ProductInfo& returnPi )
 {
+   if( m_printFunctionNames == true )
+   {
+      cout << "fn: " << __FUNCTION__ << endl;
+   }
+
    if( index > (int) m_productList.size() )
    {
       return false;
@@ -1028,6 +1173,11 @@ bool        DiplodocusLogin:: GetProductByIndex( int index, ProductInfo& returnP
 
 bool        DiplodocusLogin:: GetProductByProductId( int productId, ProductInfo& returnPi  )
 {
+   if( m_printFunctionNames == true )
+   {
+      cout << "fn: " << __FUNCTION__ << endl;
+   }
+
    vector< ProductInfo >::iterator it = m_productList.begin();
    while( it != m_productList.end() )
    {
@@ -1047,6 +1197,11 @@ bool        DiplodocusLogin:: GetProductByProductId( int productId, ProductInfo&
 // how can we trust these values?
 bool        DiplodocusLogin:: StoreUserPurchases( U32 connectionId, const PacketListOfUserAggregatePurchases* deviceReportedPurchases )
 {
+   if( m_printFunctionNames == true )
+   {
+      cout << "fn: " << __FUNCTION__ << endl;
+   }
+
    Threading::MutexLock locker( m_inputChainListMutex );
    ConnectionToUser* connection = GetUserConnection( connectionId );
    if( connection == NULL )
@@ -1070,6 +1225,11 @@ bool        DiplodocusLogin:: StoreUserPurchases( U32 connectionId, const Packet
 
 bool   DiplodocusLogin:: RequestListOfPurchases( U32 connectionId, const PacketListOfUserPurchasesRequest* purchase )
 {
+   if( m_printFunctionNames == true )
+   {
+      cout << "fn: " << __FUNCTION__ << endl;
+   }
+
    ConnectionToUser* connection = GetUserConnection( connectionId );
    if( connection == NULL || connection->status != ConnectionToUser::LoginStatus_LoggedIn )
    {
@@ -1085,6 +1245,11 @@ bool   DiplodocusLogin:: RequestListOfPurchases( U32 connectionId, const PacketL
 
 bool   DiplodocusLogin:: RequestListOfPurchasesUpdate( const PacketListOfUserPurchasesUpdated* userInventory )
 {
+   if( m_printFunctionNames == true )
+   {
+      cout << "fn: " << __FUNCTION__ << endl;
+   }
+
    ConnectionToUser* connection = GetUserConnection( userInventory->userConnectionId );
    if( connection == NULL || connection->status != ConnectionToUser::LoginStatus_LoggedIn )
    {
@@ -1100,6 +1265,11 @@ bool   DiplodocusLogin:: RequestListOfPurchasesUpdate( const PacketListOfUserPur
 
 bool   DiplodocusLogin:: AddPurchase( U32 connectionId, const PacketAddPurchaseEntry* purchase )
 {
+   if( m_printFunctionNames == true )
+   {
+      cout << "fn: " << __FUNCTION__ << endl;
+   }
+
    ConnectionToUser* connection = GetUserConnection( connectionId );
    if( connection == NULL || connection->status != ConnectionToUser::LoginStatus_LoggedIn )
    {
@@ -1115,6 +1285,11 @@ bool   DiplodocusLogin:: AddPurchase( U32 connectionId, const PacketAddPurchaseE
 
 bool     DiplodocusLogin:: RequestProfile( U32 connectionId, const PacketRequestUserProfile* profileRequest )
 {
+   if( m_printFunctionNames == true )
+   {
+      cout << "fn: " << __FUNCTION__ << endl;
+   }
+
    ConnectionToUser* connection = GetUserConnection( connectionId );
    if( connection == NULL || connection->status != ConnectionToUser::LoginStatus_LoggedIn )
    {
@@ -1128,7 +1303,12 @@ bool     DiplodocusLogin:: RequestProfile( U32 connectionId, const PacketRequest
 //---------------------------------------------------------------
 
 bool     DiplodocusLogin:: UpdateProfile( U32 connectionId, const PacketUpdateUserProfile* profileRequest )
-{
+{   
+   if( m_printFunctionNames == true )
+   {
+      cout << "fn: " << __FUNCTION__ << endl;
+   }
+
    ConnectionToUser* connection = GetUserConnection( connectionId );
    if( connection == NULL || connection->status != ConnectionToUser::LoginStatus_LoggedIn )
    {
@@ -1143,6 +1323,11 @@ bool     DiplodocusLogin:: UpdateProfile( U32 connectionId, const PacketUpdateUs
 
 bool     DiplodocusLogin:: UpdateProfile( U32 connectionId, const PacketUpdateSelfProfile* profileRequest )
 {
+   if( m_printFunctionNames == true )
+   {
+      cout << "fn: " << __FUNCTION__ << endl;
+   }
+
    ConnectionToUser* connection = GetUserConnection( connectionId );
    if( connection == NULL || connection->status != ConnectionToUser::LoginStatus_LoggedIn )
    {
@@ -1157,6 +1342,11 @@ bool     DiplodocusLogin:: UpdateProfile( U32 connectionId, const PacketUpdateSe
 
 bool     DiplodocusLogin:: HandleRequestListOfProducts( U32 connectionId, PacketRequestListOfProducts* purchaseRequest )
 {
+   if( m_printFunctionNames == true )
+   {
+      cout << "fn: " << __FUNCTION__ << endl;
+   }
+
    ConnectionToUser* connection = GetUserConnection( connectionId );
    if( connection == NULL || connection->status != ConnectionToUser::LoginStatus_LoggedIn )
    {
@@ -1225,6 +1415,11 @@ bool     DiplodocusLogin:: HandleRequestListOfProducts( U32 connectionId, Packet
 
 bool  DiplodocusLogin:: RequestOthersProfile( U32 connectionId, const PacketRequestOtherUserProfile* profileRequest )
 {
+   if( m_printFunctionNames == true )
+   {
+      cout << "fn: " << __FUNCTION__ << endl;
+   }
+
    ConnectionToUser* connection = GetUserConnection( connectionId );
    if( connection == NULL || connection->status != ConnectionToUser::LoginStatus_LoggedIn )
    {
@@ -1239,6 +1434,11 @@ bool  DiplodocusLogin:: RequestOthersProfile( U32 connectionId, const PacketRequ
 
 bool  DiplodocusLogin::ThrottleUser( U32 userConnectionId, const PacketLoginDebugThrottleUserPackets* throttleRequest )
 {
+   if( m_printFunctionNames == true )
+   {
+      cout << "fn: " << __FUNCTION__ << endl;
+   }
+
    ConnectionToUser* connection = GetUserConnection( userConnectionId );
    if( connection == NULL || connection->status != ConnectionToUser::LoginStatus_LoggedIn )
    {
@@ -1259,6 +1459,11 @@ bool  DiplodocusLogin::ThrottleUser( U32 userConnectionId, const PacketLoginDebu
 
 bool     DiplodocusLogin::EchoHandler( U32 userConnectionId )
 {
+   if( m_printFunctionNames == true )
+   {
+      cout << "fn: " << __FUNCTION__ << endl;
+   }
+
    ConnectionToUser* connection = GetUserConnection( userConnectionId );
    if( connection == NULL || connection->status != ConnectionToUser::LoginStatus_LoggedIn )
    {
@@ -1273,8 +1478,13 @@ bool     DiplodocusLogin::EchoHandler( U32 userConnectionId )
 
 //---------------------------------------------------------------
 
-ConnectionToUser*     DiplodocusLogin:: GetLoadedUserConnectionByUuid(const string & uuid )
+ConnectionToUser*     DiplodocusLogin:: GetLoadedUserConnectionByUuid( const string & uuid )
 {
+   if( m_printFunctionNames == true )
+   {
+      cout << "fn: " << __FUNCTION__ << endl;
+   }
+
    Threading::MutexLock locker( m_inputChainListMutex );
    UserConnectionMapIterator it = m_userConnectionMap.begin();
    while( it != m_userConnectionMap.end() )
@@ -1291,6 +1501,11 @@ ConnectionToUser*     DiplodocusLogin:: GetLoadedUserConnectionByUuid(const stri
 
 bool   DiplodocusLogin:: HandleCheats( U32 connectionId, const PacketCheat* cheat )
 {
+   if( m_printFunctionNames == true )
+   {
+      cout << "fn: " << __FUNCTION__ << endl;
+   }
+
    ConnectionToUser* connection = GetUserConnection( connectionId );
    if( connection == NULL || connection->status != ConnectionToUser::LoginStatus_LoggedIn )
    {
@@ -1307,6 +1522,11 @@ bool   DiplodocusLogin:: HandleCheats( U32 connectionId, const PacketCheat* chea
 
 bool     DiplodocusLogin:: UpdateProductFilterName( int index, string newVendorUuid )
 {
+   if( m_printFunctionNames == true )
+   {
+      cout << "fn: " << __FUNCTION__ << endl;
+   }
+
    std::transform( newVendorUuid.begin(), newVendorUuid.end(), newVendorUuid.begin(), ::tolower );
 
    m_productList[ index ].vendorUuid = newVendorUuid;
@@ -1328,6 +1548,11 @@ bool     DiplodocusLogin:: UpdateProductFilterName( int index, string newVendorU
 
 bool  DiplodocusLogin:: ForceUserLogoutAndBlock( U32 connectionId )
 {
+   if( m_printFunctionNames == true )
+   {
+      cout << "fn: " << __FUNCTION__ << endl;
+   }
+
    SendErrorToClient( connectionId, PacketErrorReport::ErrorType_UserBadLogin );
 
    string                     userName;
@@ -1381,6 +1606,11 @@ bool  DiplodocusLogin:: ForceUserLogoutAndBlock( U32 connectionId )
 
 bool  DiplodocusLogin:: SendListOfGamesToGameServers( U32 connectionId, const KeyValueVector& kvArray )
 {
+   if( m_printFunctionNames == true )
+   {
+      cout << "fn: " << __FUNCTION__ << endl;
+   }
+
    if( IsUserConnectionValid( connectionId ) ) // user may have disconnected waiting for the db.
    {
       BaseOutputContainer::iterator itOutputs = m_listOfOutputs.begin();
@@ -1407,6 +1637,11 @@ bool  DiplodocusLogin:: SendListOfGamesToGameServers( U32 connectionId, const Ke
 
 bool  DiplodocusLogin:: UpdateLastLoggedInTime( U32 connectionId )
 {
+   if( m_printFunctionNames == true )
+   {
+      cout << "fn: " << __FUNCTION__ << endl;
+   }
+
    ConnectionToUser* connection = GetUserConnection( connectionId );
    if( connection )
    {
@@ -1420,6 +1655,11 @@ bool  DiplodocusLogin:: UpdateLastLoggedInTime( U32 connectionId )
 
 bool  DiplodocusLogin:: UpdateLastLoggedOutTime( U32 connectionId )
 {
+   if( m_printFunctionNames == true )
+   {
+      cout << "fn: " << __FUNCTION__ << endl;
+   }
+
    ConnectionToUser* connection = GetUserConnection( connectionId );
    if( connection )
    {
@@ -1477,6 +1717,11 @@ bool  DiplodocusLogin:: SendLoginStatus(  ChainType*  destinationServerPtr,
                                           bool isLoggedIn, 
                                           bool wasDisconnectedByError )
 {
+   if( m_printFunctionNames == true )
+   {
+      cout << "fn: " << __FUNCTION__ << endl;
+   }
+
    if( destinationServerPtr == NULL )
       return false;
 
@@ -1537,6 +1782,11 @@ bool  DiplodocusLogin:: SendLoginStatusToOtherServers( const string& userName,
                                                      bool isLoggedIn, 
                                                      bool wasDisconnectedByError )
 {
+   if( m_printFunctionNames == true )
+   {
+      cout << "fn: " << __FUNCTION__ << endl;
+   }
+
    // send this to every other listening server
    BaseOutputContainer::iterator itOutputs = m_listOfOutputs.begin();
    //cout << "SendLoginStatusToOtherServers" << endl;
@@ -1586,6 +1836,11 @@ bool  DiplodocusLogin:: SendLoginStatusTo_Non_GameServers( const string& userNam
                                                      bool isLoggedIn, 
                                                      bool wasDisconnectedByError )
 {
+   if( m_printFunctionNames == true )
+   {
+      cout << "fn: " << __FUNCTION__ << endl;
+   }
+
    // send this to every other listening server
    BaseOutputContainer::iterator itOutputs = m_listOfOutputs.begin();
    cout << "SendLoginStatusTo_Non_GameServers for user: " << userName << endl;
@@ -1594,11 +1849,17 @@ bool  DiplodocusLogin:: SendLoginStatusTo_Non_GameServers( const string& userNam
       ChainType*  outputPtr = static_cast< ChainType*> ( (*itOutputs).m_interface );
       itOutputs++;
 
-      FruitadensLogin* login = static_cast< FruitadensLogin* >( outputPtr );      
+      cout << outputPtr->GetClassName() << endl;
+      if( outputPtr->DoesNameMatch( "FruitadensLogin" ) != true )
+      {
+         continue;
+      }
+      FruitadensLogin* login = static_cast< FruitadensLogin* >( outputPtr );
       if( login->IsGameServer() == true )
       {
          continue;
       }
+
       SendLoginStatus( outputPtr, 
                         userName, 
                        userUuid, 
@@ -1613,6 +1874,11 @@ bool  DiplodocusLogin:: SendLoginStatusTo_Non_GameServers( const string& userNam
                        languageId, 
                        isLoggedIn, 
                        wasDisconnectedByError );
+   }
+
+   if( m_printFunctionNames == true )
+   {
+      cout << "fn: " << __FUNCTION__ " exit " << endl;
    }
 
    return true;
@@ -1632,6 +1898,11 @@ bool  DiplodocusLogin:: SendLoginStatusTo_GameServers( const string& userName,
                                                      bool isLoggedIn, 
                                                      bool wasDisconnectedByError )
 {
+   if( m_printFunctionNames == true )
+   {
+      cout << "fn: " << __FUNCTION__ << endl;
+   }
+
    // send this to every other listening server
    BaseOutputContainer::iterator itOutputs = m_listOfOutputs.begin();
    cout << "SendLoginStatusTo_GameServers for user: " << userName << endl;
@@ -1640,6 +1911,10 @@ bool  DiplodocusLogin:: SendLoginStatusTo_GameServers( const string& userName,
       ChainType*  outputPtr = static_cast< ChainType*> ( (*itOutputs).m_interface );
       itOutputs++;
 
+      if( outputPtr->DoesNameMatch( "FruitadensLogin" ) != true )
+      {
+         continue;
+      }
       FruitadensLogin* login = static_cast< FruitadensLogin* >( outputPtr );      
       if( login->IsGameServer() == false )
       {
@@ -1661,6 +1936,10 @@ bool  DiplodocusLogin:: SendLoginStatusTo_GameServers( const string& userName,
                        wasDisconnectedByError );
    }
 
+   if( m_printFunctionNames == true )
+   {
+      cout << "fn: " << __FUNCTION__ " exit " << endl;
+   }
    return true;
 }
 
@@ -1707,6 +1986,11 @@ bool     DiplodocusLogin:: SendListOfUserProductsToOtherServers( const string& u
 
 bool     DiplodocusLogin:: SendPacketToOtherServer( BasePacket* packet, U32 connectionId )
 {
+   if( m_printFunctionNames == true )
+   {
+      cout << "fn: " << __FUNCTION__ << endl;
+   }
+
    ConnectionToUser* connection = GetUserConnection( connectionId );
    if( connection )
    {
@@ -1734,6 +2018,11 @@ bool     DiplodocusLogin:: SendPacketToOtherServer( BasePacket* packet, U32 conn
 
 void     DiplodocusLogin:: UpdateUserRecord( CreateAccountResultsAggregator* aggregator )
 {
+   if( m_printFunctionNames == true )
+   {
+      cout << "fn: " << __FUNCTION__ << endl;
+   }
+
    // any duplicates should simply report back to the user that this account email or user id is already taken
    if( aggregator->IsDuplicateRecord() && aggregator->ShouldUpdatePendingUserRecord() == false )
    {
@@ -1766,6 +2055,11 @@ void     DiplodocusLogin:: UpdateUserRecord( CreateAccountResultsAggregator* agg
 
 bool  DiplodocusLogin::HandlePacketFromOtherServer( BasePacket* packet, U32 connectionId )// not thread safe
 {
+   if( m_printFunctionNames == true )
+   {
+      cout << "fn: " << __FUNCTION__ << endl;
+   }
+
    U8 packetType = packet->packetType;
    U8 subType = packet->packetSubType;
 
@@ -1796,6 +2090,11 @@ bool  DiplodocusLogin::HandlePacketFromOtherServer( BasePacket* packet, U32 conn
 // we simply send it on.
 bool     DiplodocusLogin::AddOutputChainData( BasePacket* packet, U32 connectionId ) 
 {
+   if( m_printFunctionNames == true )
+   {
+      cout << "fn: " << __FUNCTION__ << endl;
+   }
+
    if( packet->packetType == PacketType_ServerJobWrapper )
    {
       return HandlePacketToOtherServer( packet, connectionId );
@@ -1847,6 +2146,14 @@ void     DiplodocusLogin::UpdateDbResults()
    m_dbQueries.clear();
    m_mutex.unlock();
 
+   if( tempQueue.size() )
+   {
+      if( m_printFunctionNames == true )
+      {
+         cout << "fn: " << __FUNCTION__ << endl;
+      }
+   }
+
    deque< PacketDbQueryResult* >::iterator it = tempQueue.begin();
    while( it != tempQueue.end() )
    {
@@ -1864,6 +2171,11 @@ void     DiplodocusLogin::UpdateDbResults()
 
 bool     DiplodocusLogin:: HandleDbResult( PacketDbQueryResult* dbResult )
 {
+   if( m_printFunctionNames == true )
+   {
+      cout << "fn: " << __FUNCTION__ << endl;
+   }
+
    U32 connectionId = dbResult->id;
 
    // new user accounts are not going to be part of the normal login.
@@ -2060,6 +2372,11 @@ bool     DiplodocusLogin:: HandleDbResult( PacketDbQueryResult* dbResult )
 
 void     DiplodocusLogin:: StoreAllProducts( const PacketDbQueryResult* dbResult )
 {
+   if( m_printFunctionNames == true )
+   {
+      cout << "fn: " << __FUNCTION__ << endl;
+   }
+
    ProductTable            enigma( dbResult->bucket );
 
    ProductTable::iterator  it = enigma.begin();
@@ -2113,6 +2430,11 @@ void     DiplodocusLogin:: StoreAllProducts( const PacketDbQueryResult* dbResult
 
 void     DiplodocusLogin:: StoreSingleProduct( const PacketDbQueryResult* dbResult )
 {
+   if( m_printFunctionNames == true )
+   {
+      cout << "fn: " << __FUNCTION__ << endl;
+   }
+
    ProductTable            enigma( dbResult->bucket );
 
    string vendorUuid;
@@ -2177,6 +2499,11 @@ void     DiplodocusLogin:: StoreSingleProduct( const PacketDbQueryResult* dbResu
 
 void     DiplodocusLogin:: SendListOfPurchasesToUser( U32 connectionId, PacketDbQueryResult* dbResult )
 {
+   if( m_printFunctionNames == true )
+   {
+      cout << "fn: " << __FUNCTION__ << endl;
+   }
+
    ConnectionToUser* connection = GetUserConnection( connectionId );
    if( connection )
    {
@@ -2188,6 +2515,11 @@ void     DiplodocusLogin:: SendListOfPurchasesToUser( U32 connectionId, PacketDb
 
 void     DiplodocusLogin:: StoreListOfUsersProductsFromDB( U32 connectionId, PacketDbQueryResult* dbResult )
 {
+   if( m_printFunctionNames == true )
+   {
+      cout << "fn: " << __FUNCTION__ << endl;
+   }
+
    ConnectionToUser* connection = GetUserConnection( connectionId );
    if( connection )
    {
@@ -2199,6 +2531,11 @@ void     DiplodocusLogin:: StoreListOfUsersProductsFromDB( U32 connectionId, Pac
 
 void     DiplodocusLogin:: AddNewProductToDb( const PurchaseEntry& product )
 {
+   if( m_printFunctionNames == true )
+   {
+      cout << "fn: " << __FUNCTION__ << endl;
+   }
+
    std::string lowercase_productUuidname = product.productUuid; 
    std::transform( lowercase_productUuidname.begin(), lowercase_productUuidname.end(), lowercase_productUuidname.begin(), ::tolower );
    
@@ -2245,6 +2582,11 @@ void     DiplodocusLogin:: AddNewProductToDb( const PurchaseEntry& product )
 
 void     DiplodocusLogin:: SendListOfUserProductsToAssetServer( U32 connectionId )
 {
+   if( m_printFunctionNames == true )
+   {
+      cout << "fn: " << __FUNCTION__ << endl;
+   }
+
    ConnectionToUser* connection = GetUserConnection( connectionId );
    if( connection )
    {
@@ -2281,6 +2623,11 @@ void     DiplodocusLogin:: SendListOfUserProductsToAssetServer( U32 connectionId
 
 void     DiplodocusLogin:: LoadInitializationData()
 {
+   if( m_printFunctionNames == true )
+   {
+      cout << "fn: " << __FUNCTION__ << endl;
+   }
+
    PacketDbQuery* dbQuery = new PacketDbQuery;
    dbQuery->id =           0;
    dbQuery->lookup =       QueryType_LoadProductInfo;
@@ -2297,6 +2644,11 @@ void     DiplodocusLogin:: LoadInitializationData()
 
 void     DiplodocusLogin::TrackCountStats( StatTracking stat, float value, int sub_category )
 {
+   if( m_printFunctionNames == true )
+   {
+      cout << "fn: " << __FUNCTION__ << endl;
+   }
+
    StatTrackingConnections::TrackCountStats( m_serverName, m_serverId, stat, value, sub_category );
 }
 
@@ -2315,6 +2667,10 @@ void     DiplodocusLogin::RunHourlyStats()
 
    if( difftime( currentTime, m_timestampHourlyStatServerStatisics ) >= timeoutHourlyStatisics ) 
    {
+      if( m_printFunctionNames == true )
+      {
+         cout << "fn: " << __FUNCTION__ << endl;
+      }
       m_timestampHourlyStatServerStatisics = ZeroOutMinutes( currentTime );
 
       //--------------------------------
@@ -2358,6 +2714,10 @@ void     DiplodocusLogin::RunDailyStats()
    time( &currentTime );
    if( difftime( currentTime, m_timestampDailyStatServerStatisics ) >= timeoutDailyStatisics ) 
    {
+      if( m_printFunctionNames == true )
+      {
+         cout << "fn: " << __FUNCTION__ << endl;
+      }
       m_timestampDailyStatServerStatisics = ZeroOutHours( currentTime );
 
       float numUniqueUsers = static_cast< float >( m_uniqueUsers.size() );
@@ -2374,6 +2734,11 @@ void     DiplodocusLogin::RunDailyStats()
 
 void     DiplodocusLogin::ClearOutUniqueUsersNotLoggedIn()
 {
+   if( m_printFunctionNames == true )
+   {
+      cout << "fn: " << __FUNCTION__ << endl;
+   }
+
    // clear out
    set< string >::iterator it = m_uniqueUsers.begin();
    while( it != m_uniqueUsers.end() )
@@ -2401,6 +2766,13 @@ void     DiplodocusLogin::ClearOutUniqueUsersNotLoggedIn()
 
 int      DiplodocusLogin:: CallbackFunction()
 {
+   /*// too chatty to be useful
+   if( m_printFunctionNames == true )
+   {
+      cout << "fn: ClearOutUniqueUsersNotLoggedIn" << endl;
+   }
+
+   */
    CommonUpdate();
 
    if( m_isInitializing == false )

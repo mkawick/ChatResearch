@@ -109,6 +109,7 @@ namespace Database
       static const JobId      JobIdError = 0xffffffff;
    public:
       Deltadromeus();
+      const char*       GetClassName() const { return "Deltadromeus"; }
 
       virtual void     SetConnectionInfo( const string& serverName, U16 port, const string& username,const string& password, const string& dbName );
       virtual bool     IsConnected() const { return m_isConnected; }

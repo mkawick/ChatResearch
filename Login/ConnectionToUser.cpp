@@ -643,6 +643,7 @@ void     ConnectionToUser:: SendListOfOwnedProductsToClient( U32 m_connectionId 
 
    PacketListOfUserAggregatePurchases* purchases = new PacketListOfUserAggregatePurchases;
 
+   purchases->userUuid = m_userUuid;
    map< U32, ProductBrief >::iterator it = productsOwned.begin();
    while( it != productsOwned.end() )
    {
@@ -684,13 +685,13 @@ void     ConnectionToUser:: SendListOfOwnedProductsToClient( U32 m_connectionId 
 
    int num = purchases->purchases.size();
    cout << "SendListOfOwnedProductsToClient:: list of products: num=" << num << endl;
-   for( int i=0; i< num; i++ )
+  /* for( int i=0; i< num; i++ )
    {
       const PurchaseEntry& pe = purchases->purchases[i];
       
       cout << i << ") Uuid:    " << pe.productUuid << endl;
       cout << "   name:        " << pe.name << endl;
-   }
+   }*/
    cout << "endlist" << endl << endl;
 
    userManager->SendPacketToGateway( purchases, m_connectionId );

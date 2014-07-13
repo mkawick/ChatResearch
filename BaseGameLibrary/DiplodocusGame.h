@@ -43,6 +43,7 @@ public:
 
 public:
    DiplodocusGame( const string& serverName, U32 serverId, U8 gameProductId = 0 );
+   const char* GetClassName() const { return "DiplodocusGame"; }
 
    void     RegisterCallbacks( GameCallbacks* callbacks ) { m_callbacks = callbacks; }
 

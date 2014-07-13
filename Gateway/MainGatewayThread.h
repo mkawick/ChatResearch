@@ -78,6 +78,7 @@ public:
 public:
    MainGatewayThread( const string& serverName, U32 serverId );
    ~MainGatewayThread();
+   const char*    GetClassName() const { return "MainGatewayThread"; }
    void           Init();
 
    void           AllowUnauthenticatedConnections() { m_connectionsRequireAuthentication = false; }

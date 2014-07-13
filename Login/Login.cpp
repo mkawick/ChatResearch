@@ -100,6 +100,7 @@ void  PrintInstructions()
    cout << "    notification.address - when a user registers a device..." << endl;
    cout << "    notification.port - when a user registers a device..." << endl;
 
+   cout << "    print.functions   - print each function for debugging" << endl;
    cout << "    print.packets     - print each packet for debugging" << endl;
 
    cout << "    autoAddLoginProduct - automatically add the product from which you login" << endl;
@@ -142,6 +143,9 @@ int main( int argc, const char* argv[] )
 
    string autoAddLoginProductString = "true";
 
+   string printFunctionsString = "false";
+   string printPacketTypes = "false";
+
    
    //--------------------------------------------------------------
 
@@ -176,6 +180,9 @@ int main( int argc, const char* argv[] )
 
    parser.FindValue( "autoAddLoginProduct", autoAddLoginProductString );
 
+   parser.FindValue( "print.functions", printFunctionsString );
+   parser.FindValue( "print.packets", printPacketTypes );
+
    string dbPortString = "16384";
    string dbIpAddress = "localhost";
    string dbUsername = "root";
@@ -197,7 +204,9 @@ int main( int argc, const char* argv[] )
          purchasePort=7702, 
          analyticsPort = 7802, 
          notificationPort = 7902;
-   bool autoAddLoginProduct = true;
+   bool autoAddLoginProduct = true,
+         printPackets = false, 
+         printFunctions = false;
 
    try 
    {
@@ -221,7 +230,14 @@ int main( int argc, const char* argv[] )
        std::cout << "Error: input string was not valid" << std::endl;
    }
 
-   
+   if( printPacketTypes == "1" || printPacketTypes == "true" || printPacketTypes == "TRUE" )
+   {
+      printPackets = true;
+   }
+   if( printFunctionsString == "1" || printFunctionsString == "true" || printFunctionsString == "TRUE" )
+   {
+      printFunctions = true;
+   }
 
    //--------------------------------------------------------------
 
@@ -261,6 +277,8 @@ int main( int argc, const char* argv[] )
       loginServer->AddOutputChain( delta );
       loginServer->SetupListening( listenPort );
       loginServer->AutoAddTheProductFromWhichYouLogin( autoAddLoginProduct );
+      loginServer->PrintPacketTypes( printPackets );
+      loginServer->PrintFunctionNames( printFunctions );
       
       //----------------------------------
 

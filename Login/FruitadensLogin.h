@@ -8,9 +8,9 @@ class FruitadensLogin : public FruitadensServer
 public:
    FruitadensLogin( const char* name );
 
-private:
+   const char*  GetClassName() const { return "FruitadensLogin"; }
 
-   //void     InitalConnectionCallback();
+private:
    bool     FilterOutwardPacket( BasePacket* packet ) const;
    int      MainLoop_OutputProcessing();
 };

@@ -98,19 +98,86 @@ void  DbJobBase::AddEscapedString( DbHandle* connection, const string& escapeMe 
       return;
    }
 
-   char escapedVersion[512];
+   // in the overwhelmin majority of cases, 512 is more than enough.
+   // But occassionally...
+   const int localBufferLen  = 512;
+   int stringLen = static_cast< U32 >( escapeMe.size() );
+   int len = stringLen;
+   char localBuffer[ localBufferLen ];
+   char* escapedVersion = localBuffer;
+   if( len > localBufferLen )
+   {
+      stringLen = len + localBufferLen*4;// this can be very long
+      escapedVersion = new char [stringLen]; // add a little extra
+   }
 
-   mysql_real_escape_string( connection, escapedVersion, escapeMe.c_str(), static_cast< U32 >( escapeMe.size() ) );
-   if( strlen( escapedVersion ) == 0 )
+   mysql_real_escape_string( connection, escapedVersion, escapeMe.c_str(), escapeMe.size() );
+   size_t escapedLen = strlen( escapedVersion );
+   if( escapedLen == 0 )
       return;
 
-   if( strlen( escapedVersion ) > 0 )
+   if( escapedLen > 0 )
    {
-      boost::replace_first( m_query, "%s", escapedVersion);// much, much better than sprintf
+      if( escapedLen > localBufferLen )
+      {
+         const string searchString = "%s";
+         const size_t searchStringLen = searchString.size();
+         const char* ptr = strstr( m_query.c_str(), searchString.c_str() );
+         if( ptr != NULL )
+         {
+            // this was very ugly. the allocator wouldn't allocate enough ram, 
+            // temp strings overwrote the allocator. There is a nice article
+            // about MS fixed the string allocator bugs in VS 2012
+            boost::replace_first( m_query, "%s", escapedVersion );
+            //size_t firstPos = ptr - m_query.c_str();
+           // if( firstPos != string::npos )
+            {
+              //m_query.replace( firstPos, searchStringLen, escapedVersion );
+             /*  size_t remainingLen = m_query.size() - firstPos - searchStringLen;
+
+               int newStrLen = m_query.size() + escapedLen;
+               char* temp = new char[ newStrLen + 1 ];
+               temp[ newStrLen ] = 0;// null term
+               char* ptr = temp;
+               strncpy( ptr, m_query.c_str(), firstPos );
+               ptr += firstPos;
+               strncpy( ptr, escapedVersion, escapedLen );
+               ptr += escapedLen;
+               strncpy( ptr, m_query.c_str()+firstPos+searchStringLen, remainingLen );
+               ptr += remainingLen;
+               *ptr = 0;
+               m_query.clear();
+               m_query.reserve( newStrLen + 10 );
+               m_query = temp;
+               delete [] temp;*/
+
+               /*std::string str1 = m_query.substr (0, firstPos);
+               std::string str2 = m_query.substr (firstPos+searchStringLen, totalLen);
+               m_query = str1;
+               m_query += escapedVersion;
+               m_query += str2;*/
+            }
+         }
+      }
+      else // this works fine for smaller strings
+      {
+         boost::replace_first( m_query, "%s", escapedVersion );
+      }
+      //string searchString = "%s";
+      //size_t searchStringLen = searchString.size();
+      //size_t firstPos = m_query.find_first_of( searchString );
+      
+      //boost::replace_first( m_query, "%s", escapedVersion );// much, much better than sprintf
+      //string replaced = insertQuery.replace( firstPos, searchStringLen, receipt );
    }
    else
    {
       boost::replace_first( m_query, "%s", "" );// much, much better than sprintf
+   }
+
+   if( escapedVersion != localBuffer )
+   {
+      delete [] escapedVersion;
    }
 }
 

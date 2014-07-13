@@ -30,6 +30,7 @@ class StringBucket;
 class SalesManager;
 class PurchaseReceiptManager;
 class PacketTournament_PurchaseTournamentEntry;
+class PacketTournament_PurchaseTournamentEntryRefund;
 class PacketPurchase_ValidatePurchaseReceipt;
 
 ///////////////////////////////////////////////////////////////////
@@ -65,6 +66,7 @@ public:
    
    bool              HandleRequestFromClient( const PacketPurchase* packet ); 
    bool              MakePurchase( const PacketTournament_PurchaseTournamentEntry* packet, U32 connectionId );
+   bool              MakeRefund( const PacketTournament_PurchaseTournamentEntryRefund* packet, U32 connectionId );
 
    void              UserLoggedOut();
    bool              LogoutExpired();

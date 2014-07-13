@@ -94,6 +94,12 @@ public:
 
 public:
    DiplodocusLogin( const string& serverName, U32 serverId );
+
+   const char*    GetClassName() const { return "DiplodocusLogin"; }
+
+   void           PrintPacketTypes( bool printingOn = true );
+   void           PrintFunctionNames( bool printingOn = true );
+
    void           ServerWasIdentified( IChainedInterface* khaan );
    //void           OutputConnected( IChainedInterface * );
    void           AutoAddTheProductFromWhichYouLogin( bool addIt = false ) { m_autoAddProductFromWhichUsersLogin = addIt; }
@@ -239,6 +245,8 @@ private:
    int                        m_totalUserLoginSeconds;
    int                        m_totalNumLogouts;
    set< string >              m_uniqueUsers;
+   bool                       m_printPacketTypes;
+   bool                       m_printFunctionNames;
 
 private:
    //--------------------------------------------

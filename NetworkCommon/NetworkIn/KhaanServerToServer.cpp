@@ -80,7 +80,8 @@ bool  KhaanServerToServer::HandleInwardSerializedPacket( U8* data, int& offset )
       cout << "]" << dec << endl;
       cout << "**************************************************" << endl;
       cout << "**************************************************" << endl;
-      //offset = length;// break out of loop.
+      
+      return false;
    }
    return true;
 }
@@ -88,24 +89,62 @@ bool  KhaanServerToServer::HandleInwardSerializedPacket( U8* data, int& offset )
 bool	KhaanServerToServer :: OnDataReceived( U8* data, int length )
 {
    int offset = 0;
+   if( m_isExpectingMoreDataInPreviousPacket )
+   {
+      int numBytesToCopy = length;
+      if( m_expectedBytesReceivedSoFar + numBytesToCopy < m_expectedBytes )
+      {
+         // here we can only store the data and then return because we still do 
+         // not have the full packet yet.
+         memcpy( m_tempBuffer+m_expectedBytesReceivedSoFar, data, numBytesToCopy );
+         m_expectedBytesReceivedSoFar += numBytesToCopy;
+         return false;
+      }
+      else if( m_expectedBytesReceivedSoFar + length > m_expectedBytes )
+      {
+         numBytesToCopy = m_expectedBytes - m_expectedBytesReceivedSoFar;
+         memcpy( m_tempBuffer + m_expectedBytesReceivedSoFar, data, numBytesToCopy );
+         m_expectedBytesReceivedSoFar = m_expectedBytes;
+
+         // we have more bytes as part of a following packet following.
+         data += numBytesToCopy;// offset the pointer.. everything should be magical after this
+         length -= numBytesToCopy; // this may mean setting up another partial packet.
+         int tempOffset = 0;
+         HandleInwardSerializedPacket( m_tempBuffer, tempOffset );
+      }
+      else
+      {
+         memcpy( m_tempBuffer + m_expectedBytesReceivedSoFar, data, length );
+         int tempOffset = 0;
+         HandleInwardSerializedPacket( m_tempBuffer, tempOffset );
+         m_expectedBytes = 0;
+         m_expectedBytesReceivedSoFar = 0;
+         length = 0;
+      }
+      
+      m_isExpectingMoreDataInPreviousPacket = false;
+   }
+
+
    while( offset < length )
    {
-
-#ifdef TwoByteProtocol
+      /// before we parse, let's pull off the first two bytes
       U16 size = 0;
       Serialize::In( data, offset, size );
+      if( offset + size > length )
+      {
+         m_isExpectingMoreDataInPreviousPacket = true;
+         m_expectedBytes = size;
 
-      if( size > length )
-      { 
-         cout << "error on Gateway receiving packet info" << endl;
-         cout << "size : " << size << " > length : " << length << endl;
+         m_expectedBytesReceivedSoFar = length - offset;
+         memcpy( m_tempBuffer, data+offset, m_expectedBytesReceivedSoFar );
+         return false;
       }
-      assert( size <= length );
-#endif
 
-      //U16 size = 0;
-      //Serialize::In( data, offset, size );
-      HandleInwardSerializedPacket( data, offset );
+      if( HandleInwardSerializedPacket( data, offset ) == false )
+      {
+         offset = length;// break out of loop.
+      }
    }
 
    return true;

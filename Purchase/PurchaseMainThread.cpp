@@ -51,6 +51,7 @@ DiplodocusPurchase::DiplodocusPurchase( const string& serverName, U32 serverId )
    const int TwentySeconds = 20;
    m_purchaseReceiptManager = new PurchaseReceiptManager( QueryType_ReceiptLookup, this, ReceiptQuery, true );
    m_purchaseReceiptManager->SetPeriodicty( TwentySeconds ); //
+   m_purchaseReceiptManager->SetSalesManager( m_salesManager );
 
    vector< string > stringCategories;
    stringCategories.push_back( string( "product" ) );
