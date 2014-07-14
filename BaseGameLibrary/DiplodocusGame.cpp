@@ -602,6 +602,17 @@ bool     DiplodocusGame::SendPurchaseResultToClient( U32 connectionId, const str
    return false;
 }*/
 
+void     DiplodocusGame::LockMutex()
+{
+ /*  if( m_mutex.isLocked() ) // never hang
+      return;*/
+   m_mutex.lock();
+}
+void     DiplodocusGame::UnlockMutex()
+{
+   m_mutex.unlock();
+}
+
 //---------------------------------------------------------------
 
 void     DiplodocusGame::ConnectUser( const PacketPrepareForUserLogin* loginPacket )

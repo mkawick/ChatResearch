@@ -250,7 +250,7 @@ public:
    UuidString  userUuid;
    string      uniqueTransactionId; // fill this in with some unique value that you need
 
-   SerializedVector< PurchaseServerDebitItem > itemsToSpend;
+   SerializedVector< PurchaseServerDebitItem > itemsToRefund;
 };
 
 ///////////////////////////////////////////////////////////////////

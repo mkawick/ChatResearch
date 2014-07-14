@@ -264,6 +264,11 @@ bool  DiplodocusPurchase::HandlePacketFromOtherServer( BasePacket* packet, U32 c
             return HandlePurchaseRequest( static_cast< PacketTournament_PurchaseTournamentEntry* >( unwrappedPacket ), serverIdLookup );
          }
          break;
+      case PacketTournament::TournamentType_PurchaseTournamentEntryRefund:
+         {
+            return HandlePurchaseRefund( static_cast< PacketTournament_PurchaseTournamentEntryRefund* >( unwrappedPacket ), serverIdLookup );
+         }
+         break;
       }
       return false;
    }
@@ -362,6 +367,24 @@ bool     DiplodocusPurchase::HandlePurchaseRequest( const PacketTournament_Purch
    {
       //it->second.SetConnectionId( loginPacket->connectionId );
       it->second.MakePurchase( packet, connectionId );
+      return true;
+   }
+   //packet->
+   return false;
+}
+
+//---------------------------------------------------------------
+
+bool     DiplodocusPurchase::HandlePurchaseRefund( const PacketTournament_PurchaseTournamentEntryRefund* packet, U32 connectionId )
+{
+   U64 hashForUser = GenerateUniqueHash( packet->userUuid.c_str() );
+
+   Threading::MutexLock locker( m_mutex );
+   UAADMapIterator it = m_userTickets.find( hashForUser );
+   if( it != m_userTickets.end() )// user may be reloggin and such.. no biggie.. just ignore
+   {
+      //it->second.SetConnectionId( loginPacket->connectionId );
+      it->second.MakeRefund( packet, connectionId );
       return true;
    }
    //packet->

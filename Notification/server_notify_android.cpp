@@ -18,7 +18,7 @@ using namespace std;
 //#include "server_gamedata.h"
 //#include "server_log.h"
 //#include "string_funcs.h"
-#include "../NetworkCommon/ExternalApis/NotificationSender.h"
+#include "../NetworkCommon/ExternalApis/HTTPSender.h"
 
 
 #include <boost/format.hpp>

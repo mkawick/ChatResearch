@@ -75,6 +75,9 @@ public:
 
    //-----------------------------------------------------------------------------
 
+   void     LockMutex();
+   void     UnlockMutex();
+
 private:
    int      CallbackFunction();
    void	   UpdateAllConnections();

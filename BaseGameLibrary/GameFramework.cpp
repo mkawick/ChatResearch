@@ -420,6 +420,17 @@ void GameFramework::UpdatePushNotificationCount( U32 userId, int gameType, int n
       m_notificationServer->AddOutputChainData( wrapper, -1 );
    }
 }
+
+void     GameFramework::LockGameMutex()
+{
+   m_connectionManager->LockMutex();
+}
+
+void     GameFramework::UnlockGameMutex()
+{
+   m_connectionManager->UnlockMutex();
+}
+
 //-----------------------------------------------------
 
 void     GameFramework::AddTimer( U32 timerId, U32 callbackTimeMs ) // timers must be unique

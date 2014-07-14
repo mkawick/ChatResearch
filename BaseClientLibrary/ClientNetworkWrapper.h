@@ -203,8 +203,6 @@ public:
    //--------------------------------------------------------------
    // utility functions
 
-   U32      FindGame( const string& name ) const;
-   string   FindGameNameFromGameId( U32 id ) const;
    string   FindContact( const string& name ) const;
    string   FindContactFromUuid( const string& uuid ) const;
 

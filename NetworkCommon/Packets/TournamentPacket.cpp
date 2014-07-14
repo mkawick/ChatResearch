@@ -210,7 +210,7 @@ bool  PacketTournament_PurchaseTournamentEntryRefund::SerializeIn( const U8* dat
    PacketTournament::SerializeIn( data, bufferOffset );
    Serialize::In( data, bufferOffset, userUuid );
    Serialize::In( data, bufferOffset, uniqueTransactionId );
-   itemsToSpend.SerializeIn( data, bufferOffset );
+   itemsToRefund.SerializeIn( data, bufferOffset );
 
    return true;
 }
@@ -220,7 +220,7 @@ bool  PacketTournament_PurchaseTournamentEntryRefund::SerializeOut( U8* data, in
    PacketTournament::SerializeOut( data, bufferOffset );
    Serialize::Out( data, bufferOffset, userUuid );
    Serialize::Out( data, bufferOffset, uniqueTransactionId );
-   itemsToSpend.SerializeOut( data, bufferOffset );
+   itemsToRefund.SerializeOut( data, bufferOffset );
 
    return true;
 }

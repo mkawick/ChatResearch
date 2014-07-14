@@ -84,6 +84,8 @@ public:
 
 
    DiplodocusGame*   GetGame() { return m_connectionManager; }
+   void     LockGameMutex();
+   void     UnlockGameMutex();
 
    //----------------------------------------------
 

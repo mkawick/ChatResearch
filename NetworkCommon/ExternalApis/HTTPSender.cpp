@@ -15,7 +15,7 @@
 using boost::format;
 #include <curl/curl.h>
 
-#include "NotificationSender.h"
+#include "HTTPSender.h"
 
 #include "../General/server_log.h"
 

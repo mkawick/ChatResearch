@@ -441,11 +441,11 @@
 				Name="ExternalApis"
 				>
 				<File
-					RelativePath="..\NetworkCommon\ExternalApis\NotificationSender.cpp"
+					RelativePath="..\NetworkCommon\ExternalApis\HTTPSender.cpp"
 					>
 				</File>
 				<File
-					RelativePath="..\NetworkCommon\ExternalApis\NotificationSender.h"
+					RelativePath="..\NetworkCommon\ExternalApis\HTTPSender.h"
 					>
 				</File>
 			</Filter>

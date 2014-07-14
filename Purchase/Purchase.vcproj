@@ -61,7 +61,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="../Debug/PacketLibrary.lib"
+				AdditionalDependencies="../Debug/PacketLibrary.lib ws2_32.lib Secur32.lib ssleay32MTd.lib libeay32MTd.lib curllib.lib"
 				OutputFile="$(OutDir)\$(ProjectName)Server.exe"
 				LinkIncremental="2"
 				AdditionalLibraryDirectories="..\w32libs\lib"
@@ -423,11 +423,31 @@
 				Name="General"
 				>
 				<File
+					RelativePath="..\NetworkCommon\General\Base64.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\NetworkCommon\General\Base64.h"
+					>
+				</File>
+				<File
 					RelativePath="..\NetworkCommon\General\FixedLengthString.h"
 					>
 				</File>
 				<File
 					RelativePath="..\NetworkCommon\General\FixedLengthString.inl"
+					>
+				</File>
+			</Filter>
+			<Filter
+				Name="HTTP"
+				>
+				<File
+					RelativePath="..\NetworkCommon\ExternalApis\HTTPSender.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\NetworkCommon\ExternalApis\HTTPSender.h"
 					>
 				</File>
 			</Filter>

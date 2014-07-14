@@ -1603,53 +1603,7 @@ void     ClientNetworkWrapper::AddNotationToContact( const string& uuid, bool is
 }
 
 //-----------------------------------------------------------------------------
-/*
-bool  ClientNetworkWrapper::ChangeGame( const string& gameName )// either name or shortname
-{
-   U32 id = FindGame( gameName );
-   if( id == 0 )
-   {
-      return false;
-   }
-   else
-   {
-      m_selectedGame = id;
-   }
-   return true;
-}
 
-//-----------------------------------------------------------------------------
-
-U32   ClientNetworkWrapper::FindGame( const string& name ) const
-{
-   GameList::const_iterator it = m_gameList.begin();
-   while( it != m_gameList.end() )
-   {
-      const PacketGameIdentification& gameId = *it++;
-      if( gameId.name == name || gameId.shortName == name )
-      {
-         return gameId.gameId;
-      }
-   }
-   return 0;
-}
-
-//-----------------------------------------------------------------------------
-
-string   ClientNetworkWrapper::FindGameNameFromGameId( U32 id ) const
-{
-   GameList::const_iterator it = m_gameList.begin();
-   while( it != m_gameList.end() )
-   {
-      const PacketGameIdentification& gameId = *it++;
-      if( gameId.gameId == id )
-      {
-         return gameId.name;
-      }
-   }
-   return 0;
-}
-*/
 //-----------------------------------------------------------------------------
 
 string   ClientNetworkWrapper::FindContact( const string& name ) const 

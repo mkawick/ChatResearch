@@ -79,6 +79,7 @@ private:
    bool                    DisconnectUser( PacketPrepareForUserLogout* loginPacket );
    bool                    StoreUserProductsOwned( PacketListOfUserProductsS2S* productNamesPacket );
    bool                    HandlePurchaseRequest( const PacketTournament_PurchaseTournamentEntry* packet, U32 connectionId );
+   bool                    HandlePurchaseRefund( const PacketTournament_PurchaseTournamentEntryRefund* packet, U32 connectionId );
 
    int                     CallbackFunction();
 

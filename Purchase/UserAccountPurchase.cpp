@@ -221,12 +221,21 @@ bool     UserAccountPurchase::MakePurchase( const PacketTournament_PurchaseTourn
 
 //------------------------------------------------------------------------------------------------
 
-bool     UserAccountPurchase::MakeRefund( const PacketTournament_PurchaseTournamentEntryRefund* packet, U32 connectionId )
+bool     UserAccountPurchase::MakeRefund( const PacketTournament_PurchaseTournamentEntryRefund* refundPacket, U32 connectionId )
 {
    assert( m_salesManager != NULL || m_userTicket.connectionId == 0 );
+   int num = refundPacket->itemsToRefund.size();
+   for( int i=0; i<num; i++ )
+   {
 
-   //bool success = m_salesManager->PerformSale( packet->itemsToSpend, m_userTicket, connectionId, packet->uniqueTransactionId );
-   //success = success;// warnings
+      const PurchaseServerDebitItem& item = refundPacket->itemsToRefund[i];
+      bool success = m_salesManager->PerformSimpleInventoryAddition( m_userTicket.uuid, item.productUuidToSpend, item.numToDebit );
+   }
+
+   PacketTournament_PurchaseTournamentEntryRefundResponse* response = new PacketTournament_PurchaseTournamentEntryRefundResponse;
+   response->uniqueTransactionId = refundPacket->uniqueTransactionId;
+   response->result = 0;// success
+   m_purchaseManager->SendPacketToGateway( response, connectionId );
 
    return true;
 }
