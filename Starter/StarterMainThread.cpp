@@ -1,5 +1,24 @@
 #include "StarterMainThread.h"
 
+#include <iostream>
+#include <time.h>
+#include <string>
+using namespace std;
+
+
+#include "../NetworkCommon/Packets/ServerToServerPacket.h"
+#include "../NetworkCommon/Packets/PacketFactory.h"
+
+#include "../NetworkCommon/Packets/DbPacket.h"
+#include "../NetworkCommon/Packets/ChatPacket.h"
+#include "../NetworkCommon/Packets/InvitationPacket.h"
+#include "../NetworkCommon/Packets/LoginPacket.h"
+#include "../NetworkCommon/Packets/AnalyticsPacket.h"
+
+#include <boost/format.hpp>
+#include <boost/lexical_cast.hpp>
+//using namespace boost;
+
 StarterMainThread::StarterMainThread( const string& serverName, U32 serverId ): Diplodocus< KhaanServerToServer >( serverName, serverId, 0,  ServerType_Starter )
 {
    //time( &m_timestampStatsPrint );

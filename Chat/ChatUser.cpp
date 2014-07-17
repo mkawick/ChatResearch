@@ -478,7 +478,7 @@ bool  ChatUser:: RequestUserProfileInfo()
    dbQuery->id =           m_connectionId;
    dbQuery->meta =         "";
    dbQuery->lookup =       QueryType_UserProfile;
-   dbQuery->serverLookup = m_userId;
+   dbQuery->serverLookup = 0;//m_userId;
    dbQuery->query = "SELECT * FROM user_profile WHERE user_id='";
    dbQuery->query += idString;
    dbQuery->query += "'";

@@ -24,7 +24,7 @@ bool  CreateAccountResultsAggregator::HandleResult( const PacketDbQueryResult* d
    // we really don't care about the results, but the error results are important
    switch( dbResult->lookup )
    {
-   case DiplodocusLogin:: QueryType_LookupUserByUsernameOrEmail:
+   case DiplodocusLogin::QueryType_LookupUserByUsernameOrEmail:
       {
          UserTable            enigma( dbResult->bucket );
          UserTable::iterator  it = enigma.begin();
@@ -62,7 +62,7 @@ bool  CreateAccountResultsAggregator::HandleResult( const PacketDbQueryResult* d
          }
       }
       return true;
-   case DiplodocusLogin:: QueryType_LookupTempUserByUsernameOrEmail:
+   case DiplodocusLogin::QueryType_LookupTempUserByUsernameOrEmail:
       {
          NewUsersTable              enigma( dbResult->bucket );
          UserTable::iterator        it = enigma.begin();
@@ -93,7 +93,7 @@ bool  CreateAccountResultsAggregator::HandleResult( const PacketDbQueryResult* d
          }
       }
       return true;
-   case DiplodocusLogin:: QueryType_LookupUserNameForInvalidName:
+   case DiplodocusLogin::QueryType_LookupUserNameForInvalidName:
       {
          if( dbResult->bucket.bucket.size() != 0 )
          {
@@ -101,14 +101,21 @@ bool  CreateAccountResultsAggregator::HandleResult( const PacketDbQueryResult* d
          }
       }
       return true;
+   //case DiplodocusLogin::QueryType_LookupUserByGkHash:
    }
 
    return false;
 }
 
+bool     CreateAccountResultsAggregator::IsComplete() const 
+{ 
+   if( m_numQueriesToAggregate == 0 ) return true; 
+   return false; 
+}
+
 //---------------------------------------------
 
-bool  CreateAccountResultsAggregator::IsDuplicateRecord() const
+bool  CreateAccountResultsAggregator::IsDuplicateUsernameOrEmailRecord() const
 {
    if( m_userRecordMatchingEmail || m_userRecordMatchingName )
    {
@@ -136,9 +143,24 @@ bool     CreateAccountResultsAggregator::ShouldUpdateUserRecord() const
 
 //---------------------------------------------
 
+bool  CreateAccountResultsAggregator::DoesGKPendingMatch_ButUsernameOrEmailAreNotSameRecord() const
+{
+   if( m_pendingUserRecordMatchingGKHash != 0 )
+   {
+       if( m_pendingUserRecordMatchingGKHash != m_pendingUserRecordMatchingEmail )
+            return true;
+      if( m_pendingUserRecordMatchingGKHash != m_pendingUserRecordMatchingName )
+            return true;
+   }
+   return false;
+}
+
+//---------------------------------------------
+
 bool     CreateAccountResultsAggregator::ShouldUpdatePendingUserRecord() const 
 {
-   if( m_pendingUserRecordMatchingGKHash || m_pendingUserRecordMatchingEmail || m_pendingUserRecordMatchingName )
+   if( m_pendingUserRecordMatchingGKHash || m_pendingUserRecordMatchingEmail || 
+      m_pendingUserRecordMatchingName )
    {
       if( m_pendingUserRecordMatchingGKHash == m_pendingUserRecordMatchingEmail && // only when they match do we not update because they already have what the user needs
             m_pendingUserRecordMatchingGKHash == m_pendingUserRecordMatchingName )
@@ -169,14 +191,14 @@ bool     CreateAccountResultsAggregator::ShouldInsertNewUserRecord() const
    if( m_numUserRecordsMatching > 0 )
    {
       // if it possible that the gk hash matches but there is not an email set.. we want to create a new record and then update the existing record to clear the gk-hash
-      if( m_userRecordMatchingGKHash && m_userRecordMatchingGKHash != m_userRecordMatchingEmail )
-         return true;
+     /* if( m_userRecordMatchingGKHash && m_userRecordMatchingGKHash != m_userRecordMatchingEmail )
+         return true;*/
 
       // in all other cases, do not create a new account.
       return false;
    }
 
-   if( m_numPendingUserRecordsMatching )
+   if( m_numPendingUserRecordsMatching ) // this should have been checked by other tests and should be invalid.
    {
       return false;
      /* if( m_pendingUserRecordMatchingGKHash == m_pendingUserRecordMatchingEmail && // only when they match do we not update because they already have what the user needs

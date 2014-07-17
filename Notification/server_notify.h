@@ -12,7 +12,7 @@ enum GameNotification
 };
 
 // initialize the iOS push notification system
-bool NotifyIosInit( const char* certFile = NULL, const char* keyFile = NULL );
+bool NotifyIosInit( const char* pathToCertAndKeyFile = NULL );
 
 // uninitialize the iOS push notification system
 void NotifyIosUninit();

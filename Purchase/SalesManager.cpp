@@ -302,7 +302,7 @@ void     SalesManager::VerifyThatUserHasEnoughMoneyForEntry2( const PacketDbQuer
             num = boost::lexical_cast< int >( count );
          }
 
-         if( num <= GetItemNumToDebit( purchaseTracking->itemsToSpend, productId ) )
+         if( num < GetItemNumToDebit( purchaseTracking->itemsToSpend, productId ) )
          {
             doesPlayerHaveEnoughMoney = false;
             break;

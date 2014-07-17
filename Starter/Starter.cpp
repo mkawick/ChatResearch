@@ -72,10 +72,10 @@ int main( int argc, const char* argv[] )
    CommandLineParser    parser( argc, argv );
 
    string serverName = "Starter Server";
-   string listenPort = "8800";
+   string listenPortString = "8800";
    string listenAddress = "localhost";
 
-   string listenForS2SPort = "8802";
+   string listenForS2SPortString = "8802";
    string listenForS2SAddress = "localHost";
 
    string dbPortString = "16384";
@@ -103,25 +103,25 @@ int main( int argc, const char* argv[] )
 
    parser.FindValue( "server.name", serverName );
 
-   parser.FindValue( "listen.port", listenPort );
+   parser.FindValue( "listen.port", listenPortString );
    parser.FindValue( "listen.address", listenAddress );
 
-   parser.FindValue( "s2s.port", listenForS2SPort );
+   parser.FindValue( "s2s.port", listenForS2SPortString );
    parser.FindValue( "s2s.address", listenForS2SAddress );
 
    parser.FindValue( "stat.port", statPortString );
    parser.FindValue( "stat.address", statIpAddressString );
 
-   int   listenPortAddress = 8800, 
+   int   listenPort = 8800, 
          dbPortAddress = 3306,
          statPort = 7802, 
          listenS2SPort = 8802;
    try 
    {
-      listenPortAddress = boost::lexical_cast<int>( listenPort );
+      listenPort = boost::lexical_cast<int>( listenPortString );
       statPort = boost::lexical_cast<int>( statPortString );
       dbPortAddress = boost::lexical_cast<int>( dbPortString );
-      listenS2SPort = boost::lexical_cast<int>( listenForS2SPort );
+      listenS2SPort = boost::lexical_cast<int>( listenForS2SPortString );
    } 
    catch( boost::bad_lexical_cast const& ) 
    {
@@ -149,21 +149,40 @@ int main( int argc, const char* argv[] )
    cout << "Network protocol version: " << (int)GlobalNetworkProtocolVersion << endl;
    cout << "------------------------------------------------------------------" << endl << endl << endl;
 
-   StarterMainThread*    middleware = new StarterMainThread( serverName, serverId );
-   middleware->SetupListening( listenPortAddress );
+   InitializeSockets();
+   bool isBusy = IsPortBusy( listenPort ) | IsPortBusy( listenS2SPort );
+   ShutdownSockets();
 
-   DiplodocusServerToServer* s2s = new DiplodocusServerToServer( serverName, serverId, 0, ServerType_Starter );
-   s2s->SetupListening( listenS2SPort );
+   if( isBusy == false )
+   {
+      StarterMainThread*    middleware = new StarterMainThread( serverName, serverId );
+      middleware->SetupListening( listenPort );
 
-   PrepConnection< FruitadensServer, StarterMainThread > ( statIpAddressString, statPort, "analytics", middleware, ServerType_Analytics, true );
-   
-   //----------------------------------------------------------------
-   
-   middleware->Init();
-   middleware->AddOutputChain( delta );
-   s2s->AddOutputChain( middleware );
+      DiplodocusServerToServer* s2s = new DiplodocusServerToServer( serverName, serverId, 0, ServerType_Starter );
+      s2s->SetupListening( listenS2SPort );
 
-   middleware->Run();
+      PrepConnection< FruitadensServer, StarterMainThread > ( statIpAddressString, statPort, "analytics", middleware, ServerType_Analytics, true );
+      
+      //----------------------------------------------------------------
+      
+      middleware->Init();
+      middleware->AddOutputChain( delta );
+      s2s->AddOutputChain( middleware );
+
+      middleware->Run();
+    }
+   else
+   {
+      cout << "***********************************************" << endl;
+      cout << " error: that server port is busy " << endl;
+      cout << "  port: " << listenPort << endl;
+      cout << "  port: " << listenS2SPort << endl;
+      cout << " Note: you may have an instance already running" << endl;
+      cout << "        we must exit now" << endl;
+      cout << "***********************************************" << endl;
+      cout << endl << "Press any key to exit" << endl;
+      getch();
+   }
 
    getch();
 	return 0;

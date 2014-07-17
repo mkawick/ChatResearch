@@ -86,7 +86,7 @@ void  UserContact::Init() // send queries
    dbQuery->id =           m_connectionId;
    dbQuery->meta =         "";
    dbQuery->lookup =       QueryType_UserProfile;
-   dbQuery->serverLookup = m_userInfo.id;
+   dbQuery->serverLookup = 0;//m_userInfo.id;
    dbQuery->query = "SELECT * FROM user_profile WHERE user_id='";
    dbQuery->query += idString;
    dbQuery->query += "'";
@@ -119,7 +119,7 @@ void  UserContact::PrepFriendQuery()
    dbQuery->id =           m_connectionId;
    dbQuery->meta =         "";
    dbQuery->lookup =       QueryType_Friends;
-   dbQuery->serverLookup = m_userInfo.id;
+   dbQuery->serverLookup = 0;//m_userInfo.id;
    string query = "SELECT users.user_id, users.user_name, users.uuid, users.user_email, users.language_id, users.active, profile.mber_avatar, friends.favorite, friends.note, profile.motto ";
    query += "FROM users INNER JOIN user_profile AS profile ON users.user_id=profile.user_id ";
    query += "INNER JOIN friends ON users.user_id=friends.userid2 ";
@@ -147,7 +147,7 @@ void  UserContact::PrepInvitationsQueries()
    dbQuery->id =           m_connectionId;
    dbQuery->meta =         "";
    dbQuery->lookup =       QueryType_FriendRequestsSent;
-   dbQuery->serverLookup = m_userInfo.id;
+   dbQuery->serverLookup = 0;//m_userInfo.id;
    dbQuery->query = "SELECT * FROM users INNER JOIN friend_pending ON users.user_id=friend_pending.invitee_id WHERE friend_pending.inviter_id='";
    dbQuery->query += idString;
    dbQuery->query += "'";
@@ -160,7 +160,7 @@ void  UserContact::PrepInvitationsQueries()
    dbQuery->id =           m_connectionId;
    dbQuery->meta =         "";
    dbQuery->lookup =       QueryType_FriendRequestReceived;
-   dbQuery->serverLookup = m_userInfo.id;
+   dbQuery->serverLookup = 0;//m_userInfo.id;
    dbQuery->query = "SELECT * FROM users INNER JOIN friend_pending ON users.user_id=friend_pending.inviter_id WHERE friend_pending.invitee_id='";
    dbQuery->query += idString;
    dbQuery->query += "'";
@@ -254,6 +254,12 @@ int   UserContact::SecondsExpiredSinceLoggedOut()
    return  static_cast<int> ( difftime( currentTime, m_timeLoggedOut ) );
 }
 
+struct InviteeBlob
+{
+   InviteeBlob( int x, const string& msg ): lookupId( x ), message( msg ){}
+   int lookupId;
+   string message;
+};
 
 //------------------------------------------------------------------------------------------------
 
@@ -399,7 +405,11 @@ bool  UserContact::HandleDbQueryResult( const PacketDbQueryResult* dbResult )
             assert( 0 );
          }
 
-         int lookupIndex = dbResult->serverLookup;
+         InviteeBlob* blob = static_cast< InviteeBlob* >( dbResult->customData );
+         int lookupIndex = blob->lookupId;
+         delete blob;
+         //dbResult->customData = NULL;
+
          list< InvitationQueryLookup >::iterator it = m_invitationQueryLookup.begin();
          while( it != m_invitationQueryLookup.end() )
          {
@@ -861,12 +871,13 @@ bool     UserContact::InviteUser( const PacketContact_InviteContact* packet )
    else
    {
       // we need to store something by which we can find this query to pair up the user results.
-      int lookup = m_invitationQueryIndex++;
+      int lookupId = m_invitationQueryIndex++;
       PacketDbQuery* dbQuery = new PacketDbQuery;
       dbQuery->id =           m_connectionId;
       dbQuery->meta =         message;
       dbQuery->lookup =       QueryType_GetInviteeDetails;
-      dbQuery->serverLookup = lookup;
+      dbQuery->serverLookup = 0;//lookup;
+      dbQuery->customData = new InviteeBlob( lookupId, message );
 
       dbQuery->query = "SELECT * FROM users WHERE ";
       if( inviteeUuid.size() )
@@ -885,7 +896,7 @@ bool     UserContact::InviteUser( const PacketContact_InviteContact* packet )
       //m_invitationsPendingUserLookup.push_back( *packet );
 
       InvitationQueryLookup queryLookup;
-      queryLookup.index = lookup;
+      queryLookup.index = lookupId;
       queryLookup.inviteeUuid = inviteeUuid;
       queryLookup.inviteeName = inviteeName;
       queryLookup.message = message;
@@ -903,7 +914,7 @@ bool  UserContact::AcceptInvitation( const PacketContact_AcceptInvite* packet )/
    dbQuery->id =           m_connectionId;
    dbQuery->meta =         "";
    dbQuery->lookup =       QueryType_GetInvitationPriorToAcceptance;
-   dbQuery->serverLookup = m_userInfo.id;
+   dbQuery->serverLookup = 0;//m_userInfo.id;
 
    /*string query = "SELECT * FROM friend_pending WHERE invitee_id='";
    query += boost::lexical_cast< string >( m_userInfo.id );
@@ -926,7 +937,7 @@ bool  UserContact::DeclineInvitation( const PacketContact_DeclineInvitation* pac
    dbQuery->id =           m_connectionId;
    dbQuery->meta =         packet->message;
    dbQuery->lookup =       QueryType_GetInvitationPriorToDeclination;
-   dbQuery->serverLookup = m_userInfo.id;
+   dbQuery->serverLookup = 0;//m_userInfo.id;
 
    dbQuery->query = "SELECT * FROM users INNER JOIN friend_pending ON users.user_id=friend_pending.inviter_id WHERE friend_pending.uuid='%s'";
 
@@ -969,7 +980,7 @@ bool  UserContact::RemoveSentInvitation( const PacketContact_RemoveInvitation* p
    dbQuery->id =           m_connectionId;
    dbQuery->meta =         invitationUuid;
    dbQuery->lookup =       QueryType_DeleteInvitation;
-   dbQuery->serverLookup = m_userInfo.id;
+   dbQuery->serverLookup = 0;//m_userInfo.id;
    dbQuery->isFireAndForget = true;
 
    string query = "DELETE FROM friend_pending WHERE uuid='";
@@ -1024,7 +1035,7 @@ bool  UserContact::PerformSearch( const PacketContact_SearchForUser* packet )
    dbQuery->id =           m_connectionId;
    dbQuery->meta =         packet->searchString;
    dbQuery->lookup =       QueryType_SearchForUser;
-   dbQuery->serverLookup = m_userInfo.id;
+   dbQuery->serverLookup = 0;//m_userInfo.id;
 
    dbQuery->query = "SELECT user_name, uuid, user_id FROM users WHERE user_name LIKE '%%s%' ORDER BY user_id LIMIT ";
    int limit = 25;// always limit the numebr of searched items
@@ -1087,7 +1098,7 @@ bool  UserContact::RemoveContact( const PacketContact_ContactRemove* packet )
    dbQuery->id =           m_connectionId;
    dbQuery->meta =         "";
    dbQuery->lookup =       QueryType_DeleteFriend;
-   dbQuery->serverLookup = m_userInfo.id;
+   dbQuery->serverLookup = 0;//m_userInfo.id;
    dbQuery->isFireAndForget = true;
    m_contactServer->AddQueryToOutput( dbQuery );
      
@@ -1102,7 +1113,7 @@ bool  UserContact::RemoveContact( const PacketContact_ContactRemove* packet )
    dbQuery->id =           m_connectionId;
    dbQuery->meta =         "";
    dbQuery->lookup =       QueryType_DeleteFriend;
-   dbQuery->serverLookup = m_userInfo.id;
+   dbQuery->serverLookup = 0;//m_userInfo.id;
    dbQuery->isFireAndForget = true;
    m_contactServer->AddQueryToOutput( dbQuery );
 
@@ -1167,7 +1178,7 @@ bool  UserContact::AddNotationToContact( const PacketContact_SetNotationOnUser* 
    dbQuery->id =           m_connectionId;
    dbQuery->meta =         "";
    dbQuery->lookup =       QueryType_FriendAddNotation;
-   dbQuery->serverLookup = m_userInfo.id;
+   dbQuery->serverLookup = 0;//m_userInfo.id;
    dbQuery->isFireAndForget = true;
 
    //"UPDATE friends SET favorite=1, note=NULL WHERE userid1=16464 AND userid2=16459"
@@ -1222,7 +1233,7 @@ void  UserContact::FinishAcceptingInvitation( const PacketDbQueryResult* dbResul
    dbQuery->id =           m_connectionId;
    dbQuery->meta =         "";
    dbQuery->lookup =       QueryType_DeleteInvitation;
-   dbQuery->serverLookup = m_userInfo.id;
+   dbQuery->serverLookup = 0;//m_userInfo.id;
    dbQuery->isFireAndForget = true;
 
    string query = "DELETE FROM friend_pending WHERE id=";
@@ -1235,7 +1246,7 @@ void  UserContact::FinishAcceptingInvitation( const PacketDbQueryResult* dbResul
    dbQuery->id =           m_connectionId;
    dbQuery->meta =         "";
    dbQuery->lookup =       QueryType_InsertNewFriend;
-   dbQuery->serverLookup = m_userInfo.id;
+   dbQuery->serverLookup = 0;//m_userInfo.id;
    dbQuery->isFireAndForget = true;
 
    // both directions at once
@@ -1253,7 +1264,7 @@ void  UserContact::FinishAcceptingInvitation( const PacketDbQueryResult* dbResul
    dbQuery->id =           m_connectionId;
    dbQuery->meta =         inviterId; // << store off some lookup info
    dbQuery->lookup =       QueryType_InsertNewFriend;
-   dbQuery->serverLookup = m_userInfo.id;
+   dbQuery->serverLookup = 0;//m_userInfo.id;
    dbQuery->isFireAndForget = false;
 
    query = "INSERT INTO friends (userid1,userid2) VALUES (";
@@ -1318,7 +1329,7 @@ void  UserContact::FinishDecliningingInvitation( const PacketDbQueryResult* dbRe
    dbQuery->id =           m_connectionId;
    dbQuery->meta =         "";
    dbQuery->lookup =       QueryType_DeleteInvitation;
-   dbQuery->serverLookup = m_userInfo.id;
+   dbQuery->serverLookup = 0;//m_userInfo.id;
    dbQuery->isFireAndForget = true;
 
    string query = "DELETE FROM friend_pending WHERE id=";
@@ -1376,7 +1387,7 @@ void  UserContact::FinishInvitation( U32 inviteeId, const string& message, const
    dbQuery->id =           m_connectionId;
    dbQuery->meta =         "";
    dbQuery->lookup =       QueryType_AddInvitationToUser;
-   dbQuery->serverLookup = m_userInfo.id;
+   dbQuery->serverLookup = 0;//m_userInfo.id;
    
    time_t currentTime;
    time( &currentTime );

@@ -94,7 +94,6 @@ namespace Database
       bool                    m_cancelled;
       bool                    m_fireAndForget;
       bool                    m_isChainData;
-
       
       bool                    m_errorCondition;
       bool                    m_errorConnectionNeedsToBeReset;
@@ -107,6 +106,14 @@ namespace Database
    {
    public:
       static const JobId      JobIdError = 0xffffffff;
+   public:
+      enum DbConnectionType
+      {
+         DbConnectionType_Userdata = 1,
+         DbConnectionType_GameData = 2,
+         DbConnectionType_StatData = 4,
+         DbConnectionType_Count = 3
+      };
    public:
       Deltadromeus();
       const char*       GetClassName() const { return "Deltadromeus"; }
@@ -133,6 +140,9 @@ namespace Database
       bool     IsComplete( JobId id ) const;
       bool     HasJobsInProgress() const { return m_jobsInProgress.size() > 0; }
 
+      bool     SetConnectionType( DbConnectionType type ) { m_dbConnectionTypeBitField = type; }
+      bool     WillYouTakeThisQuery( U8 type ) const { return ( type & m_dbConnectionTypeBitField ) != 0; }
+
       bool     Log( const char* text, int priority = 1 );
       DbHandle*   GetDbHandle() { return m_DbConnection; }
 
@@ -152,6 +162,7 @@ namespace Database
 
       JobQueue                m_jobsInProgress;
       JobQueue                m_jobsComplete;
+      U32                     m_dbConnectionTypeBitField;
 
       bool                    m_isConnected;
       bool                    m_needsReconnection;

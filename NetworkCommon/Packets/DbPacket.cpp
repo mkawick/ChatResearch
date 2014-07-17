@@ -10,7 +10,7 @@ bool  BasePacketDbQuery::SerializeIn( const U8* data, int& bufferOffset )
    Serialize::In( data, bufferOffset, id );
    Serialize::In( data, bufferOffset, lookup );
    Serialize::In( data, bufferOffset, serverLookup );
-   Serialize::In( data, bufferOffset, hitsTempDb );
+   Serialize::In( data, bufferOffset, dbConnectionType );
    
    Serialize::In( data, bufferOffset, meta );
 
@@ -23,7 +23,7 @@ bool  BasePacketDbQuery::SerializeOut( U8* data, int& bufferOffset ) const
    Serialize::Out( data, bufferOffset, id );
    Serialize::Out( data, bufferOffset, lookup );
    Serialize::Out( data, bufferOffset, serverLookup );
-   Serialize::Out( data, bufferOffset, hitsTempDb );
+   Serialize::Out( data, bufferOffset, dbConnectionType );
 
    Serialize::Out( data, bufferOffset, meta );
 

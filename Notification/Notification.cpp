@@ -62,8 +62,8 @@ void  PrintInstructions()
    cout << "    db.password       - database password" << endl;
    cout << "    db.schema         - database schema-table collection" << endl;
 
-   cout << "    ios.keyfile       - file and path to ios keyfile" << endl;
-   cout << "    ios.certfile      - file and path to ios cert" << endl;
+   cout << "    ios.certpath      - path to ios keyfile and certfile" << endl;
+   //cout << "    ios.certfile      - file and path to ios cert" << endl;
 /*   cout << "    android.certfile  - file and path to android cert" << endl;
    cout << "    amazon.certfile   - file and path to amazon cert" << endl;*/
 
@@ -85,7 +85,7 @@ int main( int argc, const char* argv[] )
 
    string listenForS2SPort = "7902";
    string listenForS2SAddress = "localHost";
-   string iosCertFile, iosKeyFile;
+   string iosCertPath;
 
    //---------------------------------------
 
@@ -117,8 +117,8 @@ int main( int argc, const char* argv[] )
    parser.FindValue( "db.password", dbPassword );
    parser.FindValue( "db.schema", dbSchema );
 
-   parser.FindValue( "ios.certfile", iosCertFile );
-   parser.FindValue( "ios.keyfile", iosKeyFile );
+   parser.FindValue( "ios.certpath", iosCertPath );
+   //parser.FindValue( "ios.keyfile", iosKeyFile );
  /*  parser.FindValue( "android.certfile", dbPassword );
    //parser.FindValue( "android.certfile", dbPassword );
    parser.FindValue( "amazon.certfile", dbSchema );*/
@@ -174,7 +174,7 @@ int main( int argc, const char* argv[] )
       
       //----------------------------------------------------------------
       
-      notificationServer->Init( iosCertFile, iosKeyFile );
+      notificationServer->Init( iosCertPath );
 
       s2s->AddOutputChain( notificationServer );
       notificationServer->AddOutputChain( delta );

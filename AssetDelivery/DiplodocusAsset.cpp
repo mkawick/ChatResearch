@@ -560,14 +560,18 @@ int      DiplodocusAsset::CallbackFunction()
       ChainLinkIteratorType itInputs = m_listOfInputs.begin();
       while( itInputs != m_listOfInputs.end() )
       {
-         ChainLink& chainedInput = *itInputs++;
-         IChainedInterface* interfacePtr = chainedInput.m_interface;
-         KhaanAsset* khaan = static_cast< KhaanAsset* >( interfacePtr );
-         if( khaan->GetServerId() == serverId )
+         //ChainLink& chainedInput = *itInputs++;
+         ChainType*  outputPtr = static_cast< ChainType*> ( (*itInputs).m_interface );
+         itInputs++;
+         if( outputPtr->DoesNameMatch( "KhaanAsset" ) )
          {
-            if( khaan->Update() == false )
+            KhaanAsset* khaan = static_cast< KhaanAsset* >( outputPtr );
+            if( khaan->GetServerId() == serverId )
             {
-               AddServerNeedingUpdate( serverId );// more updating needed
+               if( khaan->Update() == false )
+               {
+                  AddServerNeedingUpdate( serverId );// more updating needed
+               }
             }
          }
       }

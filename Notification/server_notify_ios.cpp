@@ -25,7 +25,7 @@ using namespace std;
 // GameInfo flags
 #define GAME_INFO_SANDBOX  (0x01)      // Use sandbox notification server
 
-#define SSL_CERTIFICATE_PATH "Notification/certificates/"
+//#define SSL_CERTIFICATE_PATH "Notification/certificates/"
 
 #define NOTIFY_ALERT_SOUND "PN3.caf"
 
@@ -68,7 +68,7 @@ static GameInfo s_GameInfos[] =
    { NULL, NULL, 0, 0, 0, GAME_INFO_SANDBOX },  // GAME_SELECT_THUNDERSTONE
    { NULL, NULL, 0, 0, 0, GAME_INFO_SANDBOX },  // GAME_SELECT_WOWCMG
    //{ "SummonWarCert.pem", "SummonWarKey.pem", 0, 0, 0, 0 },  // GAME_SELECT_SUMMONWAR
-   { SSL_CERTIFICATE_PATH "SummonWarPTCert.pem", SSL_CERTIFICATE_PATH "SummonWarPTKey.pem", 0, 0, 0, 0 },  // GAME_SELECT_SUMMONWAR
+   { "SummonWarPTCert.pem", "SummonWarPTKey.pem", 0, 0, 0, 0 },  // GAME_SELECT_SUMMONWAR
    { NULL, NULL, 0, 0, 0, GAME_INFO_SANDBOX },  // GAME_SELECT_FOODFIGHT
    { NULL, NULL, 0, 0, 0, GAME_INFO_SANDBOX },  // GAME_SELECT_NIGHTFALL
    { NULL, NULL, 0, 0, 0, GAME_INFO_SANDBOX },  // GAME_SELECT_PENNYARCADE
@@ -379,31 +379,24 @@ static bool apnConnect()
 // notification type specific functions
 // ------
 
-int  PrepPayload( char* payload, const char* notificationTypeString, unsigned int userId, int gameType, unsigned int gameId, int badge, const char* audioFile, const char * opponent )
+int PrepPayload( char* payload, const char *pNotificationType, unsigned int userId, int gameType, unsigned int gameId, int badge, const char* pAudioFile, const char * opponent )
 {
-   bool  useDefaultAudioFile = true;
-   string temp( "{\"aps\":{\"alert\":{\"loc-key\":\"GAME_NOTIFY_TURN\",\"loc-args\":[\"%s\"]},\"badge\":%d,\"sound\":\"");
-   if( audioFile != NULL )
+   const char *pNotifyAudioFile = NOTIFY_ALERT_SOUND;
+   if( pAudioFile != NULL && pAudioFile[0] != '\0' )
    {
-      if( strlen( audioFile ) > 0 )
-      {
-         temp += audioFile;
-         useDefaultAudioFile = false;
-      }
+      pNotifyAudioFile = pAudioFile;
    }
-   if( useDefaultAudioFile == true )
-   {
-      temp += NOTIFY_ALERT_SOUND;
-   }
-   temp += "\"},\"game\":%d,\"user\":%d}";
 
    // assumption about the string length here : MAX_PAYLOAD_SIZE
-   return STRPRINTF(payload, MAX_PAYLOAD_SIZE, temp.c_str(), opponent, badge, gameId, userId);
+   return STRPRINTF(payload, MAX_PAYLOAD_SIZE,
+      "{\"aps\":{\"alert\":{\"loc-key\":\"%s\",\"loc-args\":[\"%s\"]},"
+      "\"badge\":%d,\"sound\":\"%s\"},\"game\":%d,\"user\":%d}",
+      pNotificationType, opponent, badge, pNotifyAudioFile, gameId, userId);
+
 }
 
 static bool sendTurnNotification(const unsigned char *deviceId, unsigned int userId, int gameType, unsigned int gameId, int badge, const char* audioFile, const char *opponent )
 {
-   cout<< "sendTurnNotification" << endl;
    char payload[MAX_PAYLOAD_SIZE];
 
    if (!opponent || !*opponent)
@@ -412,30 +405,6 @@ static bool sendTurnNotification(const unsigned char *deviceId, unsigned int use
    }
 
    int payloadLen = PrepPayload( payload, "GAME_NOTIFY_TURN", userId, gameType, gameId, badge, audioFile, opponent );
-
-  /* 
-
-   bool  useDefaultAudioFile = true;
-   string temp( "{\"aps\":{\"alert\":{\"loc-key\":\"GAME_NOTIFY_TURN\",\"loc-args\":[\"%s\"]},\"badge\":%d,\"sound\":\"");
-   if( audioFile != NULL )
-   {
-      if( strlen( audioFile ) > 0 )
-      {
-         temp += audioFile;
-         useDefaultAudioFile = false;
-      }
-   }
-   if( useDefaultAudioFile == true )
-   {
-      temp += NOTIFY_ALERT_SOUND;
-   }
-   temp += "\"},\"game\":%d,\"user\":%d}";
-
-   STRPRINTF(payload, sizeof(payload), temp.c_str(), opponent, badge, gameId, userId);*/
-
-  /* payloadLen = STRPRINTF(payload, sizeof(payload),
-      "{\"aps\":{\"alert\":{\"loc-key\":\"GAME_NOTIFY_TURN\",\"loc-args\":[\"%s\"]},\"badge\":%d,\"sound\":\"" NOTIFY_ALERT_SOUND "\"},"
-      "\"game\":%d,\"user\":%d}", opponent, badge, gameId, userId);*/
 
    if (!sendNotification(s_GameInfos[gameType].ssl, deviceId, payload, payloadLen))
    {
@@ -448,9 +417,7 @@ static bool sendTurnNotification(const unsigned char *deviceId, unsigned int use
 
 static bool sendInviteNotification(const unsigned char *deviceId, unsigned int userId, int gameType, unsigned int gameId, int badge, const char* audioFile, const char *opponent )
 {
-   cout<< "sendInviteNotification" << endl;
    char payload[MAX_PAYLOAD_SIZE];
-   //int payloadLen;
 
    if (!opponent || !*opponent)
    {
@@ -458,10 +425,6 @@ static bool sendInviteNotification(const unsigned char *deviceId, unsigned int u
    }
 
    int payloadLen = PrepPayload( payload, "GAME_NOTIFY_INVITE", userId, gameType, gameId, badge, audioFile, opponent );
-
-  /* payloadLen = STRPRINTF(payload, sizeof(payload),
-      "{\"aps\":{\"alert\":{\"loc-key\":\"GAME_NOTIFY_INVITE\",\"loc-args\":[\"%s\"]},\"badge\":%d,\"sound\":\"" NOTIFY_ALERT_SOUND "\"},"
-      "\"game\":%d,\"user\":%d}", opponent, badge, gameId, userId);*/
 
    if (!sendNotification(s_GameInfos[gameType].ssl, deviceId, payload, payloadLen))
    {
@@ -474,18 +437,12 @@ static bool sendInviteNotification(const unsigned char *deviceId, unsigned int u
 
 static bool sendGameReadyNotification(const unsigned char *deviceId, unsigned int userId, int gameType, unsigned int gameId, int badge, const char* audioFile, const char *opponent )
 {
-   cout<< "sendGameReadyNotification" << endl;
    char payload[MAX_PAYLOAD_SIZE];
-   //int payloadLen;
 
    if (!opponent || !*opponent)
    {
       opponent = "Someone";
    }
-
- /*  payloadLen = STRPRINTF(payload, sizeof(payload),
-      "{\"aps\":{\"alert\":{\"loc-key\":\"GAME_NOTIFY_READY\",\"loc-args\":[\"%s\"]},\"badge\":%d,\"sound\":\"" NOTIFY_ALERT_SOUND "\"},"
-      "\"game\":%d,\"user\":%d}", opponent, badge, gameId, userId);*/
 
    int payloadLen = PrepPayload( payload, "GAME_NOTIFY_READY", userId, gameType, gameId, badge, audioFile, opponent );
 
@@ -500,20 +457,13 @@ static bool sendGameReadyNotification(const unsigned char *deviceId, unsigned in
 
 static bool sendGameEndedNotification(const unsigned char *deviceId, unsigned int userId, int gameType, unsigned int gameId, int badge, const char* audioFile, const char *opponent )
 {
-   cout<< "sendGameEndedNotification" << endl;
    char payload[MAX_PAYLOAD_SIZE];
-   //int payloadLen;
 
    if (!opponent || !*opponent)
    {
       opponent = "Someone";
    }
-
- /*  payloadLen = STRPRINTF(payload, sizeof(payload),
-      "{\"aps\":{\"alert\":{\"loc-key\":\"GAME_NOTIFY_FINISHED\",\"loc-args\":[\"%s\"]},\"badge\":%d,\"sound\":\"" NOTIFY_ALERT_SOUND "\"},"
-      "\"game\":%d,\"user\":%d}", opponent, badge, gameId, userId);*/
    int payloadLen = PrepPayload( payload, "GAME_NOTIFY_FINISHED", userId, gameType, gameId, badge, audioFile, opponent );
-
 
    if (!sendNotification(s_GameInfos[gameType].ssl, deviceId, payload, payloadLen))
    {
@@ -586,7 +536,7 @@ bool  getUserDeviceIos( unsigned int userId, int gameType, unsigned char* buffer
 #include <stdlib.h>
 #include <stdio.h>*/
 
-bool NotifyIosInit( const char* certFile, const char* keyFile )
+bool NotifyIosInit( const char* pathToFiles )
 {
    s_ApnIsInitialized = true;
 
@@ -597,16 +547,19 @@ bool NotifyIosInit( const char* certFile, const char* keyFile )
          continue;
       }
 
-      if( certFile != NULL && strlen( certFile ) > 2 )// copy to global buffer
+      
+      const char* certTempPtr = s_GameInfos[i].cert;
+      const char* keyTempPtr = s_GameInfos[i].key;
+      if( pathToFiles != NULL && strlen( pathToFiles ) > 2 )// copy to global buffer
       {
-         STRCPY( certFileStringBuffer, maxFileBufferLen, certFile );
-         //cout << "current dir = " << _getcwd(NULL, 0) << endl;
-         s_GameInfos[i].cert = certFileStringBuffer;
-      }
-      if( keyFile != NULL && strlen( keyFile ) > 2 )// copy to global buffer
-      {
-         STRCPY( keyFileStringBuffer, maxFileBufferLen, keyFile );
-         s_GameInfos[i].key = keyFileStringBuffer;
+         STRCPY( certFileStringBuffer, maxFileBufferLen, pathToFiles );
+         STRCAT( certFileStringBuffer, maxFileBufferLen, "/" );
+         STRCAT( certFileStringBuffer, maxFileBufferLen, s_GameInfos[i].cert );
+         certTempPtr = certFileStringBuffer;
+         STRCPY( keyFileStringBuffer, maxFileBufferLen, pathToFiles );
+         STRCAT( keyFileStringBuffer, maxFileBufferLen, "/" );
+         STRCAT( keyFileStringBuffer, maxFileBufferLen, s_GameInfos[i].key );
+         keyTempPtr = keyFileStringBuffer;
       }
 
       // open SSL connection
@@ -622,14 +575,14 @@ bool NotifyIosInit( const char* certFile, const char* keyFile )
       }
       SSL_CTX_set_default_passwd_cb(s_GameInfos[i].ctx, pem_passwd_cb);
 
-      if (!SSL_CTX_use_certificate_file(s_GameInfos[i].ctx, s_GameInfos[i].cert, SSL_FILETYPE_PEM))
+      if (!SSL_CTX_use_certificate_file(s_GameInfos[i].ctx, certTempPtr, SSL_FILETYPE_PEM))
       {
          LogMessage(LOG_PRIO_ERR, "Can't load certificate file %d (%s)\n", i, s_GameInfos[i].cert);
          //ERR_print_errors_fp(stderr);
          continue;
       }
 
-      if (!SSL_CTX_use_PrivateKey_file(s_GameInfos[i].ctx, s_GameInfos[i].key, SSL_FILETYPE_PEM))
+      if (!SSL_CTX_use_PrivateKey_file(s_GameInfos[i].ctx, keyTempPtr, SSL_FILETYPE_PEM))
       {
          LogMessage(LOG_PRIO_ERR, "Can't load private key file %d (%s)\n", i, s_GameInfos[i].key);
          //ERR_print_errors_fp(stderr);

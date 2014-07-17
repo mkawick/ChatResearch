@@ -31,7 +31,7 @@ using boost::format;
 #include "DiplodocusLogin.h"
 #include "FruitadensLogin.h"
 
-#define _DEMO_13_Aug_2013
+//#define _DEMO_13_Aug_2013
 
 
 //////////////////////////////////////////////////////////
@@ -752,6 +752,10 @@ void     DiplodocusLogin:: TellUserThatAccountAlreadyMatched( const CreateAccoun
 
 void DiplodocusLogin:: UpdateUserAccount( const CreateAccountResultsAggregator* aggregator )
 {
+   return;
+   
+   /// unused function.. I kept it for reference and 
+
    if( m_printFunctionNames == true )
    {
       cout << "fn: " << __FUNCTION__ << endl;
@@ -774,9 +778,12 @@ void DiplodocusLogin:: UpdateUserAccount( const CreateAccountResultsAggregator* 
    // Rule #1 
    // if the GK Hash matches but the email does not, then this may be two users sharing the same device. Zero out the
    // GK hash, and then create the new account.
+
+   // If the gk hash matches but the username or email do not match, then zero out the storage of the gk
+   // hash and create the new pending account
    if( aggregator->IsMatching_GKHashRecord_DifferentFrom_UserEmail( aggregator->m_useremail ) )
    {
-      bool  wasUpdated = false;
+     /* bool  wasUpdated = false;
       if( aggregator->m_userRecordMatchingGKHash != 0 )
       {
          string query = "UPDATE users SET user_gamekit_hash='0', active='1' WHERE user_id='";
@@ -794,19 +801,24 @@ void DiplodocusLogin:: UpdateUserAccount( const CreateAccountResultsAggregator* 
       }
 
 
-      // now use all of this infor to create a new user record and reset the game_kit_hash
+      // now use all of this info to create a new user record and reset the game_kit_hash
       if( aggregator->m_numPendingUserRecordsMatching == 0 )//  aggregator->ShouldUpdatePendingUserRecord() == false ) // we may already have this user update pending...
       {
-         CreateNewPendingUserAccount( aggregator, true );
+         bool setGkHashToNull = true;
+         CreateNewPendingUserAccount( aggregator, setGkHashToNull );
       }
       else if( wasUpdated )
       {
          SendErrorToClient( aggregator->m_connectionId, PacketErrorReport::ErrorType_CreateAccount_AccountUpdated );
       }
-      return;
+      return;*/
+
+      //aggregator->m_gamekitHashId.clear();
+      bool setGkHashToNull = true;
+      CreateNewPendingUserAccount( aggregator, setGkHashToNull );
    }
 
-
+/*
    // Rule #2
    // user is probably updating his user name.
    
@@ -833,6 +845,7 @@ void DiplodocusLogin:: UpdateUserAccount( const CreateAccountResultsAggregator* 
    AddQueryToOutput( dbQuery );
 
    SendErrorToClient( aggregator->m_connectionId, PacketErrorReport::ErrorType_CreateAccount_AccountUpdated );
+   */
 }
 
 //---------------------------------------------------------------
@@ -964,7 +977,6 @@ void     DiplodocusLogin:: CreateNewUserAccount( const CreateAccountResultsAggre
    SendErrorToClient( aggregator->m_connectionId, PacketErrorReport::ErrorType_CreateAccount_Success );
 }
 
-
 //---------------------------------------------------------------
 
 bool        DiplodocusLogin:: CreateUserAccount( U32 connectionId, const string& email, const string& password, const string& userName, const string& deviceAccountId, const string& deviceId, U8 languageId, U8 gameProductId )
@@ -999,8 +1011,13 @@ bool        DiplodocusLogin:: CreateUserAccount( U32 connectionId, const string&
       return false;
    }
 
+   //bool  isExpectingGkHash = false;
    U64 gameKitHash = 0;
-   ConvertFromString( deviceAccountId, gameKitHash );
+   if( deviceAccountId.size() != 0 )
+   {
+      //isExpectingGkHash = true;
+      ConvertFromString( deviceAccountId, gameKitHash );
+   }
    LogMessage(LOG_PRIO_INFO, "        email=%s, GC ID=%llu\n", email.c_str(), gameKitHash );
 
    std::string lowercase_username = userName; 
@@ -1016,6 +1033,8 @@ bool        DiplodocusLogin:: CreateUserAccount( U32 connectionId, const string&
    }
 
    CreateAccountResultsAggregator* aggregator = new CreateAccountResultsAggregator( connectionId, lowercase_useremail, password, userName, deviceAccountId, deviceId, languageId, gameProductId ); 
+   //aggregator->isExpectingGkHash = isExpectingGkHash;
+
    LockMutex();
    m_userAccountCreationMap.insert( UserCreateAccountPair( connectionId, aggregator ) );
    UnlockMutex();
@@ -1023,9 +1042,10 @@ bool        DiplodocusLogin:: CreateUserAccount( U32 connectionId, const string&
    U64 passwordHash = 0;
    ConvertFromString( password, passwordHash );
    
+ //  string gkHashLookup =         "SELECT id FROM users WHERE user_gamekit_hash='%s'";
    string queryInvalidUserName = "SELECT id FROM invalid_username WHERE user_name_match='%s'";
-   string queryUsers = "SELECT * FROM users WHERE user_name='%s' OR user_email='%s' OR user_gamekit_hash='%s'";
-   string queryTempUsers = "SELECT * FROM user_temp_new_user WHERE user_name='%s' OR user_email='%s' OR user_gamekit_hash='%s'";
+   string queryUsers =           "SELECT * FROM users WHERE user_name='%s' OR user_email='%s' OR user_gamekit_hash='%s'";
+   string queryTempUsers =       "SELECT * FROM user_temp_new_user WHERE user_name='%s' OR user_email='%s' OR user_gamekit_hash='%s'";
 
    PacketDbQuery* dbQuery = new PacketDbQuery;
    dbQuery->id =           connectionId;
@@ -1060,6 +1080,19 @@ bool        DiplodocusLogin:: CreateUserAccount( U32 connectionId, const string&
    dbQuery->escapedStrings.insert( email );
    dbQuery->escapedStrings.insert( deviceAccountId );
    AddQueryToOutput( dbQuery );
+
+ /*  if( isExpectingGkHash )
+   {
+      dbQuery = new PacketDbQuery;
+      dbQuery->id =           connectionId;
+      dbQuery->lookup =       QueryType_LookupUserByGkHash;
+      dbQuery->meta =         userName;
+      dbQuery->serverLookup = gameProductId;
+
+      dbQuery->query = gkHashLookup;
+      dbQuery->escapedStrings.insert( deviceAccountId );
+      AddQueryToOutput( dbQuery );   
+   }*/
    
    return false;
 
@@ -2024,15 +2057,15 @@ void     DiplodocusLogin:: UpdateUserRecord( CreateAccountResultsAggregator* agg
    }
 
    // any duplicates should simply report back to the user that this account email or user id is already taken
-   if( aggregator->IsDuplicateRecord() && aggregator->ShouldUpdatePendingUserRecord() == false )
+   if( aggregator->IsDuplicateUsernameOrEmailRecord() )
    {
       TellUserThatAccountAlreadyMatched( aggregator );
    }
-   else if( aggregator->ShouldUpdateUserRecord() )
+   else if( aggregator->DoesGKPendingMatch_ButUsernameOrEmailAreNotSameRecord() )
    {
-      UpdateUserAccount( aggregator );
+      UpdatePendingUserRecord( aggregator );
    }
-   else if( aggregator->ShouldUpdatePendingUserRecord() )
+   else if( aggregator->ShouldUpdatePendingUserRecord() ) // checks gkhash kit and does exact match, reset count back to 0
    {
       UpdatePendingUserRecord( aggregator );
    }
@@ -2309,6 +2342,7 @@ bool     DiplodocusLogin:: HandleDbResult( PacketDbQueryResult* dbResult )
          case QueryType_LookupUserByUsernameOrEmail:// these should never happen since these are handled elsewhere
          case QueryType_LookupTempUserByUsernameOrEmail:
          case QueryType_LookupUserNameForInvalidName:
+         case QueryType_LookupUserByGkHash:
             {
                if( dbResult->successfulQuery == false || dbResult->GetBucket().size() == 0 )
                {

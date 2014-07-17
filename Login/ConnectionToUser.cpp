@@ -361,9 +361,7 @@ void  ConnectionToUser::WriteUserProfile()
    }
    else
    {
-      query += ",motto='";
-      query += m_userMotto;
-      query += "',";
+      query += ",motto='%s',";
    }
    query += "display_online_status_to_others=";
    query += boost::lexical_cast<string>( m_displayOnlineStatusToOtherUsers?1:0 );
@@ -375,7 +373,7 @@ void  ConnectionToUser::WriteUserProfile()
    query += boost::lexical_cast<string>( m_id );
    
    dbQuery->query = query;
-
+   dbQuery->escapedStrings.insert( m_userMotto );
    userManager->AddQueryToOutput( dbQuery );
 }
 

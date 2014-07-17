@@ -48,7 +48,7 @@ NotificationMainThread :: ~NotificationMainThread()
    NotifyAndroidUninit();
 }
 
-void     NotificationMainThread :: Init( const string& iosCertFile, const string& iosKeyFile )
+void     NotificationMainThread :: Init( const string& iosPathToCertAndKeyFile )
 {
    SSL_library_init();
    SSL_load_error_strings();
@@ -56,7 +56,7 @@ void     NotificationMainThread :: Init( const string& iosCertFile, const string
 
    Diplodocus::Init();
    
-   NotifyIosInit( iosCertFile.c_str(), iosKeyFile.c_str() ); 
+   NotifyIosInit( iosPathToCertAndKeyFile.c_str() ); 
    NotifyAndroidInit(); 
 }
 ///////////////////////////////////////////////////////////////////

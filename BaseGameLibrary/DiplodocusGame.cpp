@@ -273,15 +273,18 @@ bool   DiplodocusGame::AddOutputChainData( BasePacket* packet, U32 connectionId 
       while( itInputs != m_listOfInputs.end() )
       {
          ChainLink& chainedInput = *itInputs++;
-         IChainedInterface* interfacePtr = chainedInput.m_interface;
-         KhaanGame* khaan = static_cast< KhaanGame* >( interfacePtr );
-         if( khaan->GetServerId() == m_connectionIdGateway )
+         ChainedInterface* interfacePtr = static_cast< ChainedInterface* >( chainedInput.m_interface );  
+         if( interfacePtr->DoesNameMatch( "KhaanGame" ) )
          {
-            khaan->AddOutputChainData( packet );
-            //khaan->Update();// the gateway may not have a proper connection id.
+            KhaanGame* khaan = static_cast< KhaanGame* >( interfacePtr );
+            if( khaan->GetServerId() == m_connectionIdGateway )
+            {
+               khaan->AddOutputChainData( packet );
+               //khaan->Update();// the gateway may not have a proper connection id.
 
-            m_serversNeedingUpdate.push_back( khaan->GetServerId() );
-            return true;
+               m_serversNeedingUpdate.push_back( khaan->GetServerId() );
+               return true;
+            }
          }
       }
       return false;

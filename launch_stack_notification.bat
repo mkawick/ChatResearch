@@ -13,7 +13,7 @@ start ./debug/LoginServer.exe db.address=10.16.4.44 db.port=3306 db.username=inc
 ping -n 1 -w 1000 127.0.0.1 > nul
 	
 Pushd C:/projects/Mber/ServerStack/w32libs/lib
-start ./debug/NotificationServer.exe listen.port=7900 s2s.port=7902 db.address=10.16.4.44 db.port=3306 db.username=incinerator db.password=Cm8235 
+start ./debug/NotificationServer.exe listen.port=7900 s2s.port=7902 db.address=10.16.4.44 db.port=3306 db.username=incinerator db.password=Cm8235 ios.certpath="../../../../SummonWar/main/data/ios/certificates"
 Popd
 
 

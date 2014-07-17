@@ -33,7 +33,7 @@ public:
    ~NotificationMainThread();
    const char*             GetClassName() const { return "NotificationMainThread"; }
 
-   void     Init( const string& iosCertFile, const string& iosKeyFile );
+   void     Init( const string& iosPathToCertAndKeyFile );
 
    bool     AddInputChainData( BasePacket* packet, U32 connectionId );
    bool     AddOutputChainData( BasePacket* packet, U32 connectionId );

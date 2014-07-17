@@ -65,6 +65,7 @@ public:
       QueryType_LookupUserNameForInvalidName,
       QueryType_LookupUserByUsernameOrEmail,
       QueryType_LookupTempUserByUsernameOrEmail,
+      QueryType_LookupUserByGkHash,
       QueryType_UpdateUseraccount,
       QueryType_CreateUseraccount,
       QueryType_UpdatePendingUseraccount,

@@ -25,7 +25,7 @@ ping -n 1 -w 1000 127.0.0.1 > nul
 start ./debug/PurchaseServer.exe listen.port=7700 s2s.port=7702 s2s.address=localhost db.address=10.16.4.44 db.port=3306 db.username=incinerator db.password=Cm8235 db.schema=playdek
 
 Pushd C:/projects/Mber/ServerStack/w32libs/lib
-start C:\projects\Mber\ServerStack/debug/NotificationServer.exe listen.port=7900 s2s.port=7902 db.address=10.16.4.44 db.port=3306 db.username=incinerator db.password=Cm8235 
+start C:\projects\Mber\ServerStack/debug/NotificationServer.exe listen.port=7900 s2s.port=7902 db.address=10.16.4.44 db.port=3306 db.username=incinerator db.password=Cm8235 ios.certpath="../../../../SummonWar/main/data/ios/certificates"
 Popd
 
 REM ping -n 1 -w 1000 127.0.0.1 > nul

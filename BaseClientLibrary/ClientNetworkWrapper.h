@@ -22,6 +22,7 @@
 
 #include <queue>
 #include <map>
+#include <iostream>
 using namespace std;
 
 #include "ClientSideNetworkCallback.h"
@@ -100,7 +101,6 @@ public:
    //--------------------------------------------------------------
    // ********************   Contacts/Chat     *******************
    bool     RequestListOfContacts() const;
-   bool     RequestFriendDemographics( const string& username ) const;
    bool     RequestUserWinLossRecord( const string& username ) const;
 
    bool     RequestChatChannelHistory( const string& channelUuid, int numRecords = 20, int startingIndex = 0, const char* startingTimestamp = NULL ) const;
@@ -237,6 +237,7 @@ public:
    void     FillProfileChangeRequest( PacketUpdateSelfProfile& profile ) const;
 
    void     SendNotifications();
+   void     PrintFunctionNames( bool turnOn = true) { m_printFunction = turnOn; }
    
 protected:
 
@@ -306,6 +307,7 @@ protected:
    bool                                      m_isLoggingIn;
    bool                                      m_isLoggedIn;
    bool                                      m_isCreatingAccount;
+   bool                                      m_printFunction;
    U32                                       m_connectionId;
    string                                    m_lastLoggedOutTime;
    int                                       m_lastRawDataIndex;
@@ -314,6 +316,7 @@ protected:
    mutable U32                               m_beginTime, m_endTime;
    bool                                      m_wasCallbackForReadyToBeginSent;
    bool                                      m_requiresGatewayDiscovery;   
+   bool                                      m_isInvalid;
 
    MBerNotifierList                          m_callbacks;
    RawDataAccumulator                        m_rawDataBuffer;
@@ -352,6 +355,7 @@ protected:
    PacketLogin*                              m_savedLoginInfo;
 
 protected:
+   void     CreateNetworkObjects();
    void     ReconnectAfterTalkingToLoadBalancer();
    void     Disconnect();
 
@@ -412,6 +416,8 @@ protected:
 
    bool     InitialConnectionCallback( const Fruitadens* connectionObject );
    bool     InitialDisconnectionCallback( const Fruitadens* connectionObject );
+
+   bool     PrintFunctionName( const char* name ) const { if ( m_printFunction ) { cout << "fn: " << name << endl; return true;} return false; }
 };
 
 ///////////////////////////////////////////////////////

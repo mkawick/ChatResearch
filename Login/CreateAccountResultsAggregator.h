@@ -48,7 +48,7 @@ public:
 
    bool     HandleResult( const PacketDbQueryResult* dbResult );
    U32      GetConnectionId() const { return m_connectionId; }
-   bool     IsComplete() const { if( m_numQueriesToAggregate == 0 ) return true; return false; }
+   bool     IsComplete() const;
    bool     HasFoundAnyMatchingRecords() const;
    bool     HasMatchingGamekitHash() const { if( m_whichRecordMatched == MatchingRecord_Gamekithash ) return true; return false; }
 
@@ -56,8 +56,9 @@ public:
    //U32      Get
 
    // decision making
-   bool     IsDuplicateRecord() const;
+   bool     IsDuplicateUsernameOrEmailRecord() const;
    bool     ShouldUpdateUserRecord() const;
+   bool     DoesGKPendingMatch_ButUsernameOrEmailAreNotSameRecord() const;
    bool     ShouldUpdatePendingUserRecord() const;
    bool     ShouldInsertNewUserRecord() const;
 

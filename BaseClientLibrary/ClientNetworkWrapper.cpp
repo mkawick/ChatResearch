@@ -53,27 +53,26 @@ ClientNetworkWrapper::ClientNetworkWrapper( U8 gameProductId, bool connectToAsse
       m_blockContactInvitations( false ),
       m_blockGroupInvitations( false ),
       m_wasCallbackForReadyToBeginSent( false ),
-      m_requiresGatewayDiscovery( true )
+      m_requiresGatewayDiscovery( true ),
+      m_isInvalid( false )
 {
+   PrintFunctionName( __FUNCTION__ );
    m_loadBalancerDns = "you.have.not.initialized.the.library.properly.com"; // just the default
    InitializeSockets();
 
    for( int i=0; i< ConnectionNames_Num; i++ )
    {
-      m_fruitadens[i] = new Fruitadens( "Networking Layer", false );
-      m_fruitadens[i]->SetSleepTime( m_normalSleepTime );
-      m_fruitadens[i]->RegisterPacketHandlerInterface( this );
-      m_serverConnectionPort[i] = 0;
-      m_isThreadPerformanceBoosted[i] = false;
-      m_timeWhenThreadPerformanceBoosted[i] = 0;
-   } 
+      m_fruitadens[i] = NULL;
+   }
 }
 
 ClientNetworkWrapper::~ClientNetworkWrapper()
 {
+   PrintFunctionName( __FUNCTION__ );
    for( int i=0; i< ConnectionNames_Num; i++ )
    {
       delete m_fruitadens[i];
+      m_fruitadens[i] = NULL;
    }
 
    Exit();
@@ -88,6 +87,10 @@ ClientNetworkWrapper::~ClientNetworkWrapper()
 
 bool     ClientNetworkWrapper::IsConnected( bool isMainServer ) const
 {
+   // PrintFunctionName( __FUNCTION__ ); // too chatty
+   if( m_isInvalid == true )
+      return false;
+
    if( isMainServer )
    {
       if( m_requiresGatewayDiscovery == true )
@@ -107,6 +110,7 @@ bool     ClientNetworkWrapper::IsConnected( bool isMainServer ) const
 
 void  ClientNetworkWrapper::EnableMultithreadedCallbackSystem()
 {
+   PrintFunctionName( __FUNCTION__ );
    m_enabledMultithreadedProtections = true;
 }
 
@@ -115,8 +119,33 @@ void  ClientNetworkWrapper::CheckForReroutes( bool checkForReroutes )
    //m_checkForReroute = checkForReroutes;
 }
 
+//////////////////////////////////////////////////////////////////////////
+
+void  ClientNetworkWrapper::CreateNetworkObjects()
+{
+   PrintFunctionName( __FUNCTION__ );
+   for( int i=0; i< ConnectionNames_Num; i++ )
+   {
+      if( m_fruitadens[i] != NULL )
+         continue;
+
+      m_fruitadens[i] = new Fruitadens( "Networking Layer", false );
+      m_fruitadens[i]->SetSleepTime( m_normalSleepTime );
+      m_fruitadens[i]->RegisterPacketHandlerInterface( this );
+      m_serverConnectionPort[i] = 0;
+      m_isThreadPerformanceBoosted[i] = false;
+      m_timeWhenThreadPerformanceBoosted[i] = 0;
+   }
+}
+
+//////////////////////////////////////////////////////////////////////////
+
 void  ClientNetworkWrapper::Init( const char* serverDNS )
 {
+   PrintFunctionName( __FUNCTION__ );
+   m_isInvalid = false;
+   CreateNetworkObjects();
+
    if( m_fruitadens[0]->IsSocketValid() || IsConnected() == true )
    {
       Disconnect();
@@ -145,9 +174,11 @@ void  ClientNetworkWrapper::Init( const char* serverDNS )
    }
 }
 
+//////////////////////////////////////////////////////////////////////////
 
 void     ClientNetworkWrapper::ReconnectAfterTalkingToLoadBalancer()
 {
+   PrintFunctionName( __FUNCTION__ );
    if( IsConnected() == false )
    {
       for( int i=0; i< ConnectionNames_Num; i++ )
@@ -181,6 +212,7 @@ void     ClientNetworkWrapper::ReconnectAfterTalkingToLoadBalancer()
 
 void     ClientNetworkWrapper::Disconnect()
 {
+   PrintFunctionName( __FUNCTION__ );
    if( IsConnected() == true )
    {
       for( int i=0; i< ConnectionNames_Num; i++ )
@@ -199,6 +231,7 @@ void     ClientNetworkWrapper::Disconnect()
 
 bool     ClientNetworkWrapper::InitialConnectionCallback( const Fruitadens* connectionObject )
 { 
+   PrintFunctionName( __FUNCTION__ );
    if( m_requiresGatewayDiscovery && // main stateful flag
       connectionObject->GetName() == "LoadBalancer" ) // main thread does double duty here
    {
@@ -232,6 +265,7 @@ bool     ClientNetworkWrapper::InitialConnectionCallback( const Fruitadens* conn
 
 bool     ClientNetworkWrapper::InitialDisconnectionCallback( const Fruitadens* connectionObject )
 { 
+   PrintFunctionName( __FUNCTION__ );
    if( m_requiresGatewayDiscovery )
       return false;
 
@@ -251,7 +285,21 @@ bool     ClientNetworkWrapper::InitialDisconnectionCallback( const Fruitadens* c
 
 void  ClientNetworkWrapper::Exit()
 {
+   PrintFunctionName( __FUNCTION__ );
+   if( m_isInvalid == true )
+      return;
+
+   m_isInvalid = true;
    Disconnect();
+
+   for( int i=0; i< ConnectionNames_Num; i++ )
+   {
+      m_fruitadens[i]->Cleanup();
+   }
+   for( int i=0; i< ConnectionNames_Num; i++ )
+   {
+      m_fruitadens[i] = NULL;
+   }
 
    Threading::MutexLock    locker( m_notificationMutex );
 
@@ -282,15 +330,17 @@ void  ClientNetworkWrapper::Exit()
    m_blockContactInvitations = false;
    m_blockGroupInvitations = false;
    m_wasCallbackForReadyToBeginSent = false;
+   //m_requiresGatewayDiscovery = true;
+   m_enabledMultithreadedProtections = false;
 
-   /*
+   
    m_requiresGatewayDiscovery = true;
-   m_serverIpAddress[0].clear();
-   m_serverIpAddress[1].clear();
-
-   m_serverConnectionPort[0] = 0;
-   m_serverConnectionPort[1] = 0;
-   */
+   for( int i=0; i< ConnectionNames_Num; i++ )
+   {
+      m_serverIpAddress[i].clear();
+      m_serverConnectionPort[i] = 0;
+   }
+   
 
    m_invitationsReceived.clear();
    m_invitationsSent.clear();
@@ -309,6 +359,7 @@ void  ClientNetworkWrapper::Exit()
    m_gameList.clear();
 
    m_purchases.clear();
+   m_otherUsersPurchases.clear();
 
    //m_gameProductId; // do not change this
    m_isLoggingIn = false;
@@ -342,6 +393,7 @@ string   ClientNetworkWrapper::GenerateHash( const string& stringThatIWantHashed
 
 void     ClientNetworkWrapper::UpdateNotifications()
 {
+   // PrintFunctionName( __FUNCTION__ ); // too chatty
    if( m_callbacks.size() == 0 )
    {
       return;
@@ -763,6 +815,7 @@ void     ClientNetworkWrapper::UpdateNotifications()
 
 void     ClientNetworkWrapper::CleanupLingeringMemory()
 {
+   //PrintFunctionName( __FUNCTION__ );// too chatty
    vector< string > categories;
    GetAssetCategories( categories );
 
@@ -890,6 +943,7 @@ static inline U64 CreatePasswordHash( const char *pPassword )
 
 bool  ClientNetworkWrapper::RequestLogin( const string& userName, const string& password, const string& languageCode )
 {
+   PrintFunctionName( __FUNCTION__ );
    if( IsConnected() == false )
    {
       //Init( NULL );
@@ -933,6 +987,7 @@ bool  ClientNetworkWrapper::RequestLogin( const string& userName, const string& 
 
 bool     ClientNetworkWrapper::RequestAccountCreate( const string& userName, const string& userEmail, const string& password, int languageId, const string& deviceId, const string& gkHash )
 {
+   PrintFunctionName( __FUNCTION__ );
    if( IsConnected() == false )
    {
       //Init();
@@ -945,7 +1000,11 @@ bool     ClientNetworkWrapper::RequestAccountCreate( const string& userName, con
    createAccount.userEmail = userEmail;
    createAccount.password = boost::lexical_cast< string >( CreatePasswordHash( password.c_str() ) );
    createAccount.deviceId = deviceId;
-   createAccount.deviceAccountId = boost::lexical_cast< string >( CreatePasswordHash( gkHash.c_str() ) );
+   createAccount.deviceAccountId = "";
+   if( gkHash.size() != 0 )
+   {
+      createAccount.deviceAccountId = boost::lexical_cast< string >( CreatePasswordHash( gkHash.c_str() ) );
+   }
    createAccount.languageId = languageId;
 
    m_attemptedUsername = userName;
@@ -960,6 +1019,7 @@ bool     ClientNetworkWrapper::RequestAccountCreate( const string& userName, con
 
 bool  ClientNetworkWrapper::RequestLogout() const
 {
+   PrintFunctionName( __FUNCTION__ );
    if( IsConnected() == false )
    {
       return false;
@@ -972,6 +1032,7 @@ bool  ClientNetworkWrapper::RequestLogout() const
 
 bool ClientNetworkWrapper::ForceLogout()
 {
+   PrintFunctionName( __FUNCTION__ );
    m_isLoggingIn = false;
    m_isLoggedIn = false;
    
@@ -991,6 +1052,7 @@ bool ClientNetworkWrapper::ForceLogout()
 
 bool  ClientNetworkWrapper::RequestProfile( const string userName )//if empty, profile for currently logged in user is used
 {
+   PrintFunctionName( __FUNCTION__ );
    if( IsConnected() == false )
    {
       return false;
@@ -1008,6 +1070,7 @@ bool  ClientNetworkWrapper::RequestProfile( const string userName )//if empty, p
 
 bool  ClientNetworkWrapper::ThrottleConnection( U8 level )
 {
+   PrintFunctionName( __FUNCTION__ );
    if( IsConnected() == false )
    {
       return false;
@@ -1022,6 +1085,7 @@ bool  ClientNetworkWrapper::ThrottleConnection( U8 level )
 
 void  ClientNetworkWrapper::FillProfileChangeRequest( PacketUpdateSelfProfile& profile ) const 
 {
+   PrintFunctionName( __FUNCTION__ );
    profile.userName = m_userName;
    profile.email = m_email;
    //profile.
@@ -1041,6 +1105,7 @@ void  ClientNetworkWrapper::FillProfileChangeRequest( PacketUpdateSelfProfile& p
 
 bool  ClientNetworkWrapper::RequestChangeAvatarId( int newId ) const
 {
+   PrintFunctionName( __FUNCTION__ );
    if( IsConnected() == false )
    {
       return false;
@@ -1059,6 +1124,7 @@ bool  ClientNetworkWrapper::RequestChangeAvatarId( int newId ) const
 
 bool  ClientNetworkWrapper::RequestOtherUserInGameProfile( const string& userName, bool fullProfile ) // friends, games list, etc
 {
+   PrintFunctionName( __FUNCTION__ );
    if( IsConnected() == false || userName.size() == 0 )
    {
       return false;
@@ -1076,6 +1142,7 @@ bool  ClientNetworkWrapper::RequestOtherUserInGameProfile( const string& userNam
 
 bool  ClientNetworkWrapper::RequestChatChannelList( )
 {
+   PrintFunctionName( __FUNCTION__ );
    if( IsConnected() == false )
    {
       return false;
@@ -1089,6 +1156,7 @@ bool  ClientNetworkWrapper::RequestChatChannelList( )
 
 bool  ClientNetworkWrapper::AdminUpdateUserProfile( const string userName, const string& email, const string& userUuid, int adminLevel, int languageId, bool isActive, bool showWinLossRecord, bool marketingOptOut, bool showGenderProfile )
 {
+   PrintFunctionName( __FUNCTION__ );
    if( IsConnected() == false )
    {
       return false;
@@ -1114,6 +1182,7 @@ bool  ClientNetworkWrapper::AdminUpdateUserProfile( const string userName, const
 
 bool     ClientNetworkWrapper::UpdateOwnProfile( const string& userName, const string& email, const string& motto )
 {
+   PrintFunctionName( __FUNCTION__ );
    if( IsConnected() == false )
    {
       return false;
@@ -1132,6 +1201,7 @@ bool     ClientNetworkWrapper::UpdateOwnProfile( const string& userName, const s
 
 bool     ClientNetworkWrapper::SetLanguage( int languageId )
 {
+   PrintFunctionName( __FUNCTION__ );
    if( IsConnected() == false )
    {
       return false;
@@ -1148,6 +1218,7 @@ bool     ClientNetworkWrapper::SetLanguage( int languageId )
 }
 bool     ClientNetworkWrapper::SetMarketingOptOut ( bool marketingOptOut )
 {
+   PrintFunctionName( __FUNCTION__ );
    if( IsConnected() == false )
    {
       return false;
@@ -1163,6 +1234,7 @@ bool     ClientNetworkWrapper::SetMarketingOptOut ( bool marketingOptOut )
 
 bool     ClientNetworkWrapper::SetShowWinLossRecord( bool winLossShow )
 {
+   PrintFunctionName( __FUNCTION__ );
    if( IsConnected() == false )
    {
       return false;
@@ -1178,6 +1250,7 @@ bool     ClientNetworkWrapper::SetShowWinLossRecord( bool winLossShow )
 
 bool     ClientNetworkWrapper::SetShowGenderProfile( bool showGenderProfile )
 {
+   PrintFunctionName( __FUNCTION__ );
    if( IsConnected() == false )
    {
       return false;
@@ -1193,6 +1266,7 @@ bool     ClientNetworkWrapper::SetShowGenderProfile( bool showGenderProfile )
 
 bool     ClientNetworkWrapper::SetDisplayOnlineStatusToOtherUsers( bool display )
 {
+   PrintFunctionName( __FUNCTION__ );
    if( IsConnected() == false )
    {
       return false;
@@ -1208,6 +1282,7 @@ bool     ClientNetworkWrapper::SetDisplayOnlineStatusToOtherUsers( bool display 
 
 bool     ClientNetworkWrapper::SetBlockContactInvitations( bool block )
 {
+   PrintFunctionName( __FUNCTION__ );
    if( IsConnected() == false )
    {
       return false;
@@ -1223,6 +1298,7 @@ bool     ClientNetworkWrapper::SetBlockContactInvitations( bool block )
 
 bool     ClientNetworkWrapper::SetBlockGroupInvitations( bool block )
 {
+   PrintFunctionName( __FUNCTION__ );
    if( IsConnected() == false )
    {
       return false;
@@ -1244,6 +1320,7 @@ bool     ClientNetworkWrapper::SetBlockGroupInvitations( bool block )
 
 bool  ClientNetworkWrapper::RequestListOfContacts() const
 {
+   PrintFunctionName( __FUNCTION__ );
    if( IsConnected() == false )
    {
       return false;
@@ -1258,6 +1335,7 @@ bool  ClientNetworkWrapper::RequestListOfContacts() const
 
 bool  ClientNetworkWrapper::GetAvailableProduct( int index, ProductBriefPacketed& product ) const
 {
+   PrintFunctionName( __FUNCTION__ );
    if( index < 0 || index >= m_products.size() )
    {
       //product.quantity = -1;
@@ -1273,6 +1351,7 @@ bool  ClientNetworkWrapper::GetAvailableProduct( int index, ProductBriefPacketed
 
 bool  ClientNetworkWrapper::FindProductByVendorUuid( const string& vendorUuid, ProductBriefPacketed& product ) const
 {
+   PrintFunctionName( __FUNCTION__ );
    if( vendorUuid.size() == 0 )
    {
       product.vendorUuid.clear();
@@ -1299,6 +1378,7 @@ bool  ClientNetworkWrapper::FindProductByVendorUuid( const string& vendorUuid, P
 
 bool  ClientNetworkWrapper::FindProduct( const string& uuid, ProductBriefPacketed& product ) const
 {
+   PrintFunctionName( __FUNCTION__ );
    if( uuid.size() == 0 )
    {
       product.vendorUuid.clear();
@@ -1325,6 +1405,7 @@ bool  ClientNetworkWrapper::FindProduct( const string& uuid, ProductBriefPackete
 
 bool  ClientNetworkWrapper::RequestListOfAppStoreProducts() const
 {
+   PrintFunctionName( __FUNCTION__ );
    if( IsConnected() == false )
    {
       return false;
@@ -1353,6 +1434,7 @@ bool  ClientNetworkWrapper::RequestListOfProducts() const
 
 bool  ClientNetworkWrapper::RequestListOfMberProducts() const
 {
+   PrintFunctionName( __FUNCTION__ );
    if( IsConnected() == false )
    {
       return false;
@@ -1367,6 +1449,7 @@ bool  ClientNetworkWrapper::RequestListOfMberProducts() const
 
 bool  ClientNetworkWrapper::RequestListOfPurchases( const string userUuid ) const
 {
+   PrintFunctionName( __FUNCTION__ );
    if( IsConnected() == false )
    {
       return false;
@@ -1389,6 +1472,7 @@ bool  ClientNetworkWrapper::RequestListOfPurchases( const string userUuid ) cons
 
 bool  ClientNetworkWrapper::MakePurchase( const string& exchangeUuid ) const
 {
+   PrintFunctionName( __FUNCTION__ );
    if( IsConnected() == false )
    {
       return false;
@@ -1402,6 +1486,7 @@ bool  ClientNetworkWrapper::MakePurchase( const string& exchangeUuid ) const
 
 bool  ClientNetworkWrapper::VerifyVendorPurchase( const string& purchaseItemId, int quantity, const string& transactionId, const string& receipt, int platformId ) const
 {
+   PrintFunctionName( __FUNCTION__ );
    if( IsConnected() == false )
    {
       return false;
@@ -1422,6 +1507,7 @@ bool  ClientNetworkWrapper::VerifyVendorPurchase( const string& purchaseItemId, 
 
 bool  ClientNetworkWrapper::UserHasMadePurchase( const string& vendorProductUuid, const string& receipt, int platformId ) const
 {
+   PrintFunctionName( __FUNCTION__ );
    if( IsConnected() == false )
    {
       return false;
@@ -1437,6 +1523,7 @@ bool  ClientNetworkWrapper::UserHasMadePurchase( const string& vendorProductUuid
 
 bool  ClientNetworkWrapper::RequestListOfTournaments()
 {
+   PrintFunctionName( __FUNCTION__ );
    if( IsConnected() == false )
    {
       return false;
@@ -1451,6 +1538,7 @@ bool  ClientNetworkWrapper::RequestListOfTournaments()
 
 bool  ClientNetworkWrapper::GetPurchase( int index, PurchaseEntry& purchase ) const
 {
+   PrintFunctionName( __FUNCTION__ );
    if( index < 0 || index >= m_purchases.size() )
    {
       purchase.quantity = -1;
@@ -1465,6 +1553,7 @@ bool  ClientNetworkWrapper::GetPurchase( int index, PurchaseEntry& purchase ) co
 
 bool  ClientNetworkWrapper::GetPurchaseOtherUser( int index, PurchaseEntry& purchase ) const
 {
+   PrintFunctionName( __FUNCTION__ );
    if( index < 0 || index >= m_otherUsersPurchases.size() )
    {
       purchase.quantity = -1;
@@ -1480,6 +1569,7 @@ bool  ClientNetworkWrapper::GetPurchaseOtherUser( int index, PurchaseEntry& purc
 
 bool  ClientNetworkWrapper::GetPurchasesByType( vector< PurchaseEntry >& purchases, GameProductType productType )
 {
+   PrintFunctionName( __FUNCTION__ );
    int num = m_purchases.size();
    for( int i=0; i<num; i++ )
    {
@@ -1503,6 +1593,7 @@ bool  ClientNetworkWrapper::GetPurchasesByType( vector< PurchaseEntry >& purchas
 
 bool  ClientNetworkWrapper::PurchaseEntryIntoTournament( const string& tournamentUuid, const vector<PurchaseServerDebitItem>& listOfDebitItems, const string& customDeck )
 {
+   PrintFunctionName( __FUNCTION__ );
    if( IsConnected() == false )
    {
       return false;
@@ -1527,6 +1618,7 @@ bool  ClientNetworkWrapper::PurchaseEntryIntoTournament( const string& tournamen
   
 bool  ClientNetworkWrapper::RequestChatChannelHistory( const string& channelUuid, int numRecords, int startingIndex, const char* startingTimestamp ) const
 {
+   PrintFunctionName( __FUNCTION__ );
    if( IsConnected() == false )
    {
       return false;
@@ -1547,6 +1639,7 @@ bool  ClientNetworkWrapper::RequestChatChannelHistory( const string& channelUuid
   
 bool  ClientNetworkWrapper::RequestChatP2PHistory( const string& userUuid, int numRecords, int startingIndex, const char* startingTimestamp ) const
 {
+   PrintFunctionName( __FUNCTION__ );
    if( IsConnected() == false )
    {
       return false;
@@ -1567,6 +1660,7 @@ bool  ClientNetworkWrapper::RequestChatP2PHistory( const string& userUuid, int n
   
 void     ClientNetworkWrapper::AddNotationToContact( const string& uuid, bool isFavorite, const string& message )
 {
+   PrintFunctionName( __FUNCTION__ );
    if( IsConnected() == false )
    {
       return;
@@ -1608,6 +1702,7 @@ void     ClientNetworkWrapper::AddNotationToContact( const string& uuid, bool is
 
 string   ClientNetworkWrapper::FindContact( const string& name ) const 
 {
+   PrintFunctionName( __FUNCTION__ );
    UserNameKeyValue::const_KVIterator  itFriends = m_contacts.begin();
    while( itFriends != m_contacts.end() )
    {
@@ -1629,8 +1724,8 @@ string   ClientNetworkWrapper::FindContact( const string& name ) const
 
 string   ClientNetworkWrapper::FindContactFromUuid( const string& uuid ) const 
 {
+   PrintFunctionName( __FUNCTION__ );
    Threading::MutexLock    locker( m_notificationMutex );
-
    UserNameKeyValue::const_KVIterator  itFriends = m_contacts.begin();
    while( itFriends != m_contacts.end() )
    {
@@ -1650,14 +1745,14 @@ string   ClientNetworkWrapper::FindContactFromUuid( const string& uuid ) const
 
 bool     ClientNetworkWrapper::GetContact( int index, BasicUser& user )
 {
+   PrintFunctionName( __FUNCTION__ );
+   Threading::MutexLock    locker( m_notificationMutex );
    if( index < 0 || index >= m_contacts.size() )
    {
       user.userName.clear();
       user.UUID.clear();
       return false;
    }
-
-   Threading::MutexLock    locker( m_notificationMutex );
 
    int i = 0;
    UserNameKeyValue::const_KVIterator  itFriends = m_contacts.begin();
@@ -1680,6 +1775,7 @@ bool     ClientNetworkWrapper::GetContact( int index, BasicUser& user )
 
 bool     ClientNetworkWrapper::GetContact( const string& uuid, BasicUser& user )
 {
+   PrintFunctionName( __FUNCTION__ );
    Threading::MutexLock    locker( m_notificationMutex );
 
    UserNameKeyValue::const_KVIterator  itFriends = m_contacts.begin();
@@ -1699,6 +1795,7 @@ bool     ClientNetworkWrapper::GetContact( const string& uuid, BasicUser& user )
 
 bool     ClientNetworkWrapper::IsContact( const string& userUuid )
 {
+   PrintFunctionName( __FUNCTION__ );
    if( userUuid.size() < 2 )
    {
       return false;
@@ -1722,12 +1819,13 @@ bool     ClientNetworkWrapper::IsContact( const string& userUuid )
 
 bool     ClientNetworkWrapper::IsContactByName( const string& userName )
 {
+   PrintFunctionName( __FUNCTION__ );
+
+   Threading::MutexLock    locker( m_notificationMutex );
    if( userName.size() < 2 )
    {
       return false;
    }
-
-   Threading::MutexLock    locker( m_notificationMutex );
 
    UserNameKeyValue::const_KVIterator  itFriends = m_contacts.begin();
    while( itFriends != m_contacts.end() )
@@ -1745,14 +1843,16 @@ bool     ClientNetworkWrapper::IsContactByName( const string& userName )
 
 bool     ClientNetworkWrapper::GetUserSearchResult( int index, BasicUser& user )
 {
+   PrintFunctionName( __FUNCTION__ );
+   
+   Threading::MutexLock    locker( m_notificationMutex );
+
    if( index < 0 || index >= m_lastUserSearch.size() )
    {
       user.userName = "";
       user.UUID = "";
       return false;
    }
-
-   Threading::MutexLock    locker( m_notificationMutex );
 
    int i = 0;
    UserNameKeyValue::const_KVIterator  itFound = m_lastUserSearch.begin();
@@ -1785,6 +1885,7 @@ bool     ClientNetworkWrapper::GetChannel( const string& channelUuid, ChatChanne
 
    return false;*/
 
+   PrintFunctionName( __FUNCTION__ );
    Threading::MutexLock    locker( m_notificationMutex );
 
    vector< ChatChannel >::const_iterator itChannels = m_channels.begin();
@@ -1807,13 +1908,14 @@ bool     ClientNetworkWrapper::GetChannel( const string& channelUuid, ChatChanne
 
 bool    ClientNetworkWrapper::GetChannel( int index, ChatChannel& channel ) const
 {
+   PrintFunctionName( __FUNCTION__ );
+   Threading::MutexLock    locker( m_notificationMutex );
+
    if( index < 0 || index >= (int) m_channels.size() )
    {
       channel.Clear();
       return false;
    }
-
-   Threading::MutexLock    locker( m_notificationMutex );
 
    int i = 0;
    vector< ChatChannel >::const_iterator itChannels = m_channels.begin();
@@ -1835,6 +1937,7 @@ vector< ChatChannel >::iterator    ClientNetworkWrapper::GetChannel( const strin
 {
    // Threading::MutexLock    locker( m_notificationMutex ); // protected
 
+   PrintFunctionName( __FUNCTION__ );
    vector< ChatChannel >::iterator itChannels = m_channels.begin();
    while( itChannels != m_channels.end() )
    {
@@ -1850,6 +1953,7 @@ vector< ChatChannel >::iterator    ClientNetworkWrapper::GetChannel( const strin
 
 bool     ClientNetworkWrapper::RemoveChannel( const string& channelUuid )
 {
+   PrintFunctionName( __FUNCTION__ );
    vector< ChatChannel >::iterator itChannels = m_channels.begin();
    while( itChannels != m_channels.end() )
    {
@@ -1869,6 +1973,7 @@ bool     ClientNetworkWrapper::RemoveChannel( const string& channelUuid )
 
 bool     ClientNetworkWrapper::IsGameChannel( const string& channelUuid ) const
 {
+   PrintFunctionName( __FUNCTION__ );
    ChatChannel channel;
    if( GetChannel( channelUuid, channel ) == false )
       return false;
@@ -1883,6 +1988,7 @@ bool     ClientNetworkWrapper::IsGameChannel( const string& channelUuid ) const
 
 int      ClientNetworkWrapper::GetAssetCategories( vector< string >& categories ) const
 {
+   //PrintFunctionName( __FUNCTION__ );// chatty
    Threading::MutexLock    locker( m_notificationMutex );
 
    AssetMapConstIter it = m_assets.begin();
@@ -1899,6 +2005,7 @@ int      ClientNetworkWrapper::GetAssetCategories( vector< string >& categories 
 
 int      ClientNetworkWrapper::GetNumAssets( const string& category )
 {
+   PrintFunctionName( __FUNCTION__ );
    Threading::MutexLock    locker( m_notificationMutex );
 
    AssetMapConstIter it = m_assets.find( category );
@@ -1911,6 +2018,7 @@ int      ClientNetworkWrapper::GetNumAssets( const string& category )
 
 bool     ClientNetworkWrapper::GetAssetInfo( const string& category, int index, AssetInfoExtended& assetInfo )
 {
+   PrintFunctionName( __FUNCTION__ );
    Threading::MutexLock    locker( m_notificationMutex );
 
    AssetMapConstIter it = m_assets.find( category );
@@ -1927,6 +2035,7 @@ bool     ClientNetworkWrapper::GetAssetInfo( const string& category, int index, 
 
 bool     ClientNetworkWrapper::GetAvatarAsset( U32 index, AssetInfoExtended& assetInfo )
 {
+   PrintFunctionName( __FUNCTION__ );
    Threading::MutexLock    locker( m_notificationMutex );
 
    AssetMapConstIter it = m_assets.find( "avatar" );
@@ -1956,6 +2065,7 @@ bool     ClientNetworkWrapper::GetAvatarAsset( U32 index, AssetInfoExtended& ass
 
 bool     ClientNetworkWrapper:: ClearAssetInfo( const string& category, const string& hash )
 {
+   PrintFunctionName( __FUNCTION__ );
    Threading::MutexLock    locker( m_notificationMutex );
 
    AssetMapIter it = m_assets.find( category );
@@ -1981,13 +2091,14 @@ bool     ClientNetworkWrapper:: ClearAssetInfo( const string& category, const st
 
 bool    ClientNetworkWrapper::GetTournamentInfo( int index, TournamentInfo& tournamentInfo )
 {
+   PrintFunctionName( __FUNCTION__ );
+   Threading::MutexLock    locker( m_notificationMutex );
+
    if( index < 0 || index >= (int) m_availableTournaments.size() )
    {
       tournamentInfo.Clear();
       return false;
    }
-
-   Threading::MutexLock    locker( m_notificationMutex );
 
    int i = 0;
    vector< TournamentInfo >::const_iterator itTournament = m_availableTournaments.begin();
@@ -2026,16 +2137,9 @@ bool     ClientNetworkWrapper::RequestListOfUsersLoggedIntoGame( ) const
 
 //-----------------------------------------------------------------------------
 
-bool     ClientNetworkWrapper::RequestFriendDemographics( const string& userName ) const
-{
-   assert( 0 );// not finished
-   return true;
-}
-
-//-----------------------------------------------------------------------------
-
 bool     ClientNetworkWrapper::RequestUserWinLossRecord( const string& userName ) const
 {
+   PrintFunctionName( __FUNCTION__ );
    PacketRequestUserWinLoss packet;
    packet.userUuid;
    packet.gameUuid;
@@ -2047,6 +2151,7 @@ bool     ClientNetworkWrapper::RequestUserWinLossRecord( const string& userName 
 
 bool     ClientNetworkWrapper::RequestListOfInvitationsSentForContacts() const
 {
+   PrintFunctionName( __FUNCTION__ );
    PacketContact_GetListOfInvitationsSent    invitationRequest;
    return SerializePacketOut( &invitationRequest );
 }
@@ -2055,6 +2160,7 @@ bool     ClientNetworkWrapper::RequestListOfInvitationsSentForContacts() const
 
 bool     ClientNetworkWrapper::RequestListOfInvitationsReceivedForContacts() const
 {
+   PrintFunctionName( __FUNCTION__ );
    PacketContact_GetListOfInvitations    invitationRequest;
    return SerializePacketOut( &invitationRequest );
 }
@@ -2063,6 +2169,7 @@ bool     ClientNetworkWrapper::RequestListOfInvitationsReceivedForContacts() con
 
 bool     ClientNetworkWrapper::AcceptInvitationForContacts( const string& uuid ) const
 {
+   PrintFunctionName( __FUNCTION__ );
    Threading::MutexLock    locker( m_notificationMutex );
 
    const SerializedKeyValueVector< InvitationInfo >& kvVector = m_invitationsReceived;
@@ -2110,6 +2217,7 @@ bool     ClientNetworkWrapper::AcceptInvitationFromUsername( const string& userN
 
 bool     ClientNetworkWrapper::DeclineInvitationForContacts( const string& uuid, string message ) const
 {
+   PrintFunctionName( __FUNCTION__ );
    PacketContact_DeclineInvitation invitationDeclined;
    invitationDeclined.invitationUuid = uuid;
    invitationDeclined.message = message;
@@ -2123,6 +2231,7 @@ bool     ClientNetworkWrapper::DeclineInvitationForContacts( const string& uuid,
 
 bool     ClientNetworkWrapper::RemoveSentInvitationForContacts( const string& uuid ) const
 {
+   PrintFunctionName( __FUNCTION__ );
    bool found = false;
    Threading::MutexLock    locker( m_notificationMutex );
 
@@ -2154,6 +2263,7 @@ bool     ClientNetworkWrapper::RemoveSentInvitationForContacts( const string& uu
 
 bool     ClientNetworkWrapper::RequestListOfInvitations( Invitation::InvitationType type ) const
 {
+   PrintFunctionName( __FUNCTION__ );
    PacketInvitation_GetListOfInvitations invitationRequest;
    invitationRequest.invitationType = type;
    
@@ -2162,6 +2272,7 @@ bool     ClientNetworkWrapper::RequestListOfInvitations( Invitation::InvitationT
 
 bool     ClientNetworkWrapper::AcceptInvitation( const string& uuid, Invitation::InvitationType type ) const
 {
+   PrintFunctionName( __FUNCTION__ );
    PacketInvitation_AcceptInvitation accept;
    //todo... validate that this is a valid invitation
    accept.invitationUuid = uuid;
@@ -2172,6 +2283,7 @@ bool     ClientNetworkWrapper::AcceptInvitation( const string& uuid, Invitation:
 
 bool     ClientNetworkWrapper::DeclineInvitation( const string& uuid, string message, Invitation::InvitationType type ) const
 {
+   PrintFunctionName( __FUNCTION__ );
    PacketInvitation_RejectInvitation decline;
    //todo... validate that this is a valid invitation
    decline.invitationUuid = uuid;
@@ -2182,6 +2294,7 @@ bool     ClientNetworkWrapper::DeclineInvitation( const string& uuid, string mes
 
 bool     ClientNetworkWrapper::RemoveSentInvitation( const string& uuid, Invitation::InvitationType type ) const
 {
+   PrintFunctionName( __FUNCTION__ );
    PacketInvitation_CancelInvitation cancel;
    cancel.invitationUuid = uuid;
    cancel.invitationType = type;
@@ -2191,6 +2304,7 @@ bool     ClientNetworkWrapper::RemoveSentInvitation( const string& uuid, Invitat
 
 bool     ClientNetworkWrapper::RequestListOfMembersInGroup( const string& groupUuid, Invitation::InvitationType type ) const
 {
+   PrintFunctionName( __FUNCTION__ );
    if( type == Invitation::InvitationType_ChatRoom  )
    {
       PacketChatListAllMembersInChatChannel  request;
@@ -2207,6 +2321,7 @@ bool     ClientNetworkWrapper::RequestListOfMembersInGroup( const string& groupU
 
 bool     ClientNetworkWrapper::RequestListOfInvitationsForGroup( const string& groupUuid, Invitation::InvitationType type ) const
 {
+   PrintFunctionName( __FUNCTION__ );
    PacketInvitation_GetListOfInvitationsForGroup   invitationRequest;
    invitationRequest.groupUuid = groupUuid;
    invitationRequest.invitationType = type;
@@ -2216,6 +2331,7 @@ bool     ClientNetworkWrapper::RequestListOfInvitationsForGroup( const string& g
 
 bool     ClientNetworkWrapper::InviteUserToChatChannel( const string& channelUuid, const string& userUuid, const string& message )
 {
+   PrintFunctionName( __FUNCTION__ );
    PacketInvitation_InviteUser invite;
    invite.userUuid = userUuid;
    invite.inviteGroup = channelUuid;
@@ -2230,6 +2346,7 @@ bool     ClientNetworkWrapper::InviteUserToChatChannel( const string& channelUui
 
 bool     ClientNetworkWrapper::GetListOfInvitationsSentForContacts( list< InvitationInfo >& listOfInvites )
 {
+   PrintFunctionName( __FUNCTION__ );
    listOfInvites.clear();
    Threading::MutexLock    locker( m_notificationMutex );
 
@@ -2247,6 +2364,7 @@ bool     ClientNetworkWrapper::GetListOfInvitationsSentForContacts( list< Invita
 
 bool     ClientNetworkWrapper::GetListOfInvitationsReceivedForContacts( list< InvitationInfo >& listOfInvites )
 {
+   PrintFunctionName( __FUNCTION__ );
    listOfInvites.clear();
    Threading::MutexLock    locker( m_notificationMutex );
 
@@ -2264,6 +2382,7 @@ bool     ClientNetworkWrapper::GetListOfInvitationsReceivedForContacts( list< In
 
 bool     ClientNetworkWrapper::GetListOfInvitationsSent( list< Invitation >& listOfInvites, Invitation::InvitationType type )
 {
+   PrintFunctionName( __FUNCTION__ );
    assert( type > 0 && type < Invitation::InvitationType_Num );
    listOfInvites.clear();
    Threading::MutexLock    locker( m_notificationMutex );
@@ -2286,6 +2405,7 @@ bool     ClientNetworkWrapper::GetListOfInvitationsSent( list< Invitation >& lis
 
 bool     ClientNetworkWrapper::GetListOfInvitationsReceived( list< Invitation >& listOfInvites, Invitation::InvitationType type )
 {
+   PrintFunctionName( __FUNCTION__ );
    assert( type > 0 && type < Invitation::InvitationType_Num );
    listOfInvites.clear();
    Threading::MutexLock    locker( m_notificationMutex );
@@ -2308,6 +2428,7 @@ bool     ClientNetworkWrapper::GetListOfInvitationsReceived( list< Invitation >&
 
 bool     ClientNetworkWrapper::GetListOfGroupInvitations( list< Invitation >& listOfInvites, Invitation::InvitationType type )
 {
+   PrintFunctionName( __FUNCTION__ );
    assert( type > 0 && type < Invitation::InvitationType_Num );
 
    listOfInvites.clear();
@@ -2330,6 +2451,7 @@ bool     ClientNetworkWrapper::GetListOfGroupInvitations( list< Invitation >& li
 
 bool     ClientNetworkWrapper::RegisterCallbackInterface( ClientSideNetworkCallback* _callbacks ) 
 {
+   PrintFunctionName( __FUNCTION__ );
    for( list< ClientSideNetworkCallback* >::iterator it = m_callbacks.begin(); it != m_callbacks.end(); ++it )
    {
       if( *it == _callbacks )
@@ -2346,6 +2468,7 @@ bool     ClientNetworkWrapper::RegisterCallbackInterface( ClientSideNetworkCallb
 
 bool     ClientNetworkWrapper::NeedsProcessingTime() const 
 { 
+   // PrintFunctionName( __FUNCTION__ ); // too chatty
    if( IsConnected() == true || m_notifications.size() > 0 ) 
       return true; 
    return false; 
@@ -2355,6 +2478,7 @@ bool     ClientNetworkWrapper::NeedsProcessingTime() const
 
 bool     ClientNetworkWrapper::SendRawPacket( const char* buffer, int length ) const
 {
+   PrintFunctionName( __FUNCTION__ );
    PacketGameplayRawData raw;
    memcpy( raw.data, buffer, length );
    raw.size = length;
@@ -2366,6 +2490,7 @@ bool     ClientNetworkWrapper::SendRawPacket( const char* buffer, int length ) c
 
 bool     ClientNetworkWrapper::SendSearchForUsers( const string& searchString, int numRequested, int offset ) const // min 2 char
 {
+   PrintFunctionName( __FUNCTION__ );
    if( searchString.size() < 2 )
       return false;
    if( numRequested < 1 || numRequested > 25 )
@@ -2386,6 +2511,7 @@ bool     ClientNetworkWrapper::SendSearchForUsers( const string& searchString, i
 
 bool     ClientNetworkWrapper::InviteUserToBeContact( const string& uuid, const string& userName, const string& message )
 {
+   PrintFunctionName( __FUNCTION__ );
    if( uuid.size() < 2 && userName.size() < 2 )
       return false;
 
@@ -2403,6 +2529,7 @@ bool     ClientNetworkWrapper::InviteUserToBeContact( const string& uuid, const 
 
 bool     ClientNetworkWrapper::RemoveContact( const string& contactUuid, const string message )
 {
+   PrintFunctionName( __FUNCTION__ );
    if( IsContact( contactUuid ) == false )
       return false;
 
@@ -2417,6 +2544,7 @@ bool     ClientNetworkWrapper::RemoveContact( const string& contactUuid, const s
 
 bool	   ClientNetworkWrapper::SendP2PTextMessage( const string& message, const string& destinationUserUuid )
 {
+   PrintFunctionName( __FUNCTION__ );
    PacketChatToServer chat;
    chat.message = message;
    chat.userUuid = destinationUserUuid;
@@ -2428,6 +2556,7 @@ bool	   ClientNetworkWrapper::SendP2PTextMessage( const string& message, const s
 
 bool	   ClientNetworkWrapper::SendChannelTextMessage( const string& message, const string& chatChannelUuid, U32 gameTurn )
 {
+   PrintFunctionName( __FUNCTION__ );
    PacketChatToServer chat;
    chat.message = message;
    chat.gameTurn = gameTurn;
@@ -2439,6 +2568,7 @@ bool	   ClientNetworkWrapper::SendChannelTextMessage( const string& message, con
 
 bool	   ClientNetworkWrapper::CreateNewChatChannel( const string& channelName )
 {
+   PrintFunctionName( __FUNCTION__ );
    PacketChatCreateChatChannel chat;
    chat.name = channelName;
    return SerializePacketOut( &chat );
@@ -2448,6 +2578,7 @@ bool	   ClientNetworkWrapper::CreateNewChatChannel( const string& channelName )
 
 bool	   ClientNetworkWrapper::RenameChannel( const string& channelUuid, const string& newName )
 {
+   PrintFunctionName( __FUNCTION__ );
    ChatChannel channel;
    if( GetChannel( channelUuid, channel ) == false )
       return false;
@@ -2463,6 +2594,7 @@ bool	   ClientNetworkWrapper::RenameChannel( const string& channelUuid, const st
 
 bool	   ClientNetworkWrapper::AddUserToChannel( const string& userUuid, const string& channelUuid ) // PacketChatAddUserToChatChannel
 {
+   PrintFunctionName( __FUNCTION__ );
    ChatChannel channel;
    if( GetChannel( channelUuid, channel ) == false )
       return false;
@@ -2484,6 +2616,7 @@ bool	   ClientNetworkWrapper::DeleteChannel( const string& channelUuid ) // Pack
 
 bool	   ClientNetworkWrapper::LeaveChannel( const string& channelUuid )
 {
+   PrintFunctionName( __FUNCTION__ );
    ChatChannel channel;
    if( GetChannel( channelUuid, channel ) == false )
       return false;
@@ -2499,6 +2632,7 @@ bool	   ClientNetworkWrapper::LeaveChannel( const string& channelUuid )
 
 bool     ClientNetworkWrapper::RequestListOfAssetCategories()
 {
+   PrintFunctionName( __FUNCTION__ );
    PacketAsset_GetListOfAssetCategories assetCategoryRequest;
    assetCategoryRequest.uuid = m_uuid;
    assetCategoryRequest.loginKey = m_loginKey;
@@ -2509,6 +2643,7 @@ bool     ClientNetworkWrapper::RequestListOfAssetCategories()
 
 bool     ClientNetworkWrapper::RequestListOfAssets( const string& category, int platformId )
 {
+   PrintFunctionName( __FUNCTION__ );
    PacketAsset_GetListOfAssets assetRequest;
    assetRequest.uuid = m_uuid;
    assetRequest.loginKey = m_loginKey;
@@ -2522,6 +2657,7 @@ bool     ClientNetworkWrapper::RequestListOfAssets( const string& category, int 
 
 bool     ClientNetworkWrapper::RequestAssetByHash( const string& assetHash )
 {
+   PrintFunctionName( __FUNCTION__ );
    AssetInfoExtended asset;
    if( GetAsset( assetHash, asset ) == false )
       return false;
@@ -2538,6 +2674,7 @@ bool     ClientNetworkWrapper::RequestAssetByHash( const string& assetHash )
 
 bool     ClientNetworkWrapper::RequestAssetByName( const string& assetName )
 {
+   PrintFunctionName( __FUNCTION__ );
    AssetInfoExtended asset;
    const string assetHash = GenerateHash( assetName );
    if( GetAsset( assetHash, asset ) == false )
@@ -2555,6 +2692,7 @@ bool     ClientNetworkWrapper::RequestAssetByName( const string& assetName )
 
 bool     ClientNetworkWrapper::RequestAvatarById( U32 id )
 {
+   PrintFunctionName( __FUNCTION__ );
    AssetInfoExtended asset;
    const string assetHash = GenerateHash( boost::lexical_cast< string >( id ) );
    if( GetAsset( assetHash, asset ) == false )
@@ -2575,6 +2713,7 @@ bool     ClientNetworkWrapper::RequestAvatarById( U32 id )
 
 bool     ClientNetworkWrapper::RegisterDevice( const string& playdekUuid, const string& deviceName, PlatformType platformId, const string& vendorProvidedDeviceId )
 {
+   PrintFunctionName( __FUNCTION__ );
    PacketNotification_RegisterDevice registration;
    registration.deviceName = deviceName;
    registration.deviceId = vendorProvidedDeviceId;
@@ -2588,6 +2727,7 @@ bool     ClientNetworkWrapper::RegisterDevice( const string& playdekUuid, const 
 
 bool     ClientNetworkWrapper::RequestListOfDevicesForThisGame( int platformId )
 {
+   PrintFunctionName( __FUNCTION__ );
    PacketNotification_RequestListOfDevices request;
    request.platformId = platformId;
 
@@ -2598,6 +2738,7 @@ bool     ClientNetworkWrapper::RequestListOfDevicesForThisGame( int platformId )
 
 bool     ClientNetworkWrapper::ChangeDevice(  const string& deviceUuid, const string& deviceNewName, const string& audioFileToPlay, bool isEnabled, int iconId, int repeatFrequencyInHours )
 {
+   PrintFunctionName( __FUNCTION__ );
    PacketNotification_UpdateDevice update;
    update.deviceUuid = deviceUuid;//m_thisDeviceUuid;
    update.deviceName = deviceNewName;
@@ -2614,6 +2755,7 @@ bool     ClientNetworkWrapper::ChangeDevice(  const string& deviceUuid, const st
 
 bool    ClientNetworkWrapper::GetDevice( int index, RegisteredDevice& device ) const
 {   
+   PrintFunctionName( __FUNCTION__ );
    if( index < 0 || index >= static_cast< int >( m_devices.size() ) )
       return false;
    device = m_devices[ index ];
@@ -2624,6 +2766,7 @@ bool    ClientNetworkWrapper::GetDevice( int index, RegisteredDevice& device ) c
 
 bool    ClientNetworkWrapper::RemoveDevice( const string& deviceUuid ) const
 {
+   PrintFunctionName( __FUNCTION__ );
    if( deviceUuid.size() < 1 )
       return false;
 
@@ -2637,6 +2780,7 @@ bool    ClientNetworkWrapper::RemoveDevice( const string& deviceUuid ) const
 
 bool     ClientNetworkWrapper::SendPurchases( const vector< RegisteredProduct >& purchases, int platformId )
 {
+   PrintFunctionName( __FUNCTION__ );
    Threading::MutexLock    locker( m_notificationMutex );
 
    PacketListOfUserAggregatePurchases packet;
@@ -2667,6 +2811,7 @@ bool     ClientNetworkWrapper::SendPurchases( const vector< RegisteredProduct >&
 
 bool     ClientNetworkWrapper::GiveProduct( const string& userUuid, const string& productUuid, int quantity, const string& notes, int platformId )
 {
+   PrintFunctionName( __FUNCTION__ );
    PacketAddPurchaseEntry purchaseEntry;
    purchaseEntry.userName = userUuid;
    purchaseEntry.userEmail = userUuid;
@@ -2684,6 +2829,7 @@ bool     ClientNetworkWrapper::GiveProduct( const string& userUuid, const string
 
 bool     ClientNetworkWrapper::SendCheat( const string& cheatText )
 {
+   PrintFunctionName( __FUNCTION__ );
    PacketCheat cheat;
    cheat.cheat = cheatText;
    cheat.whichServer = ServerType_Login;// needs improvement
@@ -2736,6 +2882,7 @@ void      ClientNetworkWrapper::Update()
 
 void     ClientNetworkWrapper::BoostThreadPerformance( ConnectionNames whichConnection )
 {
+   PrintFunctionName( __FUNCTION__ );
    assert( whichConnection < ConnectionNames_Num );
    m_fruitadens[ whichConnection ]->SetSleepTime( m_boostedSleepTime );
    m_fruitadens[ whichConnection ]->SetPriority( Threading::CAbstractThread:: ePriorityHigh );
@@ -2745,6 +2892,7 @@ void     ClientNetworkWrapper::BoostThreadPerformance( ConnectionNames whichConn
 
 void     ClientNetworkWrapper::RestoreNormalThreadPerformance( ConnectionNames whichConnection )
 {
+   PrintFunctionName( __FUNCTION__ );
    assert( whichConnection < ConnectionNames_Num );
    m_fruitadens[ whichConnection ]->SetSleepTime( m_normalSleepTime );
    m_isThreadPerformanceBoosted[ whichConnection ] = false;
@@ -2753,6 +2901,7 @@ void     ClientNetworkWrapper::RestoreNormalThreadPerformance( ConnectionNames w
 
 void     ClientNetworkWrapper::ExpireThreadPerformanceBoost( ConnectionNames whichConnection )
 {
+   PrintFunctionName( __FUNCTION__ );
    assert( whichConnection < ConnectionNames_Num );
    if( m_isThreadPerformanceBoosted[ whichConnection ] == true )
    {
@@ -2769,6 +2918,7 @@ void     ClientNetworkWrapper::ExpireThreadPerformanceBoost( ConnectionNames whi
 
 void     ClientNetworkWrapper::LoadBalancedNewAddress( const PacketRerouteRequestResponse* response )
 {
+   PrintFunctionName( __FUNCTION__ );
    if( m_requiresGatewayDiscovery == false )
       return;
 
@@ -2817,9 +2967,10 @@ void     ClientNetworkWrapper::LoadBalancedNewAddress( const PacketRerouteReques
 
 bool     ClientNetworkWrapper::HandlePacketReceived( BasePacket* packetIn )
 {
+   //PrintFunctionName( __FUNCTION__ );// duplicitous
    PacketCleaner cleaner( packetIn );
 
-   cout << "Packet type " << (U32) (packetIn->packetType) << endl;
+   cout << "Packet type " << (U32) (packetIn->packetType) << ":" << (U32) (packetIn->packetSubType) << endl;
    if( packetIn->packetType == 9 )
    {
       cout << "Type 9 met" << endl;
@@ -3496,6 +3647,7 @@ bool     ClientNetworkWrapper::HandlePacketReceived( BasePacket* packetIn )
 
 void     ClientNetworkWrapper::HandleListOfContacts( const PacketContact_GetListOfContactsResponse* packet )
 {
+   PrintFunctionName( __FUNCTION__ );
    cout << " HandleListOfContacts : num records: " << packet->friends.size() << endl;
 
    m_contacts.clear();
@@ -3522,6 +3674,7 @@ void     ClientNetworkWrapper::HandleListOfContacts( const PacketContact_GetList
 
 void     ClientNetworkWrapper::HandleUserOnlineStatusChange( const PacketContact_FriendOnlineStatusChange* packet )
 {
+   PrintFunctionName( __FUNCTION__ );
    cout << " HandleUserOnlineStatusChange: " << packet->friendInfo.userName << " online status = " << boolalpha << packet->friendInfo.isOnline << noboolalpha << endl;
    Threading::MutexLock    locker( m_notificationMutex );
 
@@ -3542,6 +3695,7 @@ void     ClientNetworkWrapper::HandleUserOnlineStatusChange( const PacketContact
 
 void     ClientNetworkWrapper::HandleListOfReceivedInvitations( const PacketContact_GetListOfInvitationsResponse* packet )
 {
+   PrintFunctionName( __FUNCTION__ );
    cout << " HandleListOfReceivedInvitations: Num invites received: " << packet->invitations.size() << endl;
    Threading::MutexLock    locker( m_notificationMutex );
 
@@ -3562,6 +3716,7 @@ void     ClientNetworkWrapper::HandleListOfReceivedInvitations( const PacketCont
 
 void     ClientNetworkWrapper::HandleListOfSentInvitations( const PacketContact_GetListOfInvitationsSentResponse* packet )
 {
+   PrintFunctionName( __FUNCTION__ );
    cout << " HandleListOfSentInvitations: Num invites sent: " << packet->invitations.size() << endl;
    Threading::MutexLock    locker( m_notificationMutex );
 
@@ -3582,6 +3737,7 @@ void     ClientNetworkWrapper::HandleListOfSentInvitations( const PacketContact_
 
 void     ClientNetworkWrapper::HandleInvitationReceived( const PacketContact_InviteReceivedNotification* packet )
 {
+   PrintFunctionName( __FUNCTION__ );
    cout << " HandleInvitationReceived: new invite received" << endl;
 
    cout << "   From " << packet->info.inviterName << endl;
@@ -3593,6 +3749,7 @@ void     ClientNetworkWrapper::HandleInvitationReceived( const PacketContact_Inv
 
 void     ClientNetworkWrapper::HandleInvitationAccepted( const PacketContact_InvitationAccepted* packet )
 {
+   PrintFunctionName( __FUNCTION__ );
    cout << " HandleInvitationAccepted: invite accepted" << endl;
    cout << "From " << packet->fromUsername << endl;
    cout << "To " << packet->toUsername << endl;
@@ -3612,6 +3769,7 @@ void     ClientNetworkWrapper::HandleInvitationAccepted( const PacketContact_Inv
 
 void     ClientNetworkWrapper::HandleSearchForUserResults( const PacketContact_SearchForUserResult* packet )
 {
+   PrintFunctionName( __FUNCTION__ );
    cout << " HandleSearchForUserResults: search for user results received" << endl;
    cout << "Num found: " << packet->found.size() << endl;
 
@@ -3637,6 +3795,7 @@ void     ClientNetworkWrapper::HandleSearchForUserResults( const PacketContact_S
 
 void     ClientNetworkWrapper::HandleListOfAggregatePurchases( const PacketListOfUserAggregatePurchases* packet )
 {
+   PrintFunctionName( __FUNCTION__ );
    cout << " HandleListOfAggregatePurchases: " << endl;
    cout << " Num found: " << packet->purchases.size() << endl;
    cout << " user: " << packet->userUuid << endl;
@@ -3657,6 +3816,7 @@ void     ClientNetworkWrapper::HandleListOfAggregatePurchases( const PacketListO
 
 void     ClientNetworkWrapper::HandleListOfProducts( const PacketRequestListOfProductsResponse* packet )
 {
+   PrintFunctionName( __FUNCTION__ );
    cout << " HandleListOfProducts: " << endl;
    cout << " Num found: " << packet->products.size() << endl;
    ///Threading::MutexLock    locker( m_notificationMutex );
@@ -3686,6 +3846,7 @@ void     ClientNetworkWrapper::HandleListOfProducts( const PacketRequestListOfPr
 
 void     ClientNetworkWrapper::HandleBeingAddedByServerToChatChannel( const PacketChatUserAddedToChatChannelFromGameServer* chat )
 {
+   PrintFunctionName( __FUNCTION__ );
    cout << " HandleBeingAddedByServerToChatChannel: You received a chat channel addition: " << endl;
 
    Threading::MutexLock    locker( m_notificationMutex );
@@ -3715,6 +3876,7 @@ void     ClientNetworkWrapper::HandleBeingAddedByServerToChatChannel( const Pack
 
 void     ClientNetworkWrapper::HandleUserChatStatusChange( const PacketChatUserStatusChangeBase* packet )
 {
+   PrintFunctionName( __FUNCTION__ );
    cout << " HandleUserChatStatusChange: user status changed" << endl;
    cout << packet->userName << " online status = " << boolalpha << packet->statusChange << noboolalpha << endl;
    
@@ -3735,6 +3897,7 @@ void     ClientNetworkWrapper::HandleUserChatStatusChange( const PacketChatUserS
 
 void     ClientNetworkWrapper::HandleAddUserToChatChannel( const PacketChatAddUserToChatChannelResponse* packet )
 {
+   PrintFunctionName( __FUNCTION__ );
    cout << " HandleAddUserToChatChannel: char contacts received" << endl;
 
    Threading::MutexLock    locker( m_notificationMutex );
@@ -3747,6 +3910,7 @@ void     ClientNetworkWrapper::HandleAddUserToChatChannel( const PacketChatAddUs
 
 void     ClientNetworkWrapper::HandleRemoveUserFromChatChannel( const PacketChatRemoveUserFromChatChannelResponse* packet )
 {
+   PrintFunctionName( __FUNCTION__ );
    cout << " HandleRemoveUserFromChatChannel: channel uuid: " << packet->chatChannelUuid.c_str() << " , userUuid = " << packet->userUuid  << endl;
              
    Threading::MutexLock    locker( m_notificationMutex );
@@ -3759,6 +3923,7 @@ void     ClientNetworkWrapper::HandleRemoveUserFromChatChannel( const PacketChat
 
 void     ClientNetworkWrapper::HandleListOfAssetCategoriesUpdate( const PacketAsset_GetListOfAssetCategoriesResponse* packet )
 {
+   PrintFunctionName( __FUNCTION__ );
    int num = packet->assetcategory.size();
    cout << " HandleListOfAssetCategoriesUpdate: num categories: " << num << endl;
    Threading::MutexLock    locker( m_notificationMutex );
@@ -3778,6 +3943,7 @@ void     ClientNetworkWrapper::HandleListOfAssetCategoriesUpdate( const PacketAs
 
 void     ClientNetworkWrapper::HandleListOfAssets( const PacketAsset_GetListOfAssetsResponse* packet )
 {
+   PrintFunctionName( __FUNCTION__ );
    const string& category = packet->assetCategory;
    assert( category.size() > 0 );
 
@@ -3807,6 +3973,7 @@ void     ClientNetworkWrapper::HandleListOfAssets( const PacketAsset_GetListOfAs
 
 void     ClientNetworkWrapper::HandleListOfDevices( const PacketNotification_RequestListOfDevicesResponse* packet )
 {
+   PrintFunctionName( __FUNCTION__ );
    cout << " HandleListOfDevices: num = " << packet->devices.size() << endl;
    Threading::MutexLock    locker( m_notificationMutex );
    m_devices = packet->devices;
@@ -3817,6 +3984,7 @@ void     ClientNetworkWrapper::HandleListOfDevices( const PacketNotification_Req
 
 void     ClientNetworkWrapper::HandleAssetData( PacketGameplayRawData* data )
 {
+   PrintFunctionName( __FUNCTION__ );
    const string hash = data->identifier;
    AssetInfoExtended* asset = GetAsset( hash );
    bool  wasBoosted = false;
@@ -3856,6 +4024,7 @@ void     ClientNetworkWrapper::HandleAssetData( PacketGameplayRawData* data )
 
 void     ClientNetworkWrapper::HandleData( PacketGameplayRawData* data )
 {
+   PrintFunctionName( __FUNCTION__ );
    //const string& hash = data->identifier;
    int dataType = data->dataType;
    cout << "packet type: " << dataType << ", index: " << (int) data->index << ", size:" << (int) data->size;
@@ -3895,6 +4064,7 @@ void     ClientNetworkWrapper::HandleData( PacketGameplayRawData* data )
 
 void     ClientNetworkWrapper::HandleChatChannelUpdate( BasePacket* packetIn )
 {
+   PrintFunctionName( __FUNCTION__ );
    PacketChatChannelList* packetChannels = static_cast<PacketChatChannelList*>( packetIn );
 
    cout << " chat channel list received " << packetChannels->channelList.size() << endl;
@@ -3942,6 +4112,7 @@ void     ClientNetworkWrapper::HandleChatChannelUpdate( BasePacket* packetIn )
 
 void     ClientNetworkWrapper::NotifyClientToBeginSendingRequests()
 {
+   PrintFunctionName( __FUNCTION__ );
    if( m_isLoggedIn == false )
       return;
 
@@ -3972,6 +4143,7 @@ void     ClientNetworkWrapper::InitialConnectionCallback()
 
 bool     ClientNetworkWrapper::AddChatChannel( const ChatChannel& channel )
 {
+   PrintFunctionName( __FUNCTION__ );
    vector< ChatChannel >::iterator it =  m_channels.begin();
    while( it != m_channels.end() )
    {
@@ -3989,6 +4161,7 @@ bool     ClientNetworkWrapper::AddChatChannel( const ChatChannel& channel )
 
 bool     ClientNetworkWrapper::AddUserToChatChannel( const string& channelUuid, const string& userUuid, const string& userName )
 {
+   PrintFunctionName( __FUNCTION__ );
    vector< ChatChannel >::iterator channelIt = GetChannel( channelUuid );
    if( channelIt == m_channels.end() )
       return false;
@@ -4020,6 +4193,7 @@ bool     ClientNetworkWrapper::AddUserToChatChannel( const string& channelUuid, 
 
 bool     ClientNetworkWrapper::RemoveUserfromChatChannel( const string& channelUuid, const string& userUuid )
 {
+   PrintFunctionName( __FUNCTION__ );
    vector< ChatChannel >::iterator channelIt = GetChannel( channelUuid );
    if( channelIt == m_channels.end() )
       return false;
@@ -4045,6 +4219,7 @@ bool     ClientNetworkWrapper::RemoveUserfromChatChannel( const string& channelU
 
 bool     ClientNetworkWrapper::RemoveInvitationFromSent( const string& uuid )
 {
+   PrintFunctionName( __FUNCTION__ );
    SerializedKeyValueVector< InvitationInfo >& kvVector = m_invitationsSent;
    SerializedKeyValueVector< InvitationInfo >::KVIterator it = kvVector.begin();
    while (it != kvVector.end() )
@@ -4061,6 +4236,7 @@ bool     ClientNetworkWrapper::RemoveInvitationFromSent( const string& uuid )
 
 bool     ClientNetworkWrapper::RemoveInvitationFromReceived( const string& uuid )
 {
+   PrintFunctionName( __FUNCTION__ );
    SerializedKeyValueVector< InvitationInfo >& kvVector = m_invitationsReceived;
    SerializedKeyValueVector< InvitationInfo >::KVIterator it = kvVector.begin();
    while (it != kvVector.end() )
@@ -4079,6 +4255,7 @@ bool     ClientNetworkWrapper::RemoveInvitationFromReceived( const string& uuid 
 
 bool     ClientNetworkWrapper::GetAsset( const string& hash, AssetInfoExtended& asset )
 {
+   PrintFunctionName( __FUNCTION__ );
    Threading::MutexLock    locker( m_notificationMutex );
 
    AssetMapConstIter it = m_assets.begin();//find( category );
@@ -4106,6 +4283,7 @@ bool     ClientNetworkWrapper::GetAsset( const string& hash, AssetInfoExtended& 
 
 AssetInfoExtended* ClientNetworkWrapper::GetAsset( const string& hash )
 {
+   PrintFunctionName( __FUNCTION__ );
    Threading::MutexLock    locker( m_notificationMutex );
 
    AssetMapIter it = m_assets.begin();//find( category );
@@ -4133,6 +4311,7 @@ AssetInfoExtended* ClientNetworkWrapper::GetAsset( const string& hash )
 
 bool     ClientNetworkWrapper::GetAsset( const string& category, const string& hash, AssetInfoExtended& asset )
 {
+   PrintFunctionName( __FUNCTION__ );
    Threading::MutexLock    locker( m_notificationMutex );
 
    AssetMapConstIter it = m_assets.find( category );
@@ -4158,6 +4337,7 @@ bool     ClientNetworkWrapper::GetAsset( const string& category, const string& h
 
 bool     ClientNetworkWrapper::UpdateAssetData( const string& hash, AssetInfoExtended& asset )
 {
+   PrintFunctionName( __FUNCTION__ );
    AssetMapIter it = m_assets.begin();
    while( it != m_assets.end() )
    {
@@ -4299,6 +4479,7 @@ void  NetworkLayerExtended::StartTime()
 
 void  NetworkLayerExtended::SendAssetEcho()
 {
+   PrintFunctionName( __FUNCTION__ );
    PacketAsset_EchoToServer packet;
    packet.uuid = m_uuid;
    packet.loginKey = m_loginKey;
@@ -4308,6 +4489,7 @@ void  NetworkLayerExtended::SendAssetEcho()
 
 void  NetworkLayerExtended::SendContactEcho()
 {
+   PrintFunctionName( __FUNCTION__ );
    PacketContact_EchoToServer packet;
    SerializePacketOut( &packet );
    StartTime();
@@ -4315,6 +4497,7 @@ void  NetworkLayerExtended::SendContactEcho()
 
 void  NetworkLayerExtended::SendChatEcho()
 {
+   PrintFunctionName( __FUNCTION__ );
    PacketChat_EchoToServer packet;
    SerializePacketOut( &packet );
    StartTime();
@@ -4322,6 +4505,7 @@ void  NetworkLayerExtended::SendChatEcho()
 
 void  NetworkLayerExtended::SendLoginEcho()
 {
+   PrintFunctionName( __FUNCTION__ );
    PacketLogin_EchoToServer packet;
    SerializePacketOut( &packet );
    StartTime();
@@ -4329,6 +4513,7 @@ void  NetworkLayerExtended::SendLoginEcho()
 
 void  NetworkLayerExtended::SendGameEcho()
 {
+   PrintFunctionName( __FUNCTION__ );
    PacketGame_EchoToServer packet;
    SerializePacketOut( &packet );
    StartTime();
@@ -4336,6 +4521,7 @@ void  NetworkLayerExtended::SendGameEcho()
 
 void  NetworkLayerExtended::SendPurchaseEcho()
 {
+   PrintFunctionName( __FUNCTION__ );
    PacketPurchase_EchoToServer packet;
    SerializePacketOut( &packet );
    StartTime();
@@ -4343,6 +4529,7 @@ void  NetworkLayerExtended::SendPurchaseEcho()
 
 void  NetworkLayerExtended::SendNotification( U8 type, string additionalText )
 {
+   PrintFunctionName( __FUNCTION__ );
    PacketGame_Notification packet;
    packet.userUuid = m_uuid;
    packet.notificationType = type;
