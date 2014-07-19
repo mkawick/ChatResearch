@@ -2,6 +2,7 @@
 
 #include <assert.h>
 #include <iostream>
+#include <boost/format.hpp>
 
 
 #include <boost/lexical_cast.hpp>
@@ -13,6 +14,7 @@
 #include "../NetworkCommon/Packets/NotificationPacket.h"
 #include "../NetworkCommon/Packets/ServerToServerPacket.h"
 #include "../NetworkCommon/Packets/PacketFactory.h"
+
 
 #include "DiplodocusGame.h"
 #include "../NetworkCommon/NetworkIn/DiplodocusServerToServer.h"
@@ -52,6 +54,9 @@ GameFramework::GameFramework( const char* name, const char* shortName, U8 gamePr
 
    m_notificationServerPort = 7902;
    m_notificationServerAddress = "localhost";
+
+   m_userStatsPort = 12002;
+   m_userStatsIpAddress = "localhost";
 
    m_listenForS2SPort = 21002;
    m_listenForS2SAddress = "localHost";
@@ -129,6 +134,14 @@ void  GameFramework::SetupDefaultNotificationConnection( const string& address, 
 
 //-----------------------------------------------------
 
+void  GameFramework::SetupDefaultUserStatConnection( const string& address, U16 port )
+{
+   m_userStatsPort = port;
+   m_userStatsIpAddress = address;
+}
+
+//-----------------------------------------------------
+
 void  GameFramework::SetupDefaultS2S( const string& address, U16 port )
 {
    m_listenForS2SPort = port;
@@ -173,6 +186,7 @@ void  GameFramework::UseCommandlineOverrides( int argc, const char* argv[] )
    string   analyticsPort;
    string   chatPort;
    string   notificationPort;
+   string   userStatsPort;
    string   purchasePort;
    string   listenForS2SPort;
    string   dbPort;
@@ -184,6 +198,7 @@ void  GameFramework::UseCommandlineOverrides( int argc, const char* argv[] )
       analyticsPort = boost::lexical_cast<string>( m_analyticsServerPort );
       chatPort = boost::lexical_cast<string>( m_chatServerPort );
       notificationPort = boost::lexical_cast<string>( m_notificationServerPort );
+      userStatsPort = boost::lexical_cast<string>( m_userStatsPort );
       purchasePort = boost::lexical_cast<string>( m_purchaseServerPort );
       listenForS2SPort = boost::lexical_cast<string>( m_listenForS2SPort );
       dbPort = boost::lexical_cast<string>( m_dbPort );
@@ -196,31 +211,37 @@ void  GameFramework::UseCommandlineOverrides( int argc, const char* argv[] )
 
    //----------------------------------------
 
-   CommandLineParser    parser( argc, argv );
+   m_parser = new CommandLineParser( argc, argv );
 
-   parser.FindValue( "listen.port", gatewayListenPort );
-   parser.FindValue( "listen.address", m_serverAddress );   
+   m_parser->FindValue( "listen.port", gatewayListenPort );
+   m_parser->FindValue( "listen.address", m_serverAddress );   
 
-   parser.FindValue( "analytics.port", analyticsPort );
-   parser.FindValue( "analytics.address", m_analyticsServerAddress );
+   m_parser->FindValue( "analytics.port", analyticsPort );
+   m_parser->FindValue( "analytics.address", m_analyticsServerAddress );
 
-   parser.FindValue( "chat.port", chatPort );
-   parser.FindValue( "chat.address", m_chatServerAddress );
+   m_parser->FindValue( "chat.port", chatPort );
+   m_parser->FindValue( "chat.address", m_chatServerAddress );
 
-   parser.FindValue( "notification.port", notificationPort );
-   parser.FindValue( "notification.address", m_notificationServerAddress );
+   m_parser->FindValue( "notification.port", notificationPort );
+   m_parser->FindValue( "notification.address", m_notificationServerAddress );
 
-   parser.FindValue( "purchase.port", purchasePort );
-   parser.FindValue( "purchase.address", m_purchaseServerAddress );
+   m_parser->FindValue( "notification.port", notificationPort );
+   m_parser->FindValue( "notification.address", m_notificationServerAddress );
 
-   parser.FindValue( "s2s.port", listenForS2SPort );
-   parser.FindValue( "s2s.address", m_listenForS2SAddress );   
+   m_parser->FindValue( "userstat.port", userStatsPort );
+   m_parser->FindValue( "userstat.address", m_userStatsIpAddress );
 
-   parser.FindValue( "db.port", dbPort );
-   parser.FindValue( "db.address", m_dbIpAddress );
-   parser.FindValue( "db.username", m_dbUsername );
-   parser.FindValue( "db.password", m_dbPassword );
-   parser.FindValue( "db.schema", m_dbSchema );
+   m_parser->FindValue( "purchase.port", purchasePort );
+   m_parser->FindValue( "purchase.address", m_purchaseServerAddress );
+
+   m_parser->FindValue( "s2s.port", listenForS2SPort );
+   m_parser->FindValue( "s2s.address", m_listenForS2SAddress );   
+
+   m_parser->FindValue( "db.port", dbPort );
+   m_parser->FindValue( "db.address", m_dbIpAddress );
+   m_parser->FindValue( "db.username", m_dbUsername );
+   m_parser->FindValue( "db.password", m_dbPassword );
+   m_parser->FindValue( "db.schema", m_dbSchema );
 
    try 
    {
@@ -228,6 +249,7 @@ void  GameFramework::UseCommandlineOverrides( int argc, const char* argv[] )
       m_analyticsServerPort = boost::lexical_cast<int>( analyticsPort );
       m_chatServerPort = boost::lexical_cast<int>( chatPort );
       m_notificationServerPort = boost::lexical_cast<int>( notificationPort );
+      m_userStatsPort = boost::lexical_cast<int>( userStatsPort );
       m_purchaseServerPort = boost::lexical_cast<int>( purchasePort );
       m_listenForS2SPort = boost::lexical_cast<int>( listenForS2SPort );
       
@@ -458,15 +480,15 @@ void     GameFramework::AddTimer( U32 timerId, U32 callbackTimeMs ) // timers mu
 
 bool  GameFramework::Run()
 {
-   cout << "Game framework version 0.86" << endl;
+   cout << "Game framework version 0.95" << endl;
 
-   Database::Deltadromeus* delta = new Database::Deltadromeus;
+  /* Database::Deltadromeus* delta = new Database::Deltadromeus;
    delta->SetConnectionInfo( m_dbIpAddress, m_dbPort, m_dbUsername, m_dbPassword, m_dbSchema );
    if( delta->IsConnected() == false )
    {
       cout << "Error: Database connection is invalid." << endl;
       return false;
-   }
+   }*/
 
    cout << GetServerName() << ":" << endl;
    cout << "Server stack version: " << ServerStackVersion << endl;
@@ -484,7 +506,23 @@ bool  GameFramework::Run()
    m_connectionManager->SetAsControllerApp( false );
    m_connectionManager->SetAsGame();
 
-   m_connectionManager->AddOutputChain( delta );
+   //----------------------------------------------------------------
+   if( Database::ConnectToMultipleDatabases< DiplodocusGame > ( *m_parser, m_connectionManager ) == false )
+   {
+      Database::Deltadromeus* delta = new Database::Deltadromeus;
+      delta->SetConnectionInfo( m_dbIpAddress, m_dbPort, m_dbUsername, m_dbPassword, m_dbSchema );
+      delta->SetConnectionType( Database::Deltadromeus::DbConnectionType_All );
+      if( delta->IsConnected() == false )
+      {
+         cout << "Error: Database connection is invalid." << endl;
+         return 1;
+      }
+      m_connectionManager->AddOutputChain( delta );
+   }
+
+   delete m_parser;
+   //----------------------------------------------------------------
+   
    m_connectionManager->SetupListening( m_listenPort );   
    m_connectionManager->RegisterCallbacks( m_callbacksObject );
 
@@ -524,6 +562,9 @@ bool  GameFramework::Run()
 
    m_notificationServer = PrepConnection< FruitadensServerToServer, DiplodocusGame > ( m_notificationServerAddress, m_notificationServerPort, "notification", m_connectionManager, ServerType_Notification, true );
    m_notificationServer->AddToOutwardFilters( PacketType_Notification );
+
+   m_userStatsServer = PrepConnection< FruitadensServerToServer, DiplodocusGame > ( m_userStatsIpAddress, m_userStatsPort, "userstat", m_connectionManager, ServerType_UserStats, true );
+   m_userStatsServer->AddToOutwardFilters( PacketType_UserStats );
 
    //----------------------------------------------------------------
    

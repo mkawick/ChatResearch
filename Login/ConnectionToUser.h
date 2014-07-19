@@ -28,7 +28,7 @@ struct ConnectionToUser
    };
 
    ConnectionToUser( const string& name, const string& pword, const string& key );
-   void     SetManager( DiplodocusLogin* manager )  { userManager = manager; }
+   void     SetManager( DiplodocusLogin* manager )  { m_userManager = manager; }
    void     ClearLoggingOutStatus() { m_loggedOutTime = 0; }
    bool     CanContinueLogginIn() const { return m_isActive && ( m_isReadyToBeCleanedUp == false ); }
 
@@ -150,7 +150,7 @@ protected:
    
 
    
-   static DiplodocusLogin* userManager;
+   static DiplodocusLogin*    m_userManager;
 
    typedef map< string, ConnectionToUser>    UserConnectionMap;
    typedef pair< string, ConnectionToUser>   UserConnectionPair;

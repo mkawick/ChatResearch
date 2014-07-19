@@ -827,7 +827,7 @@ string   ChatRoomManager::CreateNewRoom( const string& channelName, const string
    string createDate = GetDateInUTC();
    AddChatRoom( 0, channelName, channelUuid, isActive, maxNumPlayersInChatRoom, gameType, gameInstanceId, createDate );
 
-   string queryString = "INSERT INTO chat_channel VALUES( null, '%s','";
+   string queryString = "INSERT INTO chat_channel ( name, uuid, is_active, max_num_users, game_type, game_instance_id, date_created ) VALUES( '%s','";
    queryString += channelUuid;
    queryString += "', 1, "; // active
    queryString += boost::lexical_cast< string >( maxNumPlayersInChatRoom );
@@ -837,7 +837,7 @@ string   ChatRoomManager::CreateNewRoom( const string& channelName, const string
    queryString += boost::lexical_cast< string >( gameInstanceId ); // almost always 0
    queryString += ", '";
    queryString += createDate;
-   queryString += "', null )"; // default expry date.
+   queryString += "' )"; 
 
    list< string > sanitizedStrings;
    sanitizedStrings.push_back( channelName );
@@ -1534,9 +1534,9 @@ bool     ChatRoomManager::AddUserToRoomAndWriteToDB( const string& channelUuid, 
    
    string createDate = GetDateInUTC();
    // add single entry to db for that chat channel
-   string queryString = "INSERT INTO user_join_chat_channel VALUES ('%s','%s', null, '";
+   string queryString = "INSERT INTO user_join_chat_channel ( user_uuid, channel_uuid, added_date ) VALUES ('%s','%s', '";
    queryString += createDate;
-   queryString += "', null )";
+   queryString += "')";
 
    PacketDbQuery* dbQuery = DbQueryFactory( queryString, true );
 
@@ -2095,7 +2095,7 @@ void     ChatRoomManager::WriteChatToDb( const string& message, const string& se
       }
    }
    
-   string queryString = "INSERT INTO chat_message VALUES( null, _utf8'%s', '%s', ";
+   string queryString = "INSERT INTO chat_message ( text, user_id_sender, user_id_recipient, chat_channel_id, timestamp, game_turn ) VALUES( _utf8'%s', '%s', ";
    if( friendUuid.size() > 0 )
    {
       queryString += "'%s'";

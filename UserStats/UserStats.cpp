@@ -1,49 +1,45 @@
-// Purchase.cpp : Defines the entry point for the console application.
+// UserStats.cpp : Defines the entry point for the console application.
 //
 
 #include <iostream>
 #include <list>
 #include <vector>
-using namespace std;
 
-#include <assert.h>
-
-#include <boost/format.hpp>
-#include <boost/lexical_cast.hpp>
-using boost::format;
-
+#include "../NetworkCommon/Platform.h"
 #include "../NetworkCommon/Version.h"
-
 #include "../NetworkCommon/Utils/CommandLineParser.h"
-#include "../NetworkCommon/DataTypes.h"
-#include "../NetworkCommon/Utils/Utils.h"
-#include "../NetworkCommon/NetworkUtils.h"
-
-#include "../NetworkCommon/Daemon/Daemonizer.h"
-#include "../NetworkCommon/Logging/server_log.h"
-
-#include "../NetworkCommon/NetworkIn/DiplodocusServerToServer.h"
-#include "../NetworkCommon/Database/Deltadromeus.h"
-#include "../NetworkCommon/Daemon/Daemonizer.h"
-
-#include "PurchaseMainThread.h"
-
-
 
 #if PLATFORM == PLATFORM_WINDOWS
 #pragma warning (disable:4996)
+#endif
+
+#include <assert.h>
+
+#include <boost/lexical_cast.hpp>
+#include <boost/format.hpp>
+using boost::format;
+
+
+#include "../NetworkCommon/NetworkIn/Diplodocus.h"
+#include "../NetworkCommon/NetworkIn/DiplodocusServerToServer.h"
+#include "../NetworkCommon/Daemon/Daemonizer.h"
+#include "../NetworkCommon/NetworkOut/Fruitadens.h"
+
+#include "UserStatsMainThread.h"
+
+#if PLATFORM == PLATFORM_WINDOWS
 #include <conio.h>
 #endif   
+
+using namespace std;
 
 ////////////////////////////////////////////////////////////////////////
 
 void  PrintInstructions()
 {
-   cout << "purchase takes params as follows:" << endl;
-   cout << "> purchase_server listen.port=7700 s2s.port=7702 s2s.address=localhost" << endl;
-   cout << "    db.address=10.16.4.44 db.port=3306 db.username=incinerator" << endl;
-   cout << "    db.password=Cm8235 db.schema=playdek" << endl;
-   cout << " NOTE: purchase is a server-to-games, who connect to it and trade items." << endl;
+   cout << "UserStats takes params as follows:" << endl;
+   cout << "> userstats_server listen.port=8800 db.address=10.16.4.44 db.port=3306 db.username=incinerator db.password=Cm8235 db.schema=playdek ... " << endl;
+   cout << " NOTE: UserStats is a server-to-other-servers, who connect to it." << endl;
 
    cout << endl << endl;
    cout << ": params are as follows:" << endl;
@@ -51,8 +47,11 @@ void  PrintInstructions()
    cout << "    listen.address    - what is the ipaddress that this app should be using;" << endl;
    cout << "                        usually localhost or null" << endl;
    cout << "    listen.port       - listen on which port to gateway connections" << endl;
-   cout << "    s2s.address       - where is the load balancer" << endl;
-   cout << "    s2s.port          - load balancer" << endl;
+   cout << "    s2s.address       - which address should we use" << endl;
+   cout << "    s2s.port          - on which port are we listening to other servers" << endl;
+   
+   cout << "    analytics.address - analytics server ipaddress" << endl;
+   cout << "    analytics.port    - analytics server port" << endl;
    
    cout << " - for simple single DB connection - " << endl;
    cout << "    db.address        - database ipaddress" << endl;
@@ -75,27 +74,16 @@ void  PrintInstructions()
 
 int main( int argc, const char* argv[] )
 {
-   daemonize( "purchase_serverd" );
+   daemonize( "userstats_serverd" );
 
-	CommandLineParser    parser( argc, argv );
+   CommandLineParser    parser( argc, argv );
 
-   string serverName = "Purchase Server";
-
-   string listenPortString = "7700";
+   string serverName = "User Stats Server";
+   string listenPortString = "8800";
    string listenAddress = "localhost";
 
-   string listenForS2SPort = "7702";
+   string listenForS2SPortString = "8802";
    string listenForS2SAddress = "localHost";
-
-   //---------------------------------------
-   
-   parser.FindValue( "server.name", serverName );
-
-   parser.FindValue( "listen.port", listenPortString );
-   parser.FindValue( "listen.address", listenAddress );
-
-   parser.FindValue( "s2s.port", listenForS2SPort );
-   parser.FindValue( "s2s.address", listenForS2SAddress );
 
    string dbPortString = "16384";
    string dbIpAddress = "localhost";
@@ -103,19 +91,44 @@ int main( int argc, const char* argv[] )
    string dbPassword = "password";
    string dbSchema = "playdek";
 
+   string statPortString = "7802";
+   string statIpAddressString = "localhost";
+
+   //--------------------------------------------------------------
+
+   if( parser.IsRequestingInstructions() == true )
+   {
+      PrintInstructions();
+      return 0;
+   }
+
    parser.FindValue( "db.address", dbIpAddress );
    parser.FindValue( "db.port", dbPortString );
    parser.FindValue( "db.username", dbUsername );
    parser.FindValue( "db.password", dbPassword );
    parser.FindValue( "db.schema", dbSchema );
 
+   parser.FindValue( "server.name", serverName );
 
-   int listenPort = 7700, dbPortAddress = 3306, listenS2SPort = 7702;
+   parser.FindValue( "listen.port", listenPortString );
+   parser.FindValue( "listen.address", listenAddress );
+
+   parser.FindValue( "s2s.port", listenForS2SPortString );
+   parser.FindValue( "s2s.address", listenForS2SAddress );
+
+   parser.FindValue( "stat.port", statPortString );
+   parser.FindValue( "stat.address", statIpAddressString );
+
+   int   listenPort = 8800, 
+         dbPortAddress = 3306,
+         statPort = 7802, 
+         listenS2SPort = 8802;
    try 
    {
-      listenS2SPort = boost::lexical_cast<int>( listenForS2SPort );
       listenPort = boost::lexical_cast<int>( listenPortString );
+      statPort = boost::lexical_cast<int>( statPortString );
       dbPortAddress = boost::lexical_cast<int>( dbPortString );
+      listenS2SPort = boost::lexical_cast<int>( listenForS2SPortString );
    } 
    catch( boost::bad_lexical_cast const& ) 
    {
@@ -128,7 +141,6 @@ int main( int argc, const char* argv[] )
    U32 serverId = (U32)serverUniqueHashValue;
 
    cout << serverName << ":" << endl;
-   //cout << "Version " << version << endl;
    cout << "Server stack version " << ServerStackVersion << endl;
    cout << "ServerId " << serverId << endl;
    cout << "Db " << dbIpAddress << ":" << dbPortAddress << endl;
@@ -141,19 +153,15 @@ int main( int argc, const char* argv[] )
 
    if( isBusy == false )
    {
-      DiplodocusPurchase*    purchaseServer = new DiplodocusPurchase( serverName, serverId );
-      purchaseServer->SetupListening( listenPort );
+      UserStatsMainThread*    middleware = new UserStatsMainThread( serverName, serverId );
+      middleware->SetupListening( listenPort );
 
-      DiplodocusServerToServer* s2s = new DiplodocusServerToServer( serverName, serverId, 0, ServerType_Purchase );
+      DiplodocusServerToServer* s2s = new DiplodocusServerToServer( serverName, serverId, 0, ServerType_UserStats );
       s2s->SetupListening( listenS2SPort );
-      
-      //----------------------------------------------------------------
-      
-      s2s->AddOutputChain( purchaseServer );
-      
+
       //----------------------------------------------------------------
 
-      if( Database::ConnectToMultipleDatabases< DiplodocusPurchase > ( parser, purchaseServer ) == false )
+      if( Database::ConnectToMultipleDatabases< UserStatsMainThread > ( parser, middleware ) == false )
       {
          Database::Deltadromeus* delta = new Database::Deltadromeus;
          delta->SetConnectionInfo( dbIpAddress, dbPortAddress, dbUsername, dbPassword, dbSchema );
@@ -164,16 +172,18 @@ int main( int argc, const char* argv[] )
             getch();
             return 1;
          }
-         purchaseServer->AddOutputChain( delta );
+         middleware->AddOutputChain( delta );
       }
 
+      PrepConnection< FruitadensServer, UserStatsMainThread > ( statIpAddressString, statPort, "analytics", middleware, ServerType_Analytics, true );
+      
       //----------------------------------------------------------------
+      
+      middleware->Init();
+      s2s->AddOutputChain( middleware );
 
-      s2s->Resume();
-
-      purchaseServer->Init();
-      purchaseServer->Run();
-   }
+      middleware->Run();
+    }
    else
    {
       cout << "***********************************************" << endl;
@@ -186,7 +196,10 @@ int main( int argc, const char* argv[] )
       cout << endl << "Press any key to exit" << endl;
       getch();
    }
+
+   getch();
 	return 0;
 }
 
-////////////////////////////////////////////////////////////////////////
+//-------------------------------------------------------------------------------------------------
+//-------------------------------------------------------------------------------------------------

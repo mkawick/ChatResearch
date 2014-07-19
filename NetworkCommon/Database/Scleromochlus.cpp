@@ -30,13 +30,14 @@ Scleromochlus::Scleromochlus() : Deltadromeus()
 
 //------------------------------------------------------------
 
-void     Scleromochlus::SetConnectionInfo( const string& serverName, U16 port, const string& username,const string& password, const string& dbName )
+void     Scleromochlus::SetConnectionInfo( const string& serverName, U16 port, const string& username,const string& password, const string& dbSchema )
 {
    m_serverName = serverName;
    m_port = port;
    m_username = username;
    m_password = password;
-   m_dbName = dbName;
+   m_dbSchema = dbSchema;
+   //m_dbConnectionTypeBitField = type;
 }
 
 Database::JobId    Scleromochlus::SendQuery( const string& query, int myId, int senderReference, const list<string>* stringsToEscape, bool isFireAndForget, bool isChainData, int extraLookupInfo, string* meta, U32 serverId )

@@ -73,6 +73,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Notification", "Notificatio
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Analytics", "Analytics\Analytics.vcproj", "{5F4F1B30-68FE-446C-A8C7-527518266278}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "UserStats", "UserStats\UserStats.vcproj", "{FB5FA8F7-81EB-40C0-A239-85CA94DC8704}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Win32 = Debug|Win32
@@ -176,6 +178,12 @@ Global
 		{5F4F1B30-68FE-446C-A8C7-527518266278}.DebugForCLR|Win32.Build.0 = Debug|Win32
 		{5F4F1B30-68FE-446C-A8C7-527518266278}.Release|Win32.ActiveCfg = Release|Win32
 		{5F4F1B30-68FE-446C-A8C7-527518266278}.Release|Win32.Build.0 = Release|Win32
+		{FB5FA8F7-81EB-40C0-A239-85CA94DC8704}.Debug|Win32.ActiveCfg = Debug|Win32
+		{FB5FA8F7-81EB-40C0-A239-85CA94DC8704}.Debug|Win32.Build.0 = Debug|Win32
+		{FB5FA8F7-81EB-40C0-A239-85CA94DC8704}.DebugForCLR|Win32.ActiveCfg = Debug|Win32
+		{FB5FA8F7-81EB-40C0-A239-85CA94DC8704}.DebugForCLR|Win32.Build.0 = Debug|Win32
+		{FB5FA8F7-81EB-40C0-A239-85CA94DC8704}.Release|Win32.ActiveCfg = Release|Win32
+		{FB5FA8F7-81EB-40C0-A239-85CA94DC8704}.Release|Win32.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

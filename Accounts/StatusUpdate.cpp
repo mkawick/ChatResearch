@@ -6,6 +6,8 @@
 #include "../NetworkCommon/Packets/ServerToServerPacket.h"
 #include "../NetworkCommon/Packets/GamePacket.h"
 #include "../NetworkCommon/Packets/DbPacket.h"
+#include "../NetworkCommon/Packets/PacketFactory.h"
+#include "../NetworkCommon/Database/Deltadromeus.h"
 
 #include "../NetworkCommon/Logging/server_log.h"
 
@@ -377,7 +379,7 @@ int      StatusUpdate::CallbackFunction()
 
 
 //---------------------------------------------------------------
-
+/*
 bool     StatusUpdate::AddQueryToOutput( PacketDbQuery* packet )
 {
    ChainLinkIteratorType itOutputs = m_listOfOutputs.begin();
@@ -393,7 +395,50 @@ bool     StatusUpdate::AddQueryToOutput( PacketDbQuery* packet )
 
    delete packet;/// normally, we'd leave this up to the invoker to cleanup. 
    return false;
+}*/
+
+bool     StatusUpdate::AddQueryToOutput( PacketDbQuery* dbQuery )
+{
+   PacketFactory factory;
+   //dbQuery->id = connectionId;
+
+   ChainLinkIteratorType itOutputs = m_listOfOutputs.begin();
+   while( itOutputs != m_listOfOutputs.end() )// only one output currently supported.
+   {
+      ChainType* outputPtr = static_cast< ChainType*> ( (*itOutputs).m_interface );
+      ChainedInterface* interfacePtr = static_cast< ChainedInterface* >( outputPtr );
+      if( interfacePtr->DoesNameMatch( "Deltadromeus" ) )
+      {
+         bool isValidConnection = false;
+         Database::Deltadromeus* delta = static_cast< Database::Deltadromeus* >( outputPtr );
+         if( dbQuery->dbConnectionType != 0 )
+         {
+            if( delta->WillYouTakeThisQuery( dbQuery->dbConnectionType ) )
+            {
+               isValidConnection = true;
+            }
+         }
+         else // if this query is not set, default to true
+         {
+            isValidConnection = true;
+         }
+         if( isValidConnection == true )
+         {
+            if( outputPtr->AddInputChainData( dbQuery, m_chainId ) == true )
+            {
+               return true;
+            }
+         }
+      }
+      itOutputs++;
+   }
+
+   BasePacket* deleteMe = static_cast< BasePacket*>( dbQuery );
+
+   factory.CleanupPacket( deleteMe );
+   return false;
 }
+
 
 //---------------------------------------------------------------
 

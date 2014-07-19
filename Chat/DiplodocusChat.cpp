@@ -329,7 +329,7 @@ bool     DiplodocusChat::HandleLoginPacket( BasePacket* packet, U32 connectionId
       case PacketLogin::LoginType_PrepareForUserLogout:
          {
             PacketPrepareForUserLogout* pPacket = static_cast< PacketPrepareForUserLogout* > ( packet );
-            cout << "Prep for logout: " << pPacket->connectionId << ", " << pPacket->uuid << ", " << endl;
+            cout << "Prep for logout: " << pPacket->connectionId << ", " << pPacket->uuid << endl;
             U32 userConnectionId = pPacket->connectionId;
             LockMutex();
             UserMapIterator iter = m_users.find( userConnectionId );
@@ -423,10 +423,12 @@ bool     DiplodocusChat::SendMessageToClient( BasePacket* packet, U32 connection
 {
    if( packet->packetType == PacketType_GatewayWrapper )// this is already wrapped up and ready for the gateway... send it on.
    {
-      Threading::MutexLock locker( m_mutex );
+      m_inputChainListMutex.lock();
+      ClientMap tempInputContainer = m_connectedClients;
+      m_inputChainListMutex.unlock();
 
-      ClientMapIterator itInputs = m_connectedClients.begin();
-      if( itInputs != m_connectedClients.end() )// only one output currently supported.
+      ClientMapIterator itInputs = tempInputContainer.begin();
+      if( itInputs != tempInputContainer.end() )// only one output currently supported.
       {
          KhaanChat* khaan = static_cast< KhaanChat* >( itInputs->second );
          khaan->AddOutputChainData( packet );
@@ -436,7 +438,7 @@ bool     DiplodocusChat::SendMessageToClient( BasePacket* packet, U32 connection
       return true;
    }
 
-   if( packet->packetType == PacketType_DbQuery )
+  /* if( packet->packetType == PacketType_DbQuery )
    {
       Threading::MutexLock locker( m_outputChainListMutex );
       // we don't do much interpretation here, we simply pass output data onto our output, which should be the DB or other servers.
@@ -451,7 +453,7 @@ bool     DiplodocusChat::SendMessageToClient( BasePacket* packet, U32 connection
          itOutputs++;
       }
       return true;
-   }
+   }*/
 
    return false;
 }
@@ -633,20 +635,11 @@ void     DiplodocusChat::RemoveLoggedOutUsers()
 }
 //---------------------------------------------------------------
 //---------------------------------------------------------------
-
+/*
 bool     DiplodocusChat::AddQueryToOutput( PacketDbQuery* dbQuery, U32 connectionId )
 {
    PacketFactory factory;
    dbQuery->id = connectionId;
- /*  dbQuery->serverLookup = 0;
-   if( isChatChannelManager )
-   {
-      dbQuery->serverLookup = 1;
-   }
-   else if( isInvitationManager )
-   {
-      dbQuery->serverLookup = 2;
-   }*/
 
    ChainLinkIteratorType itOutputs = m_listOfOutputs.begin();
    while( itOutputs != m_listOfOutputs.end() )// only one output currently supported.
@@ -663,7 +656,49 @@ bool     DiplodocusChat::AddQueryToOutput( PacketDbQuery* dbQuery, U32 connectio
 
    factory.CleanupPacket( deleteMe );
    return false;
+}*/
+bool     DiplodocusChat::AddQueryToOutput( PacketDbQuery* dbQuery, U32 connectionId )
+{
+   PacketFactory factory;
+   dbQuery->id = connectionId;
+
+   ChainLinkIteratorType itOutputs = m_listOfOutputs.begin();
+   while( itOutputs != m_listOfOutputs.end() )// only one output currently supported.
+   {
+      ChainType* outputPtr = static_cast< ChainType*> ( (*itOutputs).m_interface );
+      ChainedInterface* interfacePtr = static_cast< ChainedInterface* >( outputPtr );
+      if( interfacePtr->DoesNameMatch( "Deltadromeus" ) )
+      {
+         bool isValidConnection = false;
+         Database::Deltadromeus* delta = static_cast< Database::Deltadromeus* >( outputPtr );
+         if( dbQuery->dbConnectionType != 0 )
+         {
+            if( delta->WillYouTakeThisQuery( dbQuery->dbConnectionType ) )
+            {
+               isValidConnection = true;
+            }
+         }
+         else // if this query is not set, default to true
+         {
+            isValidConnection = true;
+         }
+         if( isValidConnection == true )
+         {
+            if( outputPtr->AddInputChainData( dbQuery, m_chainId ) == true )
+            {
+               return true;
+            }
+         }
+      }
+      itOutputs++;
+   }
+
+   BasePacket* deleteMe = static_cast< BasePacket*>( dbQuery );
+
+   factory.CleanupPacket( deleteMe );
+   return false;
 }
+
 //---------------------------------------------------------------
 
 bool     DiplodocusChat::SendErrorToClient( U32 connectionId, PacketErrorReport::ErrorType error )

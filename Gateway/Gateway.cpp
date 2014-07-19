@@ -71,13 +71,16 @@ void  PrintInstructions()
    cout << "    notification.address- notification server ipaddress" << endl;
    cout << "    notification.port - notification server port" << endl;
 
+   cout << "    userstats.address - user stats server ipaddress" << endl;
+   cout << "    userstats.port    - user stats server port" << endl;
+
    cout << "    asset.only        - connect to only the asset server" << endl;
    cout << "    asset.block       - do not connect to the asset server" << endl;
 
    cout << "    print.functions   - print each function for debugging" << endl;
    cout << "    print.packets     - print each packet for debugging" << endl;
 
-   cout << "    games = [192.168.1.0:21000:MFM,localhost:21100:game1]     - game list" << endl;
+   cout << "    games=[192.168.1.0:21000:MFM,localhost:21100:game1]     - game list" << endl;
 
    cout << " -h, -help, -? for help " << endl;
 }
@@ -123,6 +126,9 @@ int main( int argc, const char* argv[] )
    string notificationPortString = "7900";
    string notificationIpAddressString = "localhost";
 
+   string userStatsPortString = "12000";
+   string userStatsIpAddressString = "localhost";
+
    string printFunctionsString = "false";
    string printPacketTypes = "false";
 
@@ -165,6 +171,9 @@ int main( int argc, const char* argv[] )
    parser.FindValue( "notification.port", notificationPortString );
    parser.FindValue( "notification.address", notificationIpAddressString );
 
+   parser.FindValue( "userstat.port", userStatsPortString );
+   parser.FindValue( "userstat.address", userStatsIpAddressString );
+
    //parser.FindValue( "reroute.port", reroutePortString );
    //parser.FindValue( "reroute.address", rerouteAddressString );
 
@@ -191,7 +200,8 @@ int main( int argc, const char* argv[] )
          purchasePort = 7700,
          notificationPort = 7900,
          analyticsPort = 7802,
-         listenPort = 9600;
+         listenPort = 9600,
+         userStatsPort = 12000;
 
    U16 reroutePort = 0;
    bool printPackets = false, 
@@ -208,7 +218,8 @@ int main( int argc, const char* argv[] )
       loginPort =          boost::lexical_cast<int>( loginPortString );
       analyticsPort =      boost::lexical_cast<int>( analyticsPortString );
       purchasePort =       boost::lexical_cast<int>( purchasePortString );
-      notificationPort =   boost::lexical_cast<U16>( notificationPort );      
+      notificationPort =   boost::lexical_cast<U16>( notificationPortString );
+      userStatsPort =      boost::lexical_cast<U16>( userStatsPortString );
       listenPort =         boost::lexical_cast<int>( listenPortString );
       ///reroutePort =        boost::lexical_cast<U16>( reroutePortString );
 
@@ -303,8 +314,9 @@ int main( int argc, const char* argv[] )
          PrepConnection< FruitadensGateway, MainGatewayThread > ( loginIpAddressString,         loginPort,        "logon",          gatewayServer, ServerType_Login, true );
          PrepConnection< FruitadensGateway, MainGatewayThread > ( contactIpAddressString,       contactPort,      "contact",        gatewayServer, ServerType_Contact, true );
          PrepConnection< FruitadensGateway, MainGatewayThread > ( purchaseIpAddressString,      purchasePort,     "purchase",       gatewayServer, ServerType_Purchase, true );
-         PrepConnection< FruitadensGateway, MainGatewayThread > ( analyticsIpAddressString,     analyticsPort,         "analytics",      gatewayServer, ServerType_Analytics, true );
+         PrepConnection< FruitadensGateway, MainGatewayThread > ( analyticsIpAddressString,     analyticsPort,    "analytics",      gatewayServer, ServerType_Analytics, true );
          PrepConnection< FruitadensGateway, MainGatewayThread > ( notificationIpAddressString,  notificationPort, "notification",   gatewayServer, ServerType_Notification, true );
+         PrepConnection< FruitadensGateway, MainGatewayThread > ( userStatsIpAddressString, userStatsPort,        "userstat",       gatewayServer, ServerType_UserStats, true );
       
       }
       if( assetBlock == false )

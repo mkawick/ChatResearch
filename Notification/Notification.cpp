@@ -56,11 +56,18 @@ void  PrintInstructions()
    cout << "    stat.address      - stat server ipaddress" << endl;
    cout << "    stat.port         - stat server port" << endl;
    
+   cout << " - for simple single DB connection - " << endl;
    cout << "    db.address        - database ipaddress" << endl;
    cout << "    db.port           - database port" << endl;
    cout << "    db.username       - database username" << endl;
    cout << "    db.password       - database password" << endl;
    cout << "    db.schema         - database schema-table collection" << endl;
+
+   cout << " - for multiple DB connections " << endl;
+   cout << " A single db connection would look like this... note the 'all' designation" << endl;
+   cout << " databaselist=[all:192.168.1.0:21000:root:password:playdek]" << endl;
+   cout << " Multiple connections look like this" << endl;
+   cout << " databaselist=[user:192.168.1.0:21000:root:password:playdek, game:192.168.1.0:21000:root:password:playdek ]" << endl;
 
    cout << "    ios.certpath      - path to ios keyfile and certfile" << endl;
    //cout << "    ios.certfile      - file and path to ios cert" << endl;
@@ -135,19 +142,6 @@ int main( int argc, const char* argv[] )
    {
        std::cout << "Error: input string was not valid" << std::endl;
    }
-
-   //--------------------------------------------------------------
-
-   Database::Deltadromeus* delta = new Database::Deltadromeus;
-   delta->SetConnectionInfo( dbIpAddress, dbPortAddress, dbUsername, dbPassword, dbSchema );
-   if( delta->IsConnected() == false )
-   {
-      cout << "Error: Database connection is invalid." << endl;
-      LogMessage(LOG_PRIO_ERR, "Error: Database connection is invalid.\n");
-      getch();
-      return 1;
-   }
-
    //----------------------------------------------------------------
    
    U64 serverUniqueHashValue = GenerateUniqueHash( serverName );
@@ -177,7 +171,23 @@ int main( int argc, const char* argv[] )
       notificationServer->Init( iosCertPath );
 
       s2s->AddOutputChain( notificationServer );
-      notificationServer->AddOutputChain( delta );
+      //----------------------------------------------------------------
+
+      if( Database::ConnectToMultipleDatabases< NotificationMainThread > ( parser, notificationServer ) == false )
+      {
+         Database::Deltadromeus* delta = new Database::Deltadromeus;
+         delta->SetConnectionInfo( dbIpAddress, dbPortAddress, dbUsername, dbPassword, dbSchema );
+         delta->SetConnectionType( Database::Deltadromeus::DbConnectionType_All );
+         if( delta->IsConnected() == false )
+         {
+            cout << "Error: Database connection is invalid." << endl;
+            getch();
+            return 1;
+         }
+         notificationServer->AddOutputChain( delta );
+      }
+
+      //----------------------------------------------------------------
 
       s2s->Resume();
       notificationServer->Run();

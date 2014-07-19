@@ -174,6 +174,9 @@ bool  DiplodocusGame::HandlePacketFromOtherServer( BasePacket* packet, U32 conne
 void  DiplodocusGame::ConnectUser( const PacketPrepareForUserLogin* loginPacket )
 {
    U32 connectionId = loginPacket->connectionId;
+   string uuid = loginPacket->uuid;
+   cout << "Prep for logon: " << connectionId << ", " << loginPacket->userName << ", " << uuid << ", " << loginPacket->password << endl;
+
    ConnectionMapIterator it = m_connectionMap.find( connectionId );
    if( it != m_connectionMap.end() )
    {
@@ -212,6 +215,7 @@ void  DiplodocusGame::ConnectUser( const PacketPrepareForUserLogin* loginPacket 
 
 void  DiplodocusGame::DisconnectUser( const PacketPrepareForUserLogout* logoutPacket )
 {
+   cout << "Prep for logout: " << logoutPacket->connectionId << ", " << logoutPacket->uuid << endl;
   /* U32 connectionId = logoutPacket->connectionId;
    ConnectionMapIterator it = m_connectionMap.find( connectionId );
    if( it == m_connectionMap.end() )

@@ -23,6 +23,8 @@ using boost::format;
 #include "../NetworkCommon/Packets/PacketFactory.h"
 #include "../NetworkCommon/Utils/CommandLineParser.h"
 
+#include "../NetworkCommon/Database/Deltadromeus.h"
+
 #include "../NetworkCommon/Logging/server_log.h"
 
 #include <boost/lexical_cast.hpp>
@@ -235,14 +237,14 @@ bool     DiplodocusLogin:: AddInputChainData( BasePacket* packet, U32 connection
 
 //---------------------------------------------------------------
 
-bool     DiplodocusLogin:: AddQueryToOutput( PacketDbQuery* packet )
+bool     DiplodocusLogin:: AddQueryToOutput( PacketDbQuery* dbQuery )
 {
    if( m_printFunctionNames )
    {
       cout << "fn: " << __FUNCTION__ << endl;
    }
 
-   ChainLinkIteratorType itOutputs = m_listOfOutputs.begin();
+  /* ChainLinkIteratorType itOutputs = m_listOfOutputs.begin();
    while( itOutputs != m_listOfOutputs.end() )// only one output currently supported.
    {
       ChainType* outputPtr = static_cast< ChainType*> ( (*itOutputs).m_interface );
@@ -254,6 +256,47 @@ bool     DiplodocusLogin:: AddQueryToOutput( PacketDbQuery* packet )
    }
 
    delete packet;/// normally, we'd leave this up to the invoker to cleanup. 
+   return false;*/
+
+   PacketFactory factory;
+   m_outputChainListMutex.lock();
+   BaseOutputContainer tempOutputContainer = m_listOfOutputs;
+   m_outputChainListMutex.unlock();
+
+   ChainLinkIteratorType itOutputs = tempOutputContainer.begin();
+   while( itOutputs != tempOutputContainer.end() )// only one output currently supported.
+   {
+      ChainType* outputPtr = static_cast< ChainType*> ( (*itOutputs).m_interface );
+      ChainedInterface* interfacePtr = static_cast< ChainedInterface* >( outputPtr );
+      if( interfacePtr->DoesNameMatch( "Deltadromeus" ) )
+      {
+         bool isValidConnection = false;
+         Database::Deltadromeus* delta = static_cast< Database::Deltadromeus* >( outputPtr );
+         if( dbQuery->dbConnectionType != 0 )
+         {
+            if( delta->WillYouTakeThisQuery( dbQuery->dbConnectionType ) )
+            {
+               isValidConnection = true;
+            }
+         }
+         else // if this query is not set, default to true
+         {
+            isValidConnection = true;
+         }
+         if( isValidConnection == true )
+         {
+            if( outputPtr->AddInputChainData( dbQuery, m_chainId ) == true )
+            {
+               return true;
+            }
+         }
+      }
+      itOutputs++;
+   }
+
+   BasePacket* deleteMe = static_cast< BasePacket*>( dbQuery );
+
+   factory.CleanupPacket( deleteMe );
    return false;
 }
 
@@ -2151,7 +2194,7 @@ bool     DiplodocusLogin::AddOutputChainData( BasePacket* packet, U32 connection
       }
    }
 
-   if( packet->packetType == PacketType_DbQuery )
+   if( packet->packetType == PacketType_DbQuery )// coming from the db
    {
       Threading::MutexLock locker( m_mutex );
       if( packet->packetSubType == BasePacketDbQuery::QueryType_Result )
@@ -2162,6 +2205,7 @@ bool     DiplodocusLogin::AddOutputChainData( BasePacket* packet, U32 connection
             cout << "AddOutputChainData: Non-null custom data " << endl;
       }
       return true;
+      //assert(0);/// should not happen
    }
    
    return false;

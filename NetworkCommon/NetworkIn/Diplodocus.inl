@@ -216,8 +216,12 @@ bool     Diplodocus< InputChain, OutputChain >::SendPacketToGateway( BasePacket*
    PacketGatewayWrapper* wrapper = new PacketGatewayWrapper();
    wrapper->SetupPacket( packet, connectionId );
 
-   ChainLinkIteratorType itInputs = m_listOfInputs.begin();
-   while( itInputs != m_listOfInputs.end() )// only one output currently supported.
+   m_inputChainListMutex.lock();
+   BaseOutputContainer tempInputContainer = m_listOfInputs;
+   m_inputChainListMutex.unlock();
+
+   ChainLinkIteratorType itInputs = tempInputContainer.begin();
+   while( itInputs != tempInputContainer.end() )// only one output currently supported.
    {
       ChainLink & chainedInput = *itInputs++;
       InputChainType* connection = static_cast< InputChainType* >( chainedInput.m_interface );

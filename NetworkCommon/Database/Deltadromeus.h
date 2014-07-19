@@ -11,12 +11,36 @@
 #include "../ChainedArchitecture/ChainedThread.h"
 using namespace std;
 
+#include <boost/format.hpp>
+
 class    BasePacket;
-struct st_mysql;
+class    CommandLineParser;
+struct   st_mysql;
 
 //typedef struct MYSQL DbPointer;
 namespace Database 
 {
+   struct DbConnectionInfo
+   {
+      DbConnectionInfo( const string& serverName, U16 port, const string& username, const string& password, const string& dbSchema, U8 type ) :
+                           m_serverName( serverName ),
+                           m_port( port ),
+                           m_username( username ),
+                           m_password( password ),
+                           m_dbSchema( dbSchema ),
+                           m_connectionType( type ){}
+
+      DbConnectionInfo() : m_connectionType( 0 ), m_port( 0 ){}
+
+      U8                      m_connectionType;
+      U16                     m_port;
+      string                  m_serverName;
+      
+      string                  m_username;
+      string                  m_password;
+      string                  m_dbSchema;
+   };
+
    #define DbHandle st_mysql
 
    typedef U32             JobId;
@@ -109,16 +133,19 @@ namespace Database
    public:
       enum DbConnectionType
       {
-         DbConnectionType_Userdata = 1,
-         DbConnectionType_GameData = 2,
-         DbConnectionType_StatData = 4,
+         DbConnectionType_none, 
+         DbConnectionType_UserData = 1 << 0,
+         DbConnectionType_GameData = 1 << 1,
+         DbConnectionType_StatData = 1 << 2,
+         DbConnectionType_All = DbConnectionType_UserData | DbConnectionType_GameData | DbConnectionType_StatData,
          DbConnectionType_Count = 3
       };
    public:
       Deltadromeus();
       const char*       GetClassName() const { return "Deltadromeus"; }
 
-      virtual void     SetConnectionInfo( const string& serverName, U16 port, const string& username,const string& password, const string& dbName );
+      virtual void     SetConnectionInfo( const string& serverName, U16 port, const string& username,const string& password, const string& dbSchema );
+              void     GetConnectInfo( string& serverName, U16& port, string& username, string& password, string& dbSchema ) const;
       virtual bool     IsConnected() const { return m_isConnected; }
 
       //-----------------------------------------------
@@ -140,7 +167,7 @@ namespace Database
       bool     IsComplete( JobId id ) const;
       bool     HasJobsInProgress() const { return m_jobsInProgress.size() > 0; }
 
-      bool     SetConnectionType( DbConnectionType type ) { m_dbConnectionTypeBitField = type; }
+      void     SetConnectionType( DbConnectionType type ) { m_dbConnectionTypeBitField = type; }
       bool     WillYouTakeThisQuery( U8 type ) const { return ( type & m_dbConnectionTypeBitField ) != 0; }
 
       bool     Log( const char* text, int priority = 1 );
@@ -171,11 +198,40 @@ namespace Database
       
       string                  m_username;
       string                  m_password;
-      string                  m_dbName;
+      string                  m_dbSchema;
 
       DbHandle*               m_DbConnection;
    };
 
    //---------------------------------------------------------------------------------------------------
    //---------------------------------------------------------------------------------------------------
+
+   bool  ParseCommandLineIntoConnectionInfo( CommandLineParser& parser, vector< DbConnectionInfo >& listOfConnections );
+
+   //---------------------------------------------------------------------------------------------------
+
+   template <typename type >
+   bool  ConnectToMultipleDatabases( CommandLineParser& parser, type* localServer )
+   {
+      vector< DbConnectionInfo > listOfConnections;
+      if( ParseCommandLineIntoConnectionInfo( parser, listOfConnections ) == false )
+         return false;
+
+      vector< DbConnectionInfo >::iterator it = listOfConnections.begin();
+      while (it != listOfConnections.end() )
+      {
+         const DbConnectionInfo& conn = *it++;
+         Database::Deltadromeus* delta = new Database::Deltadromeus;
+         delta->SetConnectionInfo( conn.m_serverName, conn.m_port, conn.m_username, conn.m_password, conn.m_dbSchema );
+         delta->SetConnectionType( (Database::Deltadromeus::DbConnectionType) conn.m_connectionType );
+         if( delta->IsConnected() == false )
+         {
+            cout << "Error: Database connection is invalid." << endl;
+            return false;
+         }
+         localServer->AddOutputChain( delta );
+      }
+
+      return true;
+   }
 } // namespace Database

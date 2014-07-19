@@ -64,6 +64,8 @@ public:
    void     SetDatabaseIdentification( const string& uuid ) { m_gameUuid = uuid; }
    bool     IsDatabaseIdentificationValid() const { return m_gameUuid.size() > 0; }
 
+   struct st_mysql * GetDBConnection( Database::Deltadromeus::DbConnectionType type );
+
    //-----------------------------------------------------------------------------
 
    // move up one layer

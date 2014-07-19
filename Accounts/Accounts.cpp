@@ -12,6 +12,8 @@
 #include <assert.h>
 
 #include <boost/lexical_cast.hpp>
+#include <boost/format.hpp>
+using boost::format;
 
 #include <cstdio>
 #include <memory.h>
@@ -122,17 +124,6 @@ int main( int argc, const char* argv[] )
 
    //--------------------------------------------------------------
 
-   Database::Deltadromeus* delta = new Database::Deltadromeus;
-   delta->SetConnectionInfo( dbIpAddress, dbPortAddress, dbUsername, dbPassword, dbSchema );
-   if( delta->IsConnected() == false )
-   {
-      cout << "Error: Database connection is invalid." << endl;
-      LogMessage(LOG_PRIO_ERR, "Error: Database connection is invalid.\n");
-      getch();
-      return 1;
-   }
-
-   //----------------------------------------------------------------
 
    U64 serverUniqueHashValue = GenerateUniqueHash( serverName );
    U32 serverId = (U32)serverUniqueHashValue;
@@ -148,7 +139,23 @@ int main( int argc, const char* argv[] )
    LogMessage(LOG_PRIO_ERR, "------------------------------------------------------------------\n\n\n");
 
    StatusUpdate* server = new StatusUpdate( serverName, serverId );
-   server->AddOutputChain( delta );
+
+   //----------------------------------------------------------------
+   if( Database::ConnectToMultipleDatabases< StatusUpdate > ( parser, server ) == false )
+   {
+      Database::Deltadromeus* delta = new Database::Deltadromeus;
+      delta->SetConnectionInfo( dbIpAddress, dbPortAddress, dbUsername, dbPassword, dbSchema );
+      delta->SetConnectionType( Database::Deltadromeus::DbConnectionType_All );
+      if( delta->IsConnected() == false )
+      {
+         cout << "Error: Database connection is invalid." << endl;
+         getch();
+         return 1;
+      }
+      server->AddOutputChain( delta );
+   }
+
+   //----------------------------------------------------------------
 
    server->EnableAddingUserProducts( enableAddingUserProducts );
    server->SetAsServicingUuidOnly( onlyUpdatesUuid );

@@ -1,4 +1,4 @@
-#include "StarterMainThread.h"
+#include "UserStatsMainThread.h"
 
 #include <iostream>
 #include <time.h>
@@ -19,25 +19,38 @@ using namespace std;
 #include <boost/lexical_cast.hpp>
 //using namespace boost;
 
-StarterMainThread::StarterMainThread( const string& serverName, U32 serverId ): Diplodocus< KhaanServerToServer >( serverName, serverId, 0,  ServerType_Starter )
+UserStatsMainThread::UserStatsMainThread( const string& serverName, U32 serverId ): Diplodocus< KhaanServerToServer >( serverName, serverId, 0,  ServerType_UserStats )
 {
    //time( &m_timestampStatsPrint );
    //m_timestampSelectPreferredGateway = m_timestampStatsPrint;
 }
 
-StarterMainThread::~StarterMainThread()
+UserStatsMainThread::~UserStatsMainThread()
 {
 }
 
-int      StarterMainThread::MainLoop_InputProcessing()
+//---------------------------------------------------------------
+
+void     UserStatsMainThread::ServerWasIdentified( IChainedInterface* khaan )
+{
+   BasePacket* packet = NULL;
+   PackageForServerIdentification( m_serverName, m_localIpAddress, m_externalIpAddress, m_serverId, m_serverType, m_listeningPort, m_gameProductId, m_isGame, m_isControllerApp, true, m_gatewayType, &packet );
+   ChainedType* localKhaan = static_cast< ChainedType* >( khaan );
+   localKhaan->AddOutputChainData( packet, 0 );
+   m_clientsNeedingUpdate.push_back( localKhaan->GetServerId() );
+}
+
+//---------------------------------------------------------------
+
+int      UserStatsMainThread::MainLoop_InputProcessing()
 {
    return 0;
 }
 
-int      StarterMainThread::MainLoop_OutputProcessing()
+int      UserStatsMainThread::MainLoop_OutputProcessing()
 {
-   UpdateDbResults();
-   /*
+   //UpdateDbResults();
+   
     UpdateAllConnections();
 
    time_t currentTime;
@@ -46,10 +59,12 @@ int      StarterMainThread::MainLoop_OutputProcessing()
    int numClients = static_cast< int >( m_connectedClients.size() );
    UpdateConsoleWindow( m_timeOfLastTitleUpdate, m_uptime, m_numTotalConnections, numClients, m_listeningPort, m_serverName );
 
+   
+   UpdateDbResults();
+   /*
    PeriodicWriteToDB();
    RemoveLoggedOutUsers();
    UpdateChatChannelManager();
-   UpdateDbResults();
    UpdateAllChatUsers();
 
    RunHourlyStats();
@@ -63,7 +78,7 @@ int      StarterMainThread::MainLoop_OutputProcessing()
 
 //---------------------------------------------------------------
 
-bool     StarterMainThread::AddInputChainData( BasePacket* packet, U32 connectionId )
+bool     UserStatsMainThread::AddInputChainData( BasePacket* packet, U32 connectionId )
 {
    U8 packetType = packet->packetType;
 
@@ -97,7 +112,7 @@ bool     StarterMainThread::AddInputChainData( BasePacket* packet, U32 connectio
 
 //---------------------------------------------------------------
 
-bool   StarterMainThread::AddOutputChainData( BasePacket* packet, U32 connectionId ) 
+bool   UserStatsMainThread::AddOutputChainData( BasePacket* packet, U32 connectionId ) 
 {
    if( packet->packetType == PacketType_ServerJobWrapper )
    {
@@ -127,7 +142,7 @@ bool   StarterMainThread::AddOutputChainData( BasePacket* packet, U32 connection
 
 //---------------------------------------------------------------
 
-void     StarterMainThread::UpdateDbResults()
+void     UserStatsMainThread::UpdateDbResults()
 {
    PacketFactory factory;
 
@@ -179,7 +194,7 @@ void     StarterMainThread::UpdateDbResults()
 
 //---------------------------------------------------------------
 
-bool     StarterMainThread::SendMessageToClient( BasePacket* packet, U32 connectionId )
+bool     UserStatsMainThread::SendMessageToClient( BasePacket* packet, U32 connectionId )
 {
    if( packet->packetType == PacketType_GatewayWrapper )// this is already wrapped up and ready for the gateway... send it on.
    {
@@ -220,7 +235,7 @@ bool     StarterMainThread::SendMessageToClient( BasePacket* packet, U32 connect
 
 ////////////////////////////////////////////////////////////////////////////////////////
 
-bool     StarterMainThread::AddQueryToOutput( PacketDbQuery* dbQuery )
+bool     UserStatsMainThread::AddQueryToOutput( PacketDbQuery* dbQuery )
 {
    PacketFactory factory;
    m_outputChainListMutex.lock();

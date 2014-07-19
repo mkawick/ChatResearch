@@ -24,6 +24,7 @@ using boost::format;
 //-----------------------------------------------------------------------------------------
 
 MainGatewayThread::MainGatewayThread( const string& serverName, U32 serverId ) : Diplodocus< KhaanGateway > ( serverName, serverId, 0, ServerType_Gateway ), StatTrackingConnections(),
+                                          m_highestNumSimultaneousUsersWatermark( 0 ),
                                           m_connectionIdTracker( 12 ),
                                           m_printPacketTypes( false ),
                                           m_printFunctionNames( false ),
@@ -95,8 +96,10 @@ bool  MainGatewayThread::AddInputChainData( BasePacket* packet, U32 connectionId
    {
       FileLog( "MainGatewayThread::AddInputChainData" );
    }
-   cout << "Packet to servers: " << (int)packet->packetType << ":" << (int)packet->packetSubType << endl;
-
+   if( m_printPacketTypes )
+   {
+      cout << "Packet to servers: " << (int)packet->packetType << ":" << (int)packet->packetSubType << endl;
+   }
    PrintDebugText( "AddInputChainData", 1);
    ConnectionMapIterator connIt = m_connectionMap.find( connectionId );
    if( connIt != m_connectionMap.end() )
@@ -130,14 +133,20 @@ bool  MainGatewayThread::AddInputChainData( BasePacket* packet, U32 connectionId
 
       Threading::MutexLock locker( m_inputChainListMutex );
       m_packetsToBeSentInternally.push_back( wrapper );
-      cout << "    Packet to servers: true" << endl;
+      if( m_printPacketTypes )
+      {
+         cout << "    Packet to servers: true" << endl;
+      }
       return true;
    }
    else
    {
       PacketFactory factory;
       factory.CleanupPacket( packet );// it dies here. we should log this and try to disconnect the user
-      cout << "    Packet to servers: false" << endl;
+      if( m_printPacketTypes )
+      {
+         cout << "    Packet to servers: false" << endl;
+      }
       return false;
    }
 }
@@ -197,6 +206,13 @@ void     MainGatewayThread::InputConnected( IChainedInterface * chainedInput )
       khaan->AuthorizeConnection();
    }
 
+   U32 numCurrentConnections = m_connectedClients.size();
+   if( numCurrentConnections > m_highestNumSimultaneousUsersWatermark )
+   {
+      m_highestNumSimultaneousUsersWatermark = numCurrentConnections;
+   }
+   cout << "Highest watermark = " << m_highestNumSimultaneousUsersWatermark << endl;
+
    //khaan->SendThroughLibEvent( true );
 
    //Threading::MutexLock locker( m_inputChainListMutex );
@@ -252,10 +268,10 @@ void     MainGatewayThread::InputRemovalInProgress( IChainedInterface * chainedI
 void     MainGatewayThread::CheckOnServerStatusChanges()
 {
    m_outputChainListMutex.lock();
-   ChainLinkIteratorType itOutput = m_listOfOutputs.begin();
    BaseOutputContainer tempOutputContainer = m_listOfOutputs;
    m_outputChainListMutex.unlock();
 
+   ChainLinkIteratorType itOutput = tempOutputContainer.begin();
    while( itOutput != tempOutputContainer.end() )
    {
       IChainedInterface* outputPtr = (*itOutput).m_interface;
@@ -702,7 +718,7 @@ bool  MainGatewayThread::AddOutputChainData( BasePacket* packet, U32 serverType 
       FileLog( "MainGatewayThread::AddOutputChainData" );
    }
 
-   PrintDebugText( "AddOutputChainData" ); 
+   //PrintDebugText( "AddOutputChainData" ); 
 
    // pass through only
    if( packet->packetType == PacketType_GatewayWrapper )
@@ -719,10 +735,16 @@ bool  MainGatewayThread::AddOutputChainData( BasePacket* packet, U32 serverType 
       //AddClientConnectionNeedingUpdate( id );
       
    }
-   else
+   else// the following really cannot happen.. but just in case
    {
-      assert( 0 );
-      return false;
+      cout << "MainGatewayThread::AddOutputChainData packet not processed" << endl;
+      int type = ( packet->packetType );
+      const char* packetTypeName = GetPacketTypename( (PacketType)type );
+      cout << "To client  packet: " << packetTypeName << " " << type << " :" << (int)packet->packetSubType << endl;
+      PacketFactory factory;
+      factory.CleanupPacket( packet );
+      //assert( 0 );
+      //return false;
    }
    return true;
 }

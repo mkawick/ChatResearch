@@ -9,6 +9,7 @@ using boost::format;
 #include "../NetworkCommon/Packets/ContactPacket.h"
 #include "../NetworkCommon/Packets/LoginPacket.h"
 #include "../NetworkCommon/Packets/PacketFactory.h"
+#include "../NetworkCommon/Database/Deltadromeus.h"
 
 #include "DiplodocusContact.h"
 #include "UserLookupManager.h"
@@ -439,7 +440,7 @@ void  DiplodocusContact::UpdateDbResults()
             UserContactMapIterator it = m_users.find( connectionId );
             if( it != m_users.end() )
             {
-               cout << "Db query type: "<< dbResult->lookup << " handed off to UserContact #" << connectionId << endl;
+               //cout << "Db query type: "<< dbResult->lookup << " handed off to UserContact #" << connectionId << endl;
                it->second.HandleDbQueryResult( dbResult );
             }
             else
@@ -644,6 +645,8 @@ void     DiplodocusContact::UpdateAllConnections()
 bool     DiplodocusContact::ConnectUser( PacketPrepareForUserLogin* loginPacket )
 {
    U32 connectionId = loginPacket->connectionId;
+   string uuid = loginPacket->uuid;
+   cout << "Prep for logon: " << connectionId << ", " << loginPacket->userName << ", " << uuid << ", " << loginPacket->password << endl;
 
    UserContactMapIterator it = m_users.find( connectionId );// don't do anything if this user is already logged in.
    if( it != m_users.end() )
@@ -704,6 +707,8 @@ bool     DiplodocusContact::ConnectUser( PacketPrepareForUserLogin* loginPacket 
 
 bool     DiplodocusContact::DisconnectUser( PacketPrepareForUserLogout* loginPacket )
 {
+   cout << "Prep for logout: " << loginPacket->connectionId << ", " << loginPacket->uuid << endl;
+
    U32 connectionId = loginPacket->connectionId;
 
    UserContactMapIterator it = m_users.find( connectionId );
@@ -759,7 +764,7 @@ bool     DiplodocusContact::HandlePacketRequests( PacketContact* packet, U32 con
 }
 
 //---------------------------------------------------------------
-
+/*
 bool     DiplodocusContact::AddQueryToOutput( PacketDbQuery* packet )
 {
    ChainLinkIteratorType itOutputs = m_listOfOutputs.begin();
@@ -774,6 +779,93 @@ bool     DiplodocusContact::AddQueryToOutput( PacketDbQuery* packet )
    }
 
    delete packet;/// normally, we'd leave this up to the invoker to cleanup. 
+   return false;
+}*/
+////////////////////////////////////////////////////////////////////////////////////////
+
+bool     DiplodocusContact::AddQueryToOutput( PacketDbQuery* dbQuery )
+{
+   PacketFactory factory;
+   //dbQuery->id = connectionId;
+
+   ChainLinkIteratorType itOutputs = m_listOfOutputs.begin();
+   while( itOutputs != m_listOfOutputs.end() )// only one output currently supported.
+   {
+      ChainType* outputPtr = static_cast< ChainType*> ( (*itOutputs).m_interface );
+      ChainedInterface* interfacePtr = static_cast< ChainedInterface* >( outputPtr );
+      if( interfacePtr->DoesNameMatch( "Deltadromeus" ) )
+      {
+         bool isValidConnection = false;
+         Database::Deltadromeus* delta = static_cast< Database::Deltadromeus* >( outputPtr );
+         if( dbQuery->dbConnectionType != 0 )
+         {
+            if( delta->WillYouTakeThisQuery( dbQuery->dbConnectionType ) )
+            {
+               isValidConnection = true;
+            }
+         }
+         else // if this query is not set, default to true
+         {
+            isValidConnection = true;
+         }
+         if( isValidConnection == true )
+         {
+            if( outputPtr->AddInputChainData( dbQuery, m_chainId ) == true )
+            {
+               return true;
+            }
+         }
+      }
+      itOutputs++;
+   }
+
+   BasePacket* deleteMe = static_cast< BasePacket*>( dbQuery );
+
+   factory.CleanupPacket( deleteMe );
+   return false;
+}
+
+
+
+bool     DiplodocusContact::AddQueryToOutput( PacketDbQuery* dbQuery, U32 connectionId )
+{
+   PacketFactory factory;
+   dbQuery->id = connectionId;
+
+   ChainLinkIteratorType itOutputs = m_listOfOutputs.begin();
+   while( itOutputs != m_listOfOutputs.end() )// only one output currently supported.
+   {
+      ChainType* outputPtr = static_cast< ChainType*> ( (*itOutputs).m_interface );
+      ChainedInterface* interfacePtr = static_cast< ChainedInterface* >( outputPtr );
+      if( interfacePtr->DoesNameMatch( "Deltadromeus" ) )
+      {
+         bool isValidConnection = false;
+         Database::Deltadromeus* delta = static_cast< Database::Deltadromeus* >( outputPtr );
+         if( dbQuery->dbConnectionType != 0 )
+         {
+            if( delta->WillYouTakeThisQuery( dbQuery->dbConnectionType ) )
+            {
+               isValidConnection = true;
+            }
+         }
+         else // if this query is not set, default to true
+         {
+            isValidConnection = true;
+         }
+         if( isValidConnection == true )
+         {
+            if( outputPtr->AddInputChainData( dbQuery, m_chainId ) == true )
+            {
+               return true;
+            }
+         }
+      }
+      itOutputs++;
+   }
+
+   BasePacket* deleteMe = static_cast< BasePacket*>( dbQuery );
+
+   factory.CleanupPacket( deleteMe );
    return false;
 }
 
@@ -828,28 +920,6 @@ bool     DiplodocusContact::SendMessageToClient( BasePacket* packet, U32 connect
    return false;
 }
 
-
-bool     DiplodocusContact::AddQueryToOutput( PacketDbQuery* dbQuery, U32 connectionId )
-{
-   PacketFactory factory;
-   dbQuery->id = connectionId;
-
-   ChainLinkIteratorType itOutputs = m_listOfOutputs.begin();
-   while( itOutputs != m_listOfOutputs.end() )// only one output currently supported.
-   {
-      ChainType* outputPtr = static_cast< ChainType*> ( (*itOutputs).m_interface );
-      if( outputPtr->AddInputChainData( dbQuery, m_chainId ) == true )
-      {
-         return true;
-      }
-      itOutputs++;
-   }
-
-   BasePacket* deleteMe = static_cast< BasePacket*>( dbQuery );
-
-   factory.CleanupPacket( deleteMe );
-   return false;
-}
 
 bool     DiplodocusContact::SendErrorToClient( U32 connectionId, PacketErrorReport::ErrorType error )
 {

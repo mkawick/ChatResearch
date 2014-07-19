@@ -127,7 +127,7 @@ bool     PurchaseReceiptManager::HandleResult( const PacketDbQueryResult* dbResu
       }
       else
       {
-         cout << "receipt additions failed" << endl;
+         cout << "receipt additions failed Time:" << GetDateInUTC() << endl;
       }
       delete data;
       return true;

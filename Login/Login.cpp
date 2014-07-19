@@ -71,11 +71,19 @@ void  PrintInstructions()
   // cout << "    s2s.address       - where is the for gateway, login and others" << endl;
    //cout << "    s2s.port          - where is the port for gateway, login and others" << endl;
    
+   cout << " - for simple single DB connection - " << endl;
    cout << "    db.address        - database ipaddress" << endl;
    cout << "    db.port           - database port" << endl;
    cout << "    db.username       - database username" << endl;
    cout << "    db.password       - database password" << endl;
    cout << "    db.schema         - database schema-table collection" << endl;
+
+   cout << " - for multiple DB connections " << endl;
+   cout << " A single db connection would look like this... note the 'all' designation" << endl;
+   cout << " databaselist=[all:192.168.1.0:21000:root:password:playdek]" << endl;
+   cout << " Multiple connections look like this" << endl;
+   cout << " databaselist=[user:192.168.1.0:21000:root:password:playdek, game:192.168.1.0:21000:root:password:playdek ]" << endl;
+
 
    cout << " ------ all of the following parameters are optional. --------" << endl;
    
@@ -99,6 +107,9 @@ void  PrintInstructions()
 
    cout << "    notification.address - when a user registers a device..." << endl;
    cout << "    notification.port - when a user registers a device..." << endl;
+
+   cout << "    userstats.address - user stats server ipaddress" << endl;
+   cout << "    userstats.port    - user stats server port" << endl;
 
    cout << "    print.functions   - print each function for debugging" << endl;
    cout << "    print.packets     - print each packet for debugging" << endl;
@@ -141,6 +152,9 @@ int main( int argc, const char* argv[] )
    string notificationPortString = "7902";
    string notificationIpAddressString = "localhost";
 
+   string userStatsPortString = "12002";
+   string userStatsIpAddressString = "localhost";
+
    string autoAddLoginProductString = "true";
 
    string printFunctionsString = "false";
@@ -178,6 +192,9 @@ int main( int argc, const char* argv[] )
    parser.FindValue( "notification.port", notificationPortString );
    parser.FindValue( "notification.address", notificationIpAddressString );
 
+   parser.FindValue( "userstat.port", userStatsPortString );
+   parser.FindValue( "userstat.address", userStatsIpAddressString );
+
    parser.FindValue( "autoAddLoginProduct", autoAddLoginProductString );
 
    parser.FindValue( "print.functions", printFunctionsString );
@@ -203,7 +220,8 @@ int main( int argc, const char* argv[] )
          assetPort=7302, 
          purchasePort=7702, 
          analyticsPort = 7802, 
-         notificationPort = 7902;
+         notificationPort = 7902,
+         userStatsPort = 12000;
    bool autoAddLoginProduct = true,
          printPackets = false, 
          printFunctions = false;
@@ -218,6 +236,7 @@ int main( int argc, const char* argv[] )
        contactPort = boost::lexical_cast<int>( contactPortString );
        analyticsPort = boost::lexical_cast<int>( analyticsPortString );
        notificationPort = boost::lexical_cast<int>( notificationPortString );
+       userStatsPort = boost::lexical_cast<int>( userStatsPortString );
 
        std::transform( autoAddLoginProductString.begin(), autoAddLoginProductString.end(), autoAddLoginProductString.begin(), ::tolower );
        if( autoAddLoginProductString == "1" || autoAddLoginProductString == "true" )
@@ -237,17 +256,6 @@ int main( int argc, const char* argv[] )
    if( printFunctionsString == "1" || printFunctionsString == "true" || printFunctionsString == "TRUE" )
    {
       printFunctions = true;
-   }
-
-   //--------------------------------------------------------------
-
-   Database::Deltadromeus* delta = new Database::Deltadromeus;
-   delta->SetConnectionInfo( dbIpAddress, dbPortAddress, dbUsername, dbPassword, dbSchema );
-   if( delta->IsConnected() == false )
-   {
-      cout << "Error: Database connection is invalid." << endl;
-      getch();
-      return 1;
    }
 
    //----------------------------------------------------------------
@@ -274,11 +282,27 @@ int main( int argc, const char* argv[] )
       loginServer->SetGatewayType( PacketServerIdentifier::GatewayType_None );
       loginServer->SetAsGame( false );
 
-      loginServer->AddOutputChain( delta );
+      //loginServer->AddOutputChain( delta );
       loginServer->SetupListening( listenPort );
       loginServer->AutoAddTheProductFromWhichYouLogin( autoAddLoginProduct );
       loginServer->PrintPacketTypes( printPackets );
       loginServer->PrintFunctionNames( printFunctions );
+
+      //----------------------------------------------------------------
+
+      if( Database::ConnectToMultipleDatabases< DiplodocusLogin > ( parser, loginServer ) == false )
+      {
+         Database::Deltadromeus* delta = new Database::Deltadromeus;
+         delta->SetConnectionInfo( dbIpAddress, dbPortAddress, dbUsername, dbPassword, dbSchema );
+         delta->SetConnectionType( Database::Deltadromeus::DbConnectionType_All );
+         if( delta->IsConnected() == false )
+         {
+            cout << "Error: Database connection is invalid." << endl;
+            getch();
+            return 1;
+         }
+         loginServer->AddOutputChain( delta );
+      }
       
       //----------------------------------
 
@@ -286,8 +310,9 @@ int main( int argc, const char* argv[] )
       PrepConnection< FruitadensLogin, DiplodocusLogin > ( contactIpAddressString, contactPort,             "contact",        loginServer, ServerType_Contact, true );
       PrepConnection< FruitadensLogin, DiplodocusLogin > ( assetIpAddressString, assetPort,                 "asset",          loginServer, ServerType_Asset, true );
       PrepConnection< FruitadensLogin, DiplodocusLogin > ( purchaseIpAddressString, purchasePort,           "purchase",       loginServer, ServerType_Purchase, true );
-      PrepConnection< FruitadensLogin, DiplodocusLogin > ( analyticsIpAddressString, analyticsPort,         "analytics",           loginServer, ServerType_Analytics, true );
+      PrepConnection< FruitadensLogin, DiplodocusLogin > ( analyticsIpAddressString, analyticsPort,         "analytics",      loginServer, ServerType_Analytics, true );
       PrepConnection< FruitadensLogin, DiplodocusLogin > ( notificationIpAddressString, notificationPort,   "notification",   loginServer, ServerType_Notification, true );
+      PrepConnection< FruitadensLogin, DiplodocusLogin > ( userStatsIpAddressString, userStatsPort,         "userstat",       loginServer, ServerType_UserStats, true );
       
       ConnectToMultipleGames< FruitadensLogin, DiplodocusLogin > ( parser, loginServer, true );
 

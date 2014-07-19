@@ -1,4 +1,4 @@
-// StarterMainThread.h
+// UserStatsMainThread.h
 #pragma once
 
 #include <deque>
@@ -18,16 +18,21 @@ class PacketDbQuery;
 class PacketDbQueryResult;
 ///////////////////////////////////////////////////////////////////
 
-class StarterMainThread :   public Diplodocus< KhaanServerToServer >
+class UserStatsMainThread : public Diplodocus< KhaanServerToServer >
 {
+public: 
+   typedef Diplodocus< KhaanServerToServer > ChainedType;
 public:
-   StarterMainThread( const string& serverName, U32 serverId );
-   ~StarterMainThread();
+   UserStatsMainThread( const string& serverName, U32 serverId );
+   ~UserStatsMainThread();
 
    bool     AddInputChainData( BasePacket* packet, U32 connectionId );
    bool     AddOutputChainData( BasePacket* packet, U32 connectionId );
    bool     SendMessageToClient( BasePacket* packet, U32 connectionId );
    bool     AddQueryToOutput( PacketDbQuery* dbQuery );
+
+   void     ServerWasIdentified( IChainedInterface* khaan );
+
 private:
    int      MainLoop_InputProcessing();
    int      MainLoop_OutputProcessing();

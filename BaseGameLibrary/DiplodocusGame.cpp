@@ -71,6 +71,33 @@ void     DiplodocusGame::ServerWasIdentified( IChainedInterface* khaan )
 
 //---------------------------------------------------------------
 
+struct st_mysql * DiplodocusGame::GetDBConnection( Database::Deltadromeus::DbConnectionType type )
+{
+   ChainLinkIteratorType itOutputs = m_listOfOutputs.begin();
+   while( itOutputs != m_listOfOutputs.end() )// only one output currently supported.
+   {
+      ChainType* outputPtr = static_cast< ChainType*> ( (*itOutputs).m_interface );
+      ChainedInterface* interfacePtr = static_cast< ChainedInterface* >( outputPtr );
+      if( interfacePtr->DoesNameMatch( "Deltadromeus" ) )
+      {
+         Database::Deltadromeus* delta = static_cast< Database::Deltadromeus* >( outputPtr );
+         if( type != 0 )
+         {
+            if( delta->WillYouTakeThisQuery( type ) )
+            {
+               return delta->GetDbHandle();
+            }
+         }
+         else // if this query is not set, default to true
+         {
+            return delta->GetDbHandle();
+         }
+         
+      }
+      itOutputs++;
+   }
+   return NULL;
+}
 //---------------------------------------------------------------
 
 bool  DiplodocusGame::HandleCommandFromGateway( BasePacket* packet, U32 connectionId )
@@ -267,10 +294,12 @@ bool   DiplodocusGame::AddOutputChainData( BasePacket* packet, U32 connectionId 
       if( m_connectionIdGateway == 0 )
          return false;
 
-      Threading::MutexLock locker( m_mutex );
+      m_inputChainListMutex.lock();
+      BaseOutputContainer tempInputContainer = m_listOfInputs;
+      m_inputChainListMutex.unlock();
 
-      ChainLinkIteratorType itInputs = m_listOfInputs.begin();
-      while( itInputs != m_listOfInputs.end() )
+      ChainLinkIteratorType itInputs = tempInputContainer.begin();
+      while( itInputs != tempInputContainer.end() )
       {
          ChainLink& chainedInput = *itInputs++;
          ChainedInterface* interfacePtr = static_cast< ChainedInterface* >( chainedInput.m_interface );  
@@ -621,6 +650,9 @@ void     DiplodocusGame::UnlockMutex()
 void     DiplodocusGame::ConnectUser( const PacketPrepareForUserLogin* loginPacket )
 {
    U32 connectionId = loginPacket->connectionId;
+   string uuid = loginPacket->uuid;
+   cout << "Prep for logon: " << connectionId << ", " << loginPacket->userName << ", " << uuid << ", " << loginPacket->password << endl;
+
    if( m_callbacks )
    {
       UserInfo ui;
@@ -644,6 +676,8 @@ void     DiplodocusGame::ConnectUser( const PacketPrepareForUserLogin* loginPack
 
 void  DiplodocusGame::DisconnectUser( const PacketPrepareForUserLogout* logoutPacket )
 {
+    cout << "Prep for logout: " << logoutPacket->connectionId << ", " << logoutPacket->uuid << endl;
+
    U32 connectionId = logoutPacket->connectionId;
    bool  errorDisconnect = logoutPacket->wasDisconnectedByError;
    if( m_callbacks )

@@ -129,6 +129,8 @@ public:
    StringLookup*  GetStringLookup() { return m_stringLookup; }
    bool           SendPacketToOtherServer( BasePacket* packet, U32 connectionId );
 
+   bool           IsPrintingFunctionNames() const { return m_printFunctionNames; }
+   bool           IsPrintingVerbose() const { return m_printPacketTypes; }
    //--------------------------------------
 
 private:

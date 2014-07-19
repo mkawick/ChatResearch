@@ -414,6 +414,10 @@ bool  DiplodocusAsset::HandlePacketFromOtherServer( BasePacket* packet, U32 conn
 
 bool     DiplodocusAsset::ConnectUser( PacketPrepareForUserLogin* loginPacket )
 {
+   U32 connectionId = loginPacket->connectionId;
+   string uuid = loginPacket->uuid;
+   cout << "Prep for logon: " << connectionId << ", " << loginPacket->userName << ", " << uuid << ", " << loginPacket->password << endl;
+
    U64 hashForUser = GenerateUniqueHash( loginPacket->uuid );
 
    Threading::MutexLock locker( m_mutex );
@@ -450,6 +454,8 @@ bool     DiplodocusAsset::ConnectUser( PacketPrepareForUserLogin* loginPacket )
 
 bool     DiplodocusAsset::DisconnectUser( PacketPrepareForUserLogout* loginPacket )
 {
+   cout << "Prep for logout: " << loginPacket->connectionId << ", " << loginPacket->uuid << endl;
+
    U32 connectionId = loginPacket->connectionId;
    connectionId = connectionId;
    string uuid = loginPacket->uuid;

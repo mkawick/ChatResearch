@@ -51,11 +51,19 @@ void  PrintInstructions()
    cout << "    analytics.address - analytics server ipaddress" << endl;
    cout << "    analytics.port    - analytics server port" << endl;
    
+   cout << " - for simple single DB connection - " << endl;
    cout << "    db.address        - database ipaddress" << endl;
    cout << "    db.port           - database port" << endl;
    cout << "    db.username       - database username" << endl;
    cout << "    db.password       - database password" << endl;
    cout << "    db.schema         - database schema-table collection" << endl;
+
+   cout << " - for multiple DB connections " << endl;
+   cout << " A single db connection would look like this... note the 'all' designation" << endl;
+   cout << " databaselist=[all:192.168.1.0:21000:root:password:playdek]" << endl;
+   cout << " Multiple connections look like this" << endl;
+   cout << " databaselist=[user:192.168.1.0:21000:root:password:playdek, game:192.168.1.0:21000:root:password:playdek ]" << endl;
+
 
    cout << " -h, -help, -? for help " << endl;
 }
@@ -119,15 +127,6 @@ int main( int argc, const char* argv[] )
        std::cout << "Error: input string was not valid" << std::endl;
    }
 
-   Database::Deltadromeus* delta = new Database::Deltadromeus;
-   delta->SetConnectionInfo( dbIpAddress, dbPortAddress, dbUsername, dbPassword, dbSchema );
-   if( delta->IsConnected() == false )
-   {
-      cout << "Error: Database connection is invalid." << endl;
-      getch();
-      return 1;
-   }
-
    //----------------------------------------------------------------
    
    U64 serverUniqueHashValue = GenerateUniqueHash( serverName );
@@ -149,7 +148,6 @@ int main( int argc, const char* argv[] )
    if( isBusy == false )
    {
       DiplodocusContact*    contactServer = new DiplodocusContact( serverName, serverId );
-      contactServer->AddOutputChain( delta );
 
       contactServer->SetupListening( listenPort );
 
@@ -160,10 +158,24 @@ int main( int argc, const char* argv[] )
       
       //----------------------------------------------------------------
 
+      if( Database::ConnectToMultipleDatabases< DiplodocusContact > ( parser, contactServer ) == false )
+      {
+         Database::Deltadromeus* delta = new Database::Deltadromeus;
+         delta->SetConnectionInfo( dbIpAddress, dbPortAddress, dbUsername, dbPassword, dbSchema );
+         delta->SetConnectionType( Database::Deltadromeus::DbConnectionType_All );
+         if( delta->IsConnected() == false )
+         {
+            cout << "Error: Database connection is invalid." << endl;
+            getch();
+            return 1;
+         }
+         contactServer->AddOutputChain( delta );
+      }
+
+      //----------------------------------------------------------------
+
       s2s->AddOutputChain( contactServer );
-
       contactServer->Init();
-
       contactServer->Run();
    }
    else

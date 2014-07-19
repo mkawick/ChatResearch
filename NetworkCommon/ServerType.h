@@ -21,7 +21,7 @@ enum  ServerType
    ServerType_Test,
    ServerType_Starter,
    ServerType_Notification,
-   ServerType_PlayerStats,
+   ServerType_UserStats,
    ServerType_Count // << end of list
 };
 

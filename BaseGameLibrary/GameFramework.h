@@ -13,6 +13,7 @@ using namespace std;
 class GameFramework;
 class DiplodocusGame;
 class FruitadensServerToServer;
+class CommandLineParser;
 
 //////////////////////////////////////////////////////////
 
@@ -52,8 +53,9 @@ public:
 
    void  SetupDefaultAnalyticsConnection( const string& address, U16 port );
    void  SetupDefaultChatConnection( const string& address, U16 port );
-   void  GameFramework::SetupDefaultPurchaseConnection( const string& address, U16 port );
+   void  SetupDefaultPurchaseConnection( const string& address, U16 port );
    void  SetupDefaultNotificationConnection( const string& address, U16 port );
+   void  SetupDefaultUserStatConnection( const string& address, U16 port );
    void  SetupDefaultS2S( const string& address, U16 port );
    void  SetupConnectionToAnotherServer( const string& address, const string& serverName, U16 port, ServerType serverType, PacketType packetType );
    void  AddPacketTypeToServer( const string& serverName, PacketType packetType );
@@ -127,6 +129,11 @@ private:
    string         m_notificationServerAddress;
    FruitadensServerToServer*  m_notificationServer;
 
+   U16            m_userStatsPort;
+   string         m_userStatsIpAddress;
+   FruitadensServerToServer*  m_userStatsServer;
+   
+
    vector< S2SConnectionSetupData > m_serverConnections;
 
 
@@ -138,6 +145,8 @@ private:
    string         m_dbUsername;
    string         m_dbPassword;
    string         m_dbSchema;
+
+   CommandLineParser* m_parser;
 
    map< U32, TimerInfo > m_timers;
 };

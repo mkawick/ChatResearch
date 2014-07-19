@@ -17,6 +17,7 @@ using namespace std;
 #include "../NetworkCommon/Packets/TournamentPacket.h"
 
 #include "../NetworkCommon/Database/StringLookup.h"
+#include "../NetworkCommon/Database/Deltadromeus.h"
 #include "../NetworkCommon/NetworkIn/DiplodocusServerToServer.h"
 
 #include <iostream>
@@ -280,6 +281,10 @@ bool  DiplodocusPurchase::HandlePacketFromOtherServer( BasePacket* packet, U32 c
 
 bool     DiplodocusPurchase::ConnectUser( PacketPrepareForUserLogin* loginPacket )
 {
+   U32 connectionId = loginPacket->connectionId;
+   string uuid = loginPacket->uuid;
+   cout << "Prep for logon: " << connectionId << ", " << loginPacket->userName << ", " << uuid << ", " << loginPacket->password << endl;
+
    U64 hashForUser = GenerateUniqueHash( loginPacket->uuid );
 
    Threading::MutexLock locker( m_mutex );
@@ -319,6 +324,8 @@ bool     DiplodocusPurchase::ConnectUser( PacketPrepareForUserLogin* loginPacket
 
 bool     DiplodocusPurchase::DisconnectUser( PacketPrepareForUserLogout* loginPacket )
 {
+   cout << "Prep for logout: " << loginPacket->connectionId << ", " << loginPacket->uuid << endl;
+
    U32 connectionId = loginPacket->connectionId;
    connectionId = connectionId;
 
@@ -393,7 +400,7 @@ bool     DiplodocusPurchase::HandlePurchaseRefund( const PacketTournament_Purcha
 
 //---------------------------------------------------------------
 //---------------------------------------------------------------
-
+/*
 bool     DiplodocusPurchase::AddQueryToOutput( PacketDbQuery* packet )
 {
    ChainLinkIteratorType itOutputs = m_listOfOutputs.begin();
@@ -412,6 +419,51 @@ bool     DiplodocusPurchase::AddQueryToOutput( PacketDbQuery* packet )
    factory.CleanupPacket( delPacket );
    //delete packet;/// normally, we'd leave this up to the invoker to cleanup. 
    return false;
+}*/
+////////////////////////////////////////////////////////////////////////////////////////
+
+bool     DiplodocusPurchase::AddQueryToOutput( PacketDbQuery* dbQuery )
+{
+   PacketFactory factory;
+   m_outputChainListMutex.lock();
+   BaseOutputContainer tempOutputContainer = m_listOfOutputs;
+   m_outputChainListMutex.unlock();
+
+   ChainLinkIteratorType itOutputs = tempOutputContainer.begin();
+   while( itOutputs != tempOutputContainer.end() )// only one output currently supported.
+   {
+      ChainType* outputPtr = static_cast< ChainType*> ( (*itOutputs).m_interface );
+      ChainedInterface* interfacePtr = static_cast< ChainedInterface* >( outputPtr );
+      if( interfacePtr->DoesNameMatch( "Deltadromeus" ) )
+      {
+         bool isValidConnection = false;
+         Database::Deltadromeus* delta = static_cast< Database::Deltadromeus* >( outputPtr );
+         if( dbQuery->dbConnectionType != 0 )
+         {
+            if( delta->WillYouTakeThisQuery( dbQuery->dbConnectionType ) )
+            {
+               isValidConnection = true;
+            }
+         }
+         else // if this query is not set, default to true
+         {
+            isValidConnection = true;
+         }
+         if( isValidConnection == true )
+         {
+            if( outputPtr->AddInputChainData( dbQuery, m_chainId ) == true )
+            {
+               return true;
+            }
+         }
+      }
+      itOutputs++;
+   }
+
+   BasePacket* deleteMe = static_cast< BasePacket*>( dbQuery );
+
+   factory.CleanupPacket( deleteMe );
+   return false;
 }
 
 //---------------------------------------------------------------
@@ -424,7 +476,7 @@ bool     DiplodocusPurchase::AddOutputChainData( BasePacket* packet, U32 connect
    {
       if( m_connectionIdGateway == 0 )
          return false;
-
+/*
       Threading::MutexLock locker( m_mutex );
 
       ChainLinkIteratorType itInputs = m_listOfInputs.begin();
@@ -442,7 +494,27 @@ bool     DiplodocusPurchase::AddOutputChainData( BasePacket* packet, U32 connect
             return true;
          }
       }
-      return false;
+      return false;*/
+      m_inputChainListMutex.lock();
+      BaseOutputContainer tempInputContainer = m_listOfInputs;
+      m_inputChainListMutex.unlock();
+
+      ChainLinkIteratorType itInputs = tempInputContainer.begin();
+      if( itInputs != tempInputContainer.end() )// only one output currently supported.
+      {
+         ChainLink& chainedInput = *itInputs++;
+         IChainedInterface* interfacePtr = chainedInput.m_interface;
+         KhaanPurchase* khaan = static_cast< KhaanPurchase* >( interfacePtr );
+         if( khaan->GetServerId() == m_connectionIdGateway )
+         {
+            khaan->AddOutputChainData( packet );
+            //khaan->Update();// the gateway may not have a proper connection id.
+
+            AddServerNeedingUpdate( khaan->GetServerId() );
+            return true;
+         }
+      }
+      return true;
    }
    if( packet->packetType == PacketType_ServerJobWrapper )
    {

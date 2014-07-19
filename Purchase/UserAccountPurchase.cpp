@@ -154,6 +154,7 @@ bool  UserAccountPurchase::HandleReceipt( const PacketPurchase_ValidatePurchaseR
    cout <<  "  quantity      : " << receiptPacket->quantity << endl;
    cout <<  "  transactionId : " << receiptPacket->transactionId << endl;
    cout <<  "  platformId    : " << receiptPacket->platformId << endl;
+   cout << "Time received: " << GetDateInUTC() << endl;
 
    const string& temp = receiptPacket->receipt;
    

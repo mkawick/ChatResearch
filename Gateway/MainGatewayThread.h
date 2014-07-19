@@ -147,7 +147,8 @@ private:
 
    ListOfOutputLists          m_orderedOutputPacketHandlers;
 
-   U32                        m_connectionIdTracker;   
+   U32                        m_highestNumSimultaneousUsersWatermark;
+   U32                        m_connectionIdTracker;
    std::deque< BasePacket* >  m_clientBoundTempStorage;
 
    SocketToConnectionMap      m_socketToConnectionMap;

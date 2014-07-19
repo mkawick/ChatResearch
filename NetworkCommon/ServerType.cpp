@@ -42,8 +42,8 @@ const char* GetServerTypeName( ServerType type )
       return "Test";
    case ServerType_Notification:
       return "Notification";
-   case ServerType_PlayerStats:
-      return "PlayerStats";
+   case ServerType_UserStats:
+      return "UserStats";
    case ServerType_Count:
       return "Number of server... this is an error";
    }

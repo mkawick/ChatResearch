@@ -216,6 +216,9 @@ bool     NotificationMainThread::HandlePacketFromGateway( BasePacket* packet, U3
 bool     NotificationMainThread::ConnectUser( const PacketPrepareForUserLogin* loginPacket )
 {
    U32 connectionId = loginPacket->connectionId;
+   string uuid = loginPacket->uuid;
+   cout << "Prep for logon: " << connectionId << ", " << loginPacket->userName << ", " << uuid << ", " << loginPacket->password << endl;
+
 
    UserConnectionIterator it = m_userConnectionMap.find( connectionId );// don't do anything if this user is already logged in.
    if( it != m_userConnectionMap.end() )
@@ -259,6 +262,7 @@ bool     NotificationMainThread::ConnectUser( const PacketPrepareForUserLogin* l
 bool     NotificationMainThread::DisconnectUser( const PacketPrepareForUserLogout* loginPacket )
 {
    U32 connectionId = loginPacket->connectionId;
+   cout << "Prep for logout: " << connectionId << ", " << loginPacket->uuid << endl;
 
    m_mutex.lock();
    UserConnectionIterator it = m_userConnectionMap.find( connectionId );
@@ -587,7 +591,7 @@ void     NotificationMainThread::PeriodicCheckForNewNotifications()
 
 //---------------------------------------------------------------
 //---------------------------------------------------------------
-
+/*
 bool     NotificationMainThread::AddQueryToOutput( PacketDbQuery* query )
 {
    ChainLinkIteratorType itOutputs = m_listOfOutputs.begin();
@@ -605,7 +609,53 @@ bool     NotificationMainThread::AddQueryToOutput( PacketDbQuery* query )
    PacketFactory factory;
    factory.CleanupPacket( packet );/// normally, we'd leave this up to the invoker to cleanup. 
    return false;
+}*/
+////////////////////////////////////////////////////////////////////////////////////////
+
+bool     NotificationMainThread::AddQueryToOutput( PacketDbQuery* dbQuery )
+{
+   PacketFactory factory;
+   m_outputChainListMutex.lock();
+   BaseOutputContainer tempOutputContainer = m_listOfOutputs;
+   m_outputChainListMutex.unlock();
+
+   ChainLinkIteratorType itOutputs = tempOutputContainer.begin();
+   while( itOutputs != tempOutputContainer.end() )// only one output currently supported.
+   {
+      ChainType* outputPtr = static_cast< ChainType*> ( (*itOutputs).m_interface );
+      ChainedInterface* interfacePtr = static_cast< ChainedInterface* >( outputPtr );
+      if( interfacePtr->DoesNameMatch( "Deltadromeus" ) )
+      {
+         bool isValidConnection = false;
+         Database::Deltadromeus* delta = static_cast< Database::Deltadromeus* >( outputPtr );
+         if( dbQuery->dbConnectionType != 0 )
+         {
+            if( delta->WillYouTakeThisQuery( dbQuery->dbConnectionType ) )
+            {
+               isValidConnection = true;
+            }
+         }
+         else // if this query is not set, default to true
+         {
+            isValidConnection = true;
+         }
+         if( isValidConnection == true )
+         {
+            if( outputPtr->AddInputChainData( dbQuery, m_chainId ) == true )
+            {
+               return true;
+            }
+         }
+      }
+      itOutputs++;
+   }
+
+   BasePacket* deleteMe = static_cast< BasePacket*>( dbQuery );
+
+   factory.CleanupPacket( deleteMe );
+   return false;
 }
+
 
 //---------------------------------------------------------------
 

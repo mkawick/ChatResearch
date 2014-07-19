@@ -17,7 +17,7 @@
 #pragma comment( lib, "libmysql.lib" )
 #endif
 
-
+#include "../Utils/CommandLineParser.h"
 
 #include <boost/type_traits.hpp>
 #include <boost/algorithm/string/replace.hpp>
@@ -253,7 +253,7 @@ Deltadromeus::~Deltadromeus()
 
 //------------------------------------------------------------
 
-void     Deltadromeus::SetConnectionInfo( const string& serverName, U16 port, const string& username,const string& password, const string& dbName )
+void     Deltadromeus::SetConnectionInfo( const string& serverName, U16 port, const string& username,const string& password, const string& dbSchema )
 {
    Disconnect();
    
@@ -261,9 +261,18 @@ void     Deltadromeus::SetConnectionInfo( const string& serverName, U16 port, co
    m_port = port;
    m_username = username;
    m_password = password;
-   m_dbName = dbName;
+   m_dbSchema = dbSchema;
 
    Connect();
+}
+
+void     Deltadromeus::GetConnectInfo( string& serverName, U16& port, string& username, string& password, string& dbName )  const
+{
+   serverName = m_serverName;
+   port = m_port;
+   username = m_username;
+   password = m_password;
+   dbName = m_dbSchema;
 }
 
 //------------------------------------------------------------
@@ -480,14 +489,14 @@ void     Deltadromeus::Connect()
 
    // Now we will actually connect to the specific database.
 
-   m_DbConnection = mysql_real_connect( m_DbConnection, m_serverName.c_str(), m_username.c_str(), m_password.c_str(), m_dbName.c_str(), m_port, NULL, 0 );
+   m_DbConnection = mysql_real_connect( m_DbConnection, m_serverName.c_str(), m_username.c_str(), m_password.c_str(), m_dbSchema.c_str(), m_port, NULL, 0 );
 
    string output = " login to the DB, IP: ";
    output += m_serverName;
    output += ":";
    output += boost::lexical_cast<string> ( m_port );
    output += " with schema ";
-   output += m_dbName;
+   output += m_dbSchema;
    output += " using  user=";
    output += m_username;
 
@@ -539,7 +548,7 @@ int     Deltadromeus::CallbackFunction()
       if( currentJob->HasStarted() == false )
       {
          LogEverything( "DB submit query " );
-         currentJob->SubmitQuery( m_DbConnection, m_dbName );
+         currentJob->SubmitQuery( m_DbConnection, m_dbSchema );
       }
       else if( currentJob->IsComplete() == true )
       {
@@ -585,7 +594,7 @@ int     Deltadromeus::CallbackFunction()
                m_mutex.lock();
                DbJobBase* currentJob = m_jobsInProgress.front();
                m_mutex.unlock(); 
-               currentJob->SubmitQuery( m_DbConnection, m_dbName );
+               currentJob->SubmitQuery( m_DbConnection, m_dbSchema );
             }
             else
             {
@@ -670,4 +679,108 @@ Database::JobId
 }
 
 //------------------------------------------------------------
+//------------------------------------------------------------
+
+bool  Database::ParseCommandLineIntoConnectionInfo( CommandLineParser& parser, vector< DbConnectionInfo >& listOfConnections )
+{
+   vector< string > databaseConfiguration;
+   if( parser.FindValue( "databaselist", databaseConfiguration ) == false )
+   {
+      if( parser.FindValue( "dblist", databaseConfiguration ) == false )
+      {
+         cout << "Multiple dbs were not listed. " << endl;
+         return false;
+      }
+   }
+
+   int NumFields = 6;
+   U32 bitTrackingForDbConnections = 0;
+   cout << "databases found = " << endl << "[ " << endl; 
+   vector< string >::iterator it = databaseConfiguration.begin();
+   while( it != databaseConfiguration.end() )
+   {
+      string str = *it++;
+      vector< string > values;
+      if( parser.SeparateStringIntoValues( str, values, NumFields ) == true )
+      {
+         string dbConnectionType = values[0];
+         const string& dbIpAddress = values[1];
+         const string& dbPort = values[2];
+         const string& dbUsername = values[3];
+         const string& dbPassword = values[4];
+         const string& dbSchema = values[5];
+
+         cout << boost::format("%s: %15s:%s ={ %6s - %-6s }-schema=%s")  % dbConnectionType % dbIpAddress % dbPort % dbUsername % dbPassword % dbSchema << endl;
+
+         
+         int port = 0;
+         bool success = false;
+         try
+         {
+            port = boost::lexical_cast<int>( dbPort );
+            success = true;
+         } 
+         catch( boost::bad_lexical_cast const& ) 
+         {
+             cout << "Error: input string was not valid" << endl;
+         }
+         std::transform( dbConnectionType.begin(), dbConnectionType.end(), dbConnectionType.begin(), ::tolower);
+
+         U32 dbType = Database::Deltadromeus::DbConnectionType_none;         
+         if( dbConnectionType == "game" || dbConnectionType.find( "game" ) != string::npos )// you can stick strings together "usergame" or "user|game"
+         {
+            dbType |= (U32)Database::Deltadromeus::DbConnectionType_GameData;
+            if( dbType & bitTrackingForDbConnections )
+            {
+               cout << "Error: duplicate connection types" << endl;
+               return false;
+            }
+         }
+         if( dbConnectionType == "user" || dbConnectionType.find( "user" ) != string::npos )
+         {
+            dbType |= Database::Deltadromeus::DbConnectionType_UserData;
+            if( dbType & bitTrackingForDbConnections )
+            {
+               cout << "Error: duplicate connection types" << endl;
+               return false;
+            }
+         }
+         if( dbConnectionType == "stat" || dbConnectionType.find( "stat" ) != string::npos )
+         {
+            dbType |= Database::Deltadromeus::DbConnectionType_StatData;
+            if( dbType & bitTrackingForDbConnections )
+            {
+               cout << "Error: duplicate connection types" << endl;
+               return false;
+            }
+         }
+         if( dbConnectionType == "all" )
+         {
+            dbType = Database::Deltadromeus::DbConnectionType_All;
+            if( dbType & bitTrackingForDbConnections )
+            {
+               cout << "Error: duplicate connection types" << endl;
+               return false;
+            }
+         }
+         if( dbType == Database::Deltadromeus::DbConnectionType_none )
+            success = false;
+         else
+            success = true;
+
+         if( success )
+         {
+            bitTrackingForDbConnections |= dbType;
+            listOfConnections.push_back( DbConnectionInfo( dbIpAddress, port, dbUsername, dbPassword, dbSchema, dbType ) );
+         }
+      }
+      else
+      {
+         cout << "Not enough database configuration for this game:" << str << endl;
+      }
+   }
+   cout << "]" << endl;
+
+   return true;
+}
 //------------------------------------------------------------
