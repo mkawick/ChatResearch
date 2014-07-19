@@ -37,6 +37,8 @@ ClientNetworkWrapper::ClientNetworkWrapper( U8 gameProductId, bool connectToAsse
       m_connectToAssetServer( connectToAssetServer ),
       m_isLoggingIn( false ),
       m_isLoggedIn( false ),
+      m_isCreatingAccount( false ),
+      m_printFunction( false ),
       m_connectionId( 0 ), 
       m_selectedGame( 0 ),
       m_normalSleepTime( 50 ),
