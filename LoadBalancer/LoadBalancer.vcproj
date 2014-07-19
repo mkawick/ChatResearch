@@ -288,6 +288,14 @@
 					>
 				</File>
 				<File
+					RelativePath="..\NetworkCommon\NetworkIn\KhaanProtected.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\NetworkCommon\NetworkIn\KhaanProtected.h"
+					>
+				</File>
+				<File
 					RelativePath="..\NetworkCommon\NetworkIn\KhaanServerToServer.cpp"
 					>
 				</File>

@@ -2,14 +2,13 @@
 
 #pragma once
 
-#include "../NetworkCommon/DataTypes.h"
-#include "../NetworkCommon/NetworkIn/Khaan.h"
+#include "../NetworkCommon/NetworkIn/KhaanProtected.h"
 
 class MainGatewayThread;
 
 //--------------------------------------------------------------
 
-class KhaanGateway : public Khaan
+class KhaanGateway : public KhaanProtected
 {
 public:
    KhaanGateway( int id, bufferevent* be );
@@ -23,7 +22,7 @@ public:
    U8       GetLanguageId() const { return m_languageId; }
    void     SetLanguageId( U8 languageId );
 
-   void     SetGateway( MainGatewayThread* gateway ) { m_gateway = gateway; }
+   //void     SetGateway( MainGatewayThread* gateway ) { m_gateway = gateway; }
    void     ThrottleConnection( U32 timeoutMs ) { m_timeoutMs = timeoutMs; }
 
    void     SetLastGameConnectedTo( U8 gameId ) { m_gameId = gameId; }
@@ -38,6 +37,7 @@ private:
    bool     HandleGatewayPackets( const BasePacket* packet ) const;
    bool     IsPacketSafe( const U8* data, int& offset);
    bool     IsHandshaking( const BasePacket* packetIn );
+   bool     IsAuthorized() const { return m_authorizedConnection; }
    bool     TrackInwardPacketType( const BasePacket* packet ); // based on base class
    bool     TrackOutwardPacketType( const BasePacket* packet );
    void     SetupOutputDelayTimestamp();
@@ -46,18 +46,18 @@ private:
    U32                  m_numPacketsReceivedBeforeAuth;
    U32                  m_randomNumberOfPacketsBeforeLogin;
    bool                 m_authorizedConnection;
-   bool                 m_denyAllFutureData;
+   //bool                 m_denyAllFutureData;
    bool                 m_logoutPacketSent;
    int                  m_adminLevel;
    U8                   m_languageId;
-   MainGatewayThread*   m_gateway;
+//   MainGatewayThread*   m_gateway;
    U32                  m_timeoutMs;
    U32                  m_lastSentToClientTimestamp;
    U8                   m_gameId;
    
    void  PreCleanup();
-   bool	OnDataReceived( const U8* data, int length );
-   bool  HandleInwardSerializedPacket( const U8* data, int& offset );
+   //bool	OnDataReceived( const U8* data, int length );
+   //bool  HandleInwardSerializedPacket( const U8* data, int& offset );
 };
 
 //--------------------------------------------------------------

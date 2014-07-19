@@ -14,14 +14,14 @@ using boost::format;
 //-----------------------------------------------------------------------------------------
 
 KhaanGateway::KhaanGateway( int id, bufferevent* be ): 
-      Khaan( id, be ), 
+      KhaanProtected( id, be ), 
       m_numPacketsReceivedBeforeAuth( 0 ),
       m_authorizedConnection( false ),
-      m_denyAllFutureData( false ),
+      //m_denyAllFutureData( false ),
       m_logoutPacketSent( false ),
       m_adminLevel( 0 ),
       m_languageId( 0 ),
-      m_gateway( NULL ),
+      //m_gateway( NULL ),
       m_timeoutMs( 0 ),
       m_lastSentToClientTimestamp( 0 ),
       m_gameId( 0 )
@@ -61,23 +61,27 @@ void     KhaanGateway::ForceShutdown()
 
 void     KhaanGateway::DenyAllFutureData() 
 { 
-   m_denyAllFutureData = true; 
-   m_gateway->TrackCountStats( StatTrackingConnections::StatTracking_UserBlocked, 1, 0 );
+   m_denyAllFutureData = true;
+   if( m_mainOutputChain )
+   {
+      static_cast< MainGatewayThread* >( m_mainOutputChain )->TrackCountStats( StatTrackingConnections::StatTracking_UserBlocked, 1, 0 );
+   }
 }
 
 //-----------------------------------------------------------------------------------------
 
 void  KhaanGateway::PreCleanup()
 {
-   if( m_gateway )
+   if( m_mainOutputChain )
    {
-      m_gateway->InputRemovalInProgress( this );
-      if( m_authorizedConnection && 
+      if( IsAuthorized() && 
           m_denyAllFutureData == false &&
           m_logoutPacketSent == false )
       {
-         m_gateway->TrackCountStats( StatTrackingConnections::StatTracking_UsersLostConnection, 1, 0 );
+         static_cast< MainGatewayThread* >( m_mainOutputChain )->TrackCountStats( StatTrackingConnections::StatTracking_UsersLostConnection, 1, 0 );
       }
+      // order really matters here... this function must come last
+      static_cast< MainGatewayThread* >( m_mainOutputChain )->InputRemovalInProgress( this );
    }
 }
 
@@ -190,7 +194,10 @@ bool  KhaanGateway::IsHandshaking( const BasePacket* packetIn )
 
       if( packetIn->versionNumber != GlobalNetworkProtocolVersion )
       {
-         m_gateway->TrackCountStats( StatTrackingConnections::StatTracking_BadPacketVersion, 1, packetIn->versionNumber );
+         if( m_mainOutputChain )
+         {
+            static_cast< MainGatewayThread* >( m_mainOutputChain )->TrackCountStats( StatTrackingConnections::StatTracking_BadPacketVersion, 1, packetIn->versionNumber );
+         }
       }
 
       // we are only sending version numbers at this point.
@@ -199,183 +206,6 @@ bool  KhaanGateway::IsHandshaking( const BasePacket* packetIn )
       return true;
    }
    return false;
-}
-
-//-----------------------------------------------------------------------------------------
-
-bool  KhaanGateway::HandleInwardSerializedPacket( const U8* data, int& offset )
-{
-   bool result = false;
-   BasePacket* packetIn;
-
-   PacketFactory parser;
-   try 
-   {
-      result = parser.Parse( data, offset, &packetIn );
-      if( packetIn != NULL )
-      {
-         TrackInwardPacketType( packetIn );
-      }
-   }
-   catch( ... )
-   {
-      Log( "parsing in KhaanGateway threw an exception" );
-      DenyAllFutureData ();
-      return false;
-   }
-
-   if( result == true )
-   {
-      bool packetCleanupRequired = false;
-      if( m_authorizedConnection == false )
-      {
-         if( IsHandshaking( packetIn ) == true )
-         {
-            packetCleanupRequired = true;
-         }
-      }
-      if( packetCleanupRequired == false )// we still have work to do
-      {
-         if( IsWhiteListedIn( packetIn ) || HasPermission( packetIn ) )
-         {
-            m_gateway->AddInputChainData( packetIn, m_connectionId );
-            SetupOutputDelayTimestamp();
-         }
-         else
-         {
-            FlushReadBuffer();// apparently bad data, let's prevent buffer overruns, etc
-            packetCleanupRequired = true;
-         }
-      }
-
-      if( packetCleanupRequired )
-      {
-         parser.CleanupPacket( packetIn );
-      }
-   }
-   else
-   {
-      FlushReadBuffer();// apparently bad data, let's prevent buffer overruns, etc
-      return false;;
-   }
-
-   return true;
-}
-
-
-//-----------------------------------------------------------------------------------------
-
-bool	KhaanGateway::OnDataReceived( const U8* data, int length )
-{
-   if( m_isInTelnetMode== false && length < BasePacket::GetSize() )// why not sizeof? Because of the virtual pointer
-      //&& m_authorizedConnection )
-   {
-      m_isInTelnetMode = true;
-      SendTelnetInstructions();
-   }
-
-   if( m_isInTelnetMode == true )
-   {
-      return HandleTelnetModeData( data, length );
-   }
-
-   if( m_denyAllFutureData == true )
-   {
-      FlushReadBuffer();
-      return false;
-   }
-
-   if( length > MaximumInputBufferSize )// special case
-   {
-      FlushReadBuffer();
-
-      DenyAllFutureData ();
-      Log( "Gateway: hacker alert. Packet length is far too long", 3 );
-      return false;
-   }
-
-   if( m_authorizedConnection == false )
-   {
-      /*if( IsHandshaking( data, length ) == true )
-      {
-         return false;
-      }*/
-
-      U16 size = 0;
-      int offset = 0;
-      Serialize::In( data, offset, size );
-      if( size > length )
-      { 
-         cout << "error on Gateway receiving packet info" << endl;
-         cout << "size : " << size << " > length : " << length << endl;
-      }
-      assert( size <= length );
-
-      if( IsPacketSafe( data, offset ) == false )
-      {
-         return false;
-      }      
-   }
-
-   int offset = 0;
-   if( m_isExpectingMoreDataInPreviousPacket )
-   {
-      int numBytesToCopy = length;
-      if( m_expectedBytesReceivedSoFar + numBytesToCopy < m_expectedBytes )
-      {
-         // here we can only store the data and then return because we still do 
-         // not have the full packet yet.
-         memcpy( m_tempBuffer+m_expectedBytesReceivedSoFar, data, numBytesToCopy );
-         m_expectedBytesReceivedSoFar += numBytesToCopy;
-         return false;
-      }
-      else if( m_expectedBytesReceivedSoFar + length > m_expectedBytes )
-      {
-         numBytesToCopy = m_expectedBytes - m_expectedBytesReceivedSoFar;
-         memcpy( m_tempBuffer + m_expectedBytesReceivedSoFar, data, numBytesToCopy );
-         m_expectedBytesReceivedSoFar = m_expectedBytes;
-
-         // we have more bytes as part of a following packet following.
-         data += numBytesToCopy;// offset the pointer.. everything should be magical after this
-         length -= numBytesToCopy; // this may mean setting up another partial packet.
-         int tempOffset = 0;
-         HandleInwardSerializedPacket( m_tempBuffer, tempOffset );
-      }
-      else
-      {
-         memcpy( m_tempBuffer + m_expectedBytesReceivedSoFar, data, length );
-         int tempOffset = 0;
-         HandleInwardSerializedPacket( m_tempBuffer, tempOffset );
-         m_expectedBytes = 0;
-         m_expectedBytesReceivedSoFar = 0;
-         length = 0;
-      }
-      
-      m_isExpectingMoreDataInPreviousPacket = false;
-   }
-
-   bool result = false;
-   
-   //BasePacket* packetIn;
-   // catch bad packets, buffer over runs, or other badly formed data.
-   while( offset < length )
-   {
-      /// before we parse, let's pull off the first two bytes
-      U16 size = 0;
-      Serialize::In( data, offset, size );
-      if( offset + size > length )
-      {
-         m_isExpectingMoreDataInPreviousPacket = true;
-         m_expectedBytes = size;
-
-         m_expectedBytesReceivedSoFar = length - offset;
-         memcpy( m_tempBuffer, data+offset, m_expectedBytesReceivedSoFar );
-         return false;
-      }
-
-      HandleInwardSerializedPacket( data, offset );
-   }
-   return true;
 }
 
 //-----------------------------------------------------------------------------------------

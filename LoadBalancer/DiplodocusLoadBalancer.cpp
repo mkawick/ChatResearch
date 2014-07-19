@@ -179,6 +179,8 @@ void     DiplodocusLoadBalancer::InputConnected( IChainedInterface * chainedInpu
    string currentTime = GetDateInUTC();
    cout << "Accepted connection at time:" << currentTime << " from " << inet_ntoa( khaan->GetIPAddress().sin_addr ) << endl;
    //PrintText( "** InputConnected" , 1 );
+
+   Threading::MutexLock locker( m_outputChainListMutex );
    U32 newId = GetNextConnectionId();
    m_socketToConnectionMap.insert( SocketToConnectionPair( khaan->GetSocketId(), newId ) );
    m_connectionToSocketMap.insert( SocketToConnectionPair( newId, khaan->GetSocketId() ) );
@@ -186,9 +188,7 @@ void     DiplodocusLoadBalancer::InputConnected( IChainedInterface * chainedInpu
 
    khaan->SetConnectionId( newId );
 
-   khaan->SetGateway( this );
-
-   Threading::MutexLock locker( m_outputChainListMutex );
+   khaan->SetMainOutput( this );
    m_connectionsNeedingUpdate.push_back( newId );
 }
 
@@ -197,6 +197,8 @@ void     DiplodocusLoadBalancer::InputConnected( IChainedInterface * chainedInpu
 void     DiplodocusLoadBalancer::InputRemovalInProgress( IChainedInterface * chainedInput )
 {
    KhaanConnector* khaan = static_cast< KhaanConnector* >( chainedInput );
+   khaan->SetMainOutput( NULL );
+
    string currentTime = GetDateInUTC();
    cout << "Client disconnection at time:" << currentTime << " from " << inet_ntoa( khaan->GetIPAddress().sin_addr ) << endl;
 
@@ -204,6 +206,7 @@ void     DiplodocusLoadBalancer::InputRemovalInProgress( IChainedInterface * cha
    int connectionId = khaan->GetConnectionId();
    int socketId = khaan->GetSocketId();
 
+   Threading::MutexLock locker( m_outputChainListMutex );
    m_socketToConnectionMap.erase( socketId );
    m_connectionToSocketMap.erase( connectionId );
    m_connectionMap.erase( connectionId );
@@ -258,9 +261,12 @@ bool  DiplodocusLoadBalancer::HandlePacketFromOtherServer( BasePacket* packet, U
 
 bool     DiplodocusLoadBalancer::AddInputChainData( BasePacket* packet, U32 connectionId )
 {
-   //PrintText( "AddInputChainData", 1);
-   ConnectionMapIterator connIt = m_connectionMap.find( connectionId );
-   if( connIt != m_connectionMap.end() )
+   m_inputChainListMutex.lock();
+   ConnectionMap localMap = m_connectionMap;
+   m_inputChainListMutex.unlock();
+
+   ConnectionMapIterator connIt = localMap.find( connectionId );
+   if( connIt != localMap.end() )
    {
       if( packet->packetType == PacketType_Base )
       {
@@ -307,8 +313,12 @@ bool  IsOnSameNetwork( const string& myNetwork, const string& potentialMatch )
 
 void     DiplodocusLoadBalancer::HandleRerouteRequest( U32 connectionId )
 {
-   ConnectionMapIterator connIt = m_connectionMap.find( connectionId );
-   if( connIt != m_connectionMap.end() )
+   m_inputChainListMutex.lock();
+   ConnectionMap localMap = m_connectionMap;
+   m_inputChainListMutex.unlock();
+
+   ConnectionMapIterator connIt = localMap.find( connectionId );
+   if( connIt != localMap.end() )
    {
       cout << "Telling user about the following connection destinations" << endl;
       connIt->second->GetIPAddress();

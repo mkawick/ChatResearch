@@ -304,6 +304,14 @@
 					RelativePath="..\NetworkCommon\NetworkIn\Khaan.h"
 					>
 				</File>
+				<File
+					RelativePath="..\NetworkCommon\NetworkIn\KhaanProtected.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\NetworkCommon\NetworkIn\KhaanProtected.h"
+					>
+				</File>
 			</Filter>
 			<Filter
 				Name="NetworkOut"

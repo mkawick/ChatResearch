@@ -199,7 +199,7 @@ void     MainGatewayThread::InputConnected( IChainedInterface * chainedInput )
 
    khaan->SetConnectionId( newId );
 
-   khaan->SetGateway( this );
+   khaan->SetMainOutput( this );
 
    if( m_connectionsRequireAuthentication == false )
    {
@@ -228,6 +228,7 @@ void     MainGatewayThread::InputRemovalInProgress( IChainedInterface * chainedI
       FileLog( "MainGatewayThread::InputRemovalInProgress" );
    }
    KhaanGateway* khaan = static_cast< KhaanGateway* >( chainedInput );
+   khaan->SetMainOutput( NULL );
    string currentTime = GetDateInUTC();
   // cout << "Client disconnection at time:" << currentTime << " from " << inet_ntoa( khaan->GetIPAddress().sin_addr ) << endl;
 
