@@ -14,6 +14,7 @@ using namespace std;
 #include "../NetworkCommon/Packets/InvitationPacket.h"
 #include "../NetworkCommon/Packets/LoginPacket.h"
 #include "../NetworkCommon/Packets/AnalyticsPacket.h"
+#include "../NetworkCommon/Packets/UserStatsPacket.h"
 
 #include <boost/format.hpp>
 #include <boost/lexical_cast.hpp>
@@ -93,7 +94,7 @@ bool     UserStatsMainThread::AddInputChainData( BasePacket* packet, U32 connect
    case PacketType_ServerJobWrapper:
       {
          PacketCleaner cleaner( packet );
-         //HandlePacketFromOtherServer( packet, connectionId );
+         HandlePacketFromOtherServer( packet, connectionId );
          return true;
       }
  
@@ -103,10 +104,199 @@ bool     UserStatsMainThread::AddInputChainData( BasePacket* packet, U32 connect
    case PacketType_GatewayWrapper:
       {
          PacketCleaner cleaner( packet );
-         //HandlePacketFromClient( packet );
+         HandlePacketFromClient( packet, connectionId ); // TODO: place packets in deque
          return true;
       }
    }
+   return false;
+}
+
+//---------------------------------------------------------------
+
+bool  UserStatsMainThread::HandlePacketFromClient( BasePacket* packet, U32 connectionId )// not thread safe
+{
+   if( packet->packetType != PacketType_GatewayWrapper )
+   {
+      return false;
+   }
+   PacketGatewayWrapper* wrapper = static_cast< PacketGatewayWrapper* >( packet );
+   BasePacket* unwrappedPacket = wrapper->pPacket;
+   //U32  serverIdLookup = wrapper->serverId;
+   //serverIdLookup = serverIdLookup;
+
+   U8 packetType = unwrappedPacket->packetType;
+   U8 packetSubType = unwrappedPacket->packetSubType;
+
+   if( packetType == PacketType_UserStats )
+   {
+      switch( packetSubType )
+      {
+         case PacketUserStats::UserStatsType_RequestListOfUserStats:
+         {
+            PacketUserStats_RequestListOfUserStats* stats = static_cast< PacketUserStats_RequestListOfUserStats* >( unwrappedPacket );
+            PacketUserStats_RequestListOfUserStatsResponse* response = new PacketUserStats_RequestListOfUserStatsResponse;
+            response->userUuid = stats->userUuid;
+            response->whichGame = stats->whichGame;
+            response->stats.insert( "stat1", "100" );            
+            response->stats.insert( "stat2", "1000" );
+            response->stats.insert( "stat3", "-9" );
+            SendPacketToGateway( response, connectionId );
+            //DbQuery
+         }
+         break;
+         //factory.CleanupPacket( packet );
+      }
+      return true;
+   }
+   return false;
+}
+
+//---------------------------------------------------------------
+
+bool  UserStatsMainThread::HandlePacketFromOtherServer( BasePacket* packet, U32 connectionId )// not thread safe
+{
+   if( packet->packetType != PacketType_ServerJobWrapper )
+   {
+      return false;
+   }
+
+   PacketServerJobWrapper* wrapper = static_cast< PacketServerJobWrapper* >( packet );
+   BasePacket* unwrappedPacket = wrapper->pPacket;
+   U32  serverIdLookup = wrapper->serverId;
+   serverIdLookup = serverIdLookup;
+
+   U8 packetType = unwrappedPacket->packetType;
+   PacketFactory factory;
+   
+   if( packetType == PacketType_Login )
+   {
+      if( HandleLoginPacket( unwrappedPacket, connectionId ) == false )
+      {
+         factory.CleanupPacket( packet );
+      }
+      
+      return true;
+   }
+
+   if( packetType == PacketType_UserStats )
+   {
+      if( HandleUserStatPacket( unwrappedPacket, connectionId ) == false )
+      {
+         factory.CleanupPacket( packet );
+      }
+      return true;
+   }
+ /*  if( packetType == PacketType_Invitation )
+   {
+      if( HandleInvitationPacket( unwrappedPacket, connectionId ) == false )
+      {
+         factory.CleanupPacket( packet );
+      }
+      return true;
+   }*/
+
+   return false;
+}
+
+//---------------------------------------------------------------
+
+bool     UserStatsMainThread::HandleLoginPacket( BasePacket* packet, U32 connectionId )
+{
+   U32 packetType = packet->packetType;
+   U32 packetSubType = packet->packetSubType;
+
+   if( packetType == PacketType_Login )
+   {
+      switch( packetSubType )
+      {
+      case PacketLogin::LoginType_PrepareForUserLogin:
+         {
+            PacketPrepareForUserLogin* pPacket = static_cast< PacketPrepareForUserLogin* > ( packet );
+            U32 userConnectionId = pPacket->connectionId;
+            cout << " --------------------------------- " << endl;
+            cout << "Prep for User login: " << endl;
+            cout << "    id: " << pPacket->userId << endl;
+            cout << "  name: " << pPacket->userName << endl;
+            cout << "  uuid: " << pPacket->uuid << endl;
+            cout << "  login time: " << pPacket->lastLoginTime << endl;
+            cout << " --------------------------------- " << endl;
+         /*   PacketPrepareForUserLogin* pPacket = static_cast< PacketPrepareForUserLogin* > ( packet );
+            U32 userConnectionId = pPacket->connectionId;
+            string uuid = pPacket->uuid;
+            
+            cout << "Prep for logon: " << connectionId << ", " << pPacket->userName << ", " << uuid << ", " << pPacket->password << endl;
+            
+            // TODO: verify that the user isn't already in the list and if s/he is, assign the new connectionId.
+            ChatUser* user = UpdateExistingUsersConnectionId( uuid, userConnectionId );
+            //ChatUser* user = GetUserByUsername( pPacket->userName );
+            if( user == NULL )
+            {
+               user = CreateNewUser( userConnectionId );
+            }
+            user->Init( pPacket->userId, pPacket->userName, pPacket->uuid, pPacket->lastLoginTime );            
+            user->LoggedIn();*/
+         }
+         return true;
+      case PacketLogin::LoginType_PrepareForUserLogout:
+         {
+            PacketPrepareForUserLogout* pPacket = static_cast< PacketPrepareForUserLogout* > ( packet );
+            cout << " --------------------------------- " << endl;
+            cout << "Prep for logout: " << pPacket->connectionId << ", " << pPacket->uuid << endl;
+            
+            cout << "User login: " << endl;
+            //cout << "    id: " << pPacket->userId << endl;
+            //cout << "  name: " << pPacket->userName << endl;
+            cout << "  uuid: " << pPacket->uuid << endl;
+            //cout << "  login time: " << pPacket->lastLoginTime << endl;
+            cout << " --------------------------------- " << endl;
+      /*      PacketPrepareForUserLogout* pPacket = static_cast< PacketPrepareForUserLogout* > ( packet );
+            cout << "Prep for logout: " << pPacket->connectionId << ", " << pPacket->uuid << endl;
+            U32 userConnectionId = pPacket->connectionId;
+            LockMutex();
+            UserMapIterator iter = m_users.find( userConnectionId );
+         
+            if( iter != m_users.end() )// a bad user login can cause this so don't worry
+            {
+               iter->second->LoggedOut();
+            }
+            else
+            {
+               string str = "Log user out failed: user not found. userUuid: ";
+               str += pPacket->uuid.c_str();
+               Log( str, 4 );
+            }
+            UnlockMutex();*/
+            
+         }
+         return true;
+      }
+   }
+   return false;
+}
+
+//---------------------------------------------------------------
+
+bool     UserStatsMainThread::HandleUserStatPacket( BasePacket* packet, U32 connectionId )
+{
+   U32 packetType = packet->packetType;
+   U32 packetSubType = packet->packetSubType;
+
+   if( packetType == PacketType_UserStats )
+   {
+      //switch( packetSubType )
+      {
+    /*  case PacketUserStats::UserStatsType_RequestListOfUserStats:
+         {
+            PacketUserStats_RequestListOfUserStats* stats = static_cast< PacketUserStats_RequestListOfUserStats* >( packet );
+            PacketUserStats_RequestListOfUserStatsResponse* response = new PacketUserStats_RequestListOfUserStatsResponse;
+            response->userUuid = stats->userUuid;
+            response->whichGame = stats->whichGame;
+            //DbQuery
+         }
+         break;*/
+      }
+   }
+
    return false;
 }
 

@@ -87,6 +87,7 @@ public:
    virtual void  UpdatedDeviceID() {}
    virtual void  ListOfDevicesUpdated() {}
    virtual void  DeviceRemoved( const string& uuid, bool success ) {}
+   virtual void  UserStats( const string& userUuid, const SerializedKeyValueVector< string >& stats, U8 gameId ) {}
 
    ClientSideNetworkCallback(): network( NULL ){}
 
@@ -161,6 +162,8 @@ public:
       NotificationType_DeviceIDUpdated,
       NotificationType_ListOfDevicesUpdated,
       NotificationType_DeviceRemoved,
+
+      NotificationType_UserStats,
       NotificationType_Num
    };
    ClientNetworkWrapper* network;

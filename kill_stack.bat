@@ -24,4 +24,6 @@ taskkill /f /im AnalyticsServer.exe
 
 taskkill /f /im NotificationServer.exe
 
+taskkill /f /im UserStatsServer.exe
+
 REM exit

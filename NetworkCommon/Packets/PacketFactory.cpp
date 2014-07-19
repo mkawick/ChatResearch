@@ -22,6 +22,7 @@
 #include "ServerToServerPacket.h"
 #include "AnalyticsPacket.h"
 #include "TournamentPacket.h"
+#include "UserStatsPacket.h"
 
 using namespace std;
 
@@ -114,6 +115,10 @@ bool	PacketFactory::Parse( const U8* bufferIn, int& bufferOffset, BasePacket** p
    case PacketType_Tournament:
       {
          return ParseTournament( bufferIn, bufferOffset, &firstPassParse, packetOut );
+      }
+   case PacketType_UserStats:
+      {
+         return ParseUserStats( bufferIn, bufferOffset, &firstPassParse, packetOut );
       }
    case PacketType_Notification:
       {
@@ -1183,6 +1188,46 @@ bool     PacketFactory::ParseTournament( const U8* bufferIn, int& bufferOffset, 
       return true;
    default:
       assert( 0 );
+   }
+   return false;
+}
+
+//-----------------------------------------------------------------------------------------
+
+bool     PacketFactory::ParseUserStats( const U8* bufferIn, int& bufferOffset, const BasePacket* firstPassParse, BasePacket** packetOut ) const
+{
+   switch( firstPassParse->packetSubType ) //PacketType_Tournament
+   {
+    case PacketUserStats::UserStatsType_Base:
+      {
+         *packetOut = SerializeIn< PacketUserStats >( bufferIn, bufferOffset );
+      }
+      return true;
+   case PacketUserStats::UserStatsType_TestUserStats:
+      {
+         *packetOut = SerializeIn< PacketUserStats_TestUserStats >( bufferIn, bufferOffset );
+      }
+      return true;
+   case PacketUserStats::UserStatsType_RequestListOfUserStats:
+      {
+         *packetOut = SerializeIn< PacketUserStats_RequestListOfUserStats >( bufferIn, bufferOffset );
+      }
+      return true;
+   case PacketUserStats::UserStatsType_RequestListOfUserStatsResponse:
+      {
+         *packetOut = SerializeIn< PacketUserStats_RequestListOfUserStatsResponse >( bufferIn, bufferOffset );
+      }
+      return true;
+   case PacketUserStats::UserStatsType_RecordUserStats:
+      {
+         *packetOut = SerializeIn< PacketUserStats_RecordUserStats >( bufferIn, bufferOffset );
+      }
+      return true;
+   case PacketUserStats::UserStatsType_RecordUserStatsResponse:
+      {
+         *packetOut = SerializeIn< PacketUserStats_RecordUserStatsResponse >( bufferIn, bufferOffset );
+      }
+      return true;
    }
    return false;
 }

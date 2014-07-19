@@ -43,6 +43,8 @@ enum GameProductId
    GameProductId_TANTO_CUORE,
    GameProductId_LORDS_OF_WATERDEEP,
    GameProductId_MONKEYS_FROM_MARS,
+   GameProductId_TWILIGHT_STUGGLE,
+   GameProductId_UNSUNG_STORY,
    GameProductId_NUM_GAMES 
 };
 

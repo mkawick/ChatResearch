@@ -280,6 +280,10 @@
 				RelativePath="..\NetworkCommon\Packets\TournamentPacket.cpp"
 				>
 			</File>
+			<File
+				RelativePath="..\NetworkCommon\Packets\UserStatsPacket.cpp"
+				>
+			</File>
 		</Filter>
 		<Filter
 			Name="Header Files"
@@ -368,6 +372,10 @@
 			</File>
 			<File
 				RelativePath="..\NetworkCommon\Packets\TournamentPacket.h"
+				>
+			</File>
+			<File
+				RelativePath="..\NetworkCommon\Packets\UserStatsPacket.h"
 				>
 			</File>
 		</Filter>

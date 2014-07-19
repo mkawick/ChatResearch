@@ -77,6 +77,7 @@ public:
    bool     GetBlockGroupInvitations() const { return m_blockGroupInvitations; }      
 
    bool     RequestProfile( const string userName ); //if empty, profile for currently logged in user is used. For other users, you must have admin
+   bool     RequestUserStats( const string& useruuid, U8 gameId = GameProductId_SUMMONWAR );
    bool     ThrottleConnection( U8 level );
    bool     RequestOtherUserInGameProfile( const string& userName, bool fullProfile = false ); // friends, games list, etc
    bool     RequestChatChannelList();

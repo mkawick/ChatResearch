@@ -38,6 +38,11 @@ private:
    int      MainLoop_OutputProcessing();
    void     UpdateDbResults();
 
+   bool     HandlePacketFromClient( BasePacket* packet, U32 connectionId );
+   bool     HandlePacketFromOtherServer( BasePacket* packet, U32 connectionId );// not thread safe
+   bool     HandleLoginPacket( BasePacket* packet, U32 connectionId );
+   bool     HandleUserStatPacket( BasePacket* packet, U32 connectionId );
+
    deque< PacketDbQueryResult* > m_dbQueries;
 };
 

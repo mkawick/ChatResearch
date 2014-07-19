@@ -9,6 +9,7 @@
 #include "../NetworkCommon/Utils/Utils.h"
 #include "../NetworkCommon/NetworkUtils.h"
 #include "../NetworkCommon/Packets/CheatPacket.h"
+#include "../NetworkCommon/Packets/UserStatsPacket.h"
 #include "../NetworkCommon/Packets/PacketFactory.h"
 #include "../NetworkCommon/ChainedArchitecture/Thread.h"
 
@@ -803,6 +804,13 @@ void     ClientNetworkWrapper::UpdateNotifications()
                notify->PurchaseReceiptResponse( purchase->transactionId, purchase->errorCode );
             }
             break;
+         case ClientSideNetworkCallback::NotificationType_UserStats:
+            {
+               PacketUserStats_RequestListOfUserStatsResponse* response = 
+                  static_cast<PacketUserStats_RequestListOfUserStatsResponse*>( qn.packet );
+               notify->UserStats( response->userUuid, response->stats, response->whichGame );
+            }
+            break;
 
          }
       }
@@ -1063,6 +1071,24 @@ bool  ClientNetworkWrapper::RequestProfile( const string userName )//if empty, p
    request.userName = userName;
    if( userName == "" )
       request.uuid = m_uuid;
+   SerializePacketOut( &request );
+
+   return true;
+}
+
+//-----------------------------------------------------------------------------
+
+bool  ClientNetworkWrapper::RequestUserStats( const string& useruuid, U8 gameId )
+{
+   PrintFunctionName( __FUNCTION__ );
+   if( IsConnected() == false )
+   {
+      return false;
+   }
+   PacketUserStats_RequestListOfUserStats request;
+   request.userUuid = useruuid;
+   request.whichGame = gameId;
+
    SerializePacketOut( &request );
 
    return true;
@@ -3509,6 +3535,20 @@ bool     ClientNetworkWrapper::HandlePacketReceived( BasePacket* packetIn )
                   (*it)->UserWinLoss( response->userUuid, response->winLoss );
                }*/
                assert( 0 );// not finished, wrong user data
+            }
+            break;
+         }
+      }
+      break;
+      case PacketType_UserStats:
+      {
+         switch( packetIn->packetSubType )
+         {
+            case PacketUserStats::UserStatsType_RequestListOfUserStatsResponse:
+            {
+               PacketUserStats_RequestListOfUserStatsResponse* response = static_cast<PacketUserStats_RequestListOfUserStatsResponse*>( packetIn );
+               Notification( ClientSideNetworkCallback::NotificationType_UserStats, response );
+               cleaner.Clear();
             }
             break;
          }

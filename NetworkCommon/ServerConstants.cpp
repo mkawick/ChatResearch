@@ -32,7 +32,7 @@ const char* productNames [] = {
    "smashup", 
    "tantocuore",
    "waterdeep",
-   "unsung_card",
+   "twilight_struggle",
    "unsung_story"
 };
 
