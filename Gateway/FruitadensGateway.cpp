@@ -346,6 +346,9 @@ int  FruitadensGateway::MainLoop_OutputProcessing()
 
 void  FruitadensGateway::PreprocessPacketsForOutput( BasePacket* packet )
 {
+   if( packet->packetType != PacketType_GatewayWrapper ) // s2s packets and such
+      return;
+
    assert( packet->packetType == PacketType_GatewayWrapper );
 
    PacketGatewayWrapper* wrapper = static_cast< PacketGatewayWrapper* >( packet );

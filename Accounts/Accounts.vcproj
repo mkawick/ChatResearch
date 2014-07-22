@@ -136,7 +136,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="../Release/PacketLibrary.lib"
+				AdditionalDependencies="../Release/PacketLibrary.lib libmysql.lib"
 				LinkIncremental="1"
 				IgnoreDefaultLibraryNames="libcpmt.lib libcmt.lib"
 				GenerateDebugInformation="true"

@@ -217,6 +217,7 @@ bool     NotificationMainThread::ConnectUser( const PacketPrepareForUserLogin* l
 {
    U32 connectionId = loginPacket->connectionId;
    string uuid = loginPacket->uuid;
+   U32 gatewayId = loginPacket->gatewayId;
    cout << "Prep for logon: " << connectionId << ", " << loginPacket->userName << ", " << uuid << ", " << loginPacket->password << endl;
 
 

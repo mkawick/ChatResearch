@@ -646,6 +646,7 @@ bool     DiplodocusContact::ConnectUser( PacketPrepareForUserLogin* loginPacket 
 {
    U32 connectionId = loginPacket->connectionId;
    string uuid = loginPacket->uuid;
+   U32 gatewayId = loginPacket->gatewayId;
    cout << "Prep for logon: " << connectionId << ", " << loginPacket->userName << ", " << uuid << ", " << loginPacket->password << endl;
 
    UserContactMapIterator it = m_users.find( connectionId );// don't do anything if this user is already logged in.

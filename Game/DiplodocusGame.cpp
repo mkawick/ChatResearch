@@ -175,6 +175,7 @@ void  DiplodocusGame::ConnectUser( const PacketPrepareForUserLogin* loginPacket 
 {
    U32 connectionId = loginPacket->connectionId;
    string uuid = loginPacket->uuid;
+   U32 gatewayId = loginPacket->gatewayId;
    cout << "Prep for logon: " << connectionId << ", " << loginPacket->userName << ", " << uuid << ", " << loginPacket->password << endl;
 
    ConnectionMapIterator it = m_connectionMap.find( connectionId );

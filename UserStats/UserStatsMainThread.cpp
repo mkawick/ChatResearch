@@ -203,14 +203,15 @@ bool     UserStatsMainThread::HandleLoginPacket( BasePacket* packet, U32 serverI
       {
       case PacketLogin::LoginType_PrepareForUserLogin:
          {
-            PacketPrepareForUserLogin* pPacket = static_cast< PacketPrepareForUserLogin* > ( packet );
-            U32 userConnectionId = pPacket->connectionId;
+            PacketPrepareForUserLogin* loginPacket = static_cast< PacketPrepareForUserLogin* > ( packet );
+            U32 userConnectionId = loginPacket->connectionId;
+            U32 gatewayId = loginPacket->gatewayId;
             cout << " --------------------------------- " << endl;
             cout << "Prep for User login: " << endl;
-            cout << "    id: " << pPacket->userId << endl;
-            cout << "  name: " << pPacket->userName << endl;
-            cout << "  uuid: " << pPacket->uuid << endl;
-            cout << "  login time: " << pPacket->lastLoginTime << endl;
+            cout << "    id: " << loginPacket->userId << endl;
+            cout << "  name: " << loginPacket->userName << endl;
+            cout << "  uuid: " << loginPacket->uuid << endl;
+            cout << "  login time: " << loginPacket->lastLoginTime << endl;
             cout << " --------------------------------- " << endl;
          /*   PacketPrepareForUserLogin* pPacket = static_cast< PacketPrepareForUserLogin* > ( packet );
             U32 userConnectionId = pPacket->connectionId;

@@ -283,6 +283,7 @@ bool     DiplodocusPurchase::ConnectUser( PacketPrepareForUserLogin* loginPacket
 {
    U32 connectionId = loginPacket->connectionId;
    string uuid = loginPacket->uuid;
+   U32 gatewayId = loginPacket->gatewayId;
    cout << "Prep for logon: " << connectionId << ", " << loginPacket->userName << ", " << uuid << ", " << loginPacket->password << endl;
 
    U64 hashForUser = GenerateUniqueHash( loginPacket->uuid );
