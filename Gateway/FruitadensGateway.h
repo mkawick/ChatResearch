@@ -20,6 +20,8 @@ private:
 
    bool     FilterOutwardPacket( BasePacket* packet ) const;
    int      MainLoop_OutputProcessing();
+
+   void     PreprocessPacketsForOutput( BasePacket* packet );
    void     PostProcessInputPackets( int bytesRead );
 
    int      MainLoop_InputProcessing();

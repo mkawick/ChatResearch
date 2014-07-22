@@ -94,6 +94,7 @@ private:
    void     IsUserAllowedToUseThisProduct( const PacketListOfGames* packet );
 
    void     EchoHandler( U32 connectionId );
+   void     RunTest();
    void     SendNotification( const PacketGame_Notification* notification, U32 connectionId );
    void     HandleUserRequestedTournamentInfo( BasePacket* packet, U32 connectionId );
 

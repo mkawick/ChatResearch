@@ -93,6 +93,11 @@ public:
 
    bool     Run();
 
+   //----------------------------------------------
+   FruitadensServerToServer*  GetChat() { return m_chatServer; }
+   FruitadensServerToServer*  GetNotification() { return m_notificationServer; }
+   FruitadensServerToServer*  GetUserStats() { return m_userStatsServer; }
+
 private:
    void     SetupS2SConnections( const string& address, U16 port );
    

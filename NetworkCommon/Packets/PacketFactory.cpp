@@ -1035,6 +1035,11 @@ bool     PacketFactory::ParseGame( const U8* bufferIn, int& bufferOffset, const 
          *packetOut = SerializeIn< PacketGame_EchoToClient >( bufferIn, bufferOffset );
       }
       return true;
+   case PacketGameToServer::GamePacketType_TestHook:
+      {
+         *packetOut = SerializeIn< PacketGame_TestHook >( bufferIn, bufferOffset );
+      }
+      return true;
 
    case PacketGameToServer::GamePacketType_Notification:
       {

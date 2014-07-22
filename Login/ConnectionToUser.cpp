@@ -47,6 +47,7 @@ ConnectionToUser:: ConnectionToUser( const string& name, const string& pword, co
                      m_loggedOutTime( 0 ),
                      m_isLoggingOut( false ),
                      m_isReadyToBeCleanedUp( false ),
+                     m_gatewayId( 0 ),
                      m_timeZone( 0 ),
                      m_languageId( 1 ),
                      m_adminLevel( 0 ),

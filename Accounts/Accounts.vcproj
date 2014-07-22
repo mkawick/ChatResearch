@@ -61,7 +61,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="../Debug/PacketLibrary.lib"
+				AdditionalDependencies="../Debug/PacketLibrary.lib libmysql.lib"
 				LinkIncremental="2"
 				AdditionalLibraryDirectories="..\w32libs\lib"
 				GenerateDebugInformation="true"

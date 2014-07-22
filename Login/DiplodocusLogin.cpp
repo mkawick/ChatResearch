@@ -132,7 +132,7 @@ bool     DiplodocusLogin:: AddInputChainData( BasePacket* packet, U32 connection
          case PacketLogin::LoginType_Login:
             {
                PacketLogin* login = static_cast<PacketLogin*>( actualPacket );
-               LogUserIn( login->userName, login->password, login->loginKey, login->gameProductId, userConnectionId );
+               LogUserIn( login->userName, login->password, login->loginKey, login->gameProductId, userConnectionId, login->gatewayId );
             }
             break;
          case PacketLogin::LoginType_Logout:
@@ -302,7 +302,7 @@ bool     DiplodocusLogin:: AddQueryToOutput( PacketDbQuery* dbQuery )
 
 //---------------------------------------------------------------
 
-bool     DiplodocusLogin:: LogUserIn( const string& userName, const string& password, const string& loginKey, U8 gameProductId, U32 connectionId )
+bool     DiplodocusLogin:: LogUserIn( const string& userName, const string& password, const string& loginKey, U8 gameProductId, U32 connectionId, U32 gatewayId )
 {
    if( m_printFunctionNames )
    {
@@ -346,6 +346,7 @@ bool     DiplodocusLogin:: LogUserIn( const string& userName, const string& pass
       ConnectionToUser* connection = GetUserConnection( connectionId );
       if( connection )
       {
+         connection->SetGatewayId( gatewayId );
          if( connection->GetLoginStatus() == ConnectionToUser::LoginStatus_Invalid )// already failed. Screw this hacker
          {
             // user may attempt hacking.. only 3 attempts allowed
@@ -375,7 +376,8 @@ bool     DiplodocusLogin:: LogUserIn( const string& userName, const string& pass
                                              connection->m_loginKey, 
                                              connection->m_languageId, 
                                              isLoggedIn, 
-                                             wasDisconnectedByError );
+                                             wasDisconnectedByError,
+                                             connection->GetGatewayId() );
 
             if( connection->SuccessfulLoginFinished( connectionId, true ) == true )
             {
@@ -394,7 +396,8 @@ bool     DiplodocusLogin:: LogUserIn( const string& userName, const string& pass
                                              connection->m_loginKey, 
                                              connection->m_languageId, 
                                              isLoggedIn, 
-                                             wasDisconnectedByError );
+                                             wasDisconnectedByError,
+                                             connection->GetGatewayId()  );
             m_numSuccessfulLogins++;
             m_numRelogins ++;
          }
@@ -403,7 +406,7 @@ bool     DiplodocusLogin:: LogUserIn( const string& userName, const string& pass
             connection->UpdateConnectionId( connectionId );
             m_numFailedLogins ++;
           /*  ForceUserLogoutAndBlock( connectionId );*/
-            return LoadUserAccount( userName, password, loginKey, gameProductId, connectionId );
+            return LoadUserAccount( userName, password, loginKey, gameProductId, connectionId, gatewayId );
          }
       }
       else
@@ -413,7 +416,7 @@ bool     DiplodocusLogin:: LogUserIn( const string& userName, const string& pass
    }
    else
    {
-      return LoadUserAccount( userName, password, loginKey, gameProductId, connectionId );
+      return LoadUserAccount( userName, password, loginKey, gameProductId, connectionId, gatewayId );
    }
 
    return false;
@@ -421,7 +424,7 @@ bool     DiplodocusLogin:: LogUserIn( const string& userName, const string& pass
 
 //---------------------------------------------------------------
 
-bool  DiplodocusLogin:: LoadUserAccount( const string& userName, const string& password, const string& loginKey, U8 gameProductId, U32 connectionId )
+bool  DiplodocusLogin:: LoadUserAccount( const string& userName, const string& password, const string& loginKey, U8 gameProductId, U32 connectionId, U32 gatewayId )
 {
    if( m_printFunctionNames )
    {
@@ -430,6 +433,7 @@ bool  DiplodocusLogin:: LoadUserAccount( const string& userName, const string& p
    ConnectionToUser conn( userName, password, loginKey );
    conn.m_gameProductId = gameProductId;
    conn.m_connectionId = connectionId;
+   conn.SetGatewayId( gatewayId );
    AddUserConnection( UserConnectionPair( connectionId, conn ) );
 
    return SetupQueryForLogin( userName, password, gameProductId, connectionId );
@@ -522,7 +526,8 @@ bool     DiplodocusLogin:: HandleUserLoginResult( U32 connectionId, const Packet
                                              connection->m_loginKey, 
                                              connection->m_languageId, 
                                              isLoggedIn, 
-                                             wasDisconnectedByError );
+                                             wasDisconnectedByError,
+                                             connection->GetGatewayId() );
 
          cout << "--------------------------------------------" << endl;
          cout << "User login: " << connection->m_userName << endl;
@@ -547,7 +552,8 @@ bool     DiplodocusLogin:: HandleUserLoginResult( U32 connectionId, const Packet
                                              connection->m_loginKey, 
                                              connection->m_languageId, 
                                              isLoggedIn, 
-                                             wasDisconnectedByError );
+                                             wasDisconnectedByError,
+                                             connection->GetGatewayId() );
             return true;
          }
          else
@@ -630,7 +636,8 @@ void     DiplodocusLogin:: FinalizeLogout( U32 connectionId, bool wasDisconnecte
                                     connection->m_loginKey,
                                     connection->m_languageId, 
                                     isLoggedIn, 
-                                    wasDisconnectedByError );
+                                    wasDisconnectedByError,
+                                    connection->GetGatewayId() );
    }
 }
 
@@ -1673,7 +1680,8 @@ bool  DiplodocusLogin:: ForceUserLogoutAndBlock( U32 connectionId )
    const bool isLoggedIn = false; 
    const bool wasDisconnectedByError = false;
 
-   SendLoginStatusToOtherServers( userName, uuid, connectionId, gameProductId, lastLoginTime, active, email, passwordHash, userId, loginKey, languageId, isLoggedIn, wasDisconnectedByError );
+   SendLoginStatusToOtherServers( userName, uuid, connectionId, gameProductId, lastLoginTime, active, email, passwordHash, userId, loginKey, languageId, isLoggedIn, wasDisconnectedByError,
+                                             connection->GetGatewayId() );
 
    return true;
 }
@@ -1791,7 +1799,8 @@ bool  DiplodocusLogin:: SendLoginStatus(  ChainType*  destinationServerPtr,
                                           const string& loginKey,
                                           int languageId, 
                                           bool isLoggedIn, 
-                                          bool wasDisconnectedByError )
+                                          bool wasDisconnectedByError,
+                                          U32 gatewayId )
 {
    if( m_printFunctionNames == true )
    {
@@ -1820,6 +1829,7 @@ bool  DiplodocusLogin:: SendLoginStatus(  ChainType*  destinationServerPtr,
       prepareForUser->password = passwordHash;
       prepareForUser->loginKey = loginKey;
       prepareForUser->languageId = languageId;
+      prepareForUser->gatewayId = gatewayId;
 
       packetToSend = prepareForUser;
       
@@ -1856,7 +1866,8 @@ bool  DiplodocusLogin:: SendLoginStatusToOtherServers( const string& userName,
                                                      const string& loginKey,
                                                      int languageId, 
                                                      bool isLoggedIn, 
-                                                     bool wasDisconnectedByError )
+                                                     bool wasDisconnectedByError,
+                                                     U32 gatewayId )
 {
    if( m_printFunctionNames == true )
    {
@@ -1885,7 +1896,8 @@ bool  DiplodocusLogin:: SendLoginStatusToOtherServers( const string& userName,
                        loginKey,
                        languageId, 
                        isLoggedIn, 
-                       wasDisconnectedByError );
+                       wasDisconnectedByError,
+                       gatewayId );
    }
 
    if( isLoggedIn )
@@ -1910,7 +1922,8 @@ bool  DiplodocusLogin:: SendLoginStatusTo_Non_GameServers( const string& userNam
                                                      const string& loginKey,
                                                      int languageId, 
                                                      bool isLoggedIn, 
-                                                     bool wasDisconnectedByError )
+                                                     bool wasDisconnectedByError,
+                                                     U32 gatewayId )
 {
    if( m_printFunctionNames == true )
    {
@@ -1949,7 +1962,8 @@ bool  DiplodocusLogin:: SendLoginStatusTo_Non_GameServers( const string& userNam
                        loginKey,
                        languageId, 
                        isLoggedIn, 
-                       wasDisconnectedByError );
+                       wasDisconnectedByError,
+                       gatewayId );
    }
 
    if( m_printFunctionNames == true )
@@ -1972,7 +1986,8 @@ bool  DiplodocusLogin:: SendLoginStatusTo_GameServers( const string& userName,
                                                      const string& loginKey,
                                                      int languageId, 
                                                      bool isLoggedIn, 
-                                                     bool wasDisconnectedByError )
+                                                     bool wasDisconnectedByError,
+                                                     U32 gatewayId )
 {
    if( m_printFunctionNames == true )
    {
@@ -2009,7 +2024,8 @@ bool  DiplodocusLogin:: SendLoginStatusTo_GameServers( const string& userName,
                        loginKey,
                        languageId, 
                        isLoggedIn, 
-                       wasDisconnectedByError );
+                       wasDisconnectedByError,
+                       gatewayId );
    }
 
    if( m_printFunctionNames == true )

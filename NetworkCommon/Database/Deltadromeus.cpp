@@ -14,7 +14,7 @@
 
 #if PLATFORM == PLATFORM_WINDOWS
 #pragma warning( disable:4996 )
-#pragma comment( lib, "libmysql.lib" )
+//#pragma comment( lib, "libmysql.lib" )
 #endif
 
 #include "../Utils/CommandLineParser.h"
@@ -539,12 +539,15 @@ int     Deltadromeus::CallbackFunction()
 
    LogEverything( "DB update" );
 
-   if( m_jobsInProgress.size() )
-   {
-      m_mutex.lock();// this lock is absolutely necessary. crashes ensue otherwise.
-      DbJobBase* currentJob = m_jobsInProgress.front();
-      m_mutex.unlock(); 
+   m_mutex.lock();
+   int numRemaining = m_jobsInProgress.size();
+   DbJobBase* currentJob = NULL;
+   if( numRemaining )
+      currentJob = m_jobsInProgress.front();// might be invalid
+   m_mutex.unlock(); 
 
+   if( currentJob != NULL )
+   {
       if( currentJob->HasStarted() == false )
       {
          LogEverything( "DB submit query " );
@@ -585,15 +588,16 @@ int     Deltadromeus::CallbackFunction()
             }
             m_mutex.lock();
             m_jobsInProgress.pop_front();
+            currentJob = NULL;
+            numRemaining = m_jobsInProgress.size();
+            if( numRemaining )
+               currentJob = m_jobsInProgress.front();// might be invalid
             m_mutex.unlock(); 
 
             // now start the next job
-            if( m_jobsInProgress.size() > 0 )
+            if( numRemaining > 0 )
             {
-               LogEverything( "DB has more jobs to start " );
-               m_mutex.lock();
-               DbJobBase* currentJob = m_jobsInProgress.front();
-               m_mutex.unlock(); 
+               LogEverything( "DB has more jobs to start " ); 
                currentJob->SubmitQuery( m_DbConnection, m_dbSchema );
             }
             else

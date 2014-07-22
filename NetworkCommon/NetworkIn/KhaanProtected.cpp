@@ -4,6 +4,8 @@
 #include <boost/format.hpp>
 #include <boost/lexical_cast.hpp>
 using boost::format;
+#include <iostream>
+using namespace std;
 
 #include "../Packets/LoginPacket.h"
 #include "../Packets/PacketFactory.h"

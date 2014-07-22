@@ -14,6 +14,13 @@ struct MarshalledData
    const U8*   m_data;
 };
 
+
+/*struct KeyValues
+{
+   string key, value;
+};*/
+
+//typedef vector< KeyValues > KeyValueVector;
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
 
@@ -28,6 +35,9 @@ public:
 
    virtual bool   DataFromClient( U32 connectionId, const MarshalledData* packet ) = 0;
    //virtual bool   CommandFromOtherServer( const BasePacket* instructions ) = 0;
+
+   virtual bool   UserStatsSaved( const string& userUuid, bool success ) = 0;
+   virtual bool   UserStatsLoaded( const string& userUuid, KeyValueVector& stats ) = 0;
 
    virtual bool   UserConfirmedToOwnThisProduct( U32 connectionId, bool isConfirmed ) = 0;
 

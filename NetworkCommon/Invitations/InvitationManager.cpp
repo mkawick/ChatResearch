@@ -2,6 +2,7 @@
 
 #include <assert.h>
 #include <map>
+#include <iostream>
 using namespace std;
 
 #include <iomanip>

@@ -143,9 +143,9 @@ private:
    void     StoreSingleProduct( const PacketDbQueryResult* dbResult );
 
    
-   bool     LogUserIn( const string& username, const string& password, const string& loginKey, U8 gameProductId, U32 connectionId );
+   bool     LogUserIn( const string& username, const string& password, const string& loginKey, U8 gameProductId, U32 connectionId, U32 gatewayId );
    bool     LogUserOut( U32 connectionId, bool wasDisconnectedByError );
-   bool     LoadUserAccount( const string& userName, const string& password, const string& loginKey, U8 gameProductId, U32 connectionId );
+   bool     LoadUserAccount( const string& userName, const string& password, const string& loginKey, U8 gameProductId, U32 connectionId, U32 gatewayId );
    bool     SetupQueryForLogin( const string& userName, const string& password, U8 gameProductId, U32 connectionId );
    bool     CreateUserAccount( U32 connectionId, const string& email, const string& password, const string& username, const string& deviceAccountId, const string& deviceId, U8 languageId, U8 gameProductId );
    U32      FindUserAlreadyInGame( const string& username, U8 gameProductId );
@@ -270,7 +270,8 @@ private:
                                              const string& loginKey, 
                                              int langaugeId, 
                                              bool isLoggedIn, 
-                                             bool wasDisconnectedByError );
+                                             bool wasDisconnectedByError,
+                                             U32 gatewayId);
    bool     SendLoginStatus(  ChainType*  destinationServerPtr,
                               const string& userName, 
                               const string& userUuid, 
@@ -284,7 +285,8 @@ private:
                               const string& loginKey,
                               int languageId, 
                               bool isLoggedIn, 
-                              bool wasDisconnectedByError );
+                              bool wasDisconnectedByError,
+                              U32 gatewayId);
    bool     SendLoginStatusTo_Non_GameServers( const string& userName, 
                                                      const string& userUuid, 
                                                      U32 connectionId, 
@@ -297,7 +299,8 @@ private:
                                                      const string& loginKey,
                                                      int languageId, 
                                                      bool isLoggedIn, 
-                                                     bool wasDisconnectedByError );
+                                                     bool wasDisconnectedByError,
+                                                     U32 gatewayId );
    bool     SendLoginStatusTo_GameServers( const string& userName, 
                                             const string& userUuid, 
                                             U32 connectionId, 
@@ -310,7 +313,8 @@ private:
                                             const string& loginKey,
                                             int languageId, 
                                             bool isLoggedIn, 
-                                            bool wasDisconnectedByError );
+                                            bool wasDisconnectedByError,
+                                            U32 gatewayId );
 };
 
 //-----------------------------------------------------------------------------------------

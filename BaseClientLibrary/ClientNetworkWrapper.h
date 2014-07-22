@@ -452,6 +452,7 @@ public:
    void  SendGameEcho();
    void  SendPurchaseEcho();
    void  SendNotification( U8 type, string additionalText = "" );
+   void  SendGameTest();
 
 protected:
    void  StartTime();

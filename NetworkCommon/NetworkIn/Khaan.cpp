@@ -266,8 +266,6 @@ int	Khaan :: UpdateOutwardPacketList()
    int sizeOfHeader = sizeof( sizeOfLastWrite );
    int sizeSent = 0;
 
-   // todo, plan for the degenerate case where a single packet is over 2k
-   //m_outputChainListMutex.lock();
    while( m_packetsOut.size() ) 
    {
       offset = 0;
@@ -294,7 +292,6 @@ int	Khaan :: UpdateOutwardPacketList()
       TrackOutwardPacketType( packet ); 
       factory.CleanupPacket( packet );
    }
-   //m_outputChainListMutex.unlock();   
 
    return sizeSent;
 }

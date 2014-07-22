@@ -21,6 +21,7 @@
 /* End PBXAggregateTarget section */
 
 /* Begin PBXBuildFile section */
+		34E9AC04197DAE4A00184045 /* UserStatsPacket.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 34E9AC02197DAE4A00184045 /* UserStatsPacket.cpp */; };
 		34EA684D17611D8B00F07E19 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 34EA684C17611D8B00F07E19 /* Foundation.framework */; };
 		34EA685217611D8B00F07E19 /* BaseClientLibrary_iOS.h in CopyFiles */ = {isa = PBXBuildFile; fileRef = 34EA685117611D8B00F07E19 /* BaseClientLibrary_iOS.h */; };
 		34EA685417611D8B00F07E19 /* BaseClientLibrary_iOS.m in Sources */ = {isa = PBXBuildFile; fileRef = 34EA685317611D8B00F07E19 /* BaseClientLibrary_iOS.m */; };
@@ -64,6 +65,9 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		34E9AC01197DAE4A00184045 /* CommonTypes.inl */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = CommonTypes.inl; sourceTree = "<group>"; };
+		34E9AC02197DAE4A00184045 /* UserStatsPacket.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = UserStatsPacket.cpp; sourceTree = "<group>"; };
+		34E9AC03197DAE4A00184045 /* UserStatsPacket.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = UserStatsPacket.h; sourceTree = "<group>"; };
 		34EA684917611D8B00F07E19 /* libBaseClientLibrary_iOS.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libBaseClientLibrary_iOS.a; sourceTree = BUILT_PRODUCTS_DIR; };
 		34EA684C17611D8B00F07E19 /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = System/Library/Frameworks/Foundation.framework; sourceTree = SDKROOT; };
 		34EA685017611D8B00F07E19 /* BaseClientLibrary_iOS-Prefix.pch */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "BaseClientLibrary_iOS-Prefix.pch"; sourceTree = "<group>"; };
@@ -227,39 +231,42 @@
 			children = (
 				4CA6EDD41964C823007A4435 /* AnalyticsPacket.cpp */,
 				4CA6EDD51964C823007A4435 /* AnalyticsPacket.h */,
-				70A0A4B91919A0D200A6630B /* InvitationPacket.cpp */,
-				70A0A4BA1919A0D200A6630B /* InvitationPacket.h */,
-				4C6C019D18F3425E004B0BF6 /* NotificationPacket.cpp */,
-				4C6C019E18F3425E004B0BF6 /* NotificationPacket.h */,
-				705282BE18EB71B000169F69 /* CommonTypes.cpp */,
-				705282BF18EB71B000169F69 /* CommonTypes.h */,
-				705282C118EB71B000169F69 /* Serialize.cpp */,
-				705282C218EB71B000169F69 /* Serialize.h */,
-				FAA2B307182B16E200A563B9 /* TournamentPacket.cpp */,
-				FAA2B308182B16E200A563B9 /* TournamentPacket.h */,
-				FAA6764D181F192A00D9FF01 /* PurchasePacket.cpp */,
-				FAA6764E181F192A00D9FF01 /* PurchasePacket.h */,
 				705B338417FE29AA00CCDDE3 /* AssetPacket.cpp */,
 				705B338517FE29AA00CCDDE3 /* AssetPacket.h */,
-				705B338617FE29AA00CCDDE3 /* CheatPacket.cpp */,
-				705B338717FE29AA00CCDDE3 /* CheatPacket.h */,
-				705B338817FE29AA00CCDDE3 /* LoginPacket.cpp */,
-				705B338917FE29AA00CCDDE3 /* LoginPacket.h */,
-				7031249617A8404C00A83FA5 /* ContactPacket.cpp */,
-				7031249717A8404C00A83FA5 /* ContactPacket.h */,
-				707B53F21794C1A6001D9BA1 /* DbPacket.cpp */,
-				707B53F31794C1A6001D9BA1 /* DbPacket.h */,
 				34EA687917611DD400F07E19 /* BasePacket.cpp */,
 				34EA687A17611DD400F07E19 /* BasePacket.h */,
 				34EA687B17611DD400F07E19 /* BasePacket.inl */,
 				34EA687C17611DD400F07E19 /* ChatPacket.cpp */,
 				34EA687D17611DD400F07E19 /* ChatPacket.h */,
+				705B338617FE29AA00CCDDE3 /* CheatPacket.cpp */,
+				705B338717FE29AA00CCDDE3 /* CheatPacket.h */,
+				705282BE18EB71B000169F69 /* CommonTypes.cpp */,
+				705282BF18EB71B000169F69 /* CommonTypes.h */,
+				34E9AC01197DAE4A00184045 /* CommonTypes.inl */,
+				7031249617A8404C00A83FA5 /* ContactPacket.cpp */,
+				7031249717A8404C00A83FA5 /* ContactPacket.h */,
+				707B53F21794C1A6001D9BA1 /* DbPacket.cpp */,
+				707B53F31794C1A6001D9BA1 /* DbPacket.h */,
 				34EA687E17611DD400F07E19 /* GamePacket.cpp */,
 				34EA687F17611DD400F07E19 /* GamePacket.h */,
+				70A0A4B91919A0D200A6630B /* InvitationPacket.cpp */,
+				70A0A4BA1919A0D200A6630B /* InvitationPacket.h */,
+				705B338817FE29AA00CCDDE3 /* LoginPacket.cpp */,
+				705B338917FE29AA00CCDDE3 /* LoginPacket.h */,
+				4C6C019D18F3425E004B0BF6 /* NotificationPacket.cpp */,
+				4C6C019E18F3425E004B0BF6 /* NotificationPacket.h */,
 				34EA688017611DD400F07E19 /* PacketFactory.cpp */,
 				34EA688117611DD400F07E19 /* PacketFactory.h */,
+				FAA6764D181F192A00D9FF01 /* PurchasePacket.cpp */,
+				FAA6764E181F192A00D9FF01 /* PurchasePacket.h */,
+				705282C118EB71B000169F69 /* Serialize.cpp */,
+				705282C218EB71B000169F69 /* Serialize.h */,
 				34EA688217611DD400F07E19 /* ServerToServerPacket.cpp */,
 				34EA688317611DD400F07E19 /* ServerToServerPacket.h */,
+				FAA2B307182B16E200A563B9 /* TournamentPacket.cpp */,
+				FAA2B308182B16E200A563B9 /* TournamentPacket.h */,
+				34E9AC02197DAE4A00184045 /* UserStatsPacket.cpp */,
+				34E9AC03197DAE4A00184045 /* UserStatsPacket.h */,
 			);
 			path = Packets;
 			sourceTree = "<group>";
@@ -361,6 +368,7 @@
 				34EA689F17611DD400F07E19 /* BasePacket.cpp in Sources */,
 				34EA68A017611DD400F07E19 /* ChatPacket.cpp in Sources */,
 				34EA68A117611DD400F07E19 /* GamePacket.cpp in Sources */,
+				34E9AC04197DAE4A00184045 /* UserStatsPacket.cpp in Sources */,
 				4CA6EDD61964C823007A4435 /* AnalyticsPacket.cpp in Sources */,
 				34EA68A217611DD400F07E19 /* PacketFactory.cpp in Sources */,
 				34EA68A317611DD400F07E19 /* ServerToServerPacket.cpp in Sources */,

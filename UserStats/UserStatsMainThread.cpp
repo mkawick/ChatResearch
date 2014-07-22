@@ -170,7 +170,7 @@ bool  UserStatsMainThread::HandlePacketFromOtherServer( BasePacket* packet, U32 
    
    if( packetType == PacketType_Login )
    {
-      if( HandleLoginPacket( unwrappedPacket, connectionId ) == false )
+      if( HandleLoginPacket( unwrappedPacket, serverIdLookup ) == false )
       {
          factory.CleanupPacket( packet );
       }
@@ -180,27 +180,19 @@ bool  UserStatsMainThread::HandlePacketFromOtherServer( BasePacket* packet, U32 
 
    if( packetType == PacketType_UserStats )
    {
-      if( HandleUserStatPacket( unwrappedPacket, connectionId ) == false )
+      if( HandleUserStatPacket( unwrappedPacket, serverIdLookup ) == false )
       {
          factory.CleanupPacket( packet );
       }
       return true;
    }
- /*  if( packetType == PacketType_Invitation )
-   {
-      if( HandleInvitationPacket( unwrappedPacket, connectionId ) == false )
-      {
-         factory.CleanupPacket( packet );
-      }
-      return true;
-   }*/
 
    return false;
 }
 
 //---------------------------------------------------------------
 
-bool     UserStatsMainThread::HandleLoginPacket( BasePacket* packet, U32 connectionId )
+bool     UserStatsMainThread::HandleLoginPacket( BasePacket* packet, U32 serverIdLookup )
 {
    U32 packetType = packet->packetType;
    U32 packetSubType = packet->packetSubType;
@@ -276,28 +268,63 @@ bool     UserStatsMainThread::HandleLoginPacket( BasePacket* packet, U32 connect
 
 //---------------------------------------------------------------
 
-bool     UserStatsMainThread::HandleUserStatPacket( BasePacket* packet, U32 connectionId )
+bool     UserStatsMainThread::HandleUserStatPacket( BasePacket* packet, U32 serverIdLookup )
 {
    U32 packetType = packet->packetType;
    U32 packetSubType = packet->packetSubType;
 
    if( packetType == PacketType_UserStats )
    {
-      //switch( packetSubType )
+      switch( packetSubType )
       {
-    /*  case PacketUserStats::UserStatsType_RequestListOfUserStats:
+      case PacketUserStats::UserStatsType_RequestListOfUserStats:
          {
             PacketUserStats_RequestListOfUserStats* stats = static_cast< PacketUserStats_RequestListOfUserStats* >( packet );
             PacketUserStats_RequestListOfUserStatsResponse* response = new PacketUserStats_RequestListOfUserStatsResponse;
             response->userUuid = stats->userUuid;
             response->whichGame = stats->whichGame;
-            //DbQuery
+
+            response->stats.insert( "stat1", "100" );            
+            response->stats.insert( "stat2", "1000" );
+            response->stats.insert( "stat3", "-9" );
+            
+            PacketServerJobWrapper* wrapper = new PacketServerJobWrapper;
+            wrapper->pPacket = response;
+            wrapper->serverId = serverIdLookup;
+            AddOutputChainData( wrapper, serverIdLookup );
          }
-         break;*/
+         break;
+      case PacketUserStats::UserStatsType_RecordUserStats:
+         {
+            PacketUserStats_RecordUserStats* stats = static_cast< PacketUserStats_RecordUserStats* >( packet );
+            
+            PacketUserStats_RecordUserStatsResponse* response = new PacketUserStats_RecordUserStatsResponse;
+            response->userUuid = stats->userUuid;
+            response->success = true;
+            PacketServerJobWrapper* wrapper = new PacketServerJobWrapper;
+            wrapper->pPacket = response;
+            wrapper->serverId = serverIdLookup;
+            AddOutputChainData( wrapper, serverIdLookup );
+
+            // lookup user and store stats
+            const string userUuid = userUuid;
+            cout << "Record user stats for user uuid: " << userUuid << endl;
+            SerializedKeyValueVector< string >& statList = stats->stats;
+            SerializedKeyValueVector< string >::KVIterator iter = statList.begin();
+            while( iter != statList.end() )
+            {
+               const string& key = iter->key;
+               const string& value = iter->value;
+               iter++;
+               cout << "stat: " << key << ", value: " << value << endl;
+            }
+            cout << "End user stats" << endl;
+         }
+         break;
       }
    }
 
-   return false;
+   return true;
 }
 
 //---------------------------------------------------------------
@@ -306,8 +333,7 @@ bool   UserStatsMainThread::AddOutputChainData( BasePacket* packet, U32 connecti
 {
    if( packet->packetType == PacketType_ServerJobWrapper )
    {
-      //return HandlePacketToOtherServer( packet, connectionId );
-      return false;
+      return HandlePacketToOtherServer( packet, connectionId );
    }
 
    if( packet->packetType == PacketType_DbQuery )

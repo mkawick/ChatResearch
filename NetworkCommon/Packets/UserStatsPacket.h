@@ -88,6 +88,7 @@ public:
    bool  SerializeOut( U8* data, int& bufferOffset ) const;
 
    UuidString                          userUuid;
+   U8                                  whichGame;
    SerializedKeyValueVector< string >  stats;
 };
 

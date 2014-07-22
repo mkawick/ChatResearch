@@ -1,13 +1,16 @@
-#include "DiplodocusGame.h"
-#include "KhaanGame.h"
-
+// DiplodocusGame.cpp
 #include "../NetworkCommon/NetworkOut/Fruitadens.h"
-
+#include "../NetworkCommon/NetworkOut/FruitadensServerToServer.h"
 #include "../NetworkCommon/Packets/ServerToServerPacket.h"
 #include "../NetworkCommon/Packets/GamePacket.h"
 #include "../NetworkCommon/Packets/LoginPacket.h"
 #include "../NetworkCommon/Packets/PacketFactory.h"
 #include "../NetworkCommon/Packets/TournamentPacket.h"
+#include "../NetworkCommon/Packets/UserStatsPacket.h"
+
+#include "DiplodocusGame.h"
+#include "KhaanGame.h"
+#include "GameFramework.h"
 
 #include <iostream>
 #include <time.h>
@@ -203,6 +206,11 @@ bool   DiplodocusGame::AddInputChainData( BasePacket* packet, U32 connectionId )
             SendNotification( notification, connectionId );
             return true;
          }
+         else if( packetSubType == PacketGameToServer::GamePacketType_TestHook )
+         {
+            RunTest();
+            return true;
+         }
          return true;
       }
       else if( packetType == PacketType_Tournament )
@@ -238,6 +246,37 @@ void  DiplodocusGame::SendNotification( const PacketGame_Notification* notificat
    if( m_callbacks )
    {
       m_callbacks->UserWantsNotification( connectionId, notification->notificationType, notification->additionalText );
+   }
+}
+
+//---------------------------------------------------------------
+
+void  DiplodocusGame::RunTest()
+{
+   static bool  testChoice = false ;
+
+   BasePacket* packet = NULL;
+   if( testChoice == false )
+   {
+      PacketUserStats_RecordUserStats* stats = new PacketUserStats_RecordUserStats;
+      stats->userUuid = "user1";
+      stats->stats.insert( "test1", "value1" );
+      packet = stats;
+   }
+   else
+   {
+      PacketUserStats_RequestListOfUserStats* statRequest = new PacketUserStats_RequestListOfUserStats;
+      statRequest->userUuid = "user1";
+      statRequest->whichGame = GetGameProductId();
+      packet = statRequest;
+   }
+   
+   if( packet != NULL )
+   {
+      PacketServerToServerWrapper* wrapper = new PacketServerToServerWrapper;
+      wrapper->pPacket = packet;
+      wrapper->serverId = GetServerId();
+      GameFramework::Instance()->GetUserStats()->AddOutputChainData( wrapper, 0 );
    }
 }
 
@@ -319,6 +358,16 @@ bool   DiplodocusGame::AddOutputChainData( BasePacket* packet, U32 connectionId 
       return false;
    }
 
+   if( packet->packetType == PacketType_ServerToServerWrapper )
+   {
+      PacketServerToServerWrapper* wrapper = static_cast< PacketServerToServerWrapper* >( packet );
+      BasePacket* unwrappedPacket = wrapper->pPacket;
+      U32  serverIdLookup = wrapper->serverId;
+
+      return HandlePacketFromOtherServer( unwrappedPacket, serverIdLookup );
+   }
+
+   cout << "Output layer is seonding unhandled packet up" << endl;
    return HandlePacketFromOtherServer( packet, connectionId );
 }
 
@@ -471,6 +520,39 @@ bool  DiplodocusGame::HandlePacketFromOtherServer( BasePacket* packet, U32 conne
       {
       case PacketGameToServer::GamePacketType_ListOfGames:
          IsUserAllowedToUseThisProduct( static_cast< PacketListOfGames* >( packet ) );
+         return true;
+      }
+   }
+   else if( packet->packetType == PacketType_UserStats )
+   {
+      switch( packet->packetSubType )
+      {
+      case PacketUserStats::UserStatsType_RecordUserStatsResponse:
+         {
+            PacketUserStats_RecordUserStatsResponse* statusUpdated = static_cast< PacketUserStats_RecordUserStatsResponse* >( packet );
+            if( m_callbacks )
+            {
+               m_callbacks->UserStatsSaved( statusUpdated->userUuid, statusUpdated->success );
+            }
+         }
+         return true;
+      case PacketUserStats::UserStatsType_RequestListOfUserStatsResponse:
+         {
+            PacketUserStats_RequestListOfUserStatsResponse* stats = static_cast< PacketUserStats_RequestListOfUserStatsResponse* >( packet );
+            if( m_callbacks )
+            {
+               KeyValueVector vec;
+               SerializedKeyValueVector< string >::KVIterator iter = stats->stats.begin();
+               while( iter != stats->stats.end() )
+               {
+                  const string& key = iter->key;
+                  const string& value = iter->value;
+                  vec.push_back( KeyValueString( key, value ) );
+                  iter ++;
+               }
+               m_callbacks->UserStatsLoaded( stats->userUuid, vec );
+            }
+         }
          return true;
       }
    }

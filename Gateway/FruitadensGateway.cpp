@@ -10,6 +10,8 @@ using boost::format;
 #include "../NetworkCommon/Packets/CheatPacket.h"
 #include "../NetworkCommon/Packets/ServerToServerPacket.h"
 #include "../NetworkCommon/Packets/InvitationPacket.h"
+//#include "../NetworkCommon/Packets/GatewayPacket.h"
+#include "../NetworkCommon/Packets/LoginPacket.h"
 #include "../NetworkCommon/Utils/CommandLineParser.h"
 
 #include <iostream>
@@ -329,6 +331,7 @@ int  FruitadensGateway::MainLoop_OutputProcessing()
          BasePacket* packet = tempQueue.front();
          tempQueue.pop_front();
          
+         PreprocessPacketsForOutput( packet );
          SerializePacketOut( packet );
 
          factory.CleanupPacket( packet );
@@ -338,6 +341,27 @@ int  FruitadensGateway::MainLoop_OutputProcessing()
    return 0;
 }
 
+
+//-----------------------------------------------------------------------------------------
+
+void  FruitadensGateway::PreprocessPacketsForOutput( BasePacket* packet )
+{
+   assert( packet->packetType == PacketType_GatewayWrapper );
+
+   PacketGatewayWrapper* wrapper = static_cast< PacketGatewayWrapper* >( packet );
+   BasePacket* testPacket = wrapper->pPacket;
+   U8 packetType = testPacket->packetType;
+   U8 packetSubType = testPacket->packetSubType;
+
+   if( packetType == PacketType_Login )
+   {
+      if( packetSubType == PacketLogin::LoginType_Login )
+      {
+         PacketLogin* login = static_cast< PacketLogin* >( testPacket );
+         login->gatewayId = m_serverId;
+      }
+   }
+}
 
 //-----------------------------------------------------------------------------------------
 

@@ -87,7 +87,8 @@ bool  PacketUserStats_RecordUserStats::SerializeIn( const U8* data, int& bufferO
 {
    PacketUserStats::SerializeIn( data, bufferOffset );
    Serialize::In( data, bufferOffset, userUuid );
-   Serialize::In( data, bufferOffset, userUuid );
+   Serialize::In( data, bufferOffset, whichGame );
+   Serialize::In( data, bufferOffset, stats );
 
    return true;
 }
@@ -96,7 +97,8 @@ bool  PacketUserStats_RecordUserStats::SerializeOut( U8* data, int& bufferOffset
 {
    PacketUserStats::SerializeOut( data, bufferOffset );
    Serialize::Out( data, bufferOffset, userUuid );
-   Serialize::Out( data, bufferOffset, userUuid );
+   Serialize::Out( data, bufferOffset, whichGame );
+   Serialize::Out( data, bufferOffset, stats );
 
    return true;
 }

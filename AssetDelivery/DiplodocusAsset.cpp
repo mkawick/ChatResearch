@@ -40,7 +40,9 @@ void     DiplodocusAsset::ServerWasIdentified( IChainedInterface* khaan )
    m_serversNeedingUpdate.push_back( static_cast<InputChainType*>( khaan )->GetServerId() );*/
    ChainedType* localKhaan = static_cast< ChainedType* >( khaan );
    localKhaan->AddOutputChainData( packet, 0 );
-   m_serversNeedingUpdate.push_back( localKhaan->GetServerId() );
+
+   //Threading::MutexLock locker( m_mutex );
+   //m_serversNeedingUpdate.push_back( localKhaan->GetServerId() );
 }
 
 //---------------------------------------------------------------
@@ -347,7 +349,6 @@ bool     DiplodocusAsset::AddInputChainData( BasePacket* packet, U32 connectionI
             else
             {
                found->second.SetConnectionId( connectionId );
-               Threading::MutexLock locker( m_mutex );
                found->second.HandleRequestFromClient( static_cast< PacketAsset* >( unwrappedPacket ) );
             }
          }
@@ -443,9 +444,9 @@ bool     DiplodocusAsset::ConnectUser( PacketPrepareForUserLogin* loginPacket )
       UserAccountAssetDelivery user( ut );
       user.SetServer( this );
 
-      m_mutex.lock();
+      //m_mutex.lock(); // locked from above
       m_userTickets.insert( UAADPair( hashForUser, user ) );
-      m_mutex.unlock();
+      //m_mutex.unlock();
    }
    return true;
 }
@@ -500,28 +501,39 @@ bool     DiplodocusAsset::AddOutputChainData( BasePacket* packet, U32 connection
       if( m_connectionIdGateway == 0 )
          return false;
 
-      Threading::MutexLock locker( m_mutex );
+      Threading::MutexLock locker( m_inputChainListMutex );
+      //BaseOutputContainer localInputs = m_listOfInputs;
 
       ChainLinkIteratorType itInputs = m_listOfInputs.begin();
       while( itInputs != m_listOfInputs.end() )
       {
          ChainLink& chainedInput = *itInputs++;
-         IChainedInterface* interfacePtr = chainedInput.m_interface;
-         KhaanAsset* khaan = static_cast< KhaanAsset* >( interfacePtr );
-         if( khaan->GetServerId() == m_connectionIdGateway )
+         ChainedInterface* interfacePtr = static_cast<ChainedInterface*>( chainedInput.m_interface );
+         if( interfacePtr->DoesNameMatch( "KhaanAsset" ) )
          {
-            khaan->AddOutputChainData( packet );
-            //khaan->Update();// the gateway may not have a proper connection id.
+            KhaanAsset* khaan = static_cast< KhaanAsset* >( interfacePtr );
+            if( khaan->GetServerId() == m_connectionIdGateway )
+            {
+               khaan->AddOutputChainData( packet );
+               //khaan->Update();// the gateway may not have a proper connection id.
 
-            AddServerNeedingUpdate( khaan->GetServerId() );
-            return true;
+               MarkConnectionAsNeedingUpdate( khaan->GetChainedId() );
+               return true;
+            }
          }
       }
       return false;
    }
+
+   return false;
+}
+
+//---------------------------------------------------------------
+void     DiplodocusAsset::ExpireOldConnections()
+{
+   Threading::MutexLock locker( m_mutex );
    if( m_userTickets.size() )
    {
-      Threading::MutexLock locker( m_mutex );
       UAADMapIterator it = m_userTickets.begin();
       while( it != m_userTickets.end() )
       {
@@ -533,55 +545,14 @@ bool     DiplodocusAsset::AddOutputChainData( BasePacket* packet, U32 connection
          }
       }
    }
-
-   return false;
-}
-
-//---------------------------------------------------------------
-
-void     DiplodocusAsset::AddServerNeedingUpdate( U32 serverId )
-{
-   deque< U32 >::iterator it = m_serversNeedingUpdate.begin();
-   while( it != m_serversNeedingUpdate.end() )
-   {
-      if( *it == serverId )
-         return;
-      it++;
-   }
-   m_serversNeedingUpdate.push_back( serverId );
-
 }
 
 //---------------------------------------------------------------
 
 int      DiplodocusAsset::CallbackFunction()
 {
-   while( m_serversNeedingUpdate.size() )
-   {
-      Threading::MutexLock locker( m_mutex );
+   ExpireOldConnections();
 
-      U32 serverId = m_serversNeedingUpdate.front();
-      m_serversNeedingUpdate.pop_front();
-      
-      ChainLinkIteratorType itInputs = m_listOfInputs.begin();
-      while( itInputs != m_listOfInputs.end() )
-      {
-         //ChainLink& chainedInput = *itInputs++;
-         ChainType*  outputPtr = static_cast< ChainType*> ( (*itInputs).m_interface );
-         itInputs++;
-         if( outputPtr->DoesNameMatch( "KhaanAsset" ) )
-         {
-            KhaanAsset* khaan = static_cast< KhaanAsset* >( outputPtr );
-            if( khaan->GetServerId() == serverId )
-            {
-               if( khaan->Update() == false )
-               {
-                  AddServerNeedingUpdate( serverId );// more updating needed
-               }
-            }
-         }
-      }
-   }
    UpdateAllConnections();
 
    CategorizedAssetLists::iterator it = m_assetsByCategory.begin();

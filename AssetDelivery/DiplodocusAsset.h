@@ -48,6 +48,7 @@ private:
    bool                    StoreUserProductsOwned( PacketListOfUserProductsS2S* productNamesPacket );
 
    int                     CallbackFunction();
+   void                    ExpireOldConnections();
 
    void                    AddServerNeedingUpdate( U32 serverId );
 
@@ -60,7 +61,7 @@ public:
    typedef pair< string, AssetOrganizer >          CategorizedAssetPair;
 
    UserAccountAssetDelivery         m_dummyUser;
-   deque< U32 >                     m_serversNeedingUpdate;
+   //deque< U32 >                     m_serversNeedingUpdate;
    UAADMap                          m_userTickets;
    CategorizedAssetLists            m_assetsByCategory;
 

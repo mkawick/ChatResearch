@@ -210,8 +210,8 @@ void	KhaanServerToServer :: UpdateInwardPacketList()
       else if( packetType == PacketType_GatewayWrapper )// here we simply push the server packet up to the next layer
       {
          PacketGatewayWrapper* wrapper = static_cast< PacketGatewayWrapper* >( packetIn );
-         m_connectionId = wrapper->connectionId;
-         if( PassPacketOn( wrapper, m_connectionId ) == true )
+         //m_connectionId = wrapper->connectionId;
+         if( PassPacketOn( wrapper, wrapper->connectionId ) == true )
          {
             packetIn = NULL;// do not delete
          }

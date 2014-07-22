@@ -53,6 +53,7 @@ public:
    string   loginKey;
    string   password;
    string   languageCode;
+   U32      gatewayId;
 };
 
 ///////////////////////////////////////////////////////////////
@@ -274,6 +275,7 @@ public:
    bool     active;
    U32      userId;
    U32      languageId;
+   U32      gatewayId;
 };
 
 ///////////////////////////////////////////////////////////////

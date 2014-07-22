@@ -1,5 +1,8 @@
 pushd C:\projects\SummonWar\main\
-start C:\projects\SummonWar\main\WorkArea/game_serverD.exe listen.port=21000 db.address=10.16.4.44 db.port=3306 db.username=incinerator db.password=Cm8235 db.schema=playdek s2s.port=21002  chat.port=7402 purchase.port=7702
+REM listen.port=21000 s2s.port=21002  chat.port=7402 purchase.port=7702 dblist=[user:192.168.1.0:21000:root:password:playdek,game:192.168.1.0:21000:root:password:playdek]
+
+REM start C:\projects\SummonWar\main\WorkArea/game_serverD.exe listen.port=21000 db.address=10.16.4.44 db.port=3306 db.username=incinerator db.password=Cm8235 db.schema=playdek s2s.port=21002  chat.port=7402 purchase.port=7702
+start C:\projects\SummonWar\main\WorkArea/game_serverD.exe listen.port=21000 s2s.port=21002 chat.port=7402 purchase.port=7702 dblist=[user:10.16.4.44:3306:incinerator:Cm8235:playdek,game:10.16.4.44:3306:incinerator:Cm8235:playdek_game_summonwar]
 popd
 
 start C:\projects\Mber\ServerStack\Debug/LoadBalancer.exe  listen.port=9500 s2s.port=9502
@@ -25,12 +28,12 @@ start C:\projects\Mber\ServerStack\Debug/PurchaseServer.exe listen.port=7700 s2s
 
 ping -n 1 -w 1000 127.0.0.1 > nul
 	
-start C:\projects\Mber\ServerStack\Debug/NotificationServer.exe listen.port=7900 s2s.port=7902 db.address=10.16.4.44 db.port=3306 db.username=incinerator db.password=Cm8235 ios.certpath="../../../../SummonWar/main/data/ios/certificates"
+start C:\projects\Mber\ServerStack\Debug/NotificationServer.exe listen.port=7900 s2s.port=7902 db.address=10.16.4.44 db.port=3306 db.username=incinerator db.password=Cm8235 db.schema=playdek ios.certpath="../../../../SummonWar/main/data/ios/certificates"
 
 
 ping -n 1 -w 1000 127.0.0.1 > nul
 	
-start C:\projects\Mber\ServerStack\Debug/AnalyticsServer.exe listen.port=7800 s2s.port=7802 db.address=10.16.4.44 db.port=3306 db.username=incinerator db.password=Cm8235 
+start C:\projects\Mber\ServerStack\Debug/AnalyticsServer.exe listen.port=7800 s2s.port=7802 db.address=10.16.4.44 db.port=3306 db.username=incinerator db.password=Cm8235 db.schema=playdek
 
 start C:\projects\Mber\ServerStack\Debug/UserStatsServer.exe listen.port=12000 s2s.port=12002   db.address=10.16.4.44 db.port=3306 db.username=incinerator db.password=Cm8235 db.schema=playdek
 ping -n 1 -w 14000 127.0.0.1 > nul
@@ -42,4 +45,3 @@ start C:\projects\Mber\ServerStack\Debug/GatewayServer.exe listen.port=9600 chat
 REM start C:\projects\Mber\ServerStack\Debug/GatewayServer.exe listen.port=9601 asset.port=7300 server.name="Asset-Only-Gateway" asset.only=true balancer.port=9502
 
 exit
-

@@ -49,6 +49,7 @@ public:
       GamePacketType_RawGameData,
       GamePacketType_EchoToServer,
       GamePacketType_EchoToClient,
+      GamePacketType_TestHook,
       GamePacketType_Notification
    };
 public:
@@ -431,6 +432,14 @@ class PacketGame_EchoToClient : public BasePacket
 {
 public:
    PacketGame_EchoToClient(): BasePacket( PacketType_Gameplay, PacketGameToServer::GamePacketType_EchoToClient ) {}
+};
+
+///////////////////////////////////////////////////////////////
+
+class PacketGame_TestHook : public BasePacket
+{
+public:
+   PacketGame_TestHook(): BasePacket( PacketType_Gameplay, PacketGameToServer::GamePacketType_TestHook ) {}
 };
 
 ///////////////////////////////////////////////////////////////

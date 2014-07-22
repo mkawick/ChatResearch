@@ -4579,6 +4579,13 @@ void  NetworkLayerExtended::SendNotification( U8 type, string additionalText )
    SerializePacketOut( &packet );
 }
 
+void  NetworkLayerExtended::SendGameTest()
+{
+   PrintFunctionName( __FUNCTION__ );
+   PacketGame_TestHook packet;
+   SerializePacketOut( &packet );
+}
+
 //------------------------------------------------------------
 
 

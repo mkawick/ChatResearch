@@ -107,6 +107,12 @@ bool	KhaanGateway :: Update()
       return false;
    }
 
+   if( m_denyAllFutureData && m_packetsOut.size() == 0 ) // shut it down
+   {
+      CloseConnection();
+      return false;
+   }
+
    return true;
 }
 
@@ -198,6 +204,7 @@ bool  KhaanGateway::IsHandshaking( const BasePacket* packetIn )
          {
             static_cast< MainGatewayThread* >( m_mainOutputChain )->TrackCountStats( StatTrackingConnections::StatTracking_BadPacketVersion, 1, packetIn->versionNumber );
          }
+         DenyAllFutureData();
       }
 
       // we are only sending version numbers at this point.

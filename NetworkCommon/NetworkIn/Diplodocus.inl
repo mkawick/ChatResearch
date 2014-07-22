@@ -583,7 +583,10 @@ void	Diplodocus< InputChain, OutputChain >::UpdateAllConnections()
       if( it != m_connectedClients.end() )
       {
          InputChainType* connection = it->second;
-         connection->Update();
+         if( connection->Update() == false )
+         {
+            MarkConnectionAsNeedingUpdate( it->first );
+         }
       }
    }
 }
