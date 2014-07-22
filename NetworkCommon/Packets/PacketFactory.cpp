@@ -216,6 +216,11 @@ bool  PacketFactory::ParseLogin( const U8* bufferIn, int& bufferOffset, const Ba
             *packetOut = SerializeIn< PacketLogin >( bufferIn, bufferOffset );
          }
          return true;
+      case PacketLogin::LoginType_LoginFromGateway:
+         {
+            *packetOut = SerializeIn< PacketLoginFromGateway >( bufferIn, bufferOffset );
+         }
+         return true;
       case PacketLogin::LoginType_Logout:
          {
             *packetOut = SerializeIn< PacketLogout >( bufferIn, bufferOffset );

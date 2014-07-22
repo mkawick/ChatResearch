@@ -168,6 +168,7 @@ namespace Database
       bool     HasJobsInProgress() const { return m_jobsInProgress.size() > 0; }
 
       void     SetConnectionType( DbConnectionType type ) { m_dbConnectionTypeBitField = type; }
+      U8       GetConnectionType() const { return m_dbConnectionTypeBitField; }
       bool     WillYouTakeThisQuery( U8 type ) const { return ( type & m_dbConnectionTypeBitField ) != 0; }
 
       bool     Log( const char* text, int priority = 1 );

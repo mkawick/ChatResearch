@@ -12,6 +12,7 @@ public:
    enum LoginType
    {
       LoginType_Login,
+      LoginType_LoginFromGateway,
       LoginType_Logout,
       LoginType_PacketLogoutToClient,
       LoginType_EchoToServer,
@@ -47,13 +48,29 @@ public:
    bool  SerializeIn( const U8* data, int& bufferOffset );
    bool  SerializeOut( U8* data, int& bufferOffset ) const;
 
-   UuidString uuid;
-   string   userName;
+   UuidString        uuid;
+   string            userName;
    
-   string   loginKey;
-   string   password;
-   string   languageCode;
-   U32      gatewayId;
+   string            loginKey;
+   string            password;
+   FixedStringTiny   languageCode;
+};
+
+///////////////////////////////////////////////////////////////
+
+class PacketLoginFromGateway : public PacketLogin
+{
+public:
+
+public:
+   PacketLoginFromGateway( int packet_type = PacketType_Login, int packet_sub_type = LoginType_LoginFromGateway ): PacketLogin( packet_type, packet_sub_type ), gatewayId( 0 ) {}
+
+   bool  SerializeIn( const U8* data, int& bufferOffset );
+   bool  SerializeOut( U8* data, int& bufferOffset ) const;
+
+   void  copy( const PacketLogin& login );
+
+   U32               gatewayId;
 };
 
 ///////////////////////////////////////////////////////////////

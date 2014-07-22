@@ -30,6 +30,7 @@ UserStatsMainThread::~UserStatsMainThread()
 {
 }
 
+
 //---------------------------------------------------------------
 
 void     UserStatsMainThread::ServerWasIdentified( IChainedInterface* khaan )
@@ -213,21 +214,6 @@ bool     UserStatsMainThread::HandleLoginPacket( BasePacket* packet, U32 serverI
             cout << "  uuid: " << loginPacket->uuid << endl;
             cout << "  login time: " << loginPacket->lastLoginTime << endl;
             cout << " --------------------------------- " << endl;
-         /*   PacketPrepareForUserLogin* pPacket = static_cast< PacketPrepareForUserLogin* > ( packet );
-            U32 userConnectionId = pPacket->connectionId;
-            string uuid = pPacket->uuid;
-            
-            cout << "Prep for logon: " << connectionId << ", " << pPacket->userName << ", " << uuid << ", " << pPacket->password << endl;
-            
-            // TODO: verify that the user isn't already in the list and if s/he is, assign the new connectionId.
-            ChatUser* user = UpdateExistingUsersConnectionId( uuid, userConnectionId );
-            //ChatUser* user = GetUserByUsername( pPacket->userName );
-            if( user == NULL )
-            {
-               user = CreateNewUser( userConnectionId );
-            }
-            user->Init( pPacket->userId, pPacket->userName, pPacket->uuid, pPacket->lastLoginTime );            
-            user->LoggedIn();*/
          }
          return true;
       case PacketLogin::LoginType_PrepareForUserLogout:
@@ -237,28 +223,8 @@ bool     UserStatsMainThread::HandleLoginPacket( BasePacket* packet, U32 serverI
             cout << "Prep for logout: " << pPacket->connectionId << ", " << pPacket->uuid << endl;
             
             cout << "User login: " << endl;
-            //cout << "    id: " << pPacket->userId << endl;
-            //cout << "  name: " << pPacket->userName << endl;
             cout << "  uuid: " << pPacket->uuid << endl;
-            //cout << "  login time: " << pPacket->lastLoginTime << endl;
             cout << " --------------------------------- " << endl;
-      /*      PacketPrepareForUserLogout* pPacket = static_cast< PacketPrepareForUserLogout* > ( packet );
-            cout << "Prep for logout: " << pPacket->connectionId << ", " << pPacket->uuid << endl;
-            U32 userConnectionId = pPacket->connectionId;
-            LockMutex();
-            UserMapIterator iter = m_users.find( userConnectionId );
-         
-            if( iter != m_users.end() )// a bad user login can cause this so don't worry
-            {
-               iter->second->LoggedOut();
-            }
-            else
-            {
-               string str = "Log user out failed: user not found. userUuid: ";
-               str += pPacket->uuid.c_str();
-               Log( str, 4 );
-            }
-            UnlockMutex();*/
             
          }
          return true;
@@ -361,6 +327,7 @@ bool   UserStatsMainThread::AddOutputChainData( BasePacket* packet, U32 connecti
 
 void     UserStatsMainThread::UpdateDbResults()
 {
+   // this function is unnecessary in this design
    PacketFactory factory;
 
    m_mutex.lock();
@@ -378,34 +345,9 @@ void     UserStatsMainThread::UpdateDbResults()
 
       U32 connectionId = dbResult->id;
 
-    /*  if( dbResult->serverLookup == m_chatRoomManager->GetDbIdentifier() ) //&& connectionId == ChatChannelManagerUniqueId )
-      {
-         if( m_chatRoomManager->HandleDbResult( dbResult ) == false )
-         {
-            factory.CleanupPacket( packet );
-         }
-         m_chatRoomManagerNeedsUpdate = true;
-      }
-      else if( dbResult->serverLookup == m_invitationManager->GetDbIdentifier() ) //&& connectionId == ChatChannelManagerUniqueId )
-      {
-         if( m_invitationManager->HandleDbResult( dbResult ) == false )
-         {
-            factory.CleanupPacket( packet );
-         }
-         m_invitationManagerNeedsUpdate = true;
-      }
-      else*/
-      {
-       /*  ChatUser* user = GetUser( connectionId );
-         if( user )
-         {
-            user->HandleDbResult( dbResult );
-         }
-         else*/
-         {
-            factory.CleanupPacket( packet );
-         }
-      }
+
+      factory.CleanupPacket( packet );
+
    }
 }
 
@@ -495,3 +437,62 @@ bool     UserStatsMainThread::AddQueryToOutput( PacketDbQuery* dbQuery )
    factory.CleanupPacket( deleteMe );
    return false;
 }
+
+////////////////////////////////////////////////////////////////////////////////////////
+
+DbHandle*   UserStatsMainThread::GetDbConnectionByType( Database::Deltadromeus::DbConnectionType type )
+{
+   const char* searchName = "Deltadromeus";
+   if( type == Database::Deltadromeus::DbConnectionType_none )// special case
+   {
+      // just grab any connection
+      ChainLinkIteratorType itOutputs = m_listOfOutputs.begin();
+      while( itOutputs != m_listOfOutputs.end() )// only one output currently supported.
+      {
+         ChainedInterface* interfacePtr = static_cast< ChainedInterface* >( (*itOutputs).m_interface );
+         if( interfacePtr->DoesNameMatch( searchName ) )
+         {
+            Database::Deltadromeus* delta = static_cast< Database::Deltadromeus* >( interfacePtr );
+            return delta->GetDbHandle();
+         }
+         itOutputs++;
+      }
+   }
+
+   // loop once giving preference to connections that fit the type exactly.
+   // this is the normal case.
+   ChainLinkIteratorType itOutputs = m_listOfOutputs.begin();
+   while( itOutputs != m_listOfOutputs.end() )// only one output currently supported.
+   {
+      ChainedInterface* interfacePtr = static_cast< ChainedInterface* >( (*itOutputs).m_interface );
+      if( interfacePtr->DoesNameMatch( searchName ) )
+      {
+         Database::Deltadromeus* delta = static_cast< Database::Deltadromeus* >( interfacePtr );
+         if( delta->GetConnectionType() == type ) // exact match
+            return delta->GetDbHandle();
+      }
+      itOutputs++;
+   }
+
+   // loop a second time giving preference to those who have a bit matching
+   itOutputs = m_listOfOutputs.begin();
+   while( itOutputs != m_listOfOutputs.end() )// only one output currently supported.
+   {
+      ChainedInterface* interfacePtr = static_cast< ChainedInterface* >( (*itOutputs).m_interface );
+      if( interfacePtr->DoesNameMatch( searchName ) )
+      {
+         Database::Deltadromeus* delta = static_cast< Database::Deltadromeus* >( interfacePtr );
+         if( delta->WillYouTakeThisQuery( type ) ) // bit operator here.. inexact match
+            return delta->GetDbHandle();
+      }
+      itOutputs++;
+   }
+
+   cout << "a db connection of that type does not exist. Please reconfigure." << endl;
+   assert( 0 );// a db connection of that type does not exist. Please reconfigure.
+
+   // lastly, grab any open connections
+   return NULL;
+}
+
+////////////////////////////////////////////////////////////////////////////////////////

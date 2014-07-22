@@ -131,8 +131,15 @@ bool     DiplodocusLogin:: AddInputChainData( BasePacket* packet, U32 connection
          {
          case PacketLogin::LoginType_Login:
             {
-               PacketLogin* login = static_cast<PacketLogin*>( actualPacket );
-               LogUserIn( login->userName, login->password, login->loginKey, login->gameProductId, userConnectionId, login->gatewayId );
+               //PacketLogin* login = static_cast<PacketLogin*>( actualPacket );
+               //LogUserIn( login->userName, login->password, login->loginKey, login->gameProductId, userConnectionId, login->gatewayId );
+               cout << "Bad packet: NO longer supperted." << endl;
+            }
+            break;
+         case PacketLogin::LoginType_LoginFromGateway:
+            {
+               PacketLoginFromGateway* login = static_cast<PacketLoginFromGateway*>( actualPacket );
+               LogUserIn( login, userConnectionId );
             }
             break;
          case PacketLogin::LoginType_Logout:
@@ -302,8 +309,15 @@ bool     DiplodocusLogin:: AddQueryToOutput( PacketDbQuery* dbQuery )
 
 //---------------------------------------------------------------
 
-bool     DiplodocusLogin:: LogUserIn( const string& userName, const string& password, const string& loginKey, U8 gameProductId, U32 connectionId, U32 gatewayId )
+bool     DiplodocusLogin:: LogUserIn( const PacketLoginFromGateway* packet, U32 connectionId )
+//LogUserIn( const string& userName, const string& password, const string& loginKey, U8 gameProductId, U32 connectionId, U32 gatewayId )
 {
+   const string& userName = packet->userName; 
+   const string& password = packet->password;
+   const string& loginKey = packet->loginKey;
+   U8 gameProductId = packet->gameProductId;
+   U32 gatewayId = packet->gatewayId;
+
    if( m_printFunctionNames )
    {
       cout << "fn: " << __FUNCTION__ << endl;

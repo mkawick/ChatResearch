@@ -33,6 +33,8 @@ public:
 
    void     ServerWasIdentified( IChainedInterface* khaan );
 
+   DbHandle*   GetDbConnectionByType( Database::Deltadromeus::DbConnectionType type );
+
 private:
    int      MainLoop_InputProcessing();
    int      MainLoop_OutputProcessing();
@@ -42,6 +44,7 @@ private:
    bool     HandlePacketFromOtherServer( BasePacket* packet, U32 connectionId );// not thread safe
    bool     HandleLoginPacket( BasePacket* packet, U32 connectionId );
    bool     HandleUserStatPacket( BasePacket* packet, U32 connectionId );
+
 
    deque< PacketDbQueryResult* > m_dbQueries;
 };

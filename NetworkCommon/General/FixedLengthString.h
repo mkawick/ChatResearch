@@ -52,11 +52,13 @@ protected:
    char buffer[ str_length + 1 ];// null terminated
 };
 
+typedef FixedLengthString< 140 > FixedString140;
 typedef FixedLengthString< 128 > FixedString128;
 typedef FixedLengthString<  80 > FixedString80;
 typedef FixedLengthString<  60 > FixedString60;
 typedef FixedLengthString<  32 > FixedString32;
 typedef FixedLengthString<  16 > FixedString16;
+typedef FixedLengthString<   8 > FixedStringTiny;
 typedef FixedLengthString<  16 > UuidString;
 
 ////////////////////////////////////////////////////////

@@ -24,6 +24,7 @@ struct PurchaseEntry;
 
 class PacketListOfUserPurchasesRequest;
 class StringLookup;
+class PacketLoginFromGateway;
 //class PacketRequestUserProfile;
 
 //-----------------------------------------------------------------------------------------
@@ -143,7 +144,7 @@ private:
    void     StoreSingleProduct( const PacketDbQueryResult* dbResult );
 
    
-   bool     LogUserIn( const string& username, const string& password, const string& loginKey, U8 gameProductId, U32 connectionId, U32 gatewayId );
+   bool     LogUserIn( const PacketLoginFromGateway* packet, U32 connectionId ); //const string& username, const string& password, const string& loginKey, U8 gameProductId, U32 connectionId, U32 gatewayId );
    bool     LogUserOut( U32 connectionId, bool wasDisconnectedByError );
    bool     LoadUserAccount( const string& userName, const string& password, const string& loginKey, U8 gameProductId, U32 connectionId, U32 gatewayId );
    bool     SetupQueryForLogin( const string& userName, const string& password, U8 gameProductId, U32 connectionId );

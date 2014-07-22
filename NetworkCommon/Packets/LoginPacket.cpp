@@ -15,7 +15,6 @@ bool  PacketLogin::SerializeIn( const U8* data, int& bufferOffset )
    Serialize::In( data, bufferOffset, password );
    Serialize::In( data, bufferOffset, loginKey );
    Serialize::In( data, bufferOffset, languageCode );
-   Serialize::In( data, bufferOffset, gatewayId );
 
    return true;
 }
@@ -29,9 +28,37 @@ bool  PacketLogin::SerializeOut( U8* data, int& bufferOffset ) const
    Serialize::Out( data, bufferOffset, password );
    Serialize::Out( data, bufferOffset, loginKey );
    Serialize::Out( data, bufferOffset, languageCode );
+
+   return true;
+}
+
+///////////////////////////////////////////////////////////////
+
+bool  PacketLoginFromGateway::SerializeIn( const U8* data, int& bufferOffset )
+{
+   PacketLogin::SerializeIn( data, bufferOffset );
+   Serialize::In( data, bufferOffset, gatewayId );
+
+   return true;
+}
+
+bool  PacketLoginFromGateway::SerializeOut( U8* data, int& bufferOffset ) const
+{
+   PacketLogin::SerializeOut( data, bufferOffset );
    Serialize::Out( data, bufferOffset, gatewayId );
 
    return true;
+}
+
+void  PacketLoginFromGateway::copy( const PacketLogin& login )
+{
+   uuid = login.uuid;
+   userName = login.userName;
+
+   loginKey = login.loginKey;
+   password = login.password;
+   languageCode = login.languageCode;
+   // gatewayId
 }
 
 ///////////////////////////////////////////////////////////////

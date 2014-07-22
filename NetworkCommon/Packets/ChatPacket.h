@@ -77,7 +77,7 @@ public:
    bool  SerializeIn( const U8* data, int& bufferOffset );
    bool  SerializeOut( U8* data, int& bufferOffset ) const;
 
-   FixedString80  message;
+   FixedString140 message;
    UuidString     channelUuid;
    UuidString     userUuid;
    U16            gameTurn;

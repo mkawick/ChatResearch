@@ -178,8 +178,18 @@ int main( int argc, const char* argv[] )
       PrepConnection< FruitadensServer, UserStatsMainThread > ( statIpAddressString, statPort, "analytics", middleware, ServerType_Analytics, true );
       
       //----------------------------------------------------------------
-      
+
       middleware->Init();
+
+#if defined _HERE_IS_A_TYPICAL_USE_CASE_GARY
+      {
+         DbHandle* ptr = middleware->GetDbConnectionByType( Database::Deltadromeus::DbConnectionType_UserData );
+         ptr = middleware->GetDbConnectionByType( Database::Deltadromeus::DbConnectionType_GameData );
+         ptr = middleware->GetDbConnectionByType( Database::Deltadromeus::DbConnectionType_StatData );
+         ptr = middleware->GetDbConnectionByType( Database::Deltadromeus::DbConnectionType_none );
+      }
+#endif
+
       s2s->AddOutputChain( middleware );
 
       middleware->Run();

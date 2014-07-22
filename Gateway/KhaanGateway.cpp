@@ -116,6 +116,8 @@ bool	KhaanGateway :: Update()
    return true;
 }
 
+//-----------------------------------------------------------------------------------------
+
 void     KhaanGateway :: SetupOutputDelayTimestamp()
 {
    if( m_timeoutMs == 0 )
@@ -131,6 +133,8 @@ void     KhaanGateway :: SetupOutputDelayTimestamp()
 
    m_lastSentToClientTimestamp = currentTime;
 }
+
+//-----------------------------------------------------------------------------------------
 
 bool  KhaanGateway :: ShouldDelayOutput()
 {
