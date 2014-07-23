@@ -12,7 +12,6 @@ public:
    enum LoginType
    {
       LoginType_Login,
-      LoginType_LoginFromGateway,
       LoginType_Logout,
       LoginType_PacketLogoutToClient,
       LoginType_EchoToServer,
@@ -40,7 +39,8 @@ public:
       LoginType_ThrottleUsersConnection,
       LoginType_DebugThrottleUsersConnection,
       LoginType_UserUpdateProfile,
-      LoginType_UserListOfPurchasesWasUpdated
+      LoginType_UserListOfPurchasesWasUpdated,
+      LoginType_LoginFromGateway
    };
 public:
    PacketLogin( int packet_type = PacketType_Login, int packet_sub_type = LoginType_Login ): BasePacket( packet_type, packet_sub_type ) {}

@@ -133,7 +133,8 @@ bool     DiplodocusLogin:: AddInputChainData( BasePacket* packet, U32 connection
             {
                //PacketLogin* login = static_cast<PacketLogin*>( actualPacket );
                //LogUserIn( login->userName, login->password, login->loginKey, login->gameProductId, userConnectionId, login->gatewayId );
-               cout << "Bad packet: NO longer supperted." << endl;
+               //LogUserIn( login, userConnectionId );
+               cout << "Bad packet: NO longer supported." << endl;
             }
             break;
          case PacketLogin::LoginType_LoginFromGateway:
@@ -326,6 +327,12 @@ bool     DiplodocusLogin:: LogUserIn( const PacketLoginFromGateway* packet, U32 
       cout << "attempt to login user: "<< userName << ", pwHash:" << password << " for game id=" << (int) gameProductId << " and conn: " << connectionId << endl;
       cout << "***********************" << endl;
    }
+
+   cout << "User login: " << endl;
+   cout << "User: " << packet->userName <<endl;
+   cout << "uuid: " << packet->uuid <<endl;
+   cout << "pass: " << packet->password <<endl;
+   cout << "--------------------------------------" << endl;
    
    if( IsUserConnectionValid( connectionId ) )
    {
@@ -2335,6 +2342,9 @@ bool     DiplodocusLogin:: HandleDbResult( PacketDbQueryResult* dbResult )
                   str += connection->m_userName;
                   str += ", uuid: ";
                   str += connection->m_userUuid;
+                  cout << "Error:" << str << endl;
+                  cout << connection->m_passwordHash << endl;
+
                   Log( str, 4 );
                   ForceUserLogoutAndBlock( connectionId );
                   wasHandled = false;

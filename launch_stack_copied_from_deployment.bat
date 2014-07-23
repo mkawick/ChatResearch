@@ -40,7 +40,7 @@ ping -n 1 -w 14000 127.0.0.1 > nul
 
 REM start ./debug/GameServer.exe db.port=16384 listen.port=21000
 
-start C:\projects\Mber\ServerStack\Debug/GatewayServer.exe listen.port=9600 chat.address=localhost chat.port=7400 login.port=7600 server.name="Main Gateway" asset.block=true balancer.port=9502 chat.port=7400 print.packets=true games=[localhost:21000:summon_war,192.168.1.1:21100:MFM] 
+start C:\projects\Mber\ServerStack\Debug/GatewayServer.exe listen.port=9600 chat.address=localhost chat.port=7400 login.port=7600 server.name="Main Gateway" asset.block=true balancer.port=9502 chat.port=7400 print.packets=false games=[localhost:21000:summon_war,192.168.1.1:21100:MFM] 
 
 REM start C:\projects\Mber\ServerStack\Debug/GatewayServer.exe listen.port=9601 asset.port=7300 server.name="Asset-Only-Gateway" asset.only=true balancer.port=9502
 

@@ -52,6 +52,8 @@ bool  PacketLoginFromGateway::SerializeOut( U8* data, int& bufferOffset ) const
 
 void  PacketLoginFromGateway::copy( const PacketLogin& login )
 {
+   gameInstanceId = login.gameInstanceId;
+   gameProductId = login.gameProductId;
    uuid = login.uuid;
    userName = login.userName;
 

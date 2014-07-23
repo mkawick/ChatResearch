@@ -118,6 +118,32 @@ bool  KhaanProtected::HandleInwardSerializedPacket( const U8* data, int& offset 
    return true;
 }
 
+void  DumpBadData( const U8* buffer, U32 numReceivedBytes, U32 bytesParsed )
+{
+   cout << "error on Gateway receiving packet info" << endl;
+   cout << "size of parsed packet: " << bytesParsed << " > length of bytes input: " << numReceivedBytes << endl;
+   cout << "This is clearly a hacker packet " << endl;
+   cout << "Terminating all future data" << endl;
+   cout << std::hex << endl;
+
+   if( numReceivedBytes > 100 )
+      numReceivedBytes = 100;
+
+   int bytesPerRow = 10;
+   int numRows = numReceivedBytes / bytesPerRow + 1;
+   
+   for( int i=0; i<numRows; i++ )
+   {
+      for( int j=0; j< bytesPerRow; j++ )
+      {
+         cout << (*buffer);
+         buffer ++;
+      }
+      cout << endl;
+   }
+
+   cout << std::dec << endl;
+}
 
 //-----------------------------------------------------------------------------------------
 
@@ -162,10 +188,12 @@ bool	KhaanProtected::OnDataReceived( const U8* data, int length )
       Serialize::In( data, offset, size );
       if( size > length )
       { 
-         cout << "error on Gateway receiving packet info" << endl;
-         cout << "size : " << size << " > length : " << length << endl;
+         DumpBadData( data, length, size );
+         
+         m_denyAllFutureData = true;
+         return false;
       }
-      assert( size <= length );
+      //assert( size <= length );
 
       if( IsPacketSafe( data, offset ) == false )
       {
