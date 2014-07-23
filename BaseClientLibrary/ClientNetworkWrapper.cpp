@@ -1570,11 +1570,12 @@ bool  ClientNetworkWrapper::GetPurchase( int index, PurchaseEntry& purchase ) co
    if( index < 0 || index >= m_purchases.size() )
    {
       purchase.quantity = -1;
-      purchase.name = "";
+      //purchase.name = "";
       return false;
    }
 
-   purchase = m_purchases[index];
+   purchase.productUuid = m_purchases[index].productUuid;
+   purchase.quantity = m_purchases[index].quantity;
    return true;
 
 }
@@ -1585,11 +1586,13 @@ bool  ClientNetworkWrapper::GetPurchaseOtherUser( int index, PurchaseEntry& purc
    if( index < 0 || index >= m_otherUsersPurchases.size() )
    {
       purchase.quantity = -1;
-      purchase.name = "";
+      //purchase.name = "";
       return false;
    }
 
-   purchase = m_otherUsersPurchases[index];
+   //purchase = m_otherUsersPurchases[index];
+   purchase.productUuid = m_otherUsersPurchases[index].productUuid;
+   purchase.quantity = m_otherUsersPurchases[index].quantity;
    return true;
 }
 
@@ -1607,7 +1610,10 @@ bool  ClientNetworkWrapper::GetPurchasesByType( vector< PurchaseEntry >& purchas
       {
          if( brief.productType == productType )
          {
-            purchases.push_back( m_purchases[i] );
+            PurchaseEntry pe;
+            pe.productUuid = m_purchases[i].productUuid;
+            pe.quantity = m_purchases[i].quantity;
+            purchases.push_back( pe );
          }
       }
    }
@@ -2819,7 +2825,7 @@ bool     ClientNetworkWrapper::SendPurchases( const vector< RegisteredProduct >&
    {
       const RegisteredProduct& rp = *it++;
       
-      PurchaseEntry pe;
+      PurchaseEntryExtended pe;
       pe.productUuid = rp.id;
       pe.name = rp.title;
       pe.quantity = rp.quantity;

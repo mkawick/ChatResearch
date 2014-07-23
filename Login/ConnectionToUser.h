@@ -79,7 +79,7 @@ struct ConnectionToUser
    void     RequestProfile( const string& email, const string& uuid, const string& name, bool asAdmin, bool isFullProfile );
    bool     UpdateProfile( const PacketUpdateUserProfile* updateProfileRequest );
    bool     UpdateProfile( const PacketUpdateSelfProfile* updateProfileRequest );
-   void     AddItemToProductTable( const PurchaseEntry& purchaseEntry );
+   void     AddItemToProductTable( const PurchaseEntryExtended& purchaseEntry );
    bool     HandleAdminRequestUserProfile( const PacketDbQueryResult* dbResult );
    bool     StoreOffProductInUserRecord ( int userManagerIndex, const string& productUuid, float numPurchased );
    void     AddConversionProductsToUserPurchases( const ProductInfo& productInfo );

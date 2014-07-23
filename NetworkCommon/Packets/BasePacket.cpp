@@ -13,7 +13,7 @@
 #include <assert.h>
 
 
-const U8   GlobalNetworkProtocolVersion = 42;
+const U8   GlobalNetworkProtocolVersion = 43;
 
 #ifdef _MEMORY_TEST_
 int BasePacket::m_counter = 0;

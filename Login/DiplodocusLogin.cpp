@@ -43,7 +43,7 @@ DiplodocusLogin:: DiplodocusLogin( const string& serverName, U32 serverId )  :
                   StatTrackingConnections(),
                   Diplodocus< KhaanLogin >( serverName, serverId, 0, ServerType_Login ), 
                   m_isInitialized( false ), 
-                  m_isInitializing( false ),
+                  m_isInitializing( true ),
                   m_autoAddProductFromWhichUsersLogin( true ),
                   m_numRelogins( 0 ),
                   m_numFailedLogins( 0 ),
@@ -57,6 +57,8 @@ DiplodocusLogin:: DiplodocusLogin( const string& serverName, U32 serverId )  :
    LogOpen();
    LogMessage( LOG_PRIO_INFO, "Login::Login server created" );
    cout << "Login::Login server created" << endl;
+
+   time( &m_initializingProductListTimeStamp );
 
    vector< string > stringCategories;
    stringCategories.push_back( string( "product" ) );
@@ -333,6 +335,14 @@ bool     DiplodocusLogin:: LogUserIn( const PacketLoginFromGateway* packet, U32 
    cout << "uuid: " << packet->uuid <<endl;
    cout << "pass: " << packet->password <<endl;
    cout << "--------------------------------------" << endl;
+   if( gameProductId == 0 )
+   {
+      cout << "User logging in without a product id" << endl;
+   }
+   if( packet->gatewayId == 0 )
+   {
+      cout << "User logging in without a gateway id" << endl;
+   }
    
    if( IsUserConnectionValid( connectionId ) )
    {
@@ -1444,6 +1454,32 @@ bool     DiplodocusLogin:: UpdateProfile( U32 connectionId, const PacketUpdateSe
 
 //---------------------------------------------------------------
 
+void  DiplodocusLogin:: PackageProductToSendToClient( const ProductInfo& pi, ProductBriefPacketed& brief, U32 languageId )
+{
+   string name = pi.name;
+   if( pi.lookupName.size() != 0 )
+   {
+      name = GetStringLookup()->GetString( pi.lookupName, languageId );
+   }
+   brief.uuid =            pi.uuid;
+   brief.vendorUuid =      pi.vendorUuid;
+   brief.localizedName =   name;
+
+   /* if( pi.productType != GameProductType_Game && 
+   pi.productType != GameProductType_Dlc && 
+   pi.productType != GameProductType_Consumable )
+   continue;*/
+
+   if( pi.parentId )
+   {
+      ProductInfo parent;
+      GetProductByProductId( pi.parentId, parent );// reuse this local variable
+      brief.parentUuid = parent.uuid;
+   }
+   brief.iconName = pi.iconName;
+   brief.productType = pi.productType;
+}
+
 bool     DiplodocusLogin:: HandleRequestListOfProducts( U32 connectionId, PacketRequestListOfProducts* purchaseRequest )
 {
    if( m_printFunctionNames == true )
@@ -1458,6 +1494,8 @@ bool     DiplodocusLogin:: HandleRequestListOfProducts( U32 connectionId, Packet
       return false;
    }
 
+   U32 languageId = connection->m_languageId;
+
    int numProductsPerPacket = 15;
    PacketRequestListOfProductsResponse* response = new PacketRequestListOfProductsResponse();
    response->platformId = purchaseRequest->platformId;
@@ -1471,14 +1509,17 @@ bool     DiplodocusLogin:: HandleRequestListOfProducts( U32 connectionId, Packet
    while( it != m_productList.end() )
    {
       const ProductInfo& pi = *it ++;
-      ProductBriefPacketed brief;
-      brief.uuid = pi.uuid;
-      brief.vendorUuid = pi.vendorUuid;
-
-     /* if( pi.productType != GameProductType_Game && 
-         pi.productType != GameProductType_Dlc && 
-         pi.productType != GameProductType_Consumable )
-         continue;*/
+      ProductBriefPacketed    brief;
+      PackageProductToSendToClient( pi, brief, languageId );
+     /* string name = pi.name;
+      if( pi.lookupName.size() != 0 )
+      {
+         name = GetStringLookup()->GetString( pi.lookupName, languageId );
+      }
+      
+      brief.uuid =            pi.uuid;
+      brief.vendorUuid =      pi.vendorUuid;
+      brief.localizedName =   name;
 
       if( pi.parentId )
       {
@@ -1487,7 +1528,7 @@ bool     DiplodocusLogin:: HandleRequestListOfProducts( U32 connectionId, Packet
          brief.parentUuid = parent.uuid;
       }
       brief.iconName = pi.iconName;
-      brief.productType = pi.productType;
+      brief.productType = pi.productType;*/
 
       response->products.push_back( brief );
       if( response->products.size() == numProductsPerPacket )
@@ -2498,6 +2539,10 @@ void     DiplodocusLogin:: StoreAllProducts( const PacketDbQueryResult* dbResult
    ProductTable            enigma( dbResult->bucket );
 
    ProductTable::iterator  it = enigma.begin();
+   //if( m_printPacketTypes == true )
+   {
+      cout << "products loaded: enigma size=" << enigma.size() << endl;
+   }
   // int numProducts = static_cast< int >( dbResult->bucket.size() );          
    while( it != enigma.end() )
    {
@@ -2541,6 +2586,11 @@ void     DiplodocusLogin:: StoreAllProducts( const PacketDbQueryResult* dbResult
       m_productList.push_back( productDefn );
    }
 
+   //if( m_printPacketTypes == true )
+   {
+      cout << "products loaded: size=" << m_productList.size() << endl;
+   }
+
    m_isInitialized = true;
 }
 
@@ -2557,6 +2607,8 @@ void     DiplodocusLogin:: StoreSingleProduct( const PacketDbQueryResult* dbResu
 
    string vendorUuid;
    string filterUuid;
+
+   
    ProductTable::row row = *enigma.begin();
    //if( it != enigma.end() )
    {
@@ -2579,6 +2631,13 @@ void     DiplodocusLogin:: StoreSingleProduct( const PacketDbQueryResult* dbResu
       
       vendorUuid = productDefn.vendorUuid;
       filterUuid = productDefn.uuid;
+
+      if( FindProductByVendorUuid( vendorUuid ) != DiplodocusLogin::ProductNotFound )
+      {
+         cout << "StoreSingleProduct failed" << endl;
+         cout << "New product already stored" << endl;
+         return;
+      }
 
       m_productList.push_back( productDefn );
    }
@@ -2647,7 +2706,7 @@ void     DiplodocusLogin:: StoreListOfUsersProductsFromDB( U32 connectionId, Pac
 
 //---------------------------------------------------------------
 
-void     DiplodocusLogin:: AddNewProductToDb( const PurchaseEntry& product )
+void     DiplodocusLogin:: AddNewProductToDb( const PurchaseEntryExtended& product )
 {
    if( m_printFunctionNames == true )
    {
@@ -2741,20 +2800,30 @@ void     DiplodocusLogin:: SendListOfUserProductsToAssetServer( U32 connectionId
 
 void     DiplodocusLogin:: LoadInitializationData()
 {
-   if( m_printFunctionNames == true )
+   if( m_productList.size() == 0 )
    {
-      cout << "fn: " << __FUNCTION__ << endl;
+      time_t currentTime;
+      time(& currentTime );
+      // try every 15 seconds
+      if( difftime( currentTime, m_initializingProductListTimeStamp ) > 15 )
+      {
+         m_initializingProductListTimeStamp = currentTime;
+         if( m_printFunctionNames == true )
+         {
+            cout << "fn: " << __FUNCTION__ << endl;
+         }
+
+         PacketDbQuery* dbQuery = new PacketDbQuery;
+         dbQuery->id =           0;
+         dbQuery->lookup =       QueryType_LoadProductInfo;
+         dbQuery->meta =         "";
+         dbQuery->serverLookup = 0;
+
+         dbQuery->query = "SELECT * FROM product";
+
+         AddQueryToOutput( dbQuery );
+      }
    }
-
-   PacketDbQuery* dbQuery = new PacketDbQuery;
-   dbQuery->id =           0;
-   dbQuery->lookup =       QueryType_LoadProductInfo;
-   dbQuery->meta =         "";
-   dbQuery->serverLookup = 0;
-
-   dbQuery->query = "SELECT * FROM product";
-
-   AddQueryToOutput( dbQuery );
 }
 
 
@@ -2893,12 +2962,15 @@ int      DiplodocusLogin:: CallbackFunction()
    */
    CommonUpdate();
 
-   if( m_isInitializing == false )
+  
+   if( m_isInitializing == true )
    {
+      if( m_productList.size() > 0 )
+         m_isInitializing = false; 
+
       if( m_isInitialized == false )
       {
          LoadInitializationData();
-         m_isInitializing = true;
       }
    }
 

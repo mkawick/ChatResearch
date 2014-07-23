@@ -299,9 +299,9 @@ protected:
    ChatChannelVector                            m_channels;
    GameList                                     m_gameList;
 
-   SerializedVector< PurchaseEntry >            m_purchases;
+   SerializedVector< PurchaseEntryExtended >    m_purchases;
    string                                       m_otherUserPurchaseUuid;
-   SerializedVector< PurchaseEntry >            m_otherUsersPurchases;
+   SerializedVector< PurchaseEntryExtended >    m_otherUsersPurchases;
 
    U8                                        m_gameProductId;
    bool                                      m_connectToAssetServer;

@@ -222,7 +222,7 @@ void  ConnectionToUser::CopyUserSettings( UserPlusProfileTable& enigma, U8 produ
    string avatar = row[ TableUserPlusProfile::Column_mber_avatar];
    if( avatar.size() != 0 )
    m_avatarIcon =                      boost::lexical_cast< int > ( avatar );
-   m_adminLevel =                        boost::lexical_cast< int > ( row[ TableUserPlusProfile::Column_admin_level] );
+   m_adminLevel =                      boost::lexical_cast< int > ( row[ TableUserPlusProfile::Column_admin_level] );
    m_marketingOptOut =                 boost::lexical_cast< bool >( row[ TableUserPlusProfile::Column_marketing_opt_out] );
    m_showWinLossRecord =               boost::lexical_cast< bool >( row[ TableUserPlusProfile::Column_show_win_loss_record] );
    m_showGenderProfile =               boost::lexical_cast< bool >( row[ TableUserPlusProfile::Column_show_gender_profile] );
@@ -652,31 +652,17 @@ void     ConnectionToUser:: SendListOfOwnedProductsToClient( U32 m_connectionId 
       if( pb.quantity == 0 )
          continue;
 
-      PurchaseEntry pe;
-      pe.name = pb.localizedName;
+      PurchaseEntryExtended pe;
       pe.quantity = pb.quantity;
-      if( pb.productDbId )//|| pe.name.size() == 0 )// fix up potentially bad data
+      if( pb.productDbId )
       {
          ProductInfo pi;
          m_userManager->GetProductByProductId( pb.productDbId, pi );
          if( pe.name.size() == 0 )
          {
-            //userManager->GetProductByProductId( pb.productDbId, pi );
             pe.name = m_userManager->GetStringLookup()->GetString( pi.lookupName, m_languageId );
          }
-       /**  if( pi.parentId != 0 )
-         {
-            m_userManager->GetProductByProductId( pi.parentId, pi );// reuse this local variable
-            pe.parentUuid = pi.uuid;
-         }*/ 
-         
       }
-      if( pe.name == "bunk01" ||
-         pe.name == "bunk-renamed" )
-      {
-         cout << "Bunk01 found" << endl;
-      }
-      
       pe.productUuid = pb.uuid;
 
       purchases->purchases.push_back( pe );
@@ -795,7 +781,7 @@ bool     ConnectionToUser:: StoreUserPurchases( const PacketListOfUserAggregateP
 
    for( int i=0; i< numItems; i++ )
    {
-      const PurchaseEntry& purchaseEntry = deviceReportedPurchases->purchases[i];
+      const PurchaseEntryExtended& purchaseEntry = deviceReportedPurchases->purchases[i];
       int  originalProductNameIndex = m_userManager->FindProductByVendorUuid( purchaseEntry.productUuid );
       if( originalProductNameIndex == DiplodocusLogin::ProductNotFound )
          originalProductNameIndex = m_userManager->FindProductByName( purchaseEntry.name );
@@ -842,7 +828,7 @@ bool     ConnectionToUser:: StoreUserPurchases( const PacketListOfUserAggregateP
 
 //---------------------------------------------------------------
 
-void  ConnectionToUser:: AddItemToProductTable( const PurchaseEntry& purchaseEntry )
+void  ConnectionToUser:: AddItemToProductTable( const PurchaseEntryExtended& purchaseEntry )
 {
    ProductInfo pi;
    pi.name = purchaseEntry.name;

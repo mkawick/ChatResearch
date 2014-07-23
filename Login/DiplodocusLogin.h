@@ -118,7 +118,7 @@ public:
 
    int            FindProductByName( const string& name );
    bool           FindProductByLookupName( const string& lookupName, ProductInfo& productDefn );
-   void           AddNewProductToDb( const PurchaseEntry& product );   
+   void           AddNewProductToDb( const PurchaseEntryExtended& product );   
    void           SendListOfUserProductsToAssetServer( U32 connectionId );
 
    ConnectionToUser* GetLoadedUserConnectionByUuid(const string & uuid );
@@ -198,6 +198,7 @@ private:
 
    //---------------------------------------------------------------
 
+   void     PackageProductToSendToClient( const ProductInfo& pi, ProductBriefPacketed& brief, U32 languageId );
    void     TrackCountStats( StatTracking stat, float value, int sub_category );
    void     RunHourlyStats();
    void     RunDailyStats();
@@ -242,6 +243,8 @@ private:
    static const U32           timeoutHourlyStatisics = 60*60;
    time_t                     m_timestampDailyStatServerStatisics;
    static const U32           timeoutDailyStatisics = timeoutHourlyStatisics*24;
+
+   time_t                     m_initializingProductListTimeStamp;
 
    int                        m_numRelogins;
    int                        m_numFailedLogins;

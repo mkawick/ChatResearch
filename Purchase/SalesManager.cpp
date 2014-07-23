@@ -46,7 +46,10 @@ void     SalesManager::Update( time_t currentTime )
       {
          if( m_lastTimeStamp == 0 &&
                difftime( currentTime, m_lastTimeStamp ) > 15 )/// bad initialization... retry.
+         {
+            m_lastTimeStamp = currentTime;
             m_hasSendProductRequest = false;
+         }
       }
    }
    else

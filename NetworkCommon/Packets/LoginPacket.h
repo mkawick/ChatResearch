@@ -189,9 +189,21 @@ struct PurchaseEntry
    bool  SerializeIn( const U8* data, int& bufferOffset );
    bool  SerializeOut( U8* data, int& bufferOffset ) const;
 
-   string   name;
+   //string   name;
    float    quantity;
    string   productUuid;
+};
+
+
+struct PurchaseEntryExtended : public PurchaseEntry
+{
+   PurchaseEntryExtended() : PurchaseEntry() {}
+
+   bool  SerializeIn( const U8* data, int& bufferOffset );
+   bool  SerializeOut( U8* data, int& bufferOffset ) const;
+
+   string   name;
+
 };
 
 struct ProductBriefPacketed
@@ -201,6 +213,7 @@ struct ProductBriefPacketed
    bool  SerializeIn( const U8* data, int& bufferOffset );
    bool  SerializeOut( U8* data, int& bufferOffset ) const;
 
+   string         localizedName;
    UuidString     uuid;
    FixedString80  vendorUuid; // e.g. summonerwars.mv.bund.pt2
    UuidString     parentUuid;
@@ -257,7 +270,7 @@ public:
    
    int      platformId;
    string   userUuid;
-   SerializedVector< PurchaseEntry > purchases;
+   SerializedVector< PurchaseEntryExtended > purchases;
 };
 
 //--------------------------------

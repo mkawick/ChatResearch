@@ -183,7 +183,7 @@ bool  PacketCreateAccountResponse::SerializeOut( U8* data, int& bufferOffset ) c
 
 bool  PurchaseEntry::SerializeIn( const U8* data, int& bufferOffset )
 {
-   Serialize::In( data, bufferOffset, name );
+   //Serialize::In( data, bufferOffset, name );
    Serialize::In( data, bufferOffset, quantity );
    Serialize::In( data, bufferOffset, productUuid );
 
@@ -192,7 +192,7 @@ bool  PurchaseEntry::SerializeIn( const U8* data, int& bufferOffset )
 
 bool  PurchaseEntry::SerializeOut( U8* data, int& bufferOffset ) const
 {
-   Serialize::Out( data, bufferOffset, name );
+   //Serialize::Out( data, bufferOffset, name );
    Serialize::Out( data, bufferOffset, quantity );
    Serialize::Out( data, bufferOffset, productUuid );
 
@@ -200,8 +200,27 @@ bool  PurchaseEntry::SerializeOut( U8* data, int& bufferOffset ) const
 }
 ///////////////////////////////////////////////////////////////
 
+bool  PurchaseEntryExtended::SerializeIn( const U8* data, int& bufferOffset )
+{
+   PurchaseEntry::SerializeIn( data, bufferOffset );
+   Serialize::In( data, bufferOffset, name );
+
+   return true;
+}
+
+bool  PurchaseEntryExtended::SerializeOut( U8* data, int& bufferOffset ) const
+{
+   PurchaseEntry::SerializeOut( data, bufferOffset );
+   Serialize::Out( data, bufferOffset, name );
+
+   return true;
+}
+
+///////////////////////////////////////////////////////////////
+
 bool  ProductBriefPacketed::SerializeIn( const U8* data, int& bufferOffset )
 {
+   Serialize::In( data, bufferOffset, localizedName );
    Serialize::In( data, bufferOffset, uuid );
    Serialize::In( data, bufferOffset, vendorUuid );
    Serialize::In( data, bufferOffset, productType );
@@ -213,6 +232,7 @@ bool  ProductBriefPacketed::SerializeIn( const U8* data, int& bufferOffset )
 
 bool  ProductBriefPacketed::SerializeOut( U8* data, int& bufferOffset ) const
 {
+   Serialize::Out( data, bufferOffset, localizedName );
    Serialize::Out( data, bufferOffset, uuid );
    Serialize::Out( data, bufferOffset, vendorUuid );
    Serialize::Out( data, bufferOffset, productType );
