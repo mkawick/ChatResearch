@@ -53,6 +53,10 @@ const char* platformStrings[];*/
 
 int   FindProductId( const char* value );
 int   FindPlatformId( const char* value );
+
+int   GetIndexOfPlatformMber();
+int   GetIndexOfPlatformAll();
+
 const char*   FindProductName( int productId );
 const char*   FindPlatformName( int platformId );
 

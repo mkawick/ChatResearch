@@ -136,6 +136,7 @@ public:
 
    void     Update( time_t currentTime );
 
+   void     UserLoggedOut( const string& uuid );
 private:
 
    bool     FindItem( const string& exchangeUuid, ExchangeEntry& ee );

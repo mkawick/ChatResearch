@@ -215,23 +215,30 @@ bool     Diplodocus< InputChain, OutputChain >::SendPacketToGateway( BasePacket*
    }
    PacketGatewayWrapper* wrapper = new PacketGatewayWrapper();
    wrapper->SetupPacket( packet, connectionId );
+ 
+   U32 chainId = 0;
+   { // be very careful here... this extra effort was made to prevent locks inside of locks
+      m_inputChainListMutex.lock();
 
-   m_inputChainListMutex.lock();
-   BaseOutputContainer tempInputContainer = m_listOfInputs;
-   m_inputChainListMutex.unlock();
-
-   ChainLinkIteratorType itInputs = tempInputContainer.begin();
-   while( itInputs != tempInputContainer.end() )// only one output currently supported.
-   {
-      ChainLink & chainedInput = *itInputs++;
-      InputChainType* connection = static_cast< InputChainType* >( chainedInput.m_interface );
-      if( connection->AddOutputChainData( wrapper, connectionId ) == true )
+      ChainLinkIteratorType itInputs = m_listOfInputs.begin();
+      while( itInputs != m_listOfInputs.end() )// only one output currently supported.
       {
-         MarkConnectionAsNeedingUpdate( connection->GetChainedId() );
-         return true;
+         ChainLink & chainedInput = *itInputs++;
+         InputChainType* connection = static_cast< InputChainType* >( chainedInput.m_interface );
+         if( connection->AddOutputChainData( wrapper, connectionId ) == true )
+         {
+            chainId = connection->GetChainedId();
+            break;
+         }
       }
+      m_inputChainListMutex.unlock();
    }
 
+   if( chainId )
+   {
+      MarkConnectionAsNeedingUpdate( chainId );
+      return true;
+   }
    return false;
 }
 
@@ -363,8 +370,9 @@ void	Diplodocus< InputChain, OutputChain >::AddClientConnection( InputChainType*
 {
    LockMutex();
    m_connectedClients.insert(  ClientLookup ( client->GetChainedId(), client ) );
-   AddInputChain( client );
    UnlockMutex();
+
+   AddInputChain( client );   
 
    client->RegisterToReceiveNetworkTraffic();
 
@@ -439,18 +447,25 @@ void Diplodocus< InputChain, OutputChain >::OnSystemError( evconnlistener* liste
 template< typename InputChain, typename OutputChain >
 void  Diplodocus< InputChain, OutputChain >::MarkAllConnectionsAsNeedingUpdate( BaseOutputContainer& listOfClients )
 {
-   LockMutex();
-
-   ChainLinkIteratorType itInputs = m_listOfInputs.begin();
-   while( itInputs != m_listOfInputs.end() )
+   deque<U32> localIds;
+   m_inputChainListMutex.lock();
    {
-      ChainLink & chainedInput = *itInputs++;
-	   ChainedInterface< InputChain >* interfacePtr = chainedInput.m_interface;
-      Khaan* khaan = static_cast< Khaan* >( interfacePtr );
-
-      m_clientsNeedingUpdate.push_back( khaan->GetChainedId() );
+      ChainLinkIteratorType itInputs = m_listOfInputs.begin();
+      while( itInputs != m_listOfInputs.end() )
+      {
+         ChainLink & chainedInput = *itInputs++;
+	      ChainedInterface< InputChain >* interfacePtr = chainedInput.m_interface;
+         localIds.push_back( interfacePtr->GetChainedId() );
+      }
    }
+   m_inputChainListMutex.unlock();
 
+   LockMutex();
+      deque< U32 >::iterator it = localIds.begin();
+      while( it != localIds.end() )
+      {
+         m_clientsNeedingUpdate.push_back( *it++ );
+      }
    UnlockMutex();
 }
 
@@ -551,17 +566,12 @@ void	Diplodocus< InputChain, OutputChain >::UpdateAllConnections()
    // this is alright as long as we pull from the front and push onto the back as this list is non-persistent
 
    deque< U32 > localQueue;
+   deque< U32 > updateQueue;
 
    {// creating local scope
       LockMutex();
       if( m_clientsNeedingUpdate.size() > 0 )// no locking a mutex if you don't need to do it.
       {
-        /* deque< U32 >::iterator it = m_clientsNeedingUpdate.begin();
-         while( it != m_clientsNeedingUpdate.end() )
-         {
-            U32 id = *it++;
-            localQueue.push_back( id );
-         }*/
          localQueue = m_clientsNeedingUpdate;
          m_clientsNeedingUpdate.clear();
       }
@@ -574,21 +584,34 @@ void	Diplodocus< InputChain, OutputChain >::UpdateAllConnections()
       U32 id = localQueue.front();
       localQueue.pop_front();
 
-      ClientMapIterator it = m_connectedClients.end();
-      if( m_connectedClients.size() )// preventing removal crashes.
+      LockMutex();
       {
-         it = m_connectedClients.find( id );
-      }
-      
-      if( it != m_connectedClients.end() )
-      {
-         InputChainType* connection = it->second;
-         if( connection->Update() == false )
+         ClientMapIterator it = m_connectedClients.end();
+         if( m_connectedClients.size() )// preventing removal crashes.
          {
-            MarkConnectionAsNeedingUpdate( it->first );
+            it = m_connectedClients.find( id );
+         }
+         
+         if( it != m_connectedClients.end() )
+         {
+            InputChainType* connection = it->second;
+            if( connection->Update() == false )
+            {
+               //MarkConnectionAsNeedingUpdate( it->first );
+               updateQueue.push_back( it->first );
+            }
          }
       }
+      UnlockMutex();
    }
+   LockMutex();
+      while( updateQueue.size() )
+      {
+         U32 id = updateQueue.front();
+         updateQueue.pop_front();
+         m_clientsNeedingUpdate.push_back( id );
+      }
+   UnlockMutex();
 }
 
 //------------------------------------------------------------------------------------------
@@ -636,26 +659,29 @@ void  Diplodocus< InputChain, OutputChain >::NotifyFinishedRemoving( IChainedInt
    InputChainType* connection = static_cast<InputChainType*>( chainedOutput );
 
    LockMutex();
-   U32 id = connection->GetSocketId();
-   ClientMapIterator it = m_connectedClients.find( id );
-   if( it == m_connectedClients.end() )
    {
-      it = m_connectedClients.find( connection->GetChainedId() );
-   }
-      
-   if( it != m_connectedClients.end() )
-   {
-      m_connectedClients.erase( it );
-   }
-
-   int num = static_cast<int>( m_clientsNeedingUpdate.size() );
-   for( int i=0; i<num; i++ )
-   {
-      if( m_clientsNeedingUpdate[i] == id )
+      U32 id = connection->GetSocketId();
+      ClientMapIterator it = m_connectedClients.find( id );
+      if( it == m_connectedClients.end() )
       {
-         m_clientsNeedingUpdate.erase( m_clientsNeedingUpdate.begin() + i );
-         break;
+         it = m_connectedClients.find( connection->GetChainedId() );
       }
+         
+      if( it != m_connectedClients.end() )
+      {
+         m_connectedClients.erase( it );
+      }
+
+      // unnecessary.
+    /*  int num = static_cast<int>( m_clientsNeedingUpdate.size() );
+      for( int i=0; i<num; i++ )
+      {
+         if( m_clientsNeedingUpdate[i] == id )
+         {
+            m_clientsNeedingUpdate.erase( m_clientsNeedingUpdate.begin() + i );
+            break;
+         }
+      }*/
    }
    UnlockMutex();
 }

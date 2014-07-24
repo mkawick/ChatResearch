@@ -361,19 +361,20 @@ void  FruitadensGateway::PreprocessPacketsForOutput( BasePacket* packet )
       if( packetSubType == PacketLogin::LoginType_Login )
       {
          PacketLogin* login = static_cast< PacketLogin* >( testPacket );
-         cout << "User login: " << endl;
+         cout << "------------- User login -------------" << endl;
          cout << "User: " << login->userName <<endl;
+         //cout << "email: " << login->user
          cout << "uuid: " << login->uuid <<endl;
          cout << "pass: " << login->password <<endl;
          cout << "--------------------------------------" << endl;
-         cout << "Converting login types" << endl;
+         //cout << "Converting login types" << endl;
          //PacketLogin* login = static_cast< PacketLogin* >( testPacket );
          PacketLoginFromGateway* newLogin = new PacketLoginFromGateway;
          newLogin->copy( *login );
          newLogin->gatewayId = m_serverId;
          delete login;
          wrapper->pPacket = newLogin;
-         cout << "done converting login types" << endl;
+         //cout << "done converting login types" << endl;
       }
    }
 }

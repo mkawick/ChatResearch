@@ -63,7 +63,8 @@ Khaan ::Khaan( int socketId, bufferevent* be, int connectionId ) : ChainedInterf
 Khaan ::~Khaan()
 {
    delete [] m_outboundBuffer;
-   bufferevent_free( GetBufferEvent() );
+   if( GetBufferEvent() )
+      bufferevent_free( GetBufferEvent() );
 #if PLATFORM == PLATFORM_WINDOWS
    closesocket( GetSocketId() );
 #elif PLATFORM == PLATFORM_MAC || PLATFORM == PLATFORM_UNIX
@@ -199,16 +200,21 @@ int	Khaan :: SendData( const U8* buffer, int length )
    if( m_useLibeventToSend )
    {
       bufferevent*	bev = GetBufferEvent();
-      struct evbuffer* outputBuffer = bufferevent_get_output( bev );
-
-      if( outputBuffer == NULL )
+      int result = -1;
+      if( bev )
       {
-         m_criticalFailure = true;
-         return false;
-      }
+         struct evbuffer* outputBuffer = bufferevent_get_output( bev );
 
-      // buffer locks happen internally
-      int result = evbuffer_add( outputBuffer, buffer, length );
+         if( outputBuffer == NULL )
+         {
+            m_criticalFailure = true;
+            return false;
+         }
+
+         // buffer locks happen internally
+         result = evbuffer_add( outputBuffer, buffer, length );
+      
+      }
       return result;
    }
 
@@ -332,6 +338,9 @@ void  Khaan :: OnDataWritten( struct bufferevent *bev, void *user_data )
 
 void     Khaan :: RegisterToReceiveNetworkTraffic()
 {
+   if( GetBufferEvent() == NULL )
+      return;
+
    bufferevent_setcb( GetBufferEvent(), 
                       OnDataAvailable, 
                       OnDataWritten, 
@@ -417,6 +426,7 @@ void     Khaan :: OnDataAvailable( struct bufferevent* bufferEventObj, void* arg
 
 void     Khaan :: FlushReadBuffer()
 {
+   if( GetBufferEvent() )
    bufferevent_flush( GetBufferEvent(), EV_READ, BEV_FINISHED );
 }
 
@@ -464,6 +474,8 @@ void    Khaan :: Cleanup()
    // flush all pending packets
    ClearAllPacketsIn();
    ClearAllPacketsOut();
+
+   m_bufferEvent = NULL;
    //bufferevent_free( GetBufferEvent() );
    //m_bufferEvent = NULL;
 }

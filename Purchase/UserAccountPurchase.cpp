@@ -47,6 +47,8 @@ void  UserAccountPurchase::Update()
 
 void     UserAccountPurchase::UserLoggedOut()
 {
+   if( m_salesManager )
+      m_salesManager->UserLoggedOut( m_userTicket.uuid );
    m_status = Status_awaiting_cleanup;
    m_readyForCleanup = true;
    time( &m_logoutTime );
@@ -212,6 +214,7 @@ bool     UserAccountPurchase::MakePurchase( const PacketPurchase_Buy* packet )
 
 bool     UserAccountPurchase::MakePurchase( const PacketTournament_PurchaseTournamentEntry* packet, U32 connectionId )
 {
+   cout << "UserAccountPurchase::MakePurchase" << endl;
    assert( m_salesManager != NULL || m_userTicket.connectionId == 0 );
 
    bool success = m_salesManager->PerformSale( packet->itemsToSpend, m_userTicket, connectionId, packet->uniqueTransactionId );
@@ -224,6 +227,7 @@ bool     UserAccountPurchase::MakePurchase( const PacketTournament_PurchaseTourn
 
 bool     UserAccountPurchase::MakeRefund( const PacketTournament_PurchaseTournamentEntryRefund* refundPacket, U32 connectionId )
 {
+   cout << "UserAccountPurchase::MakeRefund" << endl;
    assert( m_salesManager != NULL || m_userTicket.connectionId == 0 );
    int num = refundPacket->itemsToRefund.size();
    for( int i=0; i<num; i++ )

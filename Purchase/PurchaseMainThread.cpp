@@ -477,42 +477,27 @@ bool     DiplodocusPurchase::AddOutputChainData( BasePacket* packet, U32 connect
    {
       if( m_connectionIdGateway == 0 )
          return false;
-/*
-      Threading::MutexLock locker( m_mutex );
+
+      Threading::MutexLock locker( m_inputChainListMutex );
 
       ChainLinkIteratorType itInputs = m_listOfInputs.begin();
-      while( itInputs != m_listOfInputs.end() )
+      if( itInputs != m_listOfInputs.end() )// only one output currently supported.
       {
-         ChainLink& chainedInput = *itInputs++;
-         IChainedInterface* interfacePtr = chainedInput.m_interface;
-         KhaanPurchase* khaan = static_cast< KhaanPurchase* >( interfacePtr );
-         if( khaan->GetServerId() == m_connectionIdGateway )
+         ChainType* inputPtr = static_cast< ChainType*> ( (*itInputs).m_interface );
+         ChainedInterface* interfacePtr = static_cast< ChainedInterface* >( inputPtr );
+         itInputs++;
+         if( interfacePtr->DoesNameMatch( "KhaanPurchase" ) )
          {
-            khaan->AddOutputChainData( packet );
-            //khaan->Update();// the gateway may not have a proper connection id.
+            KhaanPurchase* khaan = static_cast< KhaanPurchase* >( interfacePtr );
+            if( khaan->GetServerId() == m_connectionIdGateway )
+            {
+               khaan->AddOutputChainData( packet );
+               //khaan->Update();// the gateway may not have a proper connection id.
 
-            AddServerNeedingUpdate( khaan->GetServerId() );
-            return true;
-         }
-      }
-      return false;*/
-      m_inputChainListMutex.lock();
-      BaseOutputContainer tempInputContainer = m_listOfInputs;
-      m_inputChainListMutex.unlock();
-
-      ChainLinkIteratorType itInputs = tempInputContainer.begin();
-      if( itInputs != tempInputContainer.end() )// only one output currently supported.
-      {
-         ChainLink& chainedInput = *itInputs++;
-         IChainedInterface* interfacePtr = chainedInput.m_interface;
-         KhaanPurchase* khaan = static_cast< KhaanPurchase* >( interfacePtr );
-         if( khaan->GetServerId() == m_connectionIdGateway )
-         {
-            khaan->AddOutputChainData( packet );
-            //khaan->Update();// the gateway may not have a proper connection id.
-
-            AddServerNeedingUpdate( khaan->GetServerId() );
-            return true;
+               //AddServerNeedingUpdate( khaan->GetServerId() );
+               MarkConnectionAsNeedingUpdate( khaan->GetChainedId() );
+               return true;
+            }
          }
       }
       return true;
@@ -611,19 +596,6 @@ bool  DiplodocusPurchase::SendPacketToLoginServer( BasePacket* packet, U32 conne
 
 /////////////////////////////////////////////////////////////////
 
-void     DiplodocusPurchase::AddServerNeedingUpdate( U32 serverId )
-{
-   deque< U32 >::iterator it = m_serversNeedingUpdate.begin();
-   while( it != m_serversNeedingUpdate.end() )
-   {
-      if( *it == serverId )
-         return;
-      it++;
-   }
-   m_serversNeedingUpdate.push_back( serverId );
-
-}
-
 //---------------------------------------------------------------
 
 int      DiplodocusPurchase::CallbackFunction()
@@ -633,29 +605,6 @@ int      DiplodocusPurchase::CallbackFunction()
       RequestAdminSettings();
       m_hasRequestedAdminSettings = true;
       return 0;
-   }
-
-   while( m_serversNeedingUpdate.size() )
-   {
-      Threading::MutexLock locker( m_mutex );
-
-      U32 serverId = m_serversNeedingUpdate.front();
-      m_serversNeedingUpdate.pop_front();
-      
-      ChainLinkIteratorType itInputs = m_listOfInputs.begin();
-      while( itInputs != m_listOfInputs.end() )
-      {
-         ChainLink& chainedInput = *itInputs++;
-         IChainedInterface* interfacePtr = chainedInput.m_interface;
-         KhaanPurchase* khaan = static_cast< KhaanPurchase* >( interfacePtr );
-         if( khaan->GetServerId() == serverId )
-         {
-            if( khaan->Update() == false )
-            {
-               AddServerNeedingUpdate( serverId );// more updating needed
-            }
-         }
-      }
    }
    UpdateAllConnections();
 

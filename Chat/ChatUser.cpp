@@ -759,7 +759,8 @@ void     ChatUser::SendChatHistoryToClientCommon( const DynamicDataBucket& bucke
       }
    }
 
-   if( sendSentinel == true )
+   if( sendSentinel == true && 
+      result != NULL )
    {
       ChatEntry            entry;// empty record
       result->chat.push_back( entry );

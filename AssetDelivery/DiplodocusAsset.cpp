@@ -200,38 +200,7 @@ bool  LoadListOfFiles( const string& assetManifestFile, DiplodocusAsset::Categor
    }
    return true;
 }
-/*
-int  LoadAssetOrganizerFile( AssetOrganizer& assetDictionary )
-{
-   ifstream infile( assetDictionary.GetPath().c_str() );
-   string line;
 
-   if (!infile) 
-   { 
-      std::cerr << "Error opening file!\n"; 
-      return 1; 
-   }
-
-   int errorCode = 0;
-   int lineCount = 0;
-   while( safeGetline( infile, line ) )// could be spaces, etc
-   {
-      lineCount ++;
-      if( line == "[asset]" )
-      {
-         bool result = ParseNextAsset( infile, lineCount, assetDictionary );
-         if( result == false )
-         {
-            cout << "**********************************************" << endl;
-            cout << "Error in asset file reading line " << lineCount << endl;
-            cout << "**********************************************" << endl;
-            errorCode = true;
-            break;
-         }
-      }
-   }
-   return 0;
-}*/
 
 //////////////////////////////////////////////////////////////////////////
 

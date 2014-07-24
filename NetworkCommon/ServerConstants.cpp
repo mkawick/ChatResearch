@@ -33,7 +33,8 @@ const char* productNames [] = {
    "tantocuore",
    "waterdeep",
    "twilight_struggle",
-   "unsung_story"
+   "unsung_story",
+   "mber"
 };
 
 const char* platformStrings[] = {
@@ -47,7 +48,8 @@ const char* platformStrings[] = {
    "vita",
    "xbox",
    "blackberry",
-   "wii"
+   "wii",
+   "all"
 };
 
 
@@ -74,6 +76,32 @@ int   FindPlatformId( const char* value )
    for( int i=0; i< numPlatformNames; i++ )
    {
       if( stricmp(value, platformStrings[i] ) == 0 )
+      {
+         return i;
+      }
+   }
+   return 0;
+}
+
+int   GetIndexOfPlatformAll()
+{
+   int numPlatformNames = sizeof( platformStrings ) / sizeof( platformStrings[0] );
+   for( int i=0; i< numPlatformNames; i++ )
+   {
+      if( stricmp( "all", platformStrings[i] ) == 0 )
+      {
+         return i;
+      }
+   }
+   return 0;
+}
+
+int   GetIndexOfPlatformMber()
+{
+   int numProductNames = sizeof( productNames ) / sizeof( productNames[0] );
+   for( int i=0; i< numProductNames; i++ )
+   {
+      if( stricmp("mber", productNames[i] ) == 0 )
       {
          return i;
       }

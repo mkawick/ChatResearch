@@ -698,7 +698,7 @@ bool  AssetOrganizer::LoadAssetManifest()
          if( result == false )
          {
             cout << "**********************************************" << endl;
-            cout << "Error in asset file reading line " << lineCount << endl;
+            cout << "Error in asset file " << m_dictionaryPath << " reading line " << lineCount << endl;
             cout << "**********************************************" << endl;
             errorCode = true;
             break;
@@ -711,7 +711,7 @@ bool  AssetOrganizer::LoadAssetManifest()
          if( result == false )
          {
             cout << "**********************************************" << endl;
-            cout << "Error in asset file reading line " << lineCount << endl;
+            cout << "Error in asset file " << m_dictionaryPath << " reading line " << lineCount << endl;
             cout << "**********************************************" << endl;
             errorCode = true;
             break;
@@ -769,12 +769,16 @@ bool  AssetOrganizer::GetListOfAssets( int platformId, const set< string >& list
 {
    listOfAssetsByHash.clear();
 
+   int platformIndexOfAll = GetIndexOfPlatformAll();
+   int productIndexOfMber = GetIndexOfPlatformMber();
+
    int count = 0;
    // do we need to organize the assets by product id? There probably won't be enough but we can group them by product if we end up with a lot of assets.
    vector< AssetDefinition >::const_iterator it = m_assets.begin();
    while( it != m_assets.end() && count < maxNum )
    {
-      if( it->platform == platformId )// first match product
+      if( it->platform == platformId || // first match product
+         it->platform == platformIndexOfAll) // platform doesn't matter
       {
          if( listOfFilters.size() != 0 )
          {
