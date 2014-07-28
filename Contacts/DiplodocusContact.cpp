@@ -412,8 +412,8 @@ void  DiplodocusContact::UpdateDbResults()
    while( it != tempQueue.end() )
    {
       PacketDbQueryResult* dbResult = *it++;
-      if( dbResult->customData != NULL )
-            cout << "UpdateDbResults: Non-null custom data " << endl;
+   /*   if( dbResult->customData != NULL )
+            cout << "UpdateDbResults: Non-null custom data " << endl;*/
       BasePacket* packet = static_cast<BasePacket*>( dbResult );
 
       U32 connectionId = dbResult->id;
@@ -637,7 +637,7 @@ void     DiplodocusContact::UpdateAllConnections()
    }
    m_mutex.unlock();
 
-   Parent::UpdateAllConnections();
+   Parent::UpdateAllConnections( "KhaanContact" );
 }
 
 //---------------------------------------------------------------

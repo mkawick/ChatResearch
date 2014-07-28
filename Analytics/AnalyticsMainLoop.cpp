@@ -248,7 +248,7 @@ bool     DiplodocusStat::AddQueryToOutput( PacketDbQuery* dbQuery )
 
 int      DiplodocusStat::CallbackFunction()
 {
-   UpdateAllConnections();
+   UpdateAllConnections( "KhaanStat" );
 
    time_t currentTime;
    time( &currentTime );

@@ -18,9 +18,14 @@ public:
 
       UserStatsType_RequestListOfUserStats, // from client only
       UserStatsType_RequestListOfUserStatsResponse,
+      UserStatsType_RequestUserProfileStats,
+      UserStatsType_RequestUserProfileStatsResponse,
+      UserStatsType_RequestGameProfile,
+      UserStatsType_RequestGameFactionStats, // from client only
 
       UserStatsType_RecordUserStats, // from other servers only
       UserStatsType_RecordUserStatsResponse,
+      UserStatsType_ReportGameResult,
    };
 public:
    PacketUserStats( int packet_type = PacketType_UserStats, int packet_sub_type = UserStatsType_Base ) : BasePacket( packet_type, packet_sub_type ) {}
@@ -109,3 +114,95 @@ public:
 
 
 ///////////////////////////////////////////////////////////////
+
+
+class PacketUserStats_ReportGameResult : public PacketUserStats
+{
+public:
+   PacketUserStats_ReportGameResult() : PacketUserStats( PacketType_UserStats, UserStatsType_ReportGameResult ){  }
+
+   bool  SerializeIn( const U8* data, int& bufferOffset );
+   bool  SerializeOut( U8* data, int& bufferOffset ) const;
+
+   static const int k_maxPlayerCount = 8;
+
+   int            gameType;
+   U32            gameId;
+   int            playerCount;
+   unsigned int   resultOrder[k_maxPlayerCount];
+   unsigned int   playerFactions[k_maxPlayerCount];
+   unsigned int   forfeitFlags;
+};
+
+
+///////////////////////////////////////////////////////////////
+
+
+class PacketUserStats_RequestGameFactionStats : public PacketUserStats
+{
+public:
+   PacketUserStats_RequestGameFactionStats() : PacketUserStats( PacketType_UserStats, UserStatsType_RequestGameFactionStats ) {  }
+
+   bool  SerializeIn( const U8* data, int& bufferOffset );
+   bool  SerializeOut( U8* data, int& bufferOffset ) const;
+
+
+   int            gameType;
+   unsigned int   userId;     // 0 = global stats
+};
+
+
+///////////////////////////////////////////////////////////////
+
+
+class PacketUserStats_RequestGameProfile : public PacketUserStats
+{
+public:
+   PacketUserStats_RequestGameProfile() : PacketUserStats( PacketType_UserStats, UserStatsType_RequestGameProfile ) {  }
+
+   bool  SerializeIn( const U8* data, int& bufferOffset );
+   bool  SerializeOut( U8* data, int& bufferOffset ) const;
+
+   int            gameType;
+   unsigned int   profileUserId;
+   unsigned int   requestUserId;
+};
+
+
+///////////////////////////////////////////////////////////////
+
+
+class PacketUserStats_RequestUserProfileStats : public PacketUserStats
+{
+public:
+   PacketUserStats_RequestUserProfileStats() : PacketUserStats( PacketType_UserStats, UserStatsType_RequestUserProfileStats ) {  }
+
+   bool  SerializeIn( const U8* data, int& bufferOffset );
+   bool  SerializeOut( U8* data, int& bufferOffset ) const;
+
+   int            gameType;
+   unsigned int   profileUserId;
+};
+
+
+///////////////////////////////////////////////////////////////
+
+
+class PacketUserStats_RequestUserProfileStatsResponse : public PacketUserStats
+{
+public:
+   PacketUserStats_RequestUserProfileStatsResponse() : PacketUserStats( PacketType_UserStats, UserStatsType_RequestUserProfileStatsResponse ) {  }
+
+   bool  SerializeIn( const U8* data, int& bufferOffset );
+   bool  SerializeOut( U8* data, int& bufferOffset ) const;
+
+   unsigned int                        profileUserId;
+   int                                 gameType;
+   SerializedKeyValueVector< string >  userProfileStats;
+};
+
+
+///////////////////////////////////////////////////////////////
+
+
+

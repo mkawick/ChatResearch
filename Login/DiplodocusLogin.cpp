@@ -817,6 +817,13 @@ void     DiplodocusLogin:: TellUserThatAccountAlreadyMatched( const CreateAccoun
       cout << "fn: " << __FUNCTION__ << endl;
    }
 
+   cout << "-----------------------------------" << endl;
+   cout << "Account create: Error... user eamil already in use" << endl;
+   cout << "Username: " << aggregator->m_username << endl;
+   cout << "Email:    " << aggregator->m_useremail << endl;
+   cout << "GK Hash:  " << aggregator->m_gamekitHashId << endl;
+   cout << "-----------------------------------" << endl;
+
    if( aggregator->GetMatchingRecordType( CreateAccountResultsAggregator::MatchingRecord_Name ) )
    {
       SendErrorToClient( aggregator->GetConnectionId(), PacketErrorReport::ErrorType_CreateFailed_DuplicateUsername );  // E_NETWORK_DUPLICATE_USERNAME
@@ -938,6 +945,13 @@ void     DiplodocusLogin:: CreateNewPendingUserAccount( const CreateAccountResul
       cout << "fn: " << __FUNCTION__ << endl;
    }
 
+   cout << "-----------------------------------" << endl;
+   cout << "Account create: Create pending user account" << endl;
+   cout << "Username: " << aggregator->m_username << endl;
+   cout << "Email:    " << aggregator->m_useremail << endl;
+   cout << "GK Hash:  " << aggregator->m_gamekitHashId << endl;
+   cout << "-----------------------------------" << endl;
+
    string query = "INSERT INTO user_temp_new_user (user_name, user_name_match, user_pw_hash, user_email, user_gamekit_hash, game_id, language_id) "
                                  "VALUES ('%s', '%s', '%s', '%s', '%s', '%s', '%s')";
 
@@ -978,6 +992,13 @@ void     DiplodocusLogin:: UpdatePendingUserRecord( const CreateAccountResultsAg
    {
       cout << "fn: " << __FUNCTION__ << endl;
    }
+
+   cout << "-----------------------------------" << endl;
+   cout << "Account create: Update pending user account" << endl;
+   cout << "Username: " << aggregator->m_username << endl;
+   cout << "Email:    " << aggregator->m_useremail << endl;
+   cout << "GK Hash:  " << aggregator->m_gamekitHashId << endl;
+   cout << "-----------------------------------" << endl;
 
    string query = "UPDATE user_temp_new_user SET user_name='%s', user_name_match='%s', "
          "user_pw_hash='%s', user_email='%s', user_gamekit_hash='%s', game_id='%s', "
@@ -1125,8 +1146,10 @@ bool        DiplodocusLogin:: CreateUserAccount( U32 connectionId, const string&
    
  //  string gkHashLookup =         "SELECT id FROM users WHERE user_gamekit_hash='%s'";
    string queryInvalidUserName = "SELECT id FROM invalid_username WHERE user_name_match='%s'";
-   string queryUsers =           "SELECT * FROM users WHERE user_name='%s' OR user_email='%s' OR user_gamekit_hash='%s'";
-   string queryTempUsers =       "SELECT * FROM user_temp_new_user WHERE user_name='%s' OR user_email='%s' OR user_gamekit_hash='%s'";
+   string queryUsers =           "SELECT * FROM users WHERE user_name='%s' OR user_email='%s'";
+   if( deviceAccountId.size() > 0 ) queryUsers  += " OR user_gamekit_hash='%s'";
+   string queryTempUsers =       "SELECT * FROM user_temp_new_user WHERE user_name='%s' OR user_email='%s'";
+   if( deviceAccountId.size() > 0 ) queryTempUsers += " OR user_gamekit_hash='%s'";
 
    PacketDbQuery* dbQuery = new PacketDbQuery;
    dbQuery->id =           connectionId;
@@ -1944,6 +1967,10 @@ bool  DiplodocusLogin:: SendLoginStatusToOtherServers( const string& userName,
       ChainType*  outputPtr = static_cast< ChainType*> ( (*itOutputs).m_interface );
       itOutputs++;
 
+      if( outputPtr->DoesNameMatch( "FruitadensLogin" ) != true )
+      {
+         continue;
+      }
       FruitadensLogin* login = static_cast< FruitadensLogin* >( outputPtr ); 
       SendLoginStatus( outputPtr, 
                         userName, 
@@ -2000,7 +2027,7 @@ bool  DiplodocusLogin:: SendLoginStatusTo_Non_GameServers( const string& userNam
       ChainType*  outputPtr = static_cast< ChainType*> ( (*itOutputs).m_interface );
       itOutputs++;
 
-      cout << outputPtr->GetClassName() << endl;
+      //cout << outputPtr->GetClassName() << endl;
       if( outputPtr->DoesNameMatch( "FruitadensLogin" ) != true )
       {
          continue;
@@ -2196,11 +2223,19 @@ void     DiplodocusLogin:: UpdateUserRecord( CreateAccountResultsAggregator* agg
 #ifdef _DEMO_13_Aug_2013
       CreateNewUserAccount( aggregator, true );
 #else
-      CreateNewPendingUserAccount( aggregator );
+      bool setGameKitHashToZero = aggregator->HasFoundMatchingGKHashInUserTable();
+      CreateNewPendingUserAccount( aggregator, setGameKitHashToZero );
 #endif
    }
    else
    {
+      cout << "-----------------------------------" << endl;
+      cout << "Account create: error creating pending user account" << endl;
+      cout << "Username: " << aggregator->m_username << endl;
+      cout << "Email:    " << aggregator->m_useremail << endl;
+      cout << "GK Hash:  " << aggregator->m_gamekitHashId << endl;
+      cout << "-----------------------------------" << endl;
+
       SendErrorToClient( aggregator->GetConnectionId(), PacketErrorReport::ErrorType_CreateFailed_UserCreateAccountPending );
    }
 }
@@ -2279,8 +2314,8 @@ bool     DiplodocusLogin::AddOutputChainData( BasePacket* packet, U32 connection
       {
          PacketDbQueryResult* result = static_cast<PacketDbQueryResult*>( packet );
          m_dbQueries.push_back( result );
-         if( result->customData != NULL )
-            cout << "AddOutputChainData: Non-null custom data " << endl;
+      /*   if( result->customData != NULL )
+            cout << "AddOutputChainData: Non-null custom data " << endl;*/
       }
       return true;
       //assert(0);/// should not happen
@@ -2313,8 +2348,8 @@ void     DiplodocusLogin::UpdateDbResults()
    while( it != tempQueue.end() )
    {
       PacketDbQueryResult* result = *it++;
-      if( result->customData != NULL )
-            cout << "UpdateDbResults: Non-null custom data " << endl;
+    /*  if( result->customData != NULL )
+            cout << "UpdateDbResults: Non-null custom data " << endl;*/
       BasePacket* packet = static_cast<BasePacket*>( result );
 
       HandleDbResult( result );
@@ -2555,11 +2590,21 @@ void     DiplodocusLogin:: StoreAllProducts( const PacketDbQueryResult* dbResult
       productDefn.vendorUuid =            row[ TableProduct::Column_vendor_uuid ];
 
       string productId =                  row[ TableProduct::Column_product_id ];
-      if( productId == "NULL" || productId.size() == 0 || productId == "0" ||
-         productDefn.vendorUuid.size() == 0 )
+      if( productId == "NULL" || productId.size() == 0 || productId == "0" )
       {
+         if( productDefn.vendorUuid.size() == 0 )
+         {
+            cout << "Invalid product: " << id << ", name='" << productDefn.name << "', uuid='" << productDefn.uuid << "', filter='" << productDefn.vendorUuid << "'" << endl;
+            continue;// invalid product
+         }
+         // the filter is still useful for preventing further additions
          cout << "Invalid product: " << id << ", name='" << productDefn.name << "', uuid='" << productDefn.uuid << "', filter='" << productDefn.vendorUuid << "'" << endl;
-         continue;// invalid product
+      }
+
+      if( FindProductByVendorUuid( productDefn.vendorUuid ) != DiplodocusLogin::ProductNotFound )
+      {
+         cout << "Duplicate product found by vendor uuid" << endl;
+         cout << "Invalid product: " << id << ", name='" << productDefn.name << "', uuid='" << productDefn.uuid << "', filter='" << productDefn.vendorUuid << "'" << endl;
       }
 
       std::string lowercase_productUUID = productDefn.vendorUuid; 
@@ -2716,6 +2761,15 @@ void     DiplodocusLogin:: AddNewProductToDb( const PurchaseEntryExtended& produ
    std::string lowercase_productUuidname = product.productUuid; 
    std::transform( lowercase_productUuidname.begin(), lowercase_productUuidname.end(), lowercase_productUuidname.begin(), ::tolower );
    
+
+   if( FindProductByVendorUuid( lowercase_productUuidname ) != DiplodocusLogin::ProductNotFound )
+   {
+      cout << "Duplicate product found by vendor uuid" << endl;
+      cout << "Invalid product: " << product.name << " " << lowercase_productUuidname << "', filter='" << lowercase_productUuidname << "'" << endl;
+
+      return;
+   }
+
    PacketDbQuery* dbQuery = new PacketDbQuery;
    dbQuery->id =           0;
    dbQuery->lookup =       QueryType_AddProductInfo;
@@ -2819,7 +2873,8 @@ void     DiplodocusLogin:: LoadInitializationData()
          dbQuery->meta =         "";
          dbQuery->serverLookup = 0;
 
-         dbQuery->query = "SELECT * FROM product";
+         // add in 0's last
+         dbQuery->query = "SELECT * FROM product ORDER BY product_id DESC"; // WHERE product_id > 0 
 
          AddQueryToOutput( dbQuery );
       }
@@ -2978,7 +3033,7 @@ int      DiplodocusLogin:: CallbackFunction()
    time( &currentTime );
    m_stringLookup->Update( currentTime );
 
-   UpdateAllConnections();
+   UpdateAllConnections( "KhaanLogin" );
 
    RemoveOldConnections();
 

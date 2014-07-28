@@ -125,3 +125,147 @@ bool  PacketUserStats_RecordUserStatsResponse::SerializeOut( U8* data, int& buff
 }
 
 ///////////////////////////////////////////////////////////////
+
+bool  PacketUserStats_ReportGameResult::SerializeIn( const U8* data, int& bufferOffset )
+{
+   PacketUserStats::SerializeIn( data, bufferOffset );
+   Serialize::In( data, bufferOffset, gameType );
+   Serialize::In( data, bufferOffset, gameId );
+   Serialize::In( data, bufferOffset, playerCount );
+   int players = playerCount;
+   if( players < 0 )
+   {
+      players = 0;
+   }
+   else if( players > k_maxPlayerCount )
+   {
+      players = k_maxPlayerCount;
+   }
+   for( int p = 0; p < players; ++p )
+   {
+      Serialize::In( data, bufferOffset, resultOrder[p] );
+      Serialize::In( data, bufferOffset, playerFactions[p] );
+   }
+   Serialize::In( data, bufferOffset, forfeitFlags );
+
+   return true;
+}
+
+bool  PacketUserStats_ReportGameResult::SerializeOut( U8* data, int& bufferOffset ) const
+{
+   PacketUserStats::SerializeOut( data, bufferOffset );
+   Serialize::Out( data, bufferOffset, gameType );
+   Serialize::Out( data, bufferOffset, gameId );
+   Serialize::Out( data, bufferOffset, playerCount );
+   int players = playerCount;
+   if( players < 0 )
+   {
+      players = 0;
+   }
+   else if( players > k_maxPlayerCount )
+   {
+      players = k_maxPlayerCount;
+   }
+   for( int p = 0; p < players; ++p )
+   {
+      Serialize::Out( data, bufferOffset, resultOrder[p] );
+      Serialize::Out( data, bufferOffset, playerFactions[p] );
+   }
+   Serialize::Out( data, bufferOffset, forfeitFlags );
+
+   return true;
+}
+
+///////////////////////////////////////////////////////////////
+
+bool  PacketUserStats_RequestGameFactionStats::SerializeIn( const U8* data, int& bufferOffset )
+{
+   PacketUserStats::SerializeIn( data, bufferOffset );
+
+   Serialize::In( data, bufferOffset, gameType );
+   Serialize::In( data, bufferOffset, userId );
+
+   return true;
+}
+
+bool  PacketUserStats_RequestGameFactionStats::SerializeOut( U8* data, int& bufferOffset ) const
+{
+   PacketUserStats::SerializeOut( data, bufferOffset );
+
+   Serialize::Out( data, bufferOffset, gameType );
+   Serialize::Out( data, bufferOffset, userId );
+
+   return true;
+}
+
+///////////////////////////////////////////////////////////////
+
+bool  PacketUserStats_RequestGameProfile::SerializeIn( const U8* data, int& bufferOffset )
+{
+   PacketUserStats::SerializeIn( data, bufferOffset );
+
+   Serialize::In( data, bufferOffset, gameType );
+   Serialize::In( data, bufferOffset, profileUserId );
+   Serialize::In( data, bufferOffset, requestUserId );
+
+   return true;
+}
+
+bool  PacketUserStats_RequestGameProfile::SerializeOut( U8* data, int& bufferOffset ) const
+{
+   PacketUserStats::SerializeOut( data, bufferOffset );
+
+   Serialize::Out( data, bufferOffset, gameType );
+   Serialize::Out( data, bufferOffset, profileUserId );
+   Serialize::Out( data, bufferOffset, requestUserId );
+
+   return true;
+}
+
+///////////////////////////////////////////////////////////////
+
+bool  PacketUserStats_RequestUserProfileStats::SerializeIn( const U8* data, int& bufferOffset )
+{
+   PacketUserStats::SerializeIn( data, bufferOffset );
+
+   Serialize::In( data, bufferOffset, gameType );
+   Serialize::In( data, bufferOffset, profileUserId );
+
+   return true;
+}
+
+bool  PacketUserStats_RequestUserProfileStats::SerializeOut( U8* data, int& bufferOffset ) const
+{
+   PacketUserStats::SerializeOut( data, bufferOffset );
+
+   Serialize::Out( data, bufferOffset, gameType );
+   Serialize::Out( data, bufferOffset, profileUserId );
+
+   return true;
+}
+
+///////////////////////////////////////////////////////////////
+
+bool  PacketUserStats_RequestUserProfileStatsResponse::SerializeIn( const U8* data, int& bufferOffset )
+{
+   PacketUserStats::SerializeIn( data, bufferOffset );
+   Serialize::In( data, bufferOffset, profileUserId );
+   Serialize::In( data, bufferOffset, gameType );
+   Serialize::In( data, bufferOffset, userProfileStats );
+
+   return true;
+}
+
+bool  PacketUserStats_RequestUserProfileStatsResponse::SerializeOut( U8* data, int& bufferOffset ) const
+{
+   PacketUserStats::SerializeOut( data, bufferOffset );
+   Serialize::Out( data, bufferOffset, profileUserId );
+   Serialize::Out( data, bufferOffset, gameType );
+   Serialize::Out( data, bufferOffset, userProfileStats );
+
+   return true;
+}
+
+///////////////////////////////////////////////////////////////
+
+

@@ -54,6 +54,8 @@ public:
 	Khaan( int socketId, bufferevent* be, int connectionId = 0 );
 	virtual ~Khaan();
 
+   const char* GetClassName() const { return "Khaan"; }
+
    virtual void   PreCleanup();
    virtual void   PreStart(){}
    void           Cleanup();

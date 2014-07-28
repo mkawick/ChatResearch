@@ -200,6 +200,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\ThreadedReceiptValidator.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\UserAccountPurchase.cpp"
 				>
 			</File>
@@ -223,6 +227,10 @@
 			</File>
 			<File
 				RelativePath=".\SalesManager.h"
+				>
+			</File>
+			<File
+				RelativePath=".\ThreadedReceiptValidator.h"
 				>
 			</File>
 			<File

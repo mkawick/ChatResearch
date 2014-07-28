@@ -183,20 +183,27 @@ bool     CreateAccountResultsAggregator::HasFoundAnyMatchingRecords() const
 
 //---------------------------------------------
 
+bool     CreateAccountResultsAggregator::HasFoundMatchingGKHashInUserTable() const
+{
+   return m_userRecordMatchingGKHash != 0;
+}
+
+//---------------------------------------------
+
 bool     CreateAccountResultsAggregator::ShouldInsertNewUserRecord() const
 {
    if( HasFoundAnyMatchingRecords() == false )
       return true;
 
-   if( m_numUserRecordsMatching > 0 )
+  /* if( m_numUserRecordsMatching > 0 )
    {
       // if it possible that the gk hash matches but there is not an email set.. we want to create a new record and then update the existing record to clear the gk-hash
-     /* if( m_userRecordMatchingGKHash && m_userRecordMatchingGKHash != m_userRecordMatchingEmail )
-         return true;*/
+     // if( m_userRecordMatchingGKHash && m_userRecordMatchingGKHash != m_userRecordMatchingEmail )
+     //    return true;
 
       // in all other cases, do not create a new account.
-      return false;
-   }
+    //  return false;
+   }*/
 
    if( m_numPendingUserRecordsMatching ) // this should have been checked by other tests and should be invalid.
    {
@@ -207,7 +214,7 @@ bool     CreateAccountResultsAggregator::ShouldInsertNewUserRecord() const
 
    }
 
-   return false;
+   return true;
 }
 
 //---------------------------------------------

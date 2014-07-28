@@ -70,6 +70,8 @@ public:
 
    bool                    GetUser( const string& uuid, UserAccountPurchase*& user );
 
+   //-----------------------------------------------------------
+
 private:
    void                    RequestAdminSettings();
    void                    HandleAdminSettings( const PacketDbQueryResult* dbResult );
@@ -94,8 +96,10 @@ private:
    SalesManager*                    m_salesManager;
    PurchaseReceiptManager*          m_purchaseReceiptManager;
    StringLookup*                    m_stringLookup;
-   bool                             m_hasRequestedAdminSettings;
+   bool                             m_isInitializing;
    bool                             m_isWaitingForAdminSettings;
+
+   time_t                           m_initializingAdminSettingsTimeStamp;
 };
 
 ///////////////////////////////////////////////////////////////////

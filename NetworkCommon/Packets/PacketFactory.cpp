@@ -1238,6 +1238,34 @@ bool     PacketFactory::ParseUserStats( const U8* bufferIn, int& bufferOffset, c
          *packetOut = SerializeIn< PacketUserStats_RecordUserStatsResponse >( bufferIn, bufferOffset );
       }
       return true;
+   case PacketUserStats::UserStatsType_ReportGameResult:
+      {
+         *packetOut = SerializeIn< PacketUserStats_ReportGameResult >( bufferIn, bufferOffset );
+      }
+      return true;
+   case PacketUserStats::UserStatsType_RequestGameFactionStats:
+      {
+         *packetOut = SerializeIn< PacketUserStats_RequestGameFactionStats >( bufferIn, bufferOffset );
+      }
+      return true;
+   case PacketUserStats::UserStatsType_RequestGameProfile:
+      {
+         *packetOut = SerializeIn< PacketUserStats_RequestGameProfile >( bufferIn, bufferOffset );
+      }
+      return true;
+   case PacketUserStats::UserStatsType_RequestUserProfileStats:
+      {
+         *packetOut = SerializeIn< PacketUserStats_RequestUserProfileStats >( bufferIn, bufferOffset );
+      }
+      return true;
+   case PacketUserStats::UserStatsType_RequestUserProfileStatsResponse:
+      {
+         *packetOut = SerializeIn< PacketUserStats_RequestUserProfileStatsResponse >( bufferIn, bufferOffset );
+      }
+      return true;
+
+      
+   
    }
    return false;
 }

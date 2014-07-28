@@ -714,12 +714,36 @@ bool   ChatRoomManager::CreateNewRoom( const PacketChatCreateChatChannelFromGame
    struct tm * now = gmtime( & t );
    
    int year = now->tm_year - 100; // 113 => 2013.
-   int month = now->tm_mon;
+   int month = now->tm_mon + 1; // 0-based
    int day = now->tm_mday;
 
    string date = GetDateInUTC();
 
-
+   U32 gameInstanceId = request->gameId;
+   if( gameInstanceId == 0 )
+   {
+      cout << ":::::::::::::::: Error ::::::::::::::::::::" << endl;
+      cout << "ChatRoomManager::CreateNewRoom " << endl;
+      cout << "Server id is 0" << endl;
+      cout << ":::::::::::::::::::::::::::::::::::::::::::" << endl;
+   }
+   //request->ser
+   U32 gameServerUniqueInstanceId = request->gameInstanceId;
+   if( gameServerUniqueInstanceId == 0 )
+   {
+      cout << ":::::::::::::::: Error ::::::::::::::::::::" << endl;
+      cout << "ChatRoomManager::CreateNewRoom " << endl;
+      cout << "Game instance is 0" << endl;
+      cout << ":::::::::::::::::::::::::::::::::::::::::::" << endl;
+   }
+   U32 gameProductId = request->gameProductId;
+   if( gameProductId == 0 )
+   {
+      cout << ":::::::::::::::: Error ::::::::::::::::::::" << endl;
+      cout << "ChatRoomManager::CreateNewRoom " << endl;
+      cout << "Game product is 0" << endl;
+      cout << ":::::::::::::::::::::::::::::::::::::::::::" << endl;
+   }
    std::stringstream ss;
    const int maxNumberGameInstanceDigits = 7; // into the tens of millions of games
    ss  << std::setfill('0') << request->gameName << '_' 
@@ -729,8 +753,9 @@ bool   ChatRoomManager::CreateNewRoom( const PacketChatCreateChatChannelFromGame
             << std::setw( maxNumberGameInstanceDigits ) << request->gameId;
    string channelName = ss.str();
 
+// CreateNewRoom( const string& channelName, const string userUuid, U32 serverId, U8 gameType, U32 gameInstanceId )
    // the gameId and the GameInstandId need to be verified here.. the order matters, and I can't figure out which one is which.
-   string channelUuid = CreateNewRoom( channelName, "", request->gameInstanceId, request->gameProductId, request->gameId );
+   string channelUuid = CreateNewRoom( channelName, "", gameServerUniqueInstanceId, gameProductId, gameInstanceId );
 
    if( channelUuid.size() )
    {
@@ -834,7 +859,7 @@ string   ChatRoomManager::CreateNewRoom( const string& channelName, const string
    queryString += ", ";
    queryString += boost::lexical_cast< string >( (U32)( gameType ) );
    queryString += ", ";
-   queryString += boost::lexical_cast< string >( gameInstanceId ); // almost always 0
+   queryString += boost::lexical_cast< string >( gameInstanceId );
    queryString += ", '";
    queryString += createDate;
    queryString += "' )"; 

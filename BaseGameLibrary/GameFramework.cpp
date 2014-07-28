@@ -318,8 +318,8 @@ bool     GameFramework::SendToAnotherServer( BasePacket* packet )  // this could
       if( found==true && fruity )
       {
          PacketServerToServerWrapper* wrapper = new PacketServerToServerWrapper;
-         wrapper->gameInstanceId = m_serverId;
-         wrapper->gameProductId = m_gameProductId;
+         wrapper->gameInstanceId = GetServerId();
+         wrapper->gameProductId = GetGameProductId();
          wrapper->serverId = m_serverId;
          wrapper->pPacket = packet;
 
@@ -392,9 +392,9 @@ void  GameFramework::SendNotification( const string& userUuid, U32 userId, int n
       packet->additionalText = additionalText;
 
       PacketServerToServerWrapper* wrapper = new PacketServerToServerWrapper;
-      wrapper->gameInstanceId = m_serverId;
-      wrapper->gameProductId = m_gameProductId;
-      wrapper->serverId = m_serverId;
+      wrapper->gameInstanceId = GetServerId();
+      wrapper->gameProductId = GetGameProductId();
+      wrapper->serverId = GetServerId();
       wrapper->pPacket = packet;
 
       m_notificationServer->AddOutputChainData( wrapper, -1 );
@@ -415,9 +415,9 @@ void GameFramework::SendPushNotification( U32 userId, int gameType, unsigned int
       packet->additionalText = additionalText;
 
       PacketServerToServerWrapper* wrapper = new PacketServerToServerWrapper;
-      wrapper->gameInstanceId = m_serverId;
-      wrapper->gameProductId = m_gameProductId;
-      wrapper->serverId = m_serverId;
+      wrapper->gameInstanceId = GetServerId();
+      wrapper->gameProductId = GetGameProductId();
+      wrapper->serverId = GetServerId();
       wrapper->pPacket = packet;
 
       m_notificationServer->AddOutputChainData( wrapper, -1 );
@@ -434,9 +434,9 @@ void GameFramework::UpdatePushNotificationCount( U32 userId, int gameType, int n
       packet->notificationCount = notificationCount;
 
       PacketServerToServerWrapper* wrapper = new PacketServerToServerWrapper;
-      wrapper->gameInstanceId = m_serverId;
-      wrapper->gameProductId = m_gameProductId;
-      wrapper->serverId = m_serverId;
+      wrapper->gameInstanceId = GetServerId();
+      wrapper->gameProductId = GetGameProductId();
+      wrapper->serverId = GetServerId();
       wrapper->pPacket = packet;
 
       m_notificationServer->AddOutputChainData( wrapper, -1 );

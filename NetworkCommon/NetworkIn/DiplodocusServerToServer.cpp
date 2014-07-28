@@ -256,11 +256,12 @@ int   DiplodocusServerToServer::CallbackFunction()
    // I would do this with a map, but we'll only ever have one or two of these.
    while( m_serversNeedingUpdate.size() )
    {
+      LockMutex();
       // useful for storing the 
       U32 serverId = m_serversNeedingUpdate.front();
       m_serversNeedingUpdate.pop_front();
 
-      LockMutex();
+      
       ChainLinkIteratorType itInputs = m_listOfInputs.begin();
       while( itInputs != m_listOfInputs.end() )
       {
@@ -278,7 +279,7 @@ int   DiplodocusServerToServer::CallbackFunction()
       UnlockMutex();
    }
 
-   UpdateAllConnections();
+   UpdateAllConnections( "KhaanServerToServer" );
    SendJobsToUpperLayers();
 
    return 1;

@@ -171,7 +171,8 @@ protected:
    void           SendServerIdentification();
 
    //-------------------------------------------
-   void           UpdateAllConnections();
+   void           UpdateQueuedConnections();
+   void           UpdateAllConnections( const char* connectionName, bool clearPendingUpdate = true );
    void           RemoveOldConnections();
    void           AddNewConnections();	
 

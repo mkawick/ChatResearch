@@ -53,7 +53,8 @@ Fruitadens :: Fruitadens( const char* name, bool processOnlyOneIncommingPacketPe
                m_numPacketsReceived( 0 ),
                m_receiveBufferOffset( 0 ), 
                m_packetHandlerInterface( NULL ),
-               m_bytesInOverflow( 0 )
+               m_bytesInOverflow( 0 ),
+               m_networkVersionOverride( 0 )
 {
    m_name = name;
    memset( &m_ipAddress, 0, sizeof( m_ipAddress ) );
@@ -494,6 +495,11 @@ bool  Fruitadens :: SerializePacketOut( const BasePacket* packet )
    
    int   offset = 2;
    packet->SerializeOut( buffer, offset );
+   if( m_networkVersionOverride )
+   {
+      int temp = 2;
+      BasePacket p;
+   }
    U16   size = offset-2;
    int   headerOffset = 0;
    Serialize::Out( buffer, headerOffset, size );

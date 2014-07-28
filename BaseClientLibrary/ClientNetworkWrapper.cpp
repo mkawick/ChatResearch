@@ -57,7 +57,8 @@ ClientNetworkWrapper::ClientNetworkWrapper( U8 gameProductId, bool connectToAsse
       m_blockGroupInvitations( false ),
       m_wasCallbackForReadyToBeginSent( false ),
       m_requiresGatewayDiscovery( true ),
-      m_isInvalid( false )
+      m_isInvalid( false ),
+      m_networkVersionOverride( 0 )
 {
    PrintFunctionName( __FUNCTION__ );
    m_loadBalancerDns = "you.have.not.initialized.the.library.properly.com"; // just the default
@@ -152,6 +153,14 @@ void  ClientNetworkWrapper::Init( const char* serverDNS )
    if( m_fruitadens[0]->IsSocketValid() || IsConnected() == true )
    {
       Disconnect();
+   }
+
+   if( m_networkVersionOverride )
+   {
+      for( int i=0; i< ConnectionNames_Num; i++ )
+      {
+         m_fruitadens[i]->SetNetworkVersionOverride( m_networkVersionOverride );
+      }
    }
 
    
@@ -292,8 +301,9 @@ void  ClientNetworkWrapper::Exit()
    if( m_isInvalid == true )
       return;
 
-   m_isInvalid = true;
    Disconnect();
+
+   m_isInvalid = true;
 
    for( int i=0; i< ConnectionNames_Num; i++ )
    {
@@ -401,6 +411,7 @@ void     ClientNetworkWrapper::UpdateNotifications()
    {
       return;
    }
+   Update();
 
    m_notificationMutex.lock();
    std::queue< QueuedNotification > localCopy = m_notifications;
@@ -1005,22 +1016,34 @@ bool     ClientNetworkWrapper::RequestAccountCreate( const string& userName, con
    }
    assert( m_isLoggedIn == false );
 
-   PacketCreateAccount createAccount;
-   createAccount.userName = userName;
-   createAccount.userEmail = userEmail;
-   createAccount.password = boost::lexical_cast< string >( CreatePasswordHash( password.c_str() ) );
-   createAccount.deviceId = deviceId;
-   createAccount.deviceAccountId = "";
+   PacketCreateAccount* createAccount = new PacketCreateAccount;
+   createAccount->userName = userName;
+   createAccount->userEmail = userEmail;
+   createAccount->password = boost::lexical_cast< string >( CreatePasswordHash( password.c_str() ) );
+   createAccount->deviceId = deviceId;
+   createAccount->deviceAccountId = "";
    if( gkHash.size() != 0 )
    {
-      createAccount.deviceAccountId = boost::lexical_cast< string >( CreatePasswordHash( gkHash.c_str() ) );
+      createAccount->deviceAccountId = boost::lexical_cast< string >( CreatePasswordHash( gkHash.c_str() ) );
    }
-   createAccount.languageId = languageId;
+   createAccount->languageId = languageId;
 
    m_attemptedUsername = userName;
 
    m_isCreatingAccount = true;
-   SerializePacketOut( &createAccount );
+   //SerializePacketOut( &createAccount );
+
+   if( m_requiresGatewayDiscovery == false &&
+      SerializePacketOut( createAccount ) == true )
+   {
+      PacketCleaner cleaner( createAccount );
+      cout << " RequestAccountCreate send packet" << endl;
+   }
+   else
+   {
+      m_savedLoginInfo = createAccount;
+      cout << " RequestAccountCreate saved packet to send later" << endl;
+   }
 
    return true;
 }
@@ -2505,6 +2528,15 @@ bool     ClientNetworkWrapper::NeedsProcessingTime() const
    // PrintFunctionName( __FUNCTION__ ); // too chatty
    if( IsConnected() == true || m_notifications.size() > 0 ) 
       return true; 
+
+   if( m_requiresGatewayDiscovery == false ) /// we aren't connected but we have the info needed to connect
+   {
+      for( int i=0; i< ConnectionNames_Num; i++ )
+      {
+         if( m_serverIpAddress[i].size() )
+            return true;
+      }
+   }
    return false; 
 }
 
@@ -2993,7 +3025,6 @@ void     ClientNetworkWrapper::LoadBalancedNewAddress( const PacketRerouteReques
    //if( isReconnectNecessary )
    {
       Disconnect(); // << slight danger here... disconnecting when we are servicing a previous request
-      ReconnectAfterTalkingToLoadBalancer();
    }
 }
 
@@ -4590,6 +4621,11 @@ void  NetworkLayerExtended::SendGameTest()
    PrintFunctionName( __FUNCTION__ );
    PacketGame_TestHook packet;
    SerializePacketOut( &packet );
+}
+
+void  NetworkLayerExtended::SetNetworkVersionOverride( U8 ver )
+{
+   m_networkVersionOverride = ver;
 }
 
 //------------------------------------------------------------

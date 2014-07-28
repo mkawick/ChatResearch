@@ -9,6 +9,7 @@
 
 #include <openssl/ssl.h>
 #include <openssl/err.h>
+#include <direct.h>
 
 //#include "server_database.h"
 //#include "server_gamedata.h"
@@ -561,6 +562,13 @@ bool NotifyIosInit( const char* pathToFiles )
          STRCAT( keyFileStringBuffer, maxFileBufferLen, s_GameInfos[i].key );
          keyTempPtr = keyFileStringBuffer;
       }
+
+      cout << "Current directory : " << endl;
+      cout << getcwd( NULL, 0 ) << endl;
+      cout << "Cert file final path: " << endl;
+      cout << certFileStringBuffer << endl;
+      cout << "Key file final path: " << endl;
+      cout << keyFileStringBuffer << endl;
 
       // open SSL connection
       s_GameInfos[i].method = SSLv23_method();

@@ -93,7 +93,7 @@ public:
 
    void     Update( time_t currentTime );
 
-   void     SetValidationEndpoint( const string& http ) { m_endpointValidation = http; }
+   void     SetValidationEndpoint( const string& http, PlatformType platform ) { m_endpointValidation = http; }
 
 private:
 

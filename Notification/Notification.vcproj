@@ -441,7 +441,7 @@
 				</File>
 			</Filter>
 			<Filter
-				Name="ExternalApis"
+				Name="HTTP"
 				>
 				<File
 					RelativePath="..\NetworkCommon\ExternalApis\HTTPSender.cpp"

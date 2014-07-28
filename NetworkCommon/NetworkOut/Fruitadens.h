@@ -62,6 +62,8 @@ public:
    bool        IsConnected() const { return m_isConnected; }
    void        SetServerUniqueId( U32 id ) { m_serverId = id; }
 
+   void        SetNetworkVersionOverride( U8 ver ) { m_networkVersionOverride = ver; }
+
    virtual bool   NeedsProcessingTime() const { return true; }
    virtual void   HasBeenConnectedCallback();
    virtual void   HasBeenDisconnectedCallback();
@@ -113,6 +115,7 @@ protected:
    U32                  m_receiveBufferSize;
    U32                  m_receiveBufferOffset;
    U8*                  m_receiveBuffer;
+   U8                   m_networkVersionOverride;
    PacketHandlerInterface*    m_packetHandlerInterface;
 
    //enum { OverflowBufferSize = 12*1024 };

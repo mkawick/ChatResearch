@@ -30,10 +30,10 @@ using namespace std;
 
 DiplodocusPurchase::DiplodocusPurchase( const string& serverName, U32 serverId ): Diplodocus< KhaanPurchase >( serverName, serverId, 0,  ServerType_Purchase ), 
                               m_isWaitingForAdminSettings( false ),
-                              m_hasRequestedAdminSettings( false )
+                              m_isInitializing( true )
                                          
 {
-    //time( &m_lastTimeStamp );
+   time( &m_initializingAdminSettingsTimeStamp );
    SetSleepTime( 100 );
 
    
@@ -60,8 +60,6 @@ DiplodocusPurchase::DiplodocusPurchase( const string& serverName, U32 serverId )
    stringCategories.push_back( string( "product" ) );
    stringCategories.push_back( string( "sale" ) );
    m_stringLookup = new StringLookup( QueryType_ProductLookup, this, stringCategories );
-
-   RequestAdminSettings();
 }
 
 DiplodocusPurchase :: ~DiplodocusPurchase()
@@ -90,14 +88,25 @@ void     DiplodocusPurchase::ServerWasIdentified( IChainedInterface* khaan )
 
 void     DiplodocusPurchase::RequestAdminSettings()
 {
-   PacketDbQuery* dbQuery = new PacketDbQuery;
-   dbQuery->id = 0;
-   dbQuery->lookup = QueryType_PurchaseAdminSettings;
-   dbQuery->query = "SELECT * FROM admin_purchase";
+   if( m_isInitializing == false )
+      return;
 
-   m_isWaitingForAdminSettings = true;
+   time_t currentTime;
+   time(& currentTime );
+   // try every 15 seconds
+   if( difftime( currentTime, m_initializingAdminSettingsTimeStamp ) > 15 )
+   {
+      PacketDbQuery* dbQuery = new PacketDbQuery;
+      dbQuery->id = 0;
+      dbQuery->lookup = QueryType_PurchaseAdminSettings;
+      dbQuery->query = "SELECT * FROM admin_purchase";
 
-   AddQueryToOutput( dbQuery );
+      m_isWaitingForAdminSettings = true;
+
+      AddQueryToOutput( dbQuery );
+
+      m_initializingAdminSettingsTimeStamp = currentTime;
+   }
 }
 
 //---------------------------------------------------------------
@@ -108,7 +117,12 @@ void     DiplodocusPurchase::HandleAdminSettings( const PacketDbQueryResult* dbR
    KeyValueParser::iterator    it = enigma.begin();
 
    string   enpoint;
-   
+
+   if( enigma.size() == 0 )
+   {
+      cout << "No admin settings" << endl;
+      return;
+   }
    while( it != enigma.end() )
    {
       KeyValueParser::row      row = *it++;
@@ -118,11 +132,16 @@ void     DiplodocusPurchase::HandleAdminSettings( const PacketDbQueryResult* dbR
       if( setting == "vendor.receipt_validation.apple" )
       {
          const string& endpoint = value;
-         m_purchaseReceiptManager->SetValidationEndpoint( endpoint );
+         cout << "Vendor: Apple receipt validation value" << endl;
+         cout << value << endl;
+         
+         m_purchaseReceiptManager->SetValidationEndpoint( endpoint, Platform_ios );
       }
    }
 
+   m_isInitializing = false;
    m_isWaitingForAdminSettings = false;
+   
 }
 
 //---------------------------------------------------------------
@@ -600,13 +619,9 @@ bool  DiplodocusPurchase::SendPacketToLoginServer( BasePacket* packet, U32 conne
 
 int      DiplodocusPurchase::CallbackFunction()
 {
-   if( m_hasRequestedAdminSettings == false )
-   {
-      RequestAdminSettings();
-      m_hasRequestedAdminSettings = true;
-      return 0;
-   }
-   UpdateAllConnections();
+   RequestAdminSettings();
+
+   UpdateAllConnections( "KhaanPurchase" );
 
    time_t currentTime;
    time( &currentTime );

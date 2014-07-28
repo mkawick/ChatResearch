@@ -54,6 +54,7 @@ void  PacketLoginFromGateway::copy( const PacketLogin& login )
 {
    gameInstanceId = login.gameInstanceId;
    gameProductId = login.gameProductId;
+
    uuid = login.uuid;
    userName = login.userName;
 

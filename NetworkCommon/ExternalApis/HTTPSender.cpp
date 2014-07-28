@@ -18,8 +18,11 @@ using boost::format;
 #include "HTTPSender.h"
 
 #include "../General/server_log.h"
+#include "../Utils/Utils.h"
 
 static string   printResponseData; //will hold the response text
+namespace HTTP
+{
 
 // libs to include
 // ../Debug/PacketLibrary.lib ws2_32.lib Secur32.lib ssleay32MTd.lib libeay32MTd.lib curllib.lib
@@ -46,7 +49,7 @@ static size_t   WriteCallback(char* buf, size_t size, size_t nmemb, void* up)
 
 /////////////////////////////////////////////////////////////////////////////////////
 
-std::string    NotificationSender::hex( unsigned int c )
+std::string    hex( unsigned int c )
 {
     std::ostringstream stm ;
     stm << '%' << std::hex << std::uppercase << c ;
@@ -54,7 +57,7 @@ std::string    NotificationSender::hex( unsigned int c )
 }
 
 
-std::string    NotificationSender::url_encode( const std::string& str )
+std::string    url_encode( const std::string& str )
 {
     static const std::string unreserved = "0123456789"
                                             "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
@@ -66,7 +69,7 @@ std::string    NotificationSender::url_encode( const std::string& str )
     {
        char c = *it;
         if( unreserved.find(c) != std::string::npos ) result += c ;
-        else result += hex(c) ;
+        else result += HTTP::hex(c) ;
     }
 
     return result ;
@@ -75,7 +78,7 @@ std::string    NotificationSender::url_encode( const std::string& str )
 /////////////////////////////////////////////////////////////////////////////////////
 
 
-void  NotificationSender::ParseIntoKeyValue( map< string, string >& result, string& text )
+void  ParseIntoKeyValue( KeyValueMap& result, string& text )
 {
    std::string word;
    //std::istream   stream = inString;
@@ -137,7 +140,7 @@ void  NotificationSender::ParseIntoKeyValue( map< string, string >& result, stri
 
 /////////////////////////////////////////////////////////////////////////////////////
 
-bool  NotificationSender::ParseListOfItems( vector< string >& listOfStuff, string text, const char* delimiter, const char* charsToRemove )
+bool  ParseListOfItems( vector< string >& listOfStuff, string text, const char* delimiter, const char* charsToRemove )
 {
    //text.erase( boost::remove_if( text.begin(), text.end(), "[]{}"), text.end() );
    if( charsToRemove )
@@ -151,7 +154,7 @@ bool  NotificationSender::ParseListOfItems( vector< string >& listOfStuff, strin
 
 
    boost::escaped_list_separator<char> els( separator1, separator2, separator3 );
-   boost::tokenizer<boost::escaped_list_separator<char> > tokens( text, els );
+   boost::tokenizer<boost::escaped_list_separator<char> > tokens( Trim( text ), els );
 
    for (boost::tokenizer<boost::escaped_list_separator<char> >::iterator i(tokens.begin());
       i!=tokens.end(); ++i) 
@@ -567,12 +570,12 @@ bool  AmazonAndroidNotificationSender::SendNotification( const string& deviceId,
 
 /////////////////////////////////////////////////////////////////////////////////////
 
-string   AmazonAndroidNotificationSender::PrepJsonStrings( const string& deviceId, const NotificationSender::KeyValueMap& keyValues )
+string   AmazonAndroidNotificationSender::PrepJsonStrings( const string& deviceId, const KeyValueMap& keyValues )
 {
    string returnString( "\"data\":{" );
    string commaString = ",";
 
-   NotificationSender::KeyValueMap::const_iterator it = keyValues.begin();
+   KeyValueMap::const_iterator it = keyValues.begin();
    while( it != keyValues.end() )
    {
       const string& key = it->first;
@@ -591,3 +594,144 @@ string   AmazonAndroidNotificationSender::PrepJsonStrings( const string& deviceI
 }
 
 /////////////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////////////////
+
+bool     AppleReceiptValidator::ValidateReceipt( const char* receipt )
+{
+   assert( m_validationUrl.size () > 0 );
+   assert( strlen( receipt ) > 0 );
+   if( m_isBusy )
+   {
+      return false;
+   }
+   m_isBusy = true;
+   m_isFinished = false;
+   m_state = ReceiptState_unknown;
+   CURL *curl;
+   CURLcode res = CURL_LAST;
+
+   curl_global_init( CURL_GLOBAL_DEFAULT );
+
+   bool returnCode = false;
+   curl = curl_easy_init();
+   if(curl) 
+   {
+      vector< string > headers;
+      headers.push_back( "Content-Type: application/json" );
+      headers.push_back( "Accept: application/json" );
+
+      //--------------------------------------------------------
+
+
+      string body = (format("{\"receipt-data\":\"%1%\"}") % receipt).str();
+      struct curl_slist* curlStringList=NULL;
+      int numHeaders = headers.size();
+      
+      cout << "Headers: {";
+      for( int i=0; i<numHeaders; i++ )
+      {
+         curlStringList = curl_slist_append( curlStringList, headers[i].c_str() );
+         cout << headers[i] << "," << endl;
+      }
+
+      //DumpTextToFile( "c:/temp/appleValidationBody.txt", body );
+      //--------------------------------------------------------
+
+      cout << "Destination: " << m_validationUrl << endl;
+      cout << "}" << endl;
+      cout << "body: " << body << endl;
+      cout << "body length: " << body.size() << endl;
+
+      //------------------------------------------------
+
+      curl_easy_setopt( curl, CURLOPT_URL, m_validationUrl.c_str() );
+      curl_easy_setopt( curl, CURLOPT_HTTPHEADER, curlStringList );
+      curl_easy_setopt( curl, CURLOPT_SSL_VERIFYPEER, FALSE ); // --insecure or -k
+      curl_easy_setopt( curl, CURLOPT_POST, true );
+      
+      curl_easy_setopt( curl, CURLOPT_POSTFIELDS, body.c_str() );
+      curl_easy_setopt( curl, CURLOPT_WRITEFUNCTION, &WriteCallback);
+
+
+      res = curl_easy_perform( curl );  
+      /* Check for errors */ 
+      if( res == CURLE_OK )
+      {
+         returnCode = true; // success
+      }
+      else
+      {
+         fprintf(stderr, "curl_easy_perform() failed: %s\n", curl_easy_strerror(res));
+         returnCode = false;
+         m_state = ReceiptState_unknown;
+      }
+
+      long code = 0;
+      curl_easy_getinfo ( curl, CURLINFO_RESPONSE_CODE, &code );
+
+      cout << "http return code was:" << code << endl;
+
+      m_receipt = printResponseData;
+      cout << endl << printResponseData << endl;
+      //DumpTextToFile( "c:/temp/appleReceiptBody.txt", printResponseData );
+      
+      ParseResult() ;
+     
+      curl_easy_cleanup( curl );
+   }
+
+   curl_global_cleanup();
+
+   m_isBusy = false;
+   m_isFinished = true;
+   return returnCode;
+}
+
+/////////////////////////////////////////////////////////////////////////////////////
+
+void   AppleReceiptValidator::ParseResult() 
+{
+   m_state = ReceiptState_unknown;
+   map< string, string > result;
+   ParseIntoKeyValue( result,  m_receipt );
+   KeyValueMap:: iterator it = result.begin();
+   cout << "{" << endl;
+   while( it != result.end() )
+   {
+      cout << it->first << ":" << it->second << endl;
+      it++;
+   }
+   cout << "}" << endl;
+
+   it = result.find( "status" );
+   if( it != result.end() )
+   {
+      // https://developer.apple.com/library/mac/releasenotes/General/ValidateAppStoreReceipt/ValidateAppStoreReceipt.pdf
+
+      U32 value = boost::lexical_cast <U32>( it->second );
+      if( value == 0 )
+      {
+         m_state = ReceiptState_valid;
+      }
+      if( value == 21003 ) // cannot be authenticated
+      {
+         m_state = ReceiptState_invalid;
+      }
+      if( value == 21000 ||  // could not be read
+         value == 21002 ||  // data invalid
+         value == 21005 ||   // The receipt server is not currently available
+         value == 21007 ||   // this receipt is from the test environment and you are submitting to the release
+         value == 20008 )    // this receipt is from the release environment and you are submitting to the test
+         
+         {
+         m_state = ReceiptState_cannot_be_verified;
+      }
+   }
+} 
+
+/////////////////////////////////////////////////////////////////////////////////////
+
+/////////////////////////////////////////////////////////////////////////////////////
+
+
+}

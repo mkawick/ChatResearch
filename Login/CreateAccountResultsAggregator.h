@@ -50,6 +50,7 @@ public:
    U32      GetConnectionId() const { return m_connectionId; }
    bool     IsComplete() const;
    bool     HasFoundAnyMatchingRecords() const;
+   bool     HasFoundMatchingGKHashInUserTable() const;
    bool     HasMatchingGamekitHash() const { if( m_whichRecordMatched == MatchingRecord_Gamekithash ) return true; return false; }
 
    bool     GetMatchingRecordType( MatchingRecord recordType ) const { return (m_whichRecordMatched & recordType )? true: false; }

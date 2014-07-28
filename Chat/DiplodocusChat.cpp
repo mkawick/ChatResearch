@@ -422,8 +422,8 @@ bool   DiplodocusChat::AddOutputChainData( BasePacket* packet, U32 connectionId 
          Threading::MutexLock locker( m_mutex );
 
          m_dbQueries.push_back( result );
-         if( result->customData != NULL )
-            cout << "AddOutputChainData: Non-null custom data " << endl;
+       /*  if( result->customData != NULL )
+            cout << "AddOutputChainData: Non-null custom data " << endl;*/
       }
       return true;
    }
@@ -489,8 +489,8 @@ void  DiplodocusChat::UpdateDbResults()
    while( it != tempQueue.end() )
    {
       PacketDbQueryResult* dbResult = *it++;
-      if( dbResult->customData != NULL )
-            cout << "UpdateDbResults: Non-null custom data " << endl;
+    /*  if( dbResult->customData != NULL )
+            cout << "UpdateDbResults: Non-null custom data " << endl;*/
       BasePacket* packet = static_cast<BasePacket*>( dbResult );
 
       U32 connectionId = dbResult->id;
@@ -826,7 +826,7 @@ void     DiplodocusChat::RunDailyStats()
 
 int      DiplodocusChat::CallbackFunction()
 {
-   UpdateAllConnections();
+   UpdateAllConnections( "KhaanChat" );
 
    time_t currentTime;
    time( &currentTime );

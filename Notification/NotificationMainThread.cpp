@@ -395,87 +395,6 @@ bool     NotificationMainThread::HandleNotification( const PacketNotification_Se
                               unwrappedPacket->notificationType,
                               unwrappedPacket->additionalText.c_str(),
                               true );
- /*  if( m_database != NULL )
-   {
-      string query( "SELECT user_device.device_id, user_device.platformId, user_device.id, user_device_notification.audio_file, user_device_notification.repeat_frequency_in_hours ");
-      query += " FROM user_device JOIN user_device_notification "
-                     "ON user_device.id=user_device_notification.user_device_id WHERE user_device.user_id='";
-      query += boost::lexical_cast< string  >( user_id );
-      query += "' AND user_device_notification.game_type='";
-      query += boost::lexical_cast< string  >( game_type );
-      query += "' AND user_device_notification.is_enabled='1' ";
-      query += "AND user_device.is_enabled='1'";
-
-      //cout << query << endl;
-
-
-      MYSQL *mysql = m_database->GetDbHandle();
-
-      int ret = mysql_query( mysql, query.c_str() );
-      if (ret != 0)
-      {
-         cout << "Error " << mysql_error(mysql)
-              << " (code " << ret << ") executing DB query: \""
-              << query << "\"" << endl;
-         cout << "        error: " << mysql_error(mysql) << endl;
-         return false;
-      }
-
-      MYSQL_RES *res = mysql_store_result(mysql);
-      if( res != NULL )
-      {
-         MYSQL_ROW row;
-         for( row = mysql_fetch_row(res); row; row = mysql_fetch_row(res) )
-         {
-            if( row[0] == NULL )
-            {
-               continue;
-            }
-
-            unsigned int device_platform;
-            sscanf( row[1], "%u", &device_platform );
-
-            unsigned int device_id;
-            sscanf( row[2], "%u", &device_id );
-
-            char audioFile[60];
-            sscanf( row[3], "%s", audioFile );
-
-            unsigned int repeatFrequencyInHours;
-            sscanf( row[4], "%u", &repeatFrequencyInHours );
-
-
-            if( device_platform == 1 ) // iOS
-            {
-               NotifyUserDirect_iOS( user_id, 
-                  (const unsigned char*)row[0], 
-                  game_type, 
-                  game_id, 
-                  badge_count,
-                  audioFile, 
-                  (GameNotification)unwrappedPacket->notificationType,
-                  unwrappedPacket->additionalText.c_str() );
-
-            }
-            else if( device_platform == 2 ) // Android
-            {
-               NotifyUserDirect_Android( user_id, (const unsigned char*)row[0], game_type, game_id, badge_count,
-                  (GameNotification)unwrappedPacket->notificationType, unwrappedPacket->additionalText.c_str() );
-            }
-
-
-            if( repeatFrequencyInHours )
-            {
-               SetupUserNotificationResend( user_id, game_type, device_id, 60 * repeatFrequencyInHours );
-            }
-            //SetupUserNotificationResend( user_id, game_type, device_id, 60 );
-         }
-         mysql_free_result(res);
-      }
-
-      //NotifyUser(unwrappedPacket->userId, unwrappedPacket->gameType, unwrappedPacket->gameId,
-      //            (GameNotification)unwrappedPacket->notificationType, unwrappedPacket->additionalText.c_str());
-   }*/
 
    //
    return false;
@@ -529,62 +448,6 @@ void     NotificationMainThread::PeriodicCheckForNewNotifications()
                               itt->second.lastNotificationText.c_str(),
                               false );
 
-         /*if( m_database != NULL )
-         {
-            string query( "SELECT user_device.device_id, user_device.platformId, user_device.id FROM user_device JOIN user_device_notification "
-                           "ON user_device.id=user_device_notification.user_device_id WHERE user_device.user_id='");
-            query += boost::lexical_cast< string  >( user_id );
-            query += "' AND user_device_notification.game_type='";
-            query += boost::lexical_cast< string  >( game_type );
-            query += "' AND user_device_notification.is_enabled='1' ";
-            query += "AND user_device.is_enabled='1'";
-
-            //cout << query << endl;
-
-            MYSQL *mysql = m_database->GetDbHandle();
-
-            int ret = mysql_query( mysql, query.c_str() );
-            if (ret != 0)
-            {
-               cout << "Error " << mysql_error(mysql)
-                    << " (code " << ret << ") executing DB query: \""
-                    << query << "\"" << endl;
-               cout << "        error: " << mysql_error(mysql) << endl;
-               break;
-            }
-
-            MYSQL_RES *res = mysql_store_result(mysql);
-            if( res != NULL )
-            {
-               MYSQL_ROW row;
-               for( row = mysql_fetch_row(res); row; row = mysql_fetch_row(res) )
-               {
-                  if( row[0] == NULL )
-                  {
-                     continue;
-                  }
-
-                  unsigned int device_platform;
-                  sscanf( row[1], "%u", &device_platform );
-
-                  unsigned int device_id;
-                  sscanf( row[2], "%u", &device_id );
-
-                  if( device_platform == 1 ) // iOS
-                  {
-                     NotifyUserDirect_iOS( user_id, (const unsigned char*)row[0], game_type, game_id, badge_count,
-                        (GameNotification)itt->second.lastNotificationType, itt->second.lastNotificationText );
-                  }
-                  else if( device_platform == 2 ) // Android
-                  {
-                     NotifyUserDirect_Android( user_id, (const unsigned char*)row[0], game_type, game_id, badge_count,
-                        (GameNotification)itt->second.lastNotificationType, itt->second.lastNotificationText );
-                  }
-
-               }
-               mysql_free_result(res);
-            }
-         }*/
       }
 
    }
@@ -729,7 +592,7 @@ int     NotificationMainThread::MainLoop_InputProcessing()
 
 int      NotificationMainThread::MainLoop_OutputProcessing()
 {
-   UpdateAllConnections();
+   UpdateAllConnections( "KhaanServerToServer" );
 
    time_t currentTime;
    time( &currentTime );

@@ -560,7 +560,7 @@ void	Diplodocus< InputChain, OutputChain >::RemoveOldConnections()
 //------------------------------------------------------------------------------------------
 
 template< typename InputChain, typename OutputChain >
-void	Diplodocus< InputChain, OutputChain >::UpdateAllConnections()
+void	Diplodocus< InputChain, OutputChain >::UpdateQueuedConnections()
 {
    // the potential exists for this queue to be updated while we are working on it
    // this is alright as long as we pull from the front and push onto the back as this list is non-persistent
@@ -612,6 +612,37 @@ void	Diplodocus< InputChain, OutputChain >::UpdateAllConnections()
          m_clientsNeedingUpdate.push_back( id );
       }
    UnlockMutex();
+}
+
+//------------------------------------------------------------------------------------------
+
+template< typename InputChain, typename OutputChain >
+void	Diplodocus< InputChain, OutputChain >::UpdateAllConnections( const char* connectionName, bool clearPendingUpdate )
+{
+   {
+      m_inputChainListMutex.lock();
+
+      ChainLinkIteratorType itInputs = m_listOfInputs.begin();
+      while( itInputs != m_listOfInputs.end() )// only one output currently supported.
+      {
+         ChainLink & chainedInput = *itInputs++;
+         InputChainType* connection = static_cast< InputChainType* >( chainedInput.m_interface );
+         if( connection->DoesNameMatch( connectionName ) )
+         {
+         //ChainedInterface* interfacePtr = static_cast< ChainedInterface* >( chainedInput.m_interface );
+
+            connection->Update();
+         }
+      }
+      m_inputChainListMutex.unlock();
+   }
+
+   if( clearPendingUpdate )
+   {
+      LockMutex();
+      m_clientsNeedingUpdate.clear();
+      UnlockMutex();
+   }
 }
 
 //------------------------------------------------------------------------------------------
@@ -719,7 +750,7 @@ int      Diplodocus< InputChain, OutputChain >::MainLoop_OutputProcessing()
    if( m_isNetworkingEnabled == false )
       return 1;
 
-   UpdateAllConnections();
+   UpdateQueuedConnections();
 
    UpdatePendingGatewayPackets();
 

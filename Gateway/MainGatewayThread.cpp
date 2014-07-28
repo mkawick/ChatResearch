@@ -573,7 +573,9 @@ int       MainGatewayThread::CallbackFunction()
    RunHourlyAverages();
 
    MoveClientBoundPacketsFromTempToKhaan();
-   UpdateAllClientConnections();
+   //UpdateAllClientConnections();
+
+   UpdateAllConnections( "KhaanGateway" );
 
    //CheckOnServerStatusChanges();
 

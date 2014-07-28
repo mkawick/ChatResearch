@@ -327,6 +327,7 @@ protected:
 
    //----------------------------------
    bool                                      m_enabledMultithreadedProtections;
+   U8                                        m_networkVersionOverride;
    struct QueuedNotification
    {
       QueuedNotification() : eventId( 0 ),  intValue( 0 ), intValue2( 0 ), packet( NULL ), genericData( NULL )  {}
@@ -353,7 +354,7 @@ protected:
 
    // only for dealing with the fact that the game will often login well before the 
    // server has connected to the client.
-   PacketLogin*                              m_savedLoginInfo;
+   BasePacket*                               m_savedLoginInfo;
 
 protected:
    void     CreateNetworkObjects();
@@ -453,6 +454,7 @@ public:
    void  SendPurchaseEcho();
    void  SendNotification( U8 type, string additionalText = "" );
    void  SendGameTest();
+   void  SetNetworkVersionOverride( U8 ver );
 
 protected:
    void  StartTime();

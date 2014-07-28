@@ -53,7 +53,7 @@ int      UserStatsMainThread::MainLoop_OutputProcessing()
 {
    //UpdateDbResults();
    
-    UpdateAllConnections();
+    UpdateAllConnections( "KhaanServerToServer" );
 
    time_t currentTime;
    time( &currentTime );
@@ -312,11 +312,16 @@ bool   UserStatsMainThread::AddOutputChainData( BasePacket* packet, U32 connecti
       {
          PacketDbQueryResult* result = static_cast< PacketDbQueryResult* >( packet );
          m_dbQueries.push_back( result );
-         if( result->customData != NULL )
-            cout << "AddOutputChainData: Non-null custom data " << endl;
+      /*   if( result->customData != NULL )
+            cout << "AddOutputChainData: Non-null custom data " << endl;*/
       }
       return true;
       //return false;
+   }
+
+   if( packet->packetType == PacketType_GatewayWrapper )
+   {
+      return SendMessageToClient( packet, connectionId );
    }
 
    
@@ -339,8 +344,8 @@ void     UserStatsMainThread::UpdateDbResults()
    while( it != tempQueue.end() )
    {
       PacketDbQueryResult* dbResult = *it++;
-      if( dbResult->customData != NULL )
-            cout << "UpdateDbResults: Non-null custom data " << endl;
+ /*     if( dbResult->customData != NULL )
+            cout << "UpdateDbResults: Non-null custom data " << endl;*/
       BasePacket* packet = static_cast<BasePacket*>( dbResult );
 
       U32 connectionId = dbResult->id;

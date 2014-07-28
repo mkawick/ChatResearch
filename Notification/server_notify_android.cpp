@@ -30,8 +30,8 @@ typedef pair< string, string>  KeyValuePair;
 
 //static string  authKey              = "AIzaSyD-KJoLqlrgnGipT5lqFUeQu4YojgqWgTA";
 static string  NOTIFY_ALERT_SOUND   = "PlaydekNotification.ogg";
-GoogleAndroidNotificationSender* googleAndroidSender = NULL;
-AmazonAndroidNotificationSender* amazonSender = NULL;
+HTTP::GoogleAndroidNotificationSender* googleAndroidSender = NULL;
+HTTP::AmazonAndroidNotificationSender* amazonSender = NULL;
 //const int maxAndroidDeviceStringId = 1200; 
 
 /////////////////////////////////////////////////////////////////////////////////////
@@ -139,8 +139,8 @@ void  NotifyAndroidInit()
 {
    assert( googleAndroidSender == NULL && amazonSender == NULL );
 
-   googleAndroidSender = new GoogleAndroidNotificationSender;
-   amazonSender = new AmazonAndroidNotificationSender;
+   googleAndroidSender = new HTTP::GoogleAndroidNotificationSender;
+   amazonSender = new HTTP::AmazonAndroidNotificationSender;
 }
 
 void NotifyAndroidUninit()

@@ -523,7 +523,7 @@ int      DiplodocusAsset::CallbackFunction()
 {
    ExpireOldConnections();
 
-   UpdateAllConnections();
+   UpdateAllConnections( "KhaanAsset" );
 
    CategorizedAssetLists::iterator it = m_assetsByCategory.begin();
    while( it != m_assetsByCategory.end() )

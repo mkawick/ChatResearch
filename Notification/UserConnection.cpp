@@ -330,18 +330,6 @@ void     UserConnection::RegisterNewDevice( const PacketNotification_RegisterDev
    U32 xorValue = GetCurrentMilliseconds();
    string newDeviceUuid = GenerateUUID( xorValue );
 
- /*  string query( "INSERT INTO user_device VALUES( DEFAULT, '");
-   query += m_userInfo.uuid.c_str();
-   query += "', '";
-   query += newDeviceUuid;
-   query += "', x'";
-   query += devicetoa( (const unsigned char*)registerDevice->deviceId.c_str(), registerDevice->deviceId.size() );
-   query += "', '%s', '1', '"; // device name, icon id
-   query += boost::lexical_cast< string  >( (int) registerDevice->platformId );
-   query += "', '";
-   query += boost::lexical_cast< string  >( m_userInfo.userId );
-   query += "', '1', DEFAULT )";// is_enabled, date*/
-
    string query( "INSERT INTO user_device ( user_uuid, device_uuid, device_id, name, icon_id, platformId, user_id, is_enabled )" );
    query += " VALUES( '";
    query += m_userInfo.uuid.c_str();
@@ -353,9 +341,13 @@ void     UserConnection::RegisterNewDevice( const PacketNotification_RegisterDev
    query += boost::lexical_cast< string  >( (int) registerDevice->platformId );
    query += "', '";
    query += boost::lexical_cast< string  >( m_userInfo.userId );
-   query += "', '1' )";// is_enabled*/
+   query += "', '1' )";
 
-   cout << query << endl;
+   cout << "/////////////////////////////////////////////////////////" << endl;
+   cout << " RegisterNewDevice: " << registerDevice->deviceId << endl;
+   cout << " Useruuid: " << m_userInfo.uuid << endl;
+   cout << " UserId: " << m_userInfo.userId << endl;
+
 
    // we're going to assume that this new entry works fine. There is the potential for a uuid conflict, so we'll need to build that later.
    ExtendedRegisteredDevice* rd = new ExtendedRegisteredDevice;
@@ -425,19 +417,6 @@ void  UserConnection::CreateEnabledNotificationEntry( const PacketDbQueryResult*
 // we do not make all of the same error checks here... it's too costly and assumed to have already have been performed
 void  UserConnection::CreateNewDeviceNotificationEntry( U32 userDeviceId, U32 gameType, const string& deviceId )
 {
- /*  string query( "INSERT INTO user_device_notification VALUES( DEFAULT, ");
-   query += boost::lexical_cast< string  >( userDeviceId );
-   query += ", ";
-   query += boost::lexical_cast< string  >( gameType );
-   query += ", 1, DEFAULT, x'";
-   query += devicetoa( (const unsigned char*)deviceId.c_str(), deviceId.size() );
-   query += "')";// is enabled, timestamp*/
-
-   //cout << query << endl;
-
- /*  INSERT INTO table_name (user_device_id,game_type,is_enabled,time_changed, device_id)
-   VALUES (value1,value2,value3,...);*/
-
    string query( "INSERT INTO user_device_notification ( user_device_id, game_type, is_enabled, device_id) " );
    query += " VALUES( ";
    query += boost::lexical_cast< string  >( userDeviceId );
@@ -447,7 +426,12 @@ void  UserConnection::CreateNewDeviceNotificationEntry( U32 userDeviceId, U32 ga
    query += devicetoa( (const unsigned char*)deviceId.c_str(), deviceId.size() );
    query += "')";
 
-   cout << query << endl;
+   cout << "/////////////////////////////////////////////////////////" << endl;
+   cout << " CreateNewDeviceNotificationEntry: " << deviceId << endl;
+   cout << " user_device_id: " << userDeviceId << endl;
+   cout << " Useruuid: " << m_userInfo.uuid << endl;
+   cout << " UserId: " << m_userInfo.userId << endl;
+   //cout << query << endl;
 
    PacketDbQuery* dbQuery = new PacketDbQuery;
    dbQuery->id =           m_userInfo.connectionId;
