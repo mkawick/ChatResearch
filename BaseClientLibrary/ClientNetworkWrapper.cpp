@@ -99,7 +99,13 @@ bool     ClientNetworkWrapper::IsConnected( bool isMainServer ) const
    {
       if( m_requiresGatewayDiscovery == true )
          return false;
-      return m_fruitadens[ ConnectionNames_Main ]->IsConnected();
+	  if( m_fruitadens[ ConnectionNames_Main ]->GetName() == "LoadBalancer" )
+		  return false;
+
+      bool isMainConnected = m_fruitadens[ ConnectionNames_Main ]->IsConnected();
+	  //PrintFunctionName( __FUNCTION__ );
+	  cout << "Is main connected " << std::boolalpha << isMainConnected << std::noboolalpha << endl;
+	  return isMainConnected;
    }
    else
    {
@@ -2988,7 +2994,7 @@ void     ClientNetworkWrapper::LoadBalancedNewAddress( const PacketRerouteReques
    if( m_requiresGatewayDiscovery == false )
       return;
 
-   m_requiresGatewayDiscovery = false;// clear this flag
+   
 
    //m_fruitadens[ ConnectionNames_Main ]->SetName( "MainGateway" );
 
@@ -3026,6 +3032,10 @@ void     ClientNetworkWrapper::LoadBalancedNewAddress( const PacketRerouteReques
    {
       Disconnect(); // << slight danger here... disconnecting when we are servicing a previous request
    }
+
+   // when setting up the reroute, we must wait to clear this flag. Other threads will attempt to 
+   // reconnect, interfere in various ways, etc. This blocks a lot of bad behavior.
+   m_requiresGatewayDiscovery = false;// clear this flag
 }
 
 //-----------------------------------------------------------------------------
