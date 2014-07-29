@@ -104,7 +104,7 @@ bool     ClientNetworkWrapper::IsConnected( bool isMainServer ) const
 
       bool isMainConnected = m_fruitadens[ ConnectionNames_Main ]->IsConnected();
 	  //PrintFunctionName( __FUNCTION__ );
-	  cout << "Is main connected " << std::boolalpha << isMainConnected << std::noboolalpha << endl;
+	  //cout << "Is main connected " << std::boolalpha << isMainConnected << std::noboolalpha << endl;
 	  return isMainConnected;
    }
    else
