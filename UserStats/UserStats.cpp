@@ -158,7 +158,7 @@ int main( int argc, const char* argv[] )
 
       DiplodocusServerToServer* s2s = new DiplodocusServerToServer( serverName, serverId, 0, ServerType_UserStats );
       s2s->SetupListening( listenS2SPort );
-
+      
       //----------------------------------------------------------------
 
       if( Database::ConnectToMultipleDatabases< UserStatsMainThread > ( parser, middleware ) == false )

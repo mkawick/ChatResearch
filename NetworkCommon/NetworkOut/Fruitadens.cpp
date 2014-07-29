@@ -45,16 +45,18 @@ Fruitadens :: Fruitadens( const char* name, bool processOnlyOneIncommingPacketPe
                m_hasFailedCritically( false ),
                m_processOnlyOneIncommingPacketPerLoop( processOnlyOneIncommingPacketPerLoop ),
                m_checkForReroute( false ),
+               m_isSettingUpConnection( false ),
                m_connectedServerId( 0 ),
                m_connectedGameProductId( 0 ),
                m_port( 0 ),
                m_serverType( ServerType_General ),
                m_serverId( 0 ),
                m_numPacketsReceived( 0 ),
-               m_receiveBufferOffset( 0 ), 
+               m_receiveBufferOffset( 0 ),
+               m_networkVersionOverride( 0 ),
                m_packetHandlerInterface( NULL ),
-               m_bytesInOverflow( 0 ),
-               m_networkVersionOverride( 0 )
+               m_bytesInOverflow( 0 )
+               
 {
    m_name = name;
    memset( &m_ipAddress, 0, sizeof( m_ipAddress ) );
@@ -134,6 +136,12 @@ void   Fruitadens :: HasBeenDisconnectedCallback()
 
 bool  Fruitadens :: SetupConnection( const char* serverName, int port )
 {
+   if( m_isSettingUpConnection == true ) // preventing reentrant code.. threading protections.
+      return false;
+
+   m_isSettingUpConnection = true;
+   SetValueOnExit< bool > setter( m_isSettingUpConnection, false );
+
    Pause();
    m_port = port;
 

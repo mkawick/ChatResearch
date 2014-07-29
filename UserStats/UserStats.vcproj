@@ -64,6 +64,7 @@
 				AdditionalDependencies="../Debug/PacketLibrary.lib libmysql.lib"
 				OutputFile="$(OutDir)\$(ProjectName)Server.exe"
 				LinkIncremental="2"
+				AdditionalLibraryDirectories="..\w32libs\lib"
 				IgnoreDefaultLibraryNames="libcmt.lib"
 				GenerateDebugInformation="true"
 				SubSystem="1"
@@ -138,7 +139,9 @@
 			<Tool
 				Name="VCLinkerTool"
 				AdditionalDependencies="../Release/PacketLibrary.lib libmysql.lib"
+				OutputFile="$(OutDir)\$(ProjectName)Server.exe"
 				LinkIncremental="1"
+				AdditionalLibraryDirectories="..\w32libs\lib"
 				IgnoreDefaultLibraryNames="libcpmt.lib libcmt.lib"
 				GenerateDebugInformation="true"
 				SubSystem="1"
@@ -178,6 +181,30 @@
 			UniqueIdentifier="{4FC737F1-C7A5-4376-A066-2A32D752A2FF}"
 			>
 			<File
+				RelativePath=".\server_rating_glicko2.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\server_stats_agricola.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\server_stats_ascension.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\server_stats_plugins.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\server_stats_summonwar.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\server_stats_waterdeep.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\UserStats.cpp"
 				>
 			</File>
@@ -191,6 +218,14 @@
 			Filter="h;hpp;hxx;hm;inl;inc;xsd"
 			UniqueIdentifier="{93995380-89BD-4b04-88EB-625FBE52EBFB}"
 			>
+			<File
+				RelativePath=".\server_rating_glicko2.h"
+				>
+			</File>
+			<File
+				RelativePath=".\server_stats_plugins.h"
+				>
+			</File>
 			<File
 				RelativePath=".\UserStatsMainThread.h"
 				>

@@ -345,7 +345,12 @@ void     DiplodocusLoadBalancer::HandleRerouteRequest( U32 connectionId )
 
                address.port = it->port;
 
-               cout << "addr( " << address.address << " ) : port( " << address.port << " )" << endl;
+               cout << "addr( " << address.address << " ) : port( " << address.port << " ) : type(";
+               if( it->type == GatewayInfo::Type_Normal )
+                  cout << " main";
+               else
+                  cout << " asset";
+               cout << ")" << endl;
                
                if( it->type == GatewayInfo::Type_Normal )
                {

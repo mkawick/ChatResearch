@@ -268,26 +268,22 @@ protected:
       ConnectionNames_Asset,
       ConnectionNames_Num
    };
-
-   Fruitadens*                               m_fruitadens[ ConnectionNames_Num ];   
+   Fruitadens* m_fruitadens[ ConnectionNames_Num ];
+   int                                       m_normalSleepTime, m_boostedSleepTime;
    bool                                      m_isThreadPerformanceBoosted[ ConnectionNames_Num ];
    time_t                                    m_timeWhenThreadPerformanceBoosted[ ConnectionNames_Num ];
-   string                                    m_serverIpAddress[ ConnectionNames_Num ];
-   U16                                       m_serverConnectionPort[ ConnectionNames_Num ];
    //----------------------------------
 
    string                                    m_userName, m_attemptedUsername;
    string                                    m_email;
-   string                                    m_uuid;   
+   string                                    m_uuid;
+   string                                    m_serverIpAddress[ ConnectionNames_Num ];
+   U16                                       m_serverConnectionPort[ ConnectionNames_Num ];
    string                                    m_loadBalancerDns;
    string                                    m_loginKey;
    string                                    m_motto;
    string                                    m_thisDeviceUuid;
-
-   int                                       m_normalSleepTime, m_boostedSleepTime;
-   
    U32                                       m_selectedGame;
-   U8                                        m_gameProductId;
    int                                       m_avatarId;
    int                                       m_languageId;
 
@@ -313,7 +309,7 @@ protected:
    string                                       m_otherUserPurchaseUuid;
    SerializedVector< PurchaseEntryExtended >    m_otherUsersPurchases;
 
-   
+   U8                                        m_gameProductId;
    bool                                      m_connectToAssetServer;
    bool                                      m_isLoggingIn;
    bool                                      m_isLoggedIn;
@@ -324,9 +320,12 @@ protected:
    int                                       m_lastRawDataIndex;
    int                                       m_loadBalancerPort;
 
+   mutable U32                               m_beginTime, m_endTime;
    bool                                      m_wasCallbackForReadyToBeginSent;
    bool                                      m_requiresGatewayDiscovery;   
-   bool                                      m_hasFinishedInitializing;
+   bool                                      m_isInvalid;
+   bool                                      m_isReconnectingAfterLoadBalancerDiscovery;
+   bool                                      m_isBusyConnectingToGateway;
 
    MBerNotifierList                          m_callbacks;
    RawDataAccumulator                        m_rawDataBuffer;

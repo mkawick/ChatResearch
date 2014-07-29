@@ -18,6 +18,7 @@ class PacketDbQuery;
 class PacketDbQueryResult;
 ///////////////////////////////////////////////////////////////////
 
+
 class UserStatsMainThread : public Diplodocus< KhaanServerToServer >
 {
 public: 
@@ -26,9 +27,12 @@ public:
    UserStatsMainThread( const string& serverName, U32 serverId );
    ~UserStatsMainThread();
 
+   void     Init();
+
    bool     AddInputChainData( BasePacket* packet, U32 connectionId );
    bool     AddOutputChainData( BasePacket* packet, U32 connectionId );
    bool     SendMessageToClient( BasePacket* packet, U32 connectionId );
+   bool     SendGameData( U32 connectionId, int packetSize, const U8* packet );
    bool     AddQueryToOutput( PacketDbQuery* dbQuery );
 
    void     ServerWasIdentified( IChainedInterface* khaan );

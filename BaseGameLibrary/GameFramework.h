@@ -84,6 +84,8 @@ public:
    void     SendPushNotification( U32 userId, int gameType, unsigned int gameId, int notificationType, const string& additionalText );
    void     UpdatePushNotificationCount( U32 userId, int gameType, int notificationCount );
 
+   void     SendGameResultToStatServer( int gameType, U32 gameId, int playerCount,
+                                 unsigned int *pResultOrder, unsigned int *pPlayerFactions, unsigned int forfeitFlags );
 
    DiplodocusGame*   GetGame() { return m_connectionManager; }
    void     LockGameMutex();

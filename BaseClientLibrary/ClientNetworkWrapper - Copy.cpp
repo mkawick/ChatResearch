@@ -33,12 +33,21 @@ struct GameData
 ///////////////////////////////////////////////////////////////////////////////////
 //------------------------------------------------------------
 
-ClientNetworkWrapper::ClientNetworkWrapper( U8 gameProductId, bool connectToAssetServer ): 
-      m_normalSleepTime( 50 ),
-      m_boostedSleepTime( 8 ),         
-      m_selectedGame( 0 ),
+ClientNetworkWrapper::ClientNetworkWrapper( U8 gameProductId, bool connectToAssetServer ): //PacketHandlerInterface()
       m_gameProductId( gameProductId ), 
-      m_avatarId( 0 ),
+      m_connectToAssetServer( connectToAssetServer ),
+      m_isLoggingIn( false ),
+      m_isLoggedIn( false ),
+      m_isCreatingAccount( false ),
+      m_printFunction( false ),
+      m_connectionId( 0 ), 
+      m_selectedGame( 0 ),
+      m_normalSleepTime( 50 ),
+      m_boostedSleepTime( 8 ),
+      m_lastRawDataIndex( 0 ),
+      m_loadBalancerPort( 9500 ),
+      m_enabledMultithreadedProtections( false ),
+      m_savedLoginInfo( NULL ),
       m_languageId( LanguageList_english ),
       m_showWinLossRecord( false ),
       m_marketingOptOut( false ),
@@ -46,20 +55,12 @@ ClientNetworkWrapper::ClientNetworkWrapper( U8 gameProductId, bool connectToAsse
       m_displayOnlineStatusToOtherUsers( false ),
       m_blockContactInvitations( false ),
       m_blockGroupInvitations( false ),
-      m_connectToAssetServer( connectToAssetServer ),
-      m_isLoggingIn( false ),
-      m_isLoggedIn( false ),
-      m_isCreatingAccount( false ),
-      m_printFunction( false ),
-      m_connectionId( 0 ),       
-      m_lastRawDataIndex( 0 ),
-      m_loadBalancerPort( DefaultLoadBalancerPort ),
       m_wasCallbackForReadyToBeginSent( false ),
       m_requiresGatewayDiscovery( true ),
-      m_hasFinishedInitializing( true ),
-      m_enabledMultithreadedProtections( false ),
+      m_isInvalid( false ),
       m_networkVersionOverride( 0 ),
-      m_savedLoginInfo( NULL )
+      m_isReconnectingAfterLoadBalancerDiscovery( false ),
+      m_isBusyConnectingToGateway( false )
 {
    PrintFunctionName( __FUNCTION__ );
    m_loadBalancerDns = "you.have.not.initialized.the.library.properly.com"; // just the default
@@ -67,10 +68,7 @@ ClientNetworkWrapper::ClientNetworkWrapper( U8 gameProductId, bool connectToAsse
 
    for( int i=0; i< ConnectionNames_Num; i++ )
    {
-      m_isThreadPerformanceBoosted[i] = false;
-      m_timeWhenThreadPerformanceBoosted[i] = 0;
       m_fruitadens[i] = NULL;
-      m_serverConnectionPort[i] = 0;
    }
 }
 
@@ -93,13 +91,10 @@ ClientNetworkWrapper::~ClientNetworkWrapper()
    }
 }
 
-//////////////////////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////////////////////
-
 bool     ClientNetworkWrapper::IsConnected( bool isMainServer ) const
 {
    // PrintFunctionName( __FUNCTION__ ); // too chatty
-   if( m_hasFinishedInitializing == false )
+   if( m_isInvalid == true )
       return false;
 
    if( isMainServer )
@@ -160,7 +155,7 @@ void  ClientNetworkWrapper::CreateNetworkObjects()
 void  ClientNetworkWrapper::Init( const char* serverDNS )
 {
    PrintFunctionName( __FUNCTION__ );
-   m_hasFinishedInitializing = true;
+   m_isInvalid = false;
    CreateNetworkObjects();
 
    if( m_fruitadens[0]->IsSocketValid() || IsConnected() == true )
@@ -204,8 +199,12 @@ void  ClientNetworkWrapper::Init( const char* serverDNS )
 void     ClientNetworkWrapper::ReconnectAfterTalkingToLoadBalancer()
 {
    PrintFunctionName( __FUNCTION__ );
-   if( IsConnected() == false )
+   // this flag is used to prevent reentrant code from stomping the current operations.
+   // This could be a mutex, but I am avoiding that to prevent locked up UI.
+   if( IsConnected() == false && m_isBusyConnectingToGateway == false && m_isReconnectingAfterLoadBalancerDiscovery == false )
    {
+      m_isReconnectingAfterLoadBalancerDiscovery = true;
+      bool  successfulConnection = false;
       for( int i=0; i< ConnectionNames_Num; i++ )
       {
          if( m_connectToAssetServer == false && 
@@ -224,16 +223,24 @@ void     ClientNetworkWrapper::ReconnectAfterTalkingToLoadBalancer()
 
          cout << " Server address[" << i <<"] = " << m_serverIpAddress[i].c_str() << ":" << m_serverConnectionPort[i] << endl;
          m_fruitadens[i]->RegisterPacketHandlerInterface( this );
-         m_fruitadens[i]->Connect( m_serverIpAddress[i].c_str(), m_serverConnectionPort[i] );
+         successfulConnection |= m_fruitadens[i]->Connect( m_serverIpAddress[i].c_str(), m_serverConnectionPort[i] );
       }
 
-      if( m_serverIpAddress[ ConnectionNames_Main ].size() > 0 )
+      if( successfulConnection == false &&
+         m_serverIpAddress[ ConnectionNames_Main ].size() > 0 )
       {
          string tempName( "MainGateway" );
          m_fruitadens[ ConnectionNames_Main ]->SetName( tempName );
       }
+      m_isReconnectingAfterLoadBalancerDiscovery = false;
+      if( successfulConnection )
+      {
+         m_isBusyConnectingToGateway = true;
+      }
    }
 }
+
+//////////////////////////////////////////////////////////////////////////
 
 void     ClientNetworkWrapper::Disconnect()
 {
@@ -257,21 +264,15 @@ void     ClientNetworkWrapper::Disconnect()
 bool     ClientNetworkWrapper::InitialConnectionCallback( const Fruitadens* connectionObject )
 { 
    PrintFunctionName( __FUNCTION__ );
-   cout << "m_requiresGatewayDiscovery=" << boolalpha << m_requiresGatewayDiscovery << noboolalpha << endl;
-   bool isLoadBalancer = connectionObject->GetName() == "LoadBalancer";
-   cout << "isLoadBalancer=" << boolalpha << isLoadBalancer << noboolalpha << endl;
-   
-   if( m_requiresGatewayDiscovery == true && // main stateful flag
-      isLoadBalancer == true ) // main thread does double duty here
+   if( m_requiresGatewayDiscovery && // main stateful flag
+      connectionObject->GetName() == "LoadBalancer" ) // main thread does double duty here
    {
       PacketRerouteRequest* request = new PacketRerouteRequest;
       SerializePacketOut( request );
    }
    else
    {
-      bool isMainGateway = connectionObject->GetName() == "MainGateway";
-      cout << "isMainGateway=" << boolalpha << isMainGateway << noboolalpha << endl;
-      if( isMainGateway )
+      if( connectionObject->GetName() == "MainGateway" )
       {
          PacketHello          hello;
          SerializePacketOut( &hello );
@@ -291,6 +292,7 @@ bool     ClientNetworkWrapper::InitialConnectionCallback( const Fruitadens* conn
          Notification( ClientSideNetworkCallback::NotificationType_AssetHasBeenConnectedToGateway );
       }
    }
+   m_isBusyConnectingToGateway = false;
    return false; 
 }
 
@@ -308,6 +310,8 @@ bool     ClientNetworkWrapper::InitialDisconnectionCallback( const Fruitadens* c
    {
       Notification( ClientSideNetworkCallback::NotificationType_AssetHasBeenDisconnectedToGateway );
    }
+
+    m_isBusyConnectingToGateway = false;
    
    return false; 
 }
@@ -317,12 +321,12 @@ bool     ClientNetworkWrapper::InitialDisconnectionCallback( const Fruitadens* c
 void  ClientNetworkWrapper::Exit()
 {
    PrintFunctionName( __FUNCTION__ );
-   if( m_hasFinishedInitializing == false )
+   if( m_isInvalid == true )
       return;
 
    Disconnect();
 
-   m_hasFinishedInitializing = false;
+   m_isInvalid = true;
 
    for( int i=0; i< ConnectionNames_Num; i++ )
    {
@@ -3010,7 +3014,7 @@ bool     ClientNetworkWrapper::SerializePacketOut( BasePacket* packet ) const
    packet->gameInstanceId = m_selectedGame;
    packet->gameProductId = m_gameProductId;
 
-   //m_beginTime = GetCurrentMilliseconds();
+   m_beginTime = GetCurrentMilliseconds();
 
    U8 type = packet->packetType;
    if( type == PacketType_Asset ) 
@@ -3068,7 +3072,7 @@ void     ClientNetworkWrapper::RestoreNormalThreadPerformance( ConnectionNames w
 
 void     ClientNetworkWrapper::ExpireThreadPerformanceBoost( ConnectionNames whichConnection )
 {
-   //PrintFunctionName( __FUNCTION__ );// chatty
+   PrintFunctionName( __FUNCTION__ );
    assert( whichConnection < ConnectionNames_Num );
    if( m_isThreadPerformanceBoosted[ whichConnection ] == true )
    {
@@ -3089,8 +3093,6 @@ void     ClientNetworkWrapper::LoadBalancedNewAddress( const PacketRerouteReques
    if( m_requiresGatewayDiscovery == false )
       return;
 
-   cout << "BasePacket_RerouteRequestResponse:" << endl;
-   cout << "Num server locations: " << response->locations.size() << endl;
    
 
    //m_fruitadens[ ConnectionNames_Main ]->SetName( "MainGateway" );
@@ -4320,6 +4322,22 @@ void     ClientNetworkWrapper::NotifyClientToBeginSendingRequests()
       m_wasCallbackForReadyToBeginSent = true;
    }
 }
+
+
+//------------------------------------------------------------------------
+/*
+void     ClientNetworkWrapper::InitialConnectionCallback()
+{
+   PacketHello          hello;
+   SerializePacketOut( &hello );
+
+   if( m_savedLoginInfo != NULL )
+   {
+      SerializePacketOut( m_savedLoginInfo );
+      PacketCleaner cleaner( m_savedLoginInfo );
+      m_savedLoginInfo = NULL;
+   }
+}*/
 
 //------------------------------------------------------------------------
 

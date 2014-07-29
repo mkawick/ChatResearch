@@ -30,30 +30,38 @@ using boost::format;
 Khaan :: Khaan() : ChainedInterface< BasePacket* >(), 
                   m_socketId (0), 
                   m_bufferEvent(NULL), 
+                  m_listeningPort( 0 ),
                   m_timeOfConnection( 0 ),
                   m_useLibeventToSend( true ),
                   m_criticalFailure( false ),
+                  m_isInTelnetMode( false ),
                   m_outboundBuffer( NULL ),
                   m_isExpectingMoreDataInPreviousPacket( false ),
                   m_expectedBytesReceivedSoFar( 0 ),
-                  m_expectedBytes( 0 ),
-                  m_isInTelnetMode( false )
+                  m_expectedBytes( 0 )
+                  
 {
+   m_tempBuffer[0] = 0;
+   m_tempBuffer[1] = 0;
    SetOutboudBufferSize( MaxBufferSize + 1024 );
 }
 
 Khaan ::Khaan( int socketId, bufferevent* be, int connectionId ) : ChainedInterface< BasePacket* >(), 
                                                                   m_socketId( socketId ), 
                                                                   m_bufferEvent( be ), 
+                                                                  m_listeningPort( 0 ),
                                                                   m_timeOfConnection( 0 ),
                                                                   m_useLibeventToSend( true ),
                                                                   m_criticalFailure( false ),
+                                                                  m_isInTelnetMode( false ),
                                                                   m_outboundBuffer( NULL ),
                                                                   m_isExpectingMoreDataInPreviousPacket( false ),
                                                                   m_expectedBytesReceivedSoFar( 0 ),
-                                                                  m_expectedBytes( 0 ),
-                                                                  m_isInTelnetMode( false )
+                                                                  m_expectedBytes( 0 )
 {
+   m_tempBuffer[0] = 0;
+   m_tempBuffer[1] = 0;
+
    SetConnectionId( connectionId );
    SetOutboudBufferSize( MaxBufferSize + 1024 );
 }
@@ -366,6 +374,7 @@ void     Khaan :: RegisterToReceiveNetworkTraffic()
 // Called by libevent when there is data to read.
 void     Khaan :: OnDataAvailable( struct bufferevent* bufferEventObj, void* arg )
 {
+   cout << "Data avail:" << endl;
    struct evbuffer *input = bufferevent_get_input( bufferEventObj );
    size_t readLength = evbuffer_get_length( input );
 
@@ -398,6 +407,13 @@ void     Khaan :: OnDataAvailable( struct bufferevent* bufferEventObj, void* arg
       
       if( totalBytes )
       {
+         cout << "data=[" << endl;
+         for( int i=0; i<totalBytes; i++ )
+         {
+            cout << dataBuffer[i] << " ";
+         }
+         cout << "]" << endl;
+
          This->OnDataReceived( dataBuffer, static_cast< int>( totalBytes ) );
       }
    }

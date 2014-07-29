@@ -139,6 +139,7 @@
 			<Tool
 				Name="VCLinkerTool"
 				AdditionalDependencies="../Release/PacketLibrary.lib ws2_32.lib Secur32.lib ..\w32libs\lib\ssleay32MT.lib ..\w32libs\lib\libeay32MT.lib ..\w32libs\lib\curllib.lib ..\w32libs\lib\libmysql.lib"
+				OutputFile="$(OutDir)\$(ProjectName)Server.exe"
 				LinkIncremental="1"
 				IgnoreDefaultLibraryNames="libcpmt.lib libcmt.lib"
 				GenerateDebugInformation="true"

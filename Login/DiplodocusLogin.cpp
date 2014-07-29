@@ -1003,7 +1003,17 @@ void     DiplodocusLogin:: UpdatePendingUserRecord( const CreateAccountResultsAg
    string query = "UPDATE user_temp_new_user SET user_name='%s', user_name_match='%s', "
          "user_pw_hash='%s', user_email='%s', user_gamekit_hash='%s', game_id='%s', "
          "language_id='%s', was_email_sent='0', lookup_key=NULL, flagged_as_invalid='0' WHERE id='";
-   query += boost::lexical_cast< U32 >( aggregator->m_pendingUserRecordMatchingEmail );
+   if( aggregator->m_pendingUserRecordMatchingGKHash != 0 )
+      query += boost::lexical_cast< U32 >( aggregator->m_pendingUserRecordMatchingGKHash );
+   else if( aggregator->m_pendingUserRecordMatchingEmail != 0 )
+      query += boost::lexical_cast< U32 >( aggregator->m_pendingUserRecordMatchingEmail );
+   else if( aggregator->m_pendingUserRecordMatchingName !=0 )
+      query += boost::lexical_cast< U32 >( aggregator->m_pendingUserRecordMatchingName );
+   else 
+   {
+      cout << "Bad update user record in user account creation" << endl;
+      assert( 0 );
+   }
    query += "'";
 
    PacketDbQuery* dbQuery = new PacketDbQuery;

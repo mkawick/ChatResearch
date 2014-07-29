@@ -15,6 +15,9 @@ using namespace std;
 #include "../NetworkCommon/Packets/LoginPacket.h"
 #include "../NetworkCommon/Packets/AnalyticsPacket.h"
 #include "../NetworkCommon/Packets/UserStatsPacket.h"
+#include "../NetworkCommon/Packets/GamePacket.h"
+
+#include "server_stats_plugins.h"
 
 #include <boost/format.hpp>
 #include <boost/lexical_cast.hpp>
@@ -30,7 +33,14 @@ UserStatsMainThread::~UserStatsMainThread()
 {
 }
 
+void UserStatsMainThread::Init()
+{
+   Diplodocus::Init();
 
+   DbHandle *pStatDB = GetDbConnectionByType( Database::Deltadromeus::DbConnectionType_StatData );
+
+   InitStatsPlugins( pStatDB );
+}
 //---------------------------------------------------------------
 
 void     UserStatsMainThread::ServerWasIdentified( IChainedInterface* khaan )
@@ -145,7 +155,70 @@ bool  UserStatsMainThread::HandlePacketFromClient( BasePacket* packet, U32 conne
             //DbQuery
          }
          break;
-         //factory.CleanupPacket( packet );
+      case PacketUserStats::UserStatsType_RequestGameFactionStats:
+         {
+            PacketUserStats_RequestGameFactionStats *pRequestFaction = static_cast< PacketUserStats_RequestGameFactionStats* >( unwrappedPacket );
+
+            if( pRequestFaction->gameType < 0 || pRequestFaction->gameType >= k_statsPluginCount )
+            {
+               break;
+            }
+
+            if( pRequestFaction->userId == 0 )
+            {
+               if( s_StatsPlugins[pRequestFaction->gameType].onRequestGlobalFactionStats != NULL )
+               {
+                  s_StatsPlugins[pRequestFaction->gameType].onRequestGlobalFactionStats( this, connectionId );
+               }
+            }
+            else
+            {
+               if( s_StatsPlugins[pRequestFaction->gameType].onRequestPlayerFactionStats != NULL )
+               {
+                  s_StatsPlugins[pRequestFaction->gameType].onRequestPlayerFactionStats( this, connectionId, pRequestFaction->userId );
+               }
+            }
+         }
+         break;
+      case PacketUserStats::UserStatsType_RequestGameProfile:
+         {
+            PacketUserStats_RequestGameProfile *pRequestGameProfile = static_cast< PacketUserStats_RequestGameProfile* >( unwrappedPacket );
+
+            if( pRequestGameProfile->gameType < 0 || pRequestGameProfile->gameType >= k_statsPluginCount )
+            {
+               break;
+            }
+
+            if( s_StatsPlugins[pRequestGameProfile->gameType].onRequestGameProfile != NULL )
+            {
+               s_StatsPlugins[pRequestGameProfile->gameType].onRequestGameProfile( this, connectionId,
+                  pRequestGameProfile->profileUserId, pRequestGameProfile->requestUserId );
+            }
+         }
+         break;
+      case PacketUserStats::UserStatsType_RequestUserProfileStats:
+         {
+            PacketUserStats_RequestUserProfileStats *pRequestUserProfileStats = static_cast< PacketUserStats_RequestUserProfileStats* >( unwrappedPacket );
+
+            if( pRequestUserProfileStats->gameType < 0 || pRequestUserProfileStats->gameType >= k_statsPluginCount )
+            {
+               break;
+            }
+
+            if( s_StatsPlugins[pRequestUserProfileStats->gameType].onRequestUserProfileStats != NULL )
+            {
+               if( s_StatsPlugins[pRequestUserProfileStats->gameType].onRequestUserProfileStats(this,connectionId,pRequestUserProfileStats->profileUserId) )
+               {
+                  break;
+               }
+            }
+
+            PacketUserStats_RequestUserProfileStatsResponse* response = new PacketUserStats_RequestUserProfileStatsResponse;
+            response->profileUserId = pRequestUserProfileStats->profileUserId;
+            response->gameType = pRequestUserProfileStats->gameType;
+            SendPacketToGateway( response, connectionId );
+         }
+         break;
       }
       return true;
    }
@@ -288,6 +361,17 @@ bool     UserStatsMainThread::HandleUserStatPacket( BasePacket* packet, U32 serv
             cout << "End user stats" << endl;
          }
          break;
+      case PacketUserStats::UserStatsType_ReportGameResult:
+         {
+            PacketUserStats_ReportGameResult *pReportResult = static_cast< PacketUserStats_ReportGameResult* >( packet );
+
+            if( s_StatsPlugins[pReportResult->gameType].onReportGameResult != NULL )
+            {
+               s_StatsPlugins[pReportResult->gameType].onReportGameResult( pReportResult->gameId, pReportResult->playerCount,
+                  pReportResult->resultOrder, pReportResult->playerFactions );
+            }
+         }
+         break;
       }
    }
 
@@ -301,6 +385,11 @@ bool   UserStatsMainThread::AddOutputChainData( BasePacket* packet, U32 connecti
    if( packet->packetType == PacketType_ServerJobWrapper )
    {
       return HandlePacketToOtherServer( packet, connectionId );
+   }
+
+   if( packet->packetType == PacketType_GatewayWrapper )
+   {
+      return SendMessageToClient( packet, connectionId );
    }
 
    if( packet->packetType == PacketType_DbQuery )
@@ -395,6 +484,14 @@ bool     UserStatsMainThread::SendMessageToClient( BasePacket* packet, U32 conne
    }*/
 
    return false;
+}
+
+bool  UserStatsMainThread::SendGameData( U32 connectionId, int packetSize, const U8* packet )
+{
+   const int MaxSize = PacketGameplayRawData::MaxBufferSize  - sizeof( PacketGatewayWrapper );
+
+   return SendRawData< PacketGameplayRawData, UserStatsMainThread > 
+      ( packet, packetSize, PacketGameplayRawData::Game, MaxSize, GetServerId(), GetGameProductId(), "raw", connectionId, this );
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////

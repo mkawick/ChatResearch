@@ -38,7 +38,7 @@ start C:\projects\Mber\ServerStack\Debug/AnalyticsServer.exe listen.port=7800 s2
 start C:\projects\Mber\ServerStack\Debug/UserStatsServer.exe listen.port=12000 s2s.port=12002   db.address=10.16.4.44 db.port=3306 db.username=incinerator db.password=Cm8235 db.schema=playdek
 ping -n 1 -w 14000 127.0.0.1 > nul
 
-REM start ./debug/GameServer.exe db.port=16384 listen.port=21000
+REM start ./Debug/GameServer.exe db.port=16384 listen.port=21000
 
 start C:\projects\Mber\ServerStack\Debug/GatewayServer.exe listen.port=9600 chat.address=localhost chat.port=7400 login.port=7600 server.name="Main Gateway" asset.block=true balancer.port=9502 chat.port=7400 print.packets=false games=[localhost:21000:summon_war,192.168.1.1:21100:MFM] 
 

@@ -100,6 +100,7 @@ protected:
    bool                 m_hasFailedCritically;
    bool                 m_processOnlyOneIncommingPacketPerLoop;
    bool                 m_checkForReroute;
+   bool                 m_isSettingUpConnection;
    U32                  m_connectedServerId;
    U8                   m_connectedGameProductId;
 

@@ -12,6 +12,7 @@
 
 #include "../NetworkCommon/Packets/GamePacket.h"
 #include "../NetworkCommon/Packets/NotificationPacket.h"
+#include "../NetworkCommon/Packets/UserStatsPacket.h"
 #include "../NetworkCommon/Packets/ServerToServerPacket.h"
 #include "../NetworkCommon/Packets/PacketFactory.h"
 
@@ -440,6 +441,34 @@ void GameFramework::UpdatePushNotificationCount( U32 userId, int gameType, int n
       wrapper->pPacket = packet;
 
       m_notificationServer->AddOutputChainData( wrapper, -1 );
+   }
+}
+
+void GameFramework::SendGameResultToStatServer( int gameType, U32 gameId, int playerCount,
+                                 unsigned int *pResultOrder, unsigned int *pPlayerFactions, unsigned int forfeitFlags )
+{
+   if( playerCount < 2 || playerCount > PacketUserStats_ReportGameResult::k_maxPlayerCount )
+   {
+      return;
+   }
+
+   if( m_userStatsServer )
+   {
+      PacketUserStats_ReportGameResult* packet = new PacketUserStats_ReportGameResult;
+      packet->gameType = gameType;
+      packet->gameId = gameId;
+      packet->playerCount = playerCount;
+      memcpy( packet->resultOrder, pResultOrder, playerCount * sizeof(unsigned int) );
+      memcpy( packet->playerFactions, pPlayerFactions, playerCount * sizeof(unsigned int) );
+      packet->forfeitFlags = forfeitFlags;
+
+      PacketServerToServerWrapper* wrapper = new PacketServerToServerWrapper;
+      wrapper->gameInstanceId = m_serverId;
+      wrapper->gameProductId = m_gameProductId;
+      wrapper->serverId = m_serverId;
+      wrapper->pPacket = packet;
+
+      m_userStatsServer->AddOutputChainData( wrapper, -1 );
    }
 }
 

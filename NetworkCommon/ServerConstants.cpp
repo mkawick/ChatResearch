@@ -15,6 +15,7 @@
 
 #endif
 
+const char* DefaultLoadBalancerAddress = "mber.pub.playdekgames.com";
 
 const char* productNames [] = {
    "",
