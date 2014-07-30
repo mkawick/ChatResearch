@@ -123,6 +123,7 @@ protected:
 
    U8*            m_outboundBuffer;
 
+   bool           m_isDisconnected;
    bool           m_isInTelnetMode;
    bool           m_isExpectingMoreDataInPreviousPacket;
    int            m_expectedBytesReceivedSoFar;

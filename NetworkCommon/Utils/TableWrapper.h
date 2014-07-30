@@ -454,6 +454,7 @@ public:
       Column_parent_id,
       Column_converts_to_product_id,
       Column_converts_to_quantity,
+      Column_is_hidden,
       Column_end
    };
 };

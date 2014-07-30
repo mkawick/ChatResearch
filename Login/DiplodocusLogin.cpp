@@ -2884,7 +2884,7 @@ void     DiplodocusLogin:: LoadInitializationData()
          dbQuery->serverLookup = 0;
 
          // add in 0's last
-         dbQuery->query = "SELECT * FROM product ORDER BY product_id DESC"; // WHERE product_id > 0 
+         dbQuery->query = "SELECT * FROM product WHERE is_hidden=0 ORDER BY product_id DESC"; // WHERE product_id > 0 
 
          AddQueryToOutput( dbQuery );
       }

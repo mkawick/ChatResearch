@@ -35,6 +35,7 @@ Khaan :: Khaan() : ChainedInterface< BasePacket* >(),
                   m_useLibeventToSend( true ),
                   m_criticalFailure( false ),
                   m_isInTelnetMode( false ),
+                  m_isDisconnected( false ),
                   m_outboundBuffer( NULL ),
                   m_isExpectingMoreDataInPreviousPacket( false ),
                   m_expectedBytesReceivedSoFar( 0 ),
@@ -54,6 +55,7 @@ Khaan ::Khaan( int socketId, bufferevent* be, int connectionId ) : ChainedInterf
                                                                   m_useLibeventToSend( true ),
                                                                   m_criticalFailure( false ),
                                                                   m_isInTelnetMode( false ),
+                                                                  m_isDisconnected( false ),
                                                                   m_outboundBuffer( NULL ),
                                                                   m_isExpectingMoreDataInPreviousPacket( false ),
                                                                   m_expectedBytesReceivedSoFar( 0 ),
@@ -85,6 +87,7 @@ Khaan ::~Khaan()
 
 void   Khaan ::PreCleanup()
 {
+   m_isDisconnected = true;
    if( m_listOfOutputs.size() == 0 )
       return;
 
@@ -109,7 +112,7 @@ void	Khaan :: SetIPAddress( const sockaddr_in& addr )
 
 bool	Khaan :: OnDataReceived( const U8* data, int length )
 {
-   if( m_criticalFailure )
+   if( m_criticalFailure || m_isDisconnected )
       return false;
 
    BasePacket* packetIn = NULL;
@@ -142,6 +145,9 @@ bool	Khaan :: OnDataReceived( const U8* data, int length )
 
 bool	Khaan :: Update()
 {
+   if( m_isDisconnected )
+      return false;
+
    UpdateInwardPacketList();
    UpdateOutwardPacketList();
 
@@ -173,7 +179,7 @@ void  Khaan :: SetOutboudBufferSize( U32 size )
 
 void	Khaan :: UpdateInwardPacketList()
 {
-   if( m_packetsIn.size() == 0 )
+   if( m_packetsIn.size() == 0 || m_isDisconnected )
       return;
 
    int numOutputs = static_cast<int>( m_listOfOutputs.size() );
@@ -205,6 +211,9 @@ void	Khaan :: UpdateInwardPacketList()
 
 int	Khaan :: SendData( const U8* buffer, int length )
 {
+   if( m_isDisconnected )
+      return -1;
+
    if( m_useLibeventToSend )
    {
       bufferevent*	bev = GetBufferEvent();
@@ -230,6 +239,7 @@ int	Khaan :: SendData( const U8* buffer, int length )
    return send( m_socketId, (const char* )buffer, length, 0 );
 }
 
+//------------------------------------------------------------------------------
 
 bool  Khaan :: HandleTelnetModeData( const U8* data, int length )
 {
@@ -265,7 +275,7 @@ void  Khaan::SendTelnetInstructions()
 
 int	Khaan :: UpdateOutwardPacketList()
 {
-   if( m_packetsOut.size() == 0 )
+   if( m_packetsOut.size() == 0 || m_isDisconnected )
       return 0;
 
    int length;
@@ -288,10 +298,10 @@ int	Khaan :: UpdateOutwardPacketList()
 
       BasePacket* packet = m_packetsOut.front();      
       packet->SerializeOut( m_outboundBuffer, length );
-      if( packet->packetType == 9 )
+    /*  if( packet->packetType == 9 )
       {
          sizeOfHeader = sizeOfHeader;
-      }
+      }*/
       
       totalBytesLeftToWrite -= length;
       if( totalBytesLeftToWrite < 0 )
@@ -374,12 +384,15 @@ void     Khaan :: RegisterToReceiveNetworkTraffic()
 // Called by libevent when there is data to read.
 void     Khaan :: OnDataAvailable( struct bufferevent* bufferEventObj, void* arg )
 {
-   cout << "Data avail:" << endl;
+   Khaan*      This = (Khaan*) arg;
+   if( This->m_isDisconnected )
+      return;
+
+   //cout << "Data avail:" << endl;
    struct evbuffer *input = bufferevent_get_input( bufferEventObj );
    size_t readLength = evbuffer_get_length( input );
-
    const U32   MaxBufferSize = 12*1024;// allowing for massive, reads that should never happen
-   Khaan*      This = (Khaan*) arg;
+   
    if( This == NULL )
       return;
    
@@ -407,42 +420,23 @@ void     Khaan :: OnDataAvailable( struct bufferevent* bufferEventObj, void* arg
       
       if( totalBytes )
       {
-         cout << "data=[" << endl;
-         for( int i=0; i<totalBytes; i++ )
+       /*  cout << "data=[" << endl;
+         for( U32 i=0; i<totalBytes; i++ )
          {
-            cout << dataBuffer[i] << " ";
+            cout << (int)( dataBuffer[i] ) << " ";
          }
-         cout << "]" << endl;
+         cout << "]" << endl;*/
 
          This->OnDataReceived( dataBuffer, static_cast< int>( totalBytes ) );
       }
    }
-   /* Read 12k at a time and send it to all connected clients. */
-  /* while( 1 )
-   {
-      numBytesReceived = bufferevent_read( bufferEventObj, data, sizeof( data ) );
-      if( numBytesReceived <= 0 ) // nothing received
-      {
-         break;
-      }
-      if( numBytesReceived >= MaxBufferSize )
-      {
-         cout << "** Major problem ** too much data" << endl;
-         assert( 0 );
-      }
-
-      if( This )
-      {
-         This->OnDataReceived( data, static_cast< int>( numBytesReceived ) );
-      }
-   }*/
 }
 
 //---------------------------------------------------------------
 
 void     Khaan :: FlushReadBuffer()
 {
-   if( GetBufferEvent() )
+   if( GetBufferEvent() && m_isDisconnected == false )
    bufferevent_flush( GetBufferEvent(), EV_READ, BEV_FINISHED );
 }
 
@@ -450,6 +444,7 @@ void     Khaan :: FlushReadBuffer()
 
 void     Khaan :: CloseConnection()
 {
+   m_isDisconnected = true;
    if( GetBufferEvent() )
    {
       bufferevent_free( GetBufferEvent() );

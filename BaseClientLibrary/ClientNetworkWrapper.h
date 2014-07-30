@@ -325,7 +325,8 @@ protected:
    int                                       m_loadBalancerPort;
 
    bool                                      m_wasCallbackForReadyToBeginSent;
-   bool                                      m_requiresGatewayDiscovery;   
+   bool                                      m_requiresGatewayDiscovery;  
+   bool                                      m_readyToReconnectToGateway;
    bool                                      m_hasFinishedInitializing;
 
    MBerNotifierList                          m_callbacks;

@@ -56,6 +56,7 @@ ClientNetworkWrapper::ClientNetworkWrapper( U8 gameProductId, bool connectToAsse
       m_loadBalancerPort( DefaultLoadBalancerPort ),
       m_wasCallbackForReadyToBeginSent( false ),
       m_requiresGatewayDiscovery( true ),
+      m_readyToReconnectToGateway( false ),
       m_hasFinishedInitializing( true ),
       m_enabledMultithreadedProtections( false ),
       m_networkVersionOverride( 0 ),
@@ -105,6 +106,8 @@ bool     ClientNetworkWrapper::IsConnected( bool isMainServer ) const
    if( isMainServer )
    {
       if( m_requiresGatewayDiscovery == true )
+         return false;
+      if( m_readyToReconnectToGateway == true )
          return false;
 	  if( m_fruitadens[ ConnectionNames_Main ]->GetName() == "LoadBalancer" )
 		  return false;
@@ -206,6 +209,7 @@ void     ClientNetworkWrapper::ReconnectAfterTalkingToLoadBalancer()
    PrintFunctionName( __FUNCTION__ );
    if( IsConnected() == false )
    {
+      int mainIsPrepared = false;
       for( int i=0; i< ConnectionNames_Num; i++ )
       {
          if( m_connectToAssetServer == false && 
@@ -224,13 +228,31 @@ void     ClientNetworkWrapper::ReconnectAfterTalkingToLoadBalancer()
 
          cout << " Server address[" << i <<"] = " << m_serverIpAddress[i].c_str() << ":" << m_serverConnectionPort[i] << endl;
          m_fruitadens[i]->RegisterPacketHandlerInterface( this );
+         if( i == ConnectionNames_Main && 
+            m_serverIpAddress[i].size() > 0 )
+         {
+            string tempName( "MainGateway" );
+            m_fruitadens[ ConnectionNames_Main ]->SetName( tempName );
+
+            cout << "set m_readyToReconnectToGateway = false" << endl;
+            m_readyToReconnectToGateway = false;
+            mainIsPrepared = true;
+         }
+         else if( i == ConnectionNames_Asset && m_serverIpAddress[i].size() > 0 )
+         {
+            string tempName( "Asset" );
+            m_fruitadens[ i ]->SetName( tempName );
+         }
+
+         cout << "New server name = " << m_fruitadens[i]->GetName() << endl;
+
          m_fruitadens[i]->Connect( m_serverIpAddress[i].c_str(), m_serverConnectionPort[i] );
       }
 
-      if( m_serverIpAddress[ ConnectionNames_Main ].size() > 0 )
+      
+      if( mainIsPrepared == false )
       {
-         string tempName( "MainGateway" );
-         m_fruitadens[ ConnectionNames_Main ]->SetName( tempName );
+         cout << "m_serverIpAddress[main] is invalid" << endl;
       }
    }
 }
@@ -258,10 +280,15 @@ bool     ClientNetworkWrapper::InitialConnectionCallback( const Fruitadens* conn
 { 
    PrintFunctionName( __FUNCTION__ );
    cout << "m_requiresGatewayDiscovery=" << boolalpha << m_requiresGatewayDiscovery << noboolalpha << endl;
-   bool isLoadBalancer = connectionObject->GetName() == "LoadBalancer";
+
+   const string& name = connectionObject->GetName();
+   cout << "This connection name = " << name << endl;
+
+   bool isLoadBalancer = ( name == "LoadBalancer" );
    cout << "isLoadBalancer=" << boolalpha << isLoadBalancer << noboolalpha << endl;
    
    if( m_requiresGatewayDiscovery == true && // main stateful flag
+      m_readyToReconnectToGateway == false &&
       isLoadBalancer == true ) // main thread does double duty here
    {
       PacketRerouteRequest* request = new PacketRerouteRequest;
@@ -269,7 +296,7 @@ bool     ClientNetworkWrapper::InitialConnectionCallback( const Fruitadens* conn
    }
    else
    {
-      bool isMainGateway = connectionObject->GetName() == "MainGateway";
+      bool isMainGateway = ( name == "MainGateway" );
       cout << "isMainGateway=" << boolalpha << isMainGateway << noboolalpha << endl;
       if( isMainGateway )
       {
@@ -367,6 +394,7 @@ void  ClientNetworkWrapper::Exit()
 
    
    m_requiresGatewayDiscovery = true;
+   m_readyToReconnectToGateway = false;
    for( int i=0; i< ConnectionNames_Num; i++ )
    {
       m_serverIpAddress[i].clear();
@@ -3039,7 +3067,12 @@ void      ClientNetworkWrapper::Update()
    {
       if( m_requiresGatewayDiscovery == true )
          return;
+   }
+
+   if( m_readyToReconnectToGateway == true )
+   {
       ReconnectAfterTalkingToLoadBalancer();
+      return;
    }
 
    ExpireThreadPerformanceBoost();
@@ -3093,8 +3126,6 @@ void     ClientNetworkWrapper::LoadBalancedNewAddress( const PacketRerouteReques
    cout << "Num server locations: " << response->locations.size() << endl;
    
 
-   //m_fruitadens[ ConnectionNames_Main ]->SetName( "MainGateway" );
-
    bool     isReconnectNecessary = false;
    int num = response->locations.size();
    for( int i=0; i< num; i++ )
@@ -3133,6 +3164,7 @@ void     ClientNetworkWrapper::LoadBalancedNewAddress( const PacketRerouteReques
    // when setting up the reroute, we must wait to clear this flag. Other threads will attempt to 
    // reconnect, interfere in various ways, etc. This blocks a lot of bad behavior.
    m_requiresGatewayDiscovery = false;// clear this flag
+   m_readyToReconnectToGateway = true;
 }
 
 //-----------------------------------------------------------------------------
