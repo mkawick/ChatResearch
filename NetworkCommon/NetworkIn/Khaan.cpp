@@ -418,7 +418,7 @@ void     Khaan :: OnDataAvailable( struct bufferevent* bufferEventObj, void* arg
       } while( numBytesReceived > 0 );
       
       
-      if( totalBytes )
+      if( totalBytes > 0 && This->m_isDisconnected == false )
       {
        /*  cout << "data=[" << endl;
          for( U32 i=0; i<totalBytes; i++ )

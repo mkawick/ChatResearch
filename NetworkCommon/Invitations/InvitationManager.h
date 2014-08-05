@@ -66,6 +66,8 @@ public:
 
    ///-----------------------------------------------------------
 
+   bool           RemoveAnyRelatedInvitations( const string& channelUuid );
+
 protected:
 
    enum 

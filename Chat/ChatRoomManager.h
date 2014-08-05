@@ -96,6 +96,8 @@ public:
    void           SetDbIdentifier( int dbIdentifier ) { m_dbIdentifier = dbIdentifier; }
    int            GetDbIdentifier() const { return m_dbIdentifier; }
 
+   static void    Set( InvitationManager* svr ) { m_invitationServer = svr; }
+
    static void    Set( DiplodocusChat* svr ) { m_chatServer = svr; }
    int            GetNumChannelChatsSent() const { return m_numChannelChatsSent; }
    int            GetNumP2PChatsSent() const { return m_numP2PChatsSent; }
@@ -206,6 +208,8 @@ private:
    bool           AddUserToRoomAndWriteToDB( const string& channelUuid, const string& addedUserUuid, const string& addedUserName );
    bool           RemoveUserFromRoomAndWriteToDB( const string& channelUuid, const string& removedUserUuid );
    bool           RemoveRoomAndMarkRoomInDB( const string& channelUuid );
+   bool           RemoveAnyRelatedInvitationsAndInformUsers( const string& channelUuid );
+   
    //-----------------------------------------------------
 
    // query functions
@@ -240,6 +244,8 @@ private:
    int                           m_numP2PChatsSent;
    int                           m_numChangesToChatRoom;
    int                           m_dbIdentifier;
+
+   static InvitationManager*     m_invitationServer;
 };
 
 ///////////////////////////////////////////////////////////////////

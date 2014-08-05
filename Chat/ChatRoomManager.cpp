@@ -24,6 +24,7 @@ using boost::format;
 
 
 DiplodocusChat*        ChatRoomManager::m_chatServer;
+InvitationManager*     ChatRoomManager::m_invitationServer;
 const int maxNumPlayersInChatRoom = 32;
 
 // ChatRoomManagerNeedsUpdate
@@ -1645,6 +1646,16 @@ bool     ChatRoomManager::RemoveRoomAndMarkRoomInDB( const string& channelUuid )
 }
 
 //---------------------------------------------------------------------
+
+bool     ChatRoomManager::RemoveAnyRelatedInvitationsAndInformUsers( const string& channelUuid )
+{
+   if( m_invitationServer == NULL )
+      return false;
+
+   return m_invitationServer->RemoveAnyRelatedInvitations( channelUuid );
+}
+
+//---------------------------------------------------------------------
 //---------------------------------------------------------------------
 
 bool     ChatRoomManager::RemoveUserFromRoom( const PacketChatRemoveUserFromChatChannelGameServer* request )
@@ -1759,6 +1770,7 @@ bool     ChatRoomManager::RemoveUserFromRoom( const string& channelUuid, const s
       if( channelIter->second.userBasics.size() == 0 )
       {
          RemoveRoomAndMarkRoomInDB( channelUuid );
+         RemoveAnyRelatedInvitationsAndInformUsers( channelUuid );
       }
       else // notify everyone remaining
       {
