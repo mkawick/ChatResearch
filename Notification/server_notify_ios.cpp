@@ -1,6 +1,7 @@
 
 #include <map>
 #include <iostream>
+#include <fstream>
 
 // MYSQL on Win32 requires winsock to be included first
 #include "server_comms.h"
@@ -171,6 +172,28 @@ static bool sendNotification(SSL *ssl, const unsigned char *device,
    }
 
    return true;
+}
+
+bool  DoesFileExist( const char* path )
+{
+   std::ifstream myfile ( path, std::ifstream::binary);
+
+   if(myfile.is_open() == true )
+   {
+      myfile.close();
+
+      cout << "Search for the file path of : " << path << endl;
+      cout << "The file requested \"" << path << "\" is a valid file" << endl;
+      return true;
+   }
+
+   else
+   {
+      cout << "ALERT-----------------------------" << endl;
+      cout << "\nThe file requested " << path << " is not a valid file" << endl;
+      cout << "The return from function is : " << path << endl;
+      return false;
+   }
 }
 
 static bool checkConnection(int gameType)
@@ -475,67 +498,6 @@ static bool sendGameEndedNotification(const unsigned char *deviceId, unsigned in
    return true;
 }
 
-// ------
-
-/*
-// returns the device ID of the given user, or NULL if it cannot be found.
-// the pointer returned is valid until the next call to getUserDevice.
-bool  getUserDeviceIos( unsigned int userId, int gameType, unsigned char* buffer, int buffersize )
-{
-   bool found = false;
-   buffer[0] = 0;
-
-#if 1
-//#if USE_MYSQL_DATABASE
-
-   //const char *gameName = GameDatabaseName(gameType);
-   const char *gameName = "summonwar";
-
-   char query[256];
-   //MYSQL *sql = GetMysqlConnection();
-   MYSQL *sql = g_NotificationMYSQL;
-   if( sql == NULL )
-   {
-      return false;
-   }
-
-   STRPRINTF(query, sizeof(query), "SELECT device_id FROM devices_ios_%s WHERE user_id = \'%u\'", gameName, userId);
-   mysql_query(sql, query);
-   MYSQL_RES *res = mysql_store_result(sql);
-
-   MYSQL_ROW row;
-   if ((row = mysql_fetch_row(res)))
-   {
-      unsigned long *lengths = mysql_fetch_lengths(res);
-
-      int device_length = lengths[0];
-      if( device_length >= buffersize )
-      {
-          memcpy( buffer, row[0], buffersize );
-      }
-      else
-      {
-         memcpy( buffer, row[0], device_length );
-         memset( &buffer[device_length], 0, buffersize-device_length );
-      }
-
-      found = true;
-
-      //LogMessage(LOG_PRIO_ERR, "    getUserDevice(userId=%d,gameType=%s) = %s\n", userId, gameName, devicetoa(deviceId) );
-   }
-   else
-   {
-      LogMessage(LOG_PRIO_ERR, "    !!!! getUserDevice(userId=%d,gameType=%s) failed!\n", userId, gameName);
-   }
-   mysql_free_result(res);
-#endif
-   return found;
-}
-*/
-/*
-#include <direct.h>
-#include <stdlib.h>
-#include <stdio.h>*/
 
 bool NotifyIosInit( const char* pathToFiles )
 {
@@ -569,6 +531,16 @@ bool NotifyIosInit( const char* pathToFiles )
       cout << certFileStringBuffer << endl;
       cout << "Key file final path: " << endl;
       cout << keyFileStringBuffer << endl;
+
+      bool existsCertFile = DoesFileExist( certTempPtr ); // done this way to guaratee that we check both files.
+      bool existsKeyFile = DoesFileExist( keyTempPtr );
+      if( existsCertFile == false || 
+          existsKeyFile == false )
+      {
+         cout << "-------------------------------------" << endl;
+         cout << "invalid files... now exiting" << endl << endl;;
+         return false;
+      }
 
       // open SSL connection
       s_GameInfos[i].method = SSLv23_method();

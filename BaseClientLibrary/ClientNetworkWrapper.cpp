@@ -458,7 +458,10 @@ void     ClientNetworkWrapper::UpdateNotifications()
    {
       return;
    }
-   Update();
+   if( m_enabledMultithreadedProtections == true )
+   {
+      Update();
+   }
 
    m_notificationMutex.lock();
    std::queue< QueuedNotification > localCopy = m_notifications;
@@ -3075,6 +3078,10 @@ void      ClientNetworkWrapper::Update()
       return;
    }
 
+   if( m_enabledMultithreadedProtections == false )
+   {
+      UpdateNotifications();
+   }
    ExpireThreadPerformanceBoost();
 
    //return Fruitadens::MainLoop_InputProcessing();

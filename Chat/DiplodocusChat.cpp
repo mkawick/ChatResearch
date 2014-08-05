@@ -61,6 +61,8 @@ void  DiplodocusChat :: Init()
    ChatUser::Set( this );
    ChatUser::Set( m_chatRoomManager );
    Diplodocus< KhaanChat >::Init();
+
+   m_chatRoomManager->Set( m_invitationManager );
 }
 
 //---------------------------------------------------------------

@@ -225,6 +225,49 @@ bool     InvitationManager::HandlePacketRequest( const BasePacket* packet, U32 c
    return false;
 }
 
+//------------------------------------------------------------------------------------------------
+
+bool     InvitationManager::RemoveAnyRelatedInvitations( const string& groupUuid )
+{
+   // invitationUuid
+   bool found = false;
+   InvitationMapConstIterator it = m_invitationMap.begin();
+   while( it != m_invitationMap.end() )
+   {
+      bool shouldAdvanceIter = true;
+      const Invitation& invite = it->second;
+      if( invite.groupUuid == groupUuid )
+      {
+         U32 invitationId = it->second.invitationId;
+         const string inviteeUuid = it->second.inviteeUuid;
+         const string inviterUuid = it->second.inviterUuid;
+         it = m_invitationMap.erase( it );
+         shouldAdvanceIter = false;
+         DeleteInvitationFromDb( invitationId );
+
+         U32 connectionId = 0;
+         m_mainServer->GetUserConnectionId( inviteeUuid, connectionId );
+         if( connectionId != 0 )
+         {
+            SendUserHisInvitations <PacketInvitation_GetListOfInvitationsResponse> ( m_invitationMap, IsUserInThisInvitation, inviteeUuid, connectionId );
+         }
+         connectionId = 0;
+         m_mainServer->GetUserConnectionId( inviterUuid, connectionId );
+         if( connectionId != 0 )
+         {
+            SendUserHisInvitations <PacketInvitation_GetListOfInvitationsResponse> ( m_invitationMap, IsUserInThisInvitation, inviterUuid, connectionId );
+         }
+
+         found = true;// there could be multiples for this group... let's not break early.
+      }
+      if( shouldAdvanceIter == true )
+      {
+         it++;
+      }
+   }
+
+   return found;
+}
 
 //------------------------------------------------------------------------------------------------
 

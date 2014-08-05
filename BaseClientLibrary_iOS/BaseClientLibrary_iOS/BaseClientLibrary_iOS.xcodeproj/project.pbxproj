@@ -353,7 +353,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "XCODEBUILD_PATH=/Applications/Xcode.app/Contents/Developer/usr/bin\nXCODEBUILD=$XCODEBUILD_PATH/xcodebuild\n\n$XCODEBUILD -project BaseClientLibrary_iOS.xcodeproj -target \"BaseClientLibrary_iOS\" -sdk \"iphonesimulator\" -configuration \"Debug\" clean build\n$XCODEBUILD -project BaseClientLibrary_iOS.xcodeproj -target \"BaseClientLibrary_iOS\" -sdk \"iphoneos\" -configuration \"Debug\" clean build\nlipo -create -output \"build/libBaseClientLibrary_iOS.a\" \"build/Debug-iphoneos/libBaseClientLibrary_iOS.a\" \"build/Debug-iphonesimulator/libBaseClientLibrary_iOS.a\"\n";
+			shellScript = "XCODEBUILD_PATH=/Applications/Xcode.app/Contents/Developer/usr/bin\nXCODEBUILD=$XCODEBUILD_PATH/xcodebuild\n\n$XCODEBUILD -project BaseClientLibrary_iOS.xcodeproj -target \"BaseClientLibrary_iOS\" -sdk \"iphonesimulator\" -configuration \"Release\" clean build\n$XCODEBUILD -project BaseClientLibrary_iOS.xcodeproj -target \"BaseClientLibrary_iOS\" -sdk \"iphoneos\" -configuration \"Release\" clean build\nlipo -create -output \"build/libBaseClientLibrary_iOS.a\" \"build/Release-iphoneos/libBaseClientLibrary_iOS.a\" \"build/Release-iphonesimulator/libBaseClientLibrary_iOS.a\"\n";
 		};
 /* End PBXShellScriptBuildPhase section */
 

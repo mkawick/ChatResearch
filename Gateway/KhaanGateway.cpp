@@ -89,6 +89,9 @@ void  KhaanGateway::PreCleanup()
 
 bool	KhaanGateway :: Update()
 {
+   if( m_isDisconnected ) // no update for you
+      return false;
+
    UpdateInwardPacketList();
 
    if( ShouldDelayOutput() == false )
