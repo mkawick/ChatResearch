@@ -9,11 +9,14 @@
 #include "BasePacket.h"
 #include "Serialize.h"
 #include "PacketFactory.h"
-
 #include <assert.h>
 
+const U8   NetworkVersionMajor = 44;
+const U8   NetworkVersionMinor = 1;
 
-const U8   GlobalNetworkProtocolVersion = 44;
+//#include <boost/static_assert.hpp>
+//BOOST_STATIC_ASSERT( NetworkVersionMajor < (1<<5) );// 5 bits for major
+//BOOST_STATIC_ASSERT( NetworkVersionMinor < (1<<3) );
 
 #ifdef _MEMORY_TEST_
 int BasePacket::m_counter = 0;
@@ -100,11 +103,19 @@ const char* GetPacketTypename( PacketType type )
 ///////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////
 
+int   BasePacket::GetSize() 
+{ 
+   return sizeof( BasePacket ) - 
+      3 - //sizeof( padding ) - 
+      sizeof( long*); 
+}
+
 bool  BasePacket::SerializeIn( const U8* data, int& bufferOffset )
 { 
    Serialize::In( data, bufferOffset, packetType );
    Serialize::In( data, bufferOffset, packetSubType );
-   Serialize::In( data, bufferOffset, versionNumber );
+   Serialize::In( data, bufferOffset, versionNumberMajor );
+   Serialize::In( data, bufferOffset, versionNumberMinor );
    Serialize::In( data, bufferOffset, gameProductId );
    //Serialize::In( data, bufferOffset, packetSize ); 
    Serialize::In( data, bufferOffset, gameInstanceId );
@@ -116,7 +127,8 @@ bool  BasePacket::SerializeOut( U8* data, int& bufferOffset ) const
 { 
    Serialize::Out( data, bufferOffset, packetType );
    Serialize::Out( data, bufferOffset, packetSubType );
-   Serialize::Out( data, bufferOffset, versionNumber );
+   Serialize::Out( data, bufferOffset, versionNumberMajor );
+   Serialize::Out( data, bufferOffset, versionNumberMinor );
    Serialize::Out( data, bufferOffset, gameProductId );
    //Serialize::Out( data, bufferOffset, packetSize );
    Serialize::Out( data, bufferOffset, gameInstanceId );
@@ -288,12 +300,7 @@ bool  PacketGatewayWrapper::SerializeIn( const U8* data, int& bufferOffset )
    delete pPacket; pPacket = NULL;
    PacketFactory packetFactory;
 
-   if( packetFactory.Parse( data, bufferOffset, &pPacket ) == false )
-   {
-      return false;
-   }
-
-   return true;
+   return packetFactory.Parse( data, bufferOffset, &pPacket );
 }
 
 ///////////////////////////////////////////////////////////////

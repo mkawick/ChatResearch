@@ -2,7 +2,7 @@ pushd C:\projects\SummonWar\main\
 REM listen.port=21000 s2s.port=21002  chat.port=7402 purchase.port=7702 dblist=[user:192.168.1.0:21000:root:password:playdek,game:192.168.1.0:21000:root:password:playdek]
 
 REM start C:\projects\SummonWar\main\WorkArea/game_serverD.exe listen.port=21000 db.address=10.16.4.44 db.port=3306 db.username=incinerator db.password=Cm8235 db.schema=playdek s2s.port=21002  chat.port=7402 purchase.port=7702
-start C:\projects\SummonWar\main\WorkArea/game_serverD.exe listen.port=21000 s2s.port=21002 chat.port=7402 purchase.port=7702 dblist=[user:10.16.4.44:3306:incinerator:Cm8235:playdek,game:10.16.4.44:3306:incinerator:Cm8235:playdek_game_summonwar]
+start C:\projects\SummonWar\main\WorkArea/game_serverD.exe listen.port=21000 s2s.port=21002 chat.port=7402 purchase.port=7702 dblist=[user:10.16.4.44:3306:incinerator:Cm8235:playdek,game:10.16.4.44:3306:incinerator:Cm8235:playdek_game_summonwar_test]
 popd
 
 start C:\projects\Mber\ServerStack\Debug/LoadBalancer.exe  listen.port=9500 s2s.port=9502

@@ -98,7 +98,7 @@ int main( int argc, const char* argv[] )
    //cout << "Version " << version << endl;
    cout << "Server stack version " << ServerStackVersion << endl;
    cout << "ServerId " << serverId << endl;
-   cout << "Network protocol version: " << (int)GlobalNetworkProtocolVersion << endl;
+   cout << "Network protocol version: " << (int)NetworkVersionMajor << ":" << (int)NetworkVersionMinor << endl;
    cout << "------------------------------------------------------------------" << endl << endl << endl;
 
    //--------------------------------------------------------------

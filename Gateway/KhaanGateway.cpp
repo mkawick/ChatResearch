@@ -17,11 +17,9 @@ KhaanGateway::KhaanGateway( int id, bufferevent* be ):
       KhaanProtected( id, be ), 
       m_numPacketsReceivedBeforeAuth( 0 ),
       m_authorizedConnection( false ),
-      //m_denyAllFutureData( false ),
       m_logoutPacketSent( false ),
       m_adminLevel( 0 ),
       m_languageId( 0 ),
-      //m_gateway( NULL ),
       m_timeoutMs( 0 ),
       m_lastSentToClientTimestamp( 0 ),
       m_gameId( 0 )
@@ -205,14 +203,16 @@ bool  KhaanGateway::IsHandshaking( const BasePacket* packetIn )
    {
       //<< do nothing
 
-      if( packetIn->versionNumber != GlobalNetworkProtocolVersion )
+      if( packetIn->versionNumberMajor != NetworkVersionMajor )
       {
          if( m_mainOutputChain )
          {
-            static_cast< MainGatewayThread* >( m_mainOutputChain )->TrackCountStats( StatTrackingConnections::StatTracking_BadPacketVersion, 1, packetIn->versionNumber );
+            static_cast< MainGatewayThread* >( m_mainOutputChain )->TrackCountStats( StatTrackingConnections::StatTracking_BadPacketVersion, 1, packetIn->versionNumberMajor );
          }
          DenyAllFutureData();
       }
+
+      m_versionNumberMinor = packetIn->versionNumberMinor;
 
       // we are only sending version numbers at this point.
       PacketHello* hello = new PacketHello();

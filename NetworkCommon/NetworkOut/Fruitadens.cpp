@@ -368,10 +368,19 @@ void  Fruitadens::PostProcessInputPackets( int bytesRead )
       }
 
       BasePacket* packetIn = NULL;
-      if( factory.Parse( m_receiveBuffer, offset, &packetIn ) == true )
+      int readSize = offset;
+      bool parseResult = factory.Parse( m_receiveBuffer, readSize, &packetIn );
+      if( offset + size < readSize )
+      {
+         cout << "Super bad parsing error." << endl;
+      }
+
+      if( parseResult == true )
       {
          m_numPacketsReceived ++;
          HandlePacketReceived( packetIn );
+         offset += size; // ignore the read size because this could be smaller 
+         // than the number of bytes provided by the underlying transport.
       }
       else 
       {

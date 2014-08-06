@@ -95,6 +95,7 @@ bool	PacketFactory::Parse( const U8* bufferIn, int& bufferOffset, BasePacket** p
       }
    case PacketType_ErrorReport:
       {   
+         // put here just to avoid a function call for only one type.
          PacketErrorReport* error = new PacketErrorReport();
          error->SerializeIn( bufferIn, bufferOffset );
          *packetOut = error;

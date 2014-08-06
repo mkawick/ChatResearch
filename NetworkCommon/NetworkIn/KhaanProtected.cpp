@@ -15,7 +15,8 @@ using namespace std;
 
 KhaanProtected::KhaanProtected( int id, bufferevent* be ): Khaan( id, be ),
                   m_denyAllFutureData( false ),
-                  m_mainOutputChain( NULL )
+                  m_mainOutputChain( NULL ),
+                  m_versionNumberMinor( 0 )
 {
 }
 

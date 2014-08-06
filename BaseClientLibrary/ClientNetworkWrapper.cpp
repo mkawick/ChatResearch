@@ -486,8 +486,13 @@ void     ClientNetworkWrapper::UpdateNotifications()
          {
          case ClientSideNetworkCallback::NotificationType_AreWeUsingCorrectNetworkVersion:
             {
-               U32 serverVersion = boost::lexical_cast< U32 >( qn.intValue );
-               notify->AreWeUsingCorrectNetworkVersion( GlobalNetworkProtocolVersion == serverVersion );
+               U32 serverMajorVersion = boost::lexical_cast< U32 >( qn.intValue );
+               U32 serverMinorVersion = boost::lexical_cast< U32 >( qn.intValue2 );
+           /*cout << "Server protocol version: " << (int)(packet->versionNumberMajor) << ":" << (int)(packet->versionNumberMinor) << endl;
+               cout << "Client protocol version: " << (int)(NetworkVersionMajor) << ":" << (int)(NetworkVersionMinor) << endl;
+
+               Notification( ClientSideNetworkCallback::NotificationType_AreWeUsingCorrectNetworkVersion, (int)packet->versionNumberMajor, (int)packet->versionNumberMinor );*/
+               notify->AreWeUsingCorrectNetworkVersion( (U32)(NetworkVersionMajor) == serverMajorVersion );
             }
             break;
          case ClientSideNetworkCallback::NotificationType_FriendsUpdate:
@@ -3178,6 +3183,9 @@ void     ClientNetworkWrapper::LoadBalancedNewAddress( const PacketRerouteReques
 
 bool     ClientNetworkWrapper::HandlePacketReceived( BasePacket* packetIn )
 {
+   if( packetIn == NULL )
+      return false;
+
    //PrintFunctionName( __FUNCTION__ );// duplicitous
    PacketCleaner cleaner( packetIn );
 
@@ -3196,10 +3204,11 @@ bool     ClientNetworkWrapper::HandlePacketReceived( BasePacket* packetIn )
          case BasePacket::BasePacket_Hello:
             {
                PacketHello* packet = static_cast< PacketHello* >( packetIn );
-               cout << "Server protocol version: " << (int)(packet->versionNumber) << endl;
-               cout << "Client protocol version: " << (int)(GlobalNetworkProtocolVersion) << endl;
+   
+               cout << "Server protocol version: " << (int)(packet->versionNumberMajor) << ":" << (int)(packet->versionNumberMinor) << endl;
+               cout << "Client protocol version: " << (int)(NetworkVersionMajor) << ":" << (int)(NetworkVersionMinor) << endl;
 
-               Notification( ClientSideNetworkCallback::NotificationType_AreWeUsingCorrectNetworkVersion, (int)packet->versionNumber );
+               Notification( ClientSideNetworkCallback::NotificationType_AreWeUsingCorrectNetworkVersion, (int)packet->versionNumberMajor, (int)packet->versionNumberMinor );
             }
             break;
          case BasePacket::BasePacket_RerouteRequestResponse:
@@ -4584,6 +4593,9 @@ bool     ClientNetworkWrapper::UpdateAssetData( const string& hash, AssetInfoExt
 
 bool  NetworkLayerExtended::HandlePacketReceived( BasePacket* packetIn )
 {
+   if( packetIn == NULL )
+      return false;
+
    bool wasHandled = false;
    switch( packetIn->packetType )
    {

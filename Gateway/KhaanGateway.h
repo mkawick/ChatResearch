@@ -54,6 +54,7 @@ private:
    U32                  m_timeoutMs;
    U32                  m_lastSentToClientTimestamp;
    U8                   m_gameId;
+   U8                   m_versionNumberMinor;
    
    void  PreCleanup();
    //bool	OnDataReceived( const U8* data, int length );

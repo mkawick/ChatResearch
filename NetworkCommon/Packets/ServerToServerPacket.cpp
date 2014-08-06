@@ -94,12 +94,7 @@ bool  PacketServerToServerWrapper::SerializeIn( const U8* data, int& bufferOffse
    delete pPacket; pPacket = NULL;
    PacketFactory packetFactory;
 
-   if( packetFactory.Parse( data, bufferOffset, &pPacket ) == false )
-   {
-      return false;
-   }
-
-   return true;
+   return packetFactory.Parse( data, bufferOffset, &pPacket );
 }
 
 ///////////////////////////////////////////////////////////////
@@ -129,12 +124,7 @@ bool  PacketServerJobWrapper::SerializeIn( const U8* data, int& bufferOffset )
    delete pPacket; pPacket = NULL;
    PacketFactory packetFactory;
 
-   if( packetFactory.Parse( data, bufferOffset, &pPacket ) == false )
-   {
-      return false;
-   }
-
-   return true;
+   return packetFactory.Parse( data, bufferOffset, &pPacket );
 }
 
 ///////////////////////////////////////////////////////////////

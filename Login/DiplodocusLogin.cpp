@@ -1513,6 +1513,8 @@ void  DiplodocusLogin:: PackageProductToSendToClient( const ProductInfo& pi, Pro
    brief.productType = pi.productType;
 }
 
+//---------------------------------------------------------------
+
 bool     DiplodocusLogin:: HandleRequestListOfProducts( U32 connectionId, PacketRequestListOfProducts* purchaseRequest )
 {
    if( m_printFunctionNames == true )
@@ -1542,26 +1544,11 @@ bool     DiplodocusLogin:: HandleRequestListOfProducts( U32 connectionId, Packet
    while( it != m_productList.end() )
    {
       const ProductInfo& pi = *it ++;
+      if( pi.isHidden == true )
+         continue;
+
       ProductBriefPacketed    brief;
       PackageProductToSendToClient( pi, brief, languageId );
-     /* string name = pi.name;
-      if( pi.lookupName.size() != 0 )
-      {
-         name = GetStringLookup()->GetString( pi.lookupName, languageId );
-      }
-      
-      brief.uuid =            pi.uuid;
-      brief.vendorUuid =      pi.vendorUuid;
-      brief.localizedName =   name;
-
-      if( pi.parentId )
-      {
-         ProductInfo parent;
-         GetProductByProductId( pi.parentId, parent );// reuse this local variable
-         brief.parentUuid = parent.uuid;
-      }
-      brief.iconName = pi.iconName;
-      brief.productType = pi.productType;*/
 
       response->products.push_back( brief );
       if( response->products.size() == numProductsPerPacket )
@@ -2598,6 +2585,10 @@ void     DiplodocusLogin:: StoreAllProducts( const PacketDbQueryResult* dbResult
       productDefn.name =                  row[ TableProduct::Column_name ];
       int id =                            boost::lexical_cast< int >( row[ TableProduct::Column_id ] );
       productDefn.vendorUuid =            row[ TableProduct::Column_vendor_uuid ];
+      if( row[ TableProduct::Column_is_hidden ] == "1" )
+         productDefn.isHidden =           true;
+      else 
+         productDefn.isHidden =           false;
 
       string productId =                  row[ TableProduct::Column_product_id ];
       if( productId == "NULL" || productId.size() == 0 || productId == "0" )
@@ -2672,6 +2663,12 @@ void     DiplodocusLogin:: StoreSingleProduct( const PacketDbQueryResult* dbResu
       productDefn.uuid =                  row[ TableProduct::Column_uuid ];
       productDefn.name =                  row[ TableProduct::Column_name ];
       productDefn.vendorUuid =            row[ TableProduct::Column_vendor_uuid ];
+
+      if( row[ TableProduct::Column_is_hidden ] == "1" )
+         productDefn.isHidden =           true;
+      else 
+         productDefn.isHidden =           false;
+
       std::string lowercase_productUUID = productDefn.vendorUuid; 
       std::transform( lowercase_productUUID.begin(), lowercase_productUUID.end(), lowercase_productUUID.begin(), ::tolower );
       productDefn.vendorUuid = lowercase_productUUID;
@@ -2884,7 +2881,7 @@ void     DiplodocusLogin:: LoadInitializationData()
          dbQuery->serverLookup = 0;
 
          // add in 0's last
-         dbQuery->query = "SELECT * FROM product WHERE is_hidden=0 ORDER BY product_id DESC"; // WHERE product_id > 0 
+         dbQuery->query = "SELECT * FROM product ORDER BY product_id DESC"; // WHERE product_id > 0 
 
          AddQueryToOutput( dbQuery );
       }

@@ -146,51 +146,6 @@ bool  ConnectionToUser::LoginResult( const PacketDbQueryResult* dbResult )
 
 bool  ConnectionToUser::StoreProductInfo( PacketDbQueryResult* dbResult )
 {
-   /*int numProducts = dbResult->bucket.bucket.size();
-               
-      PacketListOfUserPurchases* purchasePacket = new PacketListOfUserPurchases();
-      purchasePacket->isAllProducts = false;
-      if( dbResult->meta == "all" )
-         purchasePacket->isAllProducts = true;
-      purchasePacket->platformId = 0;
-
-      if( purchasePacket->isAllProducts == true )
-      {
-         ProductTable            enigma( dbResult->bucket );
-         ProductTable::iterator  it = enigma.begin();
-         while( it != enigma.end() )
-         {
-            ProductTable::row       row = *it++;
-
-            PurchaseEntry pe;
-            pe.productUuid =     row[ TableProduct::Column_name ];
-            pe.name =               row[ TableProduct::Column_filter_name ];
-            purchasePacket->purchases.push_back( pe );
-         }
-      }
-      else
-      {
-         
-      }
-
-      SendPacketToGateway( purchasePacket, m_connectionId );
-      */
- /*  ProductJoinUserProductTable            enigma( dbResult->bucket );
-   ProductJoinUserProductTable::iterator  it = enigma.begin();
-   while( it != enigma.end() )
-   {
-      ProductJoinUserProductTable::row       row = *it++;
-
-
-      int id =          boost::lexical_cast< int >  ( row[ TableProductJoinUserProduct::Column_id ] );
-
-      string name =           row[ TableProductJoinUserProduct::Column_filter_name ];
-      string uuid =           row[ TableProductJoinUserProduct::Column_uuid ];
-      float quantity =  boost::lexical_cast< float >( row[ TableProductJoinUserProduct::Column_num_purchased ] );
-
-      AddToProductsOwned( id, name, uuid, quantity );
-   }*/
-
    return true;
 }
 
@@ -1306,8 +1261,14 @@ bool     ConnectionToUser:: AddToProductsOwned( int productDbId, const string& l
    }
    else
    {
+      ProductInfo pi;
+      m_userManager->GetProductByProductId( productDbId, pi );
+      if( pi.isHidden == true )
+         return false;
+
       ProductBrief brief;
       brief.productDbId = productDbId;
+      
       brief.localizedName = m_userManager->GetStringLookup()->GetString( lookupName, m_languageId );
 
       brief.vendorUuid = vendorUuid;

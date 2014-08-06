@@ -473,14 +473,14 @@ bool     InvitationManager::AcceptInvitation( const PacketInvitation_AcceptInvit
 
    const Invitation& invite = it->second;
 
-   U32 senderConnectionId = 0;
-   string senderUuid = m_mainServer->GetUserUuidByConnectionId( connectionId );
-   if( senderUuid.size() == 0 )
+   //U32 senderConnectionId = 0;
+   string inviteeUuid = m_mainServer->GetUserUuidByConnectionId( connectionId );
+   if( inviteeUuid.size() == 0 )
    {
       m_mainServer->SendErrorToClient( connectionId, PacketErrorReport::ErrorType_UserUnknown );
       return false;
    }
-   if( invite.inviteeUuid != senderUuid )
+   if( invite.inviteeUuid != inviteeUuid )
    {
       m_mainServer->SendErrorToClient( connectionId, PacketErrorReport::ErrorType_Invitation_DoesNotExist );// you are not allowed to accept this.
       return false;
@@ -505,19 +505,55 @@ bool     InvitationManager::AcceptInvitation( const PacketInvitation_AcceptInvit
    string inviterUuid = invite.inviterUuid;
    U32 inviterConnectionId = 0;
    m_mainServer->GetUserConnectionId( inviterUuid, inviterConnectionId );
+   string groupUuid = invite.groupUuid;
+
    m_invitationMap.erase( it );// must erase before sending the updated lists.
-
-   SendUserHisInvitations <PacketInvitation_GetListOfInvitationsResponse> ( m_invitationMap, IsUserInThisInvitation, senderUuid, connectionId );
-
-   
    if( inviterConnectionId != 0 )
    {
       SendUserHisInvitations <PacketInvitation_GetListOfInvitationsResponse> ( m_invitationMap, IsUserInThisInvitation, inviterUuid, inviterConnectionId );
    }
 
+   DeleteAllInvitationsToThisGroup( groupUuid, inviteeUuid );
+
+   SendUserHisInvitations <PacketInvitation_GetListOfInvitationsResponse> ( m_invitationMap, IsUserInThisInvitation, inviteeUuid, connectionId );
+
    DeleteInvitationFromDb( invitationId );   
 
    return true;
+}
+
+///////////////////////////////////////////////////////////////////
+
+void  InvitationManager::DeleteAllInvitationsToThisGroup( const string& groupUuid, const string& inviteeUuid )
+{
+   if( groupUuid.size() > 0 )
+   {
+      // remove all invitations to this group for this user and send notifications to all of those who invited him/her
+      InvitationMapConstIterator it = m_invitationMap.begin();
+      while( it != m_invitationMap.end() )
+      {
+         bool shouldAdvanceIter = true;
+         const Invitation& invite = it->second;
+         if( invite.inviteeUuid == inviteeUuid && invite.groupUuid == groupUuid )
+         {
+            U32 invitationId = invite.invitationId; 
+            const string& inviterUuid = invite.inviterUuid;
+            U32 inviterConnectionId = 0;
+            m_mainServer->GetUserConnectionId( inviterUuid, inviterConnectionId );
+            if( inviterConnectionId )
+            {
+               SendUserHisInvitations <PacketInvitation_GetListOfInvitationsResponse> ( m_invitationMap, IsUserInThisInvitation, inviterUuid, inviterConnectionId );
+            }
+            DeleteInvitationFromDb( invitationId ); 
+            it = m_invitationMap.erase( it );
+            shouldAdvanceIter = false;
+         }
+         if( shouldAdvanceIter == true )
+         {
+            it++;
+         }
+      }
+   }
 }
 
 ///////////////////////////////////////////////////////////////////

@@ -11,7 +11,8 @@
 
 //#define _MEMLEAK_TESTING_
 
-extern const U8   GlobalNetworkProtocolVersion;
+extern const U8   NetworkVersionMajor;
+extern const U8   NetworkVersionMinor;
 
 ///////////////////////////////////////////////////////////////
 
@@ -69,7 +70,8 @@ public:
    BasePacket( int packet_type = PacketType_Base, int packet_sub_type = BasePacket_Type ) :
       packetType( packet_type ),
       packetSubType( packet_sub_type ),
-      versionNumber( GlobalNetworkProtocolVersion ),
+      versionNumberMajor( NetworkVersionMajor ),
+      versionNumberMinor( NetworkVersionMinor ),
       gameProductId( 0 ),
       //packetSize( 0 ),
       gameInstanceId( 0 )
@@ -93,15 +95,16 @@ cout << "BasePacket ~count: " << m_counter << endl;
 
    U8       packetType;
    U8       packetSubType;
-   U8       versionNumber;
    U8       gameProductId;
-   //U16      packetSize;
+   U8       versionNumberMajor;
+   U8       versionNumberMinor;
+   U8       padding[3];// this will not be serialized
    U32      gameInstanceId;
 #ifdef _MEMORY_TEST_
    static int      m_counter;
 #endif
 
-   static int   GetSize() { return sizeof( BasePacket ) - sizeof( long*); }
+   static int   GetSize();
 };
 
 ///////////////////////////////////////////////////////////////
