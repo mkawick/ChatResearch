@@ -114,6 +114,11 @@ class PacketHello : public BasePacket
 public:
    PacketHello(): BasePacket( PacketType_Base, BasePacket::BasePacket_Hello ) {}
    // serialize by base is good enough
+
+   bool  SerializeIn( const U8* data, int& bufferOffset );
+   bool  SerializeOut( U8* data, int& bufferOffset ) const;
+
+   string test;
 };
 
 ///////////////////////////////////////////////////////////////

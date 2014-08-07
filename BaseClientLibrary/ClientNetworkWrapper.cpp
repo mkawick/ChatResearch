@@ -94,7 +94,7 @@ ClientNetworkWrapper::~ClientNetworkWrapper()
    }
 }
 
-//////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////f////////////
 //////////////////////////////////////////////////////////////////////////
 
 bool     ClientNetworkWrapper::IsConnected( bool isMainServer ) const
@@ -207,7 +207,9 @@ void  ClientNetworkWrapper::Init( const char* serverDNS )
 void     ClientNetworkWrapper::ReconnectAfterTalkingToLoadBalancer()
 {
    PrintFunctionName( __FUNCTION__ );
-   if( IsConnected() == false )
+   bool isConnected = IsConnected();
+   cout << "IsConnected() = " << boolalpha << isConnected << noboolalpha << endl;
+   if( isConnected == false )
    {
       int mainIsPrepared = false;
       for( int i=0; i< ConnectionNames_Num; i++ )
@@ -260,7 +262,9 @@ void     ClientNetworkWrapper::ReconnectAfterTalkingToLoadBalancer()
 void     ClientNetworkWrapper::Disconnect()
 {
    PrintFunctionName( __FUNCTION__ );
-   if( IsConnected() == true )
+   bool isConnected = IsConnected();
+   cout << "Disconnect::isConnected = " << boolalpha << isConnected << noboolalpha << endl;
+   if( isConnected == true )
    {
       for( int i=0; i< ConnectionNames_Num; i++ )
       {
@@ -269,9 +273,13 @@ void     ClientNetworkWrapper::Disconnect()
             continue;
 
          m_fruitadens[ i ]->RegisterPacketHandlerInterface( NULL );
+         cout << "Disconnecting: " << m_fruitadens[ i ]->GetName() << endl;
          m_fruitadens[ i ]->Disconnect();
       }     
    }
+   isConnected = IsConnected();
+   cout << "Disconnect::isConnected final = " << boolalpha << isConnected << noboolalpha << endl;
+
 }
 
 //-----------------------------------------------------------------------------
@@ -3041,8 +3049,9 @@ bool     ClientNetworkWrapper::SendCheat( const string& cheatText )
 
 //-----------------------------------------------------------------------------
 
-bool     ClientNetworkWrapper::SerializePacketOut( BasePacket* packet ) const 
+bool     ClientNetworkWrapper::SerializePacketOut( BasePacket* packet ) const
 {
+   cout << "SerializePacketOut: (" << (U32)packet->packetType << ":" << (U32)packet->packetSubType << ")" << endl;
    packet->gameInstanceId = m_selectedGame;
    packet->gameProductId = m_gameProductId;
 
@@ -3062,7 +3071,9 @@ bool     ClientNetworkWrapper::SerializePacketOut( BasePacket* packet ) const
       // for initial callbacks, we may not be connected
       //assert( m_fruitadens[ ConnectionNames_Main ]->IsConnected() );
       // TODO.. branch on asset requests.. otherwise, main
-      return m_fruitadens[ ConnectionNames_Main ]->SerializePacketOut( packet );
+      bool sendResult =  m_fruitadens[ ConnectionNames_Main ]->SerializePacketOut( packet );
+      cout << "sendResult:" << sendResult << endl;
+      return sendResult;
    }
 }
 
@@ -3089,6 +3100,7 @@ void      ClientNetworkWrapper::Update()
    }
    ExpireThreadPerformanceBoost();
 
+   //cout << ".";
    //return Fruitadens::MainLoop_InputProcessing();
 }
 

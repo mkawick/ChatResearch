@@ -12,7 +12,7 @@
 #include <assert.h>
 
 const U8   NetworkVersionMajor = 44;
-const U8   NetworkVersionMinor = 1;
+const U8   NetworkVersionMinor = 2;
 
 //#include <boost/static_assert.hpp>
 //BOOST_STATIC_ASSERT( NetworkVersionMajor < (1<<5) );// 5 bits for major
@@ -106,8 +106,8 @@ const char* GetPacketTypename( PacketType type )
 int   BasePacket::GetSize() 
 { 
    return sizeof( BasePacket ) - 
-      3 - //sizeof( padding ) - 
-      sizeof( long*); 
+      3 - //sizeof( padding )
+      sizeof( long*); // this accounts for the virtual pointer.
 }
 
 bool  BasePacket::SerializeIn( const U8* data, int& bufferOffset )
@@ -134,6 +134,26 @@ bool  BasePacket::SerializeOut( U8* data, int& bufferOffset ) const
    Serialize::Out( data, bufferOffset, gameInstanceId );
 
    return true; 
+}
+
+///////////////////////////////////////////////////////////////
+
+bool  PacketHello::SerializeIn( const U8* data, int& bufferOffset )
+{
+   BasePacket::SerializeIn( data, bufferOffset );
+   if( this->versionNumberMinor > 1 )
+   {
+      Serialize::In( data, bufferOffset, test );
+   }
+   return true;
+}
+
+bool  PacketHello::SerializeOut( U8* data, int& bufferOffset ) const
+{
+   BasePacket::SerializeOut( data, bufferOffset );
+   Serialize::Out( data, bufferOffset, test );
+
+   return true;
 }
 
 ///////////////////////////////////////////////////////////////
