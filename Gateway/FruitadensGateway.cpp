@@ -397,9 +397,9 @@ void  FruitadensGateway::PostProcessInputPackets( int bytesRead )
    while( offset < bytesRead )
    { 
       int preOffset = offset;
-      Serialize::In( m_receiveBuffer, offset, size );
+      Serialize::In( m_receiveBuffer, offset, size, NetworkVersionMinor );
 
-      wrapper.HeaderSerializeIn( m_receiveBuffer, offset );
+      wrapper.HeaderSerializeIn( m_receiveBuffer, offset, NetworkVersionMinor );
 //      if( offset + wrapper.size > bytesRead )// we must have cut off a packet in the middle.
       if( offset + size > bytesRead )
       {
@@ -412,7 +412,7 @@ void  FruitadensGateway::PostProcessInputPackets( int bytesRead )
 
       //int previousOffset = offset;
       BasePacket* packetIn = NULL;
-      if( factory.Parse( m_receiveBuffer, offset, &packetIn ) == true )
+      if( factory.Parse( m_receiveBuffer, offset, &packetIn, NetworkVersionMinor ) == true )
       {
          m_numPacketsReceived ++;
          HandlePacketReceived( packetIn );

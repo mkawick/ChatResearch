@@ -30,8 +30,8 @@ struct AssetInfo
       category.clear();
    }
 
-   bool  SerializeIn( const U8* data, int& bufferOffset );
-   bool  SerializeOut( U8* data, int& bufferOffset ) const;
+   bool  SerializeIn( const U8* data, int& bufferOffset, int minorVersion );
+   bool  SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const;
 };
 
 ///////////////////////////////////////////////////////////////////
@@ -63,8 +63,8 @@ public:
 public:
    PacketAsset( int packet_type = PacketType_Asset, int packet_sub_type = AssetType_Base ) : BasePacket( packet_type, packet_sub_type ) {}
 
-   bool  SerializeIn( const U8* data, int& bufferOffset );
-   bool  SerializeOut( U8* data, int& bufferOffset ) const;
+   bool  SerializeIn( const U8* data, int& bufferOffset, int minorVersion );
+   bool  SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const;
 };
 
 ///////////////////////////////////////////////////////////////
@@ -74,8 +74,8 @@ class PacketAsset_EchoToServer : public PacketAsset
 public:
    PacketAsset_EchoToServer(): PacketAsset( PacketType_Asset, PacketAsset::AssetType_EchoToServer ) {}
 
-   bool  SerializeIn( const U8* data, int& bufferOffset );
-   bool  SerializeOut( U8* data, int& bufferOffset ) const;
+   bool  SerializeIn( const U8* data, int& bufferOffset, int minorVersion );
+   bool  SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const;
 
    string   uuid;
    string   loginKey;
@@ -98,8 +98,8 @@ class PacketAsset_TestNotification : public PacketAsset
 public:
    PacketAsset_TestNotification() : PacketAsset( PacketType_Asset, AssetType_TestNotification ){  }
 
-   bool  SerializeIn( const U8* data, int& bufferOffset );
-   bool  SerializeOut( U8* data, int& bufferOffset ) const;
+   bool  SerializeIn( const U8* data, int& bufferOffset, int minorVersion );
+   bool  SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const;
 
    string   message;
    string   senderName;
@@ -115,8 +115,8 @@ class PacketAsset_GetListOfStaticAssets : public PacketAsset
 public:
    PacketAsset_GetListOfStaticAssets() : PacketAsset( PacketType_Asset, AssetType_GetListOfStaticAssets ){  }
 
-   bool  SerializeIn( const U8* data, int& bufferOffset );
-   bool  SerializeOut( U8* data, int& bufferOffset ) const;
+   bool  SerializeIn( const U8* data, int& bufferOffset, int minorVersion );
+   bool  SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const;
 
    string   uuid;
    string   loginKey;
@@ -131,8 +131,8 @@ class PacketAsset_GetListOfStaticAssetsResponse : public PacketAsset
 public:
    PacketAsset_GetListOfStaticAssetsResponse() : PacketAsset( PacketType_Asset, AssetType_GetListOfStaticAssetsResponse ){  }
 
-   bool  SerializeIn( const U8* data, int& bufferOffset );
-   bool  SerializeOut( U8* data, int& bufferOffset ) const;
+   bool  SerializeIn( const U8* data, int& bufferOffset, int minorVersion );
+   bool  SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const;
 
    SerializedKeyValueVector< AssetInfo >   updatedAssets;
 };
@@ -144,8 +144,8 @@ class PacketAsset_GetListOfDynamicAssets : public PacketAsset
 public:
    PacketAsset_GetListOfDynamicAssets() : PacketAsset( PacketType_Asset, AssetType_GetListOfDynamicAssets ){  }
 
-   bool  SerializeIn( const U8* data, int& bufferOffset );
-   bool  SerializeOut( U8* data, int& bufferOffset ) const;
+   bool  SerializeIn( const U8* data, int& bufferOffset, int minorVersion );
+   bool  SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const;
 
    string   uuid;
    string   loginKey;
@@ -159,8 +159,8 @@ class PacketAsset_GetListOfDynamicAssetsResponse : public PacketAsset
 public:
    PacketAsset_GetListOfDynamicAssetsResponse() : PacketAsset( PacketType_Asset, AssetType_GetListOfDynamicAssetsResponse ){  }
 
-   bool  SerializeIn( const U8* data, int& bufferOffset );
-   bool  SerializeOut( U8* data, int& bufferOffset ) const;
+   bool  SerializeIn( const U8* data, int& bufferOffset, int minorVersion );
+   bool  SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const;
 
    SerializedKeyValueVector< AssetInfo >   updatedAssets;
 };
@@ -173,8 +173,8 @@ class PacketAsset_GetListOfAssetCategories : public PacketAsset
 public:
    PacketAsset_GetListOfAssetCategories() : PacketAsset( PacketType_Asset, AssetType_GetListOfAssetCategories ){  }
 
-   bool  SerializeIn( const U8* data, int& bufferOffset );
-   bool  SerializeOut( U8* data, int& bufferOffset ) const;
+   bool  SerializeIn( const U8* data, int& bufferOffset, int minorVersion );
+   bool  SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const;
 
    string   uuid;
    string   loginKey;
@@ -187,8 +187,8 @@ class PacketAsset_GetListOfAssetCategoriesResponse : public PacketAsset
 public:
    PacketAsset_GetListOfAssetCategoriesResponse() : PacketAsset( PacketType_Asset, AssetType_GetListOfAssetCategoriesResponse ){  }
 
-   bool  SerializeIn( const U8* data, int& bufferOffset );
-   bool  SerializeOut( U8* data, int& bufferOffset ) const;
+   bool  SerializeIn( const U8* data, int& bufferOffset, int minorVersion );
+   bool  SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const;
 
    SerializedVector< string >   assetcategory;
 };
@@ -200,8 +200,8 @@ class PacketAsset_GetListOfAssets : public PacketAsset
 public:
    PacketAsset_GetListOfAssets() : PacketAsset( PacketType_Asset, AssetType_GetListOfAssets ){  }
 
-   bool  SerializeIn( const U8* data, int& bufferOffset );
-   bool  SerializeOut( U8* data, int& bufferOffset ) const;
+   bool  SerializeIn( const U8* data, int& bufferOffset, int minorVersion );
+   bool  SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const;
 
    string   uuid;
    string   loginKey;
@@ -216,8 +216,8 @@ class PacketAsset_GetListOfAssetsResponse : public PacketAsset
 public:
    PacketAsset_GetListOfAssetsResponse() : PacketAsset( PacketType_Asset, AssetType_GetListOfAssetsResponse ){  }
 
-   bool  SerializeIn( const U8* data, int& bufferOffset );
-   bool  SerializeOut( U8* data, int& bufferOffset ) const;
+   bool  SerializeIn( const U8* data, int& bufferOffset, int minorVersion );
+   bool  SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const;
 
    string   assetCategory;
    SerializedKeyValueVector< AssetInfo >   updatedAssets;
@@ -230,12 +230,12 @@ class PacketAsset_RequestAsset : public PacketAsset
 public:
    PacketAsset_RequestAsset() : PacketAsset( PacketType_Asset, AssetType_RequestAsset ){  }
 
-   bool  SerializeIn( const U8* data, int& bufferOffset );
-   bool  SerializeOut( U8* data, int& bufferOffset ) const;
+   bool  SerializeIn( const U8* data, int& bufferOffset, int minorVersion );
+   bool  SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const;
 
    string      uuid;
    string      loginKey;
    string      assetHash;
 };
 
-///////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////

@@ -40,7 +40,7 @@ namespace Serialize
    template<typename T>
    struct IsSelfSerializableIn
    {
-	   template< typename U, bool (U::*)( const U8*, int&) > struct signature;
+	   template< typename U, bool (U::*)( const U8*, int&, int networkVersion) > struct signature;
 	   template< typename U > static char& HasSerialize(signature< U, &U::SerializeIn >*);
       template< typename U > static int& HasSerialize(...);
 	   static const bool value = sizeof(char) == sizeof(HasSerialize<T>(0));
@@ -52,7 +52,7 @@ namespace Serialize
    template< typename T, bool hasSerializer = IsSelfSerializableIn<T>::value >
    struct Serializer
    {
-	   static inline void In( const U8* source, int& offset, T& value)
+	   static inline void In( const U8* source, int& offset, T& value, int minorVersion )
 	   {
          int size = sizeof( T );
    #if size == 1
@@ -78,8 +78,13 @@ namespace Serialize
          offset += size;
 	   }
       //----------------------------------
-      static inline void Out( U8* destination, int& offset, const T& value )
+      static inline void Out( U8* destination, int& offset, const T& value, int minorVersion )
 	   {
+        /* if( hasSerializer == true )
+         {
+            value.SerializeOut( destination, offset, minorVersion );
+            return;
+         }*/
          int size = sizeof( value );
    #if size == 1
          {
@@ -104,19 +109,33 @@ namespace Serialize
 	   }
    };
 
+ /*  template< typename T >
+   struct Serializer <T, true>
+   {
+	   static inline void In( const U8* source, int& offset, T& value, int minorVersion )
+	   {
+         value.SerializeIn( source, offset, minorVersion );
+	   }
+      //----------------------------------
+      static inline void Out( U8* destination, int& offset, const T& value, int minorVersion )
+	   {
+         value.SerializeOut( destination, offset, minorVersion );
+	   }
+   };*/
+
    ////////////////////////////////////////////////////////////////
    //                       class serialization
    ////////////////////////////////////////////////////////////////
    template< typename T >
    struct Serializer< T, true >
    {
-	   static inline void In( const U8* destination, int& offset, T& value )
+	   static inline void In( const U8* destination, int& offset, T& value, int minorVersion )
 	   {
-		   value.SerializeIn( destination, offset );
+		   value.SerializeIn( destination, offset, minorVersion );
 	   }
-      static inline void Out( U8* destination, int& offset, const T& value )
+      static inline void Out( U8* destination, int& offset, const T& value, int minorVersion )
 	   {
-		   value.SerializeOut( destination, offset );
+		   value.SerializeOut( destination, offset, minorVersion );
 	   }
    };
    ////////////////////////////////////////////////////////////////
@@ -125,7 +144,7 @@ namespace Serialize
    template<>
    struct Serializer< bool, false >
    {
-	   static inline void In( const U8* source, int& offset, bool& outValue )
+	   static inline void In( const U8* source, int& offset, bool& outValue, int minorVersion )
 	   {
 		   U8 tempValue;
          int size = sizeof( tempValue );
@@ -133,7 +152,7 @@ namespace Serialize
          outValue = tempValue ? true:false;
          offset += size;
 	   }
-      static inline void Out( U8* destination, int& offset, const bool& value )
+      static inline void Out( U8* destination, int& offset, const bool& value, int minorVersion )
 	   {
 		   U8 finalValue = value ? 1:0;
          int size = sizeof( finalValue );
@@ -148,7 +167,7 @@ namespace Serialize
    template<>
    struct Serializer< std::string, false >
    {
-	   static inline void In( const U8* source, int& offset, std::string& value )
+	   static inline void In( const U8* source, int& offset, std::string& value, int minorVersion )
 	   {
 		   U16 len = 0;// there should be a maximum size to strings
          int size = sizeof( len );
@@ -167,7 +186,7 @@ namespace Serialize
 
          offset += len;
 	   }
-      static inline void Out( U8* destination, int& offset, const std::string& value )
+      static inline void Out( U8* destination, int& offset, const std::string& value, int minorVersion )
 	   {
 		   U16 len = static_cast< U16 >( value.size() );// there should be a maximum size to strings
          int size = sizeof( len );
@@ -186,17 +205,17 @@ namespace Serialize
    //          global entry points for serialization
    ////////////////////////////////////////////////////////////////
    template<typename T>
-   inline void In( const U8* source, int& offset, T& value )
+   inline void In( const U8* source, int& offset, T& value, int minorVersion )
    {
-	   Serializer<T>::In( source, offset, value );
+	   Serializer<T>::In( source, offset, value, minorVersion );
    }
    template<typename T>
-   inline void Out( U8* dest, int& offset, const T& value )
+   inline void Out( U8* dest, int& offset, const T& value, int minorVersion )
    {
-	   Serializer<T>::Out( dest, offset, value );
+	   Serializer<T>::Out( dest, offset, value, minorVersion );
    }
 
-};
+} // namespace Serialize
 
 ////////////////////////////////////////////////////////
 

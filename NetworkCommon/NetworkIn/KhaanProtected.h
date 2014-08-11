@@ -35,7 +35,7 @@ protected:
    bool                       m_denyAllFutureData;
    bool                       m_markedToBeCleanedup;
    ChainedInterface*          m_mainOutputChain;
-   U8                         m_versionNumberMinor;
+ 
 };
 
 //////////////////////////////////////////////////////////////////////

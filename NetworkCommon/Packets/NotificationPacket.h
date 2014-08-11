@@ -17,10 +17,11 @@ public:
    U8       productId;
    U8       platformId;   // int   FindPlatformId( const char* value ).. const char*   FindPlatformName( int platformId )
 
-   bool  SerializeIn( const U8* data, int& bufferOffset );
-   bool  SerializeOut( U8* data, int& bufferOffset ) const;
+   bool  SerializeIn( const U8* data, int& bufferOffset, int minorVersion );
+   bool  SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const;
 };
 
+///////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////
 
 class PacketNotification : public BasePacket 
@@ -52,8 +53,8 @@ public:
 public:
    PacketNotification( int packet_type = PacketType_Notification, int packet_sub_type = NotificationType_Base ) : BasePacket( packet_type, packet_sub_type ) {}
 
-   bool  SerializeIn( const U8* data, int& bufferOffset );
-   bool  SerializeOut( U8* data, int& bufferOffset ) const;
+   bool  SerializeIn( const U8* data, int& bufferOffset, int minorVersion );
+   bool  SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const;
 };
 
 ///////////////////////////////////////////////////////////////
@@ -65,8 +66,8 @@ class PacketNotification_TestNotification : public PacketNotification
 public:
    PacketNotification_TestNotification() : PacketNotification( PacketType_Notification, NotificationType_TestNotification ){  }
 
-   bool  SerializeIn( const U8* data, int& bufferOffset );
-   bool  SerializeOut( U8* data, int& bufferOffset ) const;
+   bool  SerializeIn( const U8* data, int& bufferOffset, int minorVersion );
+   bool  SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const;
 
    string   message;
    int      type;
@@ -97,8 +98,8 @@ class PacketNotification_RegisterDevice : public PacketNotification
 public:
    PacketNotification_RegisterDevice() : PacketNotification( PacketType_Notification, NotificationType_RegisterDevice ){  }
 
-   bool  SerializeIn( const U8* data, int& bufferOffset );
-   bool  SerializeOut( U8* data, int& bufferOffset ) const;
+   bool  SerializeIn( const U8* data, int& bufferOffset, int minorVersion );
+   bool  SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const;
 
    string      deviceName; 
    string      deviceId;
@@ -113,8 +114,8 @@ class PacketNotification_RegisterDeviceResponse : public PacketNotification
 public:
    PacketNotification_RegisterDeviceResponse() : PacketNotification( PacketType_Notification, NotificationType_RegisterDeviceResponse ){  }
 
-   bool  SerializeIn( const U8* data, int& bufferOffset );
-   bool  SerializeOut( U8* data, int& bufferOffset ) const;
+   bool  SerializeIn( const U8* data, int& bufferOffset, int minorVersion );
+   bool  SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const;
 
    UuidString  deviceUuid;
 };
@@ -131,8 +132,8 @@ public:
                   gameType( GameProductId_SUMMONWAR ) 
    {}
 
-   bool  SerializeIn( const U8* data, int& bufferOffset );
-   bool  SerializeOut( U8* data, int& bufferOffset ) const;
+   bool  SerializeIn( const U8* data, int& bufferOffset, int minorVersion );
+   bool  SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const;
 
    UuidString        deviceUuid;
    string            deviceName;
@@ -150,8 +151,8 @@ class PacketNotification_SendNotification: public PacketNotification
 public:
    PacketNotification_SendNotification() : PacketNotification( PacketType_Notification, NotificationType_SendNotification ){  }
 
-   bool  SerializeIn( const U8* data, int& bufferOffset );
-   bool  SerializeOut( U8* data, int& bufferOffset ) const;
+   bool  SerializeIn( const U8* data, int& bufferOffset, int minorVersion );
+   bool  SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const;
 
    UuidString  userUuid;
    U32            userId;
@@ -168,8 +169,8 @@ class PacketNotification_UpdateNotificationCount: public PacketNotification
 public:
    PacketNotification_UpdateNotificationCount() : PacketNotification( PacketType_Notification, NotificationType_UpdateNotificationCount ) {  }
 
-   bool  SerializeIn( const U8* data, int& bufferOffset );
-   bool  SerializeOut( U8* data, int& bufferOffset ) const;
+   bool  SerializeIn( const U8* data, int& bufferOffset, int minorVersion );
+   bool  SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const;
 
    U32            userId;
    int            gameType;
@@ -184,8 +185,8 @@ class PacketNotification_RequestListOfDevices: public PacketNotification
 public:
    PacketNotification_RequestListOfDevices() : PacketNotification( PacketType_Notification, NotificationType_RequestListOfDevices ){  }
 
-   bool  SerializeIn( const U8* data, int& bufferOffset );
-   bool  SerializeOut( U8* data, int& bufferOffset ) const;
+   bool  SerializeIn( const U8* data, int& bufferOffset, int minorVersion );
+   bool  SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const;
 
    U32      platformId;
 };
@@ -197,8 +198,8 @@ class PacketNotification_RequestListOfDevicesResponse: public PacketNotification
 public:
    PacketNotification_RequestListOfDevicesResponse() : PacketNotification( PacketType_Notification, NotificationType_RequestListOfDevicesResponse ){  }
 
-   bool  SerializeIn( const U8* data, int& bufferOffset );
-   bool  SerializeOut( U8* data, int& bufferOffset ) const;
+   bool  SerializeIn( const U8* data, int& bufferOffset, int minorVersion );
+   bool  SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const;
 
    SerializedVector< RegisteredDevice > devices;
 };
@@ -210,8 +211,8 @@ class PacketNotification_RemoveDevice: public PacketNotification
 public:
    PacketNotification_RemoveDevice() : PacketNotification( PacketType_Notification, NotificationType_RemoveDevice ){  }
 
-   bool  SerializeIn( const U8* data, int& bufferOffset );
-   bool  SerializeOut( U8* data, int& bufferOffset ) const;
+   bool  SerializeIn( const U8* data, int& bufferOffset, int minorVersion );
+   bool  SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const;
 
    UuidString  deviceUuid;
 };
@@ -223,14 +224,13 @@ class PacketNotification_RemoveDeviceResponse: public PacketNotification
 public:
    PacketNotification_RemoveDeviceResponse() : PacketNotification( PacketType_Notification, NotificationType_RemoveDeviceResponse ){  }
 
-   bool  SerializeIn( const U8* data, int& bufferOffset );
-   bool  SerializeOut( U8* data, int& bufferOffset ) const;
+   bool  SerializeIn( const U8* data, int& bufferOffset, int minorVersion );
+   bool  SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const;
 
    UuidString  deviceUuid;
    bool        success;
 };
 
-
-
+///////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////

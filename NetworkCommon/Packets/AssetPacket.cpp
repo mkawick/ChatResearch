@@ -7,275 +7,283 @@ using namespace std;
 
 ///////////////////////////////////////////////////////////////
 
-bool  PacketAsset::SerializeIn( const U8* data, int& bufferOffset )
+bool  PacketAsset::SerializeIn( const U8* data, int& bufferOffset, int minorVersion )
 { 
-   BasePacket::SerializeIn( data, bufferOffset );
+   BasePacket::SerializeIn( data, bufferOffset, minorVersion );
 
    return true; 
 }
 
-bool  PacketAsset::SerializeOut( U8* data, int& bufferOffset ) const 
+bool  PacketAsset::SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const 
 { 
-   BasePacket::SerializeOut( data, bufferOffset );
+   BasePacket::SerializeOut( data, bufferOffset, minorVersion );
 
    return true; 
 }
 
 
 
-bool  AssetInfo::SerializeIn( const U8* data, int& bufferOffset )
+bool  AssetInfo::SerializeIn( const U8* data, int& bufferOffset, int minorVersion )
 {
-   Serialize::In( data, bufferOffset, productId );
-   Serialize::In( data, bufferOffset, isOptional );
-   Serialize::In( data, bufferOffset, assetHash );
-   Serialize::In( data, bufferOffset, assetName );
-   Serialize::In( data, bufferOffset, version );
-   Serialize::In( data, bufferOffset, beginDate );
-   Serialize::In( data, bufferOffset, endDate );
-   Serialize::In( data, bufferOffset, category );
+   Serialize::In( data, bufferOffset, productId, minorVersion );
+   Serialize::In( data, bufferOffset, isOptional, minorVersion );
+   Serialize::In( data, bufferOffset, assetHash, minorVersion );
+   Serialize::In( data, bufferOffset, assetName, minorVersion );
+   Serialize::In( data, bufferOffset, version, minorVersion );
+   Serialize::In( data, bufferOffset, beginDate, minorVersion );
+   Serialize::In( data, bufferOffset, endDate, minorVersion );
+   Serialize::In( data, bufferOffset, category, minorVersion );
 
    return true;
 }
 
-bool  AssetInfo::SerializeOut( U8* data, int& bufferOffset ) const
+bool  AssetInfo::SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const
 {
-   Serialize::Out( data, bufferOffset, productId );
-   Serialize::Out( data, bufferOffset, isOptional );
-   Serialize::Out( data, bufferOffset, assetHash );
-   Serialize::Out( data, bufferOffset, assetName );
-   Serialize::Out( data, bufferOffset, version );
-   Serialize::Out( data, bufferOffset, beginDate );
-   Serialize::Out( data, bufferOffset, endDate );
-   Serialize::Out( data, bufferOffset, category );
+   Serialize::Out( data, bufferOffset, productId, minorVersion );
+   Serialize::Out( data, bufferOffset, isOptional, minorVersion );
+   Serialize::Out( data, bufferOffset, assetHash, minorVersion );
+   Serialize::Out( data, bufferOffset, assetName, minorVersion );
+   Serialize::Out( data, bufferOffset, version, minorVersion );
+   Serialize::Out( data, bufferOffset, beginDate, minorVersion );
+   Serialize::Out( data, bufferOffset, endDate, minorVersion );
+   Serialize::Out( data, bufferOffset, category, minorVersion );
 
    return true;
 }
 
 ///////////////////////////////////////////////////////////////
 
-bool  PacketAsset_EchoToServer::SerializeIn( const U8* data, int& bufferOffset )
+bool  PacketAsset_EchoToServer::SerializeIn( const U8* data, int& bufferOffset, int minorVersion )
 { 
-   PacketAsset::SerializeIn( data, bufferOffset );
-   Serialize::In( data, bufferOffset, uuid );
-   Serialize::In( data, bufferOffset, loginKey );
+   PacketAsset::SerializeIn( data, bufferOffset, minorVersion );
+   Serialize::In( data, bufferOffset, uuid, minorVersion );
+   Serialize::In( data, bufferOffset, loginKey, minorVersion );
 
    return true; 
 }
 
-bool  PacketAsset_EchoToServer::SerializeOut( U8* data, int& bufferOffset ) const 
+bool  PacketAsset_EchoToServer::SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const 
 { 
-   PacketAsset::SerializeOut( data, bufferOffset );
-   Serialize::Out( data, bufferOffset, uuid );
-   Serialize::Out( data, bufferOffset, loginKey );
-
-   return true; 
-}
-
-///////////////////////////////////////////////////////////////
-
-bool  PacketAsset_TestNotification::SerializeIn( const U8* data, int& bufferOffset )
-{ 
-   PacketAsset::SerializeIn( data, bufferOffset );
-   Serialize::In( data, bufferOffset, message );
-   Serialize::In( data, bufferOffset, senderName );
-   Serialize::In( data, bufferOffset, senderUuid );
-   Serialize::In( data, bufferOffset, type );
-
-   return true; 
-}
-
-bool  PacketAsset_TestNotification::SerializeOut( U8* data, int& bufferOffset ) const 
-{ 
-   PacketAsset::SerializeOut( data, bufferOffset );
-   Serialize::Out( data, bufferOffset, message );
-   Serialize::Out( data, bufferOffset, senderName );
-   Serialize::Out( data, bufferOffset, senderUuid );
-   Serialize::Out( data, bufferOffset, type );
+   PacketAsset::SerializeOut( data, bufferOffset, minorVersion );
+   Serialize::Out( data, bufferOffset, uuid, minorVersion );
+   Serialize::Out( data, bufferOffset, loginKey, minorVersion );
 
    return true; 
 }
 
 ///////////////////////////////////////////////////////////////
 
-bool  PacketAsset_GetListOfStaticAssets::SerializeIn( const U8* data, int& bufferOffset )
+bool  PacketAsset_TestNotification::SerializeIn( const U8* data, int& bufferOffset, int minorVersion )
 { 
-   PacketAsset::SerializeIn( data, bufferOffset );
-   Serialize::In( data, bufferOffset, uuid );
-   Serialize::In( data, bufferOffset, loginKey );
-   Serialize::In( data, bufferOffset, platformId );
+   PacketAsset::SerializeIn( data, bufferOffset, minorVersion );
+   Serialize::In( data, bufferOffset, message, minorVersion );
+   Serialize::In( data, bufferOffset, senderName, minorVersion );
+   Serialize::In( data, bufferOffset, senderUuid, minorVersion );
+   Serialize::In( data, bufferOffset, type, minorVersion );
 
    return true; 
 }
 
-bool  PacketAsset_GetListOfStaticAssets::SerializeOut( U8* data, int& bufferOffset ) const 
+bool  PacketAsset_TestNotification::SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const 
 { 
-   PacketAsset::SerializeOut( data, bufferOffset );
-   Serialize::Out( data, bufferOffset, uuid );
-   Serialize::Out( data, bufferOffset, loginKey );
-   Serialize::Out( data, bufferOffset, platformId );
-
-   return true; 
-}
-
-///////////////////////////////////////////////////////////////
-
-bool  PacketAsset_GetListOfStaticAssetsResponse::SerializeIn( const U8* data, int& bufferOffset )
-{ 
-   PacketAsset::SerializeIn( data, bufferOffset );
-   Serialize::In( data, bufferOffset, updatedAssets );
-
-   return true; 
-}
-
-bool  PacketAsset_GetListOfStaticAssetsResponse::SerializeOut( U8* data, int& bufferOffset ) const 
-{ 
-   PacketAsset::SerializeOut( data, bufferOffset );
-   Serialize::Out( data, bufferOffset, updatedAssets );
+   PacketAsset::SerializeOut( data, bufferOffset, minorVersion );
+   Serialize::Out( data, bufferOffset, message, minorVersion );
+   Serialize::Out( data, bufferOffset, senderName, minorVersion );
+   Serialize::Out( data, bufferOffset, senderUuid, minorVersion );
+   Serialize::Out( data, bufferOffset, type, minorVersion );
 
    return true; 
 }
 
 ///////////////////////////////////////////////////////////////
 
-
-bool  PacketAsset_GetListOfDynamicAssets::SerializeIn( const U8* data, int& bufferOffset )
+bool  PacketAsset_GetListOfStaticAssets::SerializeIn( const U8* data, int& bufferOffset, int minorVersion )
 { 
-   PacketAsset::SerializeIn( data, bufferOffset );
-   Serialize::In( data, bufferOffset, uuid );
-   Serialize::In( data, bufferOffset, loginKey );
-   Serialize::In( data, bufferOffset, platformId );
+   PacketAsset::SerializeIn( data, bufferOffset, minorVersion );
+   Serialize::In( data, bufferOffset, uuid, minorVersion );
+   Serialize::In( data, bufferOffset, loginKey, minorVersion );
+   Serialize::In( data, bufferOffset, platformId, minorVersion );
 
    return true; 
 }
 
-bool  PacketAsset_GetListOfDynamicAssets::SerializeOut( U8* data, int& bufferOffset ) const 
+bool  PacketAsset_GetListOfStaticAssets::SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const 
 { 
-   PacketAsset::SerializeOut( data, bufferOffset );
-   Serialize::Out( data, bufferOffset, uuid );
-   Serialize::Out( data, bufferOffset, loginKey );
-   Serialize::Out( data, bufferOffset, platformId );
-
-   return true; 
-}
-
-///////////////////////////////////////////////////////////////
-
-bool  PacketAsset_GetListOfDynamicAssetsResponse::SerializeIn( const U8* data, int& bufferOffset )
-{ 
-   PacketAsset::SerializeIn( data, bufferOffset );
-   Serialize::In( data, bufferOffset, updatedAssets );
-
-   return true; 
-}
-
-bool  PacketAsset_GetListOfDynamicAssetsResponse::SerializeOut( U8* data, int& bufferOffset ) const 
-{ 
-   PacketAsset::SerializeOut( data, bufferOffset );
-   Serialize::Out( data, bufferOffset, updatedAssets );
+   PacketAsset::SerializeOut( data, bufferOffset, minorVersion );
+   Serialize::Out( data, bufferOffset, uuid, minorVersion );
+   Serialize::Out( data, bufferOffset, loginKey, minorVersion );
+   Serialize::Out( data, bufferOffset, platformId, minorVersion );
 
    return true; 
 }
 
 ///////////////////////////////////////////////////////////////
 
-bool  PacketAsset_GetListOfAssetCategories::SerializeIn( const U8* data, int& bufferOffset )
+bool  PacketAsset_GetListOfStaticAssetsResponse::SerializeIn( const U8* data, int& bufferOffset, int minorVersion )
 { 
-   PacketAsset::SerializeIn( data, bufferOffset );
-   Serialize::In( data, bufferOffset, uuid );
-   Serialize::In( data, bufferOffset, loginKey );
+   PacketAsset::SerializeIn( data, bufferOffset, minorVersion );
+   Serialize::In( data, bufferOffset, updatedAssets, minorVersion );
+   //updatedAssets.SerializeIn( data, bufferOffset, minorVersion );
 
    return true; 
 }
 
-bool  PacketAsset_GetListOfAssetCategories::SerializeOut( U8* data, int& bufferOffset ) const 
+bool  PacketAsset_GetListOfStaticAssetsResponse::SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const 
 { 
-   PacketAsset::SerializeOut( data, bufferOffset );
-   Serialize::Out( data, bufferOffset, uuid );
-   Serialize::Out( data, bufferOffset, loginKey );
-
-   return true; 
-}
-
-///////////////////////////////////////////////////////////////
-
-bool  PacketAsset_GetListOfAssetCategoriesResponse::SerializeIn( const U8* data, int& bufferOffset )
-{ 
-   PacketAsset::SerializeIn( data, bufferOffset );
-   Serialize::In( data, bufferOffset, assetcategory );
-
-   return true; 
-}
-
-bool  PacketAsset_GetListOfAssetCategoriesResponse::SerializeOut( U8* data, int& bufferOffset ) const 
-{ 
-   PacketAsset::SerializeOut( data, bufferOffset );
-   Serialize::Out( data, bufferOffset, assetcategory );
+   PacketAsset::SerializeOut( data, bufferOffset, minorVersion );
+   Serialize::Out( data, bufferOffset, updatedAssets, minorVersion );
+   //updatedAssets.SerializeOut( data, bufferOffset, minorVersion );
 
    return true; 
 }
 
 ///////////////////////////////////////////////////////////////
 
-bool  PacketAsset_GetListOfAssets::SerializeIn( const U8* data, int& bufferOffset )
+
+bool  PacketAsset_GetListOfDynamicAssets::SerializeIn( const U8* data, int& bufferOffset, int minorVersion )
 { 
-   PacketAsset::SerializeIn( data, bufferOffset );
-   Serialize::In( data, bufferOffset, uuid );
-   Serialize::In( data, bufferOffset, loginKey );
-   Serialize::In( data, bufferOffset, assetCategory );
-   Serialize::In( data, bufferOffset, platformId );
+   PacketAsset::SerializeIn( data, bufferOffset, minorVersion );
+   Serialize::In( data, bufferOffset, uuid, minorVersion );
+   Serialize::In( data, bufferOffset, loginKey, minorVersion );
+   Serialize::In( data, bufferOffset, platformId, minorVersion );
 
    return true; 
 }
 
-bool  PacketAsset_GetListOfAssets::SerializeOut( U8* data, int& bufferOffset ) const 
+bool  PacketAsset_GetListOfDynamicAssets::SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const 
 { 
-   PacketAsset::SerializeOut( data, bufferOffset );
-   Serialize::Out( data, bufferOffset, uuid );
-   Serialize::Out( data, bufferOffset, loginKey );
-   Serialize::Out( data, bufferOffset, assetCategory );
-   Serialize::Out( data, bufferOffset, platformId );
-
-   return true; 
-}
-
-///////////////////////////////////////////////////////////////
-
-bool  PacketAsset_GetListOfAssetsResponse::SerializeIn( const U8* data, int& bufferOffset )
-{ 
-   PacketAsset::SerializeIn( data, bufferOffset );
-   Serialize::In( data, bufferOffset, assetCategory );
-   Serialize::In( data, bufferOffset, updatedAssets );
-
-   return true; 
-}
-
-bool  PacketAsset_GetListOfAssetsResponse::SerializeOut( U8* data, int& bufferOffset ) const 
-{ 
-   PacketAsset::SerializeOut( data, bufferOffset );
-   Serialize::Out( data, bufferOffset, assetCategory );
-   Serialize::Out( data, bufferOffset, updatedAssets );
+   PacketAsset::SerializeOut( data, bufferOffset, minorVersion );
+   Serialize::Out( data, bufferOffset, uuid, minorVersion );
+   Serialize::Out( data, bufferOffset, loginKey, minorVersion );
+   Serialize::Out( data, bufferOffset, platformId, minorVersion );
 
    return true; 
 }
 
 ///////////////////////////////////////////////////////////////
 
-bool  PacketAsset_RequestAsset::SerializeIn( const U8* data, int& bufferOffset )
+bool  PacketAsset_GetListOfDynamicAssetsResponse::SerializeIn( const U8* data, int& bufferOffset, int minorVersion )
 { 
-   PacketAsset::SerializeIn( data, bufferOffset );
-   Serialize::In( data, bufferOffset, uuid );
-   Serialize::In( data, bufferOffset, loginKey );
-   Serialize::In( data, bufferOffset, assetHash );
+   PacketAsset::SerializeIn( data, bufferOffset, minorVersion );
+   Serialize::In( data, bufferOffset, updatedAssets, minorVersion );
+   //updatedAssets.SerializeIn( data, bufferOffset, minorVersion );
 
    return true; 
 }
 
-bool  PacketAsset_RequestAsset::SerializeOut( U8* data, int& bufferOffset ) const 
+bool  PacketAsset_GetListOfDynamicAssetsResponse::SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const 
 { 
-   PacketAsset::SerializeOut( data, bufferOffset );
-   Serialize::Out( data, bufferOffset, uuid );
-   Serialize::Out( data, bufferOffset, loginKey );
-   Serialize::Out( data, bufferOffset, assetHash );
+   PacketAsset::SerializeOut( data, bufferOffset, minorVersion );
+   Serialize::Out( data, bufferOffset, updatedAssets, minorVersion );
+   //updatedAssets.SerializeOut( data, bufferOffset, minorVersion );
+
+   return true; 
+}
+
+///////////////////////////////////////////////////////////////
+
+bool  PacketAsset_GetListOfAssetCategories::SerializeIn( const U8* data, int& bufferOffset, int minorVersion )
+{ 
+   PacketAsset::SerializeIn( data, bufferOffset, minorVersion );
+   Serialize::In( data, bufferOffset, uuid, minorVersion );
+   Serialize::In( data, bufferOffset, loginKey, minorVersion );
+
+   return true; 
+}
+
+bool  PacketAsset_GetListOfAssetCategories::SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const 
+{ 
+   PacketAsset::SerializeOut( data, bufferOffset, minorVersion );
+   Serialize::Out( data, bufferOffset, uuid, minorVersion );
+   Serialize::Out( data, bufferOffset, loginKey, minorVersion );
+
+   return true; 
+}
+
+///////////////////////////////////////////////////////////////
+
+bool  PacketAsset_GetListOfAssetCategoriesResponse::SerializeIn( const U8* data, int& bufferOffset, int minorVersion )
+{ 
+   PacketAsset::SerializeIn( data, bufferOffset, minorVersion );
+   Serialize::In( data, bufferOffset, assetcategory, minorVersion );
+   //assetcategory.SerializeIn( data, bufferOffset, minorVersion );
+
+   return true; 
+}
+
+bool  PacketAsset_GetListOfAssetCategoriesResponse::SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const 
+{ 
+   PacketAsset::SerializeOut( data, bufferOffset, minorVersion );
+   Serialize::Out( data, bufferOffset, assetcategory, minorVersion );
+   //assetcategory.SerializeOut( data, bufferOffset, minorVersion );
+
+   return true; 
+}
+
+///////////////////////////////////////////////////////////////
+
+bool  PacketAsset_GetListOfAssets::SerializeIn( const U8* data, int& bufferOffset, int minorVersion )
+{ 
+   PacketAsset::SerializeIn( data, bufferOffset, minorVersion );
+   Serialize::In( data, bufferOffset, uuid, minorVersion );
+   Serialize::In( data, bufferOffset, loginKey, minorVersion );
+   Serialize::In( data, bufferOffset, assetCategory, minorVersion );
+   Serialize::In( data, bufferOffset, platformId, minorVersion );
+
+   return true; 
+}
+
+bool  PacketAsset_GetListOfAssets::SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const 
+{ 
+   PacketAsset::SerializeOut( data, bufferOffset, minorVersion );
+   Serialize::Out( data, bufferOffset, uuid, minorVersion );
+   Serialize::Out( data, bufferOffset, loginKey, minorVersion );
+   Serialize::Out( data, bufferOffset, assetCategory, minorVersion );
+   Serialize::Out( data, bufferOffset, platformId, minorVersion );
+
+   return true; 
+}
+
+///////////////////////////////////////////////////////////////
+
+bool  PacketAsset_GetListOfAssetsResponse::SerializeIn( const U8* data, int& bufferOffset, int minorVersion )
+{ 
+   PacketAsset::SerializeIn( data, bufferOffset, minorVersion );
+   Serialize::In( data, bufferOffset, assetCategory, minorVersion );
+   Serialize::In( data, bufferOffset, updatedAssets, minorVersion );
+   //updatedAssets.SerializeIn( data, bufferOffset, minorVersion );
+
+   return true; 
+}
+
+bool  PacketAsset_GetListOfAssetsResponse::SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const 
+{ 
+   PacketAsset::SerializeOut( data, bufferOffset, minorVersion );
+   Serialize::Out( data, bufferOffset, assetCategory, minorVersion );
+   Serialize::Out( data, bufferOffset, updatedAssets, minorVersion );
+   //updatedAssets.SerializeOut( data, bufferOffset, minorVersion );
+
+   return true; 
+}
+
+///////////////////////////////////////////////////////////////
+
+bool  PacketAsset_RequestAsset::SerializeIn( const U8* data, int& bufferOffset, int minorVersion )
+{ 
+   PacketAsset::SerializeIn( data, bufferOffset, minorVersion );
+   Serialize::In( data, bufferOffset, uuid, minorVersion );
+   Serialize::In( data, bufferOffset, loginKey, minorVersion );
+   Serialize::In( data, bufferOffset, assetHash, minorVersion );
+
+   return true; 
+}
+
+bool  PacketAsset_RequestAsset::SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const 
+{ 
+   PacketAsset::SerializeOut( data, bufferOffset, minorVersion );
+   Serialize::Out( data, bufferOffset, uuid, minorVersion );
+   Serialize::Out( data, bufferOffset, loginKey, minorVersion );
+   Serialize::Out( data, bufferOffset, assetHash, minorVersion );
 
    return true; 
 }

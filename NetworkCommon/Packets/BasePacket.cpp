@@ -12,7 +12,7 @@
 #include <assert.h>
 
 const U8   NetworkVersionMajor = 44;
-const U8   NetworkVersionMinor = 2;
+const U8   NetworkVersionMinor = 14;
 
 //#include <boost/static_assert.hpp>
 //BOOST_STATIC_ASSERT( NetworkVersionMajor < (1<<5) );// 5 bits for major
@@ -110,122 +110,124 @@ int   BasePacket::GetSize()
       sizeof( long*); // this accounts for the virtual pointer.
 }
 
-bool  BasePacket::SerializeIn( const U8* data, int& bufferOffset )
+bool  BasePacket::SerializeIn( const U8* data, int& bufferOffset, int minorVersion )
 { 
-   Serialize::In( data, bufferOffset, packetType );
-   Serialize::In( data, bufferOffset, packetSubType );
-   Serialize::In( data, bufferOffset, versionNumberMajor );
-   Serialize::In( data, bufferOffset, versionNumberMinor );
-   Serialize::In( data, bufferOffset, gameProductId );
+   Serialize::In( data, bufferOffset, packetType, minorVersion );
+   Serialize::In( data, bufferOffset, packetSubType, minorVersion );
+   Serialize::In( data, bufferOffset, versionNumberMajor, minorVersion );
+   Serialize::In( data, bufferOffset, versionNumberMinor, minorVersion );
+   Serialize::In( data, bufferOffset, gameProductId, minorVersion );
    //Serialize::In( data, bufferOffset, packetSize ); 
-   Serialize::In( data, bufferOffset, gameInstanceId );
+   Serialize::In( data, bufferOffset, gameInstanceId, minorVersion );
 
    return true; 
 }
 
-bool  BasePacket::SerializeOut( U8* data, int& bufferOffset ) const 
+bool  BasePacket::SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const 
 { 
-   Serialize::Out( data, bufferOffset, packetType );
-   Serialize::Out( data, bufferOffset, packetSubType );
-   Serialize::Out( data, bufferOffset, versionNumberMajor );
-   Serialize::Out( data, bufferOffset, versionNumberMinor );
-   Serialize::Out( data, bufferOffset, gameProductId );
+   Serialize::Out( data, bufferOffset, packetType, minorVersion );
+   Serialize::Out( data, bufferOffset, packetSubType, minorVersion );
+   Serialize::Out( data, bufferOffset, versionNumberMajor, minorVersion );
+   Serialize::Out( data, bufferOffset, versionNumberMinor, minorVersion );
+   Serialize::Out( data, bufferOffset, gameProductId, minorVersion );
    //Serialize::Out( data, bufferOffset, packetSize );
-   Serialize::Out( data, bufferOffset, gameInstanceId );
+   Serialize::Out( data, bufferOffset, gameInstanceId, minorVersion );
 
    return true; 
 }
 
 ///////////////////////////////////////////////////////////////
 
-bool  PacketHello::SerializeIn( const U8* data, int& bufferOffset )
+bool  PacketHello::SerializeIn( const U8* data, int& bufferOffset, int minorVersion )
 {
-   BasePacket::SerializeIn( data, bufferOffset );
-   if( this->versionNumberMinor > 1 )
+   BasePacket::SerializeIn( data, bufferOffset, minorVersion );
+  /* if( this->versionNumberMinor > 1 )
    {
-      Serialize::In( data, bufferOffset, test );
-   }
+      Serialize::In( data, bufferOffset, test, minorVersion );
+   }*/
    return true;
 }
 
-bool  PacketHello::SerializeOut( U8* data, int& bufferOffset ) const
+bool  PacketHello::SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const 
 {
-   BasePacket::SerializeOut( data, bufferOffset );
-   Serialize::Out( data, bufferOffset, test );
-
-   return true;
-}
-
-///////////////////////////////////////////////////////////////
-
-bool  PacketCommsHandshake::SerializeIn( const U8* data, int& bufferOffset )
-{
-   BasePacket::SerializeIn( data, bufferOffset );
-   Serialize::In( data, bufferOffset, serverHashedKey );
-
-   return true;
-}
-
-bool  PacketCommsHandshake::SerializeOut( U8* data, int& bufferOffset ) const
-{
-   BasePacket::SerializeOut( data, bufferOffset );
-   Serialize::Out( data, bufferOffset, serverHashedKey );
+   BasePacket::SerializeOut( data, bufferOffset, minorVersion );
+  // Serialize::Out( data, bufferOffset, test, minorVersion );
 
    return true;
 }
 
 ///////////////////////////////////////////////////////////////
 
-bool  PacketRerouteRequest::SerializeIn( const U8* data, int& bufferOffset )
+bool  PacketCommsHandshake::SerializeIn( const U8* data, int& bufferOffset, int minorVersion )
 {
-   BasePacket::SerializeIn( data, bufferOffset );
+   BasePacket::SerializeIn( data, bufferOffset, minorVersion );
+   Serialize::In( data, bufferOffset, serverHashedKey, minorVersion );
 
    return true;
 }
 
-bool  PacketRerouteRequest::SerializeOut( U8* data, int& bufferOffset ) const
+bool  PacketCommsHandshake::SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const 
 {
-   BasePacket::SerializeOut( data, bufferOffset );
-
-   return true;
-}
-
-///////////////////////////////////////////////////////////////
-
-bool  PacketRerouteRequestResponse::SerializeIn( const U8* data, int& bufferOffset )
-{
-   BasePacket::SerializeIn( data, bufferOffset );
-   Serialize::In( data, bufferOffset, locations );
-
-   return true;
-}
-
-bool  PacketRerouteRequestResponse::SerializeOut( U8* data, int& bufferOffset ) const
-{
-   BasePacket::SerializeOut( data, bufferOffset );
-   Serialize::Out( data, bufferOffset, locations );
+   BasePacket::SerializeOut( data, bufferOffset, minorVersion );
+   Serialize::Out( data, bufferOffset, serverHashedKey, minorVersion );
 
    return true;
 }
 
 ///////////////////////////////////////////////////////////////
 
-bool PacketRerouteRequestResponse::Address::SerializeIn( const U8* data, int& bufferOffset )
+bool  PacketRerouteRequest::SerializeIn( const U8* data, int& bufferOffset, int minorVersion )
 {
-   Serialize::In( data, bufferOffset, address );
-   Serialize::In( data, bufferOffset, name );
-   Serialize::In( data, bufferOffset, port );
-   Serialize::In( data, bufferOffset, whichLocationId );
+   BasePacket::SerializeIn( data, bufferOffset, minorVersion );
 
    return true;
 }
 
-bool  PacketRerouteRequestResponse::Address::SerializeOut( U8* data, int& bufferOffset ) const
+bool  PacketRerouteRequest::SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const 
 {
-   Serialize::Out( data, bufferOffset, address );
-   Serialize::Out( data, bufferOffset, name );
-   Serialize::Out( data, bufferOffset, port );
-   Serialize::Out( data, bufferOffset, whichLocationId );
+   BasePacket::SerializeOut( data, bufferOffset, minorVersion );
+
+   return true;
+}
+
+///////////////////////////////////////////////////////////////
+
+bool  PacketRerouteRequestResponse::SerializeIn( const U8* data, int& bufferOffset, int minorVersion )
+{
+   BasePacket::SerializeIn( data, bufferOffset, minorVersion );
+   //Serialize::In( data, bufferOffset, locations, minorVersion );
+   locations.SerializeIn( data, bufferOffset, minorVersion );
+
+   return true;
+}
+
+bool  PacketRerouteRequestResponse::SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const 
+{
+   BasePacket::SerializeOut( data, bufferOffset, minorVersion );
+   //Serialize::Out( data, bufferOffset, locations, minorVersion );
+   locations.SerializeOut( data, bufferOffset, minorVersion );
+
+   return true;
+}
+
+///////////////////////////////////////////////////////////////
+
+bool PacketRerouteRequestResponse::Address::SerializeIn( const U8* data, int& bufferOffset, int minorVersion )
+{
+   Serialize::In( data, bufferOffset, address, minorVersion );
+   Serialize::In( data, bufferOffset, name, minorVersion );
+   Serialize::In( data, bufferOffset, port, minorVersion );
+   Serialize::In( data, bufferOffset, whichLocationId, minorVersion );
+
+   return true;
+}
+
+bool  PacketRerouteRequestResponse::Address::SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const 
+{
+   Serialize::Out( data, bufferOffset, address, minorVersion );
+   Serialize::Out( data, bufferOffset, name, minorVersion );
+   Serialize::Out( data, bufferOffset, port, minorVersion );
+   Serialize::Out( data, bufferOffset, whichLocationId, minorVersion );
 
    return true;
 }
@@ -234,37 +236,18 @@ bool  PacketRerouteRequestResponse::Address::SerializeOut( U8* data, int& buffer
 ///////////////////////////////////////////////////////////////
 
 
-bool  PacketFriendsList::SerializeIn( const U8* data, int& bufferOffset )
+bool  PacketFriendsList::SerializeIn( const U8* data, int& bufferOffset, int minorVersion )
 {
-   BasePacket::SerializeIn( data, bufferOffset );
-   friendList.SerializeIn( data, bufferOffset );
+   BasePacket::SerializeIn( data, bufferOffset, minorVersion );
+   friendList.SerializeIn( data, bufferOffset, minorVersion );
 
    return true;
 }
 
-bool  PacketFriendsList::SerializeOut( U8* data, int& bufferOffset ) const
+bool  PacketFriendsList::SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const 
 {
-   BasePacket::SerializeOut( data, bufferOffset );
-   friendList.SerializeOut( data, bufferOffset );
-
-   return true;
-}
-
-///////////////////////////////////////////////////////////////
-
-
-bool  PacketGroupsList::SerializeIn( const U8* data, int& bufferOffset )
-{
-   BasePacket::SerializeIn( data, bufferOffset );
-   //groupList.SerializeIn( data, bufferOffset );
-
-   return true;
-}
-
-bool  PacketGroupsList::SerializeOut( U8* data, int& bufferOffset ) const
-{
-   BasePacket::SerializeOut( data, bufferOffset );
-   //groupList.SerializeOut( data, bufferOffset );
+   BasePacket::SerializeOut( data, bufferOffset, minorVersion );
+   friendList.SerializeOut( data, bufferOffset, minorVersion );
 
    return true;
 }
@@ -272,20 +255,39 @@ bool  PacketGroupsList::SerializeOut( U8* data, int& bufferOffset ) const
 ///////////////////////////////////////////////////////////////
 
 
-bool  PacketUserStateChange::SerializeIn( const U8* data, int& bufferOffset )
+bool  PacketGroupsList::SerializeIn( const U8* data, int& bufferOffset, int minorVersion )
 {
-   BasePacket::SerializeIn( data, bufferOffset );
-   Serialize::In( data, bufferOffset, uuid );
-   Serialize::In( data, bufferOffset, username );
+   BasePacket::SerializeIn( data, bufferOffset, minorVersion );
+   //groupList.SerializeIn( data, bufferOffset, minorVersion );
 
    return true;
 }
 
-bool  PacketUserStateChange::SerializeOut( U8* data, int& bufferOffset ) const
+bool  PacketGroupsList::SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const 
 {
-   BasePacket::SerializeOut( data, bufferOffset );
-   Serialize::Out( data, bufferOffset, uuid );
-   Serialize::Out( data, bufferOffset, username );
+   BasePacket::SerializeOut( data, bufferOffset, minorVersion );
+   //groupList.SerializeOut( data, bufferOffset, minorVersion );
+
+   return true;
+}
+
+///////////////////////////////////////////////////////////////
+
+
+bool  PacketUserStateChange::SerializeIn( const U8* data, int& bufferOffset, int minorVersion )
+{
+   BasePacket::SerializeIn( data, bufferOffset, minorVersion );
+   Serialize::In( data, bufferOffset, uuid, minorVersion );
+   Serialize::In( data, bufferOffset, username, minorVersion );
+
+   return true;
+}
+
+bool  PacketUserStateChange::SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const 
+{
+   BasePacket::SerializeOut( data, bufferOffset, minorVersion );
+   Serialize::Out( data, bufferOffset, uuid, minorVersion );
+   Serialize::Out( data, bufferOffset, username, minorVersion );
 
    return true;
 }
@@ -311,25 +313,25 @@ void  PacketGatewayWrapper::SetupPacket( BasePacket* packet, U32 connId )
 
 ///////////////////////////////////////////////////////////////
 
-bool  PacketGatewayWrapper::SerializeIn( const U8* data, int& bufferOffset )
+bool  PacketGatewayWrapper::SerializeIn( const U8* data, int& bufferOffset, int minorVersion )
 {
-   BasePacket::SerializeIn( data, bufferOffset );
-   Serialize::In( data, bufferOffset, connectionId );
-   Serialize::In( data, bufferOffset, size );
+   BasePacket::SerializeIn( data, bufferOffset, minorVersion );
+   Serialize::In( data, bufferOffset, connectionId, minorVersion );
+   Serialize::In( data, bufferOffset, size, minorVersion );
 
    delete pPacket; pPacket = NULL;
    PacketFactory packetFactory;
 
-   return packetFactory.Parse( data, bufferOffset, &pPacket );
+   return packetFactory.Parse( data, bufferOffset, &pPacket, minorVersion );
 }
 
 ///////////////////////////////////////////////////////////////
 
-bool  PacketGatewayWrapper::HeaderSerializeIn( const U8* data, int bufferOffset )
+bool  PacketGatewayWrapper::HeaderSerializeIn( const U8* data, int bufferOffset, int minorVersion )
 {
-   BasePacket::SerializeIn( data, bufferOffset );
-   Serialize::In( data, bufferOffset, connectionId );
-   Serialize::In( data, bufferOffset, size );
+   BasePacket::SerializeIn( data, bufferOffset, minorVersion );
+   Serialize::In( data, bufferOffset, connectionId, minorVersion );
+   Serialize::In( data, bufferOffset, size, minorVersion );
 
    delete pPacket; pPacket = NULL;
    return true;
@@ -337,17 +339,17 @@ bool  PacketGatewayWrapper::HeaderSerializeIn( const U8* data, int bufferOffset 
 
 ///////////////////////////////////////////////////////////////
 
-bool  PacketGatewayWrapper::SerializeOut( U8* data, int& bufferOffset ) const
+bool  PacketGatewayWrapper::SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const 
 {
-   BasePacket::SerializeOut( data, bufferOffset );   
-   Serialize::Out( data, bufferOffset, connectionId );
-   Serialize::Out( data, bufferOffset, size );
+   BasePacket::SerializeOut( data, bufferOffset, minorVersion );   
+   Serialize::Out( data, bufferOffset, connectionId, minorVersion );
+   Serialize::Out( data, bufferOffset, size, minorVersion );
 
    if( pPacket == NULL )
    {
       assert( 0 );
    }
-   pPacket->SerializeOut( data, bufferOffset );
+   pPacket->SerializeOut( data, bufferOffset, minorVersion );
 
    return true;
 }
@@ -355,46 +357,66 @@ bool  PacketGatewayWrapper::SerializeOut( U8* data, int& bufferOffset ) const
 ///////////////////////////////////////////////////////////////
 
 
-bool  PacketErrorReport::SerializeIn( const U8* data, int& bufferOffset )
+bool  PacketErrorReport::SerializeIn( const U8* data, int& bufferOffset, int minorVersion )
 {
-   BasePacket::SerializeIn( data, bufferOffset );
-   Serialize::In( data, bufferOffset, errorCode );
-   Serialize::In( data, bufferOffset, statusInfo );
-   Serialize::In( data, bufferOffset, text );
+   BasePacket::SerializeIn( data, bufferOffset, minorVersion );
+   Serialize::In( data, bufferOffset, errorCode, minorVersion );
+   Serialize::In( data, bufferOffset, statusInfo, minorVersion );
+   Serialize::In( data, bufferOffset, text, minorVersion );
 
    return true;
 }
 
-bool  PacketErrorReport::SerializeOut( U8* data, int& bufferOffset ) const
+bool  PacketErrorReport::SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const 
 {
-   BasePacket::SerializeOut( data, bufferOffset );
-   Serialize::Out( data, bufferOffset, errorCode );
-   Serialize::Out( data, bufferOffset, statusInfo );
-   Serialize::Out( data, bufferOffset, text );
+   BasePacket::SerializeOut( data, bufferOffset, minorVersion );
+   Serialize::Out( data, bufferOffset, errorCode, minorVersion );
+   Serialize::Out( data, bufferOffset, statusInfo, minorVersion );
+   Serialize::Out( data, bufferOffset, text, minorVersion );
 
    return true;
 }
 
 ///////////////////////////////////////////////////////////////
 
-bool  Packet_QOS_ReportToClient::SerializeIn( const U8* data, int& bufferOffset )
+bool  Packet_QOS_ReportToClient::SerializeIn( const U8* data, int& bufferOffset, int minorVersion )
 {
-   BasePacket::SerializeIn( data, bufferOffset );
-   Serialize::In( data, bufferOffset, errorText );
-   Serialize::In( data, bufferOffset, errorState );
-   Serialize::In( data, bufferOffset, param1 );
-   Serialize::In( data, bufferOffset, param2 );
+   BasePacket::SerializeIn( data, bufferOffset, minorVersion );
+   Serialize::In( data, bufferOffset, errorText, minorVersion );
+   Serialize::In( data, bufferOffset, errorState, minorVersion );
+   Serialize::In( data, bufferOffset, param1, minorVersion );
+   Serialize::In( data, bufferOffset, param2, minorVersion );
 
    return true;
 }
 
-bool  Packet_QOS_ReportToClient::SerializeOut( U8* data, int& bufferOffset ) const
+bool  Packet_QOS_ReportToClient::SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const 
 {
-   BasePacket::SerializeOut( data, bufferOffset );
-   Serialize::Out( data, bufferOffset, errorText );
-   Serialize::Out( data, bufferOffset, errorState );
-   Serialize::Out( data, bufferOffset, param1 );
-   Serialize::Out( data, bufferOffset, param2 );
+   BasePacket::SerializeOut( data, bufferOffset, minorVersion );
+   Serialize::Out( data, bufferOffset, errorText, minorVersion );
+   Serialize::Out( data, bufferOffset, errorState, minorVersion );
+   Serialize::Out( data, bufferOffset, param1, minorVersion );
+   Serialize::Out( data, bufferOffset, param2, minorVersion );
+
+   return true;
+}
+
+///////////////////////////////////////////////////////////////
+
+bool  PacketBase_TestOnly::SerializeIn( const U8* data, int& bufferOffset, int minorVersion )
+{
+   BasePacket::SerializeIn( data, bufferOffset, minorVersion );
+   Serialize::In( data, bufferOffset, testNo, minorVersion );
+   Serialize::In( data, bufferOffset, testString, minorVersion );
+
+   return true;
+}
+
+bool  PacketBase_TestOnly::SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const 
+{
+   BasePacket::SerializeOut( data, bufferOffset, minorVersion );
+   Serialize::Out( data, bufferOffset, testNo, minorVersion );
+   Serialize::Out( data, bufferOffset, testString, minorVersion );
 
    return true;
 }

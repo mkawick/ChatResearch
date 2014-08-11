@@ -15,68 +15,68 @@ using namespace std;
 
 ///////////////////////////////////////////////////////////////
 
-bool  PacketContact::SerializeIn( const U8* data, int& bufferOffset )
+bool  PacketContact::SerializeIn( const U8* data, int& bufferOffset, int minorVersion )
 { 
-   BasePacket::SerializeIn( data, bufferOffset );
+   BasePacket::SerializeIn( data, bufferOffset, minorVersion );
 
    return true; 
 }
 
-bool  PacketContact::SerializeOut( U8* data, int& bufferOffset ) const 
+bool  PacketContact::SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const 
 { 
-   BasePacket::SerializeOut( data, bufferOffset );
+   BasePacket::SerializeOut( data, bufferOffset, minorVersion );
 
    return true; 
 }
 
 
 
-bool  FriendInfo::SerializeIn( const U8* data, int& bufferOffset )
+bool  FriendInfo::SerializeIn( const U8* data, int& bufferOffset, int minorVersion )
 {
-   Serialize::In( data, bufferOffset, userName );
-   Serialize::In( data, bufferOffset, notesAboutThisUser );
-   Serialize::In( data, bufferOffset, motto );
-   Serialize::In( data, bufferOffset, avatarId );
-   Serialize::In( data, bufferOffset, isOnline );
-   Serialize::In( data, bufferOffset, markedAsFavorite );
+   Serialize::In( data, bufferOffset, userName, minorVersion );
+   Serialize::In( data, bufferOffset, notesAboutThisUser, minorVersion );
+   Serialize::In( data, bufferOffset, motto, minorVersion );
+   Serialize::In( data, bufferOffset, avatarId, minorVersion );
+   Serialize::In( data, bufferOffset, isOnline, minorVersion );
+   Serialize::In( data, bufferOffset, markedAsFavorite, minorVersion );
 
    return true;
 }
 
-bool  FriendInfo::SerializeOut( U8* data, int& bufferOffset ) const
+bool  FriendInfo::SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const
 {
-   Serialize::Out( data, bufferOffset, userName );
-   Serialize::Out( data, bufferOffset, notesAboutThisUser );
-   Serialize::Out( data, bufferOffset, motto );
-   Serialize::Out( data, bufferOffset, avatarId );
-   Serialize::Out( data, bufferOffset, isOnline );
-   Serialize::Out( data, bufferOffset, markedAsFavorite );
+   Serialize::Out( data, bufferOffset, userName, minorVersion );
+   Serialize::Out( data, bufferOffset, notesAboutThisUser, minorVersion );
+   Serialize::Out( data, bufferOffset, motto, minorVersion );
+   Serialize::Out( data, bufferOffset, avatarId, minorVersion );
+   Serialize::Out( data, bufferOffset, isOnline, minorVersion );
+   Serialize::Out( data, bufferOffset, markedAsFavorite, minorVersion );
 
    return true;
 }
 
 ///////////////////////////////////////////////////////////////
 
-bool  InvitationInfo::SerializeIn( const U8* data, int& bufferOffset )
+bool  InvitationInfo::SerializeIn( const U8* data, int& bufferOffset, int minorVersion )
 {
-   Serialize::In( data, bufferOffset, message );
-   Serialize::In( data, bufferOffset, inviterName );
-   Serialize::In( data, bufferOffset, inviteeName );
-   Serialize::In( data, bufferOffset, uuid );
-   Serialize::In( data, bufferOffset, date );
-   Serialize::In( data, bufferOffset, userUuid );
+   Serialize::In( data, bufferOffset, message, minorVersion );
+   Serialize::In( data, bufferOffset, inviterName, minorVersion );
+   Serialize::In( data, bufferOffset, inviteeName, minorVersion );
+   Serialize::In( data, bufferOffset, uuid, minorVersion );
+   Serialize::In( data, bufferOffset, date, minorVersion );
+   Serialize::In( data, bufferOffset, userUuid, minorVersion );
 
    return true;
 }
 
-bool  InvitationInfo::SerializeOut( U8* data, int& bufferOffset ) const
+bool  InvitationInfo::SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const
 {
-   Serialize::Out( data, bufferOffset, message );
-   Serialize::Out( data, bufferOffset, inviterName );
-   Serialize::Out( data, bufferOffset, inviteeName );
-   Serialize::Out( data, bufferOffset, uuid );
-   Serialize::Out( data, bufferOffset, date );
-   Serialize::Out( data, bufferOffset, userUuid );
+   Serialize::Out( data, bufferOffset, message, minorVersion );
+   Serialize::Out( data, bufferOffset, inviterName, minorVersion );
+   Serialize::Out( data, bufferOffset, inviteeName, minorVersion );
+   Serialize::Out( data, bufferOffset, uuid, minorVersion );
+   Serialize::Out( data, bufferOffset, date, minorVersion );
+   Serialize::Out( data, bufferOffset, userUuid, minorVersion );
 
    return true;
 }
@@ -94,125 +94,132 @@ void  InvitationInfo::Print( int tab )
 
 ///////////////////////////////////////////////////////////////
 
-bool  PacketContact_TestNotification::SerializeIn( const U8* data, int& bufferOffset )
+bool  PacketContact_TestNotification::SerializeIn( const U8* data, int& bufferOffset, int minorVersion )
 { 
-   PacketContact::SerializeIn( data, bufferOffset );
-   Serialize::In( data, bufferOffset, message );
-   Serialize::In( data, bufferOffset, senderName );
-   Serialize::In( data, bufferOffset, senderUuid );
-   Serialize::In( data, bufferOffset, type );
+   PacketContact::SerializeIn( data, bufferOffset, minorVersion );
+   Serialize::In( data, bufferOffset, message, minorVersion );
+   Serialize::In( data, bufferOffset, senderName, minorVersion );
+   Serialize::In( data, bufferOffset, senderUuid, minorVersion );
+   Serialize::In( data, bufferOffset, type, minorVersion );
 
    return true; 
 }
 
-bool  PacketContact_TestNotification::SerializeOut( U8* data, int& bufferOffset ) const 
+bool  PacketContact_TestNotification::SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const 
 { 
-   PacketContact::SerializeOut( data, bufferOffset );
-   Serialize::Out( data, bufferOffset, message );
-   Serialize::Out( data, bufferOffset, senderName );
-   Serialize::Out( data, bufferOffset, senderUuid );
-   Serialize::Out( data, bufferOffset, type );
-
-   return true; 
-}
-
-///////////////////////////////////////////////////////////////
-
-bool  PacketContact_GetListOfContacts::SerializeIn( const U8* data, int& bufferOffset )
-{ 
-   PacketContact::SerializeIn( data, bufferOffset );
-
-   return true; 
-}
-
-bool  PacketContact_GetListOfContacts::SerializeOut( U8* data, int& bufferOffset ) const 
-{ 
-   PacketContact::SerializeOut( data, bufferOffset );
+   PacketContact::SerializeOut( data, bufferOffset, minorVersion );
+   Serialize::Out( data, bufferOffset, message, minorVersion );
+   Serialize::Out( data, bufferOffset, senderName, minorVersion );
+   Serialize::Out( data, bufferOffset, senderUuid, minorVersion );
+   Serialize::Out( data, bufferOffset, type, minorVersion );
 
    return true; 
 }
 
 ///////////////////////////////////////////////////////////////
 
-bool  PacketContact_GetListOfContactsResponse::SerializeIn( const U8* data, int& bufferOffset )
+bool  PacketContact_GetListOfContacts::SerializeIn( const U8* data, int& bufferOffset, int minorVersion )
 { 
-   PacketContact::SerializeIn( data, bufferOffset );
-   Serialize::In( data, bufferOffset, friends );
+   PacketContact::SerializeIn( data, bufferOffset, minorVersion );
 
    return true; 
 }
 
-bool  PacketContact_GetListOfContactsResponse::SerializeOut( U8* data, int& bufferOffset ) const 
+bool  PacketContact_GetListOfContacts::SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const 
 { 
-   PacketContact::SerializeOut( data, bufferOffset );
-   Serialize::Out( data, bufferOffset, friends );
-
-   return true; 
-}
-
-///////////////////////////////////////////////////////////////
-
-bool  PacketContact_GetListOfInvitations::SerializeIn( const U8* data, int& bufferOffset )
-{ 
-   PacketContact::SerializeIn( data, bufferOffset );
-
-   return true; 
-}
-
-bool  PacketContact_GetListOfInvitations::SerializeOut( U8* data, int& bufferOffset ) const 
-{ 
-   PacketContact::SerializeOut( data, bufferOffset );
+   PacketContact::SerializeOut( data, bufferOffset, minorVersion );
 
    return true; 
 }
 
 ///////////////////////////////////////////////////////////////
 
-bool  PacketContact_GetListOfInvitationsResponse::SerializeIn( const U8* data, int& bufferOffset )
+bool  PacketContact_GetListOfContactsResponse::SerializeIn( const U8* data, int& bufferOffset, int minorVersion )
 { 
-   PacketContact::SerializeIn( data, bufferOffset );
-   Serialize::In( data, bufferOffset, invitations );
+   PacketContact::SerializeIn( data, bufferOffset, minorVersion );
+   Serialize::In( data, bufferOffset, friends, minorVersion );
+   //friends.SerializeIn( data, bufferOffset, minorVersion );
 
    return true; 
 }
 
-bool  PacketContact_GetListOfInvitationsResponse::SerializeOut( U8* data, int& bufferOffset ) const 
+bool  PacketContact_GetListOfContactsResponse::SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const 
 { 
-   PacketContact::SerializeOut( data, bufferOffset );
-   Serialize::Out( data, bufferOffset, invitations );
-
-   return true; 
-}
-
-///////////////////////////////////////////////////////////////
-
-bool  PacketContact_GetListOfInvitationsSent::SerializeIn( const U8* data, int& bufferOffset )
-{ 
-   PacketContact::SerializeIn( data, bufferOffset );
-
-   return true; 
-}
-
-bool  PacketContact_GetListOfInvitationsSent::SerializeOut( U8* data, int& bufferOffset ) const 
-{ 
-   PacketContact::SerializeOut( data, bufferOffset );
+   PacketContact::SerializeOut( data, bufferOffset, minorVersion );
+   Serialize::Out( data, bufferOffset, friends, minorVersion );
+   
+   //friends.SerializeOut( data, bufferOffset, minorVersion );
 
    return true; 
 }
 
 ///////////////////////////////////////////////////////////////
 
-bool  PacketContact_GetListOfInvitationsSentResponse::SerializeIn( const U8* data, int& bufferOffset )
+bool  PacketContact_GetListOfInvitations::SerializeIn( const U8* data, int& bufferOffset, int minorVersion )
 { 
-   PacketContact::SerializeIn( data, bufferOffset );
-   Serialize::In( data, bufferOffset, invitations );
+   PacketContact::SerializeIn( data, bufferOffset, minorVersion );
 
    return true; 
 }
-bool  PacketContact_GetListOfInvitationsSentResponse::SerializeOut( U8* data, int& bufferOffset ) const 
+
+bool  PacketContact_GetListOfInvitations::SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const 
 { 
-   PacketContact::SerializeOut( data, bufferOffset );
-   Serialize::Out( data, bufferOffset, invitations );
+   PacketContact::SerializeOut( data, bufferOffset, minorVersion );
+
+   return true; 
+}
+
+///////////////////////////////////////////////////////////////
+
+bool  PacketContact_GetListOfInvitationsResponse::SerializeIn( const U8* data, int& bufferOffset, int minorVersion )
+{ 
+   PacketContact::SerializeIn( data, bufferOffset, minorVersion );
+   Serialize::In( data, bufferOffset, invitations, minorVersion );
+   //invitations.SerializeIn( data, bufferOffset, minorVersion );
+
+   return true; 
+}
+
+bool  PacketContact_GetListOfInvitationsResponse::SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const 
+{ 
+   PacketContact::SerializeOut( data, bufferOffset, minorVersion );
+   Serialize::Out( data, bufferOffset, invitations, minorVersion );
+   //invitations.SerializeOut( data, bufferOffset, minorVersion );
+
+   return true; 
+}
+
+///////////////////////////////////////////////////////////////
+
+bool  PacketContact_GetListOfInvitationsSent::SerializeIn( const U8* data, int& bufferOffset, int minorVersion )
+{ 
+   PacketContact::SerializeIn( data, bufferOffset, minorVersion );
+
+   return true; 
+}
+
+bool  PacketContact_GetListOfInvitationsSent::SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const 
+{ 
+   PacketContact::SerializeOut( data, bufferOffset, minorVersion );
+
+   return true; 
+}
+
+///////////////////////////////////////////////////////////////
+
+bool  PacketContact_GetListOfInvitationsSentResponse::SerializeIn( const U8* data, int& bufferOffset, int minorVersion )
+{ 
+   PacketContact::SerializeIn( data, bufferOffset, minorVersion );
+   //Serialize::In( data, bufferOffset, invitations, minorVersion );
+   invitations.SerializeIn( data, bufferOffset, minorVersion );
+
+   return true; 
+}
+bool  PacketContact_GetListOfInvitationsSentResponse::SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const 
+{ 
+   PacketContact::SerializeOut( data, bufferOffset, minorVersion );
+   //Serialize::Out( data, bufferOffset, invitations, minorVersion );
+   invitations.SerializeOut( data, bufferOffset, minorVersion );
 
    return true; 
 }
@@ -220,58 +227,58 @@ bool  PacketContact_GetListOfInvitationsSentResponse::SerializeOut( U8* data, in
 ///////////////////////////////////////////////////////////////
 
 
-bool  PacketContact_InviteContact::SerializeIn( const U8* data, int& bufferOffset )
+bool  PacketContact_InviteContact::SerializeIn( const U8* data, int& bufferOffset, int minorVersion )
 { 
-   PacketContact::SerializeIn( data, bufferOffset );
-   Serialize::In( data, bufferOffset, userName );
-   Serialize::In( data, bufferOffset, uuid );
-   Serialize::In( data, bufferOffset, message );
+   PacketContact::SerializeIn( data, bufferOffset, minorVersion );
+   Serialize::In( data, bufferOffset, userName, minorVersion );
+   Serialize::In( data, bufferOffset, uuid, minorVersion );
+   Serialize::In( data, bufferOffset, message, minorVersion );
 
    return true; 
 }
 
-bool  PacketContact_InviteContact::SerializeOut( U8* data, int& bufferOffset ) const 
+bool  PacketContact_InviteContact::SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const 
 { 
-   PacketContact::SerializeOut( data, bufferOffset );
-   Serialize::Out( data, bufferOffset, userName );
-   Serialize::Out( data, bufferOffset, uuid );
-   Serialize::Out( data, bufferOffset, message );
-
-   return true; 
-}
-
-///////////////////////////////////////////////////////////////
-
-bool  PacketContact_InviteSentNotification::SerializeIn( const U8* data, int& bufferOffset )
-{ 
-   PacketContact::SerializeIn( data, bufferOffset );
-   Serialize::In( data, bufferOffset, info );
-
-   return true; 
-}
-
-bool  PacketContact_InviteSentNotification::SerializeOut( U8* data, int& bufferOffset ) const 
-{ 
-   PacketContact::SerializeOut( data, bufferOffset );
-   Serialize::Out( data, bufferOffset, info );
+   PacketContact::SerializeOut( data, bufferOffset, minorVersion );
+   Serialize::Out( data, bufferOffset, userName, minorVersion );
+   Serialize::Out( data, bufferOffset, uuid, minorVersion );
+   Serialize::Out( data, bufferOffset, message, minorVersion );
 
    return true; 
 }
 
 ///////////////////////////////////////////////////////////////
 
-bool  PacketContact_InviteReceivedNotification::SerializeIn( const U8* data, int& bufferOffset )
+bool  PacketContact_InviteSentNotification::SerializeIn( const U8* data, int& bufferOffset, int minorVersion )
 { 
-   PacketContact::SerializeIn( data, bufferOffset );
-   Serialize::In( data, bufferOffset, info );
+   PacketContact::SerializeIn( data, bufferOffset, minorVersion );
+   Serialize::In( data, bufferOffset, info, minorVersion );
 
    return true; 
 }
 
-bool  PacketContact_InviteReceivedNotification::SerializeOut( U8* data, int& bufferOffset ) const 
+bool  PacketContact_InviteSentNotification::SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const 
 { 
-   PacketContact::SerializeOut( data, bufferOffset );
-   Serialize::Out( data, bufferOffset, info );
+   PacketContact::SerializeOut( data, bufferOffset, minorVersion );
+   Serialize::Out( data, bufferOffset, info, minorVersion );
+
+   return true; 
+}
+
+///////////////////////////////////////////////////////////////
+
+bool  PacketContact_InviteReceivedNotification::SerializeIn( const U8* data, int& bufferOffset, int minorVersion )
+{ 
+   PacketContact::SerializeIn( data, bufferOffset, minorVersion );
+   Serialize::In( data, bufferOffset, info, minorVersion );
+
+   return true; 
+}
+
+bool  PacketContact_InviteReceivedNotification::SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const 
+{ 
+   PacketContact::SerializeOut( data, bufferOffset, minorVersion );
+   Serialize::Out( data, bufferOffset, info, minorVersion );
 
    return true; 
 }
@@ -279,200 +286,202 @@ bool  PacketContact_InviteReceivedNotification::SerializeOut( U8* data, int& buf
 
 ///////////////////////////////////////////////////////////////
 
-bool  PacketContact_ContactRemove::SerializeIn( const U8* data, int& bufferOffset )
+bool  PacketContact_ContactRemove::SerializeIn( const U8* data, int& bufferOffset, int minorVersion )
 { 
-   PacketContact::SerializeIn( data, bufferOffset );
-   Serialize::In( data, bufferOffset, contactUuid );
-   Serialize::In( data, bufferOffset, message );
+   PacketContact::SerializeIn( data, bufferOffset, minorVersion );
+   Serialize::In( data, bufferOffset, contactUuid, minorVersion );
+   Serialize::In( data, bufferOffset, message, minorVersion );
 
    return true; 
 }
 
-bool  PacketContact_ContactRemove::SerializeOut( U8* data, int& bufferOffset ) const 
+bool  PacketContact_ContactRemove::SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const 
 { 
-   PacketContact::SerializeOut( data, bufferOffset );
-   Serialize::Out( data, bufferOffset, contactUuid );
-   Serialize::Out( data, bufferOffset, message );
-
-   return true; 
-}
-
-///////////////////////////////////////////////////////////////
-
-bool  PacketContact_RemoveInvitation::SerializeIn( const U8* data, int& bufferOffset )
-{ 
-   PacketContact::SerializeIn( data, bufferOffset );
-   Serialize::In( data, bufferOffset, invitationUuid );
-
-   return true; 
-}
-
-bool  PacketContact_RemoveInvitation::SerializeOut( U8* data, int& bufferOffset ) const 
-{ 
-   PacketContact::SerializeOut( data, bufferOffset );
-   Serialize::Out( data, bufferOffset, invitationUuid );
+   PacketContact::SerializeOut( data, bufferOffset, minorVersion );
+   Serialize::Out( data, bufferOffset, contactUuid, minorVersion );
+   Serialize::Out( data, bufferOffset, message, minorVersion );
 
    return true; 
 }
 
 ///////////////////////////////////////////////////////////////
 
-bool  PacketContact_AcceptInvite::SerializeIn( const U8* data, int& bufferOffset )
+bool  PacketContact_RemoveInvitation::SerializeIn( const U8* data, int& bufferOffset, int minorVersion )
 { 
-   PacketContact::SerializeIn( data, bufferOffset );
-   Serialize::In( data, bufferOffset, invitationUuid );
+   PacketContact::SerializeIn( data, bufferOffset, minorVersion );
+   Serialize::In( data, bufferOffset, invitationUuid, minorVersion );
 
    return true; 
 }
 
-bool  PacketContact_AcceptInvite::SerializeOut( U8* data, int& bufferOffset ) const 
+bool  PacketContact_RemoveInvitation::SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const 
 { 
-   PacketContact::SerializeOut( data, bufferOffset );
-   Serialize::Out( data, bufferOffset, invitationUuid );
-
-   return true; 
-}
-
-///////////////////////////////////////////////////////////////
-
-bool  PacketContact_InvitationAccepted::SerializeIn( const U8* data, int& bufferOffset )
-{ 
-   PacketContact::SerializeIn( data, bufferOffset );
-   Serialize::In( data, bufferOffset, fromUsername );
-   Serialize::In( data, bufferOffset, toUsername );
-   Serialize::In( data, bufferOffset, invitationUuid );
-   Serialize::In( data, bufferOffset, message );
-   Serialize::In( data, bufferOffset, wasAccepted );
-
-   return true; 
-}
-
-bool  PacketContact_InvitationAccepted::SerializeOut( U8* data, int& bufferOffset ) const 
-{ 
-   PacketContact::SerializeOut( data, bufferOffset );
-   Serialize::Out( data, bufferOffset, fromUsername );
-   Serialize::Out( data, bufferOffset, toUsername );
-   Serialize::Out( data, bufferOffset, invitationUuid );
-   Serialize::Out( data, bufferOffset, message );
-   Serialize::Out( data, bufferOffset, wasAccepted );
+   PacketContact::SerializeOut( data, bufferOffset, minorVersion );
+   Serialize::Out( data, bufferOffset, invitationUuid, minorVersion );
 
    return true; 
 }
 
 ///////////////////////////////////////////////////////////////
 
-bool  PacketContact_DeclineInvitation::SerializeIn( const U8* data, int& bufferOffset )
+bool  PacketContact_AcceptInvite::SerializeIn( const U8* data, int& bufferOffset, int minorVersion )
 { 
-   PacketContact::SerializeIn( data, bufferOffset );
-   Serialize::In( data, bufferOffset, invitationUuid );
-   Serialize::In( data, bufferOffset, message );
+   PacketContact::SerializeIn( data, bufferOffset, minorVersion );
+   Serialize::In( data, bufferOffset, invitationUuid, minorVersion );
 
    return true; 
 }
 
-bool  PacketContact_DeclineInvitation::SerializeOut( U8* data, int& bufferOffset ) const 
+bool  PacketContact_AcceptInvite::SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const 
 { 
-   PacketContact::SerializeOut( data, bufferOffset );
-   Serialize::Out( data, bufferOffset, invitationUuid );
-   Serialize::Out( data, bufferOffset, message );
-
-   return true; 
-}
-
-///////////////////////////////////////////////////////////////
-
-bool  PacketContact_SearchForUser::SerializeIn( const U8* data, int& bufferOffset )
-{ 
-   PacketContact::SerializeIn( data, bufferOffset );
-   Serialize::In( data, bufferOffset, searchString );
-   Serialize::In( data, bufferOffset, limit );
-   Serialize::In( data, bufferOffset, offset );
-
-   return true; 
-}
-
-bool  PacketContact_SearchForUser::SerializeOut( U8* data, int& bufferOffset ) const 
-{ 
-   PacketContact::SerializeOut( data, bufferOffset );
-   Serialize::Out( data, bufferOffset, searchString );
-   Serialize::Out( data, bufferOffset, limit );
-   Serialize::Out( data, bufferOffset, offset );
-
-   return true; 
-}
-///////////////////////////////////////////////////////////////
-
-bool  PacketContact_SearchForUserResult::SerializeIn( const U8* data, int& bufferOffset )
-{ 
-   PacketContact::SerializeIn( data, bufferOffset );
-   Serialize::In( data, bufferOffset, found );
-
-   return true; 
-}
-
-bool  PacketContact_SearchForUserResult::SerializeOut( U8* data, int& bufferOffset ) const 
-{ 
-   PacketContact::SerializeOut( data, bufferOffset );
-   Serialize::Out( data, bufferOffset, found );
-
-   return true; 
-}
-///////////////////////////////////////////////////////////////
-
-bool  PacketContact_InviteBlockUser::SerializeIn( const U8* data, int& bufferOffset )
-{ 
-   PacketContact::SerializeIn( data, bufferOffset );
-   Serialize::In( data, bufferOffset, userName );
-   Serialize::In( data, bufferOffset, uuid );
-
-   return true; 
-}
-
-bool  PacketContact_InviteBlockUser::SerializeOut( U8* data, int& bufferOffset ) const 
-{ 
-   PacketContact::SerializeOut( data, bufferOffset );
-   Serialize::Out( data, bufferOffset, userName );
-   Serialize::Out( data, bufferOffset, uuid );
+   PacketContact::SerializeOut( data, bufferOffset, minorVersion );
+   Serialize::Out( data, bufferOffset, invitationUuid, minorVersion );
 
    return true; 
 }
 
 ///////////////////////////////////////////////////////////////
 
-bool  PacketContact_FriendOnlineStatusChange::SerializeIn( const U8* data, int& bufferOffset )
+bool  PacketContact_InvitationAccepted::SerializeIn( const U8* data, int& bufferOffset, int minorVersion )
 { 
-   PacketContact::SerializeIn( data, bufferOffset );
-   Serialize::In( data, bufferOffset, uuid );
-   Serialize::In( data, bufferOffset, friendInfo );
+   PacketContact::SerializeIn( data, bufferOffset, minorVersion );
+   Serialize::In( data, bufferOffset, fromUsername, minorVersion );
+   Serialize::In( data, bufferOffset, toUsername, minorVersion );
+   Serialize::In( data, bufferOffset, invitationUuid, minorVersion );
+   Serialize::In( data, bufferOffset, message, minorVersion );
+   Serialize::In( data, bufferOffset, wasAccepted, minorVersion );
 
    return true; 
 }
 
-bool  PacketContact_FriendOnlineStatusChange::SerializeOut( U8* data, int& bufferOffset ) const 
+bool  PacketContact_InvitationAccepted::SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const 
 { 
-   PacketContact::SerializeOut( data, bufferOffset );
-   Serialize::Out( data, bufferOffset, uuid );
-   Serialize::Out( data, bufferOffset, friendInfo );
+   PacketContact::SerializeOut( data, bufferOffset, minorVersion );
+   Serialize::Out( data, bufferOffset, fromUsername, minorVersion );
+   Serialize::Out( data, bufferOffset, toUsername, minorVersion );
+   Serialize::Out( data, bufferOffset, invitationUuid, minorVersion );
+   Serialize::Out( data, bufferOffset, message, minorVersion );
+   Serialize::Out( data, bufferOffset, wasAccepted, minorVersion );
 
    return true; 
 }
 
 ///////////////////////////////////////////////////////////////
 
-bool  PacketContact_SetNotationOnUser::SerializeIn( const U8* data, int& bufferOffset )
+bool  PacketContact_DeclineInvitation::SerializeIn( const U8* data, int& bufferOffset, int minorVersion )
 { 
-   PacketContact::SerializeIn( data, bufferOffset );
-   Serialize::In( data, bufferOffset, uuid );
-   Serialize::In( data, bufferOffset, friendInfo );
+   PacketContact::SerializeIn( data, bufferOffset, minorVersion );
+   Serialize::In( data, bufferOffset, invitationUuid, minorVersion );
+   Serialize::In( data, bufferOffset, message, minorVersion );
 
    return true; 
 }
 
-bool  PacketContact_SetNotationOnUser::SerializeOut( U8* data, int& bufferOffset ) const 
+bool  PacketContact_DeclineInvitation::SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const 
 { 
-   PacketContact::SerializeOut( data, bufferOffset );
-   Serialize::Out( data, bufferOffset, uuid );
-   Serialize::Out( data, bufferOffset, friendInfo );
+   PacketContact::SerializeOut( data, bufferOffset, minorVersion );
+   Serialize::Out( data, bufferOffset, invitationUuid, minorVersion );
+   Serialize::Out( data, bufferOffset, message, minorVersion );
+
+   return true; 
+}
+
+///////////////////////////////////////////////////////////////
+
+bool  PacketContact_SearchForUser::SerializeIn( const U8* data, int& bufferOffset, int minorVersion )
+{ 
+   PacketContact::SerializeIn( data, bufferOffset, minorVersion );
+   Serialize::In( data, bufferOffset, searchString, minorVersion );
+   Serialize::In( data, bufferOffset, limit, minorVersion );
+   Serialize::In( data, bufferOffset, offset, minorVersion );
+
+   return true; 
+}
+
+bool  PacketContact_SearchForUser::SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const 
+{ 
+   PacketContact::SerializeOut( data, bufferOffset, minorVersion );
+   Serialize::Out( data, bufferOffset, searchString, minorVersion );
+   Serialize::Out( data, bufferOffset, limit, minorVersion );
+   Serialize::Out( data, bufferOffset, offset, minorVersion );
+
+   return true; 
+}
+///////////////////////////////////////////////////////////////
+
+bool  PacketContact_SearchForUserResult::SerializeIn( const U8* data, int& bufferOffset, int minorVersion )
+{ 
+   PacketContact::SerializeIn( data, bufferOffset, minorVersion );
+   Serialize::In( data, bufferOffset, found, minorVersion );
+   //found.SerializeIn( data, bufferOffset, minorVersion );
+
+   return true; 
+}
+
+bool  PacketContact_SearchForUserResult::SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const 
+{ 
+   PacketContact::SerializeOut( data, bufferOffset, minorVersion );
+   Serialize::Out( data, bufferOffset, found, minorVersion );
+   //found.SerializeOut( data, bufferOffset, minorVersion );
+
+   return true; 
+}
+///////////////////////////////////////////////////////////////
+
+bool  PacketContact_InviteBlockUser::SerializeIn( const U8* data, int& bufferOffset, int minorVersion )
+{ 
+   PacketContact::SerializeIn( data, bufferOffset, minorVersion );
+   Serialize::In( data, bufferOffset, userName, minorVersion );
+   Serialize::In( data, bufferOffset, uuid, minorVersion );
+
+   return true; 
+}
+
+bool  PacketContact_InviteBlockUser::SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const 
+{ 
+   PacketContact::SerializeOut( data, bufferOffset, minorVersion );
+   Serialize::Out( data, bufferOffset, userName, minorVersion );
+   Serialize::Out( data, bufferOffset, uuid, minorVersion );
+
+   return true; 
+}
+
+///////////////////////////////////////////////////////////////
+
+bool  PacketContact_FriendOnlineStatusChange::SerializeIn( const U8* data, int& bufferOffset, int minorVersion )
+{ 
+   PacketContact::SerializeIn( data, bufferOffset, minorVersion );
+   Serialize::In( data, bufferOffset, uuid, minorVersion );
+   Serialize::In( data, bufferOffset, friendInfo, minorVersion );
+
+   return true; 
+}
+
+bool  PacketContact_FriendOnlineStatusChange::SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const 
+{ 
+   PacketContact::SerializeOut( data, bufferOffset, minorVersion );
+   Serialize::Out( data, bufferOffset, uuid, minorVersion );
+   Serialize::Out( data, bufferOffset, friendInfo, minorVersion );
+
+   return true; 
+}
+
+///////////////////////////////////////////////////////////////
+
+bool  PacketContact_SetNotationOnUser::SerializeIn( const U8* data, int& bufferOffset, int minorVersion )
+{ 
+   PacketContact::SerializeIn( data, bufferOffset, minorVersion );
+   Serialize::In( data, bufferOffset, uuid, minorVersion );
+   Serialize::In( data, bufferOffset, friendInfo, minorVersion );
+
+   return true; 
+}
+
+bool  PacketContact_SetNotationOnUser::SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const 
+{ 
+   PacketContact::SerializeOut( data, bufferOffset, minorVersion );
+   Serialize::Out( data, bufferOffset, uuid, minorVersion );
+   Serialize::Out( data, bufferOffset, friendInfo, minorVersion );
 
    return true; 
 }

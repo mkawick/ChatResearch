@@ -37,7 +37,7 @@ FixedLengthString <str_length>:: operator = ( const char * str )
 ////////////////////////////////////////////////////////
 
 template < int str_length >
-bool  FixedLengthString <str_length> :: SerializeIn( const U8* inputBuffer, int& bufferOffset )
+bool  FixedLengthString <str_length> :: SerializeIn( const U8* inputBuffer, int& bufferOffset, int minorVersion )
 {
    strncpy( buffer, (const char*)( inputBuffer + bufferOffset ), str_length );
    bufferOffset += str_length;
@@ -46,7 +46,7 @@ bool  FixedLengthString <str_length> :: SerializeIn( const U8* inputBuffer, int&
 }
 
 template < int str_length >
-bool  FixedLengthString <str_length> :: SerializeOut( U8* outputBuffer, int& bufferOffset ) const
+bool  FixedLengthString <str_length> :: SerializeOut( U8* outputBuffer, int& bufferOffset, int minorVersion ) const
 {
    strncpy( (char*)( outputBuffer + bufferOffset ), buffer, str_length );
    bufferOffset += str_length;

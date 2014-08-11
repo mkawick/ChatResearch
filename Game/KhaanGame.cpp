@@ -29,7 +29,7 @@ bool	KhaanGame::OnDataReceived( const U8* data, int length )
    BasePacket* packetIn;
    int offset = 0;
    PacketFactory parser;
-   if( parser.Parse( data, offset, &packetIn ) == true )
+   if( parser.Parse( data, offset, &packetIn, NetworkVersionMinor ) == true )
    {
       int type = packetIn->packetType;
       if( type != PacketType_GatewayWrapper &&

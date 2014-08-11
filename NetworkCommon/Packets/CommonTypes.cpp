@@ -3,25 +3,25 @@
 ///////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////
 
-bool  StringBucket::SerializeIn( const U8* data, int& bufferOffset )
+bool  StringBucket::SerializeIn( const U8* data, int& bufferOffset, int minorVersion )
 { 
    int numStrings = 0;
-   Serialize::In( data, bufferOffset, numStrings );
+   Serialize::In( data, bufferOffset, numStrings, minorVersion );
 
    for( int i=0; i<numStrings; i++ )
    {
       string temp;
-      Serialize::In( data, bufferOffset, temp );
+      Serialize::In( data, bufferOffset, temp, minorVersion );
       bucket.push_back( temp );
    }
 
    return true; 
 }
 
-bool  StringBucket::SerializeOut( U8* data, int& bufferOffset ) const 
+bool  StringBucket::SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const 
 { 
    int numStrings = static_cast< int >( bucket.size() );
-   Serialize::Out( data, bufferOffset, numStrings );
+   Serialize::Out( data, bufferOffset, numStrings, minorVersion );
 
    
    DataSet::const_iterator it = bucket.begin();
@@ -29,7 +29,7 @@ bool  StringBucket::SerializeOut( U8* data, int& bufferOffset ) const
    {
       const string& value = *it++;
 
-      Serialize::Out( data, bufferOffset, value );
+      Serialize::Out( data, bufferOffset, value, minorVersion );
    }
 
    return true; 
@@ -45,11 +45,11 @@ DynamicDataBucket::~DynamicDataBucket()
 }
 #endif
 
-bool  DynamicDataBucket::SerializeIn( const U8* data, int& bufferOffset )
+bool  DynamicDataBucket::SerializeIn( const U8* data, int& bufferOffset, int minorVersion )
 { 
    int numRows = 0, numColumns = 0;
-   Serialize::In( data, bufferOffset, numRows );
-   Serialize::In( data, bufferOffset, numColumns );
+   Serialize::In( data, bufferOffset, numRows, minorVersion );
+   Serialize::In( data, bufferOffset, numColumns, minorVersion );
    bucket.clear();
 
    for( int i=0; i<numRows; i++ )
@@ -59,7 +59,7 @@ bool  DynamicDataBucket::SerializeIn( const U8* data, int& bufferOffset )
       for (int j=0; j<numColumns; j++ )
       {
          string temp;
-         Serialize::In( data, bufferOffset, temp );
+         Serialize::In( data, bufferOffset, temp, minorVersion );
          newRow.push_back( temp );
       }
    }
@@ -67,14 +67,14 @@ bool  DynamicDataBucket::SerializeIn( const U8* data, int& bufferOffset )
    return true; 
 }
 
-bool  DynamicDataBucket::SerializeOut( U8* data, int& bufferOffset ) const 
+bool  DynamicDataBucket::SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const 
 { 
    int numRows = static_cast< int >( bucket.size() );
-   Serialize::Out( data, bufferOffset, numRows );
+   Serialize::Out( data, bufferOffset, numRows, minorVersion );
 
    DataSet::const_iterator it = bucket.begin();
    int numColumns = static_cast< int >( (*it).size() );
-   Serialize::Out( data, bufferOffset, numColumns );
+   Serialize::Out( data, bufferOffset, numColumns, minorVersion );
 
    while( it != bucket.end() )
    {
@@ -85,7 +85,7 @@ bool  DynamicDataBucket::SerializeOut( U8* data, int& bufferOffset ) const
       {
          const string& value = *rowIt;
 
-         Serialize::Out( data, bufferOffset, value );
+         Serialize::Out( data, bufferOffset, value, minorVersion );
 
          ++ rowIt;
       }

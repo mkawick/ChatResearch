@@ -128,6 +128,7 @@ protected:
    bool           m_isExpectingMoreDataInPreviousPacket;
    int            m_expectedBytesReceivedSoFar;
    int            m_expectedBytes;
+   U8             m_versionNumberMinor;
    U8             m_tempBuffer[ MaxBufferSize ];
 
 

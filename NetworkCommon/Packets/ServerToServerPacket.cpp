@@ -9,137 +9,137 @@
 
 ///////////////////////////////////////////////////////////////
 
-bool  PacketServerConnectionInfo::SerializeIn( const U8* data, int& bufferOffset )
+bool  PacketServerConnectionInfo::SerializeIn( const U8* data, int& bufferOffset, int minorVersion )
 {
-   BasePacket::SerializeIn( data, bufferOffset );
-   Serialize::In( data, bufferOffset, serverAddress );
-   Serialize::In( data, bufferOffset, serverId );
-   Serialize::In( data, bufferOffset, currentLoad );
+   BasePacket::SerializeIn( data, bufferOffset, minorVersion );
+   Serialize::In( data, bufferOffset, serverAddress, minorVersion );
+   Serialize::In( data, bufferOffset, serverId, minorVersion );
+   Serialize::In( data, bufferOffset, currentLoad, minorVersion );
 
    return true;
 }
 
-bool  PacketServerConnectionInfo::SerializeOut( U8* data, int& bufferOffset ) const
+bool  PacketServerConnectionInfo::SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const
 {
-   BasePacket::SerializeOut( data, bufferOffset );
-   Serialize::Out( data, bufferOffset, serverAddress );
-   Serialize::Out( data, bufferOffset, serverId );
-   Serialize::Out( data, bufferOffset, currentLoad );
+   BasePacket::SerializeOut( data, bufferOffset, minorVersion );
+   Serialize::Out( data, bufferOffset, serverAddress, minorVersion );
+   Serialize::Out( data, bufferOffset, serverId, minorVersion );
+   Serialize::Out( data, bufferOffset, currentLoad, minorVersion );
   
    return true;
 }
 
 ///////////////////////////////////////////////////////////////
 
-bool  PacketServerIdentifier::SerializeIn( const U8* data, int& bufferOffset )
+bool  PacketServerIdentifier::SerializeIn( const U8* data, int& bufferOffset, int minorVersion )
 {
-   BasePacket::SerializeIn( data, bufferOffset );
-   Serialize::In( data, bufferOffset, serverName );
-   Serialize::In( data, bufferOffset, serverAddress );
-   Serialize::In( data, bufferOffset, externalIpAddress );
-   Serialize::In( data, bufferOffset, serverId );
-   Serialize::In( data, bufferOffset, serverType );
-   Serialize::In( data, bufferOffset, serverPort );
-   Serialize::In( data, bufferOffset, gameInstanceId );   
-   Serialize::In( data, bufferOffset, isGameServer );
-   Serialize::In( data, bufferOffset, isController );
-   Serialize::In( data, bufferOffset, gatewayType );
+   BasePacket::SerializeIn( data, bufferOffset, minorVersion );
+   Serialize::In( data, bufferOffset, serverName, minorVersion );
+   Serialize::In( data, bufferOffset, serverAddress, minorVersion );
+   Serialize::In( data, bufferOffset, externalIpAddress, minorVersion );
+   Serialize::In( data, bufferOffset, serverId, minorVersion );
+   Serialize::In( data, bufferOffset, serverType, minorVersion );
+   Serialize::In( data, bufferOffset, serverPort, minorVersion );
+   Serialize::In( data, bufferOffset, gameInstanceId, minorVersion );   
+   Serialize::In( data, bufferOffset, isGameServer, minorVersion );
+   Serialize::In( data, bufferOffset, isController, minorVersion );
+   Serialize::In( data, bufferOffset, gatewayType, minorVersion );
 
    return true;
 }
 
-bool  PacketServerIdentifier::SerializeOut( U8* data, int& bufferOffset ) const
+bool  PacketServerIdentifier::SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const
 {
-   BasePacket::SerializeOut( data, bufferOffset );
-   Serialize::Out( data, bufferOffset, serverName );
-   Serialize::Out( data, bufferOffset, serverAddress );
-   Serialize::Out( data, bufferOffset, externalIpAddress );
-   Serialize::Out( data, bufferOffset, serverId );
-   Serialize::Out( data, bufferOffset, serverType );
-   Serialize::Out( data, bufferOffset, serverPort );
-   Serialize::Out( data, bufferOffset, gameInstanceId );
-   Serialize::Out( data, bufferOffset, isGameServer );
-   Serialize::Out( data, bufferOffset, isController );
-   Serialize::Out( data, bufferOffset, gatewayType );
+   BasePacket::SerializeOut( data, bufferOffset, minorVersion );
+   Serialize::Out( data, bufferOffset, serverName, minorVersion );
+   Serialize::Out( data, bufferOffset, serverAddress, minorVersion );
+   Serialize::Out( data, bufferOffset, externalIpAddress, minorVersion );
+   Serialize::Out( data, bufferOffset, serverId, minorVersion );
+   Serialize::Out( data, bufferOffset, serverType, minorVersion );
+   Serialize::Out( data, bufferOffset, serverPort, minorVersion );
+   Serialize::Out( data, bufferOffset, gameInstanceId, minorVersion );
+   Serialize::Out( data, bufferOffset, isGameServer, minorVersion );
+   Serialize::Out( data, bufferOffset, isController, minorVersion );
+   Serialize::Out( data, bufferOffset, gatewayType, minorVersion );
   
    return true;
 }
 
 ///////////////////////////////////////////////////////////////
 
-bool  PacketServerDisconnect::SerializeIn( const U8* data, int& bufferOffset )
+bool  PacketServerDisconnect::SerializeIn( const U8* data, int& bufferOffset, int minorVersion )
 {
-   BasePacket::SerializeIn( data, bufferOffset );
-   Serialize::In( data, bufferOffset, serverAddress );
-   Serialize::In( data, bufferOffset, serverId );
+   BasePacket::SerializeIn( data, bufferOffset, minorVersion );
+   Serialize::In( data, bufferOffset, serverAddress, minorVersion );
+   Serialize::In( data, bufferOffset, serverId, minorVersion );
 
    return true;
 }
 
-bool  PacketServerDisconnect::SerializeOut( U8* data, int& bufferOffset ) const
+bool  PacketServerDisconnect::SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const
 {
-   BasePacket::SerializeOut( data, bufferOffset );
-   Serialize::Out( data, bufferOffset, serverAddress );
-   Serialize::Out( data, bufferOffset, serverId );
+   BasePacket::SerializeOut( data, bufferOffset, minorVersion );
+   Serialize::Out( data, bufferOffset, serverAddress, minorVersion );
+   Serialize::Out( data, bufferOffset, serverId, minorVersion );
   
    return true;
 }
 ///////////////////////////////////////////////////////////////
 
-bool  PacketServerToServerWrapper::SerializeIn( const U8* data, int& bufferOffset )
+bool  PacketServerToServerWrapper::SerializeIn( const U8* data, int& bufferOffset, int minorVersion )
 {
-   BasePacket::SerializeIn( data, bufferOffset );
-   Serialize::In( data, bufferOffset, serverId );
+   BasePacket::SerializeIn( data, bufferOffset, minorVersion );
+   Serialize::In( data, bufferOffset, serverId, minorVersion );
 
    delete pPacket; pPacket = NULL;
    PacketFactory packetFactory;
 
-   return packetFactory.Parse( data, bufferOffset, &pPacket );
+   return packetFactory.Parse( data, bufferOffset, &pPacket, minorVersion );
 }
 
 ///////////////////////////////////////////////////////////////
 
-bool  PacketServerToServerWrapper::SerializeOut( U8* data, int& bufferOffset ) const
+bool  PacketServerToServerWrapper::SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const
 {
-   BasePacket::SerializeOut( data, bufferOffset );   
-   Serialize::Out( data, bufferOffset, serverId );
+   BasePacket::SerializeOut( data, bufferOffset, minorVersion );   
+   Serialize::Out( data, bufferOffset, serverId, minorVersion );
 
    if( pPacket == NULL )
    {
       assert( 0 );
    }
-   pPacket->SerializeOut( data, bufferOffset );
+   pPacket->SerializeOut( data, bufferOffset, minorVersion );
 
    return true;
 }
 
 ///////////////////////////////////////////////////////////////
 
-bool  PacketServerJobWrapper::SerializeIn( const U8* data, int& bufferOffset )
+bool  PacketServerJobWrapper::SerializeIn( const U8* data, int& bufferOffset, int minorVersion )
 {
-   BasePacket::SerializeIn( data, bufferOffset );
-   Serialize::In( data, bufferOffset, serverId );
-   Serialize::In( data, bufferOffset, jobId );
+   BasePacket::SerializeIn( data, bufferOffset, minorVersion );
+   Serialize::In( data, bufferOffset, serverId, minorVersion );
+   Serialize::In( data, bufferOffset, jobId, minorVersion );
 
    delete pPacket; pPacket = NULL;
    PacketFactory packetFactory;
 
-   return packetFactory.Parse( data, bufferOffset, &pPacket );
+   return packetFactory.Parse( data, bufferOffset, &pPacket, minorVersion );
 }
 
 ///////////////////////////////////////////////////////////////
 
-bool  PacketServerJobWrapper::SerializeOut( U8* data, int& bufferOffset ) const
+bool  PacketServerJobWrapper::SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const
 {
-   BasePacket::SerializeOut( data, bufferOffset );   
-   Serialize::Out( data, bufferOffset, serverId );
-   Serialize::Out( data, bufferOffset, jobId );
+   BasePacket::SerializeOut( data, bufferOffset, minorVersion );   
+   Serialize::Out( data, bufferOffset, serverId, minorVersion );
+   Serialize::Out( data, bufferOffset, jobId, minorVersion );
 
    if( pPacket == NULL )
    {
       assert( 0 );
    }
-   pPacket->SerializeOut( data, bufferOffset );
+   pPacket->SerializeOut( data, bufferOffset, minorVersion );
 
    return true;
 }

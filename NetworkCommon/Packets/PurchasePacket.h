@@ -23,6 +23,9 @@ struct PurchaseInfo
    string   iconHashDest;
    string   beginDate, endDate;
 
+   U32      junk1;
+   string   junk2;
+
    PurchaseInfo()
    {
       Clear();
@@ -45,10 +48,13 @@ struct PurchaseInfo
       iconHashDest.clear();
       beginDate.clear();
       endDate.clear();
+
+      junk1 = 3;
+      junk2.clear();
    }
 
-   bool  SerializeIn( const U8* data, int& bufferOffset );
-   bool  SerializeOut( U8* data, int& bufferOffset ) const;
+   bool  SerializeIn( const U8* data, int& bufferOffset, int minorVersion );
+   bool  SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const;
 };
 
 ///////////////////////////////////////////////////////////////////
@@ -58,12 +64,15 @@ struct PurchaseServerDebitItem
    PurchaseServerDebitItem() : numToDebit( 0 ){}
    PurchaseServerDebitItem( const PurchaseServerDebitItem& rhs ):numToDebit( rhs.numToDebit ), productUuidToSpend( rhs.productUuidToSpend ) {}
    PurchaseServerDebitItem( const string& uuid, int num ):numToDebit( num ), productUuidToSpend( uuid ) {}
-   bool  SerializeIn( const U8* data, int& bufferOffset );
-   bool  SerializeOut( U8* data, int& bufferOffset ) const;
+   bool  SerializeIn( const U8* data, int& bufferOffset, int minorVersion );
+   bool  SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const;
 
    int         numToDebit;
    UuidString  productUuidToSpend;
 };
+
+///////////////////////////////////////////////////////////////////
+
 
 int   GetItemNumToDebit( const SerializedVector< PurchaseServerDebitItem >& itemsToSpend, const string& uuid );
 
@@ -91,8 +100,8 @@ public:
 public:
    PacketPurchase( int packet_type = PacketType_Purchase, int packet_sub_type = PurchaseType_Base ) : BasePacket( packet_type, packet_sub_type ) {}
 
-   bool  SerializeIn( const U8* data, int& bufferOffset );
-   bool  SerializeOut( U8* data, int& bufferOffset ) const;
+   bool  SerializeIn( const U8* data, int& bufferOffset, int minorVersion );
+   bool  SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const;
 };
 
 ///////////////////////////////////////////////////////////////
@@ -104,8 +113,8 @@ class PacketPurchase_TestNotification : public PacketPurchase
 public:
    PacketPurchase_TestNotification() : PacketPurchase( PacketType_Purchase, PurchaseType_TestNotification ){  }
 
-   bool  SerializeIn( const U8* data, int& bufferOffset );
-   bool  SerializeOut( U8* data, int& bufferOffset ) const;
+   bool  SerializeIn( const U8* data, int& bufferOffset, int minorVersion );
+   bool  SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const;
 
    string   message;
    int      type;
@@ -136,8 +145,8 @@ class PacketPurchase_Buy : public PacketPurchase
 public:
    PacketPurchase_Buy() : PacketPurchase( PacketType_Purchase, PurchaseType_Buy ){  }
 
-   bool  SerializeIn( const U8* data, int& bufferOffset );
-   bool  SerializeOut( U8* data, int& bufferOffset ) const;
+   bool  SerializeIn( const U8* data, int& bufferOffset, int minorVersion );
+   bool  SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const;
 
    UuidString  purchaseUuid;
 };
@@ -149,8 +158,8 @@ class PacketPurchase_BuyResponse: public PacketPurchase
 public:
    PacketPurchase_BuyResponse() : PacketPurchase( PacketType_Purchase, PurchaseType_BuyResponse ){  }
 
-   bool  SerializeIn( const U8* data, int& bufferOffset );
-   bool  SerializeOut( U8* data, int& bufferOffset ) const;
+   bool  SerializeIn( const U8* data, int& bufferOffset, int minorVersion );
+   bool  SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const;
 
    UuidString  purchaseUuid;
    bool     success;
@@ -163,8 +172,8 @@ class PacketPurchase_RequestListOfSales : public PacketPurchase
 public:
    PacketPurchase_RequestListOfSales() : PacketPurchase( PacketType_Purchase, PurchaseType_RequestListOfSales ){  }
 
-   bool  SerializeIn( const U8* data, int& bufferOffset );
-   bool  SerializeOut( U8* data, int& bufferOffset ) const;
+   bool  SerializeIn( const U8* data, int& bufferOffset, int minorVersion );
+   bool  SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const;
 };
 
 ///////////////////////////////////////////////////////////////
@@ -174,8 +183,8 @@ class PacketPurchase_RequestListOfSalesResponse : public PacketPurchase
 public:
    PacketPurchase_RequestListOfSalesResponse() : PacketPurchase( PacketType_Purchase, PurchaseType_RequestListOfSalesResponse ){  }
 
-   bool  SerializeIn( const U8* data, int& bufferOffset );
-   bool  SerializeOut( U8* data, int& bufferOffset ) const;
+   bool  SerializeIn( const U8* data, int& bufferOffset, int minorVersion );
+   bool  SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const;
 
    SerializedKeyValueVector< PurchaseInfo >   thingsForSale;
 };
@@ -187,8 +196,8 @@ class PacketPurchase_ValidatePurchaseReceipt : public PacketPurchase
 public:
    PacketPurchase_ValidatePurchaseReceipt() : PacketPurchase( PacketType_Purchase, PurchaseType_ValidatePurchaseReceipt ){  }
 
-   bool  SerializeIn( const U8* data, int& bufferOffset );
-   bool  SerializeOut( U8* data, int& bufferOffset ) const;
+   bool  SerializeIn( const U8* data, int& bufferOffset, int minorVersion );
+   bool  SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const;
 
    string   purchaseItemId;
    int      quantity;
@@ -204,8 +213,8 @@ class PacketPurchase_ValidatePurchaseReceiptResponse : public PacketPurchase
 public:
    PacketPurchase_ValidatePurchaseReceiptResponse() : PacketPurchase( PacketType_Purchase, PurchaseType_ValidatePurchaseReceiptResponse ){  }
 
-   bool  SerializeIn( const U8* data, int& bufferOffset );
-   bool  SerializeOut( U8* data, int& bufferOffset ) const;
+   bool  SerializeIn( const U8* data, int& bufferOffset, int minorVersion );
+   bool  SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const;
 
    //SerializedKeyValueVector< PurchaseInfo >   thingsForSale;
 
@@ -215,3 +224,4 @@ public:
       
 ///////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////
+

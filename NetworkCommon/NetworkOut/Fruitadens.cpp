@@ -53,7 +53,7 @@ Fruitadens :: Fruitadens( const char* name, bool processOnlyOneIncommingPacketPe
                m_serverId( 0 ),
                m_numPacketsReceived( 0 ),
                m_receiveBufferOffset( 0 ),
-               m_networkVersionOverride( 0 ),
+               m_networkVersionOverride( NetworkVersionMinor ),
                m_packetHandlerInterface( NULL ),
                m_bytesInOverflow( 0 )
                
@@ -356,7 +356,7 @@ void  Fruitadens::PostProcessInputPackets( int bytesRead )
    while( offset < bytesRead )
    {
       int preOffset = offset;
-      Serialize::In( m_receiveBuffer, offset, size );
+      Serialize::In( m_receiveBuffer, offset, size, m_networkVersionOverride );
 
       if( offset + size > bytesRead )
       {
@@ -369,7 +369,7 @@ void  Fruitadens::PostProcessInputPackets( int bytesRead )
 
       BasePacket* packetIn = NULL;
       int readSize = offset;
-      bool parseResult = factory.Parse( m_receiveBuffer, readSize, &packetIn );
+      bool parseResult = factory.Parse( m_receiveBuffer, readSize, &packetIn, m_networkVersionOverride );
       if( offset + size < readSize )
       {
          cout << "Super bad parsing error." << endl;
@@ -379,14 +379,18 @@ void  Fruitadens::PostProcessInputPackets( int bytesRead )
       {
          m_numPacketsReceived ++;
          HandlePacketReceived( packetIn );
-         offset += size; // ignore the read size because this could be smaller 
-         // than the number of bytes provided by the underlying transport.
       }
-      else 
+      else
+      {
+         cout << "Unknown packet type" << endl;
+      }
+    /*  else 
       {
          assert( 0 );// major problem
          offset = m_numPacketsReceived;// major failure here
-      }
+      }*/
+      offset += size; // ignore the read size because this could be smaller 
+      // than the number of bytes provided by the underlying transport.
       if( m_processOnlyOneIncommingPacketPerLoop == true )
          break;
    }
@@ -511,15 +515,20 @@ bool  Fruitadens :: SerializePacketOut( const BasePacket* packet )
    U8 buffer[ MaxBufferSize ];
    
    int   offset = 2;
-   packet->SerializeOut( buffer, offset );
-   if( m_networkVersionOverride )
+   
+   if( m_networkVersionOverride != NetworkVersionMinor )
    {
-      int temp = 2;
-      BasePacket p;
+      BasePacket* p = const_cast<BasePacket*>( packet );// yes, I know that this is awful... normally. Not so bad here. I am working aorund the compiler.
+      p->versionNumberMinor = m_networkVersionOverride;
+      p->SerializeOut( buffer, offset, m_networkVersionOverride );
+   }
+   else
+   {
+      packet->SerializeOut( buffer, offset, m_networkVersionOverride );
    }
    U16   size = offset-2;
    int   headerOffset = 0;
-   Serialize::Out( buffer, headerOffset, size );
+   Serialize::Out( buffer, headerOffset, size, m_networkVersionOverride );
 
    return SendPacket( buffer, offset );
 }

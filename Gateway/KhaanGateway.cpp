@@ -165,7 +165,7 @@ bool  KhaanGateway::IsPacketSafe( const U8* data, int& offset)
    PacketFactory parser;
    // before we parse, which is potentially dangerous, we will do a quick check
    BasePacket testPacket;
-   parser.SafeParse( data, offset, testPacket );
+   parser.SafeParse( data, offset, testPacket, 0 );// always pass the simplest possible - 0
 
    // we only allow a few packet types
    bool allow = false;
@@ -216,7 +216,14 @@ bool  KhaanGateway::IsHandshaking( const BasePacket* packetIn )
 
       // we are only sending version numbers at this point.
       PacketHello* hello = new PacketHello();
+      hello->test = "this is a long string meant to prove out the viability of accepting packets of pracically any size and to not worry too much about packet versioning";
       AddOutputChainData( hello );
+
+      PacketBase_TestOnly* test = new PacketBase_TestOnly();
+      test->testNo = 30;
+      test->testString = "what the heck is this long string doing in our network protocol";
+      AddOutputChainData( test );
+
       return true;
    }
    return false;

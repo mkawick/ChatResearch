@@ -39,7 +39,8 @@ Khaan :: Khaan() : ChainedInterface< BasePacket* >(),
                   m_outboundBuffer( NULL ),
                   m_isExpectingMoreDataInPreviousPacket( false ),
                   m_expectedBytesReceivedSoFar( 0 ),
-                  m_expectedBytes( 0 )
+                  m_expectedBytes( 0 ),
+                  m_versionNumberMinor( NetworkVersionMinor )
                   
 {
    m_tempBuffer[0] = 0;
@@ -59,7 +60,8 @@ Khaan ::Khaan( int socketId, bufferevent* be, int connectionId ) : ChainedInterf
                                                                   m_outboundBuffer( NULL ),
                                                                   m_isExpectingMoreDataInPreviousPacket( false ),
                                                                   m_expectedBytesReceivedSoFar( 0 ),
-                                                                  m_expectedBytes( 0 )
+                                                                  m_expectedBytes( 0 ),
+                                                                  m_versionNumberMinor( NetworkVersionMinor )
 {
    m_tempBuffer[0] = 0;
    m_tempBuffer[1] = 0;
@@ -118,7 +120,7 @@ bool	Khaan :: OnDataReceived( const U8* data, int length )
    BasePacket* packetIn = NULL;
    int offset = 0;
    PacketFactory parser;
-   if( parser.Parse( data, offset, &packetIn ) == true )
+   if( parser.Parse( data, offset, &packetIn, m_versionNumberMinor ) == true )
    {
       m_packetsIn.push_back( packetIn );
  
@@ -297,7 +299,7 @@ int	Khaan :: UpdateOutwardPacketList()
       length = sizeOfHeader;// reserve space
 
       BasePacket* packet = m_packetsOut.front();      
-      packet->SerializeOut( m_outboundBuffer, length );
+      packet->SerializeOut( m_outboundBuffer, length, m_versionNumberMinor );
     /*  if( packet->packetType == 9 )
       {
          sizeOfHeader = sizeOfHeader;
@@ -309,7 +311,7 @@ int	Khaan :: UpdateOutwardPacketList()
       sizeSent += length + sizeOfHeader;
 
       sizeOfLastWrite = length - sizeOfHeader;
-      Serialize::Out( m_outboundBuffer, offset, sizeOfLastWrite );// write in the size
+      Serialize::Out( m_outboundBuffer, offset, sizeOfLastWrite, m_versionNumberMinor );// write in the size
 
       SendData( m_outboundBuffer, length );
       m_packetsOut.pop_front();

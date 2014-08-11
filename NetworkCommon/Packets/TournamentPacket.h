@@ -19,8 +19,8 @@ public:
                   timeUnitsPerRound( 1 )
                   {}// no initialization
 
-   bool  SerializeIn( const U8* data, int& bufferOffset );
-   bool  SerializeOut( U8* data, int& bufferOffset ) const;
+   bool  SerializeIn( const U8* data, int& bufferOffset, int minorVersion );
+   bool  SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const;
 
    void  Clear();
 
@@ -78,8 +78,8 @@ public:
 public:
    PacketTournament( int packet_type = PacketType_Tournament, int packet_sub_type = TournamentType_Base ) : BasePacket( packet_type, packet_sub_type ) {}
 
-   bool  SerializeIn( const U8* data, int& bufferOffset );
-   bool  SerializeOut( U8* data, int& bufferOffset ) const;
+   bool  SerializeIn( const U8* data, int& bufferOffset, int minorVersion );
+   bool  SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const;
 };
 
 ///////////////////////////////////////////////////////////////////
@@ -89,8 +89,8 @@ class PacketTournament_TestNotification : public PacketTournament
 public:
    PacketTournament_TestNotification() : PacketTournament( PacketType_Tournament, TournamentType_TestNotification ){  }
 
-   bool  SerializeIn( const U8* data, int& bufferOffset );
-   bool  SerializeOut( U8* data, int& bufferOffset ) const;
+   bool  SerializeIn( const U8* data, int& bufferOffset, int minorVersion );
+   bool  SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const;
 
    string   message;
    string   senderName;
@@ -106,8 +106,8 @@ class PacketTournament_RequestListOfTournaments : public PacketTournament
 public:
    PacketTournament_RequestListOfTournaments() : PacketTournament( PacketType_Tournament, TournamentType_RequestListOfTournaments ){  }
 
-   bool  SerializeIn( const U8* data, int& bufferOffset );
-   bool  SerializeOut( U8* data, int& bufferOffset ) const;
+   bool  SerializeIn( const U8* data, int& bufferOffset, int minorVersion );
+   bool  SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const;
 };
 
 ///////////////////////////////////////////////////////////////////
@@ -117,8 +117,8 @@ class PacketTournament_RequestListOfTournamentsResponse : public PacketTournamen
 public:
    PacketTournament_RequestListOfTournamentsResponse() : PacketTournament( PacketType_Tournament, TournamentType_RequestListOfTournamentsResponse ){  }
 
-   bool  SerializeIn( const U8* data, int& bufferOffset );
-   bool  SerializeOut( U8* data, int& bufferOffset ) const;
+   bool  SerializeIn( const U8* data, int& bufferOffset, int minorVersion );
+   bool  SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const;
 
    SerializedKeyValueVector< TournamentInfo >   tournaments;
 };
@@ -130,8 +130,8 @@ class PacketTournament_RequestTournamentDetails : public PacketTournament
 public:
    PacketTournament_RequestTournamentDetails() : PacketTournament( PacketType_Tournament, TournamentType_RequestTournamentDetails ){  }
 
-   bool  SerializeIn( const U8* data, int& bufferOffset );
-   bool  SerializeOut( U8* data, int& bufferOffset ) const;
+   bool  SerializeIn( const U8* data, int& bufferOffset, int minorVersion );
+   bool  SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const;
 
    UuidString  tournamentUuid;
 };
@@ -143,8 +143,8 @@ class PacketTournament_RequestTournamentDetailsResponse : public PacketTournamen
 public:
    PacketTournament_RequestTournamentDetailsResponse() : PacketTournament( PacketType_Tournament, TournamentType_RequestTournamentDetailsResponse ){  }
 
-   bool  SerializeIn( const U8* data, int& bufferOffset );
-   bool  SerializeOut( U8* data, int& bufferOffset ) const;
+   bool  SerializeIn( const U8* data, int& bufferOffset, int minorVersion );
+   bool  SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const;
 
    TournamentInfo tournament;
 };
@@ -156,8 +156,8 @@ class PacketTournament_RequestListOfEntrants : public PacketTournament
 public:
    PacketTournament_RequestListOfEntrants() : PacketTournament( PacketType_Tournament, TournamentType_RequestListOfTournamentEntrants ){  }
 
-   bool  SerializeIn( const U8* data, int& bufferOffset );
-   bool  SerializeOut( U8* data, int& bufferOffset ) const;
+   bool  SerializeIn( const U8* data, int& bufferOffset, int minorVersion );
+   bool  SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const;
 
    UuidString  tournamentUuid;
 };
@@ -169,8 +169,8 @@ class PacketTournament_RequestListOfEntrantsResponse : public PacketTournament
 public:
    PacketTournament_RequestListOfEntrantsResponse() : PacketTournament( PacketType_Tournament, TournamentType_RequestListOfTournamentEntrantsResponse ){  }
 
-   bool  SerializeIn( const U8* data, int& bufferOffset );
-   bool  SerializeOut( U8* data, int& bufferOffset ) const;
+   bool  SerializeIn( const U8* data, int& bufferOffset, int minorVersion );
+   bool  SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const;
 
    SerializedKeyValueVector< string > entrants;
 };
@@ -182,8 +182,8 @@ class PacketTournament_UserRequestsEntryInTournament : public PacketTournament
 public:
    PacketTournament_UserRequestsEntryInTournament() : PacketTournament( PacketType_Tournament, TournamentType_UserRequestsEntryInTournament ){  }
 
-   bool  SerializeIn( const U8* data, int& bufferOffset );
-   bool  SerializeOut( U8* data, int& bufferOffset ) const;
+   bool  SerializeIn( const U8* data, int& bufferOffset, int minorVersion );
+   bool  SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const;
 
    UuidString                                      tournamentUuid;
    FixedString60                                   customDeck;
@@ -198,8 +198,8 @@ public:
    PacketTournament_UserRequestsEntryInTournamentResponse() : PacketTournament( PacketType_Tournament, TournamentType_UserRequestsEntryInTournamentResponse ),
       result( PacketErrorReport::ErrorType_Purchase_Success ){  }
 
-   bool  SerializeIn( const U8* data, int& bufferOffset );
-   bool  SerializeOut( U8* data, int& bufferOffset ) const;
+   bool  SerializeIn( const U8* data, int& bufferOffset, int minorVersion );
+   bool  SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const;
 
    UuidString  tournamentUuid; 
    int         result;
@@ -212,8 +212,8 @@ class PacketTournament_PurchaseTournamentEntry : public PacketTournament
 public:
    PacketTournament_PurchaseTournamentEntry() : PacketTournament( PacketType_Tournament, TournamentType_PurchaseTournamentEntry ){  }
 
-   bool  SerializeIn( const U8* data, int& bufferOffset );
-   bool  SerializeOut( U8* data, int& bufferOffset ) const;
+   bool  SerializeIn( const U8* data, int& bufferOffset, int minorVersion );
+   bool  SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const;
 
    UuidString  userUuid;
    string      uniqueTransactionId; // fill this in with some unique value that you need
@@ -229,8 +229,8 @@ public:
    PacketTournament_PurchaseTournamentEntryResponse() : PacketTournament( PacketType_Tournament, TournamentType_PurchaseTournamentEntryResponse ),
                result( PacketErrorReport::ErrorType_Purchase_Success ){  }
 
-   bool  SerializeIn( const U8* data, int& bufferOffset );
-   bool  SerializeOut( U8* data, int& bufferOffset ) const;
+   bool  SerializeIn( const U8* data, int& bufferOffset, int minorVersion );
+   bool  SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const;
 
    string      uniqueTransactionId; /// returned to the transaction server
    int         result;
@@ -244,8 +244,8 @@ class PacketTournament_PurchaseTournamentEntryRefund : public PacketTournament
 public:
    PacketTournament_PurchaseTournamentEntryRefund() : PacketTournament( PacketType_Tournament, TournamentType_PurchaseTournamentEntryRefund ){  }
    
-   bool  SerializeIn( const U8* data, int& bufferOffset );
-   bool  SerializeOut( U8* data, int& bufferOffset ) const;
+   bool  SerializeIn( const U8* data, int& bufferOffset, int minorVersion );
+   bool  SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const;
 
    UuidString  userUuid;
    string      uniqueTransactionId; // fill this in with some unique value that you need
@@ -261,8 +261,8 @@ public:
    PacketTournament_PurchaseTournamentEntryRefundResponse() : PacketTournament( PacketType_Tournament, TournamentType_PurchaseTournamentEntryRefundResponse ),
                result( PacketErrorReport::ErrorType_Purchase_Success ){  }
    
-   bool  SerializeIn( const U8* data, int& bufferOffset );
-   bool  SerializeOut( U8* data, int& bufferOffset ) const;
+   bool  SerializeIn( const U8* data, int& bufferOffset, int minorVersion );
+   bool  SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const;
 
    string      uniqueTransactionId; /// returned to the transaction server
    int         result;
