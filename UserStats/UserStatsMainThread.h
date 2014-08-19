@@ -36,6 +36,7 @@ public:
    bool     AddQueryToOutput( PacketDbQuery* dbQuery );
 
    void     ServerWasIdentified( IChainedInterface* khaan );
+   void     InputRemovalInProgress( IChainedInterface * chainedInput );
 
    DbHandle*   GetDbConnectionByType( Database::Deltadromeus::DbConnectionType type );
 

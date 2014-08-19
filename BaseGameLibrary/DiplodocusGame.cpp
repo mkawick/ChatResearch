@@ -46,8 +46,15 @@ void     DiplodocusGame::AddTimer( U32 timerId, U32 callbackTimeMs )
 
 void     DiplodocusGame::InputRemovalInProgress( IChainedInterface* chainedInput )
 {
-   cout << "Gateway has disconnected" << endl;
+   KhaanGame* khaan = static_cast< KhaanGame* >( chainedInput );
 
+   SetupClientWaitingToBeRemoved( khaan );
+
+   string currentTime = GetDateInUTC();
+   string printer = "Client disconnection at time:" + currentTime + " from " + inet_ntoa( khaan->GetIPAddress().sin_addr );
+   cout << printer << endl;
+
+   PrintDebugText( "** InputRemovalInProgress" , 1 );
 }
 
 //---------------------------------------------------------------
@@ -253,6 +260,25 @@ void  DiplodocusGame::SendNotification( const PacketGame_Notification* notificat
 
 void  DiplodocusGame::RunTest()
 {
+   bool user9User14ChatchannelCreateTest = true;
+   if( user9User14ChatchannelCreateTest == true )
+   {
+    /*  list< const char* > listOfUserUuids;
+      listOfUserUuids.push_back( "user9" );
+      listOfUserUuids.push_back( "a150f79095fa1235" );*/
+      //GameFramework::Instance()->SendChatChannelCreate( "summonwar", 5, listOfUserUuids );
+      PacketChatCreateChatChannelFromGameServer* createChannel = new PacketChatCreateChatChannelFromGameServer;
+      createChannel->gameName = "summonwar";
+      createChannel->gameId = 5;
+
+      //createChannel->userUuidList.insert( uuid );
+      createChannel->userUuidList.insert( "user9" );
+      createChannel->userUuidList.insert( "a150f79095fa1235" );
+
+      GameFramework::Instance()->SendChatData( createChannel );
+      return;
+   }
+
    static bool  testChoice = false ;
 
    BasePacket* packet = NULL;
@@ -473,6 +499,9 @@ int   DiplodocusGame::CallbackFunction()
          }
       }
    }
+
+   CleanupOldClientConnections( "KhaanGame" );
+
    UpdateAllConnections();
    UpdateAllTimers();
 

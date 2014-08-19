@@ -50,13 +50,6 @@ void     KhaanGateway::SetLanguageId( U8 languageId )
 
 //-----------------------------------------------------------------------------------------
 
-void     KhaanGateway::ForceShutdown() 
-{ 
-   CloseConnection(); 
-}
-
-//-----------------------------------------------------------------------------------------
-
 void     KhaanGateway::DenyAllFutureData() 
 { 
    m_denyAllFutureData = true;
@@ -216,7 +209,7 @@ bool  KhaanGateway::IsHandshaking( const BasePacket* packetIn )
 
       // we are only sending version numbers at this point.
       PacketHello* hello = new PacketHello();
-      hello->test = "this is a long string meant to prove out the viability of accepting packets of pracically any size and to not worry too much about packet versioning";
+      //hello->test = "this is a long string meant to prove out the viability of accepting packets of pracically any size and to not worry too much about packet versioning";
       AddOutputChainData( hello );
 
       PacketBase_TestOnly* test = new PacketBase_TestOnly();

@@ -17,54 +17,12 @@ class Fruitadens;
 class FruitadensGateway;
 
 ////////////////////////////////////////////////////////////////////////////////////
-/*
-class ServerConnectionState
-{
-public:
-   ServerConnectionState():
-                        m_recentlyConnected( false ),
-                        m_recentlyDisconnected( false ){}
 
-
-   void  Disconnect() { m_recentlyConnected = true; }
-   void  ClearDisconnect() { m_recentlyConnected = false; }
-   void  Connect() { m_recentlyDisconnected = true; }
-   void  ClearConnect() { m_recentlyDisconnected = false; }
-
-private:
-   bool  m_recentlyConnected;
-   bool  m_recentlyDisconnected;
-};
-*/
 typedef vector< FruitadensGateway* >  OutputConnectorList;
 typedef vector< OutputConnectorList > ListOfOutputLists;
 
 ////////////////////////////////////////////////////////////////////////////////////
 
-class KhaanGatewayWrapper
-{
-public:
-   KhaanGatewayWrapper( KhaanGateway* connector) : 
-                        m_connector( connector ), 
-                        m_markedForDeleteTime( 0 ){}
-
-   KhaanGateway*        m_connector;
-   time_t               m_markedForDeleteTime;
-public:
-   void     MarkForDeletion( time_t& time ) { m_markedForDeleteTime = time; }
-   bool     IsMarkedForDeletion() const { return m_markedForDeleteTime != 0; }
-   bool     HasDeleteTimeElapsed( time_t& currentTime ) const 
-   {
-      if( difftime( currentTime, m_markedForDeleteTime ) >= 5 ) // once per second
-      {
-         return true;
-      }
-      return false;
-   }
-
-private:
-   KhaanGatewayWrapper(){}
-};
 
 ////////////////////////////////////////////////////////////////////////////////////
 
@@ -113,14 +71,13 @@ private:
    void           BroadcastPacketToAllUsers( const string& errorText, int errorState, int param1, int param2, U8 matchingGameId );
    
    void           MoveClientBoundPacketsFromTempToKhaan();
+   void           MarkConnectionForDeletion( U32 connectionId );
 
    void           HandleReroutRequest( U32 connectionId );
    void           UpdateAllClientConnections();
-   void           AddClientConnectionNeedingUpdate( U32 id );
    void           CheckOnServerStatusChanges();
+   //void           UpdateRemovedConnections();
 
-   //int            MainLoop_InputProcessing();
-   //int            MainLoop_OutputProcessing();
    int            CallbackFunction();
 
    void           CleanupOldConnections();
@@ -136,13 +93,9 @@ private:
 
    //--------------------------------------------------------
 
-   typedef map< int, int >    SocketToConnectionMap;
-   typedef pair<int, int>     SocketToConnectionPair;
-   typedef SocketToConnectionMap::iterator SocketToConnectionMapIterator;
-
-   typedef map< int, KhaanGatewayWrapper >    ConnectionMap;
-   typedef pair< int, KhaanGatewayWrapper >   ConnectionPair;
-   typedef ConnectionMap::iterator        ConnectionMapIterator;
+   typedef map< int, KhaanGateway* >         ConnectionMap;
+   typedef pair< int, KhaanGateway* >        ConnectionPair;
+   typedef ConnectionMap::iterator           ConnectionMapIterator;
 
 
    ListOfOutputLists          m_orderedOutputPacketHandlers;
@@ -151,11 +104,7 @@ private:
    U32                        m_connectionIdTracker;
    std::deque< BasePacket* >  m_clientBoundTempStorage;
 
-   SocketToConnectionMap      m_socketToConnectionMap;
-   SocketToConnectionMap      m_connectionToSocketMap;
-
    ConnectionMap              m_connectionMap;
-   ConnectionIdQueue          m_connectionsNeedingUpdate;
 
    PacketQueue                m_packetsToBeSentInternally;
 
@@ -172,4 +121,4 @@ private:
    U16                        m_reroutePort;
 };
 
-//-----------------------------------------------------------------------------
+////////////////////////////////////////////////////////////////////////////////////

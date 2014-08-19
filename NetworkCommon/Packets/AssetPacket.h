@@ -118,10 +118,9 @@ public:
    bool  SerializeIn( const U8* data, int& bufferOffset, int minorVersion );
    bool  SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const;
 
-   string   uuid;
-   string   loginKey;
-   int      platformId;
-   //SerializedKeyValueVector< AssetInfo >   currentAssets;
+   UuidString  uuid;
+   string      loginKey;
+   int         platformId;
 };
 
 ///////////////////////////////////////////////////////////////////
@@ -147,9 +146,9 @@ public:
    bool  SerializeIn( const U8* data, int& bufferOffset, int minorVersion );
    bool  SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const;
 
-   string   uuid;
-   string   loginKey;
-   int      platformId;
+   UuidString  uuid;
+   string      loginKey;
+   int         platformId;
 };
 
 ///////////////////////////////////////////////////////////////////
@@ -176,8 +175,8 @@ public:
    bool  SerializeIn( const U8* data, int& bufferOffset, int minorVersion );
    bool  SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const;
 
-   string   uuid;
-   string   loginKey;
+   UuidString  uuid;
+   string      loginKey;
 };
 
 ///////////////////////////////////////////////////////////////////
@@ -203,10 +202,11 @@ public:
    bool  SerializeIn( const U8* data, int& bufferOffset, int minorVersion );
    bool  SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const;
 
-   string   uuid;
-   string   loginKey;
-   string   assetCategory;
-   int      platformId;
+   UuidString        uuid;
+   string            loginKey;
+   string            assetCategory;
+   int               platformId;
+   FixedStringTiny   compressionType;
 };
 
 ///////////////////////////////////////////////////////////////////
@@ -233,9 +233,10 @@ public:
    bool  SerializeIn( const U8* data, int& bufferOffset, int minorVersion );
    bool  SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const;
 
-   string      uuid;
-   string      loginKey;
-   string      assetHash;
+   UuidString        uuid;
+   string            loginKey;
+   string            assetHash;   
+   int               fileVersion;
 };
 
 ///////////////////////////////////////////////////////////////

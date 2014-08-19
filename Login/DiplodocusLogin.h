@@ -103,7 +103,7 @@ public:
    void           PrintFunctionNames( bool printingOn = true );
 
    void           ServerWasIdentified( IChainedInterface* khaan );
-   //void           OutputConnected( IChainedInterface * );
+   void           InputRemovalInProgress( IChainedInterface * chainedInput );
    void           AutoAddTheProductFromWhichYouLogin( bool addIt = false ) { m_autoAddProductFromWhichUsersLogin = addIt; }
 
    bool           AddInputChainData( BasePacket* packet, U32 connectionId );

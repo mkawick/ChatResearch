@@ -16,7 +16,6 @@ public:
    const char* GetClassName() const { return "KhaanGateway"; }
 
    void     AuthorizeConnection();
-   void     ForceShutdown();
    void     DenyAllFutureData();
    void     SetAdminLevelOperations( int level ) { m_adminLevel = level; }
    U8       GetLanguageId() const { return m_languageId; }
@@ -46,11 +45,9 @@ private:
    U32                  m_numPacketsReceivedBeforeAuth;
    U32                  m_randomNumberOfPacketsBeforeLogin;
    bool                 m_authorizedConnection;
-   //bool                 m_denyAllFutureData;
    bool                 m_logoutPacketSent;
    int                  m_adminLevel;
    U8                   m_languageId;
-//   MainGatewayThread*   m_gateway;
    U32                  m_timeoutMs;
    U32                  m_lastSentToClientTimestamp;
    U8                   m_gameId;

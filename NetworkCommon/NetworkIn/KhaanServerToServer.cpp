@@ -30,7 +30,7 @@ bool  KhaanServerToServer::HandleInwardSerializedPacket( const U8* data, int& of
    BasePacket* packetIn = NULL;
    PacketFactory factory;
 
-   if( factory.Parse( data, offset, &packetIn, NetworkVersionMinor ) == true )
+   if( factory.Parse( data, offset, &packetIn, m_versionNumberMinor ) == true )
    {
       int packetType = packetIn->packetType;
       if( packetType != PacketType_GatewayWrapper &&
@@ -130,7 +130,7 @@ bool	KhaanServerToServer :: OnDataReceived( const U8* data, int length )
    {
       /// before we parse, let's pull off the first two bytes
       U16 size = 0;
-      Serialize::In( data, offset, size, NetworkVersionMinor );
+      Serialize::In( data, offset, size, m_versionNumberMinor );
       if( offset + size > length )
       {
          m_isExpectingMoreDataInPreviousPacket = true;

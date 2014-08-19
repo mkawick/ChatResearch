@@ -11,7 +11,7 @@ using namespace std;
 #include <assert.h>
 
 #include "AssetCommon.h"
-#include "DiplodocusAsset.h"
+#include "AssetMainThread.h"
 #include "../NetworkCommon/NetworkIn/DiplodocusServerToServer.h"
 #include "../NetworkCommon/NetworkUtils.h"
 
@@ -114,7 +114,7 @@ int main( int argc, const char* argv[] )
 
    if( isBusy == false )
    {
-      DiplodocusAsset*    assetServer = new DiplodocusAsset( serverName, serverId );
+      AssetMainThread*    assetServer = new AssetMainThread( serverName, serverId );
       assetServer->SetupListening( listenPort );
       assetServer->SetIniFilePath( assetPath, assetDictionary );
 

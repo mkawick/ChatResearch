@@ -54,7 +54,6 @@ public:
    //UserConnection*   FindUser( const string& uuid );
 
 private:
-   void     CleanupOldConnections();
 
    bool     HandlePacketFromOtherServer( BasePacket* packet, U32 connectionId );
    //bool     HandlePacketToOtherServer( BasePacket* packet, U32 connectionId );

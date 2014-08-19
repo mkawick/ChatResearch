@@ -52,6 +52,21 @@ void     UserStatsMainThread::ServerWasIdentified( IChainedInterface* khaan )
    m_clientsNeedingUpdate.push_back( localKhaan->GetServerId() );
 }
 
+/////////////////////////////////////////////////////////////////////////////////
+
+void     UserStatsMainThread::InputRemovalInProgress( IChainedInterface * chainedInput )
+{
+   KhaanServerToServer* khaan = static_cast< KhaanServerToServer* >( chainedInput );
+
+   SetupClientWaitingToBeRemoved( khaan );
+
+   string currentTime = GetDateInUTC();
+   string printer = "Client disconnection at time:" + currentTime + " from " + inet_ntoa( khaan->GetIPAddress().sin_addr );
+   cout << printer << endl;
+
+   PrintDebugText( "** InputRemovalInProgress" , 1 );
+}
+
 //---------------------------------------------------------------
 
 int      UserStatsMainThread::MainLoop_InputProcessing()
@@ -71,6 +86,7 @@ int      UserStatsMainThread::MainLoop_OutputProcessing()
    int numClients = static_cast< int >( m_connectedClients.size() );
    UpdateConsoleWindow( m_timeOfLastTitleUpdate, m_uptime, m_numTotalConnections, numClients, m_listeningPort, m_serverName );
 
+   CleanupOldClientConnections( "KhaanServerToServer" );
    
    UpdateDbResults();
    /*

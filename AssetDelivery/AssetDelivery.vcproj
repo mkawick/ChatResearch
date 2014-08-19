@@ -256,11 +256,11 @@
 				>
 			</File>
 			<File
-				RelativePath=".\AssetOrganizer.cpp"
+				RelativePath=".\AssetMainThread.cpp"
 				>
 			</File>
 			<File
-				RelativePath=".\DiplodocusAsset.cpp"
+				RelativePath=".\AssetOrganizer.cpp"
 				>
 			</File>
 			<File
@@ -282,11 +282,11 @@
 				>
 			</File>
 			<File
-				RelativePath=".\AssetOrganizer.h"
+				RelativePath=".\AssetMainThread.h"
 				>
 			</File>
 			<File
-				RelativePath=".\DiplodocusAsset.h"
+				RelativePath=".\AssetOrganizer.h"
 				>
 			</File>
 			<File
@@ -390,6 +390,14 @@
 				</File>
 				<File
 					RelativePath="..\NetworkCommon\Utils\Enigmosaurus.h"
+					>
+				</File>
+				<File
+					RelativePath="..\NetworkCommon\Utils\FileUtils.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\NetworkCommon\Utils\FileUtils.h"
 					>
 				</File>
 				<File

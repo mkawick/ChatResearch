@@ -141,17 +141,12 @@ bool  BasePacket::SerializeOut( U8* data, int& bufferOffset, int minorVersion ) 
 bool  PacketHello::SerializeIn( const U8* data, int& bufferOffset, int minorVersion )
 {
    BasePacket::SerializeIn( data, bufferOffset, minorVersion );
-  /* if( this->versionNumberMinor > 1 )
-   {
-      Serialize::In( data, bufferOffset, test, minorVersion );
-   }*/
    return true;
 }
 
 bool  PacketHello::SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const 
 {
    BasePacket::SerializeOut( data, bufferOffset, minorVersion );
-  // Serialize::Out( data, bufferOffset, test, minorVersion );
 
    return true;
 }
@@ -195,8 +190,8 @@ bool  PacketRerouteRequest::SerializeOut( U8* data, int& bufferOffset, int minor
 bool  PacketRerouteRequestResponse::SerializeIn( const U8* data, int& bufferOffset, int minorVersion )
 {
    BasePacket::SerializeIn( data, bufferOffset, minorVersion );
-   //Serialize::In( data, bufferOffset, locations, minorVersion );
-   locations.SerializeIn( data, bufferOffset, minorVersion );
+   Serialize::In( data, bufferOffset, locations, minorVersion );
+   //locations.SerializeIn( data, bufferOffset, minorVersion );
 
    return true;
 }
@@ -204,8 +199,8 @@ bool  PacketRerouteRequestResponse::SerializeIn( const U8* data, int& bufferOffs
 bool  PacketRerouteRequestResponse::SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const 
 {
    BasePacket::SerializeOut( data, bufferOffset, minorVersion );
-   //Serialize::Out( data, bufferOffset, locations, minorVersion );
-   locations.SerializeOut( data, bufferOffset, minorVersion );
+   Serialize::Out( data, bufferOffset, locations, minorVersion );
+   //locations.SerializeOut( data, bufferOffset, minorVersion );
 
    return true;
 }
@@ -296,6 +291,7 @@ bool  PacketUserStateChange::SerializeOut( U8* data, int& bufferOffset, int mino
 ///////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////
 
+
 U8 PacketGatewayWrapper::SerializeBuffer[ PacketGatewayWrapper::BufferSize ];
 
 void  PacketGatewayWrapper::SetupPacket( BasePacket* packet, U32 connId )
@@ -322,7 +318,12 @@ bool  PacketGatewayWrapper::SerializeIn( const U8* data, int& bufferOffset, int 
    delete pPacket; pPacket = NULL;
    PacketFactory packetFactory;
 
-   return packetFactory.Parse( data, bufferOffset, &pPacket, minorVersion );
+   if( packetFactory.Parse( data, bufferOffset, &pPacket, minorVersion ) == false )
+   {
+      return false;
+   }
+
+   return true;
 }
 
 ///////////////////////////////////////////////////////////////
@@ -421,6 +422,7 @@ bool  PacketBase_TestOnly::SerializeOut( U8* data, int& bufferOffset, int minorV
    return true;
 }
 
+///////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////
 
 ///////////////////////////////////////////////////////////////

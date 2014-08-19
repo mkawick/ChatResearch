@@ -210,16 +210,16 @@ bool  PacketContact_GetListOfInvitationsSent::SerializeOut( U8* data, int& buffe
 bool  PacketContact_GetListOfInvitationsSentResponse::SerializeIn( const U8* data, int& bufferOffset, int minorVersion )
 { 
    PacketContact::SerializeIn( data, bufferOffset, minorVersion );
-   //Serialize::In( data, bufferOffset, invitations, minorVersion );
-   invitations.SerializeIn( data, bufferOffset, minorVersion );
+   Serialize::In( data, bufferOffset, invitations, minorVersion );
+   //invitations.SerializeIn( data, bufferOffset, minorVersion );
 
    return true; 
 }
 bool  PacketContact_GetListOfInvitationsSentResponse::SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const 
 { 
    PacketContact::SerializeOut( data, bufferOffset, minorVersion );
-   //Serialize::Out( data, bufferOffset, invitations, minorVersion );
-   invitations.SerializeOut( data, bufferOffset, minorVersion );
+   Serialize::Out( data, bufferOffset, invitations, minorVersion );
+   //invitations.SerializeOut( data, bufferOffset, minorVersion );
 
    return true; 
 }

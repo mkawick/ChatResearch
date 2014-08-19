@@ -910,6 +910,7 @@ void     ClientNetworkWrapper::CleanupLingeringMemory()
    vector< string > categories;
    GetAssetCategories( categories );
 
+   Threading::MutexLock    locker( m_notificationMutex );
    AssetMapIter it = m_assets.begin();
    while( it != m_assets.end() )
    {
@@ -2852,7 +2853,7 @@ bool     ClientNetworkWrapper::RequestListOfAssetCategories()
 
 //-----------------------------------------------------------------------------
 
-bool     ClientNetworkWrapper::RequestListOfAssets( const string& category, int platformId )
+bool     ClientNetworkWrapper::RequestListOfAssets( const string& category, int platformId, const string fileCompression )
 {
    PrintFunctionName( __FUNCTION__ );
    PacketAsset_GetListOfAssets assetRequest;
@@ -2860,13 +2861,15 @@ bool     ClientNetworkWrapper::RequestListOfAssets( const string& category, int 
    assetRequest.loginKey = m_loginKey;
    assetRequest.platformId = platformId;
    assetRequest.assetCategory = category;
+   
+   assetRequest.compressionType = fileCompression.c_str();
 
    return SerializePacketOut( &assetRequest );
 }
 
 //-----------------------------------------------------------------------------
 
-bool     ClientNetworkWrapper::RequestAssetByHash( const string& assetHash )
+bool     ClientNetworkWrapper::RequestAssetByHash( const string& assetHash, int fileVersion )
 {
    PrintFunctionName( __FUNCTION__ );
    AssetInfoExtended asset;
@@ -2877,13 +2880,14 @@ bool     ClientNetworkWrapper::RequestAssetByHash( const string& assetHash )
    assetRequest.uuid = m_uuid;
    assetRequest.loginKey = m_loginKey;
    assetRequest.assetHash = assetHash;
+   assetRequest.fileVersion = fileVersion;
 
    return SerializePacketOut( &assetRequest );
 }
 
 //-----------------------------------------------------------------------------
 
-bool     ClientNetworkWrapper::RequestAssetByName( const string& assetName )
+bool     ClientNetworkWrapper::RequestAssetByName( const string& assetName, int fileVersion )
 {
    PrintFunctionName( __FUNCTION__ );
    AssetInfoExtended asset;
@@ -2895,13 +2899,14 @@ bool     ClientNetworkWrapper::RequestAssetByName( const string& assetName )
    assetRequest.uuid = m_uuid;
    assetRequest.loginKey = m_loginKey;
    assetRequest.assetHash = assetHash ;
+   assetRequest.fileVersion = fileVersion;
 
    return SerializePacketOut( &assetRequest );
 }
 
 //-----------------------------------------------------------------------------
 
-bool     ClientNetworkWrapper::RequestAvatarById( U32 id )
+bool     ClientNetworkWrapper::RequestAvatarById( U32 id, int fileVersion  )
 {
    PrintFunctionName( __FUNCTION__ );
    AssetInfoExtended asset;
@@ -2915,11 +2920,12 @@ bool     ClientNetworkWrapper::RequestAvatarById( U32 id )
    PacketAsset_RequestAsset assetRequest;
    assetRequest.uuid = m_uuid;
    assetRequest.loginKey = m_loginKey;
-   assetRequest.assetHash = assetHash ;
+   assetRequest.assetHash = assetHash;
+
+   assetRequest.fileVersion = fileVersion;
 
    return SerializePacketOut( &assetRequest );
 }
-
 //-----------------------------------------------------------------------------
 
 bool     ClientNetworkWrapper::RegisterDevice( const string& playdekUuid, const string& deviceName, PlatformType platformId, const string& vendorProvidedDeviceId )
@@ -4580,6 +4586,7 @@ bool     ClientNetworkWrapper::GetAsset( const string& category, const string& h
 bool     ClientNetworkWrapper::UpdateAssetData( const string& hash, AssetInfoExtended& asset )
 {
    PrintFunctionName( __FUNCTION__ );
+   Threading::MutexLock    locker( m_notificationMutex );
    AssetMapIter it = m_assets.begin();
    while( it != m_assets.end() )
    {

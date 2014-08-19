@@ -101,6 +101,22 @@ void     DiplodocusLogin:: ServerWasIdentified( IChainedInterface* khaan )
    m_clientsNeedingUpdate.push_back( localKhaan->GetChainedId() );
 }
 
+/////////////////////////////////////////////////////////////////////////////////
+
+void     DiplodocusLogin::InputRemovalInProgress( IChainedInterface * chainedInput )
+{
+   KhaanLogin* khaan = static_cast< KhaanLogin* >( chainedInput );
+
+   SetupClientWaitingToBeRemoved( khaan );
+
+   string currentTime = GetDateInUTC();
+   string printer = "Client disconnection at time:" + currentTime + " from " + inet_ntoa( khaan->GetIPAddress().sin_addr );
+   cout << printer << endl;
+
+   PrintDebugText( "** InputRemovalInProgress" , 1 );
+}
+
+
 //---------------------------------------------------------------
 
 bool     DiplodocusLogin:: AddInputChainData( BasePacket* packet, U32 connectionId )
@@ -3024,7 +3040,6 @@ int      DiplodocusLogin:: CallbackFunction()
    */
    CommonUpdate();
 
-  
    if( m_isInitializing == true )
    {
       if( m_productList.size() > 0 )
@@ -3040,6 +3055,7 @@ int      DiplodocusLogin:: CallbackFunction()
    time( &currentTime );
    m_stringLookup->Update( currentTime );
 
+   CleanupOldClientConnections( "KhaanLogin" );
    UpdateAllConnections( "KhaanLogin" );
 
    RemoveOldConnections();

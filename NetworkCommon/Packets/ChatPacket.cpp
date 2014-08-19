@@ -90,8 +90,8 @@ PacketChatChannelList::~PacketChatChannelList()
 bool  PacketChatChannelList::SerializeIn( const U8* data, int& bufferOffset, int minorVersion )
 {
    BasePacket::SerializeIn( data, bufferOffset, minorVersion );
-   //channelList.SerializeIn( data, bufferOffset, minorVersion );
-   Serialize::In( data, bufferOffset, channelList, minorVersion );
+   channelList.SerializeIn( data, bufferOffset, minorVersion );
+   //Serialize::In( data, bufferOffset, channelList, minorVersion );
 
    return true;
 }
@@ -99,8 +99,8 @@ bool  PacketChatChannelList::SerializeIn( const U8* data, int& bufferOffset, int
 bool  PacketChatChannelList::SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const
 {
    BasePacket::SerializeOut( data, bufferOffset, minorVersion );
-   //channelList.SerializeOut( data, bufferOffset, minorVersion );
-   Serialize::Out( data, bufferOffset, channelList, minorVersion );
+   channelList.SerializeOut( data, bufferOffset, minorVersion );
+   //Serialize::Out( data, bufferOffset, channelList, minorVersion );
 
    return true;
 }
@@ -309,8 +309,8 @@ bool  PacketChatHistoryResult::SerializeIn( const U8* data, int& bufferOffset, i
    Serialize::In( data, bufferOffset, userUuid, minorVersion );
    Serialize::In( data, bufferOffset, startingTimestamp, minorVersion );
    Serialize::In( data, bufferOffset, startingIndex, minorVersion );
-   //Serialize::In( data, bufferOffset, chat, minorVersion );
-   chat.SerializeIn( data, bufferOffset, minorVersion );
+   Serialize::In( data, bufferOffset, chat, minorVersion );
+   //chat.SerializeIn( data, bufferOffset, minorVersion );
 
    return true;
 }
@@ -322,8 +322,8 @@ bool  PacketChatHistoryResult::SerializeOut( U8* data, int& bufferOffset, int mi
    Serialize::Out( data, bufferOffset, userUuid, minorVersion );
    Serialize::Out( data, bufferOffset, startingTimestamp, minorVersion );
    Serialize::Out( data, bufferOffset, startingIndex, minorVersion );
-   //Serialize::Out( data, bufferOffset, chat, minorVersion );
-   chat.SerializeOut( data, bufferOffset, minorVersion );
+   Serialize::Out( data, bufferOffset, chat, minorVersion );
+   //chat.SerializeOut( data, bufferOffset, minorVersion );
 
    return true;
 }

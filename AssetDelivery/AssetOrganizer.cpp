@@ -2,26 +2,19 @@
 // AssetOrganizer.cpp 
 //
 
-#include <iostream>       // std::cout, std::ios
-#include <sstream>        // std::istringstream
-#include <ctime>          // std::tm
-#include <locale>         // std::locale, std::time_get, std::use_facet
-
-#include <fstream> 
-#include <string>
-using namespace std;
 
 #include <sys/stat.h>
 #include <time.h>
-
-
-#include "../NetworkCommon/ServerConstants.h"
-#include "../NetworkCommon/DataTypes.h"
 
 #include "../NetworkCommon/Utils/Utils.h"
 
 #if PLATFORM == PLATFORM_WINDOWS
 #pragma warning (disable: 4996)
+   #include <windows.h>
+   #include <mmsystem.h>
+   #include <sys/stat.h>
+   #include <direct.h>
+   #include <io.h>
 #endif
 
 #include <boost/format.hpp>
@@ -151,6 +144,54 @@ const char* assetPriotityType[] = {
    "secondary"
 };
 
+
+//////////////////////////////////////////////////////////////////////////
+
+LoadedFile :: LoadedFile() : FileVersion(), fileData( NULL ), fileSize( 0 ), compressionType( 0 ) {}
+LoadedFile :: LoadedFile( const FileVersion& fi ) : FileVersion( fi ), fileData( NULL ), fileSize( 0 ), compressionType( 0 ) {}
+LoadedFile :: LoadedFile( const LoadedFile&  lf ) : compressionType( 0 ) 
+{
+   filePath = lf.filePath; lastModifiedTime = lf.lastModifiedTime; version = lf.version; 
+   if( fileSize == 0 )
+   {
+      fileData = NULL, fileSize = 0; 
+   }
+   else
+   {
+      fileSize = lf.fileSize;
+      fileData  = new U8[ fileSize ];
+      memcpy( fileData, lf.fileData, fileSize );
+   }
+}
+
+LoadedFile :: ~LoadedFile() 
+{
+   delete [] fileData;
+}
+
+const LoadedFile& LoadedFile::operator = ( const LoadedFile& lf )
+{
+   filePath = lf.filePath; lastModifiedTime = lf.lastModifiedTime; version = lf.version; 
+   if( fileSize == 0 )
+   {
+      fileData = NULL, fileSize = 0; 
+   }
+   else
+   {
+      fileSize = lf.fileSize;
+      fileData  = new U8[ fileSize ];
+      memcpy( fileData, lf.fileData, fileSize );
+   }
+   return *this;
+}
+
+void  LoadedFile :: operator = ( const FileVersion& ver ) 
+{ 
+   filePath = ver.filePath; lastModifiedTime = ver.lastModifiedTime; version = ver.version; 
+   fileData = NULL, fileSize = 0; 
+   compressionType = 0;
+}
+
 //////////////////////////////////////////////////////////////////////////
 
 AssetDefinition:: AssetDefinition() :  isLoaded( false ), 
@@ -160,13 +201,14 @@ AssetDefinition:: AssetDefinition() :  isLoaded( false ),
                                        platform( 0 ), 
                                        priority( 0 ),
                                        fileModificationTime( 0 ),
-                                       version( "0.8" ),
-                                       fileData( NULL ), 
-                                       fileSize( 0 ),
-                                       compressionType( 0 )
+                                       version( "0.8" )//,
+                                       //fileData( NULL ), 
+                                       //fileSize( 0 ),
+                                       //compressionType( 0 )
 {
 }
 
+ // needs work on copying the contents
 AssetDefinition:: AssetDefinition( const AssetDefinition& assetDefn ) : isLoaded( assetDefn.isLoaded ), 
                                        isLayout( assetDefn.isLayout ), 
                                        isOptional( assetDefn.isOptional ), 
@@ -182,23 +224,26 @@ AssetDefinition:: AssetDefinition( const AssetDefinition& assetDefn ) : isLoaded
                                        name( assetDefn.name ),
                                        hash( assetDefn.hash ),
                                        category( assetDefn.category ),
+                                       compressionType( assetDefn.compressionType ),
                                        filters( assetDefn.filters ),
-                                       gates( assetDefn.gates ),
-                                       fileData( NULL ), 
-                                       fileSize( assetDefn.fileSize ),
-                                       compressionType( assetDefn.compressionType )
+                                       gates( assetDefn.gates )//,
+                                       //fileData( NULL ), 
+                                       //fileSize( assetDefn.fileSize ),
+                                       //compressionType( assetDefn.compressionType )
 {
-   if( assetDefn.fileData )
+   /*if( assetDefn.fileData )
    {
       fileData = new U8[ assetDefn.fileSize ];
       memcpy( fileData, assetDefn.fileData, assetDefn.fileSize );
-   }
+   }*/
+
+   listOfVersionedFiles = assetDefn.listOfVersionedFiles;
 
 }
 
 AssetDefinition::~AssetDefinition()
 {
-   delete [] fileData;
+   //delete [] fileData;
 }
 
 AssetDefinition& AssetDefinition:: operator = ( const AssetDefinition& assetDefn )
@@ -218,30 +263,56 @@ AssetDefinition& AssetDefinition:: operator = ( const AssetDefinition& assetDefn
    name = assetDefn.name;
    hash = assetDefn.hash;
    category = assetDefn.category;
+   compressionType = assetDefn.compressionType;
    filters = assetDefn.filters;
    gates = assetDefn.gates;
-   fileSize = assetDefn.fileSize;
+  /* fileSize = assetDefn.fileSize;
    compressionType = assetDefn.compressionType;
 
    if( assetDefn.fileData )
    {
       fileData = new U8[ assetDefn.fileSize ];
       memcpy( fileData, assetDefn.fileData, assetDefn.fileSize );
-   }
+   }*/
+
+   listOfVersionedFiles = assetDefn.listOfVersionedFiles;
 
    return *this;
 }
+
+bool     AssetDefinition:: FindFile( int version, LoadedFile& file ) const
+{
+   vector< LoadedFile >::const_reverse_iterator it = listOfVersionedFiles.rbegin();
+   while( it != listOfVersionedFiles.rend() )
+   {
+      if( it->version <= version )
+      {
+         file = *it;
+         return true;
+      }
+      it++;
+   }
+
+   return false;
+}
+
 
 void  AssetDefinition:: SetupHash()
 {
    if( name.size() > 0 )
    {
       string lowerCaseString = ConvertStringToLower( name );
+      if( compressionType.size() )
+         lowerCaseString += compressionType;// adding hashing by compression type
+
       ConvertToString( GenerateUniqueHash( lowerCaseString ), hash );
    }
    else
    {
       string lowerCaseString = ConvertStringToLower( name );
+      if( compressionType.size() )
+         lowerCaseString += compressionType;// adding hashing by compression type
+
       ConvertToString( GenerateUniqueHash( lowerCaseString ), hash );
    }
 
@@ -253,7 +324,42 @@ void  AssetDefinition:: SetupHash()
 
 bool  AssetDefinition:: LoadFile()
 {
-   ifstream file ( path.c_str(), ios::in|ios::binary|ios::ate);
+   vector< FileVersion > fullyQualifiedPaths;
+   FindFilesInSubdirectories( path, fullyQualifiedPaths );
+   PrintFileDetails( path, fullyQualifiedPaths );
+
+   if( fullyQualifiedPaths.size() == 0 )
+   {
+      if( listOfVersionedFiles.size() == 0 )
+         isLoaded = false;
+
+      return false;
+   }
+
+   listOfVersionedFiles.clear();
+
+   vector< FileVersion > :: iterator it = fullyQualifiedPaths.begin();
+   while( it != fullyQualifiedPaths.end() )
+   {
+      U8* fileData = NULL;
+      int fileSize = 0;
+      FileVersion ver = *it++;
+      if( ::LoadFile( ver.filePath, fileData, fileSize ) == true )
+      {
+         LoadedFile lf( ver );
+         lf.fileData = fileData;
+         lf.fileSize = fileSize;
+         lf.compressionType = 0;
+         listOfVersionedFiles.push_back( lf );
+      }
+   }
+
+   isLoaded = true;
+   return true;
+
+   //
+
+  /* ifstream file ( path.c_str(), ios::in|ios::binary|ios::ate);
    if (file.is_open())
    {
       delete fileData;// delete any previous data
@@ -262,7 +368,7 @@ bool  AssetDefinition:: LoadFile()
       file.seekg (0, ios::beg);
       file.read ( reinterpret_cast< char* >( fileData ), fileSize);
       file.close();
-      isLoaded = true;
+      
 
       fileModificationTime = GetFileModificationTime( path );
    }
@@ -272,7 +378,28 @@ bool  AssetDefinition:: LoadFile()
    }
 
    
-   return true;
+   return true;*/
+}
+
+
+bool  AssetDefinition:: IsFileChanged() const 
+{
+/*   struct stat fileInfo;
+   stat( path.c_str(), &fileInfo);
+   if( fileModificationTime != fileInfo.st_mtime )
+   {
+      return true;
+   }
+   return false;*/
+
+   vector< LoadedFile >::const_iterator it = listOfVersionedFiles.begin();
+   while( it != listOfVersionedFiles.end() )
+   {
+      const LoadedFile& file = *it++;
+      if( file.lastModifiedTime != GetFileModificationTime( file.filePath ) )
+         return true;
+   }
+   return false;
 }
 
 bool  AssetDefinition:: IsDefinitionComplete()
@@ -288,17 +415,6 @@ bool  AssetDefinition:: IsDefinitionComplete()
          return false;
    }
    return true;
-}
-
-bool  AssetDefinition:: IsFileChanged() const 
-{
-   struct stat fileInfo;
-   stat( path.c_str(), &fileInfo);
-   if( fileModificationTime != fileInfo.st_mtime )
-   {
-      return true;
-   }
-   return false;
 }
 
 void  AssetDefinition:: Print()
@@ -339,8 +455,12 @@ int   Findpriority( const string& value )
 }
 
 //////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////
 
 
+//////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////
 
 bool  FillInAsset( string& line, AssetDefinition& asset )
@@ -431,6 +551,11 @@ bool  FillInAsset( string& line, AssetDefinition& asset )
          {
             return ParseListOfItems( asset.gates, value, ",", "[]{}" );
          }
+         else if( potentionalKey == "compressiontype" )
+         {
+            asset.compressionType = value;
+            return true;
+         }
          else if( potentionalKey == "notes" )
          {
             return true;// ignore notes
@@ -451,7 +576,7 @@ bool  FillInAsset( string& line, AssetDefinition& asset )
 
 
 //////////////////////////////////////////////////////////////////////////
-
+/*
 bool  FillInLayout( string& line, AssetDefinition& asset )
 {
    vector< string > listOfStuff;
@@ -523,7 +648,7 @@ bool  FillInLayout( string& line, AssetDefinition& asset )
    }
 
    return false;
-}
+}*/
 
 //////////////////////////////////////////////////////////////////////////
 
@@ -589,8 +714,8 @@ bool  AssetOrganizer::ReplaceExistingAssetBasedOnHash( AssetDefinition& asset )
 
       if( testAsset.productId == asset.productId )
       {
-         if( testAsset.hash == asset.hash || 
-            ( testAsset.name.size() > 0 && testAsset.name == asset.name )// these are the same item...
+         if( testAsset.hash == asset.hash  
+            //|| ( testAsset.name.size() > 0 && testAsset.name == asset.name )// these are the same item...
              )
          {
             // the file will self update if the time has changed, so don't do this.
@@ -743,7 +868,7 @@ bool  AssetOrganizer::LoadAssetManifest()
 
 //////////////////////////////////////////////////////////////////////////
 
-bool  AssetOrganizer::GetListOfAssets( U8 productId, int platformId, vector< string >& listOfAssetsByHash ) const
+bool  AssetOrganizer::GetListOfAssets( U8 productId, int platformId, const string& compressionType, vector< string >& listOfAssetsByHash ) const
 {
    listOfAssetsByHash.clear();
 
@@ -753,7 +878,11 @@ bool  AssetOrganizer::GetListOfAssets( U8 productId, int platformId, vector< str
    {
       if( it->productId == productId )
       {
-         listOfAssetsByHash.push_back( it->hash );
+         if( compressionType.size() == 0 ||
+            it->compressionType == compressionType )
+         {
+            listOfAssetsByHash.push_back( it->hash );
+         }
       }
       it++;
    }
@@ -763,9 +892,16 @@ bool  AssetOrganizer::GetListOfAssets( U8 productId, int platformId, vector< str
    return false;
 }
 
+bool  DoesCompressionMatch( const string& compressionRequired, const string& compressionMatch )
+{
+   if( compressionRequired.size() == 0 ||
+      compressionRequired == compressionMatch )
+      return true;
+   return false;
+}
 //////////////////////////////////////////////////////////////////////////
 
-bool  AssetOrganizer::GetListOfAssets( int platformId, const set< string >& listOfFilters, vector< string >& listOfAssetsByHash, int maxNum ) const
+bool  AssetOrganizer::GetListOfAssets( int platformId, const set< string >& listOfFilters, const string& compressionType, vector< string >& listOfAssetsByHash, int maxNum ) const
 {
    listOfAssetsByHash.clear();
 
@@ -789,9 +925,12 @@ bool  AssetOrganizer::GetListOfAssets( int platformId, const set< string >& list
             {
                if( listOfFilters.find( *gateIt ) != listOfFilters.end() )
                {
-                  listOfAssetsByHash.push_back( it->hash );
-                  wasAdded = true;
-                  break;
+                  if( DoesCompressionMatch( compressionType, it->compressionType ) )
+                  {
+                     listOfAssetsByHash.push_back( it->hash );
+                     wasAdded = true;
+                     break;
+                  }
                }
                gateIt++;
             }
@@ -813,13 +952,19 @@ bool  AssetOrganizer::GetListOfAssets( int platformId, const set< string >& list
                }
                if( filterFound == false )// it's not there
                {
-                  listOfAssetsByHash.push_back( it->hash );
+                  if( DoesCompressionMatch( compressionType, it->compressionType ) )
+                  {
+                     listOfAssetsByHash.push_back( it->hash );
+                  }
                }
             }
          }
          else
          {
-            listOfAssetsByHash.push_back( it->hash );
+            if( DoesCompressionMatch( compressionType, it->compressionType ) )
+            {
+               listOfAssetsByHash.push_back( it->hash );
+            }
          }
       }
       it++;
@@ -871,7 +1016,7 @@ void  AssetOrganizer::LoadAllAssets( time_t& currentTime )
    if( m_assets.size() == 0 || m_allFilesAreNowLoaded == true || m_isInitializedProperly == false )
       return;
 
-   if( difftime( currentTime, m_lastFileLoadedTime ) >= 0.3 ) // 1/3rd of a second
+   if( difftime( currentTime, m_lastFileLoadedTime ) >= 0.2 ) // 1/5th of a second
    {
       m_lastFileLoadedTime = currentTime;
 

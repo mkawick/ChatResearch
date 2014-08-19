@@ -71,6 +71,20 @@ void     DiplodocusContact::ServerWasIdentified( IChainedInterface* khaan )
    m_serversNeedingUpdate.push_back( localKhaan->GetServerId() );
 }
 
+/////////////////////////////////////////////////////////////////////////////////
+
+void     DiplodocusContact::InputRemovalInProgress( IChainedInterface * chainedInput )
+{
+   KhaanContact* khaan = static_cast< KhaanContact* >( chainedInput );
+
+   SetupClientWaitingToBeRemoved( khaan );
+
+   string currentTime = GetDateInUTC();
+   string printer = "Client disconnection at time:" + currentTime + " from " + inet_ntoa( khaan->GetIPAddress().sin_addr );
+   cout << printer << endl;
+
+   PrintDebugText( "** InputRemovalInProgress" , 1 );
+}
 
 //---------------------------------------------------------------
 
@@ -597,6 +611,9 @@ int      DiplodocusContact::CallbackFunction()
          }
       }
    }
+
+   CleanupOldClientConnections( "KhaanContact" );
+
    UpdateAllConnections();
 
    int numClients = static_cast< int >( m_connectedClients.size() );

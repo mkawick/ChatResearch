@@ -187,10 +187,10 @@ public:
    //------------------------- asset -------------------------------
    bool     RequestListOfAssetCategories();
    
-   bool     RequestListOfAssets( const string& category, int platformId = Platform_ios );
-   bool     RequestAssetByHash( const string& assetHash );
-   bool     RequestAssetByName( const string& assetName );
-   bool     RequestAvatarById( U32 id );
+   bool     RequestListOfAssets( const string& category, int platformId = Platform_ios, const string fileCompression = "" );
+   bool     RequestAssetByHash( const string& assetHash, int fileVersion = 0 );
+   bool     RequestAssetByName( const string& assetName, int fileVersion = 0 );
+   bool     RequestAvatarById( U32 id, int fileVersion = 0 );
 
    bool     RegisterDevice( const string& playdekUuid, const string& deviceName, PlatformType platformId, const string& vendorProvidedDeviceId );// platformId = Platform_ios ); 
    bool     RequestListOfDevicesForThisGame( int platformId = Platform_ios );

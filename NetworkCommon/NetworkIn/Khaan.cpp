@@ -25,36 +25,17 @@ using boost::format;
 #include "Khaan.h"
 #include "Diplodocus.h"
 
-//-----------------------------------------------------------------------
-
-Khaan :: Khaan() : ChainedInterface< BasePacket* >(), 
-                  m_socketId (0), 
-                  m_bufferEvent(NULL), 
-                  m_listeningPort( 0 ),
-                  m_timeOfConnection( 0 ),
-                  m_useLibeventToSend( true ),
-                  m_criticalFailure( false ),
-                  m_isInTelnetMode( false ),
-                  m_isDisconnected( false ),
-                  m_outboundBuffer( NULL ),
-                  m_isExpectingMoreDataInPreviousPacket( false ),
-                  m_expectedBytesReceivedSoFar( 0 ),
-                  m_expectedBytes( 0 ),
-                  m_versionNumberMinor( NetworkVersionMinor )
-                  
-{
-   m_tempBuffer[0] = 0;
-   m_tempBuffer[1] = 0;
-   SetOutboudBufferSize( MaxBufferSize + 1024 );
-}
+/////////////////////////////////////////////////////////////////
 
 Khaan ::Khaan( int socketId, bufferevent* be, int connectionId ) : ChainedInterface< BasePacket* >(), 
                                                                   m_socketId( socketId ), 
                                                                   m_bufferEvent( be ), 
                                                                   m_listeningPort( 0 ),
                                                                   m_timeOfConnection( 0 ),
+                                                                  m_timeOfDisconnection( 0 ),
                                                                   m_useLibeventToSend( true ),
                                                                   m_criticalFailure( false ),
+                                                                  m_denyAllFutureData( false ),
                                                                   m_isInTelnetMode( false ),
                                                                   m_isDisconnected( false ),
                                                                   m_outboundBuffer( NULL ),
@@ -70,7 +51,7 @@ Khaan ::Khaan( int socketId, bufferevent* be, int connectionId ) : ChainedInterf
    SetOutboudBufferSize( MaxBufferSize + 1024 );
 }
 
-//-----------------------------------------------------------------------
+/////////////////////////////////////////////////////////////////
 
 Khaan ::~Khaan()
 {
@@ -84,8 +65,13 @@ Khaan ::~Khaan()
 #endif
 }
 
-//-----------------------------------------------------------------------
-//-----------------------------------------------------------------------------
+/////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////
+
+void     Khaan::DenyAllFutureData() 
+{ 
+   m_denyAllFutureData = true; 
+}
 
 void   Khaan ::PreCleanup()
 {
@@ -103,14 +89,29 @@ void   Khaan ::PreCleanup()
    }
 }
 
-//-----------------------------------------------------------------------------
+/////////////////////////////////////////////////////////////////
 
 void	Khaan :: SetIPAddress( const sockaddr_in& addr )
 {
 	m_ipAddress = addr;
 }
-//-----------------------------------------------------------------------------
-//-----------------------------------------------------------------------------
+
+/////////////////////////////////////////////////////////////////
+
+bool     Khaan :: HasDeleteTimeElapsed( time_t& currentTime, int testTime ) const
+{
+   if( m_timeOfDisconnection == 0 )
+      return false;
+
+   if( difftime( currentTime, m_timeOfDisconnection ) >= testTime ) // once per second
+   {
+      return true;
+   }
+   return false;
+}
+
+/////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////
 
 bool	Khaan :: OnDataReceived( const U8* data, int length )
 {
@@ -138,12 +139,15 @@ bool	Khaan :: OnDataReceived( const U8* data, int length )
    }
 
    if( packetIn )
-      delete packetIn;
+   {
+      PacketFactory factory;
+      factory.CleanupPacket( packetIn );
+   }
 
    return true;
 }
 
-//-----------------------------------------------------------------------------
+/////////////////////////////////////////////////////////////////
 
 bool	Khaan :: Update()
 {
@@ -159,6 +163,11 @@ bool	Khaan :: Update()
    if( m_packetsOut.size() || m_packetsIn.size() )// we didn't finish
    {
       cout << "Remaining packet out count: " << m_packetsOut.size() << endl;
+      return false;
+   }
+   if( m_denyAllFutureData && m_packetsOut.size() == 0 ) // shut it down
+   {
+      CloseConnection();
       return false;
    }
 
@@ -177,7 +186,7 @@ void  Khaan :: SetOutboudBufferSize( U32 size )
    m_outboundBuffer = new U8[ m_maxBytesToSend ];
 }
 
-//------------------------------------------------------------------------------
+/////////////////////////////////////////////////////////////////
 
 void	Khaan :: UpdateInwardPacketList()
 {
@@ -209,7 +218,7 @@ void	Khaan :: UpdateInwardPacketList()
    }
 }
 
-//------------------------------------------------------------------------------
+/////////////////////////////////////////////////////////////////
 
 int	Khaan :: SendData( const U8* buffer, int length )
 {
@@ -241,7 +250,7 @@ int	Khaan :: SendData( const U8* buffer, int length )
    return send( m_socketId, (const char* )buffer, length, 0 );
 }
 
-//------------------------------------------------------------------------------
+/////////////////////////////////////////////////////////////////
 
 bool  Khaan :: HandleTelnetModeData( const U8* data, int length )
 {
@@ -259,7 +268,7 @@ bool  Khaan :: HandleTelnetModeData( const U8* data, int length )
    return true;
 }
 
-//------------------------------------------------------------------------------
+/////////////////////////////////////////////////////////////////
 
 void  Khaan::SendTelnetInstructions()
 {
@@ -273,12 +282,17 @@ void  Khaan::SendTelnetInstructions()
    SendData( reinterpret_cast< const U8* >( notice.c_str() ), notice.size() );
 }
 
-//------------------------------------------------------------------------------
+/////////////////////////////////////////////////////////////////
 
 int	Khaan :: UpdateOutwardPacketList()
 {
    if( m_packetsOut.size() == 0 || m_isDisconnected )
       return 0;
+
+   m_outputChainListMutex.lock();
+   deque< BasePacket* > localQueue = m_packetsOut;
+   m_packetsOut.clear();
+   m_outputChainListMutex.unlock();
 
    int length;
    int numPacketsPackaged = 0;
@@ -292,13 +306,13 @@ int	Khaan :: UpdateOutwardPacketList()
    int sizeOfHeader = sizeof( sizeOfLastWrite );
    int sizeSent = 0;
 
-   while( m_packetsOut.size() ) 
+   while( localQueue.size() ) 
    {
       offset = 0;
       
       length = sizeOfHeader;// reserve space
 
-      BasePacket* packet = m_packetsOut.front();      
+      BasePacket* packet = localQueue.front();
       packet->SerializeOut( m_outboundBuffer, length, m_versionNumberMinor );
     /*  if( packet->packetType == 9 )
       {
@@ -314,35 +328,55 @@ int	Khaan :: UpdateOutwardPacketList()
       Serialize::Out( m_outboundBuffer, offset, sizeOfLastWrite, m_versionNumberMinor );// write in the size
 
       SendData( m_outboundBuffer, length );
-      m_packetsOut.pop_front();
+      localQueue.pop_front();
       TrackOutwardPacketType( packet ); 
       factory.CleanupPacket( packet );
+   }
+
+   if( localQueue.size() ) // remainder
+   {
+      m_outputChainListMutex.lock();
+      deque< BasePacket* >::reverse_iterator it = localQueue.rbegin();// reverse order
+      while( it != localQueue.rend() )
+      {
+         BasePacket* packet = *it++;
+         m_packetsOut.push_front( packet );
+      }
+      m_outputChainListMutex.unlock();
    }
 
    return sizeSent;
 }
 
-//---------------------------------------------------------------
+/////////////////////////////////////////////////////////////////
 
 bool  Khaan :: AddInputChainData( BasePacket*, U32 filingData ) 
 { 
    return false; 
 }
 
-//---------------------------------------------------------------
+/////////////////////////////////////////////////////////////////
 
 bool Khaan :: AddOutputChainData( BasePacket* packet, U32 filingData ) 
 { 
    if( m_criticalFailure )
       return false;
 
-  // m_outputChainListMutex.lock();
+   m_outputChainListMutex.lock();
    m_packetsOut.push_back( packet );
-  // m_outputChainListMutex.unlock();
+   if( packet->packetType == 221 )
+   {
+      cout << "Bad packet:" << endl;
+      cout << "Type" << (int)packet->packetType << endl;
+      cout << "Subtype" << (int)packet->packetSubType << endl;
+      cout << "Game id" << (int)packet->gameProductId << endl;
+      assert( packet->packetType != 221 );
+   }
+   m_outputChainListMutex.unlock();
    return true; 
 }
 
-//-----------------------------------------------------------------------------
+/////////////////////////////////////////////////////////////////
 
 void  Khaan :: OnDataWritten( struct bufferevent *bev, void *user_data ) 
 {
@@ -353,8 +387,8 @@ void  Khaan :: OnDataWritten( struct bufferevent *bev, void *user_data )
          //bufferevent_free(bev);
      }*/
 }
-//---------------------------------------------------------------
-//---------------------------------------------------------------
+/////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////
 
 void     Khaan :: RegisterToReceiveNetworkTraffic()
 {
@@ -380,8 +414,8 @@ void     Khaan :: RegisterToReceiveNetworkTraffic()
    time( &m_timeOfConnection );
 }
 
-//---------------------------------------------------------------
-//---------------------------------------------------------------
+/////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////
 
 // Called by libevent when there is data to read.
 void     Khaan :: OnDataAvailable( struct bufferevent* bufferEventObj, void* arg )
@@ -434,7 +468,7 @@ void     Khaan :: OnDataAvailable( struct bufferevent* bufferEventObj, void* arg
    }
 }
 
-//---------------------------------------------------------------
+/////////////////////////////////////////////////////////////////
 
 void     Khaan :: FlushReadBuffer()
 {
@@ -442,19 +476,72 @@ void     Khaan :: FlushReadBuffer()
    bufferevent_flush( GetBufferEvent(), EV_READ, BEV_FINISHED );
 }
 
-//---------------------------------------------------------------
+/////////////////////////////////////////////////////////////////
 
 void     Khaan :: CloseConnection()
 {
    m_isDisconnected = true;
-   if( GetBufferEvent() )
+   if( GetBufferEvent() ) // this is set to NULL in Cleanup
    {
       bufferevent_free( GetBufferEvent() );
       Cleanup();
    }
 }
 
-//---------------------------------------------------------------
+/////////////////////////////////////////////////////////////////
+
+/////////////////////////////////////////////////////////////////
+
+void    Khaan :: Cleanup()
+{
+   PreCleanup();
+
+   CleanupAllChainDependencies();
+
+   // flush all pending packets
+   ClearAllPacketsIn();
+   ClearAllPacketsOut();
+
+   m_bufferEvent = NULL;
+   //bufferevent_free( GetBufferEvent() );
+   //m_bufferEvent = NULL;
+}
+
+/////////////////////////////////////////////////////////////////
+
+void     Khaan :: ClearAllPacketsIn()
+{
+   m_inputChainListMutex.lock();
+   deque< BasePacket* > localQueue = m_packetsIn;
+   m_packetsIn.clear();
+   m_inputChainListMutex.unlock();
+
+   while( localQueue.size() )
+   {
+      BasePacket* packet = localQueue.front();
+      localQueue.pop_front();
+      delete packet;
+   }
+}
+
+/////////////////////////////////////////////////////////////////
+
+void     Khaan :: ClearAllPacketsOut()
+{
+   m_outputChainListMutex.lock();
+   deque< BasePacket* > localQueue = m_packetsOut;
+   m_packetsOut.clear();
+   m_outputChainListMutex.unlock();
+
+   while( localQueue.size() )
+   {
+      BasePacket* packet = localQueue.front();
+      localQueue.pop_front();
+      delete packet;
+   }
+}
+
+/////////////////////////////////////////////////////////////////
 
 // Called by libevent when there is an error on the underlying socket descriptor.
 void	   Khaan::OnSocketError( struct bufferevent* bufferEventObj, short events, void* context )
@@ -472,54 +559,8 @@ void	   Khaan::OnSocketError( struct bufferevent* bufferEventObj, short events, 
       cout << "Client socket error, disconnecting." << endl;
    }
 
-   khaan->Cleanup();
-   delete khaan;
+   //khaan->m_isDisconnected = true; // prevents handling of future data... just in case
+   khaan->PreCleanup();
 }
 
-//-----------------------------------------------------------------------------
-
-void    Khaan :: Cleanup()
-{
-   PreCleanup();
-
-   CleanupAllChainDependencies();
-
-   // flush all pending packets
-   ClearAllPacketsIn();
-   ClearAllPacketsOut();
-
-   m_bufferEvent = NULL;
-   //bufferevent_free( GetBufferEvent() );
-   //m_bufferEvent = NULL;
-}
-
-//---------------------------------------------------------------
-
-void     Khaan :: ClearAllPacketsIn()
-{
-   while( m_packetsIn.size() )
-   {
-      BasePacket* packet = m_packetsIn.front();
-      m_packetsIn.pop_front();
-      delete packet;
-   }
-}
-
-//---------------------------------------------------------------
-
-void     Khaan :: ClearAllPacketsOut()
-{
-   while( m_packetsOut.size() )
-   {
-      BasePacket* packet = m_packetsOut.front();
-      m_packetsOut.pop_front();
-      delete packet;
-   }
-}
-
-//---------------------------------------------------------------
-
-
-//---------------------------------------------------------------
-//-----------------------------------------------------------------------------
-//-----------------------------------------------------------------------------
+/////////////////////////////////////////////////////////////////

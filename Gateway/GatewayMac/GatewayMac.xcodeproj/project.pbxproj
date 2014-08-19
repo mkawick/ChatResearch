@@ -1,0 +1,418 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 46;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		702214221759250900476F8D /* GatewayMac.1 in CopyFiles */ = {isa = PBXBuildFile; fileRef = 702214211759250900476F8D /* GatewayMac.1 */; };
+		70221482175925C400476F8D /* CommandLineParser.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 7022147E175925C400476F8D /* CommandLineParser.cpp */; };
+		70221483175925C400476F8D /* Utils.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 70221480175925C400476F8D /* Utils.cpp */; };
+		7022148A175925D500476F8D /* Serialize.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 70221486175925D500476F8D /* Serialize.cpp */; };
+		70221496175925F300476F8D /* BasePacket.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 7022148B175925F300476F8D /* BasePacket.cpp */; };
+		70221497175925F300476F8D /* ChatPacket.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 7022148E175925F300476F8D /* ChatPacket.cpp */; };
+		70221498175925F300476F8D /* GamePacket.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 70221490175925F300476F8D /* GamePacket.cpp */; };
+		70221499175925F300476F8D /* PacketFactory.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 70221492175925F300476F8D /* PacketFactory.cpp */; };
+		7022149A175925F300476F8D /* ServerToServerPacket.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 70221494175925F300476F8D /* ServerToServerPacket.cpp */; };
+		7022149D1759261300476F8D /* Fruitadens.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 7022149B1759261300476F8D /* Fruitadens.cpp */; };
+		702214A01759262D00476F8D /* Diplodocus.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 7022149E1759262D00476F8D /* Diplodocus.cpp */; };
+		702214A41759264800476F8D /* Khaan.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 702214A21759264800476F8D /* Khaan.cpp */; };
+		702214AA1759265A00476F8D /* Thread.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 702214A71759265A00476F8D /* Thread.cpp */; };
+		702214AC1759277C00476F8D /* libncurses.5.4.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 702214AB1759277C00476F8D /* libncurses.5.4.dylib */; };
+		707F585F1759497A006FEA41 /* DiplodocusGateway.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 707F58571759497A006FEA41 /* DiplodocusGateway.cpp */; };
+		707F58601759497A006FEA41 /* FruitadensGateway.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 707F58591759497A006FEA41 /* FruitadensGateway.cpp */; };
+		707F58611759497A006FEA41 /* Gateway.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 707F585B1759497A006FEA41 /* Gateway.cpp */; };
+		707F58621759497A006FEA41 /* KhaanConnector.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 707F585D1759497A006FEA41 /* KhaanConnector.cpp */; };
+		70F7BB621760F20B00DCCA7E /* libevent_pthreads.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 70F7BB601760F20B00DCCA7E /* libevent_pthreads.a */; };
+		70F7BB631760F20B00DCCA7E /* libevent.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 70F7BB611760F20B00DCCA7E /* libevent.a */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		7022141A1759250900476F8D /* CopyFiles */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = /usr/share/man/man1/;
+			dstSubfolderSpec = 0;
+			files = (
+				702214221759250900476F8D /* GatewayMac.1 in CopyFiles */,
+			);
+			runOnlyForDeploymentPostprocessing = 1;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
+/* Begin PBXFileReference section */
+		7022141C1759250900476F8D /* GatewayMac */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = GatewayMac; sourceTree = BUILT_PRODUCTS_DIR; };
+		702214211759250900476F8D /* GatewayMac.1 */ = {isa = PBXFileReference; lastKnownFileType = text.man; path = GatewayMac.1; sourceTree = "<group>"; };
+		7022147E175925C400476F8D /* CommandLineParser.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = CommandLineParser.cpp; path = ../../NetworkCommon/Utils/CommandLineParser.cpp; sourceTree = "<group>"; };
+		7022147F175925C400476F8D /* CommandLineParser.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = CommandLineParser.h; path = ../../NetworkCommon/Utils/CommandLineParser.h; sourceTree = "<group>"; };
+		70221480175925C400476F8D /* Utils.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = Utils.cpp; path = ../../NetworkCommon/Utils/Utils.cpp; sourceTree = "<group>"; };
+		70221481175925C400476F8D /* Utils.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = Utils.h; path = ../../NetworkCommon/Utils/Utils.h; sourceTree = "<group>"; };
+		70221484175925D500476F8D /* DataTypes.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = DataTypes.h; path = ../../NetworkCommon/DataTypes.h; sourceTree = "<group>"; };
+		70221485175925D500476F8D /* Platform.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = Platform.h; path = ../../NetworkCommon/Platform.h; sourceTree = "<group>"; };
+		70221486175925D500476F8D /* Serialize.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = Serialize.cpp; path = ../../NetworkCommon/Serialize.cpp; sourceTree = "<group>"; };
+		70221487175925D500476F8D /* Serialize.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = Serialize.h; path = ../../NetworkCommon/Serialize.h; sourceTree = "<group>"; };
+		70221488175925D500476F8D /* ServerConstants.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = ServerConstants.h; path = ../../NetworkCommon/ServerConstants.h; sourceTree = "<group>"; };
+		70221489175925D500476F8D /* ServerType.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = ServerType.h; path = ../../NetworkCommon/ServerType.h; sourceTree = "<group>"; };
+		7022148B175925F300476F8D /* BasePacket.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = BasePacket.cpp; path = ../../NetworkCommon/Packets/BasePacket.cpp; sourceTree = "<group>"; };
+		7022148C175925F300476F8D /* BasePacket.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = BasePacket.h; path = ../../NetworkCommon/Packets/BasePacket.h; sourceTree = "<group>"; };
+		7022148D175925F300476F8D /* BasePacket.inl */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = BasePacket.inl; path = ../../NetworkCommon/Packets/BasePacket.inl; sourceTree = "<group>"; };
+		7022148E175925F300476F8D /* ChatPacket.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = ChatPacket.cpp; path = ../../NetworkCommon/Packets/ChatPacket.cpp; sourceTree = "<group>"; };
+		7022148F175925F300476F8D /* ChatPacket.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = ChatPacket.h; path = ../../NetworkCommon/Packets/ChatPacket.h; sourceTree = "<group>"; };
+		70221490175925F300476F8D /* GamePacket.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = GamePacket.cpp; path = ../../NetworkCommon/Packets/GamePacket.cpp; sourceTree = "<group>"; };
+		70221491175925F300476F8D /* GamePacket.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = GamePacket.h; path = ../../NetworkCommon/Packets/GamePacket.h; sourceTree = "<group>"; };
+		70221492175925F300476F8D /* PacketFactory.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = PacketFactory.cpp; path = ../../NetworkCommon/Packets/PacketFactory.cpp; sourceTree = "<group>"; };
+		70221493175925F300476F8D /* PacketFactory.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = PacketFactory.h; path = ../../NetworkCommon/Packets/PacketFactory.h; sourceTree = "<group>"; };
+		70221494175925F300476F8D /* ServerToServerPacket.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = ServerToServerPacket.cpp; path = ../../NetworkCommon/Packets/ServerToServerPacket.cpp; sourceTree = "<group>"; };
+		70221495175925F300476F8D /* ServerToServerPacket.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = ServerToServerPacket.h; path = ../../NetworkCommon/Packets/ServerToServerPacket.h; sourceTree = "<group>"; };
+		7022149B1759261300476F8D /* Fruitadens.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = Fruitadens.cpp; path = ../../NetworkCommon/NetworkOut/Fruitadens.cpp; sourceTree = "<group>"; };
+		7022149C1759261300476F8D /* Fruitadens.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = Fruitadens.h; path = ../../NetworkCommon/NetworkOut/Fruitadens.h; sourceTree = "<group>"; };
+		7022149E1759262D00476F8D /* Diplodocus.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = Diplodocus.cpp; path = ../../NetworkCommon/NetworkIn/Diplodocus.cpp; sourceTree = "<group>"; };
+		7022149F1759262D00476F8D /* Diplodocus.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = Diplodocus.h; path = ../../NetworkCommon/NetworkIn/Diplodocus.h; sourceTree = "<group>"; };
+		702214A11759264800476F8D /* Diplodocus.inl */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = Diplodocus.inl; path = ../../NetworkCommon/NetworkIn/Diplodocus.inl; sourceTree = "<group>"; };
+		702214A21759264800476F8D /* Khaan.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = Khaan.cpp; path = ../../NetworkCommon/NetworkIn/Khaan.cpp; sourceTree = "<group>"; };
+		702214A31759264800476F8D /* Khaan.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = Khaan.h; path = ../../NetworkCommon/NetworkIn/Khaan.h; sourceTree = "<group>"; };
+		702214A51759265A00476F8D /* ChainedInterface.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = ChainedInterface.h; path = ../../NetworkCommon/ChainedArchitecture/ChainedInterface.h; sourceTree = "<group>"; };
+		702214A61759265A00476F8D /* ChainedThread.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = ChainedThread.h; path = ../../NetworkCommon/ChainedArchitecture/ChainedThread.h; sourceTree = "<group>"; };
+		702214A71759265A00476F8D /* Thread.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = Thread.cpp; path = ../../NetworkCommon/ChainedArchitecture/Thread.cpp; sourceTree = "<group>"; };
+		702214A81759265A00476F8D /* Thread.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = Thread.h; path = ../../NetworkCommon/ChainedArchitecture/Thread.h; sourceTree = "<group>"; };
+		702214A91759265A00476F8D /* Thread.inl */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = Thread.inl; path = ../../NetworkCommon/ChainedArchitecture/Thread.inl; sourceTree = "<group>"; };
+		702214AB1759277C00476F8D /* libncurses.5.4.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libncurses.5.4.dylib; path = usr/lib/libncurses.5.4.dylib; sourceTree = SDKROOT; };
+		707F58571759497A006FEA41 /* DiplodocusGateway.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = DiplodocusGateway.cpp; path = ../../DiplodocusGateway.cpp; sourceTree = "<group>"; };
+		707F58581759497A006FEA41 /* DiplodocusGateway.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = DiplodocusGateway.h; path = ../../DiplodocusGateway.h; sourceTree = "<group>"; };
+		707F58591759497A006FEA41 /* FruitadensGateway.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = FruitadensGateway.cpp; path = ../../FruitadensGateway.cpp; sourceTree = "<group>"; };
+		707F585A1759497A006FEA41 /* FruitadensGateway.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = FruitadensGateway.h; path = ../../FruitadensGateway.h; sourceTree = "<group>"; };
+		707F585B1759497A006FEA41 /* Gateway.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = Gateway.cpp; path = ../../Gateway.cpp; sourceTree = "<group>"; };
+		707F585C1759497A006FEA41 /* GatewayCommon.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = GatewayCommon.h; path = ../../GatewayCommon.h; sourceTree = "<group>"; };
+		707F585D1759497A006FEA41 /* KhaanConnector.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = KhaanConnector.cpp; path = ../../KhaanConnector.cpp; sourceTree = "<group>"; };
+		707F585E1759497A006FEA41 /* KhaanConnector.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = KhaanConnector.h; path = ../../KhaanConnector.h; sourceTree = "<group>"; };
+		70F7BB601760F20B00DCCA7E /* libevent_pthreads.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libevent_pthreads.a; path = "../../../libevent/Mac-libs/libevent_pthreads.a"; sourceTree = "<group>"; };
+		70F7BB611760F20B00DCCA7E /* libevent.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libevent.a; path = "../../../libevent/Mac-libs/libevent.a"; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		702214191759250900476F8D /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				702214AC1759277C00476F8D /* libncurses.5.4.dylib in Frameworks */,
+				70F7BB621760F20B00DCCA7E /* libevent_pthreads.a in Frameworks */,
+				70F7BB631760F20B00DCCA7E /* libevent.a in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		702214131759250900476F8D = {
+			isa = PBXGroup;
+			children = (
+				702214AD17593A6F00476F8D /* LibeventCoreLibrary */,
+				702214AB1759277C00476F8D /* libncurses.5.4.dylib */,
+				702214281759253D00476F8D /* NetworkCommon */,
+				7022141E1759250900476F8D /* GatewayMac */,
+				7022141D1759250900476F8D /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		7022141D1759250900476F8D /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				7022141C1759250900476F8D /* GatewayMac */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		7022141E1759250900476F8D /* GatewayMac */ = {
+			isa = PBXGroup;
+			children = (
+				707F58571759497A006FEA41 /* DiplodocusGateway.cpp */,
+				707F58581759497A006FEA41 /* DiplodocusGateway.h */,
+				707F58591759497A006FEA41 /* FruitadensGateway.cpp */,
+				707F585A1759497A006FEA41 /* FruitadensGateway.h */,
+				707F585B1759497A006FEA41 /* Gateway.cpp */,
+				707F585C1759497A006FEA41 /* GatewayCommon.h */,
+				707F585D1759497A006FEA41 /* KhaanConnector.cpp */,
+				707F585E1759497A006FEA41 /* KhaanConnector.h */,
+				702214211759250900476F8D /* GatewayMac.1 */,
+			);
+			path = GatewayMac;
+			sourceTree = "<group>";
+		};
+		702214281759253D00476F8D /* NetworkCommon */ = {
+			isa = PBXGroup;
+			children = (
+				70221484175925D500476F8D /* DataTypes.h */,
+				70221485175925D500476F8D /* Platform.h */,
+				70221486175925D500476F8D /* Serialize.cpp */,
+				70221487175925D500476F8D /* Serialize.h */,
+				70221488175925D500476F8D /* ServerConstants.h */,
+				70221489175925D500476F8D /* ServerType.h */,
+				7022142D1759258100476F8D /* Utils */,
+				7022142C1759257700476F8D /* Packets */,
+				7022142B1759256E00476F8D /* NetworkOut */,
+				7022142A1759256400476F8D /* NetworkIn */,
+				702214291759255700476F8D /* ChainedArchitecture */,
+			);
+			name = NetworkCommon;
+			sourceTree = "<group>";
+		};
+		702214291759255700476F8D /* ChainedArchitecture */ = {
+			isa = PBXGroup;
+			children = (
+				702214A51759265A00476F8D /* ChainedInterface.h */,
+				702214A61759265A00476F8D /* ChainedThread.h */,
+				702214A71759265A00476F8D /* Thread.cpp */,
+				702214A81759265A00476F8D /* Thread.h */,
+				702214A91759265A00476F8D /* Thread.inl */,
+			);
+			name = ChainedArchitecture;
+			sourceTree = "<group>";
+		};
+		7022142A1759256400476F8D /* NetworkIn */ = {
+			isa = PBXGroup;
+			children = (
+				702214A11759264800476F8D /* Diplodocus.inl */,
+				702214A21759264800476F8D /* Khaan.cpp */,
+				702214A31759264800476F8D /* Khaan.h */,
+				7022149E1759262D00476F8D /* Diplodocus.cpp */,
+				7022149F1759262D00476F8D /* Diplodocus.h */,
+			);
+			name = NetworkIn;
+			sourceTree = "<group>";
+		};
+		7022142B1759256E00476F8D /* NetworkOut */ = {
+			isa = PBXGroup;
+			children = (
+				7022149B1759261300476F8D /* Fruitadens.cpp */,
+				7022149C1759261300476F8D /* Fruitadens.h */,
+			);
+			name = NetworkOut;
+			sourceTree = "<group>";
+		};
+		7022142C1759257700476F8D /* Packets */ = {
+			isa = PBXGroup;
+			children = (
+				7022148B175925F300476F8D /* BasePacket.cpp */,
+				7022148C175925F300476F8D /* BasePacket.h */,
+				7022148D175925F300476F8D /* BasePacket.inl */,
+				7022148E175925F300476F8D /* ChatPacket.cpp */,
+				7022148F175925F300476F8D /* ChatPacket.h */,
+				70221490175925F300476F8D /* GamePacket.cpp */,
+				70221491175925F300476F8D /* GamePacket.h */,
+				70221492175925F300476F8D /* PacketFactory.cpp */,
+				70221493175925F300476F8D /* PacketFactory.h */,
+				70221494175925F300476F8D /* ServerToServerPacket.cpp */,
+				70221495175925F300476F8D /* ServerToServerPacket.h */,
+			);
+			name = Packets;
+			sourceTree = "<group>";
+		};
+		7022142D1759258100476F8D /* Utils */ = {
+			isa = PBXGroup;
+			children = (
+				7022147E175925C400476F8D /* CommandLineParser.cpp */,
+				7022147F175925C400476F8D /* CommandLineParser.h */,
+				70221480175925C400476F8D /* Utils.cpp */,
+				70221481175925C400476F8D /* Utils.h */,
+			);
+			name = Utils;
+			sourceTree = "<group>";
+		};
+		702214AD17593A6F00476F8D /* LibeventCoreLibrary */ = {
+			isa = PBXGroup;
+			children = (
+				70F7BB601760F20B00DCCA7E /* libevent_pthreads.a */,
+				70F7BB611760F20B00DCCA7E /* libevent.a */,
+			);
+			name = LibeventCoreLibrary;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		7022141B1759250900476F8D /* GatewayMac */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 702214251759250900476F8D /* Build configuration list for PBXNativeTarget "GatewayMac" */;
+			buildPhases = (
+				702214181759250900476F8D /* Sources */,
+				702214191759250900476F8D /* Frameworks */,
+				7022141A1759250900476F8D /* CopyFiles */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = GatewayMac;
+			productName = GatewayMac;
+			productReference = 7022141C1759250900476F8D /* GatewayMac */;
+			productType = "com.apple.product-type.tool";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		702214141759250900476F8D /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				LastUpgradeCheck = 0460;
+				ORGANIZATIONNAME = "Mickey Kawick";
+			};
+			buildConfigurationList = 702214171759250900476F8D /* Build configuration list for PBXProject "GatewayMac" */;
+			compatibilityVersion = "Xcode 3.2";
+			developmentRegion = English;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+			);
+			mainGroup = 702214131759250900476F8D;
+			productRefGroup = 7022141D1759250900476F8D /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				7022141B1759250900476F8D /* GatewayMac */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXSourcesBuildPhase section */
+		702214181759250900476F8D /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				70221482175925C400476F8D /* CommandLineParser.cpp in Sources */,
+				70221483175925C400476F8D /* Utils.cpp in Sources */,
+				7022148A175925D500476F8D /* Serialize.cpp in Sources */,
+				70221496175925F300476F8D /* BasePacket.cpp in Sources */,
+				70221497175925F300476F8D /* ChatPacket.cpp in Sources */,
+				70221498175925F300476F8D /* GamePacket.cpp in Sources */,
+				70221499175925F300476F8D /* PacketFactory.cpp in Sources */,
+				7022149A175925F300476F8D /* ServerToServerPacket.cpp in Sources */,
+				7022149D1759261300476F8D /* Fruitadens.cpp in Sources */,
+				702214A01759262D00476F8D /* Diplodocus.cpp in Sources */,
+				702214A41759264800476F8D /* Khaan.cpp in Sources */,
+				702214AA1759265A00476F8D /* Thread.cpp in Sources */,
+				707F585F1759497A006FEA41 /* DiplodocusGateway.cpp in Sources */,
+				707F58601759497A006FEA41 /* FruitadensGateway.cpp in Sources */,
+				707F58611759497A006FEA41 /* Gateway.cpp in Sources */,
+				707F58621759497A006FEA41 /* KhaanConnector.cpp in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		702214231759250900476F8D /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ARCHS = "$(ARCHS_STANDARD_64_BIT)";
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++0x";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				GCC_C_LANGUAGE_STANDARD = gnu99;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_ENABLE_OBJC_EXCEPTIONS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				HEADER_SEARCH_PATHS = (
+					"$(SRCROOT)/../../../boost",
+					"$(SRCROOT)/../../../libevent/**",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 10.8;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = macosx;
+			};
+			name = Debug;
+		};
+		702214241759250900476F8D /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ARCHS = "$(ARCHS_STANDARD_64_BIT)";
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++0x";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = YES;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				GCC_C_LANGUAGE_STANDARD = gnu99;
+				GCC_ENABLE_OBJC_EXCEPTIONS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				HEADER_SEARCH_PATHS = (
+					"$(SRCROOT)/../../../boost",
+					"$(SRCROOT)/../../../libevent/**",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 10.8;
+				SDKROOT = macosx;
+			};
+			name = Release;
+		};
+		702214261759250900476F8D /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				LIBRARY_SEARCH_PATHS = (
+					"$(inherited)",
+					"\"$(SRCROOT)/../../../../../libevent/.libs\"",
+					"\"$(SRCROOT)/../../../libevent/Mac-libs\"",
+				);
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = Debug;
+		};
+		702214271759250900476F8D /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				LIBRARY_SEARCH_PATHS = (
+					"$(inherited)",
+					"\"$(SRCROOT)/../../../../../libevent/.libs\"",
+					"\"$(SRCROOT)/../../../libevent/Mac-libs\"",
+				);
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		702214171759250900476F8D /* Build configuration list for PBXProject "GatewayMac" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				702214231759250900476F8D /* Debug */,
+				702214241759250900476F8D /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		702214251759250900476F8D /* Build configuration list for PBXNativeTarget "GatewayMac" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				702214261759250900476F8D /* Debug */,
+				702214271759250900476F8D /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = 702214141759250900476F8D /* Project object */;
+}

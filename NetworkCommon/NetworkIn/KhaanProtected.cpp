@@ -14,7 +14,6 @@ using namespace std;
 //-----------------------------------------------------------------------------------------
 
 KhaanProtected::KhaanProtected( int id, bufferevent* be ): Khaan( id, be ),
-                  m_denyAllFutureData( false ),
                   m_mainOutputChain( NULL )
 {
 }
@@ -45,14 +44,6 @@ void  KhaanProtected::SendPacketToApp( BasePacket* packet )
       PacketFactory factory;
       factory.CleanupPacket( packet );
    }
-}
-
-//-----------------------------------------------------------------------------------------
-
-void  KhaanProtected::DenyAllFutureData() 
-{ 
-   m_denyAllFutureData = true; 
-   //m_gateway->TrackCountStats( StatTrackingConnections::StatTracking_UserBlocked, 1, 0 );
 }
 
 //-----------------------------------------------------------------------------------------

@@ -35,6 +35,7 @@ public:
    void     ChatChannelManagerNeedsUpdate() { m_chatRoomManagerNeedsUpdate = true; }
    void     InvitationManagerNeedsUpdate() { m_invitationManagerNeedsUpdate = true; }
    void     ServerWasIdentified( IChainedInterface* khaan );
+   void     InputRemovalInProgress( IChainedInterface * );
 
    bool     AddInputChainData( BasePacket* packet, U32 connectionId );
    bool     AddOutputChainData( BasePacket* packet, U32 connectionId );
