@@ -76,9 +76,9 @@ public:
    bool  SerializeIn( const U8* data, int& bufferOffset, int minorVersion );
    bool  SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const;
 
-   UuidString                          userUuid;
-   U8                                  whichGame;
-   SerializedKeyValueVector< string >  stats;
+   UuidString                                   userUuid;
+   U8                                           whichGame;
+   SerializedKeyValueVector< BoundedString64 >  stats;
 };
 
 
@@ -94,7 +94,7 @@ public:
 
    UuidString                          userUuid;
    U8                                  whichGame;
-   SerializedKeyValueVector< string >  stats;
+   SerializedKeyValueVector< BoundedString64 >  stats;
 };
 
 
@@ -196,9 +196,9 @@ public:
    bool  SerializeIn( const U8* data, int& bufferOffset, int minorVersion );
    bool  SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const;
 
-   unsigned int                        profileUserId;
-   int                                 gameType;
-   SerializedKeyValueVector< string >  userProfileStats;
+   unsigned int                                 profileUserId;
+   int                                          gameType;
+   SerializedKeyValueVector< string >           userProfileStats;// vulnerable
 };
 
 

@@ -24,12 +24,12 @@ public:
 
    void  Clear();
 
-   string      tournamentName;
-   UuidString  tournamentUuid;
-   string      beginDate;
-   string      endDate;
-   int         timePerRound;
-   int         timeUnitsPerRound;
+   BoundedString80      tournamentName;
+   UuidString           tournamentUuid;
+   TimeString           beginDate;
+   TimeString           endDate;
+   int                  timePerRound;
+   int                  timeUnitsPerRound;
   /* string   description;
    int      price;   /// lookup from products table
    bool     userCanEnter; // basically a first pass at approving a user's entry into the tournament. More of a first-pass denial.
@@ -92,10 +92,10 @@ public:
    bool  SerializeIn( const U8* data, int& bufferOffset, int minorVersion );
    bool  SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const;
 
-   string   message;
-   string   senderName;
-   UuidString  senderUuid;
-   int      type;
+   BoundedString140  message;
+   BoundedString80   senderName;
+   UuidString        senderUuid;
+   int               type;
 };
 
 
@@ -172,7 +172,7 @@ public:
    bool  SerializeIn( const U8* data, int& bufferOffset, int minorVersion );
    bool  SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const;
 
-   SerializedKeyValueVector< string > entrants;
+   SerializedKeyValueVector< UuidString > entrants;
 };
 
 ///////////////////////////////////////////////////////////////////
@@ -186,7 +186,7 @@ public:
    bool  SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const;
 
    UuidString                                      tournamentUuid;
-   FixedString60                                   customDeck;
+   BoundedString64                                 customDeck;
    SerializedVector< PurchaseServerDebitItem >     itemsToSpend;
 };
 
@@ -215,8 +215,8 @@ public:
    bool  SerializeIn( const U8* data, int& bufferOffset, int minorVersion );
    bool  SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const;
 
-   UuidString  userUuid;
-   string      uniqueTransactionId; // fill this in with some unique value that you need
+   UuidString        userUuid;
+   BoundedString32   uniqueTransactionId; // fill this in with some unique value that you need
 
    SerializedVector< PurchaseServerDebitItem > itemsToSpend;
 };
@@ -232,8 +232,8 @@ public:
    bool  SerializeIn( const U8* data, int& bufferOffset, int minorVersion );
    bool  SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const;
 
-   string      uniqueTransactionId; /// returned to the transaction server
-   int         result;
+   BoundedString32   uniqueTransactionId; /// returned to the transaction server
+   int               result;
 };
 
 ///////////////////////////////////////////////////////////////////
@@ -247,8 +247,8 @@ public:
    bool  SerializeIn( const U8* data, int& bufferOffset, int minorVersion );
    bool  SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const;
 
-   UuidString  userUuid;
-   string      uniqueTransactionId; // fill this in with some unique value that you need
+   UuidString        userUuid;
+   BoundedString32   uniqueTransactionId; // fill this in with some unique value that you need
 
    SerializedVector< PurchaseServerDebitItem > itemsToRefund;
 };
@@ -264,8 +264,8 @@ public:
    bool  SerializeIn( const U8* data, int& bufferOffset, int minorVersion );
    bool  SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const;
 
-   string      uniqueTransactionId; /// returned to the transaction server
-   int         result;
+   BoundedString32   uniqueTransactionId; /// returned to the transaction server
+   int               result;
  
 };
 

@@ -187,7 +187,7 @@ bool   DiplodocusGame::AddInputChainData( BasePacket* packet, U32 connectionId )
          {
             PacketListOfGames* packet = static_cast< PacketListOfGames* > ( unwrappedPacket );
             bool  isUserValidForThisGame = false;
-            KeyValueVectorIterator it = packet->games.begin();
+            SerializedKeyValueVector< BoundedString32 >::KeyValueVectorIterator it = packet->games.begin();
             while( it != packet->games.end() )
             {
                if( it->key == m_gameUuid )
@@ -571,7 +571,7 @@ bool  DiplodocusGame::HandlePacketFromOtherServer( BasePacket* packet, U32 conne
             if( m_callbacks )
             {
                KeyValueVector vec;
-               SerializedKeyValueVector< string >::KVIterator iter = stats->stats.begin();
+               SerializedKeyValueVector< BoundedString64 >::KVIterator iter = stats->stats.begin();
                while( iter != stats->stats.end() )
                {
                   const string& key = iter->key;
@@ -610,7 +610,7 @@ bool  DiplodocusGame::HandlePacketFromOtherServer( BasePacket* packet, U32 conne
 void  DiplodocusGame::IsUserAllowedToUseThisProduct( const PacketListOfGames* packet )
 {
    bool  isUserValidForThisGame = false;
-   KeyValueConstIterator it = packet->games.begin();
+   SerializedKeyValueVector< BoundedString32 >::const_KVIterator it = packet->games.begin();
    while( it != packet->games.end() )
    {
       if( it->key == m_gameUuid )

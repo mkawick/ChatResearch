@@ -316,15 +316,15 @@ void  KhaanServerToServer :: SaveOffServerIdentification( const PacketServerIden
    //if( m_serverName == packet->serverName && m_serverId == packet->serverId ) // prevent dups from reporting.
    //   return;
 
-   m_serverName = packet->serverName;
-   m_serverAddress = packet->serverAddress;
+   m_serverName = packet->serverName.c_str();
+   m_serverAddress = packet->serverAddress.c_str();
    m_serverId = packet->serverId;
    m_serverPort = packet->serverPort;
    m_serverType = packet->serverType; 
    m_isGameServer = packet->isGameServer;
    m_isController = packet->isController;
    m_gatewayType = packet->gatewayType;
-   m_externalIpAddress = packet->externalIpAddress;
+   m_externalIpAddress = packet->externalIpAddress.c_str();
    U8 gameProductId = packet->gameProductId;
 
    cout << "---------  Connected as S2S server to " << m_serverName << "  ------------------" << endl;

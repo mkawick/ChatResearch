@@ -432,7 +432,7 @@ bool     InvitationManager::RejectInvitation( const PacketInvitation_RejectInvit
       m_mainServer->SendErrorToClient( connectionId, PacketErrorReport::ErrorType_UserUnknown );
       return false;
    }
-   if( invite.inviteeUuid != rejecterUuid )
+   if( invite.inviteeUuid.c_str() != rejecterUuid )
    {
       m_mainServer->SendErrorToClient( connectionId, PacketErrorReport::ErrorType_Invitation_DoesNotExist );// you are not allowed to accept this.
       return false;
@@ -480,7 +480,7 @@ bool     InvitationManager::AcceptInvitation( const PacketInvitation_AcceptInvit
       m_mainServer->SendErrorToClient( connectionId, PacketErrorReport::ErrorType_UserUnknown );
       return false;
    }
-   if( invite.inviteeUuid != inviteeUuid )
+   if( inviteeUuid != invite.inviteeUuid.c_str() )
    {
       m_mainServer->SendErrorToClient( connectionId, PacketErrorReport::ErrorType_Invitation_DoesNotExist );// you are not allowed to accept this.
       return false;
@@ -792,15 +792,15 @@ void           InvitationManager::InsertInvitationIntoDb( const Invitation& invi
    dbQuery->isFireAndForget = true;
 
    string query = "INSERT INTO invitation SET inviter_id='";
-   query += invite.inviterUuid;
+   query += invite.inviterUuid.c_str();
    query += "', invitee_id='";
-   query += invite.inviteeUuid;
+   query += invite.inviteeUuid.c_str();
    query += "', group_uuid='";
-   query += invite.groupUuid;
+   query += invite.groupUuid.c_str();
    query += "', message='";
-   query += invite.message;
+   query += invite.message.c_str();
    query += "', uuid='";
-   query += invite.invitationUuid;
+   query += invite.invitationUuid.c_str();
    query += "', type=";
    query += boost::lexical_cast< string >( (U32) invite.type );
    dbQuery->query = query;

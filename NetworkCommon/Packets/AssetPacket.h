@@ -8,11 +8,11 @@ struct AssetInfo
 {
    U8       productId;
    bool     isOptional;
-   string   assetHash;
-   string   assetName;
-   string   version;
-   string   beginDate, endDate;
-   string   category;
+   string            assetHash;
+   BoundedString80   assetName;
+   FixedStringTiny   version;
+   TimeString        beginDate, endDate;
+   BoundedString32   category;
 
    AssetInfo()
    {
@@ -77,8 +77,8 @@ public:
    bool  SerializeIn( const U8* data, int& bufferOffset, int minorVersion );
    bool  SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const;
 
-   string   uuid;
-   string   loginKey;
+   UuidString     uuid;
+   FixedString80  loginKey;
 };
 
 ///////////////////////////////////////////////////////////////
@@ -101,10 +101,10 @@ public:
    bool  SerializeIn( const U8* data, int& bufferOffset, int minorVersion );
    bool  SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const;
 
-   string   message;
-   string   senderName;
-   string   senderUuid;
-   int      type;
+   BoundedString140  message;
+   BoundedString80   senderName;
+   UuidString        senderUuid;
+   int               type;
 };
 
 
@@ -118,9 +118,9 @@ public:
    bool  SerializeIn( const U8* data, int& bufferOffset, int minorVersion );
    bool  SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const;
 
-   UuidString  uuid;
-   string      loginKey;
-   int         platformId;
+   UuidString        uuid;
+   BoundedString80   loginKey;
+   int               platformId;
 };
 
 ///////////////////////////////////////////////////////////////////
@@ -146,9 +146,9 @@ public:
    bool  SerializeIn( const U8* data, int& bufferOffset, int minorVersion );
    bool  SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const;
 
-   UuidString  uuid;
-   string      loginKey;
-   int         platformId;
+   UuidString        uuid;
+   BoundedString80   loginKey;
+   int               platformId;
 };
 
 ///////////////////////////////////////////////////////////////////
@@ -175,8 +175,8 @@ public:
    bool  SerializeIn( const U8* data, int& bufferOffset, int minorVersion );
    bool  SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const;
 
-   UuidString  uuid;
-   string      loginKey;
+   UuidString        uuid;
+   BoundedString80   loginKey;
 };
 
 ///////////////////////////////////////////////////////////////////
@@ -189,7 +189,7 @@ public:
    bool  SerializeIn( const U8* data, int& bufferOffset, int minorVersion );
    bool  SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const;
 
-   SerializedVector< string >   assetcategory;
+   SerializedVector< BoundedString32 >   assetcategory;
 };
 
 ///////////////////////////////////////////////////////////////
@@ -203,8 +203,8 @@ public:
    bool  SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const;
 
    UuidString        uuid;
-   string            loginKey;
-   string            assetCategory;
+   BoundedString80   loginKey;
+   BoundedString32   assetCategory;
    int               platformId;
    FixedStringTiny   compressionType;
 };
@@ -219,8 +219,8 @@ public:
    bool  SerializeIn( const U8* data, int& bufferOffset, int minorVersion );
    bool  SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const;
 
-   string   assetCategory;
-   SerializedKeyValueVector< AssetInfo >   updatedAssets;
+   BoundedString80                        assetCategory;
+   SerializedKeyValueVector< AssetInfo >  updatedAssets;
 };
 
 ///////////////////////////////////////////////////////////////////
@@ -234,8 +234,8 @@ public:
    bool  SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const;
 
    UuidString        uuid;
-   string            loginKey;
-   string            assetHash;   
+   BoundedString80   loginKey;
+   BoundedString32   assetHash;   
    int               fileVersion;
 };
 

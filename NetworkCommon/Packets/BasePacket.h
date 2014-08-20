@@ -264,7 +264,7 @@ public:
    bool  SerializeIn( const U8* data, int& bufferOffset, int minorVersion );
    bool  SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const;
 
-   SerializedKeyValueVector< string > friendList;
+   SerializedKeyValueVector< UuidString > friendList;
 };
 
 ///////////////////////////////////////////////////////////////
@@ -322,8 +322,8 @@ public:
    bool  SerializeIn( const U8* data, int& bufferOffset, int minorVersion );
    bool  SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const;
 
-   UuidString   uuid;
-   string   username;
+   UuidString        uuid;
+   BoundedString80   username;
 };
 
 class PacketUserStateChange_Login : public PacketUserStateChange
@@ -334,8 +334,8 @@ public:
    bool  SerializeIn( const U8* data, int& bufferOffset, int minorVersion ) { return PacketUserStateChange::SerializeIn( data, bufferOffset, minorVersion ); }
    bool  SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const { return PacketUserStateChange::SerializeOut( data, bufferOffset, minorVersion ); }
 
-   UuidString   uuid;
-   string   username;
+   UuidString        uuid;
+   BoundedString80   username;
 };
 
 class PacketUserStateChange_Logout : public PacketUserStateChange
@@ -346,8 +346,8 @@ public:
    bool  SerializeIn( const U8* data, int& bufferOffset, int minorVersion ) { return PacketUserStateChange::SerializeIn( data, bufferOffset, minorVersion ); }
    bool  SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const { return PacketUserStateChange::SerializeOut( data, bufferOffset, minorVersion ); }
 
-   UuidString   uuid;
-   string   username;
+   UuidString        uuid;
+   BoundedString80   username;
 };
 
 ///////////////////////////////////////////////////////////////
@@ -523,9 +523,9 @@ public:
    bool  SerializeIn( const U8* data, int& bufferOffset, int minorVersion );
    bool  SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const;
 
-   U16      errorCode;
-   U16      statusInfo;
-   string   text;
+   U16               errorCode;
+   U16               statusInfo;
+   BoundedString140  text;
 };
 
 ///////////////////////////////////////////////////////////////

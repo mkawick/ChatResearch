@@ -23,9 +23,9 @@ public:
    bool  SerializeIn( const U8* data, int& bufferOffset, int minorVersion );
    bool  SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const;
 
-   string      serverAddress;
-   U32         serverId;
-   int         currentLoad;
+   BoundedString80   serverAddress;
+   U32               serverId;
+   int               currentLoad;
    //string   timeLastConnection;
 };
 
@@ -52,16 +52,16 @@ public:
    bool  SerializeIn( const U8* data, int& bufferOffset, int minorVersion );
    bool  SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const;
 
-   string      serverName;
-   string      serverAddress;
-   string      externalIpAddress;
-   U32         serverId;
-   U16         serverPort;
-   U32         gameInstanceId;// used to filter game packets
-   U8          serverType;
-   bool        isGameServer;
-   bool        isController;
-   U8          gatewayType;
+   BoundedString80   serverName;
+   BoundedString32   serverAddress;
+   BoundedString80   externalIpAddress;
+   U32               serverId;
+   U16               serverPort;
+   U32               gameInstanceId;// used to filter game packets
+   U8                serverType;
+   bool              isGameServer;
+   bool              isController;
+   U8                gatewayType;
 };
 
 ///////////////////////////////////////////////////////////////
@@ -77,8 +77,8 @@ public:
    bool  SerializeIn( const U8* data, int& bufferOffset, int minorVersion );
    bool  SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const;
 
-   string      serverAddress;
-   U32         serverId;
+   BoundedString80   serverAddress;
+   U32               serverId;
 };
 
 ///////////////////////////////////////////////////////////////

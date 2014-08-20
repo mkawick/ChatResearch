@@ -335,9 +335,9 @@ bool     DiplodocusPurchase::ConnectUser( PacketPrepareForUserLogin* loginPacket
    {
 
       UserTicket ut;
-      ut.userName =        loginPacket->userName;
+      ut.userName =        loginPacket->userName.c_str();
       ut.uuid =            loginPacket->uuid.c_str();
-      ut.userTicket =      loginPacket->loginKey;
+      ut.userTicket =      loginPacket->loginKey.c_str();
       ut.connectionId =    loginPacket->connectionId;
       ut.gameProductId =   loginPacket->gameProductId;
       ut.userId =          loginPacket->userId;

@@ -77,7 +77,7 @@ public:
    bool  SerializeIn( const U8* data, int& bufferOffset, int minorVersion );
    bool  SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const;
 
-   FixedString140 message;
+   BoundedString140 message;
    UuidString     channelUuid;
    UuidString     userUuid;
    U16            gameTurn;
@@ -96,12 +96,12 @@ public:
    bool  SerializeIn( const U8* data, int& bufferOffset, int minorVersion );
    bool  SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const;
 
-   string         channelName;
-   UuidString     channelUuid;
-   int            gameProduct;
-   int            gameId;
-   int            numNewChats;
-   bool           isActive;
+   BoundedString80   channelName;
+   UuidString        channelUuid;
+   int               gameProduct;
+   int               gameId;
+   int               numNewChats;
+   bool              isActive;
 };
 
 typedef SerializedKeyValueVector< ChannelInfo > ChannelKeyValue;
@@ -175,9 +175,9 @@ public:
    bool  SerializeIn( const U8* data, int& bufferOffset, int minorVersion );
    bool  SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const;
 
-   string   userName;
-   string   timeStamp;
-   U32      userTempId;
+   BoundedString80   userName;
+   TimeString        timeStamp;
+   U32               userTempId;
 };
 
 ///////////////////////////////////////////////////////////////
@@ -207,10 +207,10 @@ public:
    bool  SerializeIn( const U8* data, int& bufferOffset, int minorVersion );
    bool  SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const;
 
-   U32            statusChange;
-   UuidString  uuid;
-   string         userName;
-   UuidString  chatChannelUuid;
+   U32               statusChange;
+   UuidString        uuid;
+   BoundedString80   userName;
+   UuidString        chatChannelUuid;
 };
 
 ///////////////////////////////////////////////////////////////
@@ -238,9 +238,9 @@ public:
    bool  SerializeIn( const U8* data, int& bufferOffset, int minorVersion );
    bool  SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const;
 
-   string         gameName;
-   U32            gameId;
-   UuidString  channelUuid;
+   BoundedString80         gameName;
+   U32                     gameId;
+   UuidString              channelUuid;
    SerializedKeyValueVector< string >   userList;
 };
 
@@ -255,9 +255,9 @@ public:
    bool  SerializeIn( const U8* data, int& bufferOffset, int minorVersion );
    bool  SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const;
 
-   UuidString  chatChannelUuid;
-   UuidString  userUuid;
-   string         startingTimestamp;
+   UuidString     chatChannelUuid;
+   UuidString     userUuid;
+   FixedString32  startingTimestamp;
    int            numRecords;
    int            startingIndex;
 };
@@ -269,12 +269,12 @@ struct ChatEntry
    bool  SerializeIn( const U8* data, int& bufferOffset, int minorVersion );
    bool  SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const;
 
-   string         userName;
-   UuidString  useruuid;
-   U32            userTempId;
-   string         message;
-   string         timestamp;   
-   U16            gameTurn;
+   BoundedString80   userName;
+   UuidString        useruuid;
+   U32               userTempId;
+   BoundedString140  message;
+   TimeString        timestamp;   
+   U16               gameTurn;
 };
 
 ///////////////////////////////////////////////////////////////
@@ -478,7 +478,7 @@ public:
 
    UuidString  chatChannelUuid;
    UuidString  userUuid;
-   bool           success;
+   bool        success;
 };
 
 ///////////////////////////////////////////////////////////////
@@ -505,11 +505,11 @@ public:
    bool  SerializeIn( const U8* data, int& bufferOffset, int minorVersion );
    bool  SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const;
 
-   string         channelName; // only valuable sometimes.
-   UuidString  channelUuid;
-   UuidString  userUuid;
-   string         userName;
-   bool           success;
+   BoundedString80   channelName; // only valuable sometimes.
+   UuidString        channelUuid;
+   UuidString        userUuid;
+   BoundedString80   userName;
+   bool              success;
 };
 
 ///////////////////////////////////////////////////////////////
@@ -522,9 +522,9 @@ public:
    bool  SerializeIn( const U8* data, int& bufferOffset, int minorVersion );
    bool  SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const;
 
-   string         gameName;
-   U32            gameId;
-   UuidString  userUuid;
+   BoundedString80   gameName;
+   U32               gameId;
+   UuidString        userUuid;
 };
 
 ///////////////////////////////////////////////////////////////
@@ -582,9 +582,9 @@ public:
    bool  SerializeIn( const U8* data, int& bufferOffset, int minorVersion );
    bool  SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const;
 
-   string         gameName;
-   U32            gameId;
-   UuidString  userUuid;
+   BoundedString80   gameName;
+   U32               gameId;
+   UuidString        userUuid;
 };
 
 ///////////////////////////////////////////////////////////////
@@ -597,8 +597,8 @@ public:
    bool  SerializeIn( const U8* data, int& bufferOffset, int minorVersion );
    bool  SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const;
 
-   UuidString  chatChannelUuid;
-   UuidString  userUuid;
+   UuidString     chatChannelUuid;
+   UuidString     userUuid;
    U32            gameId;
    bool           success;
 };
@@ -771,8 +771,8 @@ public:
    bool  SerializeIn( const U8* data, int& bufferOffset, int minorVersion );
    bool  SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const;
    
-   UuidString  channelUuid;
-   string   newName;
+   UuidString        channelUuid;
+   BoundedString80   newName;
 };
 
 ///////////////////////////////////////////////////////////////
@@ -785,9 +785,9 @@ public:
    bool  SerializeIn( const U8* data, int& bufferOffset, int minorVersion );
    bool  SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const;
 
-   bool           success;
-   UuidString  channelUuid;
-   string         newName;
+   bool              success;
+   UuidString        channelUuid;
+   BoundedString80   newName;
 };
 
 ///////////////////////////////////////////////////////////////

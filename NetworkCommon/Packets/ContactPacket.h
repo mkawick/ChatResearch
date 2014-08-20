@@ -7,19 +7,19 @@
 
 struct UserInfo
 {
-   string   userName;
-   string   uuid;
-   string   apple_id;
-   U32      connectionId;
-   U32      avatarId;
-   U8       gameProductId;
-   bool     active;
-   string   email;
-   string   passwordHash;
-   U32      id;
-   bool     favorite;
-   string   note;
-   string   motto;
+   BoundedString80   userName;
+   UuidString        uuid;
+   BoundedString80   apple_id;
+   U32               connectionId;
+   U32               avatarId;
+   U8                gameProductId;
+   bool              active;
+   BoundedString80   email;
+   BoundedString32   passwordHash;
+   U32               id;
+   bool              favorite;
+   BoundedString140  note;
+   BoundedString140  motto;
 };
 
 ///////////////////////////////////////////////////////////////////
@@ -40,9 +40,9 @@ public:
    bool  SerializeIn( const U8* data, int& bufferOffset, int minorVersion );
    bool  SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const;
 
-   string            userName;
-   FixedString128    notesAboutThisUser;
-   FixedString32     motto;
+   BoundedString80   userName;
+   BoundedString128  notesAboutThisUser;
+   BoundedString128  motto;
    int               avatarId;
    bool              isOnline;
    bool              markedAsFavorite;
@@ -56,12 +56,12 @@ public:
    bool  SerializeIn( const U8* data, int& bufferOffset, int minorVersion );
    bool  SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const;
 
-   string   message;
-   string   inviterName;
-   string   inviteeName;
-   string   uuid;
-   string   date;
-   string   userUuid; // the non-current user... could be invitee or inviter... just not you
+   BoundedString140  message;
+   BoundedString80   inviterName;
+   BoundedString80   inviteeName;
+   UuidString        uuid;
+   TimeString        date;
+   UuidString        userUuid; // the non-current user... could be invitee or inviter... just not you
 
    void     Print( int tab = 0 );
 };
@@ -124,10 +124,10 @@ public:
    bool  SerializeIn( const U8* data, int& bufferOffset, int minorVersion );
    bool  SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const;
 
-   string   message;
-   string   senderName;
-   UuidString  senderUuid;
-   int      type;
+   BoundedString140  message;
+   BoundedString80   senderName;
+   UuidString        senderUuid;
+   int               type;
 };
 
 ///////////////////////////////////////////////////////////////
@@ -231,9 +231,9 @@ public:
    bool  SerializeIn( const U8* data, int& bufferOffset, int minorVersion );
    bool  SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const;
 
-   string      userName;// one or the other
-   UuidString  uuid;
-   string      message;
+   BoundedString80   userName;// one or the other
+   UuidString        uuid;
+   BoundedString140  message;
 };
 
 class PacketContact_InviteSentNotification : public PacketContact
@@ -267,8 +267,8 @@ public:
    bool  SerializeIn( const U8* data, int& bufferOffset, int minorVersion );
    bool  SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const;
 
-   UuidString  contactUuid;
-   string message;
+   UuidString        contactUuid;
+   BoundedString140  message;
 };
 
 ///////////////////////////////////////////////////////////////////
@@ -304,11 +304,11 @@ public:
    bool  SerializeIn( const U8* data, int& bufferOffset, int minorVersion );
    bool  SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const;
 
-   string   fromUsername;
-   string   toUsername;
-   UuidString  invitationUuid;
-   string   message;
-   bool     wasAccepted;
+   BoundedString80   fromUsername;
+   BoundedString80   toUsername;
+   UuidString        invitationUuid;
+   BoundedString140  message;
+   bool              wasAccepted;
 };
 
 
@@ -320,8 +320,8 @@ public:
    bool  SerializeIn( const U8* data, int& bufferOffset, int minorVersion );
    bool  SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const;
 
-   UuidString  invitationUuid;
-   string   message;
+   UuidString        invitationUuid;
+   BoundedString140  message;
 };
 
 
@@ -334,8 +334,8 @@ public:
    bool  SerializeIn( const U8* data, int& bufferOffset, int minorVersion );
    bool  SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const;
 
-   string userName;
-   UuidString  uuid;
+   BoundedString80   userName;
+   UuidString        uuid;
 };
 
 ///////////////////////////////////////////////////////////////////
@@ -348,9 +348,9 @@ public:
    bool  SerializeIn( const U8* data, int& bufferOffset, int minorVersion );
    bool  SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const;
 
-   string   searchString;
-   int      limit;
-   int      offset;
+   BoundedString32   searchString;
+   int               limit;
+   int               offset;
 };
 
 class PacketContact_SearchForUserResult : public PacketContact

@@ -359,6 +359,7 @@ protected:
    void     Notification( int type, const string& data );
    void     Notification( int type, const string& data, const string& data2 );
    void     Notification( int type, SerializedKeyValueVector< string >& strings );
+   void     Notification( int type, SerializedKeyValueVector< BoundedString32 >& strings );
 
    //----------------------------------
 

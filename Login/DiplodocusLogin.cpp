@@ -1786,7 +1786,7 @@ bool  DiplodocusLogin:: ForceUserLogoutAndBlock( U32 connectionId )
 
 //------------------------------------------------------------------------------------------------
 
-bool  DiplodocusLogin:: SendListOfGamesToGameServers( U32 connectionId, const KeyValueVector& kvArray )
+bool  DiplodocusLogin:: SendListOfOwnedGamesToGameServers( U32 connectionId, const KeyValueVector& kvArray )
 {
    if( m_printFunctionNames == true )
    {
@@ -1801,7 +1801,14 @@ bool  DiplodocusLogin:: SendListOfGamesToGameServers( U32 connectionId, const Ke
          ChainType* outputPtr = static_cast< ChainType*> ( (*itOutputs).m_interface );
 
          PacketListOfGames* packetToSend = new PacketListOfGames;
-         packetToSend->games = kvArray;// potentially costly.
+
+         KeyValueVector::const_iterator it = kvArray.begin();
+         while( it != kvArray.end() )
+         {
+            packetToSend->games.insert( it->key, it->value );
+            it++;
+         }
+         //packetToSend->games = kvArray;// potentially costly.
          packetToSend->connectionId = connectionId;
 
          if( outputPtr->AddOutputChainData( packetToSend, m_chainId ) == false )
@@ -2489,7 +2496,7 @@ bool     DiplodocusLogin:: HandleDbResult( PacketDbQueryResult* dbResult )
                      key_value_array.push_back( KeyValueString ( uuid, name ) );
                   }
 
-                  SendListOfGamesToGameServers( connectionId, key_value_array );
+                  SendListOfOwnedGamesToGameServers( connectionId, key_value_array );
                }
             }
             break;
@@ -2796,7 +2803,7 @@ void     DiplodocusLogin:: AddNewProductToDb( const PurchaseEntryExtended& produ
    PacketDbQuery* dbQuery = new PacketDbQuery;
    dbQuery->id =           0;
    dbQuery->lookup =       QueryType_AddProductInfo;
-   dbQuery->meta =         product.name;
+   dbQuery->meta =         product.name.c_str();
    dbQuery->serverLookup = 0;
    dbQuery->isFireAndForget = true;
 
@@ -2823,7 +2830,7 @@ void     DiplodocusLogin:: AddNewProductToDb( const PurchaseEntryExtended& produ
    dbQuery = new PacketDbQuery;
    dbQuery->id =           0;
    dbQuery->lookup =       QueryType_GetSingleProductInfo;
-   dbQuery->meta =         product.name;
+   dbQuery->meta =         product.name.c_str();
    dbQuery->serverLookup = 0;
 
    dbQuery->query = "SELECT * FROM product WHERE uuid = '%s'";

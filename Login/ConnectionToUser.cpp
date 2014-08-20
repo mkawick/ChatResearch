@@ -213,17 +213,17 @@ void  ConnectionToUser::SaveUpdatedProfile( const PacketUpdateUserProfile* profi
       // some fields may be blank
       if( profileUpdate->userName.size() > 0 )
       {
-         m_userName =                     profileUpdate->userName;
+         m_userName =                     profileUpdate->userName.c_str();
       }
       //userUuid =                       profileUpdate->userUuid;
       if( profileUpdate->email.size() > 0 )
       {
-         m_email =                        profileUpdate->email;
+         m_email =                        profileUpdate->email.c_str();
       }
 
       if( profileUpdate->passwordHash.size() > 0 )
       {
-         m_passwordHash =                 profileUpdate->passwordHash;
+         m_passwordHash =                 profileUpdate->passwordHash.c_str();
       }
    }
    
@@ -786,7 +786,7 @@ bool     ConnectionToUser:: StoreUserPurchases( const PacketListOfUserAggregateP
 void  ConnectionToUser:: AddItemToProductTable( const PurchaseEntryExtended& purchaseEntry )
 {
    ProductInfo pi;
-   pi.name = purchaseEntry.name;
+   pi.name = purchaseEntry.name.c_str();
    pi.vendorUuid = purchaseEntry.productUuid.c_str();
    std::transform( pi.vendorUuid.begin(), pi.vendorUuid.end(), pi.vendorUuid.begin(), ::tolower );
    // productUuid .. I don't know what to do with this.
@@ -1438,13 +1438,13 @@ bool     ConnectionToUser:: UpdateProfile( const PacketUpdateSelfProfile* update
       if ( updateProfileRequest->languageId >= LanguageList_english && updateProfileRequest->languageId < LanguageList_count )
          m_languageId = updateProfileRequest->languageId;
 
-      if( updateProfileRequest->motto.size() && updateProfileRequest->motto != m_userMotto )
-         m_userMotto = updateProfileRequest->motto;
-      if( updateProfileRequest->userName.size() && updateProfileRequest->userName != m_userName )
-         m_userName = updateProfileRequest->userName;
+      if( updateProfileRequest->motto.size() && updateProfileRequest->motto.c_str() != m_userMotto )
+         m_userMotto = updateProfileRequest->motto.c_str();
+      if( updateProfileRequest->userName.size() && updateProfileRequest->userName.c_str() != m_userName )
+         m_userName = updateProfileRequest->userName.c_str();
 
-      if( updateProfileRequest->email.size() && updateProfileRequest->email != m_email )
-         m_email = updateProfileRequest->email;
+      if( updateProfileRequest->email.size() && updateProfileRequest->email.c_str() != m_email )
+         m_email = updateProfileRequest->email.c_str();
 
       if( updateProfileRequest->showWinLossRecord == false ||
             updateProfileRequest->showWinLossRecord == true )

@@ -8,14 +8,14 @@
 struct RegisteredDevice
 {
 public:
-   string   uuid;
-   string   name;
-   string   audioFile;
-   U8       repeatFrequencyInHours;
-   bool     isEnabled;
-   U32      iconId;
-   U8       productId;
-   U8       platformId;   // int   FindPlatformId( const char* value ).. const char*   FindPlatformName( int platformId )
+   UuidString        uuid;
+   BoundedString80   name;
+   BoundedString80   audioFile;
+   U8                repeatFrequencyInHours;
+   bool              isEnabled;
+   U32               iconId;
+   U8                productId;
+   U8                platformId;   // int   FindPlatformId( const char* value ).. const char*   FindPlatformName( int platformId )
 
    bool  SerializeIn( const U8* data, int& bufferOffset, int minorVersion );
    bool  SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const;
@@ -69,8 +69,8 @@ public:
    bool  SerializeIn( const U8* data, int& bufferOffset, int minorVersion );
    bool  SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const;
 
-   string   message;
-   int      type;
+   BoundedString140  message;
+   int               type;
 };
 
 ///////////////////////////////////////////////////////////////
@@ -101,10 +101,10 @@ public:
    bool  SerializeIn( const U8* data, int& bufferOffset, int minorVersion );
    bool  SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const;
 
-   string      deviceName; 
-   string      deviceId;
-   UuidString  assignedUuid;
-   U8          platformId;
+   BoundedString80            deviceName; 
+   BoundedLengthString< 600 > deviceId;
+   UuidString                 assignedUuid;
+   U8                         platformId;
 };
 
 ///////////////////////////////////////////////////////////////
@@ -136,8 +136,8 @@ public:
    bool  SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const;
 
    UuidString        deviceUuid;
-   string            deviceName;
-   FixedString60     audioFile;
+   BoundedString80   deviceName;
+   FixedString64     audioFile;
    U8                repeatFrequencyInHours;
    bool              isEnabled;
    int               iconId;
@@ -154,12 +154,12 @@ public:
    bool  SerializeIn( const U8* data, int& bufferOffset, int minorVersion );
    bool  SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const;
 
-   UuidString  userUuid;
-   U32            userId;
-   int            gameType;
-   unsigned int   gameId;
-   int            notificationType; // see the enum in server_notify.h
-   string         additionalText;
+   UuidString              userUuid;
+   U32                     userId;
+   int                     gameType;
+   unsigned int            gameId;
+   int                     notificationType; // see the enum in server_notify.h
+   BoundedString140        additionalText;
 };
 
 ///////////////////////////////////////////////////////////////

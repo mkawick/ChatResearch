@@ -827,8 +827,8 @@ BasePacket*  MainGatewayThread::HandlePlayerLoginStatus( KhaanGateway* khaan, Ba
       clientNotify->lastLogoutTime = finishedLogin->lastLogoutTime;
       clientNotify->connectionId = connectionId;
       clientNotify->loginKey = finishedLogin->loginKey;
-      clientNotify->junk1 = 21;
-      clientNotify->junk2 = "this is s version number test.";
+   /*   clientNotify->junk1 = 21;
+      clientNotify->junk2 = "this is s version number test.";*/
       packet = clientNotify;
 
       TrackCountStats( StatTrackingConnections::StatTracking_UserLoginSuccess, 1, 0 );

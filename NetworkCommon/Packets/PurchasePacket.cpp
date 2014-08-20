@@ -37,11 +37,11 @@ bool  PurchaseInfo::SerializeIn( const U8* data, int& bufferOffset, int minorVer
    Serialize::In( data, bufferOffset, beginDate, minorVersion );
    Serialize::In( data, bufferOffset, endDate, minorVersion );
 
-   if( minorVersion > 1 )
+  /* if( minorVersion > 1 )
    {
       Serialize::In( data, bufferOffset, junk1, minorVersion );
       Serialize::In( data, bufferOffset, junk2, minorVersion );
-   }
+   }*/
 
 
    return true;
@@ -67,11 +67,11 @@ bool  PurchaseInfo::SerializeOut( U8* data, int& bufferOffset, int minorVersion 
    Serialize::Out( data, bufferOffset, beginDate, minorVersion );
    Serialize::Out( data, bufferOffset, endDate, minorVersion );
 
-   if( minorVersion > 1 )
+  /* if( minorVersion > 1 )
    {
       Serialize::Out( data, bufferOffset, junk1, minorVersion );
       Serialize::Out( data, bufferOffset, junk2, minorVersion );
-   }
+   }*/
 
    return true;
 }

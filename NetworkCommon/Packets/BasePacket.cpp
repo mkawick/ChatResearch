@@ -11,8 +11,8 @@
 #include "PacketFactory.h"
 #include <assert.h>
 
-const U8   NetworkVersionMajor = 44;
-const U8   NetworkVersionMinor = 14;
+const U8   NetworkVersionMajor = 45;
+const U8   NetworkVersionMinor = 0;
 
 //#include <boost/static_assert.hpp>
 //BOOST_STATIC_ASSERT( NetworkVersionMajor < (1<<5) );// 5 bits for major

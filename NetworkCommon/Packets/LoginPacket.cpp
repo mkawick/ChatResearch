@@ -92,11 +92,11 @@ bool  PacketLoginToClient::SerializeIn( const U8* data, int& bufferOffset, int m
    Serialize::In( data, bufferOffset, wasLoginSuccessful, minorVersion );
    Serialize::In( data, bufferOffset, connectionId, minorVersion );
 
-   if( minorVersion > 1 )
+  /* if( minorVersion > 1 )
    {
       Serialize::In( data, bufferOffset, junk1, minorVersion );
       Serialize::In( data, bufferOffset, junk2, minorVersion );
-   }
+   }*/
 
    return true;
 }
@@ -108,11 +108,11 @@ bool  PacketLoginToClient::SerializeOut( U8* data, int& bufferOffset, int minorV
    Serialize::Out( data, bufferOffset, wasLoginSuccessful, minorVersion );
    Serialize::Out( data, bufferOffset, connectionId, minorVersion );
 
-   if( minorVersion > 1 )
+ /*  if( minorVersion > 1 )
    {
       Serialize::Out( data, bufferOffset, junk2, minorVersion );
       Serialize::Out( data, bufferOffset, junk2, minorVersion );
-   }
+   }*/
 
    return true;
 }
@@ -240,7 +240,7 @@ bool  ProductBriefPacketed::SerializeIn( const U8* data, int& bufferOffset, int 
    Serialize::In( data, bufferOffset, parentUuid, minorVersion );
    Serialize::In( data, bufferOffset, iconName, minorVersion );
 
-   if( minorVersion > 1 )
+/*   if( minorVersion > 1 )
    {
       Serialize::In( data, bufferOffset, junk1, minorVersion );
       Serialize::In( data, bufferOffset, junk2, minorVersion );
@@ -249,7 +249,7 @@ bool  ProductBriefPacketed::SerializeIn( const U8* data, int& bufferOffset, int 
    {
       junk1 = 0;
       junk2.clear();
-   }
+   }*/
 
    return true;
 }
@@ -263,11 +263,11 @@ bool  ProductBriefPacketed::SerializeOut( U8* data, int& bufferOffset, int minor
    Serialize::Out( data, bufferOffset, parentUuid, minorVersion );
    Serialize::Out( data, bufferOffset, iconName, minorVersion );
 
-   if( minorVersion > 1 )
+  /* if( minorVersion > 1 )
    {
       Serialize::Out( data, bufferOffset, junk1, minorVersion );
       Serialize::Out( data, bufferOffset, junk2, minorVersion );
-   }
+   }*/
 
    return true;
 }

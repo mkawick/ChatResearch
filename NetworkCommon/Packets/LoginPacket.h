@@ -49,10 +49,10 @@ public:
    bool  SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const;
 
    UuidString        uuid;
-   string            userName;
+   BoundedString80   userName;
    
-   string            loginKey;
-   string            password;
+   BoundedString80   loginKey;
+   BoundedString32   password;
    FixedStringTiny   languageCode;
 };
 
@@ -123,13 +123,13 @@ public:
    bool  SerializeIn( const U8* data, int& bufferOffset, int minorVersion );
    bool  SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const;
 
-   string   lastLogoutTime;
-   bool     wasLoginSuccessful;
-   U32      connectionId;  // used for a user ID.
+   TimeString  lastLogoutTime;
+   bool        wasLoginSuccessful;
+   U32         connectionId;  // used for a user ID.
 
 
-   U32      junk1;
-   string   junk2;
+   //U32      junk1;
+   //string   junk2;
 };
 
 
@@ -143,10 +143,10 @@ public:
    bool  SerializeIn( const U8* data, int& bufferOffset, int minorVersion );
    bool  SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const;
 
-   string   lastLogoutTime;
-   bool     wasLoginSuccessful;
-   U8       adminLevel;
-   U8       languageId;
+   TimeString  lastLogoutTime;
+   bool        wasLoginSuccessful;
+   U8          adminLevel;
+   U8          languageId;
 };
 
 ///////////////////////////////////////////////////////////////
@@ -159,12 +159,12 @@ public:
    bool  SerializeIn( const U8* data, int& bufferOffset, int minorVersion );
    bool  SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const;
    
-   string    userName;
-   string    userEmail;
-   string    password;
-   string    deviceId;
-   string    deviceAccountId;
-   U8        languageId;
+   BoundedString80   userName;
+   BoundedString80   userEmail;
+   BoundedString32   password;
+   BoundedString80   deviceId;
+   BoundedString80   deviceAccountId;
+   U8                languageId;
 };
 
 ///////////////////////////////////////////////////////////////
@@ -177,9 +177,9 @@ public:
    bool  SerializeIn( const U8* data, int& bufferOffset, int minorVersion );
    bool  SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const;
    
-   string   userName;
-   string   userEmail;
-   bool     wasSuccessful;
+   BoundedString80   userName;
+   BoundedString80   userEmail;
+   bool              wasSuccessful;
 };
 
 ///////////////////////////////////////////////////////////////
@@ -194,8 +194,8 @@ struct PurchaseEntry
    bool  SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const;
 
    //string   name;
-   float    quantity;
-   string   productUuid;
+   float       quantity;
+   UuidString  productUuid;
 };
 
 
@@ -206,7 +206,7 @@ struct PurchaseEntryExtended : public PurchaseEntry
    bool  SerializeIn( const U8* data, int& bufferOffset, int minorVersion );
    bool  SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const;
 
-   string   name;
+   BoundedString80   name;
 
 };
 
@@ -217,14 +217,14 @@ struct ProductBriefPacketed
    bool  SerializeIn( const U8* data, int& bufferOffset, int minorVersion );
    bool  SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const;
 
-   string         localizedName;
-   UuidString     uuid;
-   FixedString80  vendorUuid; // e.g. summonerwars.mv.bund.pt2
-   UuidString     parentUuid;
-   int            productType;
-   string         iconName;
-   U32      junk1;
-   string   junk2;
+   BoundedString80      localizedName;
+   UuidString           uuid;
+   FixedString80        vendorUuid; // e.g. summonerwars.mv.bund.pt2
+   UuidString           parentUuid;
+   int                  productType;
+   BoundedString32      iconName;
+   //U32      junk1;
+   //string   junk2;
 };
 
 //--------------------------------
@@ -238,7 +238,7 @@ public:
    bool  SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const;
 
    UuidString  userUuid;
-   int      platformId;
+   int         platformId;
 };
 
 
@@ -253,15 +253,15 @@ public:
    bool  SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const;
 
    // the beneficiary's data
-   UuidString     userUuid; 
-   string         userEmail;
-   string         userName;
+   UuidString        userUuid; 
+   BoundedString80   userEmail;
+   BoundedString80   userName;
 
    
-   UuidString     productUuid;
-   string         adminNotes;
-   int            platformId; // for which platforms is this item. 0=all. -1=none
-   int            quantity;
+   UuidString        productUuid;
+   BoundedString140  adminNotes;
+   int               platformId; // for which platforms is this item. 0=all. -1=none
+   int               quantity;
 };
 
 //--------------------------------
@@ -274,8 +274,8 @@ public:
    bool  SerializeIn( const U8* data, int& bufferOffset, int minorVersion );
    bool  SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const;
    
-   int      platformId;
-   string   userUuid;
+   int               platformId;
+   UuidString        userUuid;
    SerializedVector< PurchaseEntryExtended > purchases;
 };
 
@@ -305,13 +305,13 @@ public:
    bool  SerializeIn( const U8* data, int& bufferOffset, int minorVersion );
    bool  SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const;
 
-   string   lastLoginTime;
-   U32      connectionId;
-   string   email;
-   bool     active;
-   U32      userId;
-   U32      languageId;
-   U32      gatewayId;
+   TimeString        lastLoginTime;
+   U32               connectionId;
+   BoundedString80   email;
+   bool              active;
+   U32               userId;
+   U32               languageId;
+   U32               gatewayId;
 };
 
 ///////////////////////////////////////////////////////////////
@@ -324,9 +324,9 @@ public:
    bool  SerializeIn( const U8* data, int& bufferOffset, int minorVersion );
    bool  SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const;
 
-   UuidString  uuid;
-   U32   connectionId;
-   bool  wasDisconnectedByError;
+   UuidString        uuid;
+   U32               connectionId;
+   bool              wasDisconnectedByError;
 };
 
 ///////////////////////////////////////////////////////////////
@@ -368,9 +368,9 @@ public:
    bool  SerializeIn( const U8* data, int& bufferOffset, int minorVersion );
    bool  SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const;
 
-   UuidString  uuid;// you can use any of these fields or all.
-   string   userEmail;
-   string   userName;
+   UuidString        uuid;// you can use any of these fields or all.
+   BoundedString80   userEmail;
+   BoundedString80   userName;
 };
 
 ///////////////////////////////////////////////////////////////
@@ -395,29 +395,29 @@ public:
    bool  SerializeIn( const U8* data, int& bufferOffset, int minorVersion );
    bool  SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const;
 
-   string   userName;
-   string   passwordHash;
-   string   email;
-   UuidString  userUuid;
-   string   lastLoginTime;
-   string   loggedOutTime;
-   string   motto;
-   int      adminLevel;
-   int      iconId;
-   int      languageId;
+   BoundedString80   userName;
+   BoundedString32   passwordHash;
+   BoundedString80   email;
+   UuidString        userUuid;
+   TimeString        lastLoginTime;
+   TimeString        loggedOutTime;
+   BoundedString140  motto;
+   int               adminLevel;
+   int               iconId;
+   int               languageId;
 
-   bool     isActive;
-   bool     showWinLossRecord;
-   bool     marketingOptOut;
-   bool     showGenderProfile;
+   bool              isActive;
+   bool              showWinLossRecord;
+   bool              marketingOptOut;
+   bool              showGenderProfile;
 
-   bool     displayOnlineStatusToOtherUsers;
-   bool     blockContactInvitations;
-   bool     blockGroupInvitations;
+   bool              displayOnlineStatusToOtherUsers;
+   bool              blockContactInvitations;
+   bool              blockGroupInvitations;
 
-   int      wins;
-   int      losses;
-   int      ties;
+   int               wins;
+   int               losses;
+   int               ties;
 
    //SerializedKeyValueVector< string > profileKeyValues;
 };
@@ -433,14 +433,14 @@ public:
    bool  SerializeIn( const U8* data, int& bufferOffset, int minorVersion );
    bool  SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const;
 
-   string   userName;
-   string   passwordHash;
-   string   email;
-   UuidString  userUuid;
-   int      adminLevel;
-   int      languageId;
+   BoundedString80   userName;
+   BoundedString32   passwordHash;
+   BoundedString80   email;
+   UuidString        userUuid;
+   int               adminLevel;
+   int               languageId;
 
-   bool     isActive;
+   bool              isActive;
    
 };
 
@@ -454,8 +454,8 @@ public:
    bool  SerializeIn( const U8* data, int& bufferOffset, int minorVersion );
    bool  SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const;
 
-   UuidString  uuid;// you can use any of these fields or all.
-   bool     success;
+   UuidString        uuid;// you can use any of these fields or all.
+   bool              success;
 };
 
 ///////////////////////////////////////////////////////////////
@@ -468,7 +468,7 @@ public:
    bool  SerializeIn( const U8* data, int& bufferOffset, int minorVersion );
    bool  SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const;
 
-   int   platformId;
+   int               platformId;
 };
 
 ///////////////////////////////////////////////////////////////
@@ -496,8 +496,8 @@ public:
    bool  SerializeIn( const U8* data, int& bufferOffset, int minorVersion );
    bool  SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const;
 
-   string   userName;
-   bool     fullProfile;
+   BoundedString80   userName;
+   bool              fullProfile;
 };
 
 ///////////////////////////////////////////////////////////////
@@ -510,9 +510,9 @@ public:
    bool  SerializeIn( const U8* data, int& bufferOffset, int minorVersion );
    bool  SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const;
 
-   SerializedKeyValueVector< string > basicProfile;
-   SerializedKeyValueVector< int > productsOwned; // only games and expansions
-   SerializedKeyValueVector< string > awards;
+   SerializedKeyValueVector< BoundedString32 >  basicProfile;
+   SerializedKeyValueVector< int >              productsOwned; // only games and expansions
+   SerializedKeyValueVector< BoundedString32 >  awards;
 };
 
 ///////////////////////////////////////////////////////////////
@@ -534,19 +534,19 @@ public:
    bool  SerializeIn( const U8* data, int& bufferOffset, int minorVersion );
    bool  SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const;
 
-   string   userName;
-   string   passwordHash;
-   string   email;
-   string   motto;
-   int      languageId;
-   int      avatarIconId;
+   BoundedString80   userName;
+   BoundedString32   passwordHash;
+   BoundedString80   email;
+   BoundedString140  motto;
+   int               languageId;
+   int               avatarIconId;
 
-   bool     showWinLossRecord;
-   bool     marketingOptOut;
-   bool     showGenderProfile;
-   bool     displayOnlineStatusToOtherUsers;
-   bool     blockContactInvitations;
-   bool     blockGroupInvitations;
+   bool              showWinLossRecord;
+   bool              marketingOptOut;
+   bool              showGenderProfile;
+   bool              displayOnlineStatusToOtherUsers;
+   bool              blockContactInvitations;
+   bool              blockGroupInvitations;
 };
 
 ///////////////////////////////////////////////////////////////

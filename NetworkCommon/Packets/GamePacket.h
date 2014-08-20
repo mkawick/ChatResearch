@@ -69,7 +69,7 @@ public:
    bool  SerializeIn( const U8* data, int& bufferOffset, int minorVersion );
    bool  SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const;
 
-   string   name;
+   BoundedString80   name;
 };
 
 ///////////////////////////////////////////////////////////////
@@ -82,8 +82,8 @@ public:
    bool  SerializeIn( const U8* data, int& bufferOffset, int minorVersion );
    bool  SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const;
 
-   string      name;
-   UuidString  uuid;
+   BoundedString80      name;
+   UuidString           uuid;
 };
       
 ///////////////////////////////////////////////////////////////
@@ -109,8 +109,8 @@ public:
    bool  SerializeIn( const U8* data, int& bufferOffset, int minorVersion );
    bool  SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const;
 
-   string   name;
-   UuidString  uuid;
+   BoundedString80   name;
+   UuidString        uuid;
 };
 
 ///////////////////////////////////////////////////////////////
@@ -137,8 +137,8 @@ public:
    bool  SerializeIn( const U8* data, int& bufferOffset, int minorVersion );
    bool  SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const;
 
-   string   name;
-   UuidString  uuid;
+   BoundedString80   name;
+   UuidString        uuid;
 };
       
 ///////////////////////////////////////////////////////////////
@@ -165,9 +165,9 @@ public:
    bool  SerializeIn( const U8* data, int& bufferOffset, int minorVersion );
    bool  SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const;
 
-   string   userName;
-   UuidString  userUuid;
-   UuidString  gameUuid;
+   BoundedString80   userName;
+   UuidString        userUuid;
+   UuidString        gameUuid;
 };
 
 ///////////////////////////////////////////////////////////////
@@ -302,9 +302,9 @@ public:
    bool  SerializeIn( const U8* data, int& bufferOffset, int minorVersion );
    bool  SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const;
 
-   string         gameName;
-   UuidString  gameUuid;
-   SerializedKeyValueVector< string >   users; // game details?
+   BoundedString80   gameName;
+   UuidString        gameUuid;
+   SerializedKeyValueVector< UuidString >   users; // game details?
 };
 
 
@@ -373,8 +373,8 @@ public:
    bool  SerializeIn( const U8* data, int& bufferOffset, int minorVersion );
    bool  SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const;
 
-   U32      connectionId;
-   SerializedKeyValueVector< string >   games;
+   U32                                          connectionId;
+   SerializedKeyValueVector< BoundedString32 >  games;
 };
 
 ///////////////////////////////////////////////////////////////
@@ -387,9 +387,9 @@ public:
    bool  SerializeIn( const U8* data, int& bufferOffset, int minorVersion );
    bool  SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const;
 
-   U32      gameId;
-   string   name;
-   string   shortName;
+   U32               gameId;
+   BoundedString80   name;
+   BoundedString32   shortName;
 };
 
 ///////////////////////////////////////////////////////////////
@@ -410,11 +410,11 @@ public:
    enum { MaxBufferSize = 1500 - 39 - sizeof( PacketGameToServer) }; // 1500 minus the other variables in this struct
    enum DataType{ Game, Asset, NumDataTypes };
 
-   string   identifier; // variable length... at least 2 and up to 34 bytes
-   U16      size;
-   U16      index; // when subdividing these, these are reverse ordered. 6.5.4.3.2.1 so that we can send up to 254k.We still rely on high layers to serialize properly.
-   U8       dataType;
-   U8       data[ MaxBufferSize ];
+   BoundedString64   identifier; 
+   U16               size;
+   U16               index; // when subdividing these, these are reverse ordered. 6.5.4.3.2.1 so that we can send up to 254k.We still rely on high layers to serialize properly.
+   U8                dataType;
+   U8                data[ MaxBufferSize ];
 };
 
 ///////////////////////////////////////////////////////////////
@@ -451,9 +451,9 @@ public:
    bool  SerializeIn( const U8* data, int& bufferOffset, int minorVersion ); // allocates memory
    bool  SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const;
 
-   UuidString  userUuid;
-   U8       notificationType;
-   string   additionalText;
+   UuidString        userUuid;
+   U8                notificationType;
+   BoundedString140  additionalText;
 
 };
 

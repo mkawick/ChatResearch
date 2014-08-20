@@ -460,7 +460,7 @@ void     DiplodocusLoadBalancer::NewServerConnection( const PacketServerIdentifi
    {
       it->serverId = gatewayInfo->serverId;
       it->port = gatewayInfo->serverPort;
-      it->externalIpAddress = gatewayInfo->externalIpAddress;
+      it->externalIpAddress = gatewayInfo->externalIpAddress.c_str();
       it->isVerified = true;
       it->isConnected = true;
       return;
@@ -470,7 +470,7 @@ void     DiplodocusLoadBalancer::NewServerConnection( const PacketServerIdentifi
    AddGatewayAddress( gatewayInfo->serverAddress, gatewayInfo->serverPort );
    it = FindGateway( gatewayInfo->serverAddress, gatewayInfo->serverPort );
    it->serverId = gatewayInfo->serverId;
-   it->externalIpAddress = gatewayInfo->externalIpAddress;
+   it->externalIpAddress = gatewayInfo->externalIpAddress.c_str();
    it->port = gatewayInfo->serverPort;
    it->isVerified = true;
    it->isConnected = true;

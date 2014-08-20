@@ -17,7 +17,7 @@ public:
    virtual void  AreWeUsingCorrectNetworkVersion( bool isCorrect ){}
    virtual void  ServerRequestsListOfUserPurchases() {}
    virtual void  UserProfileResponse() {}
-   virtual void  OtherUsersProfile( const map< string, string >& profileKeyValues ){} // items are also available
+   virtual void  OtherUsersProfile( const map< string, BoundedString32 >& profileKeyValues ){} // items are also available
    virtual void  SelfProfileUpdate( bool success ) {}
 
    virtual void  HasBeenConnectedToGateway() {}
@@ -87,7 +87,7 @@ public:
    virtual void  UpdatedDeviceID() {}
    virtual void  ListOfDevicesUpdated() {}
    virtual void  DeviceRemoved( const string& uuid, bool success ) {}
-   virtual void  UserStats( const string& userUuid, const SerializedKeyValueVector< string >& stats, U8 gameId ) {}
+   virtual void  UserStats( const string& userUuid, const SerializedKeyValueVector< BoundedString64 >& stats, U8 gameId ) {}
    virtual void  UserProfileStats( U32 userId, U32 gameType, const SerializedKeyValueVector< string >& userProfileStats ) {}
 
    ClientSideNetworkCallback(): network( NULL ){}

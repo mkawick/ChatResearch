@@ -399,7 +399,7 @@ void     UserConnection::RegisterNewDevice( const PacketNotification_RegisterDev
       rd->name =      registerDevice->deviceName;
       rd->uuid =      newDeviceUuid;
       rd->iconId =    1;
-      rd->deviceId =  registerDevice->deviceId;
+      rd->deviceId =  registerDevice->deviceId.c_str();
       rd->platformId = registerDevice->platformId;
       rd->isEnabled =  true;
 
@@ -516,9 +516,9 @@ void  UserConnection::UpdateDevice( const PacketNotification_UpdateDevice* updat
    if( deviceIt == m_deviceList.end() )
    {
       string text = "UpdateDevice:: User ";
-      text += m_userInfo.userName;
+      text += m_userInfo.userName.c_str();
       text += " tried to update a device but it could not be found ";
-      text += updateDevicePacket->deviceName;
+      text += updateDevicePacket->deviceName.c_str();
       text += ", ";
       text += updateDevicePacket->deviceUuid.c_str();
       text += " but the device does not exist in UserConnection";
@@ -532,9 +532,9 @@ void  UserConnection::UpdateDevice( const PacketNotification_UpdateDevice* updat
    if( userDeviceId == 0 )
    {
       string text = "UpdateDevice:: User ";
-      text += m_userInfo.userName;
+      text += m_userInfo.userName.c_str();
       text += " tried to update a device but it could not be found ";
-      text += updateDevicePacket->deviceName;
+      text += updateDevicePacket->deviceName.c_str();
       text += ", ";
       text += updateDevicePacket->deviceUuid.c_str();
       text += " but the device does not exist in UserConnection";
@@ -546,9 +546,9 @@ void  UserConnection::UpdateDevice( const PacketNotification_UpdateDevice* updat
    if( deviceEnabledIt == m_deviceEnabledList.end() )
    {
       string text = "UpdateDevice:: User ";
-      text += m_userInfo.userName;
+      text += m_userInfo.userName.c_str();
       text += " tried to update a device but the enabled record could not be found ";
-      text += updateDevicePacket->deviceName;
+      text += updateDevicePacket->deviceName.c_str();
       text += ", ";
       text += updateDevicePacket->deviceUuid.c_str();
       text += " but the device does not exist in UserConnection";
@@ -579,7 +579,7 @@ void  UserConnection::UpdateDbRecordForDevice( U32 id )
    if( deviceIt == m_deviceList.end() )
    {
       string text = "UpdateDbRecordForDevice:: User ";
-      text += m_userInfo.userName;
+      text += m_userInfo.userName.c_str();
       text += " tried to update a device but it could not be found ";
       text += " but the device does not exist in UserConnection";
       m_mainThread->Log( text, 1 );

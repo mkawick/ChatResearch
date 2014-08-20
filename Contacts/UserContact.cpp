@@ -935,7 +935,7 @@ bool  UserContact::DeclineInvitation( const PacketContact_DeclineInvitation* pac
 {
    PacketDbQuery* dbQuery = new PacketDbQuery;
    dbQuery->id =           m_connectionId;
-   dbQuery->meta =         packet->message;
+   dbQuery->meta =         packet->message.c_str();
    dbQuery->lookup =       QueryType_GetInvitationPriorToDeclination;
    dbQuery->serverLookup = 0;//m_userInfo.id;
 
@@ -1033,7 +1033,7 @@ bool  UserContact::PerformSearch( const PacketContact_SearchForUser* packet )
 
    PacketDbQuery* dbQuery = new PacketDbQuery;
    dbQuery->id =           m_connectionId;
-   dbQuery->meta =         packet->searchString;
+   dbQuery->meta =         packet->searchString.c_str();
    dbQuery->lookup =       QueryType_SearchForUser;
    dbQuery->serverLookup = 0;//m_userInfo.id;
 

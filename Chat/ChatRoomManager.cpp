@@ -1320,7 +1320,7 @@ bool     ChatRoomManager::AddUserToRoom( const PacketChatAddUserToChatChannelGam
    errorText += " tried to add another user ";
    errorText += addedUserUuid;
    errorText += " to channel ";
-   errorText += request->gameName;
+   errorText += request->gameName.c_str();
    
 
    PacketChatAddUserToChatChannelGameServerResponse* response = new PacketChatAddUserToChatChannelGameServerResponse;
@@ -1676,7 +1676,7 @@ bool     ChatRoomManager::RemoveUserFromRoom( const PacketChatRemoveUserFromChat
       errorText += " tried to remove user ";
       errorText += userUuid;
       errorText += " from channel ";
-      errorText += request->gameName;
+      errorText += request->gameName.c_str();
       errorText += " but this does channel not exist ";
       m_chatServer->Log( errorText, 1 );
        

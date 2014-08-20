@@ -6,25 +6,25 @@
 
 struct PurchaseInfo
 {
-   UuidString  exchangeUuid;
-   string   exchangeTitle;
-   string   exchangeDescription;
+   UuidString        exchangeUuid;
+   BoundedString80   exchangeTitle;
+   BoundedString140  exchangeDescription;
 
-   UuidString  productSourceUuid;
-   string   productSourceName;
-   int      quantityRequiredSource;
+   UuidString        productSourceUuid;
+   BoundedString80   productSourceName;
+   int               quantityRequiredSource;
 
-   UuidString  productDestUuid;
-   string   productDestName;
-   int      quantityGivenDest;
+   UuidString        productDestUuid;
+   BoundedString80   productDestName;
+   int               quantityGivenDest;
 
-   string   advertisementAssetSource;
-   string   iconHashSource;
-   string   iconHashDest;
-   string   beginDate, endDate;
+   BoundedString80   advertisementAssetSource;
+   BoundedString80   iconHashSource;
+   BoundedString80   iconHashDest;
+   TimeString        beginDate, endDate;
 
-   U32      junk1;
-   string   junk2;
+ /*  U32      junk1;
+   string   junk2;*/
 
    PurchaseInfo()
    {
@@ -49,8 +49,8 @@ struct PurchaseInfo
       beginDate.clear();
       endDate.clear();
 
-      junk1 = 3;
-      junk2.clear();
+   /*   junk1 = 3;
+      junk2.clear();*/
    }
 
    bool  SerializeIn( const U8* data, int& bufferOffset, int minorVersion );
@@ -116,8 +116,8 @@ public:
    bool  SerializeIn( const U8* data, int& bufferOffset, int minorVersion );
    bool  SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const;
 
-   string   message;
-   int      type;
+   BoundedString140  message;
+   int               type;
 };
 
 ///////////////////////////////////////////////////////////////
@@ -199,10 +199,10 @@ public:
    bool  SerializeIn( const U8* data, int& bufferOffset, int minorVersion );
    bool  SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const;
 
-   string   purchaseItemId;
-   int      quantity;
-   string   transactionId;
-   string   receipt;
+   BoundedString80            purchaseItemId;
+   int                        quantity;
+   BoundedString80            transactionId;
+   BoundedLengthString<4600>  receipt;
    int      platformId;// = Platform_ios
 };
 
@@ -218,8 +218,8 @@ public:
 
    //SerializedKeyValueVector< PurchaseInfo >   thingsForSale;
 
-   int      errorCode;// 0 = none or success
-   string   transactionId;
+   int                        errorCode;// 0 = none or success
+   BoundedString80            transactionId;
 };
       
 ///////////////////////////////////////////////////////////////////

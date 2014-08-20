@@ -18,17 +18,17 @@ struct Invitation
       InvitationType_Num
    };
 
-   string   invitationUuid;
-   string   inviterName;
-   string   inviterUuid;
-   string   inviteeName; 
-   string   inviteeUuid; 
-   string   groupName; // if the group has a name
-   string   groupUuid; // applies to event UUIDs, tournament UUIDs, etc.
-   string   message;
-   string   date;
-   U8       type;
-   int      invitationId; // does not transport to client
+   UuidString        invitationUuid;
+   BoundedString80   inviterName;
+   UuidString        inviterUuid;
+   BoundedString80   inviteeName; 
+   UuidString        inviteeUuid; 
+   BoundedString80   groupName; // if the group has a name
+   UuidString        groupUuid; // applies to event UUIDs, tournament UUIDs, etc.
+   BoundedString140  message;
+   TimeString        date;
+   U8                type;
+   int               invitationId; // does not transport to client
    
 
    bool  SerializeIn( const U8* data, int& bufferOffset, int minorVersion );
@@ -125,9 +125,9 @@ public:
    bool  SerializeIn( const U8* data, int& bufferOffset, int minorVersion );
    bool  SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const;
 
-   UuidString  userUuid; 
-   string      inviteGroup;
-   string      message;
+   UuidString        userUuid; 
+   BoundedString80   inviteGroup;
+   BoundedString140  message;
 };
 
 ///////////////////////////////////////////////////////////////
@@ -140,9 +140,8 @@ public:
    bool  SerializeIn( const U8* data, int& bufferOffset, int minorVersion );
    bool  SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const;
 
-   string   newInvitationUuid;
-
-   bool     succeeded;
+   UuidString        newInvitationUuid;
+   bool              succeeded;
 };
 
 ///////////////////////////////////////////////////////////////
@@ -155,7 +154,7 @@ public:
    bool  SerializeIn( const U8* data, int& bufferOffset, int minorVersion );
    bool  SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const;
 
-   string   invitationUuid;
+   UuidString        invitationUuid;
 };
 
 ///////////////////////////////////////////////////////////////
@@ -168,7 +167,7 @@ public:
    bool  SerializeIn( const U8* data, int& bufferOffset, int minorVersion );
    bool  SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const;
 
-   string   invitationUuid; 
+   UuidString        invitationUuid; 
 };
 
 ///////////////////////////////////////////////////////////////
@@ -181,8 +180,8 @@ public:
    bool  SerializeIn( const U8* data, int& bufferOffset, int minorVersion );
    bool  SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const;
 
-   string   invitationUuid;
-   string   reason;
+   UuidString        invitationUuid;
+   BoundedString140  reason;
 };
 
 ///////////////////////////////////////////////////////////////
@@ -203,7 +202,7 @@ public:
    bool  SerializeIn( const U8* data, int& bufferOffset, int minorVersion );
    bool  SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const;
 
-   string   invitationUuid;
+   UuidString        invitationUuid;
 };
 
 
@@ -230,7 +229,7 @@ public:
    bool  SerializeIn( const U8* data, int& bufferOffset, int minorVersion );
    bool  SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const;
 
-   string   uuid;
+   UuidString     uuid;
    SerializedKeyValueVector < Invitation >  invitationList;
 };
 
@@ -244,7 +243,7 @@ public:
    bool  SerializeIn( const U8* data, int& bufferOffset, int minorVersion );
    bool  SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const;
 
-   string   groupUuid;
+   UuidString     groupUuid;
 };
 
 ///////////////////////////////////////////////////////////////

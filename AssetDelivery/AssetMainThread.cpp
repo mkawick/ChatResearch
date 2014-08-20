@@ -292,28 +292,28 @@ bool     AssetMainThread::AddInputChainData( BasePacket* packet, U32 connectionI
             {
                PacketAsset_GetListOfAssetCategories* packetAsset = static_cast< PacketAsset_GetListOfAssetCategories* >( unwrappedPacket );
                uuid = packetAsset->uuid.c_str();
-               loginKey = packetAsset->loginKey;
+               loginKey = packetAsset->loginKey.c_str();
             }
             break;
          case PacketAsset::AssetType_GetListOfAssets:
             {
                PacketAsset_GetListOfAssets* packetAsset = static_cast< PacketAsset_GetListOfAssets* >( unwrappedPacket );
                uuid = packetAsset->uuid.c_str();
-               loginKey = packetAsset->loginKey;
+               loginKey = packetAsset->loginKey.c_str();
             }
             break;
          case PacketAsset::AssetType_RequestAsset:
             {
                PacketAsset_RequestAsset* packetAsset = static_cast< PacketAsset_RequestAsset* >( unwrappedPacket );
                uuid = packetAsset->uuid.c_str();
-               loginKey = packetAsset->loginKey;
+               loginKey = packetAsset->loginKey.c_str();
             }
             break;
          case PacketAsset::AssetType_EchoToServer:
             {
                PacketAsset_EchoToServer* packetEcho = static_cast< PacketAsset_EchoToServer* >( unwrappedPacket );
                uuid = packetEcho->uuid.c_str();
-               loginKey = packetEcho->loginKey;
+               loginKey = packetEcho->loginKey.c_str();
             }
             break;
          }
@@ -417,9 +417,9 @@ bool     AssetMainThread::ConnectUser( PacketPrepareForUserLogin* loginPacket )
    {
 
       UserTicket ut;
-      ut.userName =        loginPacket->userName;
+      ut.userName =        loginPacket->userName.c_str();
       ut.uuid =            loginPacket->uuid.c_str();
-      ut.userTicket =      loginPacket->loginKey;
+      ut.userTicket =      loginPacket->loginKey.c_str();
       ut.connectionId =    0;
       ut.gameProductId =   loginPacket->gameProductId;
       ut.userId =          loginPacket->userId;

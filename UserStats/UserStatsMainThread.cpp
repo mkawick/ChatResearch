@@ -365,8 +365,8 @@ bool     UserStatsMainThread::HandleUserStatPacket( BasePacket* packet, U32 serv
             // lookup user and store stats
             const string userUuid = userUuid;
             cout << "Record user stats for user uuid: " << userUuid << endl;
-            SerializedKeyValueVector< string >& statList = stats->stats;
-            SerializedKeyValueVector< string >::KVIterator iter = statList.begin();
+            SerializedKeyValueVector< BoundedString64 >& statList = stats->stats;
+            SerializedKeyValueVector< BoundedString64 >::KVIterator iter = statList.begin();
             while( iter != statList.end() )
             {
                const string& key = iter->key;

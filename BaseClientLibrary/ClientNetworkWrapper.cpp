@@ -643,7 +643,7 @@ void     ClientNetworkWrapper::UpdateNotifications()
             break;
          case ClientSideNetworkCallback::NotificationType_OtherUsersProfile:
             {
-               map< string, string > profileKeyValues;
+               map< string, BoundedString32 > profileKeyValues;
                while( keyValueIt != qn.genericKeyValuePairs.end() )
                {
                   profileKeyValues.insert( pair< string, string >( keyValueIt->key, keyValueIt->value ) );
@@ -1006,6 +1006,22 @@ void     ClientNetworkWrapper::Notification( int type, SerializedKeyValueVector<
 {
    QueuedNotification qn( type );
    qn.genericKeyValuePairs = strings;
+
+   Threading::MutexLock   locker( m_notificationMutex );
+   m_notifications.push( qn );
+}
+
+
+void     ClientNetworkWrapper::Notification( int type, SerializedKeyValueVector< BoundedString32 >& strings )
+{
+   QueuedNotification qn( type );
+
+   SerializedKeyValueVector< BoundedString32 >::const_KVIterator it = strings.begin();
+   while( it != strings.end() )
+   {
+      qn.genericKeyValuePairs.insert( it->key, it->value );
+      it++;
+   }
 
    Threading::MutexLock   locker( m_notificationMutex );
    m_notifications.push( qn );
@@ -3347,12 +3363,12 @@ bool     ClientNetworkWrapper::HandlePacketReceived( BasePacket* packetIn )
                   PacketLoginToClient* login = static_cast<PacketLoginToClient*>( packetIn );
                   if( login->wasLoginSuccessful == true )
                   {
-                     m_userName = login->userName;
+                     m_userName = login->userName.c_str();
                      m_uuid = login->uuid.c_str();
                      //m_email = login->email;
                      m_connectionId = login->connectionId;
-                     m_lastLoggedOutTime = login->lastLogoutTime;
-                     m_loginKey = login->loginKey;
+                     m_lastLoggedOutTime = login->lastLogoutTime.c_str();
+                     m_loginKey = login->loginKey.c_str();
                      m_isLoggedIn = true;
                   }
                   else
@@ -3395,12 +3411,12 @@ bool     ClientNetworkWrapper::HandlePacketReceived( BasePacket* packetIn )
                   if( profile->userUuid == m_uuid )
                   {
                      notifyThatSelfUpdated = true;
-                     m_userName = profile->userName;
-                     m_email = profile->email;
+                     m_userName = profile->userName.c_str();
+                     m_email = profile->email.c_str();
 
                      m_languageId = profile->languageId;
                      m_avatarId = profile->iconId;
-                     m_motto = profile->motto;
+                     m_motto = profile->motto.c_str();
                      m_showWinLossRecord = profile->showWinLossRecord;
                      m_marketingOptOut = profile->marketingOptOut;
                      m_showGenderProfile = profile->showGenderProfile;
@@ -3924,7 +3940,7 @@ void     ClientNetworkWrapper::HandleListOfContacts( const PacketContact_GetList
       BasicUser bu;
       const FriendInfo& fi = it->value;
       bu.isOnline = fi.isOnline;
-      bu.userName = fi.userName;
+      bu.userName = fi.userName.c_str();
       bu.UUID = it->key;
       bu.avatarId = fi.avatarId;
       bu.notesAboutThisUser = fi.notesAboutThisUser.c_str();
@@ -3948,7 +3964,7 @@ void     ClientNetworkWrapper::HandleUserOnlineStatusChange( const PacketContact
    {
       if( itFriends->key == packet->uuid )
       {
-         itFriends->value.userName = packet->friendInfo.userName;
+         itFriends->value.userName = packet->friendInfo.userName.c_str();
          itFriends->value.isOnline = packet->friendInfo.isOnline;
          itFriends->value.avatarId = packet->friendInfo.avatarId;
          updated = true;
@@ -4047,11 +4063,11 @@ void     ClientNetworkWrapper::HandleSearchForUserResults( const PacketContact_S
       const FriendInfo& friendly = it->value; // friend is a keyword
 
       BasicUser bu;
-      bu.userName = friendly.userName;
+      bu.userName = friendly.userName.c_str();
       bu.isOnline = friendly.isOnline;
       bu.UUID = it->key;
       m_lastUserSearch.insert( it->key, bu );
-      cout << " **found user: " << friendly.userName << endl;
+      cout << " **found user: " << friendly.userName.c_str() << endl;
       cout << "   uuid: " << bu.UUID << endl;
       it++;
    }
@@ -4066,7 +4082,7 @@ void     ClientNetworkWrapper::HandleListOfAggregatePurchases( const PacketListO
    Threading::MutexLock    locker( m_notificationMutex );
 
    if( m_uuid.size() == 0 )
-      m_uuid = packet->userUuid; // correcting for occassional order of packets arriving.
+      m_uuid = packet->userUuid.c_str(); // correcting for occassional order of packets arriving.
    if( packet->userUuid == m_uuid )
    {
       m_purchases = packet->purchases;
@@ -4074,7 +4090,7 @@ void     ClientNetworkWrapper::HandleListOfAggregatePurchases( const PacketListO
    else
    {
       m_otherUsersPurchases = packet->purchases;
-      m_otherUserPurchaseUuid = packet->userUuid;
+      m_otherUserPurchaseUuid = packet->userUuid.c_str();
    }
 }
 
@@ -4130,9 +4146,9 @@ void     ClientNetworkWrapper::HandleBeingAddedByServerToChatChannel( const Pack
    {
       ChatChannel newChannel;
       newChannel.uuid = chat->channelUuid.c_str();
-      newChannel.channelName = chat->gameName;
+      newChannel.channelName = chat->gameName.c_str();
       newChannel.gameInstanceId = chat->gameId;
-      newChannel.channelDetails= chat->gameName;
+      newChannel.channelDetails= chat->gameName.c_str();
       newChannel.userList = chat->userList;
       AddChatChannel( newChannel );
    }
@@ -4352,10 +4368,10 @@ void     ClientNetworkWrapper::HandleChatChannelUpdate( BasePacket* packetIn )
       {
          ChatChannel newChannel;
          newChannel.uuid = channelIt->value.channelUuid.c_str();
-         newChannel.channelName = channelIt->value.channelName;
+         newChannel.channelName = channelIt->value.channelName.c_str();
          newChannel.gameProductId = channelIt->value.gameProduct;
          newChannel.gameInstanceId = channelIt->value.gameId;
-         newChannel.channelDetails = channelIt->value.channelName;
+         newChannel.channelDetails = channelIt->value.channelName.c_str();
          newChannel.userList = channelIt->value.userList;// super expensive
          AddChatChannel( newChannel );
          channelIt++;

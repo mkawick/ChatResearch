@@ -169,7 +169,7 @@ private:
    bool     AddBlankUserProfile( U32 connectionId );
    bool     ForceUserLogoutAndBlock( U32 connectionId );
    bool     CreateAccount( const char* username, const char* emailAddress, const char* password, int userId, int gameId );
-   bool     SendListOfGamesToGameServers( U32 connectionId, const KeyValueVector& kv_array );
+   bool     SendListOfOwnedGamesToGameServers( U32 connectionId, const KeyValueVector& kv_array );
 
    bool     UpdateLastLoggedOutTime( U32 connectionId );
    bool     UpdateLastLoggedInTime( U32 connectionId );
