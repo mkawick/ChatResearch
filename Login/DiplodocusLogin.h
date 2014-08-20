@@ -184,6 +184,7 @@ private:
    bool     RequestProfile( U32 connectionId, const PacketRequestUserProfile* profileRequest );
    bool     UpdateProfile( U32 connectionId, const PacketUpdateUserProfile* profileRequest );
    bool     UpdateProfile( U32 connectionId, const PacketUpdateSelfProfile* profileRequest );
+   int      CountNumOfAvailableProducts();
    bool     HandleRequestListOfProducts( U32 connectionId, PacketRequestListOfProducts* purchaseRequest );
    bool     RequestOthersProfile( U32 connectionId, const PacketRequestOtherUserProfile* profileRequest );
    bool     ThrottleUser( U32 userConnectionId, const PacketLoginDebugThrottleUserPackets* throttleRequest );

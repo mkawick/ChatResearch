@@ -1529,6 +1529,21 @@ void  DiplodocusLogin:: PackageProductToSendToClient( const ProductInfo& pi, Pro
    brief.productType = pi.productType;
 }
 
+int      DiplodocusLogin:: CountNumOfAvailableProducts()
+{
+   int count = 0;
+   ProductList::iterator it = m_productList.begin();
+   while( it != m_productList.end() )
+   {
+      const ProductInfo& pi = *it ++;
+      if( pi.isHidden == true )
+         continue;
+
+      count ++;
+   }
+   return count;
+}
+
 //---------------------------------------------------------------
 
 bool     DiplodocusLogin:: HandleRequestListOfProducts( U32 connectionId, PacketRequestListOfProducts* purchaseRequest )
@@ -1551,7 +1566,7 @@ bool     DiplodocusLogin:: HandleRequestListOfProducts( U32 connectionId, Packet
    PacketRequestListOfProductsResponse* response = new PacketRequestListOfProductsResponse();
    response->platformId = purchaseRequest->platformId;
    
-   int totalCount = m_productList.size();
+   int totalCount = CountNumOfAvailableProducts();
 
    response->products.SetIndexParams( 0, totalCount );
    int   numPacketsSent = 0;
