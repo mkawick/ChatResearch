@@ -29,104 +29,105 @@ using namespace std;
 PacketFactory::PacketFactory(){}
 
 template< typename PacketType >
-PacketType* SerializeIn( const U8* bufferIn, int& bufferOffset )
+PacketType* SerializeIn( const U8* bufferIn, int& bufferOffset, int networkMinorVersion )
 {
    PacketType* newPacket = new PacketType();
-   newPacket->SerializeIn( bufferIn, bufferOffset );
+   newPacket->SerializeIn( bufferIn, bufferOffset, networkMinorVersion );
 
    return newPacket;
 }
 
 //-----------------------------------------------------------------------------------------
 
-bool	PacketFactory::Parse( const U8* bufferIn, int& bufferOffset, BasePacket** packetOut ) const
+bool	PacketFactory::Parse( const U8* bufferIn, int& bufferOffset, BasePacket** packetOut, int networkMinorVersion ) const
 {
    *packetOut = NULL;// just to be sure that no one misuses this
 
    BasePacket firstPassParse;
    int offset = bufferOffset;
-   firstPassParse.SerializeIn( bufferIn, offset );
+   firstPassParse.SerializeIn( bufferIn, offset, networkMinorVersion );
 
    switch( firstPassParse.packetType )
    {
    case PacketType_Base:
       {
-         return ParseBasePacket( bufferIn, bufferOffset, &firstPassParse, packetOut );
+         return ParseBasePacket( bufferIn, bufferOffset, &firstPassParse, packetOut, networkMinorVersion );
       }
    case PacketType_Login:
       {
-         return ParseLogin( bufferIn, bufferOffset, &firstPassParse, packetOut );
+         return ParseLogin( bufferIn, bufferOffset, &firstPassParse, packetOut, networkMinorVersion );
       }
    case PacketType_Chat:
       {
-         return ParseChat( bufferIn, bufferOffset, &firstPassParse, packetOut );
+         return ParseChat( bufferIn, bufferOffset, &firstPassParse, packetOut, networkMinorVersion );
       }
    case PacketType_UserInfo:
       {
-         return ParseUserInfo( bufferIn, bufferOffset, &firstPassParse, packetOut );
+         return ParseUserInfo( bufferIn, bufferOffset, &firstPassParse, packetOut, networkMinorVersion );
       }
    case PacketType_Contact:
       {
-         return ParseContact( bufferIn, bufferOffset, &firstPassParse, packetOut );
+         return ParseContact( bufferIn, bufferOffset, &firstPassParse, packetOut, networkMinorVersion );
       }
    case PacketType_Asset:
       {
-         return ParseAsset( bufferIn, bufferOffset, &firstPassParse, packetOut );
+         return ParseAsset( bufferIn, bufferOffset, &firstPassParse, packetOut, networkMinorVersion );
       }
    case PacketType_DbQuery:
       {   
-         return ParseDbQuery( bufferIn, bufferOffset, &firstPassParse, packetOut );
+         return ParseDbQuery( bufferIn, bufferOffset, &firstPassParse, packetOut, networkMinorVersion );
       }
    case PacketType_ServerToServerWrapper:
       {   
-         return ParseServerToServerWrapper( bufferIn, bufferOffset, &firstPassParse, packetOut );
+         return ParseServerToServerWrapper( bufferIn, bufferOffset, &firstPassParse, packetOut, networkMinorVersion );
       }
    case PacketType_ServerInformation:
       {
-         return ParseServerInfo( bufferIn, bufferOffset, &firstPassParse, packetOut );
+         return ParseServerInfo( bufferIn, bufferOffset, &firstPassParse, packetOut, networkMinorVersion );
       }
    case PacketType_GatewayWrapper:
       {   
-         return ParseGatewayWrapper( bufferIn, bufferOffset, &firstPassParse, packetOut );
+         return ParseGatewayWrapper( bufferIn, bufferOffset, &firstPassParse, packetOut, networkMinorVersion );
       }
    case PacketType_Gameplay:
       {
-         return ParseGame( bufferIn, bufferOffset, &firstPassParse, packetOut );
+         return ParseGame( bufferIn, bufferOffset, &firstPassParse, packetOut, networkMinorVersion );
       }
    case PacketType_ErrorReport:
       {   
+         // put here just to avoid a function call for only one type.
          PacketErrorReport* error = new PacketErrorReport();
-         error->SerializeIn( bufferIn, bufferOffset );
+         error->SerializeIn( bufferIn, bufferOffset, networkMinorVersion );
          *packetOut = error;
          return true;
       }
    case PacketType_Cheat:
       {
-         return ParseCheat( bufferIn, bufferOffset, &firstPassParse, packetOut );
+         return ParseCheat( bufferIn, bufferOffset, &firstPassParse, packetOut, networkMinorVersion );
       }
    case PacketType_Purchase:
       {
-         return ParsePurchase( bufferIn, bufferOffset, &firstPassParse, packetOut );
+         return ParsePurchase( bufferIn, bufferOffset, &firstPassParse, packetOut, networkMinorVersion );
       }
    case PacketType_Analytics:
       {
-         return ParseAnalytics( bufferIn, bufferOffset, &firstPassParse, packetOut );
+         return ParseAnalytics( bufferIn, bufferOffset, &firstPassParse, packetOut, networkMinorVersion );
       }
    case PacketType_Tournament:
       {
-         return ParseTournament( bufferIn, bufferOffset, &firstPassParse, packetOut );
+         return ParseTournament( bufferIn, bufferOffset, &firstPassParse, packetOut, networkMinorVersion );
       }
    case PacketType_UserStats:
       {
-         return ParseUserStats( bufferIn, bufferOffset, &firstPassParse, packetOut );
+         return ParseUserStats( bufferIn, bufferOffset, &firstPassParse, packetOut, networkMinorVersion );
       }
    case PacketType_Notification:
       {
-         return ParseNotification( bufferIn, bufferOffset, &firstPassParse, packetOut );
+         return ParseNotification( bufferIn, bufferOffset, &firstPassParse, packetOut, networkMinorVersion );
       }
    case PacketType_Invitation:
       {
-         return ParseInvitation( bufferIn, bufferOffset, &firstPassParse, packetOut );
+         return ParseInvitation( bufferIn, bufferOffset, &firstPassParse, packetOut, networkMinorVersion );
       }
    }
 
@@ -158,48 +159,53 @@ void     PacketFactory::CleanupPacket( BasePacket*& packet )
 
 //---------------------------------------------------------------------------------------------------------------------------------------
 
-bool     PacketFactory::SafeParse( const U8* bufferIn, int& bufferOffset, BasePacket& packetOut ) const
+bool     PacketFactory::SafeParse( const U8* bufferIn, int& bufferOffset, BasePacket& packetOut, int networkMinorVersion ) const
 {
    int offset = bufferOffset;
-   packetOut.SerializeIn( bufferIn, offset );
+   packetOut.SerializeIn( bufferIn, offset, networkMinorVersion );
    return true;
 }
 
 //---------------------------------------------------------------------------------------------------------------------------------------
 //---------------------------------------------------------------------------------------------------------------------------------------
 
-bool  PacketFactory::ParseBasePacket( const U8* bufferIn, int& bufferOffset, const BasePacket* firstPassParse, BasePacket** packetOut ) const
+bool  PacketFactory::ParseBasePacket( const U8* bufferIn, int& bufferOffset, const BasePacket* firstPassParse, BasePacket** packetOut, int networkMinorVersion ) const
 {
    switch( firstPassParse->packetSubType )
    {
       case BasePacket::BasePacket_Type:
          {
-            *packetOut = SerializeIn< BasePacket >( bufferIn, bufferOffset );
+            *packetOut = SerializeIn< BasePacket >( bufferIn, bufferOffset, networkMinorVersion );
          }
          return true;
       case BasePacket::BasePacket_Hello:
          {
-            *packetOut = SerializeIn< PacketHello >( bufferIn, bufferOffset );
+            *packetOut = SerializeIn< PacketHello >( bufferIn, bufferOffset, networkMinorVersion );
          }
          return true;
       case BasePacket::BasePacket_CommsHandshake:
          {
-            *packetOut = SerializeIn< PacketCommsHandshake >( bufferIn, bufferOffset );
+            *packetOut = SerializeIn< PacketCommsHandshake >( bufferIn, bufferOffset, networkMinorVersion );
          }
          return true;
       case BasePacket::BasePacket_RerouteRequest:
          {
-            *packetOut = SerializeIn< PacketRerouteRequest >( bufferIn, bufferOffset );
+            *packetOut = SerializeIn< PacketRerouteRequest >( bufferIn, bufferOffset, networkMinorVersion );
          }
          return true;
       case BasePacket::BasePacket_RerouteRequestResponse:
          {
-            *packetOut = SerializeIn< PacketRerouteRequestResponse >( bufferIn, bufferOffset );
+            *packetOut = SerializeIn< PacketRerouteRequestResponse >( bufferIn, bufferOffset, networkMinorVersion );
          }
          return true;
       case BasePacket::BasePacket_QOS:
          {
-            *packetOut = SerializeIn< Packet_QOS_ReportToClient >( bufferIn, bufferOffset );
+            *packetOut = SerializeIn< Packet_QOS_ReportToClient >( bufferIn, bufferOffset, networkMinorVersion );
+         }
+         return true;
+      case BasePacket::BasePacket_TestOnly:
+         {
+            *packetOut = SerializeIn< PacketBase_TestOnly >( bufferIn, bufferOffset, networkMinorVersion );
          }
          return true;
    }
@@ -207,161 +213,161 @@ bool  PacketFactory::ParseBasePacket( const U8* bufferIn, int& bufferOffset, con
 }
 
 //---------------------------------------------------------------------------------------------------------------------------------------
-bool  PacketFactory::ParseLogin( const U8* bufferIn, int& bufferOffset, const BasePacket* firstPassParse, BasePacket** packetOut ) const
+bool  PacketFactory::ParseLogin( const U8* bufferIn, int& bufferOffset, const BasePacket* firstPassParse, BasePacket** packetOut, int networkMinorVersion ) const
 {
    switch( firstPassParse->packetSubType )
    {
       case PacketLogin::LoginType_Login:
          {
-            *packetOut = SerializeIn< PacketLogin >( bufferIn, bufferOffset );
+            *packetOut = SerializeIn< PacketLogin >( bufferIn, bufferOffset, networkMinorVersion );
          }
          return true;
       case PacketLogin::LoginType_LoginFromGateway:
          {
-            *packetOut = SerializeIn< PacketLoginFromGateway >( bufferIn, bufferOffset );
+            *packetOut = SerializeIn< PacketLoginFromGateway >( bufferIn, bufferOffset, networkMinorVersion );
          }
          return true;
       case PacketLogin::LoginType_Logout:
          {
-            *packetOut = SerializeIn< PacketLogout >( bufferIn, bufferOffset );
+            *packetOut = SerializeIn< PacketLogout >( bufferIn, bufferOffset, networkMinorVersion );
          }
          return true;
       case PacketLogin::LoginType_PacketLogoutToClient:
          {
-            *packetOut = SerializeIn< PacketLogoutToClient >( bufferIn, bufferOffset );
+            *packetOut = SerializeIn< PacketLogoutToClient >( bufferIn, bufferOffset, networkMinorVersion );
          }
          return true;
       case PacketLogin::LoginType_EchoToServer:
          {
-            *packetOut = SerializeIn< PacketLogin_EchoToServer >( bufferIn, bufferOffset );
+            *packetOut = SerializeIn< PacketLogin_EchoToServer >( bufferIn, bufferOffset, networkMinorVersion );
          }
          return true;
       case PacketLogin::LoginType_EchoToClient:
          {
-            *packetOut = SerializeIn< PacketLogin_EchoToClient >( bufferIn, bufferOffset );
+            *packetOut = SerializeIn< PacketLogin_EchoToClient >( bufferIn, bufferOffset, networkMinorVersion );
          }
          return true;
       case PacketLogin::LoginType_InformClientOfLoginStatus:
          {
-            *packetOut = SerializeIn< PacketLoginToClient >( bufferIn, bufferOffset );
+            *packetOut = SerializeIn< PacketLoginToClient >( bufferIn, bufferOffset, networkMinorVersion );
          }
          return true;
       case PacketLogin::LoginType_InformGatewayOfLoginStatus:
          {
-            *packetOut = SerializeIn< PacketLoginToGateway >( bufferIn, bufferOffset );
+            *packetOut = SerializeIn< PacketLoginToGateway >( bufferIn, bufferOffset, networkMinorVersion );
          }
          return true;
       case PacketLogin::LoginType_PrepareForUserLogin:
          {
-            *packetOut = SerializeIn< PacketPrepareForUserLogin >( bufferIn, bufferOffset );
+            *packetOut = SerializeIn< PacketPrepareForUserLogin >( bufferIn, bufferOffset, networkMinorVersion );
          }
          return true;
       case PacketLogin::LoginType_PrepareForUserLogout:
          {
-            *packetOut = SerializeIn< PacketPrepareForUserLogout >( bufferIn, bufferOffset );
+            *packetOut = SerializeIn< PacketPrepareForUserLogout >( bufferIn, bufferOffset, networkMinorVersion );
          }
          return true;
       case PacketLogin::LoginType_ThrottleUsersConnection:
          {
-            *packetOut = SerializeIn< PacketLoginThrottlePackets >( bufferIn, bufferOffset );
+            *packetOut = SerializeIn< PacketLoginThrottlePackets >( bufferIn, bufferOffset, networkMinorVersion );
          }
          return true;
       case PacketLogin::LoginType_DebugThrottleUsersConnection:
          {
-            *packetOut = SerializeIn< PacketLoginDebugThrottleUserPackets >( bufferIn, bufferOffset );
+            *packetOut = SerializeIn< PacketLoginDebugThrottleUserPackets >( bufferIn, bufferOffset, networkMinorVersion );
          }
          return true;
       case PacketLogin::LoginType_CreateAccount:
          {
-            *packetOut = SerializeIn< PacketCreateAccount >( bufferIn, bufferOffset );
+            *packetOut = SerializeIn< PacketCreateAccount >( bufferIn, bufferOffset, networkMinorVersion );
          }
          return true;
       case PacketLogin::LoginType_CreateAccountResponse:
          {
-            *packetOut = SerializeIn< PacketCreateAccountResponse >( bufferIn, bufferOffset );
+            *packetOut = SerializeIn< PacketCreateAccountResponse >( bufferIn, bufferOffset, networkMinorVersion );
          }
          return true;
       case PacketLogin::LoginType_RequestListOfPurchases:
          {
-            *packetOut = SerializeIn< PacketListOfUserPurchasesRequest >( bufferIn, bufferOffset );
+            *packetOut = SerializeIn< PacketListOfUserPurchasesRequest >( bufferIn, bufferOffset, networkMinorVersion );
          }
          return true;
       case PacketLogin::LoginType_AddPurchaseEntry:
          {
-            *packetOut = SerializeIn< PacketAddPurchaseEntry >( bufferIn, bufferOffset );
+            *packetOut = SerializeIn< PacketAddPurchaseEntry >( bufferIn, bufferOffset, networkMinorVersion );
          }
          return true;
       case PacketLogin::LoginType_ListOfAggregatePurchases:
          {
-            *packetOut = SerializeIn< PacketListOfUserAggregatePurchases >( bufferIn, bufferOffset );
+            *packetOut = SerializeIn< PacketListOfUserAggregatePurchases >( bufferIn, bufferOffset, networkMinorVersion );
          }
          return true;
       case PacketLogin::LoginType_ListOfProductsS2S:
          {
-            *packetOut = SerializeIn< PacketListOfUserProductsS2S >( bufferIn, bufferOffset );
+            *packetOut = SerializeIn< PacketListOfUserProductsS2S >( bufferIn, bufferOffset, networkMinorVersion );
          }
          return true;
       case PacketLogin::LoginType_RequestUserProfile:
          {
-            *packetOut = SerializeIn< PacketRequestUserProfile >( bufferIn, bufferOffset );
+            *packetOut = SerializeIn< PacketRequestUserProfile >( bufferIn, bufferOffset, networkMinorVersion );
          }
          return true;
       case PacketLogin::LoginType_RequestUserProfileResponse:
          {
-            *packetOut = SerializeIn< PacketRequestUserProfileResponse >( bufferIn, bufferOffset );
+            *packetOut = SerializeIn< PacketRequestUserProfileResponse >( bufferIn, bufferOffset, networkMinorVersion );
          }
          return true;
       case PacketLogin::LoginType_UpdateUserProfile:
          {
-            *packetOut = SerializeIn< PacketUpdateUserProfile >( bufferIn, bufferOffset );
+            *packetOut = SerializeIn< PacketUpdateUserProfile >( bufferIn, bufferOffset, networkMinorVersion );
          }
          return true;
       case PacketLogin::LoginType_UpdateUserProfileResponse:
          {
-            *packetOut = SerializeIn< PacketUpdateUserProfileResponse >( bufferIn, bufferOffset );
+            *packetOut = SerializeIn< PacketUpdateUserProfileResponse >( bufferIn, bufferOffset, networkMinorVersion );
          }
          return true;
       case PacketLogin::LoginType_RequestListOfProducts:
          {
-            *packetOut = SerializeIn< PacketRequestListOfProducts >( bufferIn, bufferOffset );
+            *packetOut = SerializeIn< PacketRequestListOfProducts >( bufferIn, bufferOffset, networkMinorVersion );
          }
          return true;
       case PacketLogin::LoginType_RequestListOfProductsResponse:
          {
-            *packetOut = SerializeIn< PacketRequestListOfProductsResponse >( bufferIn, bufferOffset );
+            *packetOut = SerializeIn< PacketRequestListOfProductsResponse >( bufferIn, bufferOffset, networkMinorVersion );
          }
          return true;
       case PacketLogin::LoginType_RequestOtherUserProfile:
          {
-            *packetOut = SerializeIn< PacketRequestOtherUserProfile >( bufferIn, bufferOffset );
+            *packetOut = SerializeIn< PacketRequestOtherUserProfile >( bufferIn, bufferOffset, networkMinorVersion );
          }
          return true;
       case PacketLogin::LoginType_RequestOtherUserProfileResponse:
          {
-            *packetOut = SerializeIn< PacketRequestOtherUserProfileResponse >( bufferIn, bufferOffset );
+            *packetOut = SerializeIn< PacketRequestOtherUserProfileResponse >( bufferIn, bufferOffset, networkMinorVersion );
          }
          return true;
 
       case PacketLogin::LoginType_UpdateSelfProfile:
          {
-            *packetOut = SerializeIn< PacketUpdateSelfProfile >( bufferIn, bufferOffset );
+            *packetOut = SerializeIn< PacketUpdateSelfProfile >( bufferIn, bufferOffset, networkMinorVersion );
          }
          return true;
       case PacketLogin::LoginType_UpdateSelfProfileResponse:
          {
-            *packetOut = SerializeIn< PacketUpdateSelfProfileResponse >( bufferIn, bufferOffset );
+            *packetOut = SerializeIn< PacketUpdateSelfProfileResponse >( bufferIn, bufferOffset, networkMinorVersion );
          }
          return true;
 
       case PacketLogin::LoginType_UserUpdateProfile:
          {
-            *packetOut = SerializeIn< PacketUserUpdateProfile >( bufferIn, bufferOffset );
+            *packetOut = SerializeIn< PacketUserUpdateProfile >( bufferIn, bufferOffset, networkMinorVersion );
          }
          return true;
 
       case PacketLogin::LoginType_UserListOfPurchasesWasUpdated:
          {
-            *packetOut = SerializeIn< PacketListOfUserPurchasesUpdated >( bufferIn, bufferOffset );
+            *packetOut = SerializeIn< PacketListOfUserPurchasesUpdated >( bufferIn, bufferOffset, networkMinorVersion );
          }
          return true;
    }
@@ -371,254 +377,254 @@ bool  PacketFactory::ParseLogin( const U8* bufferIn, int& bufferOffset, const Ba
 
 //-----------------------------------------------------------------------------------------
 
-bool  PacketFactory::ParseChat( const U8* bufferIn, int& bufferOffset, const BasePacket* firstPassParse, BasePacket** packetOut ) const
+bool  PacketFactory::ParseChat( const U8* bufferIn, int& bufferOffset, const BasePacket* firstPassParse, BasePacket** packetOut, int networkMinorVersion ) const
 {
    switch( firstPassParse->packetSubType )
    {
    case PacketChatToServer::ChatType_ChatToServer:
       {
-         *packetOut = SerializeIn< PacketChatToServer >( bufferIn, bufferOffset );
+         *packetOut = SerializeIn< PacketChatToServer >( bufferIn, bufferOffset, networkMinorVersion );
       }
       return true;
    case PacketChatToServer::ChatType_ChatToClient:
       {
-         *packetOut = SerializeIn< PacketChatToClient >( bufferIn, bufferOffset );
+         *packetOut = SerializeIn< PacketChatToClient >( bufferIn, bufferOffset, networkMinorVersion );
       }
       return true;
    case PacketChatToServer::ChatType_EchoToServer:
       {
-         *packetOut = SerializeIn< PacketChat_EchoToServer >( bufferIn, bufferOffset );
+         *packetOut = SerializeIn< PacketChat_EchoToServer >( bufferIn, bufferOffset, networkMinorVersion );
       }
       return true;
    case PacketChatToServer::ChatType_EchoToClient:
       {
-         *packetOut = SerializeIn< PacketChat_EchoToClient >( bufferIn, bufferOffset );
+         *packetOut = SerializeIn< PacketChat_EchoToClient >( bufferIn, bufferOffset, networkMinorVersion );
       }
       return true;
    case PacketChatToServer::ChatType_UserChatStatusChange:
       {
-         *packetOut = SerializeIn< PacketChatUserStatusChangeBase >( bufferIn, bufferOffset );
+         *packetOut = SerializeIn< PacketChatUserStatusChangeBase >( bufferIn, bufferOffset, networkMinorVersion );
       }
       return true;
 
   /* case PacketChatToServer::ChatType_ChangeChatChannel:
       {
-         *packetOut = SerializeIn< PacketChangeChatChannel >( bufferIn, bufferOffset );
+         *packetOut = SerializeIn< PacketChangeChatChannel >( bufferIn, bufferOffset, networkMinorVersion );
       }
       return true;*/
 
    case PacketChatToServer::ChatType_RequestHistory:
       {
-         *packetOut = SerializeIn< PacketChatHistoryRequest >( bufferIn, bufferOffset );
+         *packetOut = SerializeIn< PacketChatHistoryRequest >( bufferIn, bufferOffset, networkMinorVersion );
       }
       return true;
 
    /*case PacketChatToServer::ChatType_ChangeChatChannelToClient:
       {
-         *packetOut = SerializeIn< PacketChangeChatChannelToClient >( bufferIn, bufferOffset );
+         *packetOut = SerializeIn< PacketChangeChatChannelToClient >( bufferIn, bufferOffset, networkMinorVersion );
       }
       return true;*/
 
    case PacketChatToServer::ChatType_SendListOfChannelsToClient:
       {
-         *packetOut = SerializeIn< PacketChatChannelListToClient >( bufferIn, bufferOffset );
+         *packetOut = SerializeIn< PacketChatChannelListToClient >( bufferIn, bufferOffset, networkMinorVersion );
       }
       return true;
    case PacketChatToServer::ChatType_UserAddedToChatChannelFromGameServer:
       {
-         *packetOut = SerializeIn< PacketChatUserAddedToChatChannelFromGameServer >( bufferIn, bufferOffset );
+         *packetOut = SerializeIn< PacketChatUserAddedToChatChannelFromGameServer >( bufferIn, bufferOffset, networkMinorVersion );
       }
       return true;
    case PacketChatToServer::ChatType_RequestHistoryResult:
       {
-         *packetOut = SerializeIn< PacketChatHistoryResult >( bufferIn, bufferOffset );
+         *packetOut = SerializeIn< PacketChatHistoryResult >( bufferIn, bufferOffset, networkMinorVersion );
       }
       return true;
    case PacketChatToServer::ChatType_RequestHistorySinceLastLogin:
       {
-         *packetOut = SerializeIn< PacketChatMissedHistoryRequest >( bufferIn, bufferOffset );
+         *packetOut = SerializeIn< PacketChatMissedHistoryRequest >( bufferIn, bufferOffset, networkMinorVersion );
       }
       return true;
    case PacketChatToServer::ChatType_RequestHistorySinceLastLoginResponse:
       {
-         *packetOut = SerializeIn< PacketChatMissedHistoryResult >( bufferIn, bufferOffset );
+         *packetOut = SerializeIn< PacketChatMissedHistoryResult >( bufferIn, bufferOffset, networkMinorVersion );
       }
       return true;
    case PacketChatToServer::ChatType_CreateChatChannel:
       {
-         *packetOut = SerializeIn< PacketChatCreateChatChannel >( bufferIn, bufferOffset );
+         *packetOut = SerializeIn< PacketChatCreateChatChannel >( bufferIn, bufferOffset, networkMinorVersion );
       }
       return true;
    case PacketChatToServer::ChatType_CreateChatChannelResponse:
       {
-         *packetOut = SerializeIn< PacketChatCreateChatChannelResponse >( bufferIn, bufferOffset );
+         *packetOut = SerializeIn< PacketChatCreateChatChannelResponse >( bufferIn, bufferOffset, networkMinorVersion );
       }
       return true;
    case PacketChatToServer::ChatType_CreateChatChannelFromGameServer:
       {
-         *packetOut = SerializeIn< PacketChatCreateChatChannelFromGameServer >( bufferIn, bufferOffset );
+         *packetOut = SerializeIn< PacketChatCreateChatChannelFromGameServer >( bufferIn, bufferOffset, networkMinorVersion );
       }
       return true;
    case PacketChatToServer::ChatType_CreateChatChannelFromGameServerResponse:
       {
-         *packetOut = SerializeIn< PacketChatCreateChatChannelFromGameServerResponse >( bufferIn, bufferOffset );
+         *packetOut = SerializeIn< PacketChatCreateChatChannelFromGameServerResponse >( bufferIn, bufferOffset, networkMinorVersion );
       }
       return true;
 
    case PacketChatToServer::ChatType_DeleteChatChannel:
       {
-         *packetOut = SerializeIn< PacketChatDeleteChatChannel >( bufferIn, bufferOffset );
+         *packetOut = SerializeIn< PacketChatDeleteChatChannel >( bufferIn, bufferOffset, networkMinorVersion );
       }
       return true;
    case PacketChatToServer::ChatType_DeleteChatChannelResponse:
       {
-         *packetOut = SerializeIn< PacketChatDeleteChatChannelResponse >( bufferIn, bufferOffset );
+         *packetOut = SerializeIn< PacketChatDeleteChatChannelResponse >( bufferIn, bufferOffset, networkMinorVersion );
       }
       return true;
 
    case PacketChatToServer::ChatType_DeleteChatChannelFromGameServer:
       {
-         *packetOut = SerializeIn< PacketChatDeleteChatChannelFromGameServer >( bufferIn, bufferOffset );
+         *packetOut = SerializeIn< PacketChatDeleteChatChannelFromGameServer >( bufferIn, bufferOffset, networkMinorVersion );
       }
       return true;
    case PacketChatToServer::ChatType_DeleteChatChannelFromGameServerResponse:
       {
-         *packetOut = SerializeIn< PacketChatDeleteChatChannelFromGameServerResponse >( bufferIn, bufferOffset );
+         *packetOut = SerializeIn< PacketChatDeleteChatChannelFromGameServerResponse >( bufferIn, bufferOffset, networkMinorVersion );
       }
       return true;
 
    case PacketChatToServer::ChatType_InviteUserToChatChannel:
       {
-         *packetOut = SerializeIn< PacketChatInviteUserToChatChannel >( bufferIn, bufferOffset );
+         *packetOut = SerializeIn< PacketChatInviteUserToChatChannel >( bufferIn, bufferOffset, networkMinorVersion );
       }
       return true;
    case PacketChatToServer::ChatType_InviteUserToChatChannelResponse:
       {
-         *packetOut = SerializeIn< PacketChatInviteUserToChatChannelResponse >( bufferIn, bufferOffset );
+         *packetOut = SerializeIn< PacketChatInviteUserToChatChannelResponse >( bufferIn, bufferOffset, networkMinorVersion );
       }
       return true;
 
    case PacketChatToServer::ChatType_AddUserToChatChannel:
       {
-         *packetOut = SerializeIn< PacketChatAddUserToChatChannel >( bufferIn, bufferOffset );
+         *packetOut = SerializeIn< PacketChatAddUserToChatChannel >( bufferIn, bufferOffset, networkMinorVersion );
       }
       return true;
    case PacketChatToServer::ChatType_AddUserToChatChannelResponse:
       {
-         *packetOut = SerializeIn< PacketChatAddUserToChatChannelResponse >( bufferIn, bufferOffset );
+         *packetOut = SerializeIn< PacketChatAddUserToChatChannelResponse >( bufferIn, bufferOffset, networkMinorVersion );
       }
       return true;
    case PacketChatToServer::ChatType_AddUserToChatChannelGameServer:
       {
-         *packetOut = SerializeIn< PacketChatAddUserToChatChannelGameServer >( bufferIn, bufferOffset );
+         *packetOut = SerializeIn< PacketChatAddUserToChatChannelGameServer >( bufferIn, bufferOffset, networkMinorVersion );
       }
       return true;
    case PacketChatToServer::ChatType_AddUserToChatChannelGameServerResponse:
       {
-         *packetOut = SerializeIn< PacketChatAddUserToChatChannelGameServerResponse >( bufferIn, bufferOffset );
+         *packetOut = SerializeIn< PacketChatAddUserToChatChannelGameServerResponse >( bufferIn, bufferOffset, networkMinorVersion );
       }
       return true;
 
 
    case PacketChatToServer::ChatType_RemoveUserFromChatChannel:
       {
-         *packetOut = SerializeIn< PacketChatRemoveUserFromChatChannel >( bufferIn, bufferOffset );
+         *packetOut = SerializeIn< PacketChatRemoveUserFromChatChannel >( bufferIn, bufferOffset, networkMinorVersion );
       }
       return true;
    case PacketChatToServer::ChatType_RemoveUserFromChatChannelResponse:
       {
-         *packetOut = SerializeIn< PacketChatRemoveUserFromChatChannelResponse >( bufferIn, bufferOffset );
+         *packetOut = SerializeIn< PacketChatRemoveUserFromChatChannelResponse >( bufferIn, bufferOffset, networkMinorVersion );
       }
       return true;
    case PacketChatToServer::ChatType_RemoveUserFromChatChannelGameServer:
       {
-         *packetOut = SerializeIn< PacketChatRemoveUserFromChatChannelGameServer >( bufferIn, bufferOffset );
+         *packetOut = SerializeIn< PacketChatRemoveUserFromChatChannelGameServer >( bufferIn, bufferOffset, networkMinorVersion );
       }
       return true;
    case PacketChatToServer::ChatType_RemoveUserFromChatChannelGameServerResponse:
       {
-         *packetOut = SerializeIn< PacketChatRemoveUserFromChatChannelGameServerResponse >( bufferIn, bufferOffset );
+         *packetOut = SerializeIn< PacketChatRemoveUserFromChatChannelGameServerResponse >( bufferIn, bufferOffset, networkMinorVersion );
       }
       return true;
    
    case PacketChatToServer::ChatType_RequestChatters:
       {
-         *packetOut = SerializeIn< PacketChatRequestChatters >( bufferIn, bufferOffset );
+         *packetOut = SerializeIn< PacketChatRequestChatters >( bufferIn, bufferOffset, networkMinorVersion );
       }
       return true;
    case PacketChatToServer::ChatType_RequestChattersResponse:
       {
-         *packetOut = SerializeIn< PacketChatRequestChattersResponse >( bufferIn, bufferOffset );
+         *packetOut = SerializeIn< PacketChatRequestChattersResponse >( bufferIn, bufferOffset, networkMinorVersion );
       }
       return true;
    
    case PacketChatToServer::ChatType_EnableDisableFiltering:
       {
-         *packetOut = SerializeIn< PacketChatEnableFiltering >( bufferIn, bufferOffset );
+         *packetOut = SerializeIn< PacketChatEnableFiltering >( bufferIn, bufferOffset, networkMinorVersion );
       }
       return true;
    case PacketChatToServer::ChatType_EnableDisableFilteringResponse:
       {
-         *packetOut = SerializeIn< PacketChatEnableFilteringResponse >( bufferIn, bufferOffset );
+         *packetOut = SerializeIn< PacketChatEnableFilteringResponse >( bufferIn, bufferOffset, networkMinorVersion );
       }
       return true;
 
    case PacketChatToServer::ChatType_ListAllMembersInChatChannel:
       {
-         *packetOut = SerializeIn< PacketChatListAllMembersInChatChannel >( bufferIn, bufferOffset );
+         *packetOut = SerializeIn< PacketChatListAllMembersInChatChannel >( bufferIn, bufferOffset, networkMinorVersion );
       }
       return true;
    case PacketChatToServer::ChatType_ListAllMembersInChatChannelResponse:
       {
-         *packetOut = SerializeIn< PacketChatListAllMembersInChatChannelResponse >( bufferIn, bufferOffset );
+         *packetOut = SerializeIn< PacketChatListAllMembersInChatChannelResponse >( bufferIn, bufferOffset, networkMinorVersion );
       }
       return true;
    case PacketChatToServer::ChatType_AdminLoadAllChannels:
       {
-         *packetOut = SerializeIn< PacketChatAdminLoadAllChannels >( bufferIn, bufferOffset );
+         *packetOut = SerializeIn< PacketChatAdminLoadAllChannels >( bufferIn, bufferOffset, networkMinorVersion );
       }
       return true;
    case PacketChatToServer::ChatType_AdminLoadAllChannelsResponse:
       {
-         *packetOut = SerializeIn< PacketChatAdminLoadAllChannelsResponse >( bufferIn, bufferOffset );
+         *packetOut = SerializeIn< PacketChatAdminLoadAllChannelsResponse >( bufferIn, bufferOffset, networkMinorVersion );
       }
       return true;
    
    case PacketChatToServer::ChatType_AdminRequestChatChannelList:
       {
-         *packetOut = SerializeIn< PacketChatAdminRequestChatChannelList >( bufferIn, bufferOffset );
+         *packetOut = SerializeIn< PacketChatAdminRequestChatChannelList >( bufferIn, bufferOffset, networkMinorVersion );
       }
       return true;
    case PacketChatToServer::ChatType_AdminRequestChatChannelListResponse:
       {
-         *packetOut = SerializeIn< PacketChatAdminRequestChatChannelListResponse >( bufferIn, bufferOffset );
+         *packetOut = SerializeIn< PacketChatAdminRequestChatChannelListResponse >( bufferIn, bufferOffset, networkMinorVersion );
       }
       return true;
    
    case PacketChatToServer::ChatType_AdminRequestUsersList:
       {
-         *packetOut = SerializeIn< PacketChatAdminRequestUsersList >( bufferIn, bufferOffset );
+         *packetOut = SerializeIn< PacketChatAdminRequestUsersList >( bufferIn, bufferOffset, networkMinorVersion );
       }
       return true;
    case PacketChatToServer::ChatType_AdminRequestUsersListResponse:
       {
-         *packetOut = SerializeIn< PacketChatAdminRequestUsersListResponse >( bufferIn, bufferOffset );
+         *packetOut = SerializeIn< PacketChatAdminRequestUsersListResponse >( bufferIn, bufferOffset, networkMinorVersion );
       }
       return true;
 
    case PacketChatToServer::ChatType_RenameChatChannel:
       {
-         *packetOut = SerializeIn< PacketChatRenameChannel >( bufferIn, bufferOffset );
+         *packetOut = SerializeIn< PacketChatRenameChannel >( bufferIn, bufferOffset, networkMinorVersion );
       }
       return true;
    case PacketChatToServer::ChatType_RenameChatChannelResponse:
       {
-         *packetOut = SerializeIn< PacketChatRenameChannelResponse >( bufferIn, bufferOffset );
+         *packetOut = SerializeIn< PacketChatRenameChannelResponse >( bufferIn, bufferOffset, networkMinorVersion );
       }
       return true;
    case PacketChatToServer::ChatType_UpdateProfile:
       {
-         *packetOut = SerializeIn< PacketChat_UserProfileChange >( bufferIn, bufferOffset );
+         *packetOut = SerializeIn< PacketChat_UserProfileChange >( bufferIn, bufferOffset, networkMinorVersion );
       }
       return true;
    }
@@ -628,42 +634,42 @@ bool  PacketFactory::ParseChat( const U8* bufferIn, int& bufferOffset, const Bas
 
 //---------------------------------------------------------------------------------------------------------
 
-bool     PacketFactory::ParseUserInfo( const U8* bufferIn, int& bufferOffset, const BasePacket* firstPassParse, BasePacket** packetOut ) const
+bool     PacketFactory::ParseUserInfo( const U8* bufferIn, int& bufferOffset, const BasePacket* firstPassParse, BasePacket** packetOut, int networkMinorVersion ) const
 {
    switch( firstPassParse->packetSubType )
    {
    case PacketUserInfo::InfoType_FriendsListRequest:
       {
-         *packetOut = SerializeIn< PacketFriendsListRequest >( bufferIn, bufferOffset );
+         *packetOut = SerializeIn< PacketFriendsListRequest >( bufferIn, bufferOffset, networkMinorVersion );
       }
       return true;
    case PacketUserInfo::InfoType_FriendsList:
       {
-         *packetOut = SerializeIn< PacketFriendsList >( bufferIn, bufferOffset );
+         *packetOut = SerializeIn< PacketFriendsList >( bufferIn, bufferOffset, networkMinorVersion );
       }
       return true;
 
    case PacketUserInfo::InfoType_ChatChannelListRequest:
       {
-         *packetOut = SerializeIn< PacketChatChannelListRequest >( bufferIn, bufferOffset );
+         *packetOut = SerializeIn< PacketChatChannelListRequest >( bufferIn, bufferOffset, networkMinorVersion );
       }
       return true;
 
    case PacketUserInfo::InfoType_ChatChannelList:
       {
-         *packetOut = SerializeIn< PacketChatChannelList >( bufferIn, bufferOffset );
+         *packetOut = SerializeIn< PacketChatChannelList >( bufferIn, bufferOffset, networkMinorVersion );
       }
       return true;
 
    case PacketUserInfo::InfoType_GroupsListRequest:
       {
-         *packetOut = SerializeIn< PacketGroupsListRequest >( bufferIn, bufferOffset );
+         *packetOut = SerializeIn< PacketGroupsListRequest >( bufferIn, bufferOffset, networkMinorVersion );
       }
       return true;
 
    case PacketUserInfo::InfoType_GroupsList:
       {
-         *packetOut = SerializeIn< PacketGroupsList >( bufferIn, bufferOffset );
+         *packetOut = SerializeIn< PacketGroupsList >( bufferIn, bufferOffset, networkMinorVersion );
       }
       return true;
    }
@@ -673,133 +679,133 @@ bool     PacketFactory::ParseUserInfo( const U8* bufferIn, int& bufferOffset, co
 
 //-----------------------------------------------------------------------------------------
 
-bool     PacketFactory::ParseContact( const U8* bufferIn, int& bufferOffset, const BasePacket* firstPassParse, BasePacket** packetOut ) const
+bool     PacketFactory::ParseContact( const U8* bufferIn, int& bufferOffset, const BasePacket* firstPassParse, BasePacket** packetOut, int networkMinorVersion ) const
 {
    switch( firstPassParse->packetSubType )
    {
    case PacketContact::ContactType_Base:
       {
-         *packetOut = SerializeIn< PacketContact >( bufferIn, bufferOffset );
+         *packetOut = SerializeIn< PacketContact >( bufferIn, bufferOffset, networkMinorVersion );
       }
       return true;
    case PacketContact::ContactType_TestNotification:
       {
-         *packetOut = SerializeIn< PacketContact_TestNotification >( bufferIn, bufferOffset );
+         *packetOut = SerializeIn< PacketContact_TestNotification >( bufferIn, bufferOffset, networkMinorVersion );
       }
       return true;
 
    case PacketContact::ContactType_EchoToServer:
       {
-         *packetOut = SerializeIn< PacketContact_EchoToServer >( bufferIn, bufferOffset );
+         *packetOut = SerializeIn< PacketContact_EchoToServer >( bufferIn, bufferOffset, networkMinorVersion );
       }
       return true;
    case PacketContact::ContactType_EchoToClient:
       {
-         *packetOut = SerializeIn< PacketContact_EchoToClient >( bufferIn, bufferOffset );
+         *packetOut = SerializeIn< PacketContact_EchoToClient >( bufferIn, bufferOffset, networkMinorVersion );
       }
       return true;
 
    case PacketContact::ContactType_GetListOfContacts:
       {
-         *packetOut = SerializeIn< PacketContact_GetListOfContacts >( bufferIn, bufferOffset );
+         *packetOut = SerializeIn< PacketContact_GetListOfContacts >( bufferIn, bufferOffset, networkMinorVersion );
       }
       return true;
 
    case PacketContact::ContactType_GetListOfContactsResponse:
       {
-         *packetOut = SerializeIn< PacketContact_GetListOfContactsResponse >( bufferIn, bufferOffset );
+         *packetOut = SerializeIn< PacketContact_GetListOfContactsResponse >( bufferIn, bufferOffset, networkMinorVersion );
       }
       return true;
 
    case PacketContact::ContactType_GetListOfInvitations:
       {
-         *packetOut = SerializeIn< PacketContact_GetListOfInvitations >( bufferIn, bufferOffset );
+         *packetOut = SerializeIn< PacketContact_GetListOfInvitations >( bufferIn, bufferOffset, networkMinorVersion );
       }
       return true;
    case PacketContact::ContactType_GetListOfInvitationsResponse:
       {
-         *packetOut = SerializeIn< PacketContact_GetListOfInvitationsResponse >( bufferIn, bufferOffset );
+         *packetOut = SerializeIn< PacketContact_GetListOfInvitationsResponse >( bufferIn, bufferOffset, networkMinorVersion );
       }
       return true;
 
    case PacketContact::ContactType_GetListOfInvitationsSent:
       {
-         *packetOut = SerializeIn< PacketContact_GetListOfInvitationsSent >( bufferIn, bufferOffset );
+         *packetOut = SerializeIn< PacketContact_GetListOfInvitationsSent >( bufferIn, bufferOffset, networkMinorVersion );
       }
       return true;
 
    case PacketContact::ContactType_GetListOfInvitationsSentResponse:
       {
-         *packetOut = SerializeIn< PacketContact_GetListOfInvitationsSentResponse >( bufferIn, bufferOffset );
+         *packetOut = SerializeIn< PacketContact_GetListOfInvitationsSentResponse >( bufferIn, bufferOffset, networkMinorVersion );
       }
       return true;
    case PacketContact::ContactType_InviteContact:
       {
-         *packetOut = SerializeIn< PacketContact_InviteContact >( bufferIn, bufferOffset );
+         *packetOut = SerializeIn< PacketContact_InviteContact >( bufferIn, bufferOffset, networkMinorVersion );
       }
       return true;
    case PacketContact::ContactType_InviteSentNotification:
       {
-         *packetOut = SerializeIn< PacketContact_InviteSentNotification >( bufferIn, bufferOffset );
+         *packetOut = SerializeIn< PacketContact_InviteSentNotification >( bufferIn, bufferOffset, networkMinorVersion );
       }
       return true;
    case PacketContact::ContactType_InviteReceived:
       {
-         *packetOut = SerializeIn< PacketContact_InviteReceivedNotification >( bufferIn, bufferOffset );
+         *packetOut = SerializeIn< PacketContact_InviteReceivedNotification >( bufferIn, bufferOffset, networkMinorVersion );
       }
       return true;
    case PacketContact::ContactType_RemoveContact:
       {
-         *packetOut = SerializeIn< PacketContact_ContactRemove >( bufferIn, bufferOffset );
+         *packetOut = SerializeIn< PacketContact_ContactRemove >( bufferIn, bufferOffset, networkMinorVersion );
       }
       return true;
     case PacketContact::ContactType_RemoveInvitation:
       {
-         *packetOut = SerializeIn< PacketContact_RemoveInvitation >( bufferIn, bufferOffset );
+         *packetOut = SerializeIn< PacketContact_RemoveInvitation >( bufferIn, bufferOffset, networkMinorVersion );
       }
       return true;
    case PacketContact::ContactType_AcceptInvite:
       {
-         *packetOut = SerializeIn< PacketContact_AcceptInvite >( bufferIn, bufferOffset );
+         *packetOut = SerializeIn< PacketContact_AcceptInvite >( bufferIn, bufferOffset, networkMinorVersion );
       }
       return true;
    case PacketContact::ContactType_InvitationAccepted:
       {
-         *packetOut = SerializeIn< PacketContact_InvitationAccepted >( bufferIn, bufferOffset );
+         *packetOut = SerializeIn< PacketContact_InvitationAccepted >( bufferIn, bufferOffset, networkMinorVersion );
       }
       return true;
    case PacketContact::ContactType_DeclineInvitation:
       {
-         *packetOut = SerializeIn< PacketContact_DeclineInvitation >( bufferIn, bufferOffset );
+         *packetOut = SerializeIn< PacketContact_DeclineInvitation >( bufferIn, bufferOffset, networkMinorVersion );
       }
       return true;
 
    case PacketContact::ContactType_Search:
       {
-         *packetOut = SerializeIn< PacketContact_SearchForUser >( bufferIn, bufferOffset );
+         *packetOut = SerializeIn< PacketContact_SearchForUser >( bufferIn, bufferOffset, networkMinorVersion );
       }
       return true;
    case PacketContact::ContactType_SearchResults:
       {
-         *packetOut = SerializeIn< PacketContact_SearchForUserResult >( bufferIn, bufferOffset );
+         *packetOut = SerializeIn< PacketContact_SearchForUserResult >( bufferIn, bufferOffset, networkMinorVersion );
       }
       return true;
    case PacketContact::ContactType_BlockUser:
       {
-         *packetOut = SerializeIn< PacketContact_InviteBlockUser >( bufferIn, bufferOffset );
+         *packetOut = SerializeIn< PacketContact_InviteBlockUser >( bufferIn, bufferOffset, networkMinorVersion );
       }
       return true;
 
 
    case PacketContact::ContactType_UserOnlineStatusChange:
       {
-         *packetOut = SerializeIn< PacketContact_FriendOnlineStatusChange >( bufferIn, bufferOffset );
+         *packetOut = SerializeIn< PacketContact_FriendOnlineStatusChange >( bufferIn, bufferOffset, networkMinorVersion );
       }
       return true;
 
    case PacketContact::ContactType_SetNotation:
       {
-         *packetOut = SerializeIn< PacketContact_SetNotationOnUser >( bufferIn, bufferOffset );
+         *packetOut = SerializeIn< PacketContact_SetNotationOnUser >( bufferIn, bufferOffset, networkMinorVersion );
       }
       return true;
    }
@@ -808,74 +814,74 @@ bool     PacketFactory::ParseContact( const U8* bufferIn, int& bufferOffset, con
 
 //-----------------------------------------------------------------------------------------
 
-bool     PacketFactory::ParseAsset( const U8* bufferIn, int& bufferOffset, const BasePacket* firstPassParse, BasePacket** packetOut ) const
+bool     PacketFactory::ParseAsset( const U8* bufferIn, int& bufferOffset, const BasePacket* firstPassParse, BasePacket** packetOut, int networkMinorVersion ) const
 {
    switch( firstPassParse->packetSubType )
    {
    case PacketAsset::AssetType_Base:
       {
-         *packetOut = SerializeIn< PacketAsset >( bufferIn, bufferOffset );
+         *packetOut = SerializeIn< PacketAsset >( bufferIn, bufferOffset, networkMinorVersion );
       }
       return true;
    case PacketAsset::AssetType_TestNotification:
       {
-         *packetOut = SerializeIn< PacketAsset_TestNotification >( bufferIn, bufferOffset );
+         *packetOut = SerializeIn< PacketAsset_TestNotification >( bufferIn, bufferOffset, networkMinorVersion );
       }
       return true;
    case PacketAsset::AssetType_EchoToServer:
       {
-         *packetOut = SerializeIn< PacketAsset_EchoToServer >( bufferIn, bufferOffset );
+         *packetOut = SerializeIn< PacketAsset_EchoToServer >( bufferIn, bufferOffset, networkMinorVersion );
       }
       return true;
    case PacketAsset::AssetType_EchoToClient:
       {
-         *packetOut = SerializeIn< PacketAsset_EchoToClient >( bufferIn, bufferOffset );
+         *packetOut = SerializeIn< PacketAsset_EchoToClient >( bufferIn, bufferOffset, networkMinorVersion );
       }
       return true;
    case PacketAsset::AssetType_GetListOfStaticAssets:
       {
-         *packetOut = SerializeIn< PacketAsset_GetListOfStaticAssets >( bufferIn, bufferOffset );
+         *packetOut = SerializeIn< PacketAsset_GetListOfStaticAssets >( bufferIn, bufferOffset, networkMinorVersion );
       }
       return true;
    case PacketAsset::AssetType_GetListOfStaticAssetsResponse:
       {
-         *packetOut = SerializeIn< PacketAsset_GetListOfStaticAssetsResponse >( bufferIn, bufferOffset );
+         *packetOut = SerializeIn< PacketAsset_GetListOfStaticAssetsResponse >( bufferIn, bufferOffset, networkMinorVersion );
       }
       return true;
    case PacketAsset::AssetType_GetListOfDynamicAssets:
       {
-         *packetOut = SerializeIn< PacketAsset_GetListOfDynamicAssets >( bufferIn, bufferOffset );
+         *packetOut = SerializeIn< PacketAsset_GetListOfDynamicAssets >( bufferIn, bufferOffset, networkMinorVersion );
       }
       return true;
    case PacketAsset::AssetType_GetListOfDynamicAssetsResponse:
       {
-         *packetOut = SerializeIn< PacketAsset_GetListOfDynamicAssetsResponse >( bufferIn, bufferOffset );
+         *packetOut = SerializeIn< PacketAsset_GetListOfDynamicAssetsResponse >( bufferIn, bufferOffset, networkMinorVersion );
       }
       return true;
    case PacketAsset::AssetType_GetListOfAssetCategories:
       {
-         *packetOut = SerializeIn< PacketAsset_GetListOfAssetCategories >( bufferIn, bufferOffset );
+         *packetOut = SerializeIn< PacketAsset_GetListOfAssetCategories >( bufferIn, bufferOffset, networkMinorVersion );
       }
       return true;
    case PacketAsset::AssetType_GetListOfAssetCategoriesResponse:
       {
-         *packetOut = SerializeIn< PacketAsset_GetListOfAssetCategoriesResponse >( bufferIn, bufferOffset );
+         *packetOut = SerializeIn< PacketAsset_GetListOfAssetCategoriesResponse >( bufferIn, bufferOffset, networkMinorVersion );
       }
       return true;
    case PacketAsset::AssetType_GetListOfAssets:
       {
-         *packetOut = SerializeIn< PacketAsset_GetListOfAssets >( bufferIn, bufferOffset );
+         *packetOut = SerializeIn< PacketAsset_GetListOfAssets >( bufferIn, bufferOffset, networkMinorVersion );
       }
       return true;
    case PacketAsset::AssetType_GetListOfAssetsResponse:
       {
-         *packetOut = SerializeIn< PacketAsset_GetListOfAssetsResponse >( bufferIn, bufferOffset );
+         *packetOut = SerializeIn< PacketAsset_GetListOfAssetsResponse >( bufferIn, bufferOffset, networkMinorVersion );
       }
       return true;
    
    case PacketAsset::AssetType_RequestAsset:
       {
-         *packetOut = SerializeIn< PacketAsset_RequestAsset >( bufferIn, bufferOffset );
+         *packetOut = SerializeIn< PacketAsset_RequestAsset >( bufferIn, bufferOffset, networkMinorVersion );
       }
       return true;
    }
@@ -884,18 +890,18 @@ bool     PacketFactory::ParseAsset( const U8* bufferIn, int& bufferOffset, const
 
 //-----------------------------------------------------------------------------------------
 
-bool     PacketFactory::ParseDbQuery( const U8* bufferIn, int& bufferOffset, const BasePacket* firstPassParse, BasePacket** packetOut ) const
+bool     PacketFactory::ParseDbQuery( const U8* bufferIn, int& bufferOffset, const BasePacket* firstPassParse, BasePacket** packetOut, int networkMinorVersion ) const
 {
    switch( firstPassParse->packetSubType )
    {
    case PacketDbQuery::QueryType_Query:
       {
-         *packetOut = SerializeIn< PacketDbQuery >( bufferIn, bufferOffset );
+         *packetOut = SerializeIn< PacketDbQuery >( bufferIn, bufferOffset, networkMinorVersion );
       }
       return true;
    case PacketDbQuery::QueryType_Result:
       {
-         *packetOut = SerializeIn< PacketDbQueryResult >( bufferIn, bufferOffset );
+         *packetOut = SerializeIn< PacketDbQueryResult >( bufferIn, bufferOffset, networkMinorVersion );
       }
       return true;
    }
@@ -905,150 +911,150 @@ bool     PacketFactory::ParseDbQuery( const U8* bufferIn, int& bufferOffset, con
 
 //-----------------------------------------------------------------------------------------
 
-bool     PacketFactory::ParseGame( const U8* bufferIn, int& bufferOffset, const BasePacket* firstPassParse, BasePacket** packetOut ) const
+bool     PacketFactory::ParseGame( const U8* bufferIn, int& bufferOffset, const BasePacket* firstPassParse, BasePacket** packetOut, int networkMinorVersion ) const
 {
    switch( firstPassParse->packetSubType )
    {
    case PacketGameToServer::GamePacketType_LoginToServer:
       {
-         *packetOut = SerializeIn< PacketGameToServer >( bufferIn, bufferOffset );
+         *packetOut = SerializeIn< PacketGameToServer >( bufferIn, bufferOffset, networkMinorVersion );
       }
       return true;
    case PacketGameToServer::GamePacketType_CreateGame:
       {
-         *packetOut = SerializeIn< PacketCreateGame >( bufferIn, bufferOffset );
+         *packetOut = SerializeIn< PacketCreateGame >( bufferIn, bufferOffset, networkMinorVersion );
       }
       return true;
    case PacketGameToServer::GamePacketType_CreateGameResponse:
       {
-         *packetOut = SerializeIn< PacketCreateGameResponse >( bufferIn, bufferOffset );
+         *packetOut = SerializeIn< PacketCreateGameResponse >( bufferIn, bufferOffset, networkMinorVersion );
       }
       return true;
    case PacketGameToServer::GamePacketType_DeleteGame:
       {
-         *packetOut = SerializeIn< PacketDeleteGame >( bufferIn, bufferOffset );
+         *packetOut = SerializeIn< PacketDeleteGame >( bufferIn, bufferOffset, networkMinorVersion );
       }
       return true;
    case PacketGameToServer::GamePacketType_DeleteGameResponse:
       {
-         *packetOut = SerializeIn< PacketDeleteGameResponse >( bufferIn, bufferOffset );
+         *packetOut = SerializeIn< PacketDeleteGameResponse >( bufferIn, bufferOffset, networkMinorVersion );
       }
       return true;
    case PacketGameToServer::GamePacketType_ForfeitGame:
       {
-         *packetOut = SerializeIn< PacketForfeitGame >( bufferIn, bufferOffset );
+         *packetOut = SerializeIn< PacketForfeitGame >( bufferIn, bufferOffset, networkMinorVersion );
       }
       return true;
    case PacketGameToServer::GamePacketType_ForfeitGameResponse:
       {
-         *packetOut = SerializeIn< PacketForfeitGameResponse >( bufferIn, bufferOffset );
+         *packetOut = SerializeIn< PacketForfeitGameResponse >( bufferIn, bufferOffset, networkMinorVersion );
       }
       return true;
    case PacketGameToServer::GamePacketType_QuitGame:
       {
-         *packetOut = SerializeIn< PacketQuitGame >( bufferIn, bufferOffset );
+         *packetOut = SerializeIn< PacketQuitGame >( bufferIn, bufferOffset, networkMinorVersion );
       }
       return true;
    case PacketGameToServer::GamePacketType_QuitGameResponse:
       {
-         *packetOut = SerializeIn< PacketQuitGameResponse >( bufferIn, bufferOffset );
+         *packetOut = SerializeIn< PacketQuitGameResponse >( bufferIn, bufferOffset, networkMinorVersion );
       }
       return true;
    case PacketGameToServer::GamePacketType_AddUser:
       {
-         *packetOut = SerializeIn< PacketAddUserToGame >( bufferIn, bufferOffset );
+         *packetOut = SerializeIn< PacketAddUserToGame >( bufferIn, bufferOffset, networkMinorVersion );
       }
       return true;
    case PacketGameToServer::GamePacketType_AddUserResponse:
       {
-         *packetOut = SerializeIn< PacketAddUserToGameResponse >( bufferIn, bufferOffset );
+         *packetOut = SerializeIn< PacketAddUserToGameResponse >( bufferIn, bufferOffset, networkMinorVersion );
       }
       return true;
 
    case PacketGameToServer::GamePacketType_RemoveUser:
       {
-         *packetOut = SerializeIn< PacketRemoveUserFromGame >( bufferIn, bufferOffset );
+         *packetOut = SerializeIn< PacketRemoveUserFromGame >( bufferIn, bufferOffset, networkMinorVersion );
       }
       return true;
    case PacketGameToServer::GamePacketType_RemoveUserResponse:
       {
-         *packetOut = SerializeIn< PacketRemoveUserFromGameResponse >( bufferIn, bufferOffset );
+         *packetOut = SerializeIn< PacketRemoveUserFromGameResponse >( bufferIn, bufferOffset, networkMinorVersion );
       }
       return true;
    case PacketGameToServer::GamePacketType_AdvanceTurn:
       {
-         *packetOut = SerializeIn< PacketGameAdvanceTurn >( bufferIn, bufferOffset );
+         *packetOut = SerializeIn< PacketGameAdvanceTurn >( bufferIn, bufferOffset, networkMinorVersion );
       }
       return true;
    case PacketGameToServer::GamePacketType_TurnWasAdvanced:
       {
-         *packetOut = SerializeIn< PacketGameAdvanceTurnResponse >( bufferIn, bufferOffset );
+         *packetOut = SerializeIn< PacketGameAdvanceTurnResponse >( bufferIn, bufferOffset, networkMinorVersion );
       }
       return true;
    case PacketGameToServer::GamePacketType_RequestListOfGames:
       {
-         *packetOut = SerializeIn< PacketRequestListOfGames >( bufferIn, bufferOffset );
+         *packetOut = SerializeIn< PacketRequestListOfGames >( bufferIn, bufferOffset, networkMinorVersion );
       }
       return true;
    case PacketGameToServer::GamePacketType_RequestListOfGamesResponse:
       {
-         *packetOut = SerializeIn< PacketRequestListOfGamesResponse >( bufferIn, bufferOffset );
+         *packetOut = SerializeIn< PacketRequestListOfGamesResponse >( bufferIn, bufferOffset, networkMinorVersion );
       }
       return true;
    case PacketGameToServer::GamePacketType_RequestListOfUsersInGame:
       {
-         *packetOut = SerializeIn< PacketRequestListOfUsersInGame >( bufferIn, bufferOffset );
+         *packetOut = SerializeIn< PacketRequestListOfUsersInGame >( bufferIn, bufferOffset, networkMinorVersion );
       }
       return true;
    case PacketGameToServer::GamePacketType_RequestListOfUsersInGameResponse:
       {
-         *packetOut = SerializeIn< PacketRequestListOfUsersInGameResponse >( bufferIn, bufferOffset );
+         *packetOut = SerializeIn< PacketRequestListOfUsersInGameResponse >( bufferIn, bufferOffset, networkMinorVersion );
       }
       return true;
    case PacketGameToServer::GamePacketType_RequestUserWinLoss:
       {
-         *packetOut = SerializeIn< PacketRequestUserWinLoss >( bufferIn, bufferOffset );
+         *packetOut = SerializeIn< PacketRequestUserWinLoss >( bufferIn, bufferOffset, networkMinorVersion );
       }
       return true;
    case PacketGameToServer::GamePacketType_RequestUserWinLossResponse:
       {
-         *packetOut = SerializeIn< PacketRequestUserWinLossResponse >( bufferIn, bufferOffset );
+         *packetOut = SerializeIn< PacketRequestUserWinLossResponse >( bufferIn, bufferOffset, networkMinorVersion );
       }
       return true;
    case PacketGameToServer::GamePacketType_ListOfGames:
       {
-         *packetOut = SerializeIn< PacketListOfGames >( bufferIn, bufferOffset );
+         *packetOut = SerializeIn< PacketListOfGames >( bufferIn, bufferOffset, networkMinorVersion );
       }
       return true;
    case PacketGameToServer::GamePacketType_GameIdentification:
       {
-         *packetOut = SerializeIn< PacketGameIdentification >( bufferIn, bufferOffset );
+         *packetOut = SerializeIn< PacketGameIdentification >( bufferIn, bufferOffset, networkMinorVersion );
       }
       return true;
    case PacketGameToServer::GamePacketType_RawGameData:
       {
-         *packetOut = SerializeIn< PacketGameplayRawData >( bufferIn, bufferOffset );
+         *packetOut = SerializeIn< PacketGameplayRawData >( bufferIn, bufferOffset, networkMinorVersion );
       }
       return true;
    case PacketGameToServer::GamePacketType_EchoToServer:
       {
-         *packetOut = SerializeIn< PacketGame_EchoToServer >( bufferIn, bufferOffset );
+         *packetOut = SerializeIn< PacketGame_EchoToServer >( bufferIn, bufferOffset, networkMinorVersion );
       }
       return true;
    case PacketGameToServer::GamePacketType_EchoToClient:
       {
-         *packetOut = SerializeIn< PacketGame_EchoToClient >( bufferIn, bufferOffset );
+         *packetOut = SerializeIn< PacketGame_EchoToClient >( bufferIn, bufferOffset, networkMinorVersion );
       }
       return true;
    case PacketGameToServer::GamePacketType_TestHook:
       {
-         *packetOut = SerializeIn< PacketGame_TestHook >( bufferIn, bufferOffset );
+         *packetOut = SerializeIn< PacketGame_TestHook >( bufferIn, bufferOffset, networkMinorVersion );
       }
       return true;
 
    case PacketGameToServer::GamePacketType_Notification:
       {
-         *packetOut = SerializeIn< PacketGame_Notification >( bufferIn, bufferOffset );
+         *packetOut = SerializeIn< PacketGame_Notification >( bufferIn, bufferOffset, networkMinorVersion );
       }
       return true;
    }
@@ -1058,13 +1064,13 @@ bool     PacketFactory::ParseGame( const U8* bufferIn, int& bufferOffset, const 
 
 //-----------------------------------------------------------------------------------------
 
-bool     PacketFactory::ParseCheat( const U8* bufferIn, int& bufferOffset, const BasePacket* firstPassParse, BasePacket** packetOut ) const
+bool     PacketFactory::ParseCheat( const U8* bufferIn, int& bufferOffset, const BasePacket* firstPassParse, BasePacket** packetOut, int networkMinorVersion ) const
 {
    switch( firstPassParse->packetSubType ) //PacketType_Cheat
    {
    case PacketCheat::Cheat_Basic:
       {
-         *packetOut = SerializeIn< PacketCheat >( bufferIn, bufferOffset );
+         *packetOut = SerializeIn< PacketCheat >( bufferIn, bufferOffset, networkMinorVersion );
       }
       return true;
    }
@@ -1073,58 +1079,58 @@ bool     PacketFactory::ParseCheat( const U8* bufferIn, int& bufferOffset, const
 
 //-----------------------------------------------------------------------------------------
 
-bool     PacketFactory::ParsePurchase( const U8* bufferIn, int& bufferOffset, const BasePacket* firstPassParse, BasePacket** packetOut ) const
+bool     PacketFactory::ParsePurchase( const U8* bufferIn, int& bufferOffset, const BasePacket* firstPassParse, BasePacket** packetOut, int networkMinorVersion ) const
 {
    switch( firstPassParse->packetSubType ) //PacketType_Cheat
    {
    case PacketPurchase::PurchaseType_Base:
       {
-         *packetOut = SerializeIn< PacketPurchase >( bufferIn, bufferOffset );
+         *packetOut = SerializeIn< PacketPurchase >( bufferIn, bufferOffset, networkMinorVersion );
       }
       return true;
    case PacketPurchase::PurchaseType_TestNotification:
       {
-         *packetOut = SerializeIn< PacketPurchase_TestNotification >( bufferIn, bufferOffset );
+         *packetOut = SerializeIn< PacketPurchase_TestNotification >( bufferIn, bufferOffset, networkMinorVersion );
       }
       return true;
    case PacketPurchase::PurchaseType_EchoToServer:
       {
-         *packetOut = SerializeIn< PacketPurchase_EchoToServer >( bufferIn, bufferOffset );
+         *packetOut = SerializeIn< PacketPurchase_EchoToServer >( bufferIn, bufferOffset, networkMinorVersion );
       }
       return true;
    case PacketPurchase::PurchaseType_EchoToClient:
       {
-         *packetOut = SerializeIn< PacketPurchase_EchoToClient >( bufferIn, bufferOffset );
+         *packetOut = SerializeIn< PacketPurchase_EchoToClient >( bufferIn, bufferOffset, networkMinorVersion );
       }
       return true;
    case PacketPurchase::PurchaseType_Buy:
       {
-         *packetOut = SerializeIn< PacketPurchase_Buy >( bufferIn, bufferOffset );
+         *packetOut = SerializeIn< PacketPurchase_Buy >( bufferIn, bufferOffset, networkMinorVersion );
       }
       return true;
    case PacketPurchase::PurchaseType_BuyResponse:
       {
-         *packetOut = SerializeIn< PacketPurchase_BuyResponse >( bufferIn, bufferOffset );
+         *packetOut = SerializeIn< PacketPurchase_BuyResponse >( bufferIn, bufferOffset, networkMinorVersion );
       }
       return true;
    case PacketPurchase::PurchaseType_RequestListOfSales:
       {
-         *packetOut = SerializeIn< PacketPurchase_RequestListOfSales >( bufferIn, bufferOffset );
+         *packetOut = SerializeIn< PacketPurchase_RequestListOfSales >( bufferIn, bufferOffset, networkMinorVersion );
       }
       return true;
    case PacketPurchase::PurchaseType_RequestListOfSalesResponse:
       {
-         *packetOut = SerializeIn< PacketPurchase_RequestListOfSalesResponse >( bufferIn, bufferOffset );
+         *packetOut = SerializeIn< PacketPurchase_RequestListOfSalesResponse >( bufferIn, bufferOffset, networkMinorVersion );
       }
       return true;
    case PacketPurchase::PurchaseType_ValidatePurchaseReceipt:
       {
-         *packetOut = SerializeIn< PacketPurchase_ValidatePurchaseReceipt >( bufferIn, bufferOffset );
+         *packetOut = SerializeIn< PacketPurchase_ValidatePurchaseReceipt >( bufferIn, bufferOffset, networkMinorVersion );
       }
       return true;
    case PacketPurchase::PurchaseType_ValidatePurchaseReceiptResponse:
       {
-         *packetOut = SerializeIn< PacketPurchase_ValidatePurchaseReceiptResponse >( bufferIn, bufferOffset );
+         *packetOut = SerializeIn< PacketPurchase_ValidatePurchaseReceiptResponse >( bufferIn, bufferOffset, networkMinorVersion );
       }
       return true;
    }
@@ -1134,66 +1140,66 @@ bool     PacketFactory::ParsePurchase( const U8* bufferIn, int& bufferOffset, co
 
 //-----------------------------------------------------------------------------------------
 
-bool     PacketFactory::ParseAnalytics( const U8* bufferIn, int& bufferOffset, const BasePacket* firstPassParse, BasePacket** packetOut ) const
+bool     PacketFactory::ParseAnalytics( const U8* bufferIn, int& bufferOffset, const BasePacket* firstPassParse, BasePacket** packetOut, int networkMinorVersion ) const
 {
-   *packetOut = SerializeIn< PacketAnalytics >( bufferIn, bufferOffset );
+   *packetOut = SerializeIn< PacketAnalytics >( bufferIn, bufferOffset, networkMinorVersion );
    return true;
 }
 
 //-----------------------------------------------------------------------------------------
 
-bool     PacketFactory::ParseTournament( const U8* bufferIn, int& bufferOffset, const BasePacket* firstPassParse, BasePacket** packetOut ) const
+bool     PacketFactory::ParseTournament( const U8* bufferIn, int& bufferOffset, const BasePacket* firstPassParse, BasePacket** packetOut, int networkMinorVersion ) const
 {
    switch( firstPassParse->packetSubType ) //PacketType_Tournament
    {
     case PacketTournament::TournamentType_Base:
       {
-         *packetOut = SerializeIn< PacketTournament >( bufferIn, bufferOffset );
+         *packetOut = SerializeIn< PacketTournament >( bufferIn, bufferOffset, networkMinorVersion );
       }
       return true;
    case PacketTournament::TournamentType_TestNotification:
       {
-         *packetOut = SerializeIn< PacketTournament_TestNotification >( bufferIn, bufferOffset );
+         *packetOut = SerializeIn< PacketTournament_TestNotification >( bufferIn, bufferOffset, networkMinorVersion );
       }
       return true;
    case PacketTournament::TournamentType_RequestListOfTournaments:
       {
-         *packetOut = SerializeIn< PacketTournament_RequestListOfTournaments >( bufferIn, bufferOffset );
+         *packetOut = SerializeIn< PacketTournament_RequestListOfTournaments >( bufferIn, bufferOffset, networkMinorVersion );
       }
       return true;
    case PacketTournament::TournamentType_RequestListOfTournamentsResponse:
       {
-         *packetOut = SerializeIn< PacketTournament_RequestListOfTournamentsResponse >( bufferIn, bufferOffset );
+         *packetOut = SerializeIn< PacketTournament_RequestListOfTournamentsResponse >( bufferIn, bufferOffset, networkMinorVersion );
       }
       return true;
    case PacketTournament::TournamentType_UserRequestsEntryInTournament:
       {
-         *packetOut = SerializeIn< PacketTournament_UserRequestsEntryInTournament >( bufferIn, bufferOffset );
+         *packetOut = SerializeIn< PacketTournament_UserRequestsEntryInTournament >( bufferIn, bufferOffset, networkMinorVersion );
       }
       return true;
    case PacketTournament::TournamentType_UserRequestsEntryInTournamentResponse:
       {
-         *packetOut = SerializeIn< PacketTournament_UserRequestsEntryInTournamentResponse >( bufferIn, bufferOffset );
+         *packetOut = SerializeIn< PacketTournament_UserRequestsEntryInTournamentResponse >( bufferIn, bufferOffset, networkMinorVersion );
       }
       return true;
    case PacketTournament::TournamentType_PurchaseTournamentEntry:
       {
-         *packetOut = SerializeIn< PacketTournament_PurchaseTournamentEntry >( bufferIn, bufferOffset );
+         *packetOut = SerializeIn< PacketTournament_PurchaseTournamentEntry >( bufferIn, bufferOffset, networkMinorVersion );
       }
       return true;
    case PacketTournament::TournamentType_PurchaseTournamentEntryResponse:
       {
-         *packetOut = SerializeIn< PacketTournament_PurchaseTournamentEntryResponse >( bufferIn, bufferOffset );
+         *packetOut = SerializeIn< PacketTournament_PurchaseTournamentEntryResponse >( bufferIn, bufferOffset, networkMinorVersion );
       }
       return true;
    case PacketTournament::TournamentType_PurchaseTournamentEntryRefund:
       {
-         *packetOut = SerializeIn< PacketTournament_PurchaseTournamentEntryRefund >( bufferIn, bufferOffset );
+         *packetOut = SerializeIn< PacketTournament_PurchaseTournamentEntryRefund >( bufferIn, bufferOffset, networkMinorVersion );
       }
       return true;
    case PacketTournament::TournamentType_PurchaseTournamentEntryRefundResponse:
       {
-         *packetOut = SerializeIn< PacketTournament_PurchaseTournamentEntryRefundResponse >( bufferIn, bufferOffset );
+         *packetOut = SerializeIn< PacketTournament_PurchaseTournamentEntryRefundResponse >( bufferIn, bufferOffset, networkMinorVersion );
       }
       return true;
    default:
@@ -1204,63 +1210,63 @@ bool     PacketFactory::ParseTournament( const U8* bufferIn, int& bufferOffset, 
 
 //-----------------------------------------------------------------------------------------
 
-bool     PacketFactory::ParseUserStats( const U8* bufferIn, int& bufferOffset, const BasePacket* firstPassParse, BasePacket** packetOut ) const
+bool     PacketFactory::ParseUserStats( const U8* bufferIn, int& bufferOffset, const BasePacket* firstPassParse, BasePacket** packetOut, int networkMinorVersion ) const
 {
    switch( firstPassParse->packetSubType ) //PacketType_Tournament
    {
     case PacketUserStats::UserStatsType_Base:
       {
-         *packetOut = SerializeIn< PacketUserStats >( bufferIn, bufferOffset );
+         *packetOut = SerializeIn< PacketUserStats >( bufferIn, bufferOffset, networkMinorVersion );
       }
       return true;
    case PacketUserStats::UserStatsType_TestUserStats:
       {
-         *packetOut = SerializeIn< PacketUserStats_TestUserStats >( bufferIn, bufferOffset );
+         *packetOut = SerializeIn< PacketUserStats_TestUserStats >( bufferIn, bufferOffset, networkMinorVersion );
       }
       return true;
    case PacketUserStats::UserStatsType_RequestListOfUserStats:
       {
-         *packetOut = SerializeIn< PacketUserStats_RequestListOfUserStats >( bufferIn, bufferOffset );
+         *packetOut = SerializeIn< PacketUserStats_RequestListOfUserStats >( bufferIn, bufferOffset, networkMinorVersion );
       }
       return true;
    case PacketUserStats::UserStatsType_RequestListOfUserStatsResponse:
       {
-         *packetOut = SerializeIn< PacketUserStats_RequestListOfUserStatsResponse >( bufferIn, bufferOffset );
+         *packetOut = SerializeIn< PacketUserStats_RequestListOfUserStatsResponse >( bufferIn, bufferOffset, networkMinorVersion );
       }
       return true;
    case PacketUserStats::UserStatsType_RecordUserStats:
       {
-         *packetOut = SerializeIn< PacketUserStats_RecordUserStats >( bufferIn, bufferOffset );
+         *packetOut = SerializeIn< PacketUserStats_RecordUserStats >( bufferIn, bufferOffset, networkMinorVersion );
       }
       return true;
    case PacketUserStats::UserStatsType_RecordUserStatsResponse:
       {
-         *packetOut = SerializeIn< PacketUserStats_RecordUserStatsResponse >( bufferIn, bufferOffset );
+         *packetOut = SerializeIn< PacketUserStats_RecordUserStatsResponse >( bufferIn, bufferOffset, networkMinorVersion );
       }
       return true;
    case PacketUserStats::UserStatsType_ReportGameResult:
       {
-         *packetOut = SerializeIn< PacketUserStats_ReportGameResult >( bufferIn, bufferOffset );
+         *packetOut = SerializeIn< PacketUserStats_ReportGameResult >( bufferIn, bufferOffset, networkMinorVersion );
       }
       return true;
    case PacketUserStats::UserStatsType_RequestGameFactionStats:
       {
-         *packetOut = SerializeIn< PacketUserStats_RequestGameFactionStats >( bufferIn, bufferOffset );
+         *packetOut = SerializeIn< PacketUserStats_RequestGameFactionStats >( bufferIn, bufferOffset, networkMinorVersion );
       }
       return true;
    case PacketUserStats::UserStatsType_RequestGameProfile:
       {
-         *packetOut = SerializeIn< PacketUserStats_RequestGameProfile >( bufferIn, bufferOffset );
+         *packetOut = SerializeIn< PacketUserStats_RequestGameProfile >( bufferIn, bufferOffset, networkMinorVersion );
       }
       return true;
    case PacketUserStats::UserStatsType_RequestUserProfileStats:
       {
-         *packetOut = SerializeIn< PacketUserStats_RequestUserProfileStats >( bufferIn, bufferOffset );
+         *packetOut = SerializeIn< PacketUserStats_RequestUserProfileStats >( bufferIn, bufferOffset, networkMinorVersion );
       }
       return true;
    case PacketUserStats::UserStatsType_RequestUserProfileStatsResponse:
       {
-         *packetOut = SerializeIn< PacketUserStats_RequestUserProfileStatsResponse >( bufferIn, bufferOffset );
+         *packetOut = SerializeIn< PacketUserStats_RequestUserProfileStatsResponse >( bufferIn, bufferOffset, networkMinorVersion );
       }
       return true;
 
@@ -1272,77 +1278,77 @@ bool     PacketFactory::ParseUserStats( const U8* bufferIn, int& bufferOffset, c
 
 //-----------------------------------------------------------------------------------------
 
-bool     PacketFactory::ParseNotification( const U8* bufferIn, int& bufferOffset, const BasePacket* firstPassParse, BasePacket** packetOut ) const
+bool     PacketFactory::ParseNotification( const U8* bufferIn, int& bufferOffset, const BasePacket* firstPassParse, BasePacket** packetOut, int networkMinorVersion ) const
 {
    switch( firstPassParse->packetSubType ) //PacketType_Cheat
    {
    case PacketNotification::NotificationType_Base:
       {
-         *packetOut = SerializeIn< PacketNotification >( bufferIn, bufferOffset );
+         *packetOut = SerializeIn< PacketNotification >( bufferIn, bufferOffset, networkMinorVersion );
       }
       return true;
    case PacketNotification::NotificationType_TestNotification:
       {
-         *packetOut = SerializeIn< PacketNotification_TestNotification >( bufferIn, bufferOffset );
+         *packetOut = SerializeIn< PacketNotification_TestNotification >( bufferIn, bufferOffset, networkMinorVersion );
       }
       return true;
    case PacketNotification::NotificationType_EchoToServer:
       {
-         *packetOut = SerializeIn< PacketNotification_EchoToServer >( bufferIn, bufferOffset );
+         *packetOut = SerializeIn< PacketNotification_EchoToServer >( bufferIn, bufferOffset, networkMinorVersion );
       }
       return true;
    case PacketNotification::NotificationType_EchoToClient:
       {
-         *packetOut = SerializeIn< PacketNotification_EchoToClient >( bufferIn, bufferOffset );
+         *packetOut = SerializeIn< PacketNotification_EchoToClient >( bufferIn, bufferOffset, networkMinorVersion );
       }
       return true;
    case PacketNotification::NotificationType_RegisterDevice:
       {
-         *packetOut = SerializeIn< PacketNotification_RegisterDevice >( bufferIn, bufferOffset );
+         *packetOut = SerializeIn< PacketNotification_RegisterDevice >( bufferIn, bufferOffset, networkMinorVersion );
       }
       return true;
    case PacketNotification::NotificationType_RegisterDeviceResponse:
       {
-         *packetOut = SerializeIn< PacketNotification_RegisterDeviceResponse >( bufferIn, bufferOffset );
+         *packetOut = SerializeIn< PacketNotification_RegisterDeviceResponse >( bufferIn, bufferOffset, networkMinorVersion );
       }
       return true;
    case PacketNotification::NotificationType_UpdateDevice:
       {
-         *packetOut = SerializeIn< PacketNotification_UpdateDevice >( bufferIn, bufferOffset );
+         *packetOut = SerializeIn< PacketNotification_UpdateDevice >( bufferIn, bufferOffset, networkMinorVersion );
       }
       return true;
       
    case PacketNotification::NotificationType_SendNotification:
       {
-         *packetOut = SerializeIn< PacketNotification_SendNotification >( bufferIn, bufferOffset );
+         *packetOut = SerializeIn< PacketNotification_SendNotification >( bufferIn, bufferOffset, networkMinorVersion );
       }
       return true;
 
    case PacketNotification::NotificationType_UpdateNotificationCount:
       {
-         *packetOut = SerializeIn< PacketNotification_UpdateNotificationCount >( bufferIn, bufferOffset );
+         *packetOut = SerializeIn< PacketNotification_UpdateNotificationCount >( bufferIn, bufferOffset, networkMinorVersion );
       }
       return true;
       
    case PacketNotification::NotificationType_RequestListOfDevices:
       {
-         *packetOut = SerializeIn< PacketNotification_RequestListOfDevices >( bufferIn, bufferOffset );
+         *packetOut = SerializeIn< PacketNotification_RequestListOfDevices >( bufferIn, bufferOffset, networkMinorVersion );
       }
       return true;
    case PacketNotification::NotificationType_RequestListOfDevicesResponse:
       {
-         *packetOut = SerializeIn< PacketNotification_RequestListOfDevicesResponse >( bufferIn, bufferOffset );
+         *packetOut = SerializeIn< PacketNotification_RequestListOfDevicesResponse >( bufferIn, bufferOffset, networkMinorVersion );
       }
       return true;
 
    case PacketNotification::NotificationType_RemoveDevice:
       {
-         *packetOut = SerializeIn< PacketNotification_RemoveDevice >( bufferIn, bufferOffset );
+         *packetOut = SerializeIn< PacketNotification_RemoveDevice >( bufferIn, bufferOffset, networkMinorVersion );
       }
       return true;
    case PacketNotification::NotificationType_RemoveDeviceResponse:
       {
-         *packetOut = SerializeIn< PacketNotification_RemoveDeviceResponse >( bufferIn, bufferOffset );
+         *packetOut = SerializeIn< PacketNotification_RemoveDeviceResponse >( bufferIn, bufferOffset, networkMinorVersion );
       }
       return true;
    }
@@ -1351,79 +1357,79 @@ bool     PacketFactory::ParseNotification( const U8* bufferIn, int& bufferOffset
 
 //-----------------------------------------------------------------------------------------
 
-bool     PacketFactory::ParseInvitation( const U8* bufferIn, int& bufferOffset, const BasePacket* firstPassParse, BasePacket** packetOut ) const
+bool     PacketFactory::ParseInvitation( const U8* bufferIn, int& bufferOffset, const BasePacket* firstPassParse, BasePacket** packetOut, int networkMinorVersion ) const
 {
    switch( firstPassParse->packetSubType ) 
    {
    case PacketInvitation::InvitationType_Base:
       {
-         *packetOut = SerializeIn< PacketInvitation >( bufferIn, bufferOffset );
+         *packetOut = SerializeIn< PacketInvitation >( bufferIn, bufferOffset, networkMinorVersion );
       }
       return true;
    case PacketInvitation::InvitationType_EchoToServer:
       {
-         *packetOut = SerializeIn< PacketInvitation_EchoToServer >( bufferIn, bufferOffset );
+         *packetOut = SerializeIn< PacketInvitation_EchoToServer >( bufferIn, bufferOffset, networkMinorVersion );
       }
       return true;
    case PacketInvitation::InvitationType_EchoToClient:
       {
-         *packetOut = SerializeIn< PacketInvitation_EchoToClient >( bufferIn, bufferOffset );
+         *packetOut = SerializeIn< PacketInvitation_EchoToClient >( bufferIn, bufferOffset, networkMinorVersion );
       }
       return true;
    case PacketInvitation::InvitationType_InviteUser:
       {
-         *packetOut = SerializeIn< PacketInvitation_InviteUser >( bufferIn, bufferOffset );
+         *packetOut = SerializeIn< PacketInvitation_InviteUser >( bufferIn, bufferOffset, networkMinorVersion );
       }
       return true;
    case PacketInvitation::InvitationType_InviteUserResponse:
       {
-         *packetOut = SerializeIn< PacketInvitation_InviteUserResponse >( bufferIn, bufferOffset );
+         *packetOut = SerializeIn< PacketInvitation_InviteUserResponse >( bufferIn, bufferOffset, networkMinorVersion );
       }
       return true;
    case PacketInvitation::InvitationType_CancelInvitation:
       {
-         *packetOut = SerializeIn< PacketInvitation_CancelInvitation >( bufferIn, bufferOffset );
+         *packetOut = SerializeIn< PacketInvitation_CancelInvitation >( bufferIn, bufferOffset, networkMinorVersion );
       }
       return true;
    case PacketInvitation::InvitationType_InvitationWasCancelled:
       {
-         *packetOut = SerializeIn< PacketInvitation_InvitationWasCancelled >( bufferIn, bufferOffset );
+         *packetOut = SerializeIn< PacketInvitation_InvitationWasCancelled >( bufferIn, bufferOffset, networkMinorVersion );
       }
       return true;
    case PacketInvitation::InvitationType_RejectInvitation:
       {
-         *packetOut = SerializeIn< PacketInvitation_RejectInvitation >( bufferIn, bufferOffset );
+         *packetOut = SerializeIn< PacketInvitation_RejectInvitation >( bufferIn, bufferOffset, networkMinorVersion );
       }
       return true;
 
    case PacketInvitation::InvitationType_RejectInvitationResponse:
       {
-         *packetOut = SerializeIn< PacketInvitation_RejectInvitationResponse >( bufferIn, bufferOffset );
+         *packetOut = SerializeIn< PacketInvitation_RejectInvitationResponse >( bufferIn, bufferOffset, networkMinorVersion );
       }
       return true;
    case PacketInvitation::InvitationType_AcceptInvitation:
       {
-         *packetOut = SerializeIn< PacketInvitation_AcceptInvitation >( bufferIn, bufferOffset );
+         *packetOut = SerializeIn< PacketInvitation_AcceptInvitation >( bufferIn, bufferOffset, networkMinorVersion );
       }
       return true;
    case PacketInvitation::InvitationType_GetListOfInvitations:
       {
-         *packetOut = SerializeIn< PacketInvitation_GetListOfInvitations >( bufferIn, bufferOffset );
+         *packetOut = SerializeIn< PacketInvitation_GetListOfInvitations >( bufferIn, bufferOffset, networkMinorVersion );
       }
       return true;
    case PacketInvitation::InvitationType_GetListOfInvitationsResponse:
       {
-         *packetOut = SerializeIn< PacketInvitation_GetListOfInvitationsResponse >( bufferIn, bufferOffset );
+         *packetOut = SerializeIn< PacketInvitation_GetListOfInvitationsResponse >( bufferIn, bufferOffset, networkMinorVersion );
       }
       return true;
    case PacketInvitation::InvitationType_GetListOfInvitationsForGroup:
       {
-         *packetOut = SerializeIn< PacketInvitation_GetListOfInvitationsForGroup >( bufferIn, bufferOffset );
+         *packetOut = SerializeIn< PacketInvitation_GetListOfInvitationsForGroup >( bufferIn, bufferOffset, networkMinorVersion );
       }
       return true;
    case PacketInvitation::InvitationType_GetListOfInvitationsForGroupResponse:
       {
-         *packetOut = SerializeIn< PacketInvitation_GetListOfInvitationsForGroupResponse >( bufferIn, bufferOffset );
+         *packetOut = SerializeIn< PacketInvitation_GetListOfInvitationsForGroupResponse >( bufferIn, bufferOffset, networkMinorVersion );
       }
       return true;
     }
@@ -1432,32 +1438,32 @@ bool     PacketFactory::ParseInvitation( const U8* bufferIn, int& bufferOffset, 
 
 //-----------------------------------------------------------------------------------------
 
-bool     PacketFactory::ParseServerToServerWrapper( const U8* bufferIn, int& bufferOffset, const BasePacket* firstPassParse, BasePacket** packetOut ) const
+bool     PacketFactory::ParseServerToServerWrapper( const U8* bufferIn, int& bufferOffset, const BasePacket* firstPassParse, BasePacket** packetOut, int networkMinorVersion ) const
 {
    PacketServerToServerWrapper* wrapper = new PacketServerToServerWrapper();
    *packetOut = wrapper;
-   return wrapper->SerializeIn( bufferIn, bufferOffset );
+   return wrapper->SerializeIn( bufferIn, bufferOffset, networkMinorVersion );
 }
 
 //-----------------------------------------------------------------------------------------
 
-bool     PacketFactory::ParseServerInfo( const U8* bufferIn, int& bufferOffset, const BasePacket* firstPassParse, BasePacket** packetOut ) const
+bool     PacketFactory::ParseServerInfo( const U8* bufferIn, int& bufferOffset, const BasePacket* firstPassParse, BasePacket** packetOut, int networkMinorVersion ) const
 {
    switch( firstPassParse->packetSubType ) //PacketType_Tournament
    {
     case PacketServerConnectionInfo::PacketServerIdentifier_TypicalInfo:
       {
-         *packetOut = SerializeIn< PacketServerIdentifier >( bufferIn, bufferOffset );
+         *packetOut = SerializeIn< PacketServerIdentifier >( bufferIn, bufferOffset, networkMinorVersion );
       }
       return true;
    case PacketServerConnectionInfo::PacketServerIdentifier_ConnectionInfo:
       {
-         *packetOut = SerializeIn< PacketServerConnectionInfo >( bufferIn, bufferOffset );
+         *packetOut = SerializeIn< PacketServerConnectionInfo >( bufferIn, bufferOffset, networkMinorVersion );
       }
       return true;
    case PacketServerConnectionInfo::PacketServerIdentifier_Disconnect:
       {
-         *packetOut = SerializeIn< PacketServerDisconnect >( bufferIn, bufferOffset );
+         *packetOut = SerializeIn< PacketServerDisconnect >( bufferIn, bufferOffset, networkMinorVersion );
       }
       return true;
     }
@@ -1466,14 +1472,14 @@ bool     PacketFactory::ParseServerInfo( const U8* bufferIn, int& bufferOffset, 
 
 //-----------------------------------------------------------------------------------------
 
-bool     PacketFactory::ParseGatewayWrapper( const U8* bufferIn, int& bufferOffset, const BasePacket* firstPassParse, BasePacket** packetOut ) const
+bool     PacketFactory::ParseGatewayWrapper( const U8* bufferIn, int& bufferOffset, const BasePacket* firstPassParse, BasePacket** packetOut, int networkMinorVersion ) const
 {
    // I am left wondering whether or not to return the unwrapped packet or not -mkawick
 
    // we only have one type so no switch is needed.
    PacketGatewayWrapper* wrapper = new PacketGatewayWrapper();
    *packetOut = wrapper;
-   return wrapper->SerializeIn( bufferIn, bufferOffset );
+   return wrapper->SerializeIn( bufferIn, bufferOffset, networkMinorVersion );
 }
 
 //-----------------------------------------------------------------------------------------

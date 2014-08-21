@@ -5,103 +5,82 @@
 
 ///////////////////////////////////////////////////////////////
 
-bool  RegisteredDevice::SerializeIn( const U8* data, int& bufferOffset )
+bool  RegisteredDevice::SerializeIn( const U8* data, int& bufferOffset, int minorVersion )
 {
-   Serialize::In( data, bufferOffset, uuid );
-   Serialize::In( data, bufferOffset, name );
-   Serialize::In( data, bufferOffset, isEnabled );
-   Serialize::In( data, bufferOffset, iconId );
-   Serialize::In( data, bufferOffset, productId );
-   Serialize::In( data, bufferOffset, platformId );
-   Serialize::In( data, bufferOffset, audioFile );
-   Serialize::In( data, bufferOffset, repeatFrequencyInHours );
+   Serialize::In( data, bufferOffset, uuid, minorVersion );
+   Serialize::In( data, bufferOffset, name, minorVersion );
+   Serialize::In( data, bufferOffset, isEnabled, minorVersion );
+   Serialize::In( data, bufferOffset, iconId, minorVersion );
+   Serialize::In( data, bufferOffset, productId, minorVersion );
+   Serialize::In( data, bufferOffset, platformId, minorVersion );
+   Serialize::In( data, bufferOffset, audioFile, minorVersion );
+   Serialize::In( data, bufferOffset, repeatFrequencyInHours, minorVersion );
    return true;
 }
 
-bool  RegisteredDevice::SerializeOut( U8* data, int& bufferOffset ) const
+bool  RegisteredDevice::SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const
 {
-   Serialize::Out( data, bufferOffset, uuid );
-   Serialize::Out( data, bufferOffset, name );
-   Serialize::Out( data, bufferOffset, isEnabled );
-   Serialize::Out( data, bufferOffset, iconId );
-   Serialize::Out( data, bufferOffset, productId );
-   Serialize::Out( data, bufferOffset, platformId );
-   Serialize::Out( data, bufferOffset, audioFile );
-   Serialize::Out( data, bufferOffset, repeatFrequencyInHours );
-   return true;
-}
-
-///////////////////////////////////////////////////////////////
-
-bool  PacketNotification::SerializeIn( const U8* data, int& bufferOffset )
-{
-   BasePacket::SerializeIn( data, bufferOffset );
-
-   return true;
-}
-
-bool  PacketNotification::SerializeOut( U8* data, int& bufferOffset ) const
-{
-   BasePacket::SerializeOut( data, bufferOffset );
-
+   Serialize::Out( data, bufferOffset, uuid, minorVersion );
+   Serialize::Out( data, bufferOffset, name, minorVersion );
+   Serialize::Out( data, bufferOffset, isEnabled, minorVersion );
+   Serialize::Out( data, bufferOffset, iconId, minorVersion );
+   Serialize::Out( data, bufferOffset, productId, minorVersion );
+   Serialize::Out( data, bufferOffset, platformId, minorVersion );
+   Serialize::Out( data, bufferOffset, audioFile, minorVersion );
+   Serialize::Out( data, bufferOffset, repeatFrequencyInHours, minorVersion );
    return true;
 }
 
 ///////////////////////////////////////////////////////////////
 
-bool  PacketNotification_TestNotification::SerializeIn( const U8* data, int& bufferOffset )
+bool  PacketNotification::SerializeIn( const U8* data, int& bufferOffset, int minorVersion )
 {
-   PacketNotification::SerializeIn( data, bufferOffset );
-   Serialize::In( data, bufferOffset, message );
-   Serialize::In( data, bufferOffset, type );
+   BasePacket::SerializeIn( data, bufferOffset, minorVersion );
 
    return true;
 }
 
-bool  PacketNotification_TestNotification::SerializeOut( U8* data, int& bufferOffset ) const
+bool  PacketNotification::SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const
 {
-   PacketNotification::SerializeOut( data, bufferOffset );
-   Serialize::Out( data, bufferOffset, message );
-   Serialize::Out( data, bufferOffset, type );
+   BasePacket::SerializeOut( data, bufferOffset, minorVersion );
 
    return true;
 }
 
 ///////////////////////////////////////////////////////////////
-/*
-bool  PacketNotification_EchoToServer::SerializeIn( const U8* data, int& bufferOffset )
+
+bool  PacketNotification_TestNotification::SerializeIn( const U8* data, int& bufferOffset, int minorVersion )
 {
-   BasePacket::SerializeIn( data, bufferOffset );
-   Serialize::In( data, bufferOffset, name );
-   Serialize::In( data, bufferOffset, uuid );
+   PacketNotification::SerializeIn( data, bufferOffset, minorVersion );
+   Serialize::In( data, bufferOffset, message, minorVersion );
+   Serialize::In( data, bufferOffset, type, minorVersion );
 
    return true;
 }
 
-bool  PacketNotification_EchoToServer::SerializeOut( U8* data, int& bufferOffset ) const
+bool  PacketNotification_TestNotification::SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const
 {
-   BasePacket::SerializeOut( data, bufferOffset );
-   Serialize::Out( data, bufferOffset, name );
-   Serialize::Out( data, bufferOffset, uuid );
+   PacketNotification::SerializeOut( data, bufferOffset, minorVersion );
+   Serialize::Out( data, bufferOffset, message, minorVersion );
+   Serialize::Out( data, bufferOffset, type, minorVersion );
 
    return true;
-}*/
+}
 
-///////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////
 /*
-bool  PacketNotification_EchoToClient::SerializeIn( const U8* data, int& bufferOffset )
+bool  PacketNotification_EchoToServer::SerializeIn( const U8* data, int& bufferOffset, int minorVersion )
 {
-   BasePacket::SerializeIn( data, bufferOffset );
+   BasePacket::SerializeIn( data, bufferOffset, minorVersion );
    Serialize::In( data, bufferOffset, name );
    Serialize::In( data, bufferOffset, uuid );
 
    return true;
 }
 
-bool  PacketNotification_EchoToClient::SerializeOut( U8* data, int& bufferOffset ) const
+bool  PacketNotification_EchoToServer::SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const
 {
-   BasePacket::SerializeOut( data, bufferOffset );
+   BasePacket::SerializeOut( data, bufferOffset, minorVersion );
    Serialize::Out( data, bufferOffset, name );
    Serialize::Out( data, bufferOffset, uuid );
 
@@ -109,197 +88,217 @@ bool  PacketNotification_EchoToClient::SerializeOut( U8* data, int& bufferOffset
 }*/
 
 ///////////////////////////////////////////////////////////////
-
-bool  PacketNotification_RegisterDevice::SerializeIn( const U8* data, int& bufferOffset )
+///////////////////////////////////////////////////////////////
+/*
+bool  PacketNotification_EchoToClient::SerializeIn( const U8* data, int& bufferOffset, int minorVersion )
 {
-   PacketNotification::SerializeIn( data, bufferOffset );
-   Serialize::In( data, bufferOffset, deviceName );
-   Serialize::In( data, bufferOffset, deviceId );
-   Serialize::In( data, bufferOffset, assignedUuid );
-   Serialize::In( data, bufferOffset, platformId );
+   BasePacket::SerializeIn( data, bufferOffset, minorVersion );
+   Serialize::In( data, bufferOffset, name );
+   Serialize::In( data, bufferOffset, uuid );
 
    return true;
 }
 
-bool  PacketNotification_RegisterDevice::SerializeOut( U8* data, int& bufferOffset ) const
+bool  PacketNotification_EchoToClient::SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const
 {
-   PacketNotification::SerializeOut( data, bufferOffset );
-   Serialize::Out( data, bufferOffset, deviceName );
-   Serialize::Out( data, bufferOffset, deviceId );
-   Serialize::Out( data, bufferOffset, assignedUuid );
-   Serialize::Out( data, bufferOffset, platformId );
+   BasePacket::SerializeOut( data, bufferOffset, minorVersion );
+   Serialize::Out( data, bufferOffset, name );
+   Serialize::Out( data, bufferOffset, uuid );
+
+   return true;
+}*/
+
+///////////////////////////////////////////////////////////////
+
+bool  PacketNotification_RegisterDevice::SerializeIn( const U8* data, int& bufferOffset, int minorVersion )
+{
+   PacketNotification::SerializeIn( data, bufferOffset, minorVersion );
+   Serialize::In( data, bufferOffset, deviceName, minorVersion );
+   Serialize::In( data, bufferOffset, deviceId, minorVersion );
+   Serialize::In( data, bufferOffset, assignedUuid, minorVersion );
+   Serialize::In( data, bufferOffset, platformId, minorVersion );
+
+   return true;
+}
+
+bool  PacketNotification_RegisterDevice::SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const
+{ 
+   PacketNotification::SerializeOut( data, bufferOffset, minorVersion );
+   Serialize::Out( data, bufferOffset, deviceName, minorVersion );
+   Serialize::Out( data, bufferOffset, deviceId, minorVersion );
+   Serialize::Out( data, bufferOffset, assignedUuid, minorVersion );
+   Serialize::Out( data, bufferOffset, platformId, minorVersion );
 
    return true;
 }
 
 ///////////////////////////////////////////////////////////////
 
-bool  PacketNotification_RegisterDeviceResponse::SerializeIn( const U8* data, int& bufferOffset )
+bool  PacketNotification_RegisterDeviceResponse::SerializeIn( const U8* data, int& bufferOffset, int minorVersion )
 {
-   PacketNotification::SerializeIn( data, bufferOffset );
-   Serialize::In( data, bufferOffset, deviceUuid );
+   PacketNotification::SerializeIn( data, bufferOffset, minorVersion );
+   Serialize::In( data, bufferOffset, deviceUuid, minorVersion );
 
    return true;
 }
 
-bool  PacketNotification_RegisterDeviceResponse::SerializeOut( U8* data, int& bufferOffset ) const
+bool  PacketNotification_RegisterDeviceResponse::SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const
 {
-   PacketNotification::SerializeOut( data, bufferOffset );
-   Serialize::Out( data, bufferOffset, deviceUuid );
+   PacketNotification::SerializeOut( data, bufferOffset, minorVersion );
+   Serialize::Out( data, bufferOffset, deviceUuid, minorVersion );
+   return true;
+}
+
+///////////////////////////////////////////////////////////////
+
+bool  PacketNotification_UpdateDevice::SerializeIn( const U8* data, int& bufferOffset, int minorVersion )
+{
+   PacketNotification::SerializeIn( data, bufferOffset, minorVersion );
+   Serialize::In( data, bufferOffset, deviceUuid, minorVersion );
+   Serialize::In( data, bufferOffset, deviceName, minorVersion );
+   Serialize::In( data, bufferOffset, isEnabled, minorVersion );
+   Serialize::In( data, bufferOffset, iconId, minorVersion );
+   Serialize::In( data, bufferOffset, gameType, minorVersion );
+   Serialize::In( data, bufferOffset, audioFile, minorVersion );
+   Serialize::In( data, bufferOffset, repeatFrequencyInHours, minorVersion );
+
+   return true;
+}
+
+bool  PacketNotification_UpdateDevice::SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const
+{
+   PacketNotification::SerializeOut( data, bufferOffset, minorVersion );
+   Serialize::Out( data, bufferOffset, deviceUuid, minorVersion );
+   Serialize::Out( data, bufferOffset, deviceName, minorVersion );;
+   Serialize::Out( data, bufferOffset, isEnabled, minorVersion );
+   Serialize::Out( data, bufferOffset, iconId, minorVersion );
+   Serialize::Out( data, bufferOffset, gameType, minorVersion );
+   Serialize::Out( data, bufferOffset, audioFile, minorVersion );
+   Serialize::Out( data, bufferOffset, repeatFrequencyInHours, minorVersion );
 
    return true;
 }
 
 ///////////////////////////////////////////////////////////////
 
-bool  PacketNotification_UpdateDevice::SerializeIn( const U8* data, int& bufferOffset )
+bool  PacketNotification_SendNotification::SerializeIn( const U8* data, int& bufferOffset, int minorVersion )
 {
-   PacketNotification::SerializeIn( data, bufferOffset );
-   Serialize::In( data, bufferOffset, deviceUuid );
-   Serialize::In( data, bufferOffset, deviceName );
-   Serialize::In( data, bufferOffset, isEnabled );
-   Serialize::In( data, bufferOffset, iconId );
-   Serialize::In( data, bufferOffset, gameType );
-   Serialize::In( data, bufferOffset, audioFile );
-   Serialize::In( data, bufferOffset, repeatFrequencyInHours );
+   PacketNotification::SerializeIn( data, bufferOffset, minorVersion );
+   Serialize::In( data, bufferOffset, userUuid, minorVersion );
+   Serialize::In( data, bufferOffset, userId, minorVersion );
+   Serialize::In( data, bufferOffset, gameType, minorVersion );
+   Serialize::In( data, bufferOffset, gameId, minorVersion );
+   Serialize::In( data, bufferOffset, notificationType, minorVersion );
+   Serialize::In( data, bufferOffset, additionalText, minorVersion );
 
    return true;
 }
 
-bool  PacketNotification_UpdateDevice::SerializeOut( U8* data, int& bufferOffset ) const
+bool  PacketNotification_SendNotification::SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const
 {
-   PacketNotification::SerializeOut( data, bufferOffset );
-   Serialize::Out( data, bufferOffset, deviceUuid );
-   Serialize::Out( data, bufferOffset, deviceName );
-   Serialize::Out( data, bufferOffset, isEnabled );
-   Serialize::Out( data, bufferOffset, iconId );
-   Serialize::Out( data, bufferOffset, gameType );
-   Serialize::Out( data, bufferOffset, audioFile );
-   Serialize::Out( data, bufferOffset, repeatFrequencyInHours );
-
-   return true;
-}
-
-///////////////////////////////////////////////////////////////
-
-bool  PacketNotification_SendNotification::SerializeIn( const U8* data, int& bufferOffset )
-{
-   PacketNotification::SerializeIn( data, bufferOffset );
-   Serialize::In( data, bufferOffset, userUuid );
-   Serialize::In( data, bufferOffset, userId );
-   Serialize::In( data, bufferOffset, gameType );
-   Serialize::In( data, bufferOffset, gameId );
-   Serialize::In( data, bufferOffset, notificationType );
-   Serialize::In( data, bufferOffset, additionalText );
-
-   return true;
-}
-
-bool  PacketNotification_SendNotification::SerializeOut( U8* data, int& bufferOffset ) const
-{
-   PacketNotification::SerializeOut( data, bufferOffset );
-   Serialize::Out( data, bufferOffset, userUuid );
-   Serialize::Out( data, bufferOffset, userId );
-   Serialize::Out( data, bufferOffset, gameType );
-   Serialize::Out( data, bufferOffset, gameId );
-   Serialize::Out( data, bufferOffset, notificationType );
-   Serialize::Out( data, bufferOffset, additionalText );
+   PacketNotification::SerializeOut( data, bufferOffset, minorVersion );
+   Serialize::Out( data, bufferOffset, userUuid, minorVersion );
+   Serialize::Out( data, bufferOffset, userId, minorVersion );
+   Serialize::Out( data, bufferOffset, gameType, minorVersion );
+   Serialize::Out( data, bufferOffset, gameId, minorVersion );
+   Serialize::Out( data, bufferOffset, notificationType, minorVersion );
+   Serialize::Out( data, bufferOffset, additionalText, minorVersion );
 
    return true;
 }
 
 ///////////////////////////////////////////////////////////////
 
-bool  PacketNotification_UpdateNotificationCount::SerializeIn( const U8* data, int& bufferOffset )
+bool  PacketNotification_UpdateNotificationCount::SerializeIn( const U8* data, int& bufferOffset, int minorVersion )
 {
-   PacketNotification::SerializeIn( data, bufferOffset );
-   Serialize::In( data, bufferOffset, userId );
-   Serialize::In( data, bufferOffset, gameType );
-   Serialize::In( data, bufferOffset, notificationCount );
+   PacketNotification::SerializeIn( data, bufferOffset, minorVersion );
+   Serialize::In( data, bufferOffset, userId, minorVersion );
+   Serialize::In( data, bufferOffset, gameType, minorVersion );
+   Serialize::In( data, bufferOffset, notificationCount, minorVersion );
 
    return true;
 }
 
-bool  PacketNotification_UpdateNotificationCount::SerializeOut( U8* data, int& bufferOffset ) const
+bool  PacketNotification_UpdateNotificationCount::SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const
 {
-   PacketNotification::SerializeOut( data, bufferOffset );
-   Serialize::Out( data, bufferOffset, userId );
-   Serialize::Out( data, bufferOffset, gameType );
-   Serialize::Out( data, bufferOffset, notificationCount );
-
-   return true;
-}
-
-///////////////////////////////////////////////////////////////
-
-bool  PacketNotification_RequestListOfDevices::SerializeIn( const U8* data, int& bufferOffset )
-{
-   PacketNotification::SerializeIn( data, bufferOffset );
-   Serialize::In( data, bufferOffset, platformId );
-
-   return true;
-}
-
-bool  PacketNotification_RequestListOfDevices::SerializeOut( U8* data, int& bufferOffset ) const
-{
-   PacketNotification::SerializeOut( data, bufferOffset );
-   Serialize::Out( data, bufferOffset, platformId );
+   PacketNotification::SerializeOut( data, bufferOffset, minorVersion );
+   Serialize::Out( data, bufferOffset, userId, minorVersion );
+   Serialize::Out( data, bufferOffset, gameType, minorVersion );
+   Serialize::Out( data, bufferOffset, notificationCount, minorVersion );
 
    return true;
 }
 
 ///////////////////////////////////////////////////////////////
 
-bool  PacketNotification_RequestListOfDevicesResponse::SerializeIn( const U8* data, int& bufferOffset )
+bool  PacketNotification_RequestListOfDevices::SerializeIn( const U8* data, int& bufferOffset, int minorVersion )
 {
-   PacketNotification::SerializeIn( data, bufferOffset );
-   Serialize::In( data, bufferOffset, devices );
+   PacketNotification::SerializeIn( data, bufferOffset, minorVersion );
+   Serialize::In( data, bufferOffset, platformId, minorVersion );
 
    return true;
 }
 
-bool  PacketNotification_RequestListOfDevicesResponse::SerializeOut( U8* data, int& bufferOffset ) const
+bool  PacketNotification_RequestListOfDevices::SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const
 {
-   PacketNotification::SerializeOut( data, bufferOffset );
-   Serialize::Out( data, bufferOffset, devices );
-
-   return true;
-}
-
-///////////////////////////////////////////////////////////////
-
-bool  PacketNotification_RemoveDevice::SerializeIn( const U8* data, int& bufferOffset )
-{
-   PacketNotification::SerializeIn( data, bufferOffset );
-   Serialize::In( data, bufferOffset, deviceUuid );
-
-   return true;
-}
-
-bool  PacketNotification_RemoveDevice::SerializeOut( U8* data, int& bufferOffset ) const
-{
-   PacketNotification::SerializeOut( data, bufferOffset );
-   Serialize::Out( data, bufferOffset, deviceUuid );
+   PacketNotification::SerializeOut( data, bufferOffset, minorVersion );
+   Serialize::Out( data, bufferOffset, platformId, minorVersion );
 
    return true;
 }
 
 ///////////////////////////////////////////////////////////////
 
-bool  PacketNotification_RemoveDeviceResponse::SerializeIn( const U8* data, int& bufferOffset )
+bool  PacketNotification_RequestListOfDevicesResponse::SerializeIn( const U8* data, int& bufferOffset, int minorVersion )
 {
-   PacketNotification::SerializeIn( data, bufferOffset );
-   Serialize::In( data, bufferOffset, deviceUuid );
-   Serialize::In( data, bufferOffset, success );
+   PacketNotification::SerializeIn( data, bufferOffset, minorVersion );
+   Serialize::In( data, bufferOffset, devices, minorVersion );
 
    return true;
 }
 
-bool  PacketNotification_RemoveDeviceResponse::SerializeOut( U8* data, int& bufferOffset ) const
+bool  PacketNotification_RequestListOfDevicesResponse::SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const
 {
-   PacketNotification::SerializeOut( data, bufferOffset );
-   Serialize::Out( data, bufferOffset, deviceUuid );
-   Serialize::Out( data, bufferOffset, success );
+   PacketNotification::SerializeOut( data, bufferOffset, minorVersion );
+   Serialize::Out( data, bufferOffset, devices, minorVersion );
+
+   return true;
+}
+
+///////////////////////////////////////////////////////////////
+
+bool  PacketNotification_RemoveDevice::SerializeIn( const U8* data, int& bufferOffset, int minorVersion )
+{
+   PacketNotification::SerializeIn( data, bufferOffset, minorVersion );
+   Serialize::In( data, bufferOffset, deviceUuid, minorVersion );
+
+   return true;
+}
+
+bool  PacketNotification_RemoveDevice::SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const
+{
+   PacketNotification::SerializeOut( data, bufferOffset, minorVersion );
+   Serialize::Out( data, bufferOffset, deviceUuid, minorVersion );
+
+   return true;
+}
+
+///////////////////////////////////////////////////////////////
+
+bool  PacketNotification_RemoveDeviceResponse::SerializeIn( const U8* data, int& bufferOffset, int minorVersion )
+{
+   PacketNotification::SerializeIn( data, bufferOffset, minorVersion );
+   Serialize::In( data, bufferOffset, deviceUuid, minorVersion );
+   Serialize::In( data, bufferOffset, success, minorVersion );
+
+   return true;
+}
+
+bool  PacketNotification_RemoveDeviceResponse::SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const
+{
+   PacketNotification::SerializeOut( data, bufferOffset, minorVersion );
+   Serialize::Out( data, bufferOffset, deviceUuid, minorVersion );
+   Serialize::Out( data, bufferOffset, success, minorVersion );
 
    return true;
 }

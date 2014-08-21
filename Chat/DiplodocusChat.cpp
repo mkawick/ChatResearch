@@ -229,6 +229,21 @@ void     DiplodocusChat::ServerWasIdentified( IChainedInterface* khaan )
    m_clientsNeedingUpdate.push_back( localKhaan->GetServerId() );
 }
 
+/////////////////////////////////////////////////////////////////////////////////
+
+void     DiplodocusChat::InputRemovalInProgress( IChainedInterface * chainedInput )
+{
+   KhaanChat* khaan = static_cast< KhaanChat* >( chainedInput );
+
+   SetupClientWaitingToBeRemoved( khaan );
+
+   string currentTime = GetDateInUTC();
+   string printer = "Client disconnection at time:" + currentTime + " from " + inet_ntoa( khaan->GetIPAddress().sin_addr );
+   cout << printer << endl;
+
+   PrintDebugText( "** InputRemovalInProgress" , 1 );
+}
+
 //---------------------------------------------------------------
 
 bool     DiplodocusChat::HandleChatPacket( BasePacket* packet, U32 connectionId )

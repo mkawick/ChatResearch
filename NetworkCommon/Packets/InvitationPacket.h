@@ -18,21 +18,21 @@ struct Invitation
       InvitationType_Num
    };
 
-   string   invitationUuid;
-   string   inviterName;
-   string   inviterUuid;
-   string   inviteeName; 
-   string   inviteeUuid; 
-   string   groupName; // if the group has a name
-   string   groupUuid; // applies to event UUIDs, tournament UUIDs, etc.
-   string   message;
-   string   date;
-   U8       type;
-   int      invitationId; // does not transport to client
+   UuidString        invitationUuid;
+   BoundedString80   inviterName;
+   UuidString        inviterUuid;
+   BoundedString80   inviteeName; 
+   UuidString        inviteeUuid; 
+   BoundedString80   groupName; // if the group has a name
+   UuidString        groupUuid; // applies to event UUIDs, tournament UUIDs, etc.
+   BoundedString140  message;
+   TimeString        date;
+   U8                type;
+   int               invitationId; // does not transport to client
    
 
-   bool  SerializeIn( const U8* data, int& bufferOffset );
-   bool  SerializeOut( U8* data, int& bufferOffset ) const;
+   bool  SerializeIn( const U8* data, int& bufferOffset, int minorVersion );
+   bool  SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const;
 
    bool  IsUserInThisInvitation( const string& uuid ) const { if( inviteeUuid == uuid || inviterUuid == uuid ) return true; return false; }
 };
@@ -77,8 +77,8 @@ public:
 public:
    PacketInvitation( int packet_type = PacketType_Invitation, int packet_sub_type = InvitationType_Base ) : BasePacket( packet_type, packet_sub_type ) {}
 
-   bool  SerializeIn( const U8* data, int& bufferOffset );
-   bool  SerializeOut( U8* data, int& bufferOffset ) const;
+   bool  SerializeIn( const U8* data, int& bufferOffset, int minorVersion );
+   bool  SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const;
 
    U8       invitationType;  // Invitation:: InvitationType
 };
@@ -92,8 +92,8 @@ class PacketInvitation_TestNotification : public PacketInvitation
 public:
    PacketInvitation_TestNotification() : PacketInvitation( PacketType_Invitation, InvitationType_TestNotification ){  }
 
-   bool  SerializeIn( const U8* data, int& bufferOffset );
-   bool  SerializeOut( U8* data, int& bufferOffset ) const;
+   bool  SerializeIn( const U8* data, int& bufferOffset, int minorVersion );
+   bool  SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const;
 
    string   message;
    int      type;
@@ -122,12 +122,12 @@ class PacketInvitation_InviteUser : public PacketInvitation
 public:
    PacketInvitation_InviteUser() : PacketInvitation( PacketType_Invitation, InvitationType_InviteUser ){  }
 
-   bool  SerializeIn( const U8* data, int& bufferOffset );
-   bool  SerializeOut( U8* data, int& bufferOffset ) const;
+   bool  SerializeIn( const U8* data, int& bufferOffset, int minorVersion );
+   bool  SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const;
 
-   UuidString  userUuid; 
-   string      inviteGroup;
-   string      message;
+   UuidString        userUuid; 
+   BoundedString80   inviteGroup;
+   BoundedString140  message;
 };
 
 ///////////////////////////////////////////////////////////////
@@ -137,12 +137,11 @@ class PacketInvitation_InviteUserResponse : public PacketInvitation
 public:
    PacketInvitation_InviteUserResponse() : PacketInvitation( PacketType_Invitation, InvitationType_InviteUserResponse ){  }
 
-   bool  SerializeIn( const U8* data, int& bufferOffset );
-   bool  SerializeOut( U8* data, int& bufferOffset ) const;
+   bool  SerializeIn( const U8* data, int& bufferOffset, int minorVersion );
+   bool  SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const;
 
-   string   newInvitationUuid;
-
-   bool     succeeded;
+   UuidString        newInvitationUuid;
+   bool              succeeded;
 };
 
 ///////////////////////////////////////////////////////////////
@@ -152,10 +151,10 @@ class PacketInvitation_CancelInvitation : public PacketInvitation
 public:
    PacketInvitation_CancelInvitation() : PacketInvitation( PacketType_Invitation, InvitationType_CancelInvitation ){  }
 
-   bool  SerializeIn( const U8* data, int& bufferOffset );
-   bool  SerializeOut( U8* data, int& bufferOffset ) const;
+   bool  SerializeIn( const U8* data, int& bufferOffset, int minorVersion );
+   bool  SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const;
 
-   string   invitationUuid;
+   UuidString        invitationUuid;
 };
 
 ///////////////////////////////////////////////////////////////
@@ -165,10 +164,10 @@ class PacketInvitation_InvitationWasCancelled : public PacketInvitation
 public:
    PacketInvitation_InvitationWasCancelled() : PacketInvitation( PacketType_Invitation, InvitationType_InvitationWasCancelled ){  }
 
-   bool  SerializeIn( const U8* data, int& bufferOffset );
-   bool  SerializeOut( U8* data, int& bufferOffset ) const;
+   bool  SerializeIn( const U8* data, int& bufferOffset, int minorVersion );
+   bool  SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const;
 
-   string   invitationUuid; 
+   UuidString        invitationUuid; 
 };
 
 ///////////////////////////////////////////////////////////////
@@ -178,11 +177,11 @@ class PacketInvitation_RejectInvitation : public PacketInvitation
 public:
    PacketInvitation_RejectInvitation() : PacketInvitation( PacketType_Invitation, InvitationType_RejectInvitation ){  }
 
-   bool  SerializeIn( const U8* data, int& bufferOffset );
-   bool  SerializeOut( U8* data, int& bufferOffset ) const;
+   bool  SerializeIn( const U8* data, int& bufferOffset, int minorVersion );
+   bool  SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const;
 
-   string   invitationUuid;
-   string   reason;
+   UuidString        invitationUuid;
+   BoundedString140  reason;
 };
 
 ///////////////////////////////////////////////////////////////
@@ -200,10 +199,10 @@ class PacketInvitation_AcceptInvitation  : public PacketInvitation
 public:
    PacketInvitation_AcceptInvitation () : PacketInvitation( PacketType_Invitation, InvitationType_AcceptInvitation ){  }
 
-   bool  SerializeIn( const U8* data, int& bufferOffset );
-   bool  SerializeOut( U8* data, int& bufferOffset ) const;
+   bool  SerializeIn( const U8* data, int& bufferOffset, int minorVersion );
+   bool  SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const;
 
-   string   invitationUuid;
+   UuidString        invitationUuid;
 };
 
 
@@ -214,8 +213,8 @@ class PacketInvitation_GetListOfInvitations : public PacketInvitation
 public:
    PacketInvitation_GetListOfInvitations() : PacketInvitation( PacketType_Invitation, InvitationType_GetListOfInvitations ){  }
 
-   bool  SerializeIn( const U8* data, int& bufferOffset );
-   bool  SerializeOut( U8* data, int& bufferOffset ) const;
+   bool  SerializeIn( const U8* data, int& bufferOffset, int minorVersion );
+   bool  SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const;
 
 };
 
@@ -227,10 +226,10 @@ public:
    PacketInvitation_GetListOfInvitationsResponse() : PacketInvitation( PacketType_Invitation, InvitationType_GetListOfInvitationsResponse ){  }
    PacketInvitation_GetListOfInvitationsResponse( U8 type, U8 subType ) : PacketInvitation( type, subType ){  }
 
-   bool  SerializeIn( const U8* data, int& bufferOffset );
-   bool  SerializeOut( U8* data, int& bufferOffset ) const;
+   bool  SerializeIn( const U8* data, int& bufferOffset, int minorVersion );
+   bool  SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const;
 
-   string   uuid;
+   UuidString     uuid;
    SerializedKeyValueVector < Invitation >  invitationList;
 };
 
@@ -241,10 +240,10 @@ class PacketInvitation_GetListOfInvitationsForGroup : public PacketInvitation
 public:
    PacketInvitation_GetListOfInvitationsForGroup() : PacketInvitation( PacketType_Invitation, InvitationType_GetListOfInvitationsForGroup ){  }
 
-   bool  SerializeIn( const U8* data, int& bufferOffset );
-   bool  SerializeOut( U8* data, int& bufferOffset ) const;
+   bool  SerializeIn( const U8* data, int& bufferOffset, int minorVersion );
+   bool  SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const;
 
-   string   groupUuid;
+   UuidString     groupUuid;
 };
 
 ///////////////////////////////////////////////////////////////
@@ -257,3 +256,4 @@ public:
 
 ///////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////
+

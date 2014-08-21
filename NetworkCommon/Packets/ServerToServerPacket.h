@@ -20,12 +20,12 @@ public:
                            BasePacket( packet_type, packet_sub_type ), 
                            currentLoad( 0 ) {}
 
-   bool  SerializeIn( const U8* data, int& bufferOffset );
-   bool  SerializeOut( U8* data, int& bufferOffset ) const;
+   bool  SerializeIn( const U8* data, int& bufferOffset, int minorVersion );
+   bool  SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const;
 
-   string      serverAddress;
-   U32         serverId;
-   int         currentLoad;
+   BoundedString80   serverAddress;
+   U32               serverId;
+   int               currentLoad;
    //string   timeLastConnection;
 };
 
@@ -49,19 +49,19 @@ public:
                            isController( false ), 
                            gatewayType( GatewayType_None ) {}
 
-   bool  SerializeIn( const U8* data, int& bufferOffset );
-   bool  SerializeOut( U8* data, int& bufferOffset ) const;
+   bool  SerializeIn( const U8* data, int& bufferOffset, int minorVersion );
+   bool  SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const;
 
-   string      serverName;
-   string      serverAddress;
-   string      externalIpAddress;
-   U32         serverId;
-   U16         serverPort;
-   U32         gameInstanceId;// used to filter game packets
-   U8          serverType;
-   bool        isGameServer;
-   bool        isController;
-   U8          gatewayType;
+   BoundedString80   serverName;
+   BoundedString32   serverAddress;
+   BoundedString80   externalIpAddress;
+   U32               serverId;
+   U16               serverPort;
+   U32               gameInstanceId;// used to filter game packets
+   U8                serverType;
+   bool              isGameServer;
+   bool              isController;
+   U8                gatewayType;
 };
 
 ///////////////////////////////////////////////////////////////
@@ -74,11 +74,11 @@ public:
                            BasePacket( packet_type, packet_sub_type ), 
                            serverId( 0 ) {}
 
-   bool  SerializeIn( const U8* data, int& bufferOffset );
-   bool  SerializeOut( U8* data, int& bufferOffset ) const;
+   bool  SerializeIn( const U8* data, int& bufferOffset, int minorVersion );
+   bool  SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const;
 
-   string      serverAddress;
-   U32         serverId;
+   BoundedString80   serverAddress;
+   U32               serverId;
 };
 
 ///////////////////////////////////////////////////////////////
@@ -88,8 +88,8 @@ class PacketServerToServerWrapper : public BasePacket
 public:
    PacketServerToServerWrapper( int packet_type = PacketType_ServerToServerWrapper, int packet_sub_type = 0  ): BasePacket( packet_type, packet_sub_type ), serverId( 0 ), pPacket( NULL ) {}
 
-   bool  SerializeIn( const U8* data, int& bufferOffset );
-   bool  SerializeOut( U8* data, int& bufferOffset ) const;
+   bool  SerializeIn( const U8* data, int& bufferOffset, int minorVersion );
+   bool  SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const;
 
    U32         serverId;
    BasePacket* pPacket;
@@ -106,8 +106,8 @@ class PacketServerJobWrapper : public BasePacket
 public:
    PacketServerJobWrapper( int packet_type = PacketType_ServerJobWrapper, int packet_sub_type = 0  ): BasePacket( packet_type, packet_sub_type ), serverId( 0 ), pPacket( NULL ) {}
 
-   bool  SerializeIn( const U8* data, int& bufferOffset );
-   bool  SerializeOut( U8* data, int& bufferOffset ) const;
+   bool  SerializeIn( const U8* data, int& bufferOffset, int minorVersion );
+   bool  SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const;
 
    U32         serverId;
    U32         jobId;

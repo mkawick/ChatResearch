@@ -17,11 +17,9 @@ KhaanGateway::KhaanGateway( int id, bufferevent* be ):
       KhaanProtected( id, be ), 
       m_numPacketsReceivedBeforeAuth( 0 ),
       m_authorizedConnection( false ),
-      //m_denyAllFutureData( false ),
       m_logoutPacketSent( false ),
       m_adminLevel( 0 ),
       m_languageId( 0 ),
-      //m_gateway( NULL ),
       m_timeoutMs( 0 ),
       m_lastSentToClientTimestamp( 0 ),
       m_gameId( 0 )
@@ -48,13 +46,6 @@ void     KhaanGateway::AuthorizeConnection()
 void     KhaanGateway::SetLanguageId( U8 languageId ) 
 { 
    m_languageId = languageId;
-}
-
-//-----------------------------------------------------------------------------------------
-
-void     KhaanGateway::ForceShutdown() 
-{ 
-   CloseConnection(); 
 }
 
 //-----------------------------------------------------------------------------------------
@@ -167,7 +158,7 @@ bool  KhaanGateway::IsPacketSafe( const U8* data, int& offset)
    PacketFactory parser;
    // before we parse, which is potentially dangerous, we will do a quick check
    BasePacket testPacket;
-   parser.SafeParse( data, offset, testPacket );
+   parser.SafeParse( data, offset, testPacket, 0 );// always pass the simplest possible - 0
 
    // we only allow a few packet types
    bool allow = false;
@@ -205,18 +196,27 @@ bool  KhaanGateway::IsHandshaking( const BasePacket* packetIn )
    {
       //<< do nothing
 
-      if( packetIn->versionNumber != GlobalNetworkProtocolVersion )
+      if( packetIn->versionNumberMajor != NetworkVersionMajor )
       {
          if( m_mainOutputChain )
          {
-            static_cast< MainGatewayThread* >( m_mainOutputChain )->TrackCountStats( StatTrackingConnections::StatTracking_BadPacketVersion, 1, packetIn->versionNumber );
+            static_cast< MainGatewayThread* >( m_mainOutputChain )->TrackCountStats( StatTrackingConnections::StatTracking_BadPacketVersion, 1, packetIn->versionNumberMajor );
          }
          DenyAllFutureData();
       }
 
+      m_versionNumberMinor = packetIn->versionNumberMinor;
+
       // we are only sending version numbers at this point.
       PacketHello* hello = new PacketHello();
+      //hello->test = "this is a long string meant to prove out the viability of accepting packets of pracically any size and to not worry too much about packet versioning";
       AddOutputChainData( hello );
+
+      PacketBase_TestOnly* test = new PacketBase_TestOnly();
+      test->testNo = 30;
+      test->testString = "what the heck is this long string doing in our network protocol";
+      AddOutputChainData( test );
+
       return true;
    }
    return false;

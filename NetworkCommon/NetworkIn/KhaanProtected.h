@@ -21,7 +21,6 @@ public:
 
 protected:   
    virtual bool  IsWhiteListedIn( const BasePacket* packet ) const = 0;
-   virtual void  DenyAllFutureData();
    virtual bool  IsHandshaking( const BasePacket* packet ) { return false; }
    virtual bool  HasPermission( const BasePacket* packet ) const { return true; }
    virtual void  SetupOutputDelayTimestamp() {}
@@ -32,7 +31,6 @@ protected:
    bool  HandleInwardSerializedPacket( const U8* data, int& offset );
    void  SendPacketToApp( BasePacket* packet );
 
-   bool                       m_denyAllFutureData;
    bool                       m_markedToBeCleanedup;
    ChainedInterface*          m_mainOutputChain;
 };

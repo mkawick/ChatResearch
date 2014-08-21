@@ -168,6 +168,80 @@
 				Name="VCPostBuildEventTool"
 			/>
 		</Configuration>
+		<Configuration
+			Name="DebugNetworkVersioning|Win32"
+			OutputDirectory="$(SolutionDir)$(ConfigurationName)"
+			IntermediateDirectory="$(ConfigurationName)"
+			ConfigurationType="1"
+			CharacterSet="1"
+			>
+			<Tool
+				Name="VCPreBuildEventTool"
+			/>
+			<Tool
+				Name="VCCustomBuildTool"
+			/>
+			<Tool
+				Name="VCXMLDataGeneratorTool"
+			/>
+			<Tool
+				Name="VCWebServiceProxyGeneratorTool"
+			/>
+			<Tool
+				Name="VCMIDLTool"
+			/>
+			<Tool
+				Name="VCCLCompilerTool"
+				Optimization="0"
+				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE"
+				MinimalRebuild="true"
+				BasicRuntimeChecks="3"
+				RuntimeLibrary="1"
+				UsePrecompiledHeader="0"
+				WarningLevel="3"
+				DebugInformationFormat="4"
+			/>
+			<Tool
+				Name="VCManagedResourceCompilerTool"
+			/>
+			<Tool
+				Name="VCResourceCompilerTool"
+			/>
+			<Tool
+				Name="VCPreLinkEventTool"
+			/>
+			<Tool
+				Name="VCLinkerTool"
+				AdditionalDependencies="../DebugNetworkVersioning/PacketLibrary.lib"
+				OutputFile="$(OutDir)\$(ProjectName)Server.exe"
+				LinkIncremental="2"
+				IgnoreDefaultLibraryNames="libcmt.lib"
+				GenerateDebugInformation="true"
+				SubSystem="1"
+				TargetMachine="1"
+			/>
+			<Tool
+				Name="VCALinkTool"
+			/>
+			<Tool
+				Name="VCManifestTool"
+			/>
+			<Tool
+				Name="VCXDCMakeTool"
+			/>
+			<Tool
+				Name="VCBscMakeTool"
+			/>
+			<Tool
+				Name="VCFxCopTool"
+			/>
+			<Tool
+				Name="VCAppVerifierTool"
+			/>
+			<Tool
+				Name="VCPostBuildEventTool"
+			/>
+		</Configuration>
 	</Configurations>
 	<References>
 	</References>
@@ -182,11 +256,11 @@
 				>
 			</File>
 			<File
-				RelativePath=".\AssetOrganizer.cpp"
+				RelativePath=".\AssetMainThread.cpp"
 				>
 			</File>
 			<File
-				RelativePath=".\DiplodocusAsset.cpp"
+				RelativePath=".\AssetOrganizer.cpp"
 				>
 			</File>
 			<File
@@ -208,11 +282,11 @@
 				>
 			</File>
 			<File
-				RelativePath=".\AssetOrganizer.h"
+				RelativePath=".\AssetMainThread.h"
 				>
 			</File>
 			<File
-				RelativePath=".\DiplodocusAsset.h"
+				RelativePath=".\AssetOrganizer.h"
 				>
 			</File>
 			<File
@@ -316,6 +390,14 @@
 				</File>
 				<File
 					RelativePath="..\NetworkCommon\Utils\Enigmosaurus.h"
+					>
+				</File>
+				<File
+					RelativePath="..\NetworkCommon\Utils\FileUtils.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\NetworkCommon\Utils\FileUtils.h"
 					>
 				</File>
 				<File

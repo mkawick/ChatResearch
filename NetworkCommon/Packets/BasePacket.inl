@@ -3,17 +3,17 @@
 #include <assert.h>
 
 template < typename type >
-bool  SerializedVector< type >::SerializeIn( const U8* data, int& bufferOffset )
+bool  SerializedVector< type >::SerializeIn( const U8* data, int& bufferOffset, int minorVersion )
 {
    int num = static_cast< int >( m_data.size() );
-   Serialize::In( data, bufferOffset, num );
-   Serialize::In( data, bufferOffset, listIndex );
-   Serialize::In( data, bufferOffset, listCount );
+   Serialize::In( data, bufferOffset, num, minorVersion );
+   Serialize::In( data, bufferOffset, listIndex, minorVersion );
+   Serialize::In( data, bufferOffset, listCount, minorVersion );
 
    for( int i=0; i<num; i++ )
    {
       type temp;
-      Serialize::In( data, bufferOffset, temp );
+      Serialize::In( data, bufferOffset, temp, minorVersion );
       m_data.push_back( temp );
    }
 
@@ -21,17 +21,17 @@ bool  SerializedVector< type >::SerializeIn( const U8* data, int& bufferOffset )
 }
 
 template < typename type >
-bool  SerializedVector< type >::SerializeOut( U8* data, int& bufferOffset ) const
+bool  SerializedVector< type >::SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const
 {
    int num = static_cast< int >( m_data.size() );
-   Serialize::Out( data, bufferOffset, num );
-   Serialize::Out( data, bufferOffset, listIndex );
-   Serialize::Out( data, bufferOffset, listCount );
+   Serialize::Out( data, bufferOffset, num, minorVersion );
+   Serialize::Out( data, bufferOffset, listIndex, minorVersion );
+   Serialize::Out( data, bufferOffset, listCount, minorVersion );
 
    typename std::vector< type > :: const_iterator  it = m_data.begin();
    while( it != m_data.end() )
    {
-      Serialize::Out( data, bufferOffset, *it++ );
+      Serialize::Out( data, bufferOffset, *it++, minorVersion );
    }
    return true;
 }
@@ -41,53 +41,53 @@ bool  SerializedVector< type >::SerializeOut( U8* data, int& bufferOffset ) cons
 ///////////////////////////////////////////////////////////////
 
 template < typename type >
-bool  KeyValueSerializer< type >::SerializeIn( const U8* data, int& bufferOffset )
+bool  KeyValueSerializer< type >::SerializeIn( const U8* data, int& bufferOffset, int minorVersion )
 {
-   Serialize::In( data, bufferOffset, key );
-   Serialize::In( data, bufferOffset, value );
+   Serialize::In( data, bufferOffset, key, minorVersion );
+   Serialize::In( data, bufferOffset, value, minorVersion );
    return true;
 }
 
 template < typename type >
-bool  KeyValueSerializer< type >::SerializeOut( U8* data, int& bufferOffset ) const
+bool  KeyValueSerializer< type >::SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const
 {
-   Serialize::Out( data, bufferOffset, key );
-   Serialize::Out( data, bufferOffset, value );
+   Serialize::Out( data, bufferOffset, key, minorVersion );
+   Serialize::Out( data, bufferOffset, value, minorVersion );
    return true;
 }
 
 ///////////////////////////////////////////////////////////////
 
 template < typename type >
-bool  SerializedKeyValueVector< type > ::SerializeIn( const U8* data, int& bufferOffset )
+bool  SerializedKeyValueVector< type > ::SerializeIn( const U8* data, int& bufferOffset, int minorVersion )
 {
    int num = 0;
-   Serialize::In( data, bufferOffset, num );
-   Serialize::In( data, bufferOffset, listIndex );
-   Serialize::In( data, bufferOffset, listCount );
+   Serialize::In( data, bufferOffset, num, minorVersion );
+   Serialize::In( data, bufferOffset, listIndex, minorVersion );
+   Serialize::In( data, bufferOffset, listCount, minorVersion );
 
    for( int i=0; i< num; i++ )
    {
       KeyValueSerializer<type> kvs;
-      kvs.SerializeIn( data, bufferOffset );
+      kvs.SerializeIn( data, bufferOffset, minorVersion );
       dataList.push_back( kvs );
    }
    return true;
 }
 
 template < typename type >
-bool  SerializedKeyValueVector< type > ::SerializeOut( U8* data, int& bufferOffset ) const
+bool  SerializedKeyValueVector< type > ::SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const
 {
    int num = static_cast< int >( dataList.size() );
-   Serialize::Out( data, bufferOffset, num );
-   Serialize::Out( data, bufferOffset, listIndex );
-   Serialize::Out( data, bufferOffset, listCount );
+   Serialize::Out( data, bufferOffset, num, minorVersion );
+   Serialize::Out( data, bufferOffset, listIndex, minorVersion );
+   Serialize::Out( data, bufferOffset, listCount, minorVersion );
 
    typename KeyValueVector::const_iterator it = dataList.begin();
    while( it != dataList.end() )
    {
       const KeyValueSerializer<type>& kvs = *it++ ;
-      kvs.SerializeOut( data, bufferOffset );
+      kvs.SerializeOut( data, bufferOffset, minorVersion );
    }
    return true;
 }

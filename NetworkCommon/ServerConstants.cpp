@@ -41,18 +41,19 @@ const char* productNames [] = {
 const char* platformStrings[] = {
    "",
    "ios",
-   "iphone",
+   //"iphone",
    "android",
-   "androidtablet",
+   //"androidtablet",
    "pc",
    "mac",
    "vita",
+   "sony",
    "xbox",
    "blackberry",
    "wii",
+   "phone",
    "all"
 };
-
 
 //////////////////////////////////////////////////////////////////////////
 

@@ -83,6 +83,21 @@ void     DiplodocusPurchase::ServerWasIdentified( IChainedInterface* khaan )
    m_clientsNeedingUpdate.push_back( chainId );
 }
 
+/////////////////////////////////////////////////////////////////////////////////
+
+void     DiplodocusPurchase::InputRemovalInProgress( IChainedInterface * chainedInput )
+{
+   KhaanPurchase* khaan = static_cast< KhaanPurchase* >( chainedInput );
+
+   SetupClientWaitingToBeRemoved( khaan );
+
+   string currentTime = GetDateInUTC();
+   string printer = "Client disconnection at time:" + currentTime + " from " + inet_ntoa( khaan->GetIPAddress().sin_addr );
+   cout << printer << endl;
+
+   PrintDebugText( "** InputRemovalInProgress" , 1 );
+}
+
 
 //---------------------------------------------------------------
 
@@ -320,9 +335,9 @@ bool     DiplodocusPurchase::ConnectUser( PacketPrepareForUserLogin* loginPacket
    {
 
       UserTicket ut;
-      ut.userName =        loginPacket->userName;
+      ut.userName =        loginPacket->userName.c_str();
       ut.uuid =            loginPacket->uuid.c_str();
-      ut.userTicket =      loginPacket->loginKey;
+      ut.userTicket =      loginPacket->loginKey.c_str();
       ut.connectionId =    loginPacket->connectionId;
       ut.gameProductId =   loginPacket->gameProductId;
       ut.userId =          loginPacket->userId;
@@ -621,6 +636,7 @@ int      DiplodocusPurchase::CallbackFunction()
 {
    RequestAdminSettings();
 
+   CleanupOldClientConnections( "KhaanPurchase" );
    UpdateAllConnections( "KhaanPurchase" );
 
    time_t currentTime;

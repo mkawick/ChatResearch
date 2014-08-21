@@ -30,7 +30,7 @@ bool  KhaanServerToServer::HandleInwardSerializedPacket( const U8* data, int& of
    BasePacket* packetIn = NULL;
    PacketFactory factory;
 
-   if( factory.Parse( data, offset, &packetIn ) == true )
+   if( factory.Parse( data, offset, &packetIn, m_versionNumberMinor ) == true )
    {
       int packetType = packetIn->packetType;
       if( packetType != PacketType_GatewayWrapper &&
@@ -130,7 +130,7 @@ bool	KhaanServerToServer :: OnDataReceived( const U8* data, int length )
    {
       /// before we parse, let's pull off the first two bytes
       U16 size = 0;
-      Serialize::In( data, offset, size );
+      Serialize::In( data, offset, size, m_versionNumberMinor );
       if( offset + size > length )
       {
          m_isExpectingMoreDataInPreviousPacket = true;
@@ -316,15 +316,15 @@ void  KhaanServerToServer :: SaveOffServerIdentification( const PacketServerIden
    //if( m_serverName == packet->serverName && m_serverId == packet->serverId ) // prevent dups from reporting.
    //   return;
 
-   m_serverName = packet->serverName;
-   m_serverAddress = packet->serverAddress;
+   m_serverName = packet->serverName.c_str();
+   m_serverAddress = packet->serverAddress.c_str();
    m_serverId = packet->serverId;
    m_serverPort = packet->serverPort;
    m_serverType = packet->serverType; 
    m_isGameServer = packet->isGameServer;
    m_isController = packet->isController;
    m_gatewayType = packet->gatewayType;
-   m_externalIpAddress = packet->externalIpAddress;
+   m_externalIpAddress = packet->externalIpAddress.c_str();
    U8 gameProductId = packet->gameProductId;
 
    cout << "---------  Connected as S2S server to " << m_serverName << "  ------------------" << endl;

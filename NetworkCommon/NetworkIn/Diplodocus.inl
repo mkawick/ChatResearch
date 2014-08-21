@@ -207,6 +207,87 @@ bool     Diplodocus< InputChain, OutputChain >::DelayPacketToGateway( BasePacket
 //---------------------------------------------------------------
 
 template< typename InputChain, typename OutputChain >
+void  Diplodocus< InputChain, OutputChain >::CleanupOldClientConnections( const char* connectionName )
+{
+   // cleanup old connections
+   time_t currentTime;
+   time( &currentTime );
+
+   m_inputChainListMutex.lock();
+   ChainLinkIteratorType itInputs = m_listOfInputs.begin();
+   while( itInputs != m_listOfInputs.end() )
+   {
+      ChainLinkIteratorType oldConnIt = itInputs++;
+      ChainLink & chainedInput = *oldConnIt;
+      InputChainType* connection = static_cast< InputChainType* >( chainedInput.m_interface );
+      if( connection->DoesNameMatch( connectionName ) )
+      {
+         Khaan* khaan = connection;
+         if( khaan && khaan->HasDisconnected() == true )
+         {
+            if( khaan->HasDeleteTimeElapsed( currentTime ) == true )
+            {
+               khaan->RemoveOutputChain( this );
+               khaan->CloseConnection();
+               delete khaan;
+            }
+         }
+      }
+   }
+   m_inputChainListMutex.unlock();
+}
+
+//---------------------------------------------------------------
+
+template< typename InputChain, typename OutputChain >
+void     Diplodocus< InputChain, OutputChain >::SetupClientWaitingToBeRemoved( InputChainType* chainedInput )
+{
+   SetupClientConnectionForDeletion( chainedInput );
+}
+
+//---------------------------------------------------------------
+
+//---------------------------------------------------------------
+
+template< typename InputChain, typename OutputChain >
+void     Diplodocus< InputChain, OutputChain >::SetupClientConnectionForDeletion( InputChainType* chain )
+{
+   if( chain )
+   {
+      // verify that this is still in the list
+      Threading::MutexLock locker( m_inputChainListMutex );
+      bool  found = false;
+      ChainLinkIteratorType itInputs = m_listOfInputs.begin();
+      while( itInputs != m_listOfInputs.end() )
+      {
+         ChainLink & chainedInput = *itInputs++;
+         InputChainType* connection = static_cast< InputChainType* >( chainedInput.m_interface );
+         if( connection == chain )
+         {
+            found = true;
+            break;
+         }
+      }
+      if( found == false )
+         return;
+
+      Khaan* khaan = static_cast< Khaan* >( chain );
+      if( khaan )
+      {
+         khaan->DenyAllFutureData();
+         if( khaan->HasDisconnected() == false )
+         {
+            time_t currentTime;
+            time( &currentTime );
+            khaan->SetTimeForDeletion( currentTime );
+         }
+      }     
+   }
+}
+
+//---------------------------------------------------------------
+
+template< typename InputChain, typename OutputChain >
 bool     Diplodocus< InputChain, OutputChain >::SendPacketToGateway( BasePacket* packet, U32 connectionId, float delayInSecs )
 {
    if( delayInSecs > 0 )
@@ -629,8 +710,6 @@ void	Diplodocus< InputChain, OutputChain >::UpdateAllConnections( const char* co
          InputChainType* connection = static_cast< InputChainType* >( chainedInput.m_interface );
          if( connection->DoesNameMatch( connectionName ) )
          {
-         //ChainedInterface* interfacePtr = static_cast< ChainedInterface* >( chainedInput.m_interface );
-
             connection->Update();
          }
       }
@@ -737,6 +816,7 @@ int      Diplodocus< InputChain, OutputChain >::CommonUpdate()
 template< typename InputChain, typename OutputChain >
 int      Diplodocus< InputChain, OutputChain >::MainLoop_InputProcessing()
 {
+   CleanupOldClientConnections( "khaan" );
    return CommonUpdate();
 }
 

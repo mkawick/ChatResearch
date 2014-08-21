@@ -96,6 +96,7 @@ protected:
    bool           RequestListOfInvitations( const PacketInvitation_GetListOfInvitations* request, U32 connectionId );
    bool           RequestListOfIntivationsToGroup( const PacketInvitation_GetListOfInvitationsForGroup* request, U32 connectionId );
 
+   void           DeleteAllInvitationsToThisGroup( const string& groupUuid, const string& inviteeUuid );
    bool           ProcessDbResult( PacketDbQueryResult* dbResult );
    bool           SendMessageToClient( BasePacket* packet, U32 connectionId ) const;
 

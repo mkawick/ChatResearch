@@ -16,8 +16,8 @@ class StringBucket
 public:
    typedef list< string >  DataSet;
 
-   bool  SerializeIn( const U8* data, int& bufferOffset );
-   bool  SerializeOut( U8* data, int& bufferOffset ) const;
+   bool  SerializeIn( const U8* data, int& bufferOffset, int minorVersion );
+   bool  SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const;
 
    void  operator = ( const list< string >& copyData );
    void  insert( const string& str ) { bucket.push_back( str ); }
@@ -55,8 +55,8 @@ public:
 #endif
    typedef list< DataRow >  DataSet;
 
-   bool  SerializeIn( const U8* data, int& bufferOffset );
-   bool  SerializeOut( U8* data, int& bufferOffset ) const;
+   bool  SerializeIn( const U8* data, int& bufferOffset, int minorVersion );
+   bool  SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const;
 
    void  operator = ( const list< DataRow >& copyData );
    void  operator = ( const list< list<string> >& copyData );
@@ -72,8 +72,8 @@ public:
    KeyValueSerializer(){}
    KeyValueSerializer( string _key, type _value ): key( _key ), value( _value ){}
 
-   bool  SerializeIn( const U8* data, int& bufferOffset );
-   bool  SerializeOut( U8* data, int& bufferOffset ) const;
+   bool  SerializeIn( const U8* data, int& bufferOffset, int minorVersion );
+   bool  SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const;
 
    string   key;
    type     value;
@@ -136,8 +136,8 @@ protected:
 
 public: // I put these down here to stay out of the mental space of the reader. This class is becomming complex
    // so any minor simplifications are helpful
-   bool                 SerializeIn( const U8* data, int& bufferOffset );
-   bool                 SerializeOut( U8* data, int& bufferOffset ) const;
+   bool                 SerializeIn( const U8* data, int& bufferOffset, int minorVersion );
+   bool                 SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const;
 };
 
 ///////////////////////////////////////////////////////////////
@@ -147,8 +147,8 @@ class SerializedVector
 {
 public:
    SerializedVector() { clear(); }
-   bool  SerializeIn( const U8* data, int& bufferOffset );
-   bool  SerializeOut( U8* data, int& bufferOffset ) const;
+   bool  SerializeIn( const U8* data, int& bufferOffset, int minorVersion );
+   bool  SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const;
 
    // helper functions
    void           push_back( type value ) { m_data.push_back( value ); }
@@ -187,3 +187,56 @@ bool  SerializedKeyValueVector<type>::erase( KVIterator iter )
 }
 
 ////////////////////////////////////////////////////////
+/*namespace Serialize
+{
+   template<>
+   inline void In( const U8* source, int& offset, StringBucket& value, int minorVersion )
+   {
+      value.SerializeIn( source, offset, minorVersion );
+   }
+   template<>
+   inline void Out( U8* dest, int& offset, const StringBucket& value, int minorVersion )
+   {
+      value.SerializeOut( dest, offset, minorVersion );
+   }
+   template<>
+   inline void In( const U8* source, int& offset, DynamicDataBucket& value, int minorVersion )
+   {
+      value.SerializeIn( source, offset, minorVersion );
+   }
+   template<>
+   inline void Out( U8* dest, int& offset, const DynamicDataBucket& value, int minorVersion )
+   {
+      value.SerializeOut( dest, offset, minorVersion );
+   }
+   template< typename type >
+   inline void In( const U8* source, int& offset, KeyValueSerializer<type>& value, int minorVersion )
+   {
+      value.SerializeIn( source, offset, minorVersion );
+   }
+   template< typename type >
+   inline void Out( U8* dest, int& offset, const KeyValueSerializer<type>& value, int minorVersion )
+   {
+      value.SerializeOut( dest, offset, minorVersion );
+   }
+   template< typename type >
+   inline void In( const U8* source, int& offset, SerializedKeyValueVector<type>& value, int minorVersion )
+   {
+      value.SerializeIn( source, offset, minorVersion );
+   }
+   template< typename type >
+   inline void Out( U8* dest, int& offset, const SerializedKeyValueVector<type>& value, int minorVersion )
+   {
+      value.SerializeOut( dest, offset, minorVersion );
+   }
+   template< typename type>
+   inline void In( const U8* source, int& offset, SerializedVector<type>& value, int minorVersion )
+   {
+      value.SerializeIn( source, offset, minorVersion );
+   }
+   template< typename type>
+   inline void Out( U8* dest, int& offset, const SerializedVector<type>& value, int minorVersion )
+   {
+      value.SerializeOut( dest, offset, minorVersion );
+   }
+}*/

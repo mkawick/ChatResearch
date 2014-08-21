@@ -14,7 +14,6 @@ using namespace std;
 //-----------------------------------------------------------------------------------------
 
 KhaanProtected::KhaanProtected( int id, bufferevent* be ): Khaan( id, be ),
-                  m_denyAllFutureData( false ),
                   m_mainOutputChain( NULL )
 {
 }
@@ -48,14 +47,6 @@ void  KhaanProtected::SendPacketToApp( BasePacket* packet )
 }
 
 //-----------------------------------------------------------------------------------------
-
-void  KhaanProtected::DenyAllFutureData() 
-{ 
-   m_denyAllFutureData = true; 
-   //m_gateway->TrackCountStats( StatTrackingConnections::StatTracking_UserBlocked, 1, 0 );
-}
-
-//-----------------------------------------------------------------------------------------
 //-----------------------------------------------------------------------------------------
 
 bool  KhaanProtected::HandleInwardSerializedPacket( const U8* data, int& offset )
@@ -66,7 +57,7 @@ bool  KhaanProtected::HandleInwardSerializedPacket( const U8* data, int& offset 
    PacketFactory parser;
    try 
    {
-      result = parser.Parse( data, offset, &packetIn );
+      result = parser.Parse( data, offset, &packetIn, m_versionNumberMinor );
       if( packetIn != NULL )
       {
          TrackInwardPacketType( packetIn );
@@ -185,7 +176,7 @@ bool	KhaanProtected::OnDataReceived( const U8* data, int length )
 
       U16 size = 0;
       int offset = 0;
-      Serialize::In( data, offset, size );
+      Serialize::In( data, offset, size, m_versionNumberMinor );
       if( size > length )
       { 
          DumpBadData( data, length, size );
@@ -246,7 +237,7 @@ bool	KhaanProtected::OnDataReceived( const U8* data, int length )
    {
       /// before we parse, let's pull off the first two bytes
       U16 size = 0;
-      Serialize::In( data, offset, size );
+      Serialize::In( data, offset, size, m_versionNumberMinor );
       if( offset + size > length )
       {
          m_isExpectingMoreDataInPreviousPacket = true;

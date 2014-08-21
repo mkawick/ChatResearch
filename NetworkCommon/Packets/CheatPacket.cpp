@@ -12,20 +12,20 @@
 
 ///////////////////////////////////////////////////////////////
 
-bool  PacketCheat::SerializeIn( const U8* data, int& bufferOffset )
+bool  PacketCheat::SerializeIn( const U8* data, int& bufferOffset, int minorVersion )
 {
-   BasePacket::SerializeIn( data, bufferOffset );
-   Serialize::In( data, bufferOffset, whichServer );
-   Serialize::In( data, bufferOffset, cheat );
+   BasePacket::SerializeIn( data, bufferOffset, minorVersion );
+   Serialize::In( data, bufferOffset, whichServer, minorVersion );
+   Serialize::In( data, bufferOffset, cheat, minorVersion );
 
    return true;
 }
 
-bool  PacketCheat::SerializeOut( U8* data, int& bufferOffset ) const
+bool  PacketCheat::SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const
 {
-   BasePacket::SerializeOut( data, bufferOffset );
-   Serialize::Out( data, bufferOffset, whichServer );
-   Serialize::Out( data, bufferOffset, cheat );
+   BasePacket::SerializeOut( data, bufferOffset, minorVersion );
+   Serialize::Out( data, bufferOffset, whichServer, minorVersion );
+   Serialize::Out( data, bufferOffset, cheat, minorVersion );
 
    return true;
 }

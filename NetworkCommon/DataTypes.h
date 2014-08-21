@@ -45,6 +45,7 @@ enum PlatformType
    Platform_pc,
    Platform_mac,
    Platform_vita,
+   Platform_sony,
    Platform_xbox,
    Platform_blackberry,
    Platform_wii,

@@ -129,35 +129,39 @@ protected:
    void           MarkConnectionAsNeedingUpdate( int connectionId );
    bool           DelayPacketToGateway( BasePacket* packet, U32 connectionId, float delayInSecs );
 
+   virtual void   SetupClientConnectionForDeletion( InputChainType* chain );
+   void           SetupClientWaitingToBeRemoved( InputChainType* chainedInput );
+   virtual void   CleanupOldClientConnections( const char* connectionName );
+
    typedef typename std::map< U32, InputChainType* >        ClientMap;// posssibly change this to a hash lookup once the client is logged in
    typedef typename ClientMap::iterator                     ClientMapIterator;
-   typedef  pair< U32, InputChainType* >                    ClientLookup;
+   typedef typename pair< U32, InputChainType* >            ClientLookup;
    
    ClientMap                                                m_connectedClients; // this is a duplicate of the chained list, but with mapping
    deque< U32 >                                             m_clientsNeedingUpdate;
 
-   list< DelayedPacket >   m_delayedGatewayPackets;
+   list< DelayedPacket >                  m_delayedGatewayPackets;
 
-   bool                    m_isListeningWorking;
-   bool                    m_hasSentServerIdentification;
-   bool                    m_isControllerApp;
-   U8                      m_gatewayType;
-   bool                    m_isGame;
-   //bool                    m_updateGatewayConnections;
-   bool                    m_sendHelloPacket;
-   string                  m_localIpAddress;
-   int                     m_listeningPort;
-   evconnlistener*         m_listener;// libevent object
-   U32                     m_serverId; // just used for id
-   U8                      m_gameProductId;
-   ServerType              m_serverType;// just used for logging and topology purposes.
-   U32                     m_connectionIdGateway;
-   string                  m_serverName; // just used for id
-   string                  m_externalIpAddress;
+   bool                                   m_isListeningWorking;
+   bool                                   m_hasSentServerIdentification;
+   bool                                   m_isControllerApp;
+   U8                                     m_gatewayType;
+   bool                                   m_isGame;
+   //bool                                   m_updateGatewayConnections;
+   bool                                   m_sendHelloPacket;
+   string                                 m_localIpAddress;
+   int                                    m_listeningPort;
+   evconnlistener*                        m_listener;// libevent object
+   U32                                    m_serverId; // just used for id
+   U8                                     m_gameProductId;
+   ServerType                             m_serverType;// just used for logging and topology purposes.
+   U32                                    m_connectionIdGateway;
+   string                                 m_serverName; // just used for id
+   string                                 m_externalIpAddress;
 
-   time_t                  m_timeOfLastTitleUpdate;
-   time_t                  m_uptime;
-   int                     m_numTotalConnections;
+   time_t                                 m_timeOfLastTitleUpdate;
+   time_t                                 m_uptime;
+   int                                    m_numTotalConnections;
 
 
    bool           SetupListeningSocket();

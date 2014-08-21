@@ -11,7 +11,7 @@ using namespace std;
 #include <assert.h>
 
 #include "AssetCommon.h"
-#include "DiplodocusAsset.h"
+#include "AssetMainThread.h"
 #include "../NetworkCommon/NetworkIn/DiplodocusServerToServer.h"
 #include "../NetworkCommon/NetworkUtils.h"
 
@@ -101,8 +101,9 @@ int main( int argc, const char* argv[] )
    cout << serverName << ":" << endl;
    //cout << "Version " << version << endl;
    cout << "Server stack version " << ServerStackVersion << endl;
-   cout << "Network protocol version: " << (int)GlobalNetworkProtocolVersion << endl;
    cout << "ServerId " << serverId << endl;
+   cout << "Network protocol version: " << (int)NetworkVersionMajor << ":" << (int)NetworkVersionMinor << endl;
+   
    cout << "Asset file " << assetDictionary << endl;
    cout << "Asset path " << assetPath << endl;
    cout << "------------------------------------------------------------------" << endl << endl << endl;
@@ -113,7 +114,7 @@ int main( int argc, const char* argv[] )
 
    if( isBusy == false )
    {
-      DiplodocusAsset*    assetServer = new DiplodocusAsset( serverName, serverId );
+      AssetMainThread*    assetServer = new AssetMainThread( serverName, serverId );
       assetServer->SetupListening( listenPort );
       assetServer->SetIniFilePath( assetPath, assetDictionary );
 

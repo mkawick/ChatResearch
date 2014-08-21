@@ -7,6 +7,7 @@ using boost::format;
 #include "../NetworkCommon/ServerConstants.h"
 #include "../NetworkCommon/Packets/BasePacket.h"
 #include "../NetworkCommon/Packets/ServerToServerPacket.h"
+#include "../NetworkCommon/Packets/ChatPacket.h"
 #include "../NetworkCommon/Packets/LoginPacket.h"
 #include "../NetworkCommon/Packets/PacketFactory.h"
 #include "../NetworkCommon/Packets/AnalyticsPacket.h"
@@ -20,8 +21,8 @@ using boost::format;
 
 //#define VERBOSE
 
-//-----------------------------------------------------------------------------------------
-//-----------------------------------------------------------------------------------------
+/////////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////////////
 
 MainGatewayThread::MainGatewayThread( const string& serverName, U32 serverId ) : Diplodocus< KhaanGateway > ( serverName, serverId, 0, ServerType_Gateway ), StatTrackingConnections(),
                                           m_highestNumSimultaneousUsersWatermark( 0 ),
@@ -69,7 +70,7 @@ void   MainGatewayThread::NotifyFinishedAdding( IChainedInterface* obj )
    //m_listOfInputs
 } 
 
-//-----------------------------------------------------------------------------------------
+/////////////////////////////////////////////////////////////////////////////////
 
 U32      MainGatewayThread::GetNextConnectionId()
 {
@@ -88,7 +89,7 @@ U32      MainGatewayThread::GetNextConnectionId()
    return returnValue;
 }
 
-//-----------------------------------------------------------------------------------------
+/////////////////////////////////////////////////////////////////////////////////
 
 bool  MainGatewayThread::AddInputChainData( BasePacket* packet, U32 connectionId ) // coming from the client-side socket
 {
@@ -151,30 +152,7 @@ bool  MainGatewayThread::AddInputChainData( BasePacket* packet, U32 connectionId
    }
 }
 
-//-----------------------------------------------------------------------------------------
-/*
-void     MainGatewayThread::HandleReroutRequest( U32 connectionId )
-{
-   ConnectionMapIterator connIt = m_connectionMap.find( connectionId );
-   if( connIt != m_connectionMap.end() )
-   {
-      PacketRerouteRequestResponse* response = new PacketRerouteRequestResponse;
-      if( IsRerouoting() == true )
-      {
-         PacketRerouteRequestResponse::Address address;
-         address.address = m_rerouteAddress;
-         address.port = m_reroutePort;
-         address.name = "gateway";
-         address.whichLocationId = PacketRerouteRequestResponse::LocationId_Gateway;
-
-         response->locations.push_back( address );
-      }
-      KhaanGateway* khaan = connIt->second;
-      HandlePacketToKhaan( khaan, response );// all deletion and such is handled lower
-   }
-}*/
-
-//-----------------------------------------------------------------------------------------
+/////////////////////////////////////////////////////////////////////////////////
 
 void     MainGatewayThread::InputConnected( IChainedInterface * chainedInput )
 {
@@ -193,9 +171,7 @@ void     MainGatewayThread::InputConnected( IChainedInterface * chainedInput )
    }
    PrintDebugText( "** InputConnected" , 1 );
    U32 newId = GetNextConnectionId();
-   m_socketToConnectionMap.insert( SocketToConnectionPair( khaan->GetSocketId(), newId ) );
-   m_connectionToSocketMap.insert( SocketToConnectionPair( newId, khaan->GetSocketId() ) );
-   m_connectionMap.insert( ConnectionPair( newId, KhaanGatewayWrapper( khaan ) ) );
+   m_connectionMap.insert( ConnectionPair( newId, khaan ) );
 
    khaan->SetConnectionId( newId );
 
@@ -214,12 +190,9 @@ void     MainGatewayThread::InputConnected( IChainedInterface * chainedInput )
    cout << "Highest watermark = " << m_highestNumSimultaneousUsersWatermark << endl;
 
    //khaan->SendThroughLibEvent( true );
-
-   //Threading::MutexLock locker( m_inputChainListMutex );
-   //AddClientConnectionNeedingUpdate( newId );
 }
 
-//-----------------------------------------------------------------------------------------
+/////////////////////////////////////////////////////////////////////////////////
 
 void     MainGatewayThread::InputRemovalInProgress( IChainedInterface * chainedInput )
 {
@@ -228,10 +201,11 @@ void     MainGatewayThread::InputRemovalInProgress( IChainedInterface * chainedI
       FileLog( "MainGatewayThread::InputRemovalInProgress" );
    }
    KhaanGateway* khaan = static_cast< KhaanGateway* >( chainedInput );
-   khaan->SetMainOutput( NULL );
-   string currentTime = GetDateInUTC();
-  // cout << "Client disconnection at time:" << currentTime << " from " << inet_ntoa( khaan->GetIPAddress().sin_addr ) << endl;
+   U32 connectionId = khaan->GetConnectionId();
 
+   SetupClientWaitingToBeRemoved( khaan );
+
+   string currentTime = GetDateInUTC();
    string printer = "Client disconnection at time:" + currentTime + " from " + inet_ntoa( khaan->GetIPAddress().sin_addr );
    cout << printer << endl;
    if( m_printFunctionNames )
@@ -240,29 +214,32 @@ void     MainGatewayThread::InputRemovalInProgress( IChainedInterface * chainedI
    }
 
    PrintDebugText( "** InputRemovalInProgress" , 1 );
-   int connectionId = khaan->GetConnectionId();
-   int socketId = khaan->GetSocketId();
 
-   PacketLogout* logout = new PacketLogout();// must be done before we clear the lists of ids
+   // send notice to the login server
+   // must be done before we clear the lists of ids
+   PacketLogout* logout = new PacketLogout();
    logout->wasDisconnectedByError = true;
-   //logout->serverType = ServerType_Chat;
-
    AddInputChainData( logout, connectionId );
-
-   m_socketToConnectionMap.erase( socketId );
-   m_connectionToSocketMap.erase( connectionId );
-
-   // this may be invalid - TBR
-   ConnectionMapIterator connIt = m_connectionMap.find( connectionId );
-   if( connIt != m_connectionMap.end() )
-   {
-      time_t currentTime;
-      time( &currentTime );
-      connIt->second.MarkForDeletion( currentTime );
-      connIt->second.m_connector = NULL;
-   }
-   //m_connectionMap.erase( connectionId );
 }
+
+/////////////////////////////////////////////////////////////////////////////////
+/*
+void     MainGatewayThread::UpdateRemovedConnections()
+{
+   if( m_clientsWaitingToBeRemoved.size() == 0 )
+      return;
+
+   ClientList::iterator it = m_clientsWaitingToBeRemoved.begin();
+   while( it != m_clientsWaitingToBeRemoved.end() )
+   {
+      KhaanGateway* khaan = static_cast< KhaanGateway* >( *it );
+      it++;
+
+      MarkConnectionForDeletion( khaan->GetConnectionId() );
+   }
+   // the connection will be removed later after a small period of time.
+   m_clientsWaitingToBeRemoved.clear();
+}*/
 
 //-----------------------------------------------------
 
@@ -357,8 +334,8 @@ void     MainGatewayThread::BroadcastPacketToAllUsers( const string& errorText, 
    while( nextIt != m_connectionMap.end() )
    {
       ConnectionMapIterator connIt = nextIt++;
-      KhaanGatewayWrapper& khaanWrapper = connIt->second;
-      KhaanGateway* khaan = connIt->second.m_connector;
+     // KhaanGatewayWrapper& khaanWrapper = connIt->second;
+      KhaanGateway* khaan = connIt->second;
       if( khaan == NULL )
          continue;
 
@@ -377,7 +354,7 @@ void     MainGatewayThread::BroadcastPacketToAllUsers( const string& errorText, 
       HandlePacketToKhaan( khaan, packet );
    }
 }
-//-----------------------------------------------------------------------------------------
+/////////////////////////////////////////////////////////////////////////////////
 
 void     MainGatewayThread::PrintFunctionNames( bool printingOn ) 
 {
@@ -394,7 +371,7 @@ void     MainGatewayThread::PrintFunctionNames( bool printingOn )
 }
 
 
-//-----------------------------------------------------------------------------------------
+/////////////////////////////////////////////////////////////////////////////////
 
 void     MainGatewayThread::PrintPacketTypes( bool printingOn ) 
 {
@@ -410,7 +387,7 @@ void     MainGatewayThread::PrintPacketTypes( bool printingOn )
    }
 }
 
-//-----------------------------------------------------------------------------------------
+/////////////////////////////////////////////////////////////////////////////////
 
 void     MainGatewayThread::SetupReroute( const string& address, U16 port )
 {
@@ -426,14 +403,14 @@ void     MainGatewayThread::SetupReroute( const string& address, U16 port )
    // todo, add dynamic rerouting allowing an admin to login and 
 }
 
-//-----------------------------------------------------------------------------------------
+/////////////////////////////////////////////////////////////////////////////////
 
 void     MainGatewayThread::TrackCountStats( StatTracking stat, float value, int sub_category )
 {
    StatTrackingConnections::TrackCountStats( m_serverName, m_serverId, stat, value, sub_category );
 }
 
-//-----------------------------------------------------------------------------------------
+/////////////////////////////////////////////////////////////////////////////////
 
 bool     MainGatewayThread::OrderOutputs()
 {
@@ -468,7 +445,7 @@ bool     MainGatewayThread::OrderOutputs()
    return true;
 }
 
-//-----------------------------------------------------------------------------------------
+/////////////////////////////////////////////////////////////////////////////////
 
 bool     MainGatewayThread::PushPacketToProperOutput( BasePacket* packet )
 {
@@ -521,9 +498,9 @@ bool     MainGatewayThread::PushPacketToProperOutput( BasePacket* packet )
    return false;
 }
 
-//-----------------------------------------------------------------------------------------
+/////////////////////////////////////////////////////////////////////////////////
 
-//-----------------------------------------------------------------------------------------
+/////////////////////////////////////////////////////////////////////////////////
 
 void     MainGatewayThread::SortOutgoingPackets()
 {
@@ -549,7 +526,7 @@ void     MainGatewayThread::SortOutgoingPackets()
    }
 }
 
-//-----------------------------------------------------------------------------------------
+/////////////////////////////////////////////////////////////////////////////////
 
 int       MainGatewayThread::CallbackFunction()
 {
@@ -557,6 +534,8 @@ int       MainGatewayThread::CallbackFunction()
    {
       FileLog( "MainGatewayThread::CallbackFunction" );
    }
+
+   
 
    CommonUpdate();
 
@@ -569,6 +548,8 @@ int       MainGatewayThread::CallbackFunction()
    
 
    CleanupOldConnections();
+  
+   //UpdateRemovedConnections();
 
    RunHourlyAverages();
 
@@ -587,7 +568,7 @@ int       MainGatewayThread::CallbackFunction()
    return 1;
 }
 
-//-----------------------------------------------------------------------------------------
+/////////////////////////////////////////////////////////////////////////////////
 
 void  MainGatewayThread::CleanupOldConnections()
 {
@@ -595,29 +576,11 @@ void  MainGatewayThread::CleanupOldConnections()
    {
       FileLog( "MainGatewayThread::CleanupOldConnections" );
    }
-   // cleanup old connections
-   time_t currentTime;
-   time( &currentTime );
 
-   ConnectionMapIterator nextIt = m_connectionMap.begin();
-   while( nextIt != m_connectionMap.end() )
-   {
-      ConnectionMapIterator oldConnIt = nextIt++;
-      KhaanGatewayWrapper& khaanWrapper = oldConnIt->second;
-      if( khaanWrapper.IsMarkedForDeletion () == true )
-      {
-         if( khaanWrapper.HasDeleteTimeElapsed( currentTime ) == true )
-         {
-            if( khaanWrapper.m_connector )
-               khaanWrapper.m_connector->ForceShutdown();
-            m_connectionMap.erase( oldConnIt );
-         }
-      }
-   }
+   CleanupOldClientConnections( "KhaanGateway" );
 }
 
-
-//-----------------------------------------------------------------------------------------
+/////////////////////////////////////////////////////////////////////////////////
 
 void  MainGatewayThread::RunHourlyAverages()
 {
@@ -643,10 +606,10 @@ void  MainGatewayThread::RunHourlyAverages()
       while( nextIt != m_connectionMap.end() )
       {
          ConnectionMapIterator oldConnIt = nextIt++;
-         KhaanGatewayWrapper& khaanWrapper = oldConnIt->second;
-         if( khaanWrapper.m_connector )
+         KhaanGateway* khaan = oldConnIt->second;
+         if( khaan )
          {
-            time_t connectionTime = khaanWrapper.m_connector->GetConnectionTime();
+            time_t connectionTime = khaan->GetConnectionTime();
             totalNumSeconds += static_cast<float>( difftime( currentTime, connectionTime ) );
          }
       }
@@ -658,7 +621,7 @@ void  MainGatewayThread::RunHourlyAverages()
    }
 }
 
-//-----------------------------------------------------------------------------------------
+/////////////////////////////////////////////////////////////////////////////////
 
 void  MainGatewayThread::SendStatsToLoadBalancer()
 {
@@ -712,7 +675,7 @@ void  MainGatewayThread::SendStatsToLoadBalancer()
    }
 }
 
-//-----------------------------------------------------------------------------------------
+/////////////////////////////////////////////////////////////////////////////////
 
 bool  MainGatewayThread::AddOutputChainData( BasePacket* packet, U32 serverType )
 {
@@ -752,7 +715,7 @@ bool  MainGatewayThread::AddOutputChainData( BasePacket* packet, U32 serverType 
    return true;
 }
 
-//-----------------------------------------------------------------------------------------
+/////////////////////////////////////////////////////////////////////////////////
 
 // assuming that everything is thread protected at this point
 void  MainGatewayThread::HandlePacketToKhaan( KhaanGateway* khaan, BasePacket* packet )
@@ -765,7 +728,6 @@ void  MainGatewayThread::HandlePacketToKhaan( KhaanGateway* khaan, BasePacket* p
 
    PrintDebugText( "HandlePacketToKhaan" );
    U32 connectionId = khaan->GetConnectionId();
-   //bool  packetHandled = false;
    if( packet->packetType == PacketType_Login )
    { 
       if( packet->packetType == PacketLogin::LoginType_InformClientOfLoginStatus)
@@ -780,37 +742,72 @@ void  MainGatewayThread::HandlePacketToKhaan( KhaanGateway* khaan, BasePacket* p
       }
       else if( packet->packetSubType == PacketLogin::LoginType_ThrottleUsersConnection )
       {
-         //PacketCleaner cleaner( packet );
-         //packetHandled = true;
          PacketLoginThrottlePackets* throttler = static_cast< PacketLoginThrottlePackets* >( packet );
          khaan->ThrottleConnection( throttler->delayBetweenPacketsMs );
          PacketCleaner cleaner( packet );
       }
    }
 
-   if( m_printPacketTypes )
+   if( packet ) // this may have been cleaned up.
    {
-      int type = ( packet->packetType );
-      const char* packetTypeName = GetPacketTypename( (PacketType)type );
-      cout << "To client  packet: " << packetTypeName << " " << type << " :" << (int)packet->packetSubType << endl;
-     /* string printer = "Packet to client: ";
-      printer += packetTypeName;
-      printer += ":";
-      printer += (int)packet->packetSubType;
-      FileLog( printer.c_str() );*/
+      if( m_printPacketTypes )
+      {
+         int type = ( packet->packetType );
+         const char* packetTypeName = GetPacketTypename( (PacketType)type );
+         cout << "To client  packet: " << packetTypeName << " " << type << " :" << (int)packet->packetSubType << endl;
+      }
+      if( packet->packetType == PacketType_ErrorReport )
+      {
+         PacketErrorReport* error = static_cast< PacketErrorReport* >( packet );
+         error->text = ErrorCodeLookup::GetString( error->errorCode );
+      }
+      khaan->AddOutputChainData( packet );
    }
-   if( packet->packetType == PacketType_ErrorReport )
-   {
-      PacketErrorReport* error = static_cast< PacketErrorReport* >( packet );
-      error->text = ErrorCodeLookup::GetString( error->errorCode );
-   }
-   khaan->AddOutputChainData( packet );
-
-   //Threading::MutexLock locker( m_inputChainListMutex );
-   //AddClientConnectionNeedingUpdate( connectionId );
 }
 
-//-----------------------------------------------------------------------------------------
+/////////////////////////////////////////////////////////////////////////////////
+
+void  MainGatewayThread::MarkConnectionForDeletion( U32 connectionId )
+{
+   PrintDebugText( "HandlePacketToKhaan:: MarkForDeletion", 2 );
+   
+   TrackCountStats( StatTracking_ForcedDisconnect, 1, 0 );
+
+   ConnectionMapIterator it = m_connectionMap.find( connectionId );
+   if( it != m_connectionMap.end() )
+   {
+
+      ChainedType::SetupClientConnectionForDeletion( it->second );
+   }
+/*
+   ConnectionMapIterator it = m_connectionMap.find( connectionId );
+   if( it != m_connectionMap.end() )
+   {
+      //PacketLogoutToClient* logoutPacket = new PacketLogoutToClient;
+      //logoutPacket->wasDisconnectedByError = true;
+      //packet = logoutPacket;
+
+      Khaan* khaan = it->second;
+      if( khaan )
+      {
+         khaan->DenyAllFutureData();//
+         //khaanWrapper.m_connector->AddOutputChainData( logoutPacket );
+
+         int connectionId = khaan->GetConnectionId();
+         int socketId = khaan->GetSocketId();
+         khaan->RemoveOutputChain( this );
+
+         if( khaan->HasDisconnected() == false )
+         {
+            time_t currentTime;
+            time( &currentTime );
+            khaan->SetTimeForDeletion( currentTime );
+         }
+      }      
+   }*/
+}
+
+/////////////////////////////////////////////////////////////////////////////////
 
 BasePacket*  MainGatewayThread::HandlePlayerLoginStatus( KhaanGateway* khaan, BasePacket* packet )
 {
@@ -830,6 +827,8 @@ BasePacket*  MainGatewayThread::HandlePlayerLoginStatus( KhaanGateway* khaan, Ba
       clientNotify->lastLogoutTime = finishedLogin->lastLogoutTime;
       clientNotify->connectionId = connectionId;
       clientNotify->loginKey = finishedLogin->loginKey;
+   /*   clientNotify->junk1 = 21;
+      clientNotify->junk2 = "this is s version number test.";*/
       packet = clientNotify;
 
       TrackCountStats( StatTrackingConnections::StatTracking_UserLoginSuccess, 1, 0 );
@@ -837,23 +836,10 @@ BasePacket*  MainGatewayThread::HandlePlayerLoginStatus( KhaanGateway* khaan, Ba
    }
    else
    {
-      PrintDebugText( "HandlePacketToKhaan:: MarkForDeletion", 2 );
-      khaan->DenyAllFutureData();
-      TrackCountStats( StatTracking_ForcedDisconnect, 1, 0 );
-
-      ConnectionMapIterator it = m_connectionMap.find( connectionId );
-      if( it != m_connectionMap.end() )
-      {
-         PacketLogoutToClient* logoutPacket = new PacketLogoutToClient;
-         //logoutPacket->wasDisconnectedByError = true;
-         packet = logoutPacket;
-
-         KhaanGatewayWrapper& khaanWrapper = it->second;
-         time_t currentTime;
-         time( &currentTime );
-         khaanWrapper.MarkForDeletion( currentTime );
-         //packetHandled = true;
-      }
+      PacketLogoutToClient* logoutPacket = new PacketLogoutToClient;
+      packet = logoutPacket;
+      MarkConnectionForDeletion( connectionId );
+      //packet = NULL;
 
       connectionId = 0;
    }
@@ -861,8 +847,26 @@ BasePacket*  MainGatewayThread::HandlePlayerLoginStatus( KhaanGateway* khaan, Ba
    return packet;
 }
 
-//-----------------------------------------------------------------------------------------
 
+/////////////////////////////////////////////////////////////////////////////////
+
+void  LogCertainPackets( BasePacket* packet )
+{
+   if( packet->packetType == PacketType_Chat && 
+      packet->packetSubType == PacketChatToServer::ChatType_AddUserToChatChannelResponse )
+   {
+      PacketChatAddUserToChatChannelResponse* ptr = static_cast< PacketChatAddUserToChatChannelResponse* >( packet );
+      cout << "PacketChatAddUserToChatChannelResponse begin" << endl;
+      cout << " channel name: " << ptr->channelName << endl;
+      cout << " channel uuid: " << ptr->channelUuid << endl;
+      cout << " channel useruuid: " << ptr->userUuid << endl;
+      cout << " channel user name: " << ptr->userName << endl;
+      cout << "PacketChatAddUserToChatChannelResponse end" << endl;
+   }
+}
+
+/////////////////////////////////////////////////////////////////////////////////
+/*
 void  MainGatewayThread::AddClientConnectionNeedingUpdate( U32 connectionId )
 {
    return;
@@ -878,9 +882,9 @@ void  MainGatewayThread::AddClientConnectionNeedingUpdate( U32 connectionId )
          return;
    }
    m_connectionsNeedingUpdate.push_back( connectionId );
-}
+}*/
 
-//-----------------------------------------------------------------------------------------
+/////////////////////////////////////////////////////////////////////////////////
 
 void  MainGatewayThread::MoveClientBoundPacketsFromTempToKhaan()
 {
@@ -908,15 +912,17 @@ void  MainGatewayThread::MoveClientBoundPacketsFromTempToKhaan()
          delete wrapper;
          bool  handled = false;
 
+         LogCertainPackets( dataPacket );
+
          m_inputChainListMutex.lock();
-         SocketToConnectionMapIterator it = m_connectionToSocketMap.find( connectionId );
-         if( it != m_connectionToSocketMap.end() )
+         //SocketToConnectionMapIterator it = m_connectionToSocketMap.find( connectionId );
+         //if( it != m_connectionToSocketMap.end() )
          {
             ConnectionMapIterator connIt = m_connectionMap.find( connectionId );
             if( connIt != m_connectionMap.end() )
             {
-               KhaanGateway* khaan = connIt->second.m_connector;
-               if( khaan )
+               KhaanGateway* khaan = connIt->second;
+               if( khaan && khaan->IsConnected() == true )
                {
                   HandlePacketToKhaan( khaan, dataPacket );// all deletion and such is handled lower
                }
@@ -929,65 +935,8 @@ void  MainGatewayThread::MoveClientBoundPacketsFromTempToKhaan()
             factory.CleanupPacket( dataPacket );
          }
       }
-
-   /*   while( m_connectionsNeedingUpdate.size() > 0 )// this has the m_outputChainListMutex protection
-      {
-         int connectionId = m_connectionsNeedingUpdate.front();
-         m_connectionsNeedingUpdate.pop_front();
-         ConnectionMapIterator connIt = m_connectionMap.find( connectionId );
-         if( connIt != m_connectionMap.end() )
-         {
-            KhaanGateway* khaan = connIt->second.m_connector;
-            if( khaan )
-            {
-               bool didFinish = khaan->Update();
-               if( didFinish == false )
-               {
-                  moreTimeNeededQueue.push_back( connectionId );
-               }
-            }
-         }
-      }
-      //
-      m_connectionsNeedingUpdate = moreTimeNeededQueue; // copy */
    }
 }
 
-void  MainGatewayThread::UpdateAllClientConnections()
-{
-   if( m_printFunctionNames )
-   {
-      FileLog( "MainGatewayThread::UpdateAllClientConnections" );
-   }
+/////////////////////////////////////////////////////////////////////////////////
 
-   m_inputChainListMutex.lock();
-   //m_connectionsNeedingUpdate.clear();
-
-   ConnectionMapIterator connIt = m_connectionMap.begin();
-   while( connIt != m_connectionMap.end() )
-   {
-      KhaanGateway* khaan = connIt->second.m_connector;
-      if( khaan )
-      {
-         if( khaan->NeedsUpdate() == true )
-         {
-            bool didFinish = khaan->Update();
-         }
-      }
-      connIt++;
-   }
-   m_inputChainListMutex.unlock();
-}
-
-//-----------------------------------------------------------------------------------------
-/*
-int   MainGatewayThread::MainLoop_OutputProcessing()
-{
-   // mutex is locked already
-
-   // lookup packet info and pass it back to the proper socket if we can find it.
-   
-   
-   return 1;
-}*/
-//-----------------------------------------------------------------------------------------

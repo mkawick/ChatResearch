@@ -103,7 +103,7 @@ public:
    void           PrintFunctionNames( bool printingOn = true );
 
    void           ServerWasIdentified( IChainedInterface* khaan );
-   //void           OutputConnected( IChainedInterface * );
+   void           InputRemovalInProgress( IChainedInterface * chainedInput );
    void           AutoAddTheProductFromWhichYouLogin( bool addIt = false ) { m_autoAddProductFromWhichUsersLogin = addIt; }
 
    bool           AddInputChainData( BasePacket* packet, U32 connectionId );
@@ -169,7 +169,7 @@ private:
    bool     AddBlankUserProfile( U32 connectionId );
    bool     ForceUserLogoutAndBlock( U32 connectionId );
    bool     CreateAccount( const char* username, const char* emailAddress, const char* password, int userId, int gameId );
-   bool     SendListOfGamesToGameServers( U32 connectionId, const KeyValueVector& kv_array );
+   bool     SendListOfOwnedGamesToGameServers( U32 connectionId, const KeyValueVector& kv_array );
 
    bool     UpdateLastLoggedOutTime( U32 connectionId );
    bool     UpdateLastLoggedInTime( U32 connectionId );
@@ -184,6 +184,7 @@ private:
    bool     RequestProfile( U32 connectionId, const PacketRequestUserProfile* profileRequest );
    bool     UpdateProfile( U32 connectionId, const PacketUpdateUserProfile* profileRequest );
    bool     UpdateProfile( U32 connectionId, const PacketUpdateSelfProfile* profileRequest );
+   int      CountNumOfAvailableProducts();
    bool     HandleRequestListOfProducts( U32 connectionId, PacketRequestListOfProducts* purchaseRequest );
    bool     RequestOthersProfile( U32 connectionId, const PacketRequestOtherUserProfile* profileRequest );
    bool     ThrottleUser( U32 userConnectionId, const PacketLoginDebugThrottleUserPackets* throttleRequest );

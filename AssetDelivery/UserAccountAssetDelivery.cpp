@@ -1,7 +1,7 @@
 // UserAccountAssetDelivery.cpp
 
 #include "UserAccountAssetDelivery.h"
-#include "DiplodocusAsset.h"
+#include "AssetMainThread.h"
 #include "AssetOrganizer.h"
 
 #include "../NetworkCommon/Packets/AssetPacket.h"
@@ -171,7 +171,11 @@ bool     UserAccountAssetDelivery::GetListOfAssets( const PacketAsset_GetListOfA
       return false;
    }
 
-   assetOrganizer->GetListOfAssets( packet->platformId, m_productFilterNames, assetIds, m_maxNumAssetReturnedByCategory );
+   assetOrganizer->GetListOfAssets( packet->platformId, m_productFilterNames, packet->compressionType, assetIds, m_maxNumAssetReturnedByCategory );
+   
+   // here we further reduce the set by compression type in the rare case that it is specified
+   // FixedStringTiny   compressionType;
+
    // 1) reduce the set of products by device type.
 
    //-----------------------------
@@ -217,23 +221,31 @@ bool     UserAccountAssetDelivery::GetAsset( const PacketAsset_RequestAsset* pac
 
       U32 connectionId = m_userTicket.connectionId;
       const AssetDefinition* asset = m_assetManager->GetAsset( packet->assetHash );
-    /*  bool found = m_assetManager->GetStaticAssetOrganizer()->FindByHash( packet->assetHash, asset );
-      if( found == false )
-      {
-         found = m_assetManager->GetDynamicAssetOrganizer()->FindByHash( packet->assetHash, asset );
-      }*/
       if( asset != NULL )
       {
-         data = asset->fileData;
-         size = asset->fileSize;
+         int version = packet->fileVersion;
+         LoadedFile file;
+         cout << "User lookup file: " << asset->path << "; ver:" << version << endl;
+         if( asset->FindFile( version, file ) == true )
+         {
+            data = file.fileData;
+            size = file.fileSize;
 
-         const int MaxSize = PacketGameplayRawData::MaxBufferSize  - sizeof( PacketGatewayWrapper );
-         cout << "File being sent = " << asset->name << endl;
-         cout << "   path = " << asset->path << endl;
-         cout << "   size = " << asset->fileSize << endl;
+            const int MaxSize = PacketGameplayRawData::MaxBufferSize  - sizeof( PacketGatewayWrapper );
+            cout << "File being sent = " << asset->name << endl;
+            cout << "   path = " << asset->path << endl;
+            cout << "   size = " << size << endl;
 
-         return SendRawData< PacketGameplayRawData, DiplodocusAsset > 
-            ( data, size, PacketGameplayRawData::Asset, MaxSize, m_assetManager->GetServerId(), asset->productId, asset->hash, connectionId, m_assetManager );
+            if( size == 0 )
+            {
+               cout << " Attempt to send 0 length file: " << packet->assetHash << endl;
+               m_assetManager->SendErrorToClient( m_userTicket.connectionId, PacketErrorReport::ErrorType_Asset_unknown1 );
+               return false;
+            }
+
+            return SendRawData< PacketGameplayRawData, AssetMainThread > 
+               ( data, size, PacketGameplayRawData::Asset, MaxSize, m_assetManager->GetServerId(), asset->productId, asset->hash, connectionId, m_assetManager );
+         }
       }
       else
       {

@@ -57,6 +57,7 @@ public:
    const char*             GetClassName() const { return "DiplodocusPurchase"; }
 
    void                    ServerWasIdentified( IChainedInterface* khaan );// callback really
+   void                    InputRemovalInProgress( IChainedInterface * chainedInput );
 
    bool                    AddInputChainData( BasePacket* packet, U32 connectionId );
    bool                    AddOutputChainData( BasePacket* packet, U32 connectionId );

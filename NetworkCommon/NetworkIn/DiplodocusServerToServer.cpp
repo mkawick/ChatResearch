@@ -50,9 +50,17 @@ void  DiplodocusServerToServer::InputConnected( IChainedInterface* khaan )
 
 //////////////////////////////////////////////////////////////////////////
 
-void  DiplodocusServerToServer::InputRemovalInProgress( IChainedInterface* khaan )
+void  DiplodocusServerToServer::InputRemovalInProgress( IChainedInterface* chainedInput )
 {
-   // remove all pending jobs.
+   KhaanServerToServer* khaan = static_cast< KhaanServerToServer* >( chainedInput );
+
+   SetupClientWaitingToBeRemoved( khaan );
+
+   string currentTime = GetDateInUTC();
+   string printer = "Client disconnection at time:" + currentTime + " from " + inet_ntoa( khaan->GetIPAddress().sin_addr );
+   cout << printer << endl;
+
+   PrintDebugText( "** InputRemovalInProgress" , 1 );
 }
 
 U32   DiplodocusServerToServer::FindServerIdByType( U32 type )
@@ -278,6 +286,8 @@ int   DiplodocusServerToServer::CallbackFunction()
       }
       UnlockMutex();
    }
+
+   CleanupOldClientConnections( "KhaanServerToServer" );
 
    UpdateAllConnections( "KhaanServerToServer" );
    SendJobsToUpperLayers();

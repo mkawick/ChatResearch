@@ -2,6 +2,29 @@
 
 #include <set>
 
+#include "../NetworkCommon/ServerConstants.h"
+#include "../NetworkCommon/DataTypes.h"
+
+#include "../NetworkCommon/Utils/FileUtils.h"
+
+//////////////////////////////////////////////////////////////////////////
+
+struct LoadedFile : public FileVersion
+{
+   LoadedFile();
+   LoadedFile( const FileVersion& );
+   LoadedFile( const LoadedFile& );
+
+   ~LoadedFile();
+   const LoadedFile& operator = ( const LoadedFile& );
+   void  operator = ( const FileVersion& ver );
+   U8*            fileData;
+   int            fileSize;
+   U8             compressionType;
+   
+   
+};
+
 //////////////////////////////////////////////////////////////////////////
 
 struct AssetDefinition
@@ -21,13 +44,14 @@ struct AssetDefinition
    string         name;
    string         hash;
    string         category;
+   string         compressionType;
+
+
+   bool           FindFile( int version, LoadedFile& file ) const;
 
    vector< string > filters;
    vector< string > gates;
-
-   U8*            fileData;
-   int            fileSize;
-   U8             compressionType;
+   vector< LoadedFile > listOfVersionedFiles;
 
    AssetDefinition();
    AssetDefinition( const AssetDefinition& assetDefn );
@@ -65,8 +89,8 @@ public:
    bool  Find( const string& name, AssetDefinition*& asset );
    bool  FindByHash( const string& hash, AssetDefinition const *& asset ) const; // returns a reference const... you cannot modify the result.
 
-   bool  GetListOfAssets( U8 productId, int platformType, vector< string >& listOfAssetsByHash ) const;
-   bool  GetListOfAssets( int platformId, const set< string >& listOfFilters, vector< string >& listOfAssetsByHash, int maxNum = 250 ) const;
+   bool  GetListOfAssets( U8 productId, int platformType, const string& compressionType, vector< string >& listOfAssetsByHash ) const;
+   bool  GetListOfAssets( int platformId, const set< string >& listOfFilters, const string& compressionType, vector< string >& listOfAssetsByHash, int maxNum = 250 ) const;
 
    void  Update();
 

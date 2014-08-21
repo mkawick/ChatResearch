@@ -8,421 +8,400 @@
 
 ///////////////////////////////////////////////////////////////
 
-bool  PacketGameToServer::SerializeIn( const U8* data, int& bufferOffset )
+bool  PacketGameToServer::SerializeIn( const U8* data, int& bufferOffset, int minorVersion )
 {
-   BasePacket::SerializeIn( data, bufferOffset );
+   BasePacket::SerializeIn( data, bufferOffset, minorVersion );
 
    return true;
 }
 
-bool  PacketGameToServer::SerializeOut( U8* data, int& bufferOffset ) const
+bool  PacketGameToServer::SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const
 {
-   BasePacket::SerializeOut( data, bufferOffset );
-
-   return true;
-}
-
-///////////////////////////////////////////////////////////////
-
-bool  PacketCreateGame::SerializeIn( const U8* data, int& bufferOffset )
-{
-   PacketGameToServer::SerializeIn( data, bufferOffset );
-   Serialize::In( data, bufferOffset, name );
-
-   return true;
-}
-
-bool  PacketCreateGame::SerializeOut( U8* data, int& bufferOffset ) const
-{
-   PacketGameToServer::SerializeOut( data, bufferOffset );
-   Serialize::Out( data, bufferOffset, name );
+   BasePacket::SerializeOut( data, bufferOffset, minorVersion );
 
    return true;
 }
 
 ///////////////////////////////////////////////////////////////
 
-bool  PacketCreateGameResponse::SerializeIn( const U8* data, int& bufferOffset )
+bool  PacketCreateGame::SerializeIn( const U8* data, int& bufferOffset, int minorVersion )
 {
-   PacketGameToServer::SerializeIn( data, bufferOffset );
-   Serialize::In( data, bufferOffset, name );
-   Serialize::In( data, bufferOffset, uuid );
+   PacketGameToServer::SerializeIn( data, bufferOffset, minorVersion );
+   Serialize::In( data, bufferOffset, name, minorVersion );
 
    return true;
 }
 
-bool  PacketCreateGameResponse::SerializeOut( U8* data, int& bufferOffset ) const
+bool  PacketCreateGame::SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const
 {
-   PacketGameToServer::SerializeOut( data, bufferOffset );
-   Serialize::Out( data, bufferOffset, name );
-   Serialize::Out( data, bufferOffset, uuid );
-
-   return true;
-}
-
-///////////////////////////////////////////////////////////////
-
-bool  PacketDeleteGame::SerializeIn( const U8* data, int& bufferOffset )
-{
-   PacketGameToServer::SerializeIn( data, bufferOffset );
-   Serialize::In( data, bufferOffset, uuid );
-
-   return true;
-}
-
-bool  PacketDeleteGame::SerializeOut( U8* data, int& bufferOffset ) const
-{
-   PacketGameToServer::SerializeOut( data, bufferOffset );
-   Serialize::Out( data, bufferOffset, uuid );
+   PacketGameToServer::SerializeOut( data, bufferOffset, minorVersion );
+   Serialize::Out( data, bufferOffset, name, minorVersion );
 
    return true;
 }
 
 ///////////////////////////////////////////////////////////////
 
-bool  PacketDeleteGameResponse::SerializeIn( const U8* data, int& bufferOffset )
+bool  PacketCreateGameResponse::SerializeIn( const U8* data, int& bufferOffset, int minorVersion )
 {
-   PacketGameToServer::SerializeIn( data, bufferOffset );
-   Serialize::In( data, bufferOffset, name );
-   Serialize::In( data, bufferOffset, uuid );
+   PacketGameToServer::SerializeIn( data, bufferOffset, minorVersion );
+   Serialize::In( data, bufferOffset, name, minorVersion );
+   Serialize::In( data, bufferOffset, uuid, minorVersion );
 
    return true;
 }
 
-bool  PacketDeleteGameResponse::SerializeOut( U8* data, int& bufferOffset ) const
+bool  PacketCreateGameResponse::SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const
 {
-   PacketGameToServer::SerializeOut( data, bufferOffset );
-   Serialize::Out( data, bufferOffset, name );
-   Serialize::Out( data, bufferOffset, uuid );
-
-   return true;
-}
-
-///////////////////////////////////////////////////////////////
-
-bool  PacketForfeitGame::SerializeIn( const U8* data, int& bufferOffset )
-{
-   PacketGameToServer::SerializeIn( data, bufferOffset );
-   Serialize::In( data, bufferOffset, userUuid );
-   Serialize::In( data, bufferOffset, gameUuid );
-
-   return true;
-}
-
-bool  PacketForfeitGame::SerializeOut( U8* data, int& bufferOffset ) const
-{
-   PacketGameToServer::SerializeOut( data, bufferOffset );
-   Serialize::Out( data, bufferOffset, userUuid );
-   Serialize::Out( data, bufferOffset, gameUuid );
+   PacketGameToServer::SerializeOut( data, bufferOffset, minorVersion );
+   Serialize::Out( data, bufferOffset, name, minorVersion );
+   Serialize::Out( data, bufferOffset, uuid, minorVersion );
 
    return true;
 }
 
 ///////////////////////////////////////////////////////////////
 
-bool  PacketForfeitGameResponse::SerializeIn( const U8* data, int& bufferOffset )
+bool  PacketDeleteGame::SerializeIn( const U8* data, int& bufferOffset, int minorVersion )
 {
-   PacketGameToServer::SerializeIn( data, bufferOffset );
-   Serialize::In( data, bufferOffset, name );
-   Serialize::In( data, bufferOffset, uuid );
+   PacketGameToServer::SerializeIn( data, bufferOffset, minorVersion );
+   Serialize::In( data, bufferOffset, uuid, minorVersion );
 
    return true;
 }
 
-bool  PacketForfeitGameResponse::SerializeOut( U8* data, int& bufferOffset ) const
+bool  PacketDeleteGame::SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const
 {
-   PacketGameToServer::SerializeOut( data, bufferOffset );
-   Serialize::Out( data, bufferOffset, name );
-   Serialize::Out( data, bufferOffset, uuid );
-
-   return true;
-}
-
-///////////////////////////////////////////////////////////////
-
-bool  PacketQuitGame::SerializeIn( const U8* data, int& bufferOffset )
-{
-   PacketGameToServer::SerializeIn( data, bufferOffset );
-   Serialize::In( data, bufferOffset, userUuid );
-   Serialize::In( data, bufferOffset, gameUuid );
-
-   return true;
-}
-
-bool  PacketQuitGame::SerializeOut( U8* data, int& bufferOffset ) const
-{
-   PacketGameToServer::SerializeOut( data, bufferOffset );
-   Serialize::Out( data, bufferOffset, userUuid );
-   Serialize::Out( data, bufferOffset, gameUuid );
+   PacketGameToServer::SerializeOut( data, bufferOffset, minorVersion );
+   Serialize::Out( data, bufferOffset, uuid, minorVersion );
 
    return true;
 }
 
 ///////////////////////////////////////////////////////////////
 
-bool  PacketQuitGameResponse::SerializeIn( const U8* data, int& bufferOffset )
+bool  PacketDeleteGameResponse::SerializeIn( const U8* data, int& bufferOffset, int minorVersion )
 {
-   PacketGameToServer::SerializeIn( data, bufferOffset );
-   Serialize::In( data, bufferOffset, userName );
-   Serialize::In( data, bufferOffset, userUuid );
-   Serialize::In( data, bufferOffset, gameUuid );
+   PacketGameToServer::SerializeIn( data, bufferOffset, minorVersion );
+   Serialize::In( data, bufferOffset, name, minorVersion );
+   Serialize::In( data, bufferOffset, uuid, minorVersion );
 
    return true;
 }
 
-bool  PacketQuitGameResponse::SerializeOut( U8* data, int& bufferOffset ) const
+bool  PacketDeleteGameResponse::SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const
 {
-   PacketGameToServer::SerializeOut( data, bufferOffset );
-   Serialize::Out( data, bufferOffset, userName );
-   Serialize::Out( data, bufferOffset, userUuid );
-   Serialize::Out( data, bufferOffset, gameUuid );
-
-   return true;
-}
-
-///////////////////////////////////////////////////////////////
-
-bool  PacketAddUserToGame::SerializeIn( const U8* data, int& bufferOffset )
-{
-   PacketGameToServer::SerializeIn( data, bufferOffset );
-   Serialize::In( data, bufferOffset, userUuid );
-   Serialize::In( data, bufferOffset, gameUuid );
-
-   return true;
-}
-
-bool  PacketAddUserToGame::SerializeOut( U8* data, int& bufferOffset ) const
-{
-   PacketGameToServer::SerializeOut( data, bufferOffset );
-   Serialize::Out( data, bufferOffset, userUuid );
-   Serialize::Out( data, bufferOffset, gameUuid );
+   PacketGameToServer::SerializeOut( data, bufferOffset, minorVersion );
+   Serialize::Out( data, bufferOffset, name, minorVersion );
+   Serialize::Out( data, bufferOffset, uuid, minorVersion );
 
    return true;
 }
 
 ///////////////////////////////////////////////////////////////
 
-bool  PacketAddUserToGameResponse::SerializeIn( const U8* data, int& bufferOffset )
+bool  PacketForfeitGame::SerializeIn( const U8* data, int& bufferOffset, int minorVersion )
 {
-   PacketGameToServer::SerializeIn( data, bufferOffset );
-   Serialize::In( data, bufferOffset, userUuid );
-   Serialize::In( data, bufferOffset, gameUuid );
-   Serialize::In( data, bufferOffset, wasSuccessful );
+   PacketGameToServer::SerializeIn( data, bufferOffset, minorVersion );
+   Serialize::In( data, bufferOffset, userUuid, minorVersion );
+   Serialize::In( data, bufferOffset, gameUuid, minorVersion );
 
    return true;
 }
 
-bool  PacketAddUserToGameResponse::SerializeOut( U8* data, int& bufferOffset ) const
+bool  PacketForfeitGame::SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const
 {
-   PacketGameToServer::SerializeOut( data, bufferOffset );
-   Serialize::Out( data, bufferOffset, userUuid );
-   Serialize::Out( data, bufferOffset, gameUuid );
-   Serialize::Out( data, bufferOffset, wasSuccessful );
-
-   return true;
-}
-
-///////////////////////////////////////////////////////////////
-
-bool  PacketRemoveUserFromGame::SerializeIn( const U8* data, int& bufferOffset )
-{
-   PacketGameToServer::SerializeIn( data, bufferOffset );
-   Serialize::In( data, bufferOffset, userUuid );
-   Serialize::In( data, bufferOffset, gameUuid );
-
-   return true;
-}
-
-bool  PacketRemoveUserFromGame::SerializeOut( U8* data, int& bufferOffset ) const
-{
-   PacketGameToServer::SerializeOut( data, bufferOffset );
-   Serialize::Out( data, bufferOffset, userUuid );
-   Serialize::Out( data, bufferOffset, gameUuid );
+   PacketGameToServer::SerializeOut( data, bufferOffset, minorVersion );
+   Serialize::Out( data, bufferOffset, userUuid, minorVersion );
+   Serialize::Out( data, bufferOffset, gameUuid, minorVersion );
 
    return true;
 }
 
 ///////////////////////////////////////////////////////////////
 
-bool  PacketRemoveUserFromGameResponse::SerializeIn( const U8* data, int& bufferOffset )
+bool  PacketForfeitGameResponse::SerializeIn( const U8* data, int& bufferOffset, int minorVersion )
 {
-   PacketGameToServer::SerializeIn( data, bufferOffset );
-   Serialize::In( data, bufferOffset, userUuid );
-   Serialize::In( data, bufferOffset, gameUuid );
-   Serialize::In( data, bufferOffset, wasSuccessful );
+   PacketGameToServer::SerializeIn( data, bufferOffset, minorVersion );
+   Serialize::In( data, bufferOffset, name, minorVersion );
+   Serialize::In( data, bufferOffset, uuid, minorVersion );
 
    return true;
 }
 
-bool  PacketRemoveUserFromGameResponse::SerializeOut( U8* data, int& bufferOffset ) const
+bool  PacketForfeitGameResponse::SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const
 {
-   PacketGameToServer::SerializeOut( data, bufferOffset );
-   Serialize::Out( data, bufferOffset, userUuid );
-   Serialize::Out( data, bufferOffset, gameUuid );
-   Serialize::Out( data, bufferOffset, wasSuccessful );
-
-   return true;
-}
-
-///////////////////////////////////////////////////////////////
-
-bool  PacketGameAdvanceTurn::SerializeIn( const U8* data, int& bufferOffset )
-{
-   PacketGameToServer::SerializeIn( data, bufferOffset );
-   Serialize::In( data, bufferOffset, gameUuid );
-
-   return true;
-}
-
-bool  PacketGameAdvanceTurn::SerializeOut( U8* data, int& bufferOffset ) const
-{
-   PacketGameToServer::SerializeOut( data, bufferOffset );
-   Serialize::Out( data, bufferOffset, gameUuid );
+   PacketGameToServer::SerializeOut( data, bufferOffset, minorVersion );
+   Serialize::Out( data, bufferOffset, name, minorVersion );
+   Serialize::Out( data, bufferOffset, uuid, minorVersion );
 
    return true;
 }
 
 ///////////////////////////////////////////////////////////////
 
-bool  PacketGameAdvanceTurnResponse::SerializeIn( const U8* data, int& bufferOffset )
+bool  PacketQuitGame::SerializeIn( const U8* data, int& bufferOffset, int minorVersion )
 {
-   PacketGameToServer::SerializeIn( data, bufferOffset );
-   Serialize::In( data, bufferOffset, gameUuid );
-   Serialize::In( data, bufferOffset, currentTurn );
+   PacketGameToServer::SerializeIn( data, bufferOffset, minorVersion );
+   Serialize::In( data, bufferOffset, userUuid, minorVersion );
+   Serialize::In( data, bufferOffset, gameUuid, minorVersion );
 
    return true;
 }
 
-bool  PacketGameAdvanceTurnResponse::SerializeOut( U8* data, int& bufferOffset ) const
+bool  PacketQuitGame::SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const
 {
-   PacketGameToServer::SerializeOut( data, bufferOffset );
-   Serialize::Out( data, bufferOffset, gameUuid );
-   Serialize::Out( data, bufferOffset, currentTurn );
-
-   return true;
-}
-
-///////////////////////////////////////////////////////////////
-
-bool  PacketRequestListOfGames::SerializeIn( const U8* data, int& bufferOffset )
-{
-   PacketGameToServer::SerializeIn( data, bufferOffset );
-
-   return true;
-}
-
-bool  PacketRequestListOfGames::SerializeOut( U8* data, int& bufferOffset ) const
-{
-   PacketGameToServer::SerializeOut( data, bufferOffset );
+   PacketGameToServer::SerializeOut( data, bufferOffset, minorVersion );
+   Serialize::Out( data, bufferOffset, userUuid, minorVersion );
+   Serialize::Out( data, bufferOffset, gameUuid, minorVersion );
 
    return true;
 }
 
 ///////////////////////////////////////////////////////////////
 
-bool  PacketRequestListOfGamesResponse::SerializeIn( const U8* data, int& bufferOffset )
+bool  PacketQuitGameResponse::SerializeIn( const U8* data, int& bufferOffset, int minorVersion )
 {
-   PacketGameToServer::SerializeIn( data, bufferOffset );
-   Serialize::In( data, bufferOffset, games );
+   PacketGameToServer::SerializeIn( data, bufferOffset, minorVersion );
+   Serialize::In( data, bufferOffset, userName, minorVersion );
+   Serialize::In( data, bufferOffset, userUuid, minorVersion );
+   Serialize::In( data, bufferOffset, gameUuid, minorVersion );
 
    return true;
 }
 
-bool  PacketRequestListOfGamesResponse::SerializeOut( U8* data, int& bufferOffset ) const
+bool  PacketQuitGameResponse::SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const
 {
-   PacketGameToServer::SerializeOut( data, bufferOffset );
-   Serialize::Out( data, bufferOffset, games );
-
-   return true;
-}
-
-///////////////////////////////////////////////////////////////
-
-bool  PacketRequestListOfUsersInGame::SerializeIn( const U8* data, int& bufferOffset )
-{
-   PacketGameToServer::SerializeIn( data, bufferOffset );
-
-   return true;
-}
-
-bool  PacketRequestListOfUsersInGame::SerializeOut( U8* data, int& bufferOffset ) const
-{
-   PacketGameToServer::SerializeOut( data, bufferOffset );
+   PacketGameToServer::SerializeOut( data, bufferOffset, minorVersion );
+   Serialize::Out( data, bufferOffset, userName, minorVersion );
+   Serialize::Out( data, bufferOffset, userUuid, minorVersion );
+   Serialize::Out( data, bufferOffset, gameUuid, minorVersion );
 
    return true;
 }
 
 ///////////////////////////////////////////////////////////////
 
-bool  PacketRequestListOfUsersInGameResponse::SerializeIn( const U8* data, int& bufferOffset )
+bool  PacketAddUserToGame::SerializeIn( const U8* data, int& bufferOffset, int minorVersion )
 {
-   PacketGameToServer::SerializeIn( data, bufferOffset );
-   Serialize::In( data, bufferOffset, gameName );
-   Serialize::In( data, bufferOffset, gameUuid );
-   Serialize::In( data, bufferOffset, users );
+   PacketGameToServer::SerializeIn( data, bufferOffset, minorVersion );
+   Serialize::In( data, bufferOffset, userUuid, minorVersion );
+   Serialize::In( data, bufferOffset, gameUuid, minorVersion );
 
    return true;
 }
 
-bool  PacketRequestListOfUsersInGameResponse::SerializeOut( U8* data, int& bufferOffset ) const
+bool  PacketAddUserToGame::SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const
 {
-   PacketGameToServer::SerializeOut( data, bufferOffset );
-   Serialize::Out( data, bufferOffset, gameName );
-   Serialize::Out( data, bufferOffset, gameUuid );
-   Serialize::Out( data, bufferOffset, users );
+   PacketGameToServer::SerializeOut( data, bufferOffset, minorVersion );
+   Serialize::Out( data, bufferOffset, userUuid, minorVersion );
+   Serialize::Out( data, bufferOffset, gameUuid, minorVersion );
 
    return true;
 }
 
 ///////////////////////////////////////////////////////////////
 
-bool  WinLoss::SerializeIn( const U8* data, int& bufferOffset )
+bool  PacketAddUserToGameResponse::SerializeIn( const U8* data, int& bufferOffset, int minorVersion )
 {
-   Serialize::In( data, bufferOffset, gameUuid );
-   Serialize::In( data, bufferOffset, isPrivate );
-   Serialize::In( data, bufferOffset, wins );
-   Serialize::In( data, bufferOffset, losses );
-
-   Serialize::In( data, bufferOffset, rating );
-   Serialize::In( data, bufferOffset, totalGamesPlayed );
-   Serialize::In( data, bufferOffset, hoursLogged );
-   Serialize::In( data, bufferOffset, minutesLogged );
+   PacketGameToServer::SerializeIn( data, bufferOffset, minorVersion );
+   Serialize::In( data, bufferOffset, userUuid, minorVersion );
+   Serialize::In( data, bufferOffset, gameUuid, minorVersion );
+   Serialize::In( data, bufferOffset, wasSuccessful, minorVersion );
 
    return true;
 }
 
-bool  WinLoss::SerializeOut( U8* data, int& bufferOffset ) const
+bool  PacketAddUserToGameResponse::SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const
 {
-   Serialize::Out( data, bufferOffset, gameUuid );
-   Serialize::Out( data, bufferOffset, isPrivate );
-   Serialize::Out( data, bufferOffset, wins );
-   Serialize::Out( data, bufferOffset, losses );
-
-   Serialize::Out( data, bufferOffset, rating );
-   Serialize::Out( data, bufferOffset, totalGamesPlayed );
-   Serialize::Out( data, bufferOffset, hoursLogged );
-   Serialize::Out( data, bufferOffset, minutesLogged );
+   PacketGameToServer::SerializeOut( data, bufferOffset, minorVersion );
+   Serialize::Out( data, bufferOffset, userUuid, minorVersion );
+   Serialize::Out( data, bufferOffset, gameUuid, minorVersion );
+   Serialize::Out( data, bufferOffset, wasSuccessful, minorVersion );
 
    return true;
 }
-
 
 ///////////////////////////////////////////////////////////////
 
-bool  PacketRequestUserWinLoss::SerializeIn( const U8* data, int& bufferOffset )
+bool  PacketRemoveUserFromGame::SerializeIn( const U8* data, int& bufferOffset, int minorVersion )
 {
-   PacketGameToServer::SerializeIn( data, bufferOffset );
-   Serialize::In( data, bufferOffset, userUuid );
-   Serialize::In( data, bufferOffset, gameUuid );
+   PacketGameToServer::SerializeIn( data, bufferOffset, minorVersion );
+   Serialize::In( data, bufferOffset, userUuid, minorVersion );
+   Serialize::In( data, bufferOffset, gameUuid, minorVersion );
 
    return true;
 }
 
-bool  PacketRequestUserWinLoss::SerializeOut( U8* data, int& bufferOffset ) const
+bool  PacketRemoveUserFromGame::SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const
 {
-   PacketGameToServer::SerializeOut( data, bufferOffset );
-   Serialize::Out( data, bufferOffset, userUuid );
-   Serialize::Out( data, bufferOffset, gameUuid );
+   PacketGameToServer::SerializeOut( data, bufferOffset, minorVersion );
+   Serialize::Out( data, bufferOffset, userUuid, minorVersion );
+   Serialize::Out( data, bufferOffset, gameUuid, minorVersion );
+
+   return true;
+}
+
+///////////////////////////////////////////////////////////////
+
+bool  PacketRemoveUserFromGameResponse::SerializeIn( const U8* data, int& bufferOffset, int minorVersion )
+{
+   PacketGameToServer::SerializeIn( data, bufferOffset, minorVersion );
+   Serialize::In( data, bufferOffset, userUuid, minorVersion );
+   Serialize::In( data, bufferOffset, gameUuid, minorVersion );
+   Serialize::In( data, bufferOffset, wasSuccessful, minorVersion );
+
+   return true;
+}
+
+bool  PacketRemoveUserFromGameResponse::SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const
+{
+   PacketGameToServer::SerializeOut( data, bufferOffset, minorVersion );
+   Serialize::Out( data, bufferOffset, userUuid, minorVersion );
+   Serialize::Out( data, bufferOffset, gameUuid, minorVersion );
+   Serialize::Out( data, bufferOffset, wasSuccessful, minorVersion );
+
+   return true;
+}
+
+///////////////////////////////////////////////////////////////
+
+bool  PacketGameAdvanceTurn::SerializeIn( const U8* data, int& bufferOffset, int minorVersion )
+{
+   PacketGameToServer::SerializeIn( data, bufferOffset, minorVersion );
+   Serialize::In( data, bufferOffset, gameUuid, minorVersion );
+
+   return true;
+}
+
+bool  PacketGameAdvanceTurn::SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const
+{
+   PacketGameToServer::SerializeOut( data, bufferOffset, minorVersion );
+   Serialize::Out( data, bufferOffset, gameUuid, minorVersion );
+
+   return true;
+}
+
+///////////////////////////////////////////////////////////////
+
+bool  PacketGameAdvanceTurnResponse::SerializeIn( const U8* data, int& bufferOffset, int minorVersion )
+{
+   PacketGameToServer::SerializeIn( data, bufferOffset, minorVersion );
+   Serialize::In( data, bufferOffset, gameUuid, minorVersion );
+   Serialize::In( data, bufferOffset, currentTurn, minorVersion );
+
+   return true;
+}
+
+bool  PacketGameAdvanceTurnResponse::SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const
+{
+   PacketGameToServer::SerializeOut( data, bufferOffset, minorVersion );
+   Serialize::Out( data, bufferOffset, gameUuid, minorVersion );
+   Serialize::Out( data, bufferOffset, currentTurn, minorVersion );
+
+   return true;
+}
+
+///////////////////////////////////////////////////////////////
+
+bool  PacketRequestListOfGames::SerializeIn( const U8* data, int& bufferOffset, int minorVersion )
+{
+   PacketGameToServer::SerializeIn( data, bufferOffset, minorVersion );
+
+   return true;
+}
+
+bool  PacketRequestListOfGames::SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const
+{
+   PacketGameToServer::SerializeOut( data, bufferOffset, minorVersion );
+
+   return true;
+}
+
+///////////////////////////////////////////////////////////////
+
+bool  PacketRequestListOfGamesResponse::SerializeIn( const U8* data, int& bufferOffset, int minorVersion )
+{
+   PacketGameToServer::SerializeIn( data, bufferOffset, minorVersion );
+   Serialize::In( data, bufferOffset, games, minorVersion );
+
+   return true;
+}
+
+bool  PacketRequestListOfGamesResponse::SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const
+{
+   PacketGameToServer::SerializeOut( data, bufferOffset, minorVersion );
+   Serialize::Out( data, bufferOffset, games, minorVersion );
+
+   return true;
+}
+
+///////////////////////////////////////////////////////////////
+
+bool  PacketRequestListOfUsersInGame::SerializeIn( const U8* data, int& bufferOffset, int minorVersion )
+{
+   PacketGameToServer::SerializeIn( data, bufferOffset, minorVersion );
+
+   return true;
+}
+
+bool  PacketRequestListOfUsersInGame::SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const
+{
+   PacketGameToServer::SerializeOut( data, bufferOffset, minorVersion );
+
+   return true;
+}
+
+///////////////////////////////////////////////////////////////
+
+bool  PacketRequestListOfUsersInGameResponse::SerializeIn( const U8* data, int& bufferOffset, int minorVersion )
+{
+   PacketGameToServer::SerializeIn( data, bufferOffset, minorVersion );
+   Serialize::In( data, bufferOffset, gameName, minorVersion );
+   Serialize::In( data, bufferOffset, gameUuid, minorVersion );
+   Serialize::In( data, bufferOffset, users, minorVersion );
+
+   return true;
+}
+
+bool  PacketRequestListOfUsersInGameResponse::SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const
+{
+   PacketGameToServer::SerializeOut( data, bufferOffset, minorVersion );
+   Serialize::Out( data, bufferOffset, gameName, minorVersion );
+   Serialize::Out( data, bufferOffset, gameUuid, minorVersion );
+   Serialize::Out( data, bufferOffset, users, minorVersion );
+
+   return true;
+}
+
+///////////////////////////////////////////////////////////////
+
+bool  WinLoss::SerializeIn( const U8* data, int& bufferOffset, int minorVersion )
+{
+   Serialize::In( data, bufferOffset, gameUuid, minorVersion );
+   Serialize::In( data, bufferOffset, isPrivate, minorVersion );
+   Serialize::In( data, bufferOffset, wins, minorVersion );
+   Serialize::In( data, bufferOffset, losses, minorVersion );
+
+   Serialize::In( data, bufferOffset, rating, minorVersion );
+   Serialize::In( data, bufferOffset, totalGamesPlayed, minorVersion );
+   Serialize::In( data, bufferOffset, hoursLogged, minorVersion );
+   Serialize::In( data, bufferOffset, minutesLogged, minorVersion );
+
+   return true;
+}
+
+bool  WinLoss::SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const
+{
+   Serialize::Out( data, bufferOffset, gameUuid, minorVersion );
+   Serialize::Out( data, bufferOffset, isPrivate, minorVersion );
+   Serialize::Out( data, bufferOffset, wins, minorVersion );
+   Serialize::Out( data, bufferOffset, losses, minorVersion );
+
+   Serialize::Out( data, bufferOffset, rating, minorVersion );
+   Serialize::Out( data, bufferOffset, totalGamesPlayed, minorVersion );
+   Serialize::Out( data, bufferOffset, hoursLogged, minorVersion );
+   Serialize::Out( data, bufferOffset, minutesLogged, minorVersion );
 
    return true;
 }
@@ -430,20 +409,41 @@ bool  PacketRequestUserWinLoss::SerializeOut( U8* data, int& bufferOffset ) cons
 
 ///////////////////////////////////////////////////////////////
 
-bool  PacketRequestUserWinLossResponse::SerializeIn( const U8* data, int& bufferOffset )
+bool  PacketRequestUserWinLoss::SerializeIn( const U8* data, int& bufferOffset, int minorVersion )
 {
-   PacketGameToServer::SerializeIn( data, bufferOffset );
-   Serialize::In( data, bufferOffset, userUuid );
-   Serialize::In( data, bufferOffset, winLoss );
+   PacketGameToServer::SerializeIn( data, bufferOffset, minorVersion );
+   Serialize::In( data, bufferOffset, userUuid, minorVersion );
+   Serialize::In( data, bufferOffset, gameUuid, minorVersion );
 
    return true;
 }
 
-bool  PacketRequestUserWinLossResponse::SerializeOut( U8* data, int& bufferOffset ) const
+bool  PacketRequestUserWinLoss::SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const
 {
-   PacketGameToServer::SerializeOut( data, bufferOffset );
-   Serialize::Out( data, bufferOffset, userUuid );
-   Serialize::Out( data, bufferOffset, winLoss );
+   PacketGameToServer::SerializeOut( data, bufferOffset, minorVersion );
+   Serialize::Out( data, bufferOffset, userUuid, minorVersion );
+   Serialize::Out( data, bufferOffset, gameUuid, minorVersion );
+
+   return true;
+}
+
+
+///////////////////////////////////////////////////////////////
+
+bool  PacketRequestUserWinLossResponse::SerializeIn( const U8* data, int& bufferOffset, int minorVersion )
+{
+   PacketGameToServer::SerializeIn( data, bufferOffset, minorVersion );
+   Serialize::In( data, bufferOffset, userUuid, minorVersion );
+   Serialize::In( data, bufferOffset, winLoss, minorVersion );
+
+   return true;
+}
+
+bool  PacketRequestUserWinLossResponse::SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const
+{
+   PacketGameToServer::SerializeOut( data, bufferOffset, minorVersion );
+   Serialize::Out( data, bufferOffset, userUuid, minorVersion );
+   Serialize::Out( data, bufferOffset, winLoss, minorVersion );
 
    return true;
 }
@@ -452,42 +452,42 @@ bool  PacketRequestUserWinLossResponse::SerializeOut( U8* data, int& bufferOffse
 
 ///////////////////////////////////////////////////////////////
 
-bool  PacketListOfGames::SerializeIn( const U8* data, int& bufferOffset )
+bool  PacketListOfGames::SerializeIn( const U8* data, int& bufferOffset, int minorVersion )
 {
-   PacketGameToServer::SerializeIn( data, bufferOffset );
-   Serialize::In( data, bufferOffset, connectionId );
-   Serialize::In( data, bufferOffset, games );
+   PacketGameToServer::SerializeIn( data, bufferOffset, minorVersion );
+   Serialize::In( data, bufferOffset, connectionId, minorVersion );
+   Serialize::In( data, bufferOffset, games, minorVersion );
 
    return true;
 }
 
-bool  PacketListOfGames::SerializeOut( U8* data, int& bufferOffset ) const
+bool  PacketListOfGames::SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const
 {
-   PacketGameToServer::SerializeOut( data, bufferOffset );
-   Serialize::Out( data, bufferOffset, connectionId );
-   Serialize::Out( data, bufferOffset, games );
+   PacketGameToServer::SerializeOut( data, bufferOffset, minorVersion );
+   Serialize::Out( data, bufferOffset, connectionId, minorVersion );
+   Serialize::Out( data, bufferOffset, games, minorVersion );
 
    return true;
 }
 
 ///////////////////////////////////////////////////////////////
 
-bool  PacketGameIdentification::SerializeIn( const U8* data, int& bufferOffset )
+bool  PacketGameIdentification::SerializeIn( const U8* data, int& bufferOffset, int minorVersion )
 {
-   PacketGameToServer::SerializeIn( data, bufferOffset );
-   Serialize::In( data, bufferOffset, gameId );
-   Serialize::In( data, bufferOffset, name );
-   Serialize::In( data, bufferOffset, shortName );
+   PacketGameToServer::SerializeIn( data, bufferOffset, minorVersion );
+   Serialize::In( data, bufferOffset, gameId, minorVersion );
+   Serialize::In( data, bufferOffset, name, minorVersion );
+   Serialize::In( data, bufferOffset, shortName, minorVersion );
 
    return true;
 }
 
-bool  PacketGameIdentification::SerializeOut( U8* data, int& bufferOffset ) const
+bool  PacketGameIdentification::SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const
 {
-   PacketGameToServer::SerializeOut( data, bufferOffset );
-   Serialize::Out( data, bufferOffset, gameId );
-   Serialize::Out( data, bufferOffset, name );
-   Serialize::Out( data, bufferOffset, shortName );
+   PacketGameToServer::SerializeOut( data, bufferOffset, minorVersion );
+   Serialize::Out( data, bufferOffset, gameId, minorVersion );
+   Serialize::Out( data, bufferOffset, name, minorVersion );
+   Serialize::Out( data, bufferOffset, shortName, minorVersion );
 
    return true;
 }
@@ -518,13 +518,13 @@ PacketGameplayRawData::~PacketGameplayRawData()
    data = NULL;// pointless
 }*/
 
-bool  PacketGameplayRawData::SerializeIn( const U8* buffer, int& bufferOffset )
+bool  PacketGameplayRawData::SerializeIn( const U8* buffer, int& bufferOffset, int minorVersion )
 {
-   PacketGameToServer::SerializeIn( buffer, bufferOffset );
-   Serialize::In( buffer, bufferOffset, identifier );
-   Serialize::In( buffer, bufferOffset, size );
-   Serialize::In( buffer, bufferOffset, dataType );
-   Serialize::In( buffer, bufferOffset, index );
+   PacketGameToServer::SerializeIn( buffer, bufferOffset, minorVersion );
+   Serialize::In( buffer, bufferOffset, identifier, minorVersion );
+   Serialize::In( buffer, bufferOffset, size, minorVersion );
+   Serialize::In( buffer, bufferOffset, dataType, minorVersion );
+   Serialize::In( buffer, bufferOffset, index, minorVersion );
    assert( size > 0 && size <= MaxBufferSize );
 
    //data = new U8[size + 1];
@@ -535,15 +535,15 @@ bool  PacketGameplayRawData::SerializeIn( const U8* buffer, int& bufferOffset )
    return true;
 }
 
-bool  PacketGameplayRawData::SerializeOut( U8* buffer, int& bufferOffset ) const
+bool  PacketGameplayRawData::SerializeOut( U8* buffer, int& bufferOffset, int minorVersion ) const
 { 
    //assert( size > 0 && size <= MaxBufferSize );// can sometime be used for testing
 
-   PacketGameToServer::SerializeOut( buffer, bufferOffset );
-   Serialize::Out( buffer, bufferOffset, identifier );
-   Serialize::Out( buffer, bufferOffset, size );
-   Serialize::Out( buffer, bufferOffset, dataType );
-   Serialize::Out( buffer, bufferOffset, index );
+   PacketGameToServer::SerializeOut( buffer, bufferOffset, minorVersion );
+   Serialize::Out( buffer, bufferOffset, identifier, minorVersion );
+   Serialize::Out( buffer, bufferOffset, size, minorVersion );
+   Serialize::Out( buffer, bufferOffset, dataType, minorVersion );
+   Serialize::Out( buffer, bufferOffset, index, minorVersion );
 
    memcpy( buffer + bufferOffset, data, size );
    bufferOffset += size;
@@ -565,22 +565,22 @@ void  PacketGameplayRawData::Prep( U16 numBytes, const U8* ptr, int packetIndex 
 ///////////////////////////////////////////////////////////////
 
 
-bool  PacketGame_Notification::SerializeIn( const U8* data, int& bufferOffset )
+bool  PacketGame_Notification::SerializeIn( const U8* data, int& bufferOffset, int minorVersion )
 {
-   PacketGameToServer::SerializeIn( data, bufferOffset );
-   Serialize::In( data, bufferOffset, userUuid );
-   Serialize::In( data, bufferOffset, notificationType );
-   Serialize::In( data, bufferOffset, additionalText );
+   PacketGameToServer::SerializeIn( data, bufferOffset, minorVersion );
+   Serialize::In( data, bufferOffset, userUuid, minorVersion );
+   Serialize::In( data, bufferOffset, notificationType, minorVersion );
+   Serialize::In( data, bufferOffset, additionalText, minorVersion );
 
    return true;
 }
 
-bool  PacketGame_Notification::SerializeOut( U8* data, int& bufferOffset ) const
+bool  PacketGame_Notification::SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const
 {
-   PacketGameToServer::SerializeOut( data, bufferOffset );
-   Serialize::Out( data, bufferOffset, userUuid );
-   Serialize::Out( data, bufferOffset, notificationType );
-   Serialize::Out( data, bufferOffset, additionalText );
+   PacketGameToServer::SerializeOut( data, bufferOffset, minorVersion );
+   Serialize::Out( data, bufferOffset, userUuid, minorVersion );
+   Serialize::Out( data, bufferOffset, notificationType, minorVersion );
+   Serialize::Out( data, bufferOffset, additionalText, minorVersion );
 
    return true;
 }

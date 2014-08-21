@@ -61,7 +61,7 @@ void	KhaanPurchase :: UpdateOutwardPacketList()
       int temp = bufferOffset;
       U16 sizeOfLastWrite = 0;
       bufferOffset += sizeof( sizeOfLastWrite );// reserve space
-      packet->SerializeOut( buffer, bufferOffset ); 
+      packet->SerializeOut( buffer, bufferOffset, minorVersion ); 
 
       sizeOfLastWrite = bufferOffset - temp - sizeof( sizeOfLastWrite );// set aside two bytes
       Serialize::Out( buffer, temp, sizeOfLastWrite );// write in the size

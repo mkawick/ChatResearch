@@ -94,7 +94,7 @@ ClientNetworkWrapper::~ClientNetworkWrapper()
    }
 }
 
-//////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////f////////////
 //////////////////////////////////////////////////////////////////////////
 
 bool     ClientNetworkWrapper::IsConnected( bool isMainServer ) const
@@ -207,7 +207,9 @@ void  ClientNetworkWrapper::Init( const char* serverDNS )
 void     ClientNetworkWrapper::ReconnectAfterTalkingToLoadBalancer()
 {
    PrintFunctionName( __FUNCTION__ );
-   if( IsConnected() == false )
+   bool isConnected = IsConnected();
+   cout << "IsConnected() = " << boolalpha << isConnected << noboolalpha << endl;
+   if( isConnected == false )
    {
       int mainIsPrepared = false;
       for( int i=0; i< ConnectionNames_Num; i++ )
@@ -260,7 +262,9 @@ void     ClientNetworkWrapper::ReconnectAfterTalkingToLoadBalancer()
 void     ClientNetworkWrapper::Disconnect()
 {
    PrintFunctionName( __FUNCTION__ );
-   if( IsConnected() == true )
+   bool isConnected = IsConnected();
+   cout << "Disconnect::isConnected = " << boolalpha << isConnected << noboolalpha << endl;
+   if( isConnected == true )
    {
       for( int i=0; i< ConnectionNames_Num; i++ )
       {
@@ -269,9 +273,13 @@ void     ClientNetworkWrapper::Disconnect()
             continue;
 
          m_fruitadens[ i ]->RegisterPacketHandlerInterface( NULL );
+         cout << "Disconnecting: " << m_fruitadens[ i ]->GetName() << endl;
          m_fruitadens[ i ]->Disconnect();
       }     
    }
+   isConnected = IsConnected();
+   cout << "Disconnect::isConnected final = " << boolalpha << isConnected << noboolalpha << endl;
+
 }
 
 //-----------------------------------------------------------------------------
@@ -486,8 +494,13 @@ void     ClientNetworkWrapper::UpdateNotifications()
          {
          case ClientSideNetworkCallback::NotificationType_AreWeUsingCorrectNetworkVersion:
             {
-               U32 serverVersion = boost::lexical_cast< U32 >( qn.intValue );
-               notify->AreWeUsingCorrectNetworkVersion( GlobalNetworkProtocolVersion == serverVersion );
+               U32 serverMajorVersion = boost::lexical_cast< U32 >( qn.intValue );
+               U32 serverMinorVersion = boost::lexical_cast< U32 >( qn.intValue2 );
+           /*cout << "Server protocol version: " << (int)(packet->versionNumberMajor) << ":" << (int)(packet->versionNumberMinor) << endl;
+               cout << "Client protocol version: " << (int)(NetworkVersionMajor) << ":" << (int)(NetworkVersionMinor) << endl;
+
+               Notification( ClientSideNetworkCallback::NotificationType_AreWeUsingCorrectNetworkVersion, (int)packet->versionNumberMajor, (int)packet->versionNumberMinor );*/
+               notify->AreWeUsingCorrectNetworkVersion( (U32)(NetworkVersionMajor) == serverMajorVersion );
             }
             break;
          case ClientSideNetworkCallback::NotificationType_FriendsUpdate:
@@ -630,7 +643,7 @@ void     ClientNetworkWrapper::UpdateNotifications()
             break;
          case ClientSideNetworkCallback::NotificationType_OtherUsersProfile:
             {
-               map< string, string > profileKeyValues;
+               map< string, BoundedString32 > profileKeyValues;
                while( keyValueIt != qn.genericKeyValuePairs.end() )
                {
                   profileKeyValues.insert( pair< string, string >( keyValueIt->key, keyValueIt->value ) );
@@ -897,6 +910,7 @@ void     ClientNetworkWrapper::CleanupLingeringMemory()
    vector< string > categories;
    GetAssetCategories( categories );
 
+   Threading::MutexLock    locker( m_notificationMutex );
    AssetMapIter it = m_assets.begin();
    while( it != m_assets.end() )
    {
@@ -992,6 +1006,22 @@ void     ClientNetworkWrapper::Notification( int type, SerializedKeyValueVector<
 {
    QueuedNotification qn( type );
    qn.genericKeyValuePairs = strings;
+
+   Threading::MutexLock   locker( m_notificationMutex );
+   m_notifications.push( qn );
+}
+
+
+void     ClientNetworkWrapper::Notification( int type, SerializedKeyValueVector< BoundedString32 >& strings )
+{
+   QueuedNotification qn( type );
+
+   SerializedKeyValueVector< BoundedString32 >::const_KVIterator it = strings.begin();
+   while( it != strings.end() )
+   {
+      qn.genericKeyValuePairs.insert( it->key, it->value );
+      it++;
+   }
 
    Threading::MutexLock   locker( m_notificationMutex );
    m_notifications.push( qn );
@@ -2839,7 +2869,7 @@ bool     ClientNetworkWrapper::RequestListOfAssetCategories()
 
 //-----------------------------------------------------------------------------
 
-bool     ClientNetworkWrapper::RequestListOfAssets( const string& category, int platformId )
+bool     ClientNetworkWrapper::RequestListOfAssets( const string& category, int platformId, const string fileCompression )
 {
    PrintFunctionName( __FUNCTION__ );
    PacketAsset_GetListOfAssets assetRequest;
@@ -2847,13 +2877,15 @@ bool     ClientNetworkWrapper::RequestListOfAssets( const string& category, int 
    assetRequest.loginKey = m_loginKey;
    assetRequest.platformId = platformId;
    assetRequest.assetCategory = category;
+   
+   assetRequest.compressionType = fileCompression.c_str();
 
    return SerializePacketOut( &assetRequest );
 }
 
 //-----------------------------------------------------------------------------
 
-bool     ClientNetworkWrapper::RequestAssetByHash( const string& assetHash )
+bool     ClientNetworkWrapper::RequestAssetByHash( const string& assetHash, int fileVersion )
 {
    PrintFunctionName( __FUNCTION__ );
    AssetInfoExtended asset;
@@ -2864,13 +2896,14 @@ bool     ClientNetworkWrapper::RequestAssetByHash( const string& assetHash )
    assetRequest.uuid = m_uuid;
    assetRequest.loginKey = m_loginKey;
    assetRequest.assetHash = assetHash;
+   assetRequest.fileVersion = fileVersion;
 
    return SerializePacketOut( &assetRequest );
 }
 
 //-----------------------------------------------------------------------------
 
-bool     ClientNetworkWrapper::RequestAssetByName( const string& assetName )
+bool     ClientNetworkWrapper::RequestAssetByName( const string& assetName, int fileVersion )
 {
    PrintFunctionName( __FUNCTION__ );
    AssetInfoExtended asset;
@@ -2882,13 +2915,14 @@ bool     ClientNetworkWrapper::RequestAssetByName( const string& assetName )
    assetRequest.uuid = m_uuid;
    assetRequest.loginKey = m_loginKey;
    assetRequest.assetHash = assetHash ;
+   assetRequest.fileVersion = fileVersion;
 
    return SerializePacketOut( &assetRequest );
 }
 
 //-----------------------------------------------------------------------------
 
-bool     ClientNetworkWrapper::RequestAvatarById( U32 id )
+bool     ClientNetworkWrapper::RequestAvatarById( U32 id, int fileVersion  )
 {
    PrintFunctionName( __FUNCTION__ );
    AssetInfoExtended asset;
@@ -2902,11 +2936,12 @@ bool     ClientNetworkWrapper::RequestAvatarById( U32 id )
    PacketAsset_RequestAsset assetRequest;
    assetRequest.uuid = m_uuid;
    assetRequest.loginKey = m_loginKey;
-   assetRequest.assetHash = assetHash ;
+   assetRequest.assetHash = assetHash;
+
+   assetRequest.fileVersion = fileVersion;
 
    return SerializePacketOut( &assetRequest );
 }
-
 //-----------------------------------------------------------------------------
 
 bool     ClientNetworkWrapper::RegisterDevice( const string& playdekUuid, const string& deviceName, PlatformType platformId, const string& vendorProvidedDeviceId )
@@ -3036,8 +3071,9 @@ bool     ClientNetworkWrapper::SendCheat( const string& cheatText )
 
 //-----------------------------------------------------------------------------
 
-bool     ClientNetworkWrapper::SerializePacketOut( BasePacket* packet ) const 
+bool     ClientNetworkWrapper::SerializePacketOut( BasePacket* packet ) const
 {
+   cout << "SerializePacketOut: (" << (U32)packet->packetType << ":" << (U32)packet->packetSubType << ")" << endl;
    packet->gameInstanceId = m_selectedGame;
    packet->gameProductId = m_gameProductId;
 
@@ -3057,7 +3093,9 @@ bool     ClientNetworkWrapper::SerializePacketOut( BasePacket* packet ) const
       // for initial callbacks, we may not be connected
       //assert( m_fruitadens[ ConnectionNames_Main ]->IsConnected() );
       // TODO.. branch on asset requests.. otherwise, main
-      return m_fruitadens[ ConnectionNames_Main ]->SerializePacketOut( packet );
+      bool sendResult =  m_fruitadens[ ConnectionNames_Main ]->SerializePacketOut( packet );
+      cout << "sendResult:" << sendResult << endl;
+      return sendResult;
    }
 }
 
@@ -3084,6 +3122,7 @@ void      ClientNetworkWrapper::Update()
    }
    ExpireThreadPerformanceBoost();
 
+   //cout << ".";
    //return Fruitadens::MainLoop_InputProcessing();
 }
 
@@ -3178,6 +3217,9 @@ void     ClientNetworkWrapper::LoadBalancedNewAddress( const PacketRerouteReques
 
 bool     ClientNetworkWrapper::HandlePacketReceived( BasePacket* packetIn )
 {
+   if( packetIn == NULL )
+      return false;
+
    //PrintFunctionName( __FUNCTION__ );// duplicitous
    PacketCleaner cleaner( packetIn );
 
@@ -3196,10 +3238,11 @@ bool     ClientNetworkWrapper::HandlePacketReceived( BasePacket* packetIn )
          case BasePacket::BasePacket_Hello:
             {
                PacketHello* packet = static_cast< PacketHello* >( packetIn );
-               cout << "Server protocol version: " << (int)(packet->versionNumber) << endl;
-               cout << "Client protocol version: " << (int)(GlobalNetworkProtocolVersion) << endl;
+   
+               cout << "Server protocol version: " << (int)(packet->versionNumberMajor) << ":" << (int)(packet->versionNumberMinor) << endl;
+               cout << "Client protocol version: " << (int)(NetworkVersionMajor) << ":" << (int)(NetworkVersionMinor) << endl;
 
-               Notification( ClientSideNetworkCallback::NotificationType_AreWeUsingCorrectNetworkVersion, (int)packet->versionNumber );
+               Notification( ClientSideNetworkCallback::NotificationType_AreWeUsingCorrectNetworkVersion, (int)packet->versionNumberMajor, (int)packet->versionNumberMinor );
             }
             break;
          case BasePacket::BasePacket_RerouteRequestResponse:
@@ -3320,12 +3363,12 @@ bool     ClientNetworkWrapper::HandlePacketReceived( BasePacket* packetIn )
                   PacketLoginToClient* login = static_cast<PacketLoginToClient*>( packetIn );
                   if( login->wasLoginSuccessful == true )
                   {
-                     m_userName = login->userName;
+                     m_userName = login->userName.c_str();
                      m_uuid = login->uuid.c_str();
                      //m_email = login->email;
                      m_connectionId = login->connectionId;
-                     m_lastLoggedOutTime = login->lastLogoutTime;
-                     m_loginKey = login->loginKey;
+                     m_lastLoggedOutTime = login->lastLogoutTime.c_str();
+                     m_loginKey = login->loginKey.c_str();
                      m_isLoggedIn = true;
                   }
                   else
@@ -3368,12 +3411,12 @@ bool     ClientNetworkWrapper::HandlePacketReceived( BasePacket* packetIn )
                   if( profile->userUuid == m_uuid )
                   {
                      notifyThatSelfUpdated = true;
-                     m_userName = profile->userName;
-                     m_email = profile->email;
+                     m_userName = profile->userName.c_str();
+                     m_email = profile->email.c_str();
 
                      m_languageId = profile->languageId;
                      m_avatarId = profile->iconId;
-                     m_motto = profile->motto;
+                     m_motto = profile->motto.c_str();
                      m_showWinLossRecord = profile->showWinLossRecord;
                      m_marketingOptOut = profile->marketingOptOut;
                      m_showGenderProfile = profile->showGenderProfile;
@@ -3897,7 +3940,7 @@ void     ClientNetworkWrapper::HandleListOfContacts( const PacketContact_GetList
       BasicUser bu;
       const FriendInfo& fi = it->value;
       bu.isOnline = fi.isOnline;
-      bu.userName = fi.userName;
+      bu.userName = fi.userName.c_str();
       bu.UUID = it->key;
       bu.avatarId = fi.avatarId;
       bu.notesAboutThisUser = fi.notesAboutThisUser.c_str();
@@ -3921,7 +3964,7 @@ void     ClientNetworkWrapper::HandleUserOnlineStatusChange( const PacketContact
    {
       if( itFriends->key == packet->uuid )
       {
-         itFriends->value.userName = packet->friendInfo.userName;
+         itFriends->value.userName = packet->friendInfo.userName.c_str();
          itFriends->value.isOnline = packet->friendInfo.isOnline;
          itFriends->value.avatarId = packet->friendInfo.avatarId;
          updated = true;
@@ -4020,11 +4063,11 @@ void     ClientNetworkWrapper::HandleSearchForUserResults( const PacketContact_S
       const FriendInfo& friendly = it->value; // friend is a keyword
 
       BasicUser bu;
-      bu.userName = friendly.userName;
+      bu.userName = friendly.userName.c_str();
       bu.isOnline = friendly.isOnline;
       bu.UUID = it->key;
       m_lastUserSearch.insert( it->key, bu );
-      cout << " **found user: " << friendly.userName << endl;
+      cout << " **found user: " << friendly.userName.c_str() << endl;
       cout << "   uuid: " << bu.UUID << endl;
       it++;
    }
@@ -4039,7 +4082,7 @@ void     ClientNetworkWrapper::HandleListOfAggregatePurchases( const PacketListO
    Threading::MutexLock    locker( m_notificationMutex );
 
    if( m_uuid.size() == 0 )
-      m_uuid = packet->userUuid; // correcting for occassional order of packets arriving.
+      m_uuid = packet->userUuid.c_str(); // correcting for occassional order of packets arriving.
    if( packet->userUuid == m_uuid )
    {
       m_purchases = packet->purchases;
@@ -4047,7 +4090,7 @@ void     ClientNetworkWrapper::HandleListOfAggregatePurchases( const PacketListO
    else
    {
       m_otherUsersPurchases = packet->purchases;
-      m_otherUserPurchaseUuid = packet->userUuid;
+      m_otherUserPurchaseUuid = packet->userUuid.c_str();
    }
 }
 
@@ -4103,9 +4146,9 @@ void     ClientNetworkWrapper::HandleBeingAddedByServerToChatChannel( const Pack
    {
       ChatChannel newChannel;
       newChannel.uuid = chat->channelUuid.c_str();
-      newChannel.channelName = chat->gameName;
+      newChannel.channelName = chat->gameName.c_str();
       newChannel.gameInstanceId = chat->gameId;
-      newChannel.channelDetails= chat->gameName;
+      newChannel.channelDetails= chat->gameName.c_str();
       newChannel.userList = chat->userList;
       AddChatChannel( newChannel );
    }
@@ -4325,10 +4368,10 @@ void     ClientNetworkWrapper::HandleChatChannelUpdate( BasePacket* packetIn )
       {
          ChatChannel newChannel;
          newChannel.uuid = channelIt->value.channelUuid.c_str();
-         newChannel.channelName = channelIt->value.channelName;
+         newChannel.channelName = channelIt->value.channelName.c_str();
          newChannel.gameProductId = channelIt->value.gameProduct;
          newChannel.gameInstanceId = channelIt->value.gameId;
-         newChannel.channelDetails = channelIt->value.channelName;
+         newChannel.channelDetails = channelIt->value.channelName.c_str();
          newChannel.userList = channelIt->value.userList;// super expensive
          AddChatChannel( newChannel );
          channelIt++;
@@ -4559,6 +4602,7 @@ bool     ClientNetworkWrapper::GetAsset( const string& category, const string& h
 bool     ClientNetworkWrapper::UpdateAssetData( const string& hash, AssetInfoExtended& asset )
 {
    PrintFunctionName( __FUNCTION__ );
+   Threading::MutexLock    locker( m_notificationMutex );
    AssetMapIter it = m_assets.begin();
    while( it != m_assets.end() )
    {
@@ -4584,6 +4628,9 @@ bool     ClientNetworkWrapper::UpdateAssetData( const string& hash, AssetInfoExt
 
 bool  NetworkLayerExtended::HandlePacketReceived( BasePacket* packetIn )
 {
+   if( packetIn == NULL )
+      return false;
+
    bool wasHandled = false;
    switch( packetIn->packetType )
    {

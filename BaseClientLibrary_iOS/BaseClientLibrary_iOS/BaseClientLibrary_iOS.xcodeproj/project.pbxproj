@@ -21,6 +21,7 @@
 /* End PBXAggregateTarget section */
 
 /* Begin PBXBuildFile section */
+		34A5BC1D1989519D005147E0 /* ServerConstants.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 34A5BC1C1989519D005147E0 /* ServerConstants.cpp */; };
 		34E9AC04197DAE4A00184045 /* UserStatsPacket.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 34E9AC02197DAE4A00184045 /* UserStatsPacket.cpp */; };
 		34EA684D17611D8B00F07E19 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 34EA684C17611D8B00F07E19 /* Foundation.framework */; };
 		34EA685217611D8B00F07E19 /* BaseClientLibrary_iOS.h in CopyFiles */ = {isa = PBXBuildFile; fileRef = 34EA685117611D8B00F07E19 /* BaseClientLibrary_iOS.h */; };
@@ -65,6 +66,7 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		34A5BC1C1989519D005147E0 /* ServerConstants.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = ServerConstants.cpp; sourceTree = "<group>"; };
 		34E9AC01197DAE4A00184045 /* CommonTypes.inl */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = CommonTypes.inl; sourceTree = "<group>"; };
 		34E9AC02197DAE4A00184045 /* UserStatsPacket.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = UserStatsPacket.cpp; sourceTree = "<group>"; };
 		34E9AC03197DAE4A00184045 /* UserStatsPacket.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = UserStatsPacket.h; sourceTree = "<group>"; };
@@ -198,6 +200,7 @@
 				34EA686417611DD400F07E19 /* DataTypes.h */,
 				34EA688417611DD400F07E19 /* Platform.h */,
 				34EA688717611DD400F07E19 /* ServerConstants.h */,
+				34A5BC1C1989519D005147E0 /* ServerConstants.cpp */,
 				34EA688817611DD400F07E19 /* ServerType.h */,
 			);
 			name = NetworkCommon;
@@ -365,6 +368,7 @@
 				34EA685417611D8B00F07E19 /* BaseClientLibrary_iOS.m in Sources */,
 				34EA689517611DD400F07E19 /* Thread.cpp in Sources */,
 				34EA689D17611DD400F07E19 /* Fruitadens.cpp in Sources */,
+				34A5BC1D1989519D005147E0 /* ServerConstants.cpp in Sources */,
 				34EA689F17611DD400F07E19 /* BasePacket.cpp in Sources */,
 				34EA68A017611DD400F07E19 /* ChatPacket.cpp in Sources */,
 				34EA68A117611DD400F07E19 /* GamePacket.cpp in Sources */,

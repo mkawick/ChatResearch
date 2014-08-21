@@ -44,6 +44,7 @@ local.properties
 # Build results
 
 [Dd]ebug/
+[Dd]ebugNetworkVersioning/
 [Rr]elease/
 x64/
 build/

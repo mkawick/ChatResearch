@@ -11,7 +11,8 @@
 
 //#define _MEMLEAK_TESTING_
 
-extern const U8   GlobalNetworkProtocolVersion;
+extern const U8   NetworkVersionMajor;
+extern const U8   NetworkVersionMinor;
 
 ///////////////////////////////////////////////////////////////
 
@@ -63,13 +64,15 @@ public:
       BasePacket_CommsHandshake,
       BasePacket_RerouteRequest,
       BasePacket_RerouteRequestResponse,
-      BasePacket_QOS
+      BasePacket_QOS,
+      BasePacket_TestOnly
    };
 public:
    BasePacket( int packet_type = PacketType_Base, int packet_sub_type = BasePacket_Type ) :
       packetType( packet_type ),
       packetSubType( packet_sub_type ),
-      versionNumber( GlobalNetworkProtocolVersion ),
+      versionNumberMajor( NetworkVersionMajor ),
+      versionNumberMinor( NetworkVersionMinor ),
       gameProductId( 0 ),
       //packetSize( 0 ),
       gameInstanceId( 0 )
@@ -88,20 +91,21 @@ cout << "BasePacket ~count: " << m_counter << endl;
       gameInstanceId = 0;// for a place to set breakpoints.
    }
 
-   virtual bool  SerializeIn( const U8* data, int& bufferOffset );
-   virtual bool  SerializeOut( U8* data, int& bufferOffset ) const;
+   virtual bool  SerializeIn( const U8* data, int& bufferOffset, int minorVersion );
+   virtual bool  SerializeOut( U8* data, int& bufferOffset, int minorVersion = NetworkVersionMinor ) const;
 
    U8       packetType;
    U8       packetSubType;
-   U8       versionNumber;
    U8       gameProductId;
-   //U16      packetSize;
+   U8       versionNumberMajor;
+   U8       versionNumberMinor;
+   U8       padding[3];// this will not be serialized
    U32      gameInstanceId;
 #ifdef _MEMORY_TEST_
    static int      m_counter;
 #endif
 
-   static int   GetSize() { return sizeof( BasePacket ) - sizeof( long*); }
+   static int   GetSize();
 };
 
 ///////////////////////////////////////////////////////////////
@@ -111,6 +115,11 @@ class PacketHello : public BasePacket
 public:
    PacketHello(): BasePacket( PacketType_Base, BasePacket::BasePacket_Hello ) {}
    // serialize by base is good enough
+
+   bool  SerializeIn( const U8* data, int& bufferOffset, int minorVersion );
+   bool  SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const;
+
+   //string test;
 };
 
 ///////////////////////////////////////////////////////////////
@@ -120,8 +129,8 @@ class PacketCommsHandshake : public BasePacket
 public:
    PacketCommsHandshake(): BasePacket( PacketType_Base, BasePacket::BasePacket_CommsHandshake ), serverHashedKey( 0 ) {}
 
-   bool  SerializeIn( const U8* data, int& bufferOffset );
-   bool  SerializeOut( U8* data, int& bufferOffset ) const;
+   bool  SerializeIn( const U8* data, int& bufferOffset, int minorVersion );
+   bool  SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const;
 
    U32   serverHashedKey;
 };
@@ -133,8 +142,8 @@ class PacketRerouteRequest : public BasePacket
 public:
    PacketRerouteRequest(): BasePacket( PacketType_Base, BasePacket::BasePacket_RerouteRequest ) {}
 
-   bool  SerializeIn( const U8* data, int& bufferOffset );
-   bool  SerializeOut( U8* data, int& bufferOffset ) const;
+   bool  SerializeIn( const U8* data, int& bufferOffset, int minorVersion );
+   bool  SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const;
 };
 
 ///////////////////////////////////////////////////////////////
@@ -151,9 +160,10 @@ public:
 
    PacketRerouteRequestResponse(): BasePacket( PacketType_Base, BasePacket::BasePacket_RerouteRequestResponse ) {}
 
-   bool  SerializeIn( const U8* data, int& bufferOffset );
-   bool  SerializeOut( U8* data, int& bufferOffset ) const;
+   bool  SerializeIn( const U8* data, int& bufferOffset, int minorVersion );
+   bool  SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const;
 
+   //-----------------------------
    struct Address
    {
       string   address;
@@ -161,9 +171,11 @@ public:
       U16      port;
       U16      whichLocationId;
 
-      bool  SerializeIn( const U8* data, int& bufferOffset );
-      bool  SerializeOut( U8* data, int& bufferOffset ) const;
+      bool  SerializeIn( const U8* data, int& bufferOffset, int minorVersion );
+      bool  SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const;
    };
+   
+   //-----------------------------
 
    SerializedVector< Address > locations;
 };
@@ -176,8 +188,8 @@ public:
    Packet_QOS_ReportToClient(): BasePacket( PacketType_Base, BasePacket::BasePacket_QOS ),
                errorState( ErrorState_None ) {}
 
-   bool  SerializeIn( const U8* data, int& bufferOffset );
-   bool  SerializeOut( U8* data, int& bufferOffset ) const;
+   bool  SerializeIn( const U8* data, int& bufferOffset, int minorVersion );
+   bool  SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const;
 
    enum ErrorState
    {
@@ -194,6 +206,20 @@ public:
    int      errorState;
    int      param1;
    int      param2;
+};
+
+///////////////////////////////////////////////////////////////
+
+class PacketBase_TestOnly : public BasePacket
+{
+public:
+   PacketBase_TestOnly(): BasePacket( PacketType_Base, BasePacket::BasePacket_TestOnly ), testNo( 0 ) {}
+
+   bool  SerializeIn( const U8* data, int& bufferOffset, int minorVersion );
+   bool  SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const;
+
+   U32      testNo;
+   string   testString;
 };
 
 ///////////////////////////////////////////////////////////////
@@ -235,10 +261,10 @@ class PacketFriendsList : public PacketUserInfo
 public:
    PacketFriendsList( int packet_type = PacketType_UserInfo, int packet_sub_type = InfoType_FriendsList ) : PacketUserInfo( packet_type, packet_sub_type ){  }
 
-   bool  SerializeIn( const U8* data, int& bufferOffset );
-   bool  SerializeOut( U8* data, int& bufferOffset ) const;
+   bool  SerializeIn( const U8* data, int& bufferOffset, int minorVersion );
+   bool  SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const;
 
-   SerializedKeyValueVector< string > friendList;
+   SerializedKeyValueVector< UuidString > friendList;
 };
 
 ///////////////////////////////////////////////////////////////
@@ -257,8 +283,8 @@ class PacketGroupsList : public PacketUserInfo
 public:
    PacketGroupsList( int packet_type = PacketType_UserInfo, int packet_sub_type = InfoType_GroupsList ) : PacketUserInfo( packet_type, packet_sub_type ){  }
 
-   bool  SerializeIn( const U8* data, int& bufferOffset );
-   bool  SerializeOut( U8* data, int& bufferOffset ) const;
+   bool  SerializeIn( const U8* data, int& bufferOffset, int minorVersion );
+   bool  SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const;
 
    //SerializedKeyValueVector< ChannelInfo >  groupList;
 };
@@ -293,11 +319,11 @@ public:
 public:
    PacketUserStateChange( int packet_type = PacketType_UserStateChange, int packet_sub_type = StateChangeType_None ): BasePacket( packet_type, packet_sub_type ) {}
 
-   bool  SerializeIn( const U8* data, int& bufferOffset );
-   bool  SerializeOut( U8* data, int& bufferOffset ) const;
+   bool  SerializeIn( const U8* data, int& bufferOffset, int minorVersion );
+   bool  SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const;
 
-   UuidString   uuid;
-   string   username;
+   UuidString        uuid;
+   BoundedString80   username;
 };
 
 class PacketUserStateChange_Login : public PacketUserStateChange
@@ -305,11 +331,11 @@ class PacketUserStateChange_Login : public PacketUserStateChange
 public:
    PacketUserStateChange_Login(): PacketUserStateChange( PacketType_UserStateChange, StateChangeType_Login ) {}
 
-   bool  SerializeIn( const U8* data, int& bufferOffset ) { return PacketUserStateChange::SerializeIn( data, bufferOffset ); }
-   bool  SerializeOut( U8* data, int& bufferOffset ) const { return PacketUserStateChange::SerializeOut( data, bufferOffset ); }
+   bool  SerializeIn( const U8* data, int& bufferOffset, int minorVersion ) { return PacketUserStateChange::SerializeIn( data, bufferOffset, minorVersion ); }
+   bool  SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const { return PacketUserStateChange::SerializeOut( data, bufferOffset, minorVersion ); }
 
-   UuidString   uuid;
-   string   username;
+   UuidString        uuid;
+   BoundedString80   username;
 };
 
 class PacketUserStateChange_Logout : public PacketUserStateChange
@@ -317,11 +343,11 @@ class PacketUserStateChange_Logout : public PacketUserStateChange
 public:
    PacketUserStateChange_Logout(): PacketUserStateChange( PacketType_UserStateChange, StateChangeType_Logout ) {}
 
-   bool  SerializeIn( const U8* data, int& bufferOffset ) { return PacketUserStateChange::SerializeIn( data, bufferOffset ); }
-   bool  SerializeOut( U8* data, int& bufferOffset ) const { return PacketUserStateChange::SerializeOut( data, bufferOffset ); }
+   bool  SerializeIn( const U8* data, int& bufferOffset, int minorVersion ) { return PacketUserStateChange::SerializeIn( data, bufferOffset, minorVersion ); }
+   bool  SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const { return PacketUserStateChange::SerializeOut( data, bufferOffset, minorVersion ); }
 
-   UuidString   uuid;
-   string   username;
+   UuidString        uuid;
+   BoundedString80   username;
 };
 
 ///////////////////////////////////////////////////////////////
@@ -336,10 +362,10 @@ class PacketGatewayWrapper : public BasePacket
 public:
    PacketGatewayWrapper( int packet_type = PacketType_GatewayWrapper, int packet_sub_type = 0  ): BasePacket( packet_type, packet_sub_type ), connectionId( -1 ), size( 0 ), pPacket( NULL ) {}
 
-   bool  SerializeIn( const U8* data, int& bufferOffset );
-   bool  SerializeOut( U8* data, int& bufferOffset ) const;
+   bool  SerializeIn( const U8* data, int& bufferOffset, int minorVersion );
+   bool  SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const;
 
-   bool  HeaderSerializeIn( const U8* data, int bufferOffset );// NOTE: we pass by value here because we do not want to modify variables passed in.
+   bool  HeaderSerializeIn( const U8* data, int bufferOffset, int minorVersion );// NOTE: we pass by value here because we do not want to modify variables passed in.
 
    enum { BufferSize=12*1024 };
    U32         connectionId;
@@ -494,12 +520,12 @@ public:
    //PacketErrorReport( int packet_sub_type = ErrorType_Generic ): BasePacket( PacketType_ErrorReport ), errorCode( packet_sub_type ), statusInfo( 0 ) {}
    PacketErrorReport( int packet_sub_type = ErrorType_Generic, int subType = 0 ): BasePacket( PacketType_ErrorReport ), errorCode( packet_sub_type ), statusInfo( subType ) {}
 
-   bool  SerializeIn( const U8* data, int& bufferOffset );
-   bool  SerializeOut( U8* data, int& bufferOffset ) const;
+   bool  SerializeIn( const U8* data, int& bufferOffset, int minorVersion );
+   bool  SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const;
 
-   U16      errorCode;
-   U16      statusInfo;
-   string   text;
+   U16               errorCode;
+   U16               statusInfo;
+   BoundedString140  text;
 };
 
 ///////////////////////////////////////////////////////////////
@@ -511,3 +537,5 @@ public:
 ///////////////////////////////////////////////////////////////
 
 bool  PackageForServerIdentification( const string& serverName, const string& ipAddress, const string& externalIpAddress, U32 serverId, U8 serverType, U16 serverPort, U8 gameProductId, bool isGameServer, bool isController, bool requiresWrapper, U8 gatewayType, BasePacket** packet );
+
+///////////////////////////////////////////////////////////////

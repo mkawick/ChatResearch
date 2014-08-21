@@ -146,51 +146,6 @@ bool  ConnectionToUser::LoginResult( const PacketDbQueryResult* dbResult )
 
 bool  ConnectionToUser::StoreProductInfo( PacketDbQueryResult* dbResult )
 {
-   /*int numProducts = dbResult->bucket.bucket.size();
-               
-      PacketListOfUserPurchases* purchasePacket = new PacketListOfUserPurchases();
-      purchasePacket->isAllProducts = false;
-      if( dbResult->meta == "all" )
-         purchasePacket->isAllProducts = true;
-      purchasePacket->platformId = 0;
-
-      if( purchasePacket->isAllProducts == true )
-      {
-         ProductTable            enigma( dbResult->bucket );
-         ProductTable::iterator  it = enigma.begin();
-         while( it != enigma.end() )
-         {
-            ProductTable::row       row = *it++;
-
-            PurchaseEntry pe;
-            pe.productUuid =     row[ TableProduct::Column_name ];
-            pe.name =               row[ TableProduct::Column_filter_name ];
-            purchasePacket->purchases.push_back( pe );
-         }
-      }
-      else
-      {
-         
-      }
-
-      SendPacketToGateway( purchasePacket, m_connectionId );
-      */
- /*  ProductJoinUserProductTable            enigma( dbResult->bucket );
-   ProductJoinUserProductTable::iterator  it = enigma.begin();
-   while( it != enigma.end() )
-   {
-      ProductJoinUserProductTable::row       row = *it++;
-
-
-      int id =          boost::lexical_cast< int >  ( row[ TableProductJoinUserProduct::Column_id ] );
-
-      string name =           row[ TableProductJoinUserProduct::Column_filter_name ];
-      string uuid =           row[ TableProductJoinUserProduct::Column_uuid ];
-      float quantity =  boost::lexical_cast< float >( row[ TableProductJoinUserProduct::Column_num_purchased ] );
-
-      AddToProductsOwned( id, name, uuid, quantity );
-   }*/
-
    return true;
 }
 
@@ -258,17 +213,17 @@ void  ConnectionToUser::SaveUpdatedProfile( const PacketUpdateUserProfile* profi
       // some fields may be blank
       if( profileUpdate->userName.size() > 0 )
       {
-         m_userName =                     profileUpdate->userName;
+         m_userName =                     profileUpdate->userName.c_str();
       }
       //userUuid =                       profileUpdate->userUuid;
       if( profileUpdate->email.size() > 0 )
       {
-         m_email =                        profileUpdate->email;
+         m_email =                        profileUpdate->email.c_str();
       }
 
       if( profileUpdate->passwordHash.size() > 0 )
       {
-         m_passwordHash =                 profileUpdate->passwordHash;
+         m_passwordHash =                 profileUpdate->passwordHash.c_str();
       }
    }
    
@@ -831,7 +786,7 @@ bool     ConnectionToUser:: StoreUserPurchases( const PacketListOfUserAggregateP
 void  ConnectionToUser:: AddItemToProductTable( const PurchaseEntryExtended& purchaseEntry )
 {
    ProductInfo pi;
-   pi.name = purchaseEntry.name;
+   pi.name = purchaseEntry.name.c_str();
    pi.vendorUuid = purchaseEntry.productUuid.c_str();
    std::transform( pi.vendorUuid.begin(), pi.vendorUuid.end(), pi.vendorUuid.begin(), ::tolower );
    // productUuid .. I don't know what to do with this.
@@ -1306,8 +1261,14 @@ bool     ConnectionToUser:: AddToProductsOwned( int productDbId, const string& l
    }
    else
    {
+      ProductInfo pi;
+      m_userManager->GetProductByProductId( productDbId, pi );
+      if( pi.isHidden == true )
+         return false;
+
       ProductBrief brief;
       brief.productDbId = productDbId;
+      
       brief.localizedName = m_userManager->GetStringLookup()->GetString( lookupName, m_languageId );
 
       brief.vendorUuid = vendorUuid;
@@ -1477,13 +1438,13 @@ bool     ConnectionToUser:: UpdateProfile( const PacketUpdateSelfProfile* update
       if ( updateProfileRequest->languageId >= LanguageList_english && updateProfileRequest->languageId < LanguageList_count )
          m_languageId = updateProfileRequest->languageId;
 
-      if( updateProfileRequest->motto.size() && updateProfileRequest->motto != m_userMotto )
-         m_userMotto = updateProfileRequest->motto;
-      if( updateProfileRequest->userName.size() && updateProfileRequest->userName != m_userName )
-         m_userName = updateProfileRequest->userName;
+      if( updateProfileRequest->motto.size() && updateProfileRequest->motto.c_str() != m_userMotto )
+         m_userMotto = updateProfileRequest->motto.c_str();
+      if( updateProfileRequest->userName.size() && updateProfileRequest->userName.c_str() != m_userName )
+         m_userName = updateProfileRequest->userName.c_str();
 
-      if( updateProfileRequest->email.size() && updateProfileRequest->email != m_email )
-         m_email = updateProfileRequest->email;
+      if( updateProfileRequest->email.size() && updateProfileRequest->email.c_str() != m_email )
+         m_email = updateProfileRequest->email.c_str();
 
       if( updateProfileRequest->showWinLossRecord == false ||
             updateProfileRequest->showWinLossRecord == true )

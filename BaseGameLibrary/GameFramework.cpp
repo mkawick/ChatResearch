@@ -525,7 +525,8 @@ bool  GameFramework::Run()
    cout << "ServerId: " << GetServerId() << endl;
    cout << "Product Id: " << (int) GetGameProductId() << endl;
    cout << "Db: " << m_dbIpAddress << ":" << m_dbPort << endl;
-   cout << "Network protocol version: " << (int)GlobalNetworkProtocolVersion << endl;
+   cout << "Network protocol version: " << (int)NetworkVersionMajor << ":" << (int)NetworkVersionMinor << endl;
+   
    cout << "------------------------------------------------------------------" << endl << endl << endl;
 
    //----------------------------------------------------------------

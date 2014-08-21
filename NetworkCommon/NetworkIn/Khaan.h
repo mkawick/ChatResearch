@@ -50,7 +50,7 @@ class BasePacket;
 class Khaan : public ChainedInterface < BasePacket* >
 {
 public:
-   Khaan();
+   
 	Khaan( int socketId, bufferevent* be, int connectionId = 0 );
 	virtual ~Khaan();
 
@@ -64,6 +64,7 @@ public:
 
 	//-----------------------------------------------
 
+   bool           IsConnected() const { return m_isDisconnected == false; }
 	U32				GetSocketId() const { return m_socketId; }
 	bufferevent*	GetBufferEvent() const { return m_bufferEvent; }
 
@@ -74,6 +75,13 @@ public:
    U16            GetPort() const { return m_listeningPort; }
 
    time_t         GetConnectionTime() const { return m_timeOfConnection; }
+
+   void           SetTimeForDeletion( time_t& currentTime ) { m_timeOfDisconnection = currentTime; }
+   time_t         GetDisconnectTime() const { return m_timeOfDisconnection; }
+   bool           HasDisconnected() const { return m_timeOfDisconnection != 0; }
+   bool           HasDeleteTimeElapsed( time_t& currentTime, int testTime = 5 ) const ;
+   
+   void           CloseConnection();
 	
 	//-----------------------------------------------
 
@@ -98,13 +106,14 @@ public:
 
    int	         SendData( const U8* buffer, int length );
    static void    SignalledUpdate( evutil_socket_t fd, short what, void *arg );
+
+   virtual void   DenyAllFutureData();
 protected:
    
    static void    OnDataAvailable( struct bufferevent* bev, void* This );
    static void	   OnSocketError( struct bufferevent* bev, short what, void* This );
    static void    OnDataWritten( struct bufferevent *bev, void *This );
    void           FlushReadBuffer();
-   void           CloseConnection();
 
    bool           HandleTelnetModeData( const U8* data, int length );
    void           SendTelnetInstructions();
@@ -116,10 +125,12 @@ protected:
    U16            m_listeningPort;
 
    time_t         m_timeOfConnection;
+   time_t         m_timeOfDisconnection;
    U32            m_maxBytesToSend;
 
    bool           m_useLibeventToSend;
    bool           m_criticalFailure;
+   bool           m_denyAllFutureData;
 
    U8*            m_outboundBuffer;
 
@@ -128,11 +139,17 @@ protected:
    bool           m_isExpectingMoreDataInPreviousPacket;
    int            m_expectedBytesReceivedSoFar;
    int            m_expectedBytes;
+   U8             m_versionNumberMinor;
    U8             m_tempBuffer[ MaxBufferSize ];
 
 
    deque< BasePacket* > m_packetsOut;
    deque< BasePacket* > m_packetsIn;//ToBeProcessed;
+
+private:
+   Khaan();
+   Khaan( const Khaan& );
+   const Khaan& operator = ( const Khaan& );
 };
 
 ///////////////////////////////////////////////////////////////

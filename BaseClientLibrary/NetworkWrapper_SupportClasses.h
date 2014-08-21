@@ -161,7 +161,7 @@ struct AssetInfoExtended : public AssetInfo
    bool  IsDataValid() const { if( data && size ) return true; return false; }
    void  MoveData( AssetInfoExtended& source );
 
-   bool  SerializeIn( const U8* data, int& bufferOffset ) { return false; } // do not serialize
+   bool  SerializeIn( const U8* data, int& bufferOffset, int minorVersion ) { return false; } // do not serialize
    bool  SerializeOut( U8* data, int& bufferOffset ) const { return false; }
 
    // loading from the network

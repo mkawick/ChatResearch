@@ -30,6 +30,7 @@ public:
    void     Init();
 
    void     ServerWasIdentified( IChainedInterface* khaan );
+   void     InputRemovalInProgress( IChainedInterface * );
    bool     AddInputChainData( BasePacket* packet, U32 connectionId );
 
    UserContact* GetUser( U32 userId );

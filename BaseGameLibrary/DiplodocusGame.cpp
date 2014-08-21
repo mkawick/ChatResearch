@@ -46,8 +46,15 @@ void     DiplodocusGame::AddTimer( U32 timerId, U32 callbackTimeMs )
 
 void     DiplodocusGame::InputRemovalInProgress( IChainedInterface* chainedInput )
 {
-   cout << "Gateway has disconnected" << endl;
+   KhaanGame* khaan = static_cast< KhaanGame* >( chainedInput );
 
+   SetupClientWaitingToBeRemoved( khaan );
+
+   string currentTime = GetDateInUTC();
+   string printer = "Client disconnection at time:" + currentTime + " from " + inet_ntoa( khaan->GetIPAddress().sin_addr );
+   cout << printer << endl;
+
+   PrintDebugText( "** InputRemovalInProgress" , 1 );
 }
 
 //---------------------------------------------------------------
@@ -180,7 +187,7 @@ bool   DiplodocusGame::AddInputChainData( BasePacket* packet, U32 connectionId )
          {
             PacketListOfGames* packet = static_cast< PacketListOfGames* > ( unwrappedPacket );
             bool  isUserValidForThisGame = false;
-            KeyValueVectorIterator it = packet->games.begin();
+            SerializedKeyValueVector< BoundedString32 >::KeyValueVectorIterator it = packet->games.begin();
             while( it != packet->games.end() )
             {
                if( it->key == m_gameUuid )
@@ -253,6 +260,25 @@ void  DiplodocusGame::SendNotification( const PacketGame_Notification* notificat
 
 void  DiplodocusGame::RunTest()
 {
+   bool user9User14ChatchannelCreateTest = true;
+   if( user9User14ChatchannelCreateTest == true )
+   {
+    /*  list< const char* > listOfUserUuids;
+      listOfUserUuids.push_back( "user9" );
+      listOfUserUuids.push_back( "a150f79095fa1235" );*/
+      //GameFramework::Instance()->SendChatChannelCreate( "summonwar", 5, listOfUserUuids );
+      PacketChatCreateChatChannelFromGameServer* createChannel = new PacketChatCreateChatChannelFromGameServer;
+      createChannel->gameName = "summonwar";
+      createChannel->gameId = 5;
+
+      //createChannel->userUuidList.insert( uuid );
+      createChannel->userUuidList.insert( "user9" );
+      createChannel->userUuidList.insert( "a150f79095fa1235" );
+
+      GameFramework::Instance()->SendChatData( createChannel );
+      return;
+   }
+
    static bool  testChoice = false ;
 
    BasePacket* packet = NULL;
@@ -473,6 +499,9 @@ int   DiplodocusGame::CallbackFunction()
          }
       }
    }
+
+   CleanupOldClientConnections( "KhaanGame" );
+
    UpdateAllConnections();
    UpdateAllTimers();
 
@@ -542,7 +571,7 @@ bool  DiplodocusGame::HandlePacketFromOtherServer( BasePacket* packet, U32 conne
             if( m_callbacks )
             {
                KeyValueVector vec;
-               SerializedKeyValueVector< string >::KVIterator iter = stats->stats.begin();
+               SerializedKeyValueVector< BoundedString64 >::KVIterator iter = stats->stats.begin();
                while( iter != stats->stats.end() )
                {
                   const string& key = iter->key;
@@ -581,7 +610,7 @@ bool  DiplodocusGame::HandlePacketFromOtherServer( BasePacket* packet, U32 conne
 void  DiplodocusGame::IsUserAllowedToUseThisProduct( const PacketListOfGames* packet )
 {
    bool  isUserValidForThisGame = false;
-   KeyValueConstIterator it = packet->games.begin();
+   SerializedKeyValueVector< BoundedString32 >::const_KVIterator it = packet->games.begin();
    while( it != packet->games.end() )
    {
       if( it->key == m_gameUuid )

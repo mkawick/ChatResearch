@@ -131,7 +131,8 @@ int main( int argc, const char* argv[] )
    cout << serverName << endl;
    cout << "Server stack version " << ServerStackVersion << endl;
    cout << "ServerId " << serverId << endl;
-   cout << "Network protocol version: " << (int)GlobalNetworkProtocolVersion << endl;
+   cout << "Network protocol version: " << (int)NetworkVersionMajor << ":" << (int)NetworkVersionMinor << endl;
+   
    cout << "------------------------------------------------------------------" << endl << endl << endl;
    LogMessage(LOG_PRIO_ERR, "serverName\n");
    LogMessage(LOG_PRIO_ERR, "Server stack version %s\n", ServerStackVersion );

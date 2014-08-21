@@ -10,6 +10,7 @@
 
 #include <boost/format.hpp>
 #include <boost/lexical_cast.hpp>
+#include <boost/algorithm/string.hpp>
 using boost::format;
 
 #include "../NetworkCommon/Packets/PacketFactory.h"
@@ -316,6 +317,49 @@ bool     UserConnection::FindDeviceAndUpdate( RegisteredDeviceList deviceList, c
 
 //------------------------------------------------------------
 
+void RemoveSpecialCharacters(const string& str, string& outString)
+{
+   int len = str.size();
+   if( len < 2 )
+   {
+      outString = str;
+      return;
+   }
+   char * buffer = new char[len];
+   int idx = 0;
+
+   for(int i=0; i<len; i++)
+   {
+      char c = str[i];
+      if ((c >= '0' && c <= '9') || (c >= 'A' && c <= 'Z')
+         || (c >= 'a' && c <= 'z') || (c == '.') || (c == '_'))
+      {
+         buffer[idx] = c;
+         idx++;
+      }
+   }
+
+   outString.copy( buffer, idx, 0 );
+   delete buffer;
+}
+
+//------------------------------------------------------------
+
+void PrintDetailsOfDeviceRegistrationToConsole( const string& deviceId, U32 userId, const string& userUuid )
+{
+   // clean up the string before printing... not too much and remove beeps.
+   string temp = deviceId.substr(0,20);
+   string outString;
+   RemoveSpecialCharacters( temp, outString );
+   cout << "/////////////////////////////////////////////////////////" << endl;
+   cout << " RegisterNewDevice: " << outString << endl;
+   cout << " Useruuid: " << userUuid << endl;
+   cout << " UserId: " << userId << endl;
+}
+
+//------------------------------------------------------------
+//------------------------------------------------------------
+
 void     UserConnection::RegisterNewDevice( const PacketNotification_RegisterDevice* registerDevice )
 {
    if( registerDevice->deviceId.size() < 8 )
@@ -355,7 +399,7 @@ void     UserConnection::RegisterNewDevice( const PacketNotification_RegisterDev
       rd->name =      registerDevice->deviceName;
       rd->uuid =      newDeviceUuid;
       rd->iconId =    1;
-      rd->deviceId =  registerDevice->deviceId;
+      rd->deviceId =  registerDevice->deviceId.c_str();
       rd->platformId = registerDevice->platformId;
       rd->isEnabled =  true;
 
@@ -472,9 +516,9 @@ void  UserConnection::UpdateDevice( const PacketNotification_UpdateDevice* updat
    if( deviceIt == m_deviceList.end() )
    {
       string text = "UpdateDevice:: User ";
-      text += m_userInfo.userName;
+      text += m_userInfo.userName.c_str();
       text += " tried to update a device but it could not be found ";
-      text += updateDevicePacket->deviceName;
+      text += updateDevicePacket->deviceName.c_str();
       text += ", ";
       text += updateDevicePacket->deviceUuid.c_str();
       text += " but the device does not exist in UserConnection";
@@ -488,9 +532,9 @@ void  UserConnection::UpdateDevice( const PacketNotification_UpdateDevice* updat
    if( userDeviceId == 0 )
    {
       string text = "UpdateDevice:: User ";
-      text += m_userInfo.userName;
+      text += m_userInfo.userName.c_str();
       text += " tried to update a device but it could not be found ";
-      text += updateDevicePacket->deviceName;
+      text += updateDevicePacket->deviceName.c_str();
       text += ", ";
       text += updateDevicePacket->deviceUuid.c_str();
       text += " but the device does not exist in UserConnection";
@@ -502,9 +546,9 @@ void  UserConnection::UpdateDevice( const PacketNotification_UpdateDevice* updat
    if( deviceEnabledIt == m_deviceEnabledList.end() )
    {
       string text = "UpdateDevice:: User ";
-      text += m_userInfo.userName;
+      text += m_userInfo.userName.c_str();
       text += " tried to update a device but the enabled record could not be found ";
-      text += updateDevicePacket->deviceName;
+      text += updateDevicePacket->deviceName.c_str();
       text += ", ";
       text += updateDevicePacket->deviceUuid.c_str();
       text += " but the device does not exist in UserConnection";
@@ -535,7 +579,7 @@ void  UserConnection::UpdateDbRecordForDevice( U32 id )
    if( deviceIt == m_deviceList.end() )
    {
       string text = "UpdateDbRecordForDevice:: User ";
-      text += m_userInfo.userName;
+      text += m_userInfo.userName.c_str();
       text += " tried to update a device but it could not be found ";
       text += " but the device does not exist in UserConnection";
       m_mainThread->Log( text, 1 );
@@ -595,9 +639,15 @@ void  UserConnection::UpdateDbRecordForDevice( U32 id )
 
 void     DumpDevice( const string& userName, const string&  userUuid, const ExtendedRegisteredDevice& rd )
 {
+   int numToCopy = 20;
+   if( rd.deviceId.size() > static_cast< U32 >( numToCopy ) )
+      numToCopy = rd.deviceId.size();
+   string temp = rd.deviceId.substr( 0,numToCopy );
+   string deviceOutStringId;
+   RemoveSpecialCharacters( temp, deviceOutStringId );
    cout << "User Name: " << userName << endl;
    cout << "User Uuid: " << userUuid << endl;
-   cout << "   device id: " << rd.deviceId << endl;
+   cout << "   device id: " << deviceOutStringId << endl;
    cout << "   device uuid: " << rd.uuid << endl;
    cout << "   device iconId: " << rd.iconId << endl;
    cout << "   device isEnabled: " << rd.isEnabled << endl;
@@ -607,7 +657,6 @@ void     DumpDevice( const string& userName, const string&  userUuid, const Exte
    cout << "   device userDeviceId: " << rd.userDeviceId << endl;
    cout << " --------------------------- " << endl;
 }
-
 //------------------------------------------------------------
 
 void        UserConnection::RequestDevicesList( const PacketNotification_RequestListOfDevices* device )

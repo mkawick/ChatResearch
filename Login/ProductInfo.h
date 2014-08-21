@@ -28,6 +28,7 @@ struct ProductInfo
 
    int      convertsToProductId;
    int      convertsToQuantity;
+   bool     isHidden;
    //float    quantity;
 };
 

@@ -182,8 +182,8 @@ void     DiplodocusLoadBalancer::InputConnected( IChainedInterface * chainedInpu
 
    Threading::MutexLock locker( m_outputChainListMutex );
    U32 newId = GetNextConnectionId();
-   m_socketToConnectionMap.insert( SocketToConnectionPair( khaan->GetSocketId(), newId ) );
-   m_connectionToSocketMap.insert( SocketToConnectionPair( newId, khaan->GetSocketId() ) );
+   //m_socketToConnectionMap.insert( SocketToConnectionPair( khaan->GetSocketId(), newId ) );
+   //m_connectionToSocketMap.insert( SocketToConnectionPair( newId, khaan->GetSocketId() ) );
    m_connectionMap.insert( ConnectionPair( newId, khaan ) );
 
    khaan->SetConnectionId( newId );
@@ -197,19 +197,14 @@ void     DiplodocusLoadBalancer::InputConnected( IChainedInterface * chainedInpu
 void     DiplodocusLoadBalancer::InputRemovalInProgress( IChainedInterface * chainedInput )
 {
    KhaanConnector* khaan = static_cast< KhaanConnector* >( chainedInput );
-   khaan->SetMainOutput( NULL );
+
+   SetupClientWaitingToBeRemoved( khaan );
 
    string currentTime = GetDateInUTC();
-   cout << "Client disconnection at time:" << currentTime << " from " << inet_ntoa( khaan->GetIPAddress().sin_addr ) << endl;
+   string printer = "Client disconnection at time:" + currentTime + " from " + inet_ntoa( khaan->GetIPAddress().sin_addr );
+   cout << printer << endl;
 
-   //PrintText( "** InputRemovalInProgress" , 1 );
-   int connectionId = khaan->GetConnectionId();
-   int socketId = khaan->GetSocketId();
-
-   Threading::MutexLock locker( m_outputChainListMutex );
-   m_socketToConnectionMap.erase( socketId );
-   m_connectionToSocketMap.erase( connectionId );
-   m_connectionMap.erase( connectionId );
+   PrintDebugText( "** InputRemovalInProgress" , 1 );
 }
 
 //---------------------------------------------------------------
@@ -399,6 +394,7 @@ void     DiplodocusLoadBalancer::HandlePacketToKhaan( KhaanConnector* khaan, Bas
 int   DiplodocusLoadBalancer::MainLoop_OutputProcessing()
 {
    // mutex is locked already
+   CleanupOldClientConnections( "KhaanConnector" );
 
    // lookup packet info and pass it back to the proper socket if we can find it.
    if( m_connectionsNeedingUpdate.size() )
@@ -464,7 +460,7 @@ void     DiplodocusLoadBalancer::NewServerConnection( const PacketServerIdentifi
    {
       it->serverId = gatewayInfo->serverId;
       it->port = gatewayInfo->serverPort;
-      it->externalIpAddress = gatewayInfo->externalIpAddress;
+      it->externalIpAddress = gatewayInfo->externalIpAddress.c_str();
       it->isVerified = true;
       it->isConnected = true;
       return;
@@ -474,7 +470,7 @@ void     DiplodocusLoadBalancer::NewServerConnection( const PacketServerIdentifi
    AddGatewayAddress( gatewayInfo->serverAddress, gatewayInfo->serverPort );
    it = FindGateway( gatewayInfo->serverAddress, gatewayInfo->serverPort );
    it->serverId = gatewayInfo->serverId;
-   it->externalIpAddress = gatewayInfo->externalIpAddress;
+   it->externalIpAddress = gatewayInfo->externalIpAddress.c_str();
    it->port = gatewayInfo->serverPort;
    it->isVerified = true;
    it->isConnected = true;

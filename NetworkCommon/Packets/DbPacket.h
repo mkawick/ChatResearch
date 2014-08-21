@@ -21,8 +21,8 @@ public:
    //BasePacketDbQuery( const BasePacketDbQuery& query ) : BasePacket( query.packetType, query.packetSubType), id( query.id ), lookup( query.lookup ), serverLookup( query.serverLookup ), hitsTempDb( query.hitsTempDb ), customData( query.customData )  {}
    //~BasePacketDbQuery();
 
-   bool  SerializeIn( const U8* data, int& bufferOffset );
-   bool  SerializeOut( U8* data, int& bufferOffset ) const;
+   bool  SerializeIn( const U8* data, int& bufferOffset, int minorVersion );
+   bool  SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const;
 
    int      lookup;
    U32      id;
@@ -46,8 +46,8 @@ public:
    //PacketDbQuery( const PacketDbQuery& query ) : BasePacketDbQuery( query ), isFireAndForget( query.isFireAndForget ){}
    //~PacketDbQuery();
 
-   bool  SerializeIn( const U8* data, int& bufferOffset );
-   bool  SerializeOut( U8* data, int& bufferOffset ) const;
+   bool  SerializeIn( const U8* data, int& bufferOffset, int minorVersion );
+   bool  SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const;
 
    bool           isFireAndForget;
    string         query;
@@ -65,8 +65,8 @@ class PacketDbQueryResult : public BasePacketDbQuery
 public:
    PacketDbQueryResult( int packet_type = PacketType_DbQuery, int packet_sub_type = QueryType_Result  ): BasePacketDbQuery( packet_type, packet_sub_type ), successfulQuery( false ), insertId( 0 ) {}
 
-   bool  SerializeIn( const U8* data, int& bufferOffset );
-   bool  SerializeOut( U8* data, int& bufferOffset ) const;
+   bool  SerializeIn( const U8* data, int& bufferOffset, int minorVersion );
+   bool  SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const;
 
    bool                 successfulQuery;
    int                  insertId; // rarely correct.. only for inserts

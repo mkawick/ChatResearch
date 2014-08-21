@@ -55,8 +55,8 @@ public:
 public:
    PacketGameToServer( int packet_type = PacketType_Gameplay, int packet_sub_type = GamePacketType_LoginToServer ) : BasePacket( packet_type, packet_sub_type ) {}
 
-   bool  SerializeIn( const U8* data, int& bufferOffset );
-   bool  SerializeOut( U8* data, int& bufferOffset ) const;
+   bool  SerializeIn( const U8* data, int& bufferOffset, int minorVersion );
+   bool  SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const;
 };
 
 ///////////////////////////////////////////////////////////////
@@ -66,10 +66,10 @@ class PacketCreateGame : public PacketGameToServer
 public:
    PacketCreateGame(): PacketGameToServer( PacketType_Gameplay, GamePacketType_CreateGame ) {}
 
-   bool  SerializeIn( const U8* data, int& bufferOffset );
-   bool  SerializeOut( U8* data, int& bufferOffset ) const;
+   bool  SerializeIn( const U8* data, int& bufferOffset, int minorVersion );
+   bool  SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const;
 
-   string   name;
+   BoundedString80   name;
 };
 
 ///////////////////////////////////////////////////////////////
@@ -79,11 +79,11 @@ class PacketCreateGameResponse : public PacketGameToServer
 public:
    PacketCreateGameResponse(): PacketGameToServer( PacketType_Gameplay, GamePacketType_CreateGameResponse ) {}
 
-   bool  SerializeIn( const U8* data, int& bufferOffset );
-   bool  SerializeOut( U8* data, int& bufferOffset ) const;
+   bool  SerializeIn( const U8* data, int& bufferOffset, int minorVersion );
+   bool  SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const;
 
-   string      name;
-   UuidString  uuid;
+   BoundedString80      name;
+   UuidString           uuid;
 };
       
 ///////////////////////////////////////////////////////////////
@@ -93,8 +93,8 @@ class PacketDeleteGame : public PacketGameToServer
 public:
    PacketDeleteGame(): PacketGameToServer( PacketType_Gameplay, GamePacketType_DeleteGame ) {}
 
-   bool  SerializeIn( const U8* data, int& bufferOffset );
-   bool  SerializeOut( U8* data, int& bufferOffset ) const;
+   bool  SerializeIn( const U8* data, int& bufferOffset, int minorVersion );
+   bool  SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const;
 
    UuidString  uuid;
 };
@@ -106,11 +106,11 @@ class PacketDeleteGameResponse : public PacketGameToServer
 public:
    PacketDeleteGameResponse(): PacketGameToServer( PacketType_Gameplay, GamePacketType_DeleteGameResponse ) {}
 
-   bool  SerializeIn( const U8* data, int& bufferOffset );
-   bool  SerializeOut( U8* data, int& bufferOffset ) const;
+   bool  SerializeIn( const U8* data, int& bufferOffset, int minorVersion );
+   bool  SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const;
 
-   string   name;
-   UuidString  uuid;
+   BoundedString80   name;
+   UuidString        uuid;
 };
 
 ///////////////////////////////////////////////////////////////
@@ -120,8 +120,8 @@ class PacketForfeitGame : public PacketGameToServer
 public:
    PacketForfeitGame(): PacketGameToServer( PacketType_Gameplay, GamePacketType_ForfeitGame ) {}
 
-   bool  SerializeIn( const U8* data, int& bufferOffset );
-   bool  SerializeOut( U8* data, int& bufferOffset ) const;
+   bool  SerializeIn( const U8* data, int& bufferOffset, int minorVersion );
+   bool  SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const;
 
    UuidString  userUuid;
    UuidString  gameUuid;
@@ -134,11 +134,11 @@ class PacketForfeitGameResponse : public PacketGameToServer
 public:
    PacketForfeitGameResponse(): PacketGameToServer( PacketType_Gameplay, GamePacketType_ForfeitGameResponse ) {}
 
-   bool  SerializeIn( const U8* data, int& bufferOffset );
-   bool  SerializeOut( U8* data, int& bufferOffset ) const;
+   bool  SerializeIn( const U8* data, int& bufferOffset, int minorVersion );
+   bool  SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const;
 
-   string   name;
-   UuidString  uuid;
+   BoundedString80   name;
+   UuidString        uuid;
 };
       
 ///////////////////////////////////////////////////////////////
@@ -148,8 +148,8 @@ class PacketQuitGame : public PacketGameToServer
 public:
    PacketQuitGame(): PacketGameToServer( PacketType_Gameplay, GamePacketType_QuitGame ) {}
 
-   bool  SerializeIn( const U8* data, int& bufferOffset );
-   bool  SerializeOut( U8* data, int& bufferOffset ) const;
+   bool  SerializeIn( const U8* data, int& bufferOffset, int minorVersion );
+   bool  SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const;
 
    UuidString  userUuid;
    UuidString  gameUuid;
@@ -162,12 +162,12 @@ class PacketQuitGameResponse : public PacketGameToServer
 public:
    PacketQuitGameResponse(): PacketGameToServer( PacketType_Gameplay, GamePacketType_QuitGameResponse ) {}
 
-   bool  SerializeIn( const U8* data, int& bufferOffset );
-   bool  SerializeOut( U8* data, int& bufferOffset ) const;
+   bool  SerializeIn( const U8* data, int& bufferOffset, int minorVersion );
+   bool  SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const;
 
-   string   userName;
-   UuidString  userUuid;
-   UuidString  gameUuid;
+   BoundedString80   userName;
+   UuidString        userUuid;
+   UuidString        gameUuid;
 };
 
 ///////////////////////////////////////////////////////////////
@@ -177,8 +177,8 @@ class PacketAddUserToGame : public PacketGameToServer
 public:
    PacketAddUserToGame(): PacketGameToServer( PacketType_Gameplay, GamePacketType_AddUser ) {}
 
-   bool  SerializeIn( const U8* data, int& bufferOffset );
-   bool  SerializeOut( U8* data, int& bufferOffset ) const;
+   bool  SerializeIn( const U8* data, int& bufferOffset, int minorVersion );
+   bool  SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const;
 
    UuidString  userUuid;
    UuidString  gameUuid;
@@ -191,8 +191,8 @@ class PacketAddUserToGameResponse : public PacketGameToServer
 public:
    PacketAddUserToGameResponse(): PacketGameToServer( PacketType_Gameplay, GamePacketType_AddUserResponse ) {}
 
-   bool  SerializeIn( const U8* data, int& bufferOffset );
-   bool  SerializeOut( U8* data, int& bufferOffset ) const;
+   bool  SerializeIn( const U8* data, int& bufferOffset, int minorVersion );
+   bool  SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const;
 
    UuidString  userUuid;
    UuidString  gameUuid;
@@ -206,8 +206,8 @@ class PacketRemoveUserFromGame : public PacketGameToServer
 public:
    PacketRemoveUserFromGame(): PacketGameToServer( PacketType_Gameplay, GamePacketType_RemoveUser ) {}
 
-   bool  SerializeIn( const U8* data, int& bufferOffset );
-   bool  SerializeOut( U8* data, int& bufferOffset ) const;
+   bool  SerializeIn( const U8* data, int& bufferOffset, int minorVersion );
+   bool  SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const;
 
    UuidString  userUuid;
    UuidString  gameUuid;
@@ -220,8 +220,8 @@ class PacketRemoveUserFromGameResponse : public PacketGameToServer
 public:
    PacketRemoveUserFromGameResponse(): PacketGameToServer( PacketType_Gameplay, GamePacketType_RemoveUserResponse ) {}
 
-   bool  SerializeIn( const U8* data, int& bufferOffset );
-   bool  SerializeOut( U8* data, int& bufferOffset ) const;
+   bool  SerializeIn( const U8* data, int& bufferOffset, int minorVersion );
+   bool  SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const;
 
    UuidString  userUuid;
    UuidString  gameUuid;
@@ -235,8 +235,8 @@ class PacketGameAdvanceTurn : public PacketGameToServer
 public:
    PacketGameAdvanceTurn(): PacketGameToServer( PacketType_Gameplay, GamePacketType_AdvanceTurn ) {}
 
-   bool  SerializeIn( const U8* data, int& bufferOffset );
-   bool  SerializeOut( U8* data, int& bufferOffset ) const;
+   bool  SerializeIn( const U8* data, int& bufferOffset, int minorVersion );
+   bool  SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const;
 
    UuidString  gameUuid;
 };
@@ -248,8 +248,8 @@ class PacketGameAdvanceTurnResponse : public PacketGameToServer
 public:
    PacketGameAdvanceTurnResponse(): PacketGameToServer( PacketType_Gameplay, GamePacketType_TurnWasAdvanced ) {}
 
-   bool  SerializeIn( const U8* data, int& bufferOffset );
-   bool  SerializeOut( U8* data, int& bufferOffset ) const;
+   bool  SerializeIn( const U8* data, int& bufferOffset, int minorVersion );
+   bool  SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const;
 
    UuidString  gameUuid;
    int            currentTurn;
@@ -262,8 +262,8 @@ class PacketRequestListOfGames : public PacketGameToServer
 public:
    PacketRequestListOfGames(): PacketGameToServer( PacketType_Gameplay, GamePacketType_RequestListOfGames ) {}
 
-   bool  SerializeIn( const U8* data, int& bufferOffset );
-   bool  SerializeOut( U8* data, int& bufferOffset ) const;
+   bool  SerializeIn( const U8* data, int& bufferOffset, int minorVersion );
+   bool  SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const;
 
 };
 
@@ -274,8 +274,8 @@ class PacketRequestListOfGamesResponse : public PacketGameToServer
 public:
    PacketRequestListOfGamesResponse(): PacketGameToServer( PacketType_Gameplay, GamePacketType_RequestListOfGamesResponse ) {}
 
-   bool  SerializeIn( const U8* data, int& bufferOffset );
-   bool  SerializeOut( U8* data, int& bufferOffset ) const;
+   bool  SerializeIn( const U8* data, int& bufferOffset, int minorVersion );
+   bool  SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const;
 
    SerializedKeyValueVector< ChannelInfo >   games; // game details?
 };
@@ -287,8 +287,8 @@ class PacketRequestListOfUsersInGame : public PacketGameToServer
 public:
    PacketRequestListOfUsersInGame(): PacketGameToServer( PacketType_Gameplay, GamePacketType_RequestListOfUsersInGame ) {}
 
-   bool  SerializeIn( const U8* data, int& bufferOffset );
-   bool  SerializeOut( U8* data, int& bufferOffset ) const;
+   bool  SerializeIn( const U8* data, int& bufferOffset, int minorVersion );
+   bool  SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const;
 
 };
 
@@ -299,12 +299,12 @@ class PacketRequestListOfUsersInGameResponse : public PacketGameToServer
 public:
    PacketRequestListOfUsersInGameResponse(): PacketGameToServer( PacketType_Gameplay, GamePacketType_RequestListOfUsersInGameResponse ) {}
 
-   bool  SerializeIn( const U8* data, int& bufferOffset );
-   bool  SerializeOut( U8* data, int& bufferOffset ) const;
+   bool  SerializeIn( const U8* data, int& bufferOffset, int minorVersion );
+   bool  SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const;
 
-   string         gameName;
-   UuidString  gameUuid;
-   SerializedKeyValueVector< string >   users; // game details?
+   BoundedString80   gameName;
+   UuidString        gameUuid;
+   SerializedKeyValueVector< UuidString >   users; // game details?
 };
 
 
@@ -331,10 +331,9 @@ struct WinLoss
    int      hoursLogged;
    int      minutesLogged;
 
-   bool     SerializeIn( const U8* data, int& bufferOffset );
-   bool     SerializeOut( U8* data, int& bufferOffset ) const;
+   bool     SerializeIn( const U8* data, int& bufferOffset, int minorVersion );
+   bool     SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const;
 };
-
 
 ///////////////////////////////////////////////////////////////
 
@@ -343,8 +342,8 @@ class PacketRequestUserWinLoss : public PacketGameToServer
 public:
    PacketRequestUserWinLoss(): PacketGameToServer( PacketType_Gameplay, GamePacketType_RequestUserWinLoss ) {}
 
-   bool  SerializeIn( const U8* data, int& bufferOffset );
-   bool  SerializeOut( U8* data, int& bufferOffset ) const;
+   bool  SerializeIn( const U8* data, int& bufferOffset, int minorVersion );
+   bool  SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const;
 
    UuidString  userUuid;   
    UuidString  gameUuid;
@@ -357,8 +356,8 @@ class PacketRequestUserWinLossResponse : public PacketGameToServer
 public:
    PacketRequestUserWinLossResponse(): PacketGameToServer( PacketType_Gameplay, GamePacketType_RequestUserWinLossResponse ) {}
 
-   bool  SerializeIn( const U8* data, int& bufferOffset );
-   bool  SerializeOut( U8* data, int& bufferOffset ) const;
+   bool  SerializeIn( const U8* data, int& bufferOffset, int minorVersion );
+   bool  SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const;
 
    UuidString  userUuid;
    WinLoss        winLoss;
@@ -371,11 +370,11 @@ class PacketListOfGames : public PacketGameToServer
 public:
    PacketListOfGames(): PacketGameToServer( PacketType_Gameplay, GamePacketType_ListOfGames ), connectionId ( 0 ) {}
 
-   bool  SerializeIn( const U8* data, int& bufferOffset );
-   bool  SerializeOut( U8* data, int& bufferOffset ) const;
+   bool  SerializeIn( const U8* data, int& bufferOffset, int minorVersion );
+   bool  SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const;
 
-   U32      connectionId;
-   SerializedKeyValueVector< string >   games;
+   U32                                          connectionId;
+   SerializedKeyValueVector< BoundedString32 >  games;
 };
 
 ///////////////////////////////////////////////////////////////
@@ -385,12 +384,12 @@ class PacketGameIdentification : public PacketGameToServer
 public:
    PacketGameIdentification(): PacketGameToServer( PacketType_Gameplay, GamePacketType_GameIdentification ), gameId ( 0 ) {}
 
-   bool  SerializeIn( const U8* data, int& bufferOffset );
-   bool  SerializeOut( U8* data, int& bufferOffset ) const;
+   bool  SerializeIn( const U8* data, int& bufferOffset, int minorVersion );
+   bool  SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const;
 
-   U32      gameId;
-   string   name;
-   string   shortName;
+   U32               gameId;
+   BoundedString80   name;
+   BoundedString32   shortName;
 };
 
 ///////////////////////////////////////////////////////////////
@@ -403,19 +402,19 @@ public:
    //~PacketGameplayRawData();
    //PacketGameplayRawData& operator = ( PacketGameplayRawData& packet ) ;
 
-   bool  SerializeIn( const U8* data, int& bufferOffset ); // allocates memory
-   bool  SerializeOut( U8* data, int& bufferOffset ) const;
+   bool  SerializeIn( const U8* data, int& bufferOffset, int minorVersion ); // allocates memory
+   bool  SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const;
 
    void  Prep( U16 numBytes, const U8* ptr, int packetIndex );
 
    enum { MaxBufferSize = 1500 - 39 - sizeof( PacketGameToServer) }; // 1500 minus the other variables in this struct
    enum DataType{ Game, Asset, NumDataTypes };
 
-   string   identifier; // variable length... at least 2 and up to 34 bytes
-   U16      size;
-   U16      index; // when subdividing these, these are reverse ordered. 6.5.4.3.2.1 so that we can send up to 254k.We still rely on high layers to serialize properly.
-   U8       dataType;
-   U8       data[ MaxBufferSize ];
+   BoundedString64   identifier; 
+   U16               size;
+   U16               index; // when subdividing these, these are reverse ordered. 6.5.4.3.2.1 so that we can send up to 254k.We still rely on high layers to serialize properly.
+   U8                dataType;
+   U8                data[ MaxBufferSize ];
 };
 
 ///////////////////////////////////////////////////////////////
@@ -449,16 +448,15 @@ class PacketGame_Notification : public PacketGameToServer
 public:
    PacketGame_Notification(): PacketGameToServer( PacketType_Gameplay, PacketGameToServer::GamePacketType_Notification ) {}
 
-   bool  SerializeIn( const U8* data, int& bufferOffset ); // allocates memory
-   bool  SerializeOut( U8* data, int& bufferOffset ) const;
+   bool  SerializeIn( const U8* data, int& bufferOffset, int minorVersion ); // allocates memory
+   bool  SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const;
 
-   UuidString  userUuid;
-   U8       notificationType;
-   string   additionalText;
+   UuidString        userUuid;
+   U8                notificationType;
+   BoundedString140  additionalText;
 
 };
 
 
 ///////////////////////////////////////////////////////////////
 
-///////////////////////////////////////////////////////////////

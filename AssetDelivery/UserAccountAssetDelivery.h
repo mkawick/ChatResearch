@@ -5,7 +5,7 @@
 #include <set>
 using namespace std;
 
-class DiplodocusAsset;
+class AssetMainThread;
 class PacketAsset;
 /*class PacketAsset_GetListOfStaticAssets;
 class PacketAsset_GetListOfDynamicAssets;*/
@@ -42,7 +42,7 @@ public:
    const UserTicket& GetUserTicket() const { return m_userTicket; }
    void              SetConnectionId( U32 connId ) { m_userTicket.connectionId = connId; }
 
-   void              SetServer( DiplodocusAsset* assetManager ) { m_assetManager = assetManager; }
+   void              SetServer( AssetMainThread* assetManager ) { m_assetManager = assetManager; }
    bool              HandleRequestFromClient( const PacketAsset* packet );
 
    void              UserLoggedOut();
@@ -65,7 +65,7 @@ private:
    UserTicket        m_userTicket;
    Status            m_status;
    bool              m_readyForCleanup;
-   DiplodocusAsset*  m_assetManager;
+   AssetMainThread*  m_assetManager;
    time_t            m_logoutTime;
    set< string >     m_productFilterNames;
 

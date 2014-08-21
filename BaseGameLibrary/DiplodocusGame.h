@@ -82,8 +82,7 @@ public:
 
 private:
    int      CallbackFunction();
-   void	   UpdateAllConnections();
-   void     CleanupOldConnections();
+   void     UpdateAllConnections();
 
    void     UpdateAllTimers();
 
