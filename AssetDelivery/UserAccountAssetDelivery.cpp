@@ -225,6 +225,7 @@ bool     UserAccountAssetDelivery::GetAsset( const PacketAsset_RequestAsset* pac
       {
          int version = packet->fileVersion;
          LoadedFile file;
+         cout << "User lookup file: " << asset->path << "; ver:" << version << endl;
          if( asset->FindFile( version, file ) == true )
          {
             data = file.fileData;
@@ -234,6 +235,13 @@ bool     UserAccountAssetDelivery::GetAsset( const PacketAsset_RequestAsset* pac
             cout << "File being sent = " << asset->name << endl;
             cout << "   path = " << asset->path << endl;
             cout << "   size = " << size << endl;
+
+            if( size == 0 )
+            {
+               cout << " Attempt to send 0 length file: " << packet->assetHash << endl;
+               m_assetManager->SendErrorToClient( m_userTicket.connectionId, PacketErrorReport::ErrorType_Asset_unknown1 );
+               return false;
+            }
 
             return SendRawData< PacketGameplayRawData, AssetMainThread > 
                ( data, size, PacketGameplayRawData::Asset, MaxSize, m_assetManager->GetServerId(), asset->productId, asset->hash, connectionId, m_assetManager );

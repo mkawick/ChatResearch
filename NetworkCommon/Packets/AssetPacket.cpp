@@ -229,6 +229,7 @@ bool  PacketAsset_GetListOfAssets::SerializeIn( const U8* data, int& bufferOffse
    Serialize::In( data, bufferOffset, loginKey, minorVersion );
    Serialize::In( data, bufferOffset, assetCategory, minorVersion );
    Serialize::In( data, bufferOffset, platformId, minorVersion );
+   Serialize::In( data, bufferOffset, compressionType, minorVersion );
 
    return true; 
 }
@@ -240,6 +241,7 @@ bool  PacketAsset_GetListOfAssets::SerializeOut( U8* data, int& bufferOffset, in
    Serialize::Out( data, bufferOffset, loginKey, minorVersion );
    Serialize::Out( data, bufferOffset, assetCategory, minorVersion );
    Serialize::Out( data, bufferOffset, platformId, minorVersion );
+   Serialize::Out( data, bufferOffset, compressionType, minorVersion );
 
    return true; 
 }
@@ -274,6 +276,7 @@ bool  PacketAsset_RequestAsset::SerializeIn( const U8* data, int& bufferOffset, 
    Serialize::In( data, bufferOffset, uuid, minorVersion );
    Serialize::In( data, bufferOffset, loginKey, minorVersion );
    Serialize::In( data, bufferOffset, assetHash, minorVersion );
+   Serialize::In( data, bufferOffset, fileVersion, minorVersion );
 
    return true; 
 }
@@ -284,6 +287,7 @@ bool  PacketAsset_RequestAsset::SerializeOut( U8* data, int& bufferOffset, int m
    Serialize::Out( data, bufferOffset, uuid, minorVersion );
    Serialize::Out( data, bufferOffset, loginKey, minorVersion );
    Serialize::Out( data, bufferOffset, assetHash, minorVersion );
+   Serialize::Out( data, bufferOffset, fileVersion, minorVersion );
 
    return true; 
 }

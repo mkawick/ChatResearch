@@ -152,7 +152,7 @@ LoadedFile :: LoadedFile( const FileVersion& fi ) : FileVersion( fi ), fileData(
 LoadedFile :: LoadedFile( const LoadedFile&  lf ) : compressionType( 0 ) 
 {
    filePath = lf.filePath; lastModifiedTime = lf.lastModifiedTime; version = lf.version; 
-   if( fileSize == 0 )
+   if(lf.fileSize == 0 )
    {
       fileData = NULL, fileSize = 0; 
    }
@@ -171,9 +171,11 @@ LoadedFile :: ~LoadedFile()
 
 const LoadedFile& LoadedFile::operator = ( const LoadedFile& lf )
 {
+   cout << "Copying file(LoadedFile)" << lf.filePath << ":size:" << lf.fileSize << endl;
    filePath = lf.filePath; lastModifiedTime = lf.lastModifiedTime; version = lf.version; 
-   if( fileSize == 0 )
+   if( lf.fileSize == 0 )
    {
+      cout << "**alert** zero length file copy" << endl;
       fileData = NULL, fileSize = 0; 
    }
    else
@@ -187,6 +189,7 @@ const LoadedFile& LoadedFile::operator = ( const LoadedFile& lf )
 
 void  LoadedFile :: operator = ( const FileVersion& ver ) 
 { 
+   cout << "Copying file(FileVersion)" << ver.filePath << endl;
    filePath = ver.filePath; lastModifiedTime = ver.lastModifiedTime; version = ver.version; 
    fileData = NULL, fileSize = 0; 
    compressionType = 0;
@@ -333,6 +336,7 @@ bool  AssetDefinition:: LoadFile()
       if( listOfVersionedFiles.size() == 0 )
          isLoaded = false;
 
+      cout << "File paths are invalid:" << endl;
       return false;
    }
 
@@ -350,7 +354,13 @@ bool  AssetDefinition:: LoadFile()
          lf.fileData = fileData;
          lf.fileSize = fileSize;
          lf.compressionType = 0;
+         cout << " load file: " << ver.filePath << "  size = " << lf.fileSize << endl;
          listOfVersionedFiles.push_back( lf );
+      }
+      else
+      {
+         cout << "*** alert ***" << endl;
+         cout << "File path is invalid:" << ver.filePath << endl;
       }
    }
 
