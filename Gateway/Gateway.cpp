@@ -292,18 +292,12 @@ int main( int argc, const char* argv[] )
       gatewayServer->PrintPacketTypes( printPackets );
       gatewayServer->PrintFunctionNames( printFunctions );
       gatewayServer->SetupListening( listenPort );
-      //gatewayServer->SetServerType( ServerType_Gateway );
-
-      //ServerType serverType = gatewayServer->GetServerType();
-      //U8 type = static_cast< U8 >( serverType );
 
       if( assetOnly == true )
       {
          gatewayServer->AllowUnauthenticatedConnections();
          cout << " Asset only server does not require authentication " << endl;
       }
-      //gatewayServer->SetupReroute( rerouteAddressString, reroutePort );
-      
       
       //--------------------------------------------------------------
 

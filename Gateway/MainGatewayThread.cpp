@@ -26,20 +26,24 @@ using boost::format;
 
 MainGatewayThread::MainGatewayThread( const string& serverName, U32 serverId ) : Diplodocus< KhaanGateway > ( serverName, serverId, 0, ServerType_Gateway ), StatTrackingConnections(),
                                           m_highestNumSimultaneousUsersWatermark( 0 ),
-                                          m_connectionIdTracker( 12 ),
+                                          m_connectionIdTracker( 0 ),
                                           m_printPacketTypes( false ),
                                           m_printFunctionNames( false ),
                                           m_reroutePort( 0 ),
                                           m_isServerDownForMaintenence( false ),
                                           m_hasInformedConnectedClientsThatServerIsDownForMaintenence( false ),
+                                          m_serverIsAvaitingLB_Approval( true ),
                                           m_scheduledMaintnenceEnd( 0 ),
-                                          m_scheduledMaintnenceBegins( 0 )
+                                          m_scheduledMaintnenceBegins( 0 ),
+                                          m_connectionIdBeginningRange( 0 ),
+                                          m_connectionIdCountIds( 0 )
 {
    SetSleepTime( 16 );// 30 fps
    SetSendHelloPacketOnLogin( true );
    
    time( &m_timestampSendConnectionStatisics );
    m_timestampSendStatServerStatisics = m_timestampSendConnectionStatisics;
+   m_timestampRequestConnectionIdBlocks = m_timestampSendConnectionStatisics + 5;// wait a few secs
 
    m_orderedOutputPacketHandlers.reserve( PacketType_Num );
 /*
@@ -74,17 +78,38 @@ void   MainGatewayThread::NotifyFinishedAdding( IChainedInterface* obj )
 
 U32      MainGatewayThread::GetNextConnectionId()
 {
+   if( m_serverIsAvaitingLB_Approval == true )
+      return 0;
+
    if( m_printFunctionNames )
    {
       FileLog( "MainGatewayThread::GetNextConnectionId" );
    }
-   Threading::MutexLock locker( m_inputChainListMutex );
-   m_connectionIdTracker ++;
-   if( m_connectionIdTracker >= ConnectionIdExclusion.low &&  m_connectionIdTracker <= ConnectionIdExclusion.high )
-   {
-      m_connectionIdTracker = ConnectionIdExclusion.high + 1;
-   }
+   m_inputChainListMutex.lock();
    U32 returnValue = m_connectionIdTracker;
+   m_inputChainListMutex.unlock();
+
+   m_connectionIdTracker ++;
+
+   if( m_connectionIdTracker >= m_connectionIdBeginningRange + m_connectionIdCountIds )
+   {
+      if( m_usableConnectionIds.size() == 0 )
+      {
+         RequestMoreConnectionIdsFromLoadBalancer();
+         m_serverIsAvaitingLB_Approval = true;
+         m_connectionIdBeginningRange= 0;
+         m_connectionIdCountIds = 0;
+      }
+      else
+      {
+         m_mutex.lock();
+         ConnectionIdStorage& storage = m_usableConnectionIds.front();
+         m_usableConnectionIds.pop_front();
+         m_mutex.unlock();
+         m_connectionIdBeginningRange = storage.id;
+         m_connectionIdCountIds = storage.countIds;
+      }
+   }
 
    return returnValue;
 }
@@ -170,6 +195,17 @@ void     MainGatewayThread::InputConnected( IChainedInterface * chainedInput )
       FileLog( printer.c_str() );
    }
    PrintDebugText( "** InputConnected" , 1 );
+   if( IsGatewayReady() == false )
+   {
+      khaan->DenyAllFutureData();
+      if( khaan->HasDisconnected() == false )
+      {
+         time_t currentTime;
+         time( &currentTime );
+         khaan->SetTimeForDeletion( currentTime );// todo, add to another list for updating "denied" connections
+      }
+      return;
+   }
    U32 newId = GetNextConnectionId();
    m_connectionMap.insert( ConnectionPair( newId, khaan ) );
 
@@ -410,6 +446,16 @@ void     MainGatewayThread::TrackCountStats( StatTracking stat, float value, int
    StatTrackingConnections::TrackCountStats( m_serverName, m_serverId, stat, value, sub_category );
 }
 
+bool     MainGatewayThread::IsGatewayReady() const
+{
+   if( m_serverIsAvaitingLB_Approval )
+      return false;
+   if( m_isServerDownForMaintenence )
+      return false;
+
+   return true;
+}
+
 /////////////////////////////////////////////////////////////////////////////////
 
 bool     MainGatewayThread::OrderOutputs()
@@ -552,6 +598,7 @@ int       MainGatewayThread::CallbackFunction()
    //UpdateRemovedConnections();
 
    RunHourlyAverages();
+   CheckOnConnectionIdBlocks();
 
    MoveClientBoundPacketsFromTempToKhaan();
    //UpdateAllClientConnections();
@@ -650,7 +697,7 @@ void  MainGatewayThread::SendStatsToLoadBalancer()
       while( itOutput != tempContainer.end() )
       {
          IChainedInterface* outputPtr = (*itOutput).m_interface;
-         FruitadensGateway* fruity = static_cast< FruitadensGateway* >( outputPtr );
+         Fruitadens* fruity = static_cast< Fruitadens* >( outputPtr );
          if( fruity->GetConnectedServerType() == ServerType_LoadBalancer )
          {
             PacketServerConnectionInfo* packet = new PacketServerConnectionInfo;
@@ -667,7 +714,9 @@ void  MainGatewayThread::SendStatsToLoadBalancer()
             }
             else
             {
-               delete packet;
+               PacketFactory factory;
+               BasePacket* pPacket = packet;
+               factory.CleanupPacket( pPacket );
             }
          }
          itOutput++;
@@ -677,7 +726,63 @@ void  MainGatewayThread::SendStatsToLoadBalancer()
 
 /////////////////////////////////////////////////////////////////////////////////
 
-bool  MainGatewayThread::AddOutputChainData( BasePacket* packet, U32 serverType )
+void  MainGatewayThread::RequestNewConenctionIdsFromLoadBalancer()
+{
+   if( m_printFunctionNames )
+   {
+      FileLog( "MainGatewayThread::RequestNewConenctionIdsFromLoadBalancer" );
+   }
+
+   time_t currentTime;
+   time( &currentTime );
+
+   if( difftime( currentTime, m_timestampSendConnectionStatisics ) >= timeoutSendConnectionStatisics ) 
+   {
+      m_timestampSendConnectionStatisics = currentTime;
+      int num = static_cast< int >( m_connectedClients.size() );
+
+      TrackCountStats( StatTracking_UserTotalCount, static_cast<float>( num ), 0 );
+
+      m_outputChainListMutex.lock();
+      BaseOutputContainer tempContainer = m_listOfOutputs;
+      m_outputChainListMutex.unlock();
+
+      // we'll keep this because we may be connected to multiple load balancers
+      bool statsSent = false;
+      ChainLinkIteratorType itOutput = tempContainer.begin();
+      while( itOutput != tempContainer.end() )
+      {
+         IChainedInterface* outputPtr = (*itOutput).m_interface;
+         Fruitadens* fruity = static_cast< Fruitadens* >( outputPtr );
+         if( fruity->GetConnectedServerType() == ServerType_LoadBalancer )
+         {
+            PacketServerConnectionInfo* packet = new PacketServerConnectionInfo;
+            packet->currentLoad = num;
+            packet->serverAddress = GetIpAddress();
+            packet->serverId = GetServerId();
+
+            U32 unusedParam = -1;
+            if( fruity->AddOutputChainData( packet, unusedParam ) == true )
+            {
+               statsSent = true;
+               PrintDebugText( "SendStatsToLoadBalancer" ); 
+               return;
+            }
+            else
+            {
+               PacketFactory factory;
+               BasePacket* pPacket = packet;
+               factory.CleanupPacket( pPacket );
+            }
+         }
+         itOutput++;
+      }
+   }
+}
+
+/////////////////////////////////////////////////////////////////////////////////
+
+bool  MainGatewayThread::AddOutputChainData( BasePacket* packetIn, U32 serverType )
 {
    if( m_printFunctionNames )
    {
@@ -687,32 +792,129 @@ bool  MainGatewayThread::AddOutputChainData( BasePacket* packet, U32 serverType 
    //PrintDebugText( "AddOutputChainData" ); 
 
    // pass through only
-   if( packet->packetType == PacketType_GatewayWrapper )
+   if( packetIn->packetType == PacketType_GatewayWrapper )
    {
-      PacketGatewayWrapper* wrapper = static_cast< PacketGatewayWrapper* >( packet );
+      PacketGatewayWrapper* wrapper = static_cast< PacketGatewayWrapper* >( packetIn );
       U32 id = wrapper->connectionId;
 
       //cout << "packet to client stored" << endl;
       //Threading::MutexLock locker( m_inputChainListMutex );
       m_inputChainListMutex.lock();
-      m_clientBoundTempStorage.push_back( packet );
+      m_clientBoundTempStorage.push_back( packetIn );
       m_inputChainListMutex.unlock();
 
       //AddClientConnectionNeedingUpdate( id );
       
    }
+   else if( packetIn->packetType == PacketType_ServerToServerWrapper )
+   {
+      PacketServerToServerWrapper* wrapper = static_cast< PacketServerToServerWrapper* >( packetIn );
+      BasePacket* contentPacket = wrapper->pPacket;
+      if( contentPacket->packetType == PacketType_ServerInformation && 
+         contentPacket->packetSubType == PacketServerConnectionInfo::PacketServerIdentifier_GatewayRequestLB_ConnectionIdsResponse )
+      {
+         PacketServerToServer_GatewayRequestLB_ConnectionIdsResponse* response = 
+            static_cast< PacketServerToServer_GatewayRequestLB_ConnectionIdsResponse* > ( contentPacket );
+
+         cout << "Connection id block assigned = ( " << response->beginningId << ":" << response->countId << " )" << endl;
+         if( m_connectionIdBeginningRange == 0 )// this is our working set
+         {
+            m_connectionIdBeginningRange = response->beginningId;
+
+            if( m_connectionIdTracker == 0 )
+            {
+               // this will probably only ever happen once
+               m_inputChainListMutex.lock();
+               m_connectionIdTracker = m_connectionIdBeginningRange;
+               m_inputChainListMutex.unlock();
+            }
+            m_connectionIdCountIds = response->countId;
+         }
+         else // this is our storage set.
+         {
+            m_mutex.lock();
+            m_usableConnectionIds.push_back( ConnectionIdStorage( response->beginningId, response->countId ) );
+            m_mutex.unlock();
+         }
+         m_serverIsAvaitingLB_Approval = false;
+      }
+      PacketFactory factory;
+      factory.CleanupPacket( packetIn );
+      return true;
+   }
    else// the following really cannot happen.. but just in case
    {
       cout << "MainGatewayThread::AddOutputChainData packet not processed" << endl;
-      int type = ( packet->packetType );
+      int type = ( packetIn->packetType );
       const char* packetTypeName = GetPacketTypename( (PacketType)type );
-      cout << "To client  packet: " << packetTypeName << " " << type << " :" << (int)packet->packetSubType << endl;
+      cout << "To client  packet: " << packetTypeName << " " << type << " :" << (int)packetIn->packetSubType << endl;
       PacketFactory factory;
-      factory.CleanupPacket( packet );
+      factory.CleanupPacket( packetIn );
       //assert( 0 );
       //return false;
    }
    return true;
+}
+
+/////////////////////////////////////////////////////////////////////////////////
+
+void  MainGatewayThread::CheckOnConnectionIdBlocks()
+{
+   time_t currentTime;
+   time( &currentTime );
+
+   int timeToWait = timeoutCheckOnConnectionIdBlocks;
+   if( m_connectionIdBeginningRange == 0 ) // we may need a lock here
+      timeToWait = 15;
+
+   if( difftime( currentTime, m_timestampRequestConnectionIdBlocks ) >= timeToWait ) 
+   {
+      m_timestampRequestConnectionIdBlocks = currentTime;
+
+      bool  requestMade = false;
+      if( m_usableConnectionIds.size() < 2 )// we always want at least two blocks
+      {
+         requestMade = RequestMoreConnectionIdsFromLoadBalancer();
+      }
+      // apparently, we are not yet connected to the load balancer... set the time back so we can try again immediately.
+      if( requestMade == false )
+      {
+         m_timestampRequestConnectionIdBlocks = 0;
+      }
+   }
+}
+
+/////////////////////////////////////////////////////////////////////////////////
+
+bool  MainGatewayThread::RequestMoreConnectionIdsFromLoadBalancer()
+{
+   m_outputChainListMutex.lock();
+   BaseOutputContainer tempContainer = m_listOfOutputs;
+   m_outputChainListMutex.unlock();
+
+   ChainLinkIteratorType itOutput = tempContainer.begin();
+   while( itOutput != tempContainer.end() )
+   {
+      IChainedInterface* outputPtr = (*itOutput).m_interface;
+      Fruitadens* fruity = static_cast< Fruitadens* >( outputPtr );
+      if( fruity->GetConnectedServerType() == ServerType_LoadBalancer )
+      {
+         PacketServerToServer_GatewayRequestLB_ConnectionIds* packet = new PacketServerToServer_GatewayRequestLB_ConnectionIds;
+         packet->serverAddress = GetIpAddress();
+         packet->serverId = GetServerId();
+
+         U32 unusedParam = -1;
+         if( fruity->AddOutputChainData( packet, unusedParam ) == false )
+         {
+            PacketFactory factory;
+            BasePacket* pPacket = packet;
+            factory.CleanupPacket( pPacket );
+         }
+         return true;
+      }
+      itOutput++;
+   }
+   return false;
 }
 
 /////////////////////////////////////////////////////////////////////////////////

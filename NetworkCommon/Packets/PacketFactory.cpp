@@ -1466,6 +1466,16 @@ bool     PacketFactory::ParseServerInfo( const U8* bufferIn, int& bufferOffset, 
          *packetOut = SerializeIn< PacketServerDisconnect >( bufferIn, bufferOffset, networkMinorVersion );
       }
       return true;
+   case PacketServerConnectionInfo::PacketServerIdentifier_GatewayRequestLB_ConnectionIds:
+      {
+         *packetOut = SerializeIn< PacketServerToServer_GatewayRequestLB_ConnectionIds >( bufferIn, bufferOffset, networkMinorVersion );
+      }
+      return true;
+   case PacketServerConnectionInfo::PacketServerIdentifier_GatewayRequestLB_ConnectionIdsResponse:
+      {
+         *packetOut = SerializeIn< PacketServerToServer_GatewayRequestLB_ConnectionIdsResponse >( bufferIn, bufferOffset, networkMinorVersion );
+      }
+      return true;
     }
    return false;
 }

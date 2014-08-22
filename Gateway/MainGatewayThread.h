@@ -23,6 +23,12 @@ typedef vector< OutputConnectorList > ListOfOutputLists;
 
 ////////////////////////////////////////////////////////////////////////////////////
 
+struct ConnectionIdStorage
+{
+   ConnectionIdStorage( U32 _id, U16 _count ) : id( _id ), countIds( _count ){}
+   U32 id;
+   U16 countIds;
+};
 
 ////////////////////////////////////////////////////////////////////////////////////
 
@@ -53,6 +59,7 @@ public:
    bool           IsRerouoting() { return ( m_reroutePort != 0 ) && ( m_rerouteAddress.size() > 0 ); }
 
    void           TrackCountStats( StatTracking stat, float value, int sub_category );
+   bool           IsGatewayReady() const;
 
    //-----------------------------------------------------
 
@@ -76,6 +83,11 @@ private:
    void           HandleReroutRequest( U32 connectionId );
    void           UpdateAllClientConnections();
    void           CheckOnServerStatusChanges();
+
+   void           CheckOnConnectionIdBlocks();
+   bool           RequestMoreConnectionIdsFromLoadBalancer();
+
+   void           RequestNewConenctionIdsFromLoadBalancer();
    //void           UpdateRemovedConnections();
 
    int            CallbackFunction();
@@ -90,6 +102,8 @@ private:
    static const U32 timeoutSendConnectionStatisics = 61*2; // 2 minutes
    time_t         m_timestampSendStatServerStatisics;
    static const U32 timeoutSendStatServerStatisics = 10*60;// ten minutes
+   time_t         m_timestampRequestConnectionIdBlocks;
+   static const U32 timeoutCheckOnConnectionIdBlocks = 10*60;// five minutes
 
    //--------------------------------------------------------
 
@@ -97,11 +111,15 @@ private:
    typedef pair< int, KhaanGateway* >        ConnectionPair;
    typedef ConnectionMap::iterator           ConnectionMapIterator;
 
+   list< ConnectionIdStorage >             m_usableConnectionIds;
+
 
    ListOfOutputLists          m_orderedOutputPacketHandlers;
 
    U32                        m_highestNumSimultaneousUsersWatermark;
    U32                        m_connectionIdTracker;
+   U32                        m_connectionIdBeginningRange;
+   U16                        m_connectionIdCountIds;
    std::deque< BasePacket* >  m_clientBoundTempStorage;
 
    ConnectionMap              m_connectionMap;
@@ -114,6 +132,7 @@ private:
 
    bool                       m_isServerDownForMaintenence;
    bool                       m_hasInformedConnectedClientsThatServerIsDownForMaintenence;
+   bool                       m_serverIsAvaitingLB_Approval;
    time_t                     m_scheduledMaintnenceBegins;
    time_t                     m_scheduledMaintnenceEnd;
 

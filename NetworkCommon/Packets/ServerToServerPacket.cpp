@@ -188,3 +188,45 @@ bool  PackageForServerIdentification( const string& serverName, const string& ip
 
 ///////////////////////////////////////////////////////////////
 
+///////////////////////////////////////////////////////////////
+
+bool  PacketServerToServer_GatewayRequestLB_ConnectionIds::SerializeIn( const U8* data, int& bufferOffset, int minorVersion )
+{
+   BasePacket::SerializeIn( data, bufferOffset, minorVersion );
+   Serialize::In( data, bufferOffset, serverAddress, minorVersion );   
+   Serialize::In( data, bufferOffset, serverId, minorVersion );
+
+   return true;
+}
+
+bool  PacketServerToServer_GatewayRequestLB_ConnectionIds::SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const
+{
+   BasePacket::SerializeOut( data, bufferOffset, minorVersion );
+   Serialize::Out( data, bufferOffset, serverAddress, minorVersion );   
+   Serialize::Out( data, bufferOffset, serverId, minorVersion );
+  
+   return true;
+}
+
+///////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////
+
+bool  PacketServerToServer_GatewayRequestLB_ConnectionIdsResponse::SerializeIn( const U8* data, int& bufferOffset, int minorVersion )
+{
+   BasePacket::SerializeIn( data, bufferOffset, minorVersion );
+   Serialize::In( data, bufferOffset, beginningId, minorVersion );
+   Serialize::In( data, bufferOffset, countId, minorVersion );
+
+   return true;
+}
+
+bool  PacketServerToServer_GatewayRequestLB_ConnectionIdsResponse::SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const
+{
+   BasePacket::SerializeOut( data, bufferOffset, minorVersion );
+   Serialize::Out( data, bufferOffset, beginningId, minorVersion );
+   Serialize::Out( data, bufferOffset, countId, minorVersion );
+  
+   return true;
+}
+
+///////////////////////////////////////////////////////////////

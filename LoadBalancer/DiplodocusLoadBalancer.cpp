@@ -13,7 +13,11 @@ using namespace std;
 
 ///////////////////////////////////////////////////////////////////
 
-DiplodocusLoadBalancer::DiplodocusLoadBalancer( const string& serverName, U32 serverId ): Diplodocus< KhaanConnector >( serverName, serverId, 0,  ServerType_LoadBalancer ), m_connectionIdTracker( 100 )
+DiplodocusLoadBalancer::DiplodocusLoadBalancer( const string& serverName, U32 serverId ): 
+   Diplodocus< KhaanConnector >( serverName, serverId, 0,  ServerType_LoadBalancer ), 
+   m_connectionIdTracker( 100 ),
+   m_distributedConnectionIdPoint( 1001 ),
+   m_numConnectionIdsToDistrubute( 5 )
 {
    time( &m_timestampStatsPrint );
    m_timestampSelectPreferredGateway = m_timestampStatsPrint;
@@ -240,6 +244,10 @@ bool  DiplodocusLoadBalancer::HandlePacketFromOtherServer( BasePacket* packet, U
          ServerInfoUpdate( static_cast< const PacketServerConnectionInfo* >( unwrappedPacket ) );
          success = true;
          break;
+      case  PacketServerConnectionInfo::PacketServerIdentifier_GatewayRequestLB_ConnectionIds:
+         RequestConnectionIds( static_cast< const PacketServerToServer_GatewayRequestLB_ConnectionIds* >( unwrappedPacket ) );
+         success = true;
+         break;
       }
    }
 
@@ -451,6 +459,26 @@ DiplodocusLoadBalancer::FindGateway( const string& ipAddress, U16 port, U32 serv
    return m_gatewayRoutes.end();
 }
 
+
+///////////////////////////////////////////////////////////////////
+
+list< GatewayInfo >::iterator 
+DiplodocusLoadBalancer::FindGateway( U32 serverId )
+{
+   list< GatewayInfo >::iterator it = m_gatewayRoutes.begin();
+   while( it != m_gatewayRoutes.end() )
+   {
+      if( serverId && it->serverId == serverId )
+      {
+         return it;
+      }
+    
+      it++;
+   }
+
+   return m_gatewayRoutes.end();
+}
+
 ///////////////////////////////////////////////////////////////////
 
 void     DiplodocusLoadBalancer::NewServerConnection( const PacketServerIdentifier* gatewayInfo )
@@ -516,5 +544,48 @@ void     DiplodocusLoadBalancer::ServerInfoUpdate( const PacketServerConnectionI
 }
 
 ///////////////////////////////////////////////////////////////////
+
+void     DiplodocusLoadBalancer::RequestConnectionIds( const PacketServerToServer_GatewayRequestLB_ConnectionIds* gatewayInfo )
+{
+   list< GatewayInfo >::iterator it = FindGateway( gatewayInfo->serverAddress, 0, gatewayInfo->serverId );
+   if( it != m_gatewayRoutes.end() )
+   {
+      if( it->serverId == gatewayInfo->serverId )
+      {
+         cout << "Requesting connection ids. values( " << m_distributedConnectionIdPoint << ":" << m_numConnectionIdsToDistrubute << ")" << endl;
+         PacketServerToServer_GatewayRequestLB_ConnectionIdsResponse* response = new PacketServerToServer_GatewayRequestLB_ConnectionIdsResponse;
+         if( m_distributedConnectionIdPoint >= ConnectionIdExclusion.low &&  
+            m_distributedConnectionIdPoint <= ConnectionIdExclusion.high )
+         {
+            m_distributedConnectionIdPoint = ConnectionIdExclusion.high + 1;
+         }
+         if( m_distributedConnectionIdPoint + m_numConnectionIdsToDistrubute >= ConnectionIdExclusion.low &&  
+            m_distributedConnectionIdPoint + m_numConnectionIdsToDistrubute <= ConnectionIdExclusion.high )
+         {
+            m_distributedConnectionIdPoint = ConnectionIdExclusion.high + 1;
+         }
+         response->beginningId = m_distributedConnectionIdPoint;
+         response->countId = m_numConnectionIdsToDistrubute;
+         m_distributedConnectionIdPoint += m_numConnectionIdsToDistrubute;
+
+         PackageAndSendToOtherServer( response, gatewayInfo->serverId );
+         return;
+      }
+   }
+
+}
+
+///////////////////////////////////////////////////////////////////
+
+bool     DiplodocusLoadBalancer::PackageAndSendToOtherServer( BasePacket* packet, U32 serverId )
+{
+   PacketServerJobWrapper* wrapper = new PacketServerJobWrapper;
+   wrapper->pPacket = packet;
+   wrapper->serverId = serverId;
+
+   //m_chatServer->AddOutputChainData( wrapper, serverId );
+   return HandlePacketToOtherServer( wrapper, serverId );
+}
+
 
 ///////////////////////////////////////////////////////////////////

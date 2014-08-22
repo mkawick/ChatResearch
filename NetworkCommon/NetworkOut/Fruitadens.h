@@ -94,6 +94,7 @@ protected:
 
    void           AttemptConnection();
    void           SocketHasDisconnectedDuringRecv( int error_number );
+   virtual bool   HandleS2SIdentitfyPacket( BasePacket* packetIn );
 
    SocketType           m_clientSocket;
    bool                 m_isConnected;
@@ -147,6 +148,7 @@ public:
 protected:
 
    bool        PackageLocalServerIdentificationToSend();
+   bool        HandleS2SIdentitfyPacket( BasePacket* packetIn );
 
    bool        m_areLocalIdentifyingParamsSet;
    string      m_localServerName;

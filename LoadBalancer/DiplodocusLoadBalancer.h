@@ -12,6 +12,7 @@ class BasePacket;
 class PacketServerIdentifier;
 class PacketServerDisconnect;
 class PacketServerConnectionInfo;
+class PacketServerToServer_GatewayRequestLB_ConnectionIds;
 
 ///////////////////////////////////////////////////////////////////
 
@@ -81,9 +82,12 @@ private:
    void     NewServerConnection( const PacketServerIdentifier* );
    void     ServerDisconnected( const PacketServerDisconnect* );
    void     ServerInfoUpdate( const PacketServerConnectionInfo* );
+   void     RequestConnectionIds( const PacketServerToServer_GatewayRequestLB_ConnectionIds* );
+   bool     PackageAndSendToOtherServer( BasePacket* packet, U32 serverId );
 
    list< GatewayInfo > m_gatewayRoutes;
    list< GatewayInfo >::iterator FindGateway( const string& ipAddress, U16 port, U32 serverId = 0 );
+   list< GatewayInfo >::iterator FindGateway( U32 serverId );
 
    typedef map< int, int >    SocketToConnectionMap;
    typedef pair<int, int>     SocketToConnectionPair;
@@ -100,6 +104,9 @@ private:
 
    SocketToConnectionMap      m_socketToConnectionMap;
    SocketToConnectionMap      m_connectionToSocketMap;
+
+   U32                        m_distributedConnectionIdPoint;
+   U16                        m_numConnectionIdsToDistrubute;
 
    U32                        m_connectionIdTracker;
    time_t                     m_timestampStatsPrint;

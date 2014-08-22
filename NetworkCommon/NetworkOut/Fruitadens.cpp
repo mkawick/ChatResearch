@@ -437,7 +437,6 @@ bool  Fruitadens::HandlePacketReceived( BasePacket* packetIn )
       return true;
 
    PacketFactory factory;
-
    if( packetIn->packetType == PacketType_Base )
    { 
       // our basic bahavior is to ignore these initialization packets
@@ -448,47 +447,9 @@ bool  Fruitadens::HandlePacketReceived( BasePacket* packetIn )
       }
    }
 
-   // special case... we handle server id directly, but we simply pass through for other s2s comms.
-   if( packetIn->packetType == PacketType_ServerToServerWrapper )
+   if( HandleS2SIdentitfyPacket( packetIn ) == true )
    {
-      PacketServerToServerWrapper* wrapper = static_cast< PacketServerToServerWrapper* >( packetIn );
-
-      // ** note this reset
-      BasePacket* contentPacket = wrapper->pPacket;
-      bool handled2SPacket = false;
-      // ** note
-      switch( contentPacket->packetType )
-      {
-      case PacketType_ServerInformation:
-         {
-            PacketServerIdentifier* unwrappedPacket = static_cast< PacketServerIdentifier * > ( wrapper->pPacket );
-
-            //if( m_connectedGameProductId != unwrappedPacket->gameProductId || m_connectedServerId != wrapper->serverId ) // prevent sups from reporting.
-            {
-               m_connectedServerId = wrapper->serverId;
-               m_connectedGameProductId = unwrappedPacket->gameProductId;
-
-               //std::string ip_txt( inet_ntoa( m_ipAddress.sin_addr ) );
-               cout << endl;
-               cout << "*********  Connected as client to " << unwrappedPacket->serverName << "  **************" << endl;
-               cout << "    " << unwrappedPacket->serverAddress << " : " << static_cast<U32>( unwrappedPacket->serverPort ) << endl;
-               cout << "    type " << static_cast<U32>( m_connectedGameProductId ) << " -- server ID = " << m_connectedServerId << endl;
-               cout << "    isGame = " << boolalpha << unwrappedPacket->isGameServer << ", isController : " << unwrappedPacket->isController << noboolalpha << endl;
-               cout << "**************************************************" << endl;
-            }
-
-            handled2SPacket = true;
-         }
-         break;
-      }
-
-
-      if( handled2SPacket || contentPacket == NULL ) 
-      {
-         factory.CleanupPacket( contentPacket );
-         return true;
-      }
-      // or we fall through
+      return true;
    }
 
    Threading::MutexLock locker( m_inputChainListMutex );
@@ -505,6 +466,13 @@ bool  Fruitadens::HandlePacketReceived( BasePacket* packetIn )
    }
    
    factory.CleanupPacket( packetIn );
+   return false;
+}
+
+//-----------------------------------------------------------------------------
+
+bool  Fruitadens :: HandleS2SIdentitfyPacket( BasePacket* packetIn )
+{
    return false;
 }
 
@@ -673,6 +641,51 @@ bool     FruitadensServer::PackageLocalServerIdentificationToSend()
    }
 
    return true;
+}
+
+//-------------------------------------------------------------------------
+
+bool  FruitadensServer :: HandleS2SIdentitfyPacket( BasePacket* packetIn )
+{
+   // special case... we handle server id directly, but we simply pass through for other s2s comms.
+   if( packetIn->packetType == PacketType_ServerToServerWrapper )
+   {
+      PacketServerToServerWrapper* wrapper = static_cast< PacketServerToServerWrapper* >( packetIn );
+
+      // ** note this reset
+      BasePacket* contentPacket = wrapper->pPacket;
+      bool handled2SPacket = false;
+      // ** note
+      if( contentPacket->packetType == PacketType_ServerInformation && 
+            contentPacket->packetSubType == PacketServerConnectionInfo::PacketServerIdentifier_TypicalInfo )
+      {
+         PacketServerIdentifier* unwrappedPacket = static_cast< PacketServerIdentifier * > ( wrapper->pPacket );
+
+         //if( m_connectedGameProductId != unwrappedPacket->gameProductId || m_connectedServerId != wrapper->serverId ) // prevent sups from reporting.
+         {
+            m_connectedServerId = wrapper->serverId;
+            m_connectedGameProductId = unwrappedPacket->gameProductId;
+
+            //std::string ip_txt( inet_ntoa( m_ipAddress.sin_addr ) );
+            cout << endl;
+            cout << "*********  Connected as client to " << unwrappedPacket->serverName << "  **************" << endl;
+            cout << "    " << unwrappedPacket->serverAddress << " : " << static_cast<U32>( unwrappedPacket->serverPort ) << endl;
+            cout << "    type " << static_cast<U32>( m_connectedGameProductId ) << " -- server ID = " << m_connectedServerId << endl;
+            cout << "    isGame = " << boolalpha << unwrappedPacket->isGameServer << ", isController : " << unwrappedPacket->isController << noboolalpha << endl;
+            cout << "**************************************************" << endl;
+         }
+
+         handled2SPacket = true;
+      }
+
+      if( handled2SPacket || contentPacket == NULL ) 
+      {
+         PacketFactory factory;
+         factory.CleanupPacket( contentPacket );
+         return true;
+      }
+   }
+   return false;
 }
 
 //-------------------------------------------------------------------------
