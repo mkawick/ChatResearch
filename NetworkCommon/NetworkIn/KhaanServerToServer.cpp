@@ -285,7 +285,7 @@ bool  KhaanServerToServer :: PassPacketOn( BasePacket* packet, U32 connectionId 
       IChainedInterface* interfacePtr = chain.m_interface;
       DiplodocusServerToServer * middle = static_cast<DiplodocusServerToServer*>( interfacePtr );
 
-      return middle->AddInputChainData( packet, connectionId );
+      return middle->AddInputChainData( packet, m_serverId );
    }
    return false;
 }
@@ -305,7 +305,8 @@ bool  KhaanServerToServer :: HandleCommandFromGateway( BasePacket* packet, U32 c
       IChainedInterface* interfacePtr = chain.m_interface;
       DiplodocusServerToServer * middle = static_cast<DiplodocusServerToServer*>( interfacePtr );
 
-      return middle->HandleCommandFromGateway( packet, connectionId );
+      return middle->HandleCommandFromGateway( packet, m_serverId );
+      //return middle->HandleCommandFromGateway( packet, connectionId );
    }
    return false;
 }

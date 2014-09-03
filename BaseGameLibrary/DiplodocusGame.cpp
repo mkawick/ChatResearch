@@ -110,7 +110,7 @@ struct st_mysql * DiplodocusGame::GetDBConnection( Database::Deltadromeus::DbCon
 }
 //---------------------------------------------------------------
 
-bool  DiplodocusGame::HandleCommandFromGateway( BasePacket* packet, U32 connectionId )
+bool  DiplodocusGame::HandleCommandFromGateway( BasePacket* packet, U32 gatewayId )
 {
    Threading::MutexLock locker( m_mutex );
 
@@ -123,12 +123,12 @@ bool  DiplodocusGame::HandleCommandFromGateway( BasePacket* packet, U32 connecti
 //---------------------------------------------------------------
 
 // this will always be data coming from the gateway or at least from the outside in.
-bool   DiplodocusGame::AddInputChainData( BasePacket* packet, U32 connectionId ) 
+bool   DiplodocusGame::AddInputChainData( BasePacket* packet, U32 gatewayId ) 
 {
    PacketFactory factory;
    if( packet->packetType == PacketType_GatewayInformation )
    {
-      return HandleCommandFromGateway( packet, connectionId );
+      return HandleCommandFromGateway( packet, gatewayId );
    }
 
    if( packet->packetType == PacketType_ServerJobWrapper )
@@ -164,7 +164,7 @@ bool   DiplodocusGame::AddInputChainData( BasePacket* packet, U32 connectionId )
       PacketCleaner cleaner( packet );
       PacketGatewayWrapper* wrapper = static_cast< PacketGatewayWrapper* >( packet );
       BasePacket* unwrappedPacket = wrapper->pPacket;
-      U32 connectionIdToUse = wrapper->connectionId;
+      U32 connectionId = wrapper->connectionId;
       U8 packetType = unwrappedPacket->packetType;
       U8 packetSubType = unwrappedPacket->packetSubType;
 
@@ -179,7 +179,7 @@ bool   DiplodocusGame::AddInputChainData( BasePacket* packet, U32 connectionId )
                MarshalledData data;
                data.m_data = rawData->data;
                data.m_sizeOfData = rawData->size;
-               m_callbacks->DataFromClient( connectionIdToUse, &data );
+               m_callbacks->DataFromClient( connectionId, &data );
             }
             return true;
          }
@@ -222,7 +222,7 @@ bool   DiplodocusGame::AddInputChainData( BasePacket* packet, U32 connectionId )
       }
       else if( packetType == PacketType_Tournament )
       {
-         HandleUserRequestedTournamentInfo( unwrappedPacket, connectionIdToUse );
+         HandleUserRequestedTournamentInfo( unwrappedPacket, connectionId );
          return true;
       }
       else
@@ -359,6 +359,11 @@ bool   DiplodocusGame::AddOutputChainData( BasePacket* packet, U32 connectionId 
       if( m_connectionIdGateway == 0 )
          return false;
 
+      U32 gatewayId = m_callbacks->GetGatewayId( connectionId );
+
+      if( gatewayId == 0 )
+         gatewayId = m_connectionIdGateway;
+
       m_inputChainListMutex.lock();
       BaseOutputContainer tempInputContainer = m_listOfInputs;
       m_inputChainListMutex.unlock();
@@ -371,7 +376,7 @@ bool   DiplodocusGame::AddOutputChainData( BasePacket* packet, U32 connectionId 
          if( interfacePtr->DoesNameMatch( "KhaanGame" ) )
          {
             KhaanGame* khaan = static_cast< KhaanGame* >( interfacePtr );
-            if( khaan->GetServerId() == m_connectionIdGateway )
+            if( khaan->GetServerId() == gatewayId )
             {
                khaan->AddOutputChainData( packet );
                //khaan->Update();// the gateway may not have a proper connection id.
@@ -779,7 +784,7 @@ void     DiplodocusGame::ConnectUser( const PacketPrepareForUserLogin* loginPack
       ui.id =              loginPacket->userId;
 
       m_mutex.lock();
-      m_callbacks->UserConnected( &ui, connectionId );
+      m_callbacks->UserConnected( &ui, connectionId, gatewayId );
       m_mutex.unlock();
    }
 }

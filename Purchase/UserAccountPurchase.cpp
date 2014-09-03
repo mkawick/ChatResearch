@@ -56,6 +56,15 @@ void     UserAccountPurchase::UserLoggedOut()
 
    //---------------------------------------
 
+void     UserAccountPurchase::ClearUserLogout()
+{
+   m_status = Status_initial_login;
+   m_readyForCleanup = false;
+   m_logoutTime = 0;
+}
+
+   //---------------------------------------
+
 bool     UserAccountPurchase::LogoutExpired()
 {
    if( m_readyForCleanup == false )
@@ -193,7 +202,7 @@ bool  UserAccountPurchase::HandleReceipt( const PacketPurchase_ValidatePurchaseR
    PacketPurchase_ValidatePurchaseReceiptResponse* response = new PacketPurchase_ValidatePurchaseReceiptResponse;
    response->transactionId = receiptPacket->transactionId;
    response->errorCode = ( success != true ) ;// 0 means things went well. 1 means bad
-   m_purchaseManager->SendPacketToGateway( response, m_userTicket.connectionId );
+   m_purchaseManager->SendPacketToGateway( response, m_userTicket.connectionId, m_userTicket.gatewayId );
 
    return true;
 }
@@ -240,7 +249,7 @@ bool     UserAccountPurchase::MakeRefund( const PacketTournament_PurchaseTournam
    PacketTournament_PurchaseTournamentEntryRefundResponse* response = new PacketTournament_PurchaseTournamentEntryRefundResponse;
    response->uniqueTransactionId = refundPacket->uniqueTransactionId;
    response->result = 0;// success
-   m_purchaseManager->SendPacketToGateway( response, connectionId );
+   m_purchaseManager->SendPacketToGateway( response, connectionId, m_userTicket.gatewayId );
 
    return true;
 }

@@ -393,7 +393,7 @@ static void OnRequestGameProfile_SummonWar( UserStatsMainThread *pUserStats, U32
 */
 
 
-bool OnRequestUserProfileStats_Ascension(UserStatsMainThread *pUserStats, U32 connectionId, unsigned int profileUserId )
+bool OnRequestUserProfileStats_Ascension(UserStatsMainThread *pUserStats, U32 connectionId, U32 gatewayId, unsigned int profileUserId )
 {
    PacketUserStats_RequestUserProfileStatsResponse* response = new PacketUserStats_RequestUserProfileStatsResponse;
    response->profileUserId = profileUserId;
@@ -448,7 +448,7 @@ bool OnRequestUserProfileStats_Ascension(UserStatsMainThread *pUserStats, U32 co
       mysql_free_result(res);
    }
 
-   pUserStats->SendPacketToGateway( response, connectionId );
+   pUserStats->SendPacketToGateway( response, connectionId, gatewayId );
    return true;
 }
 

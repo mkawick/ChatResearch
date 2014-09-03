@@ -171,7 +171,7 @@ bool     InvitationManager::ProcessDbResult( PacketDbQueryResult* dbResult )
 
 ///////////////////////////////////////////////////////////////////
 
-bool     InvitationManager::HandlePacketRequest( const BasePacket* packet, U32 connectionId )
+bool     InvitationManager::HandlePacketRequest( const BasePacket* packet, U32 connectionId, U32 gatewayId )
 {
    switch( packet->packetSubType )
    {
@@ -180,14 +180,14 @@ bool     InvitationManager::HandlePacketRequest( const BasePacket* packet, U32 c
       assert( 0 );
       break;
    case PacketInvitation::InvitationType_EchoToServer:
-      return EchoHandler( connectionId );
+      return EchoHandler( connectionId, gatewayId );
    case PacketInvitation::InvitationType_EchoToClient:
       cout << "Echo to client arrived at server" << endl;
       assert( 0 );
       break;
 
    case PacketInvitation::InvitationType_InviteUser:
-      return InviteUserToChatRoom( static_cast <const PacketInvitation_InviteUser*>( packet ), connectionId );
+      return InviteUserToChatRoom( static_cast <const PacketInvitation_InviteUser*>( packet ), connectionId, gatewayId );
 
    case PacketInvitation::InvitationType_InviteUserResponse:
       cout << "InviteUserResponse arrived at server" << endl;
@@ -195,7 +195,7 @@ bool     InvitationManager::HandlePacketRequest( const BasePacket* packet, U32 c
       break;
 
    case PacketInvitation::InvitationType_CancelInvitation:
-      return CancelInvitation( static_cast< const PacketInvitation_CancelInvitation* >( packet ), connectionId );
+      return CancelInvitation( static_cast< const PacketInvitation_CancelInvitation* >( packet ), connectionId, gatewayId );
 
    case PacketInvitation::InvitationType_InvitationWasCancelled:
       cout << "InvitationType_InvitationWasCancelled arrived at server" << endl;
@@ -203,16 +203,16 @@ bool     InvitationManager::HandlePacketRequest( const BasePacket* packet, U32 c
       break;
 
    case PacketInvitation::InvitationType_RejectInvitation:
-      return RejectInvitation( static_cast< const PacketInvitation_RejectInvitation*> ( packet ), connectionId );
+      return RejectInvitation( static_cast< const PacketInvitation_RejectInvitation*> ( packet ), connectionId, gatewayId );
 
    case PacketInvitation::InvitationType_AcceptInvitation: 
-      return AcceptInvitation( static_cast< const PacketInvitation_AcceptInvitation*> ( packet ), connectionId );
+      return AcceptInvitation( static_cast< const PacketInvitation_AcceptInvitation*> ( packet ), connectionId, gatewayId );
 
    case PacketInvitation::InvitationType_GetListOfInvitations:
-      return RequestListOfInvitations( static_cast < const PacketInvitation_GetListOfInvitations*> ( packet ), connectionId );
+      return RequestListOfInvitations( static_cast < const PacketInvitation_GetListOfInvitations*> ( packet ), connectionId, gatewayId );
 
    case PacketInvitation::InvitationType_GetListOfInvitationsForGroup: 
-      return RequestListOfIntivationsToGroup( static_cast< const PacketInvitation_GetListOfInvitationsForGroup*> ( packet ), connectionId );
+      return RequestListOfIntivationsToGroup( static_cast< const PacketInvitation_GetListOfInvitationsForGroup*> ( packet ), connectionId, gatewayId );
 
    case PacketInvitation::InvitationType_GetListOfInvitationsForGroupResponse:
       cout << "InvitationType_InvitationWasCancelled arrived at server" << endl;
@@ -246,16 +246,17 @@ bool     InvitationManager::RemoveAnyRelatedInvitations( const string& groupUuid
          DeleteInvitationFromDb( invitationId );
 
          U32 connectionId = 0;
-         m_mainServer->GetUserConnectionId( inviteeUuid, connectionId );
+         U32 gatewayId = 0;
+         m_mainServer->GetUserConnectionId( inviteeUuid, connectionId, gatewayId );
          if( connectionId != 0 )
          {
-            SendUserHisInvitations <PacketInvitation_GetListOfInvitationsResponse> ( m_invitationMap, IsUserInThisInvitation, inviteeUuid, connectionId );
+            SendUserHisInvitations <PacketInvitation_GetListOfInvitationsResponse> ( m_invitationMap, IsUserInThisInvitation, inviteeUuid, connectionId, gatewayId );
          }
          connectionId = 0;
-         m_mainServer->GetUserConnectionId( inviterUuid, connectionId );
+         m_mainServer->GetUserConnectionId( inviterUuid, connectionId, gatewayId );
          if( connectionId != 0 )
          {
-            SendUserHisInvitations <PacketInvitation_GetListOfInvitationsResponse> ( m_invitationMap, IsUserInThisInvitation, inviterUuid, connectionId );
+            SendUserHisInvitations <PacketInvitation_GetListOfInvitationsResponse> ( m_invitationMap, IsUserInThisInvitation, inviterUuid, connectionId, gatewayId );
          }
 
          found = true;// there could be multiples for this group... let's not break early.
@@ -271,29 +272,29 @@ bool     InvitationManager::RemoveAnyRelatedInvitations( const string& groupUuid
 
 //------------------------------------------------------------------------------------------------
 
-bool     InvitationManager::EchoHandler( U32 connectionId )
+bool     InvitationManager::EchoHandler( U32 connectionId, U32 gatewayId )
 {
    cout << " Echo " << endl;
    PacketInvitation_EchoToClient* echo = new PacketInvitation_EchoToClient;
-   SendMessageToClient( echo, connectionId );
+   SendMessageToClient( echo, connectionId, gatewayId );
    return true;
 }
 
 
 ///////////////////////////////////////////////////////////////////
 
-bool     InvitationManager::InviteUserToChatRoom( const PacketInvitation_InviteUser* invitationPacket, U32 connectionId )
+bool     InvitationManager::InviteUserToChatRoom( const PacketInvitation_InviteUser* invitationPacket, U32 connectionId, U32 gatewayId )
 {
    if( m_groupLookup == NULL )
    {
-      m_mainServer->SendErrorToClient( connectionId, PacketErrorReport::ErrorType_Invitation_BadServerSetup );
+      m_mainServer->SendErrorToClient( connectionId, gatewayId, PacketErrorReport::ErrorType_Invitation_BadServerSetup );
       return false;
    }
 
    const string& senderUuid = m_mainServer->GetUserUuidByConnectionId( connectionId );
    if( senderUuid.size() == 0 )
    {
-      m_mainServer->SendErrorToClient( connectionId, PacketErrorReport::ErrorType_UserUnknown );
+      m_mainServer->SendErrorToClient( connectionId, gatewayId, PacketErrorReport::ErrorType_UserUnknown );
       return false;
    }
 
@@ -301,13 +302,13 @@ bool     InvitationManager::InviteUserToChatRoom( const PacketInvitation_InviteU
    string inviteeName = m_groupLookup->GetUserName( invitationPacket->userUuid.c_str() );
    if( inviteeName.size() == 0 )
    {
-      m_mainServer->SendErrorToClient( connectionId, PacketErrorReport::ErrorType_UserUnknown );
+      m_mainServer->SendErrorToClient( connectionId, gatewayId, PacketErrorReport::ErrorType_UserUnknown );
       return false;
    }
 
    if( m_groupLookup->IsGroupValid( invitationPacket->inviteGroup ) == false )
    {
-      m_mainServer->SendErrorToClient( connectionId, PacketErrorReport::ErrorType_BadChatChannel );
+      m_mainServer->SendErrorToClient( connectionId, gatewayId, PacketErrorReport::ErrorType_BadChatChannel );
       return false;
    }
 
@@ -317,8 +318,8 @@ bool     InvitationManager::InviteUserToChatRoom( const PacketInvitation_InviteU
       response->succeeded = false;
       response->newInvitationUuid = "";
 
-      SendMessageToClient( response, connectionId );
-      m_mainServer->SendErrorToClient( connectionId, PacketErrorReport::ErrorType_Invitation_ExistingInvitationWithThatUser );
+      SendMessageToClient( response, connectionId, gatewayId );
+      m_mainServer->SendErrorToClient( connectionId, gatewayId, PacketErrorReport::ErrorType_Invitation_ExistingInvitationWithThatUser );
       return false;
    }
 
@@ -343,20 +344,21 @@ bool     InvitationManager::InviteUserToChatRoom( const PacketInvitation_InviteU
    InsertInvitationIntoDb( invite );   
 
    // notify sender of the new invitation sent
-   SendUserHisInvitations <PacketInvitation_GetListOfInvitationsResponse> ( m_invitationMap, IsUserInThisInvitation, senderUuid, connectionId );
+   SendUserHisInvitations <PacketInvitation_GetListOfInvitationsResponse> ( m_invitationMap, IsUserInThisInvitation, senderUuid, connectionId, gatewayId );
    
    PacketInvitation_InviteUserResponse* response = new PacketInvitation_InviteUserResponse;
    response->succeeded = true;
    response->newInvitationUuid = invitationUuid;
 
-   SendMessageToClient( response, connectionId );
+   SendMessageToClient( response, connectionId, gatewayId );
 
    U32 receivedConnectionId = 0;
-   m_mainServer->GetUserConnectionId( invitationPacket->userUuid.c_str(), receivedConnectionId );
+   U32 receivedGatewayId = 0;
+   m_mainServer->GetUserConnectionId( invitationPacket->userUuid.c_str(), receivedConnectionId, receivedGatewayId );
    // notify recipient of the new invitation received.
    if( receivedConnectionId != 0 )
    {
-      SendUserHisInvitations <PacketInvitation_GetListOfInvitationsResponse> ( m_invitationMap, IsUserInThisInvitation, invitationPacket->userUuid.c_str(), receivedConnectionId );
+      SendUserHisInvitations <PacketInvitation_GetListOfInvitationsResponse> ( m_invitationMap, IsUserInThisInvitation, invitationPacket->userUuid.c_str(), receivedConnectionId, receivedGatewayId );
      /* PacketInvitation_InviteUserResponse* response = new PacketInvitation_InviteUserResponse;
       response->succeeded = true;
       response->newInvitationUuid = invitationUuid;
@@ -368,21 +370,21 @@ bool     InvitationManager::InviteUserToChatRoom( const PacketInvitation_InviteU
 
 ///////////////////////////////////////////////////////////////////
 
-bool     InvitationManager::CancelInvitation( const PacketInvitation_CancelInvitation* invite, U32 connectionId )
+bool     InvitationManager::CancelInvitation( const PacketInvitation_CancelInvitation* invite, U32 connectionId, U32 gatewayId )
 {
   /* m_mainServer->SendErrorToClient( connectionId, PacketErrorReport::ErrorType_IncompleteFeature );
       return false;*/
 
    if( m_groupLookup == NULL )
    {
-      m_mainServer->SendErrorToClient( connectionId, PacketErrorReport::ErrorType_Invitation_BadServerSetup );
+      m_mainServer->SendErrorToClient( connectionId, gatewayId, PacketErrorReport::ErrorType_Invitation_BadServerSetup );
       return false;
    }
 
    const string& senderUuid = m_mainServer->GetUserUuidByConnectionId( connectionId );
    if( senderUuid.size() == 0 )
    {
-      m_mainServer->SendErrorToClient( connectionId, PacketErrorReport::ErrorType_UserUnknown );
+      m_mainServer->SendErrorToClient( connectionId, gatewayId, PacketErrorReport::ErrorType_UserUnknown );
       return false;
    }
 
@@ -390,7 +392,7 @@ bool     InvitationManager::CancelInvitation( const PacketInvitation_CancelInvit
    InvitationMapConstIterator it = FindInvitation( senderUuid, invite->invitationUuid );
    if( it == m_invitationMap.end() )
    {
-      m_mainServer->SendErrorToClient( connectionId, PacketErrorReport::ErrorType_Invitation_DoesNotExist );
+      m_mainServer->SendErrorToClient( connectionId, gatewayId, PacketErrorReport::ErrorType_Invitation_DoesNotExist );
       return false;
    }
 
@@ -400,13 +402,14 @@ bool     InvitationManager::CancelInvitation( const PacketInvitation_CancelInvit
    m_invitationMap.erase( it );
    DeleteInvitationFromDb( invitationId );
 
-   SendUserHisInvitations <PacketInvitation_GetListOfInvitationsResponse> ( m_invitationMap, IsUserInThisInvitation, senderUuid, connectionId );
+   SendUserHisInvitations <PacketInvitation_GetListOfInvitationsResponse> ( m_invitationMap, IsUserInThisInvitation, senderUuid, connectionId, gatewayId );
 
    U32 receivedConnectionId = 0;
-   m_mainServer->GetUserConnectionId( inviteeUuid, receivedConnectionId );
+   U32 receivedGatewayId = 0;
+   m_mainServer->GetUserConnectionId( inviteeUuid, receivedConnectionId, receivedGatewayId );
    if( receivedConnectionId != 0 )
    {
-      SendUserHisInvitations <PacketInvitation_GetListOfInvitationsResponse> ( m_invitationMap, IsUserInThisInvitation, inviteeUuid, receivedConnectionId );
+      SendUserHisInvitations <PacketInvitation_GetListOfInvitationsResponse> ( m_invitationMap, IsUserInThisInvitation, inviteeUuid, receivedConnectionId, receivedGatewayId );
    }
 
    return true;
@@ -414,13 +417,13 @@ bool     InvitationManager::CancelInvitation( const PacketInvitation_CancelInvit
 
 ///////////////////////////////////////////////////////////////////
 
-bool     InvitationManager::RejectInvitation( const PacketInvitation_RejectInvitation* invitation, U32 connectionId  )
+bool     InvitationManager::RejectInvitation( const PacketInvitation_RejectInvitation* invitation, U32 connectionId, U32 gatewayId )
 {
    stringhash lookup = GenerateUniqueHash( invitation->invitationUuid );
    InvitationMapIterator it = m_invitationMap.find( lookup );
    if( it == m_invitationMap.end() )
    {
-      m_mainServer->SendErrorToClient( connectionId, PacketErrorReport::ErrorType_Invitation_DoesNotExist );
+      m_mainServer->SendErrorToClient( connectionId, gatewayId, PacketErrorReport::ErrorType_Invitation_DoesNotExist );
       return false;
    }
 
@@ -429,29 +432,30 @@ bool     InvitationManager::RejectInvitation( const PacketInvitation_RejectInvit
    string rejecterUuid = m_mainServer->GetUserUuidByConnectionId( connectionId );
    if( rejecterUuid.size() == 0 )
    {
-      m_mainServer->SendErrorToClient( connectionId, PacketErrorReport::ErrorType_UserUnknown );
+      m_mainServer->SendErrorToClient( connectionId, gatewayId, PacketErrorReport::ErrorType_UserUnknown );
       return false;
    }
    if( invite.inviteeUuid.c_str() != rejecterUuid )
    {
-      m_mainServer->SendErrorToClient( connectionId, PacketErrorReport::ErrorType_Invitation_DoesNotExist );// you are not allowed to accept this.
+      m_mainServer->SendErrorToClient( connectionId, gatewayId, PacketErrorReport::ErrorType_Invitation_DoesNotExist );// you are not allowed to accept this.
       return false;
    }
 
    U32 invitationId = invite.invitationId;
    string inviterUuid = invite.inviterUuid;
    U32 inviterConnectionId = 0;
-   m_mainServer->GetUserConnectionId( inviterUuid, inviterConnectionId );
+   U32 inviterGatewayId = 0;
+   m_mainServer->GetUserConnectionId( inviterUuid, inviterConnectionId, inviterGatewayId );
    m_invitationMap.erase( it );// must erase before sending the updated lists.
 
    PacketInvitation_RejectInvitationResponse* response = new PacketInvitation_RejectInvitationResponse;
-   SendMessageToClient( response, connectionId );
-   SendUserHisInvitations <PacketInvitation_GetListOfInvitationsResponse> ( m_invitationMap, IsUserInThisInvitation, rejecterUuid, connectionId );
+   SendMessageToClient( response, connectionId, gatewayId );
+   SendUserHisInvitations <PacketInvitation_GetListOfInvitationsResponse> ( m_invitationMap, IsUserInThisInvitation, rejecterUuid, connectionId, gatewayId );
 
    
    if( inviterConnectionId != 0 )
    {
-      SendUserHisInvitations <PacketInvitation_GetListOfInvitationsResponse> ( m_invitationMap, IsUserInThisInvitation, inviterUuid, inviterConnectionId );
+      SendUserHisInvitations <PacketInvitation_GetListOfInvitationsResponse> ( m_invitationMap, IsUserInThisInvitation, inviterUuid, inviterConnectionId, inviterGatewayId );
    }
 
    DeleteInvitationFromDb( invitationId );
@@ -461,13 +465,13 @@ bool     InvitationManager::RejectInvitation( const PacketInvitation_RejectInvit
 
 ///////////////////////////////////////////////////////////////////
 
-bool     InvitationManager::AcceptInvitation( const PacketInvitation_AcceptInvitation* invitation, U32 connectionId  )
+bool     InvitationManager::AcceptInvitation( const PacketInvitation_AcceptInvitation* invitation, U32 connectionId, U32 gatewayId )
 {
    stringhash lookup = GenerateUniqueHash( invitation->invitationUuid );
    InvitationMapIterator it = m_invitationMap.find( lookup );
    if( it == m_invitationMap.end() )
    {
-      m_mainServer->SendErrorToClient( connectionId, PacketErrorReport::ErrorType_Invitation_DoesNotExist );
+      m_mainServer->SendErrorToClient( connectionId, gatewayId, PacketErrorReport::ErrorType_Invitation_DoesNotExist );
       return false;
    }
 
@@ -477,12 +481,12 @@ bool     InvitationManager::AcceptInvitation( const PacketInvitation_AcceptInvit
    string inviteeUuid = m_mainServer->GetUserUuidByConnectionId( connectionId );
    if( inviteeUuid.size() == 0 )
    {
-      m_mainServer->SendErrorToClient( connectionId, PacketErrorReport::ErrorType_UserUnknown );
+      m_mainServer->SendErrorToClient( connectionId, gatewayId, PacketErrorReport::ErrorType_UserUnknown );
       return false;
    }
    if( inviteeUuid != invite.inviteeUuid.c_str() )
    {
-      m_mainServer->SendErrorToClient( connectionId, PacketErrorReport::ErrorType_Invitation_DoesNotExist );// you are not allowed to accept this.
+      m_mainServer->SendErrorToClient( connectionId, gatewayId, PacketErrorReport::ErrorType_Invitation_DoesNotExist );// you are not allowed to accept this.
       return false;
    }
 
@@ -490,13 +494,13 @@ bool     InvitationManager::AcceptInvitation( const PacketInvitation_AcceptInvit
    {
       if( m_groupLookup == NULL )
       {
-         m_mainServer->SendErrorToClient( connectionId, PacketErrorReport::ErrorType_Invitation_BadServerSetup );
+         m_mainServer->SendErrorToClient( connectionId, gatewayId, PacketErrorReport::ErrorType_Invitation_BadServerSetup );
          return false;
       }
 
       if( m_groupLookup->UserAddsSelfToGroup( invite.groupUuid, invite.inviteeUuid ) == false )// bad chat room
       {
-         m_mainServer->SendErrorToClient( connectionId, PacketErrorReport::ErrorType_Invitation_DoesNotExist );
+         m_mainServer->SendErrorToClient( connectionId, gatewayId, PacketErrorReport::ErrorType_Invitation_DoesNotExist );
          return false;
       }
    }
@@ -504,18 +508,19 @@ bool     InvitationManager::AcceptInvitation( const PacketInvitation_AcceptInvit
    U32 invitationId = invite.invitationId;
    string inviterUuid = invite.inviterUuid;
    U32 inviterConnectionId = 0;
-   m_mainServer->GetUserConnectionId( inviterUuid, inviterConnectionId );
+   U32 inviterGatewayId = 0;
+   m_mainServer->GetUserConnectionId( inviterUuid, inviterConnectionId, inviterGatewayId );
    string groupUuid = invite.groupUuid;
 
    m_invitationMap.erase( it );// must erase before sending the updated lists.
    if( inviterConnectionId != 0 )
    {
-      SendUserHisInvitations <PacketInvitation_GetListOfInvitationsResponse> ( m_invitationMap, IsUserInThisInvitation, inviterUuid, inviterConnectionId );
+      SendUserHisInvitations <PacketInvitation_GetListOfInvitationsResponse> ( m_invitationMap, IsUserInThisInvitation, inviterUuid, inviterConnectionId, inviterGatewayId );
    }
 
    DeleteAllInvitationsToThisGroup( groupUuid, inviteeUuid );
 
-   SendUserHisInvitations <PacketInvitation_GetListOfInvitationsResponse> ( m_invitationMap, IsUserInThisInvitation, inviteeUuid, connectionId );
+   SendUserHisInvitations <PacketInvitation_GetListOfInvitationsResponse> ( m_invitationMap, IsUserInThisInvitation, inviteeUuid, connectionId, gatewayId );
 
    DeleteInvitationFromDb( invitationId );   
 
@@ -539,10 +544,11 @@ void  InvitationManager::DeleteAllInvitationsToThisGroup( const string& groupUui
             U32 invitationId = invite.invitationId; 
             const string& inviterUuid = invite.inviterUuid;
             U32 inviterConnectionId = 0;
-            m_mainServer->GetUserConnectionId( inviterUuid, inviterConnectionId );
+            U32 inviterGatewayId = 0;
+            m_mainServer->GetUserConnectionId( inviterUuid, inviterConnectionId, inviterGatewayId );
             if( inviterConnectionId )
             {
-               SendUserHisInvitations <PacketInvitation_GetListOfInvitationsResponse> ( m_invitationMap, IsUserInThisInvitation, inviterUuid, inviterConnectionId );
+               SendUserHisInvitations <PacketInvitation_GetListOfInvitationsResponse> ( m_invitationMap, IsUserInThisInvitation, inviterUuid, inviterConnectionId, inviterGatewayId );
             }
             DeleteInvitationFromDb( invitationId ); 
             it = m_invitationMap.erase( it );
@@ -558,25 +564,25 @@ void  InvitationManager::DeleteAllInvitationsToThisGroup( const string& groupUui
 
 ///////////////////////////////////////////////////////////////////
 
-bool     InvitationManager::RequestListOfInvitations( const PacketInvitation_GetListOfInvitations* request, U32 connectionId )
+bool     InvitationManager::RequestListOfInvitations( const PacketInvitation_GetListOfInvitations* request, U32 connectionId, U32 gatewayId )
 {
    string senderUuid = m_mainServer->GetUserUuidByConnectionId( connectionId );
    if( senderUuid.size() == 0 )
    {
-      m_mainServer->SendErrorToClient( connectionId, PacketErrorReport::ErrorType_UserUnknown );
+      m_mainServer->SendErrorToClient( connectionId, gatewayId, PacketErrorReport::ErrorType_UserUnknown );
       return false;
    }
 
-   SendUserHisInvitations <PacketInvitation_GetListOfInvitationsResponse> ( m_invitationMap, IsUserInThisInvitation, senderUuid, connectionId );
+   SendUserHisInvitations <PacketInvitation_GetListOfInvitationsResponse> ( m_invitationMap, IsUserInThisInvitation, senderUuid, connectionId, gatewayId );
    return true;
 }
 
-bool     InvitationManager::RequestListOfIntivationsToGroup( const PacketInvitation_GetListOfInvitationsForGroup* request, U32 connectionId )
+bool     InvitationManager::RequestListOfIntivationsToGroup( const PacketInvitation_GetListOfInvitationsForGroup* request, U32 connectionId, U32 gatewayId )
 {
    string senderUuid = m_mainServer->GetUserUuidByConnectionId( connectionId );
    if( senderUuid.size() == 0 )
    {
-      m_mainServer->SendErrorToClient( connectionId, PacketErrorReport::ErrorType_UserUnknown );
+      m_mainServer->SendErrorToClient( connectionId, gatewayId, PacketErrorReport::ErrorType_UserUnknown );
       return false;
    }
 
@@ -588,14 +594,14 @@ bool     InvitationManager::RequestListOfIntivationsToGroup( const PacketInvitat
 
    //m_invitationMap;
 
-   SendUserHisInvitations <PacketInvitation_GetListOfInvitationsForGroupResponse> ( m_invitationMap, IsInvitationGroup, request->groupUuid, connectionId );
+   SendUserHisInvitations <PacketInvitation_GetListOfInvitationsForGroupResponse> ( m_invitationMap, IsInvitationGroup, request->groupUuid, connectionId, gatewayId );
    return true;
 }
 
 ///////////////////////////////////////////////////////////////////
 
 template< typename PacketType >
- void    InvitationManager::SendUserHisInvitations( const InvitationMap& listOfInvitations, MatchInvitationType compare, const string& uuidId, U32 connectionId )
+ void    InvitationManager::SendUserHisInvitations( const InvitationMap& listOfInvitations, MatchInvitationType compare, const string& uuidId, U32 connectionId, U32 gatewayId )
 {
    // todo, add looking up the group names if the name is blank
 
@@ -606,7 +612,7 @@ template< typename PacketType >
       PacketType* response = new PacketType;
       response->uuid = uuidId;
       response->invitationList.SetIndexParams( 0, 0 );
-      SendMessageToClient( response, connectionId );
+      SendMessageToClient( response, connectionId, gatewayId );
       return;
    }   
 
@@ -630,7 +636,7 @@ template< typename PacketType >
    response->invitationList.SetIndexParams( currentOffset, countForThisUser );
    if( countForThisUser == 0 )
    {
-      SendMessageToClient( response, connectionId );
+      SendMessageToClient( response, connectionId, gatewayId );
       return;
    }
 
@@ -644,7 +650,7 @@ template< typename PacketType >
          response->invitationList.insert( invite.groupUuid, invite );
          if( response->invitationList.size() >= maxInvitationsToSend )
          {
-            SendMessageToClient( response, connectionId );
+            SendMessageToClient( response, connectionId, gatewayId );
 
             currentOffset += maxInvitationsToSend; // important here
 
@@ -665,7 +671,7 @@ template< typename PacketType >
    }
    if( response && response->invitationList.size() != 0 )
    {
-      SendMessageToClient( response, connectionId );
+      SendMessageToClient( response, connectionId, gatewayId );
    }
    else
    {
@@ -832,7 +838,7 @@ void           InvitationManager::SendInvitationToSenderAndRecipient( const Invi
 */
 //---------------------------------------------------------------
 
-bool     InvitationManager::SendMessageToClient( BasePacket* packet, U32 connectionId ) const
+bool     InvitationManager::SendMessageToClient( BasePacket* packet, U32 connectionId, U32 gatewayId ) const
 {
    if( packet->packetType != PacketType_Invitation )
    {
@@ -845,7 +851,7 @@ bool     InvitationManager::SendMessageToClient( BasePacket* packet, U32 connect
    PacketGatewayWrapper* wrapper = new PacketGatewayWrapper();
    wrapper->SetupPacket( packet, connectionId );
 
-   m_mainServer->SendMessageToClient( wrapper, connectionId );
+   m_mainServer->SendMessageToClient( wrapper, connectionId, gatewayId );
    return true;
 }
 

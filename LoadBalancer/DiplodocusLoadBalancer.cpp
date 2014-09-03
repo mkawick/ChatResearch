@@ -12,21 +12,25 @@ using namespace std;
 #include "../NetworkCommon/Packets/ServerToServerPacket.h"
 
 ///////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////
 
 DiplodocusLoadBalancer::DiplodocusLoadBalancer( const string& serverName, U32 serverId ): 
    Diplodocus< KhaanConnector >( serverName, serverId, 0,  ServerType_LoadBalancer ), 
    m_connectionIdTracker( 100 ),
    m_distributedConnectionIdPoint( 1001 ),
-   m_numConnectionIdsToDistrubute( 5 )
+   m_numConnectionIdsToDistrubute( 40 )
 {
    time( &m_timestampStatsPrint );
    m_timestampSelectPreferredGateway = m_timestampStatsPrint;
 }
 
+///////////////////////////////////////////////////////////////////
+
 DiplodocusLoadBalancer::~DiplodocusLoadBalancer()
 {
 }
 
+///////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////
 
 void  DiplodocusLoadBalancer::AddGatewayAddress( const string& address, U16 port )
@@ -64,7 +68,7 @@ U32      DiplodocusLoadBalancer::GetNextConnectionId()
    return returnValue;
 }
 
-//-----------------------------------------------------------------------------------------
+///////////////////////////////////////////////////////////////////
 
 int   DiplodocusLoadBalancer::MainLoop_InputProcessing()
 {
@@ -78,7 +82,7 @@ int   DiplodocusLoadBalancer::MainLoop_InputProcessing()
    return 1;
 }
 
-//-----------------------------------------------------------------------------------------
+///////////////////////////////////////////////////////////////////
 
 void     DiplodocusLoadBalancer::OutputCurrentStats()
 {
@@ -123,14 +127,14 @@ void     DiplodocusLoadBalancer::OutputCurrentStats()
    }
 }
 
-//-----------------------------------------------------------------------------------------
+///////////////////////////////////////////////////////////////////
 
 bool gatewayCompare( GatewayInfo* i, GatewayInfo* j ) 
 { 
    return ( i->currentLoad < j->currentLoad ); 
 }
 
-//-----------------------------------------------------------------------------------------
+///////////////////////////////////////////////////////////////////
 
 void     DiplodocusLoadBalancer::SelectPreferredGateways()
 {
@@ -175,7 +179,7 @@ void     DiplodocusLoadBalancer::SelectPreferredGateways()
 }
 
 
-//-----------------------------------------------------------------------------------------
+///////////////////////////////////////////////////////////////////
 
 void     DiplodocusLoadBalancer::InputConnected( IChainedInterface * chainedInput )
 {
@@ -196,7 +200,7 @@ void     DiplodocusLoadBalancer::InputConnected( IChainedInterface * chainedInpu
    m_connectionsNeedingUpdate.push_back( newId );
 }
 
-//-----------------------------------------------------------------------------------------
+///////////////////////////////////////////////////////////////////
 
 void     DiplodocusLoadBalancer::InputRemovalInProgress( IChainedInterface * chainedInput )
 {
@@ -260,7 +264,7 @@ bool  DiplodocusLoadBalancer::HandlePacketFromOtherServer( BasePacket* packet, U
 }
 
 
-//-----------------------------------------------------------------------------------------
+///////////////////////////////////////////////////////////////////
 
 bool     DiplodocusLoadBalancer::AddInputChainData( BasePacket* packet, U32 connectionId )
 {
@@ -288,7 +292,7 @@ bool     DiplodocusLoadBalancer::AddInputChainData( BasePacket* packet, U32 conn
    return false;
 }
 
-//-----------------------------------------------------------------------------------------
+///////////////////////////////////////////////////////////////////
 
 bool  IsOnSameNetwork( const string& myNetwork, const string& potentialMatch )
 {
@@ -312,13 +316,37 @@ bool  IsOnSameNetwork( const string& myNetwork, const string& potentialMatch )
    return false;
 }
 
-//-----------------------------------------------------------------------------------------
+///////////////////////////////////////////////////////////////////
+
+
+#define HACK_FOR_MULTIPLE_GATEWAY_TESTING
+
+#ifdef HACK_FOR_MULTIPLE_GATEWAY_TESTING
+int indexForRotatingGatewayIndex = 1;
+#else
+int indexForRotatingGatewayIndex = -1;
+#endif // HACK_FOR_MULTIPLE_GATEWAY_TESTING
+
+///////////////////////////////////////////////////////////////////
 
 void     DiplodocusLoadBalancer::HandleRerouteRequest( U32 connectionId )
 {
    m_inputChainListMutex.lock();
+   int numGatewayRoutes = m_gatewayRoutes.size();
    ConnectionMap localMap = m_connectionMap;
    m_inputChainListMutex.unlock();
+
+   int offsetIndex = 0;
+#ifdef HACK_FOR_MULTIPLE_GATEWAY_TESTING
+   //offsetIndex = 1;// never select the first one
+   if( indexForRotatingGatewayIndex >= numGatewayRoutes )
+      indexForRotatingGatewayIndex = 0;
+
+   offsetIndex = indexForRotatingGatewayIndex++;
+#endif // HACK_FOR_MULTIPLE_GATEWAY_TESTING
+
+   bool  hasNormal = false;
+   bool  hasAsset = false;
 
    ConnectionMapIterator connIt = localMap.find( connectionId );
    if( connIt != localMap.end() )
@@ -329,17 +357,29 @@ void     DiplodocusLoadBalancer::HandleRerouteRequest( U32 connectionId )
       PacketRerouteRequestResponse* response = new PacketRerouteRequestResponse;
       if( it != m_gatewayRoutes.end() )
       {
-         bool useLocalAddress = true;
-         if( IsOnSameNetwork( it->address, inet_ntoa( connIt->second->GetIPAddress().sin_addr ) ) )
-            useLocalAddress = true;
-         else
-            useLocalAddress = false;
-         //bool  hasFoundViableGateway = false;
-
+         /*if( offsetIndex == 1 && m_gatewayRoutes.size() > 1 )
+         {
+            it++;
+         }*/
          while( it != m_gatewayRoutes.end() )
          {
+#ifdef HACK_FOR_MULTIPLE_GATEWAY_TESTING
+            if( offsetIndex != 0 && it != m_gatewayRoutes.end() )
+            {
+               offsetIndex--;
+               it++;
+               continue;
+            }
+#endif
             if( it->isConnected == true )
             {
+               bool  shouldPushAddress = false;
+               bool useLocalAddress = true;
+               if( IsOnSameNetwork( it->address, inet_ntoa( connIt->second->GetIPAddress().sin_addr ) ) )
+                  useLocalAddress = true;
+               else
+                  useLocalAddress = false;
+
                PacketRerouteRequestResponse::Address address;
                if( useLocalAddress )
                   address.address = it->address;
@@ -357,16 +397,29 @@ void     DiplodocusLoadBalancer::HandleRerouteRequest( U32 connectionId )
                
                if( it->type == GatewayInfo::Type_Normal )
                {
-                  address.name = "normal gateway";
-                  address.whichLocationId = PacketRerouteRequestResponse::LocationId_Gateway;
+                  if( hasNormal == false )
+                  {
+                     shouldPushAddress = true;
+                     hasNormal = true;
+                     address.name = "normal gateway";
+                     address.whichLocationId = PacketRerouteRequestResponse::LocationId_Gateway;
+                  }
                }
                else
                {
-                  address.name = "asset gateway";
-                  address.whichLocationId = PacketRerouteRequestResponse::LocationId_Asset; 
+                  if( hasAsset == false )
+                  {
+                     shouldPushAddress = true;
+                     hasAsset = true;
+                     address.name = "asset gateway";
+                     address.whichLocationId = PacketRerouteRequestResponse::LocationId_Asset; 
+                  }
                }
 
-               response->locations.push_back( address );
+               if( shouldPushAddress )
+               {
+                  response->locations.push_back( address );
+               }
             }
             it++;
          }
@@ -378,7 +431,7 @@ void     DiplodocusLoadBalancer::HandleRerouteRequest( U32 connectionId )
 }
 
 
-//-----------------------------------------------------------------------------------------
+///////////////////////////////////////////////////////////////////
 
 // assuming that everything is thread protected at this point
 void     DiplodocusLoadBalancer::HandlePacketToKhaan( KhaanConnector* khaan, BasePacket* packet )
@@ -397,7 +450,7 @@ void     DiplodocusLoadBalancer::HandlePacketToKhaan( KhaanConnector* khaan, Bas
 }
 
 
-//-----------------------------------------------------------------------------------------
+///////////////////////////////////////////////////////////////////
 
 int   DiplodocusLoadBalancer::MainLoop_OutputProcessing()
 {

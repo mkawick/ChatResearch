@@ -30,8 +30,10 @@ public:
    GameCallbacks( GameFramework& game ) : m_game ( game ) {}
    virtual void   Initialize() {}
 
-   virtual bool   UserConnected( const UserInfo* info, U32 connectionId ) = 0;
+   virtual bool   UserConnected( const UserInfo* info, U32 connectionId, U32 gatewayId ) = 0;
    virtual bool   UserDisconnected( U32 connectionId, bool errorDisconnect ) = 0;
+
+   virtual U32    GetGatewayId( U32 connectionId ) const { return 0; }
 
    virtual bool   DataFromClient( U32 connectionId, const MarshalledData* packet ) = 0;
    //virtual bool   CommandFromOtherServer( const BasePacket* instructions ) = 0;

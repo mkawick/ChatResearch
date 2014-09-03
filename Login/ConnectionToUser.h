@@ -170,7 +170,7 @@ protected:
 
    void     WriteUserBasicsToAccount();
    void     WriteUserProfile();
-   void     PackUserProfileRequestAndSendToClient( U32 connectionId );
+   void     PackUserProfileRequestAndSendToClient( U32 connectionId, U32 gatewayId = 0 );
    template < typename type >
    void     PackUserSettings( type* response );
    void     PackOtherUserProfileRequestAndSendToClient( U32 connectionId );

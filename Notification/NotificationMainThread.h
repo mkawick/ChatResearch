@@ -37,7 +37,7 @@ public:
 
    bool     AddInputChainData( BasePacket* packet, U32 connectionId );
    bool     AddOutputChainData( BasePacket* packet, U32 connectionId );
-   bool     SendMessageToClient( BasePacket* packet, U32 connectionId );
+   bool     SendMessageToClient( BasePacket* packet, U32 connectionId, U32 gatewayId );
 
    bool     AddQueryToOutput( PacketDbQuery* packet );
    void     ServerWasIdentified( IChainedInterface* khaan );
@@ -69,7 +69,7 @@ private:
    int      CalculateBadgeNumberFromPendingNotifications( unsigned int userId, unsigned int gameType, int gameId );
    bool     StoreLastUserNotification( unsigned int userId, unsigned int gameType, int gameId,
                                        unsigned int notificationType, string additionalText );
-   bool     SetupUserNotificationResend( unsigned int userId, unsigned int gameType, unsigned int deviceId, unsigned delayTime );
+   bool     SetupUserNotificationResend( unsigned int userId, unsigned int gameType, unsigned int deviceId, unsigned delayTimeSeconds );
 
    typedef  map< U32, UserConnection >    UserConnectionMap;
    typedef  pair< U32, UserConnection >   UserConnectionPair;
@@ -122,7 +122,7 @@ private:
       unsigned int   lastNotificationType;
       string         lastNotificationText;
 
-      unsigned int   resendNotificationDelay;
+      unsigned int   resendNotificationDelaySeconds;
       time_t         lastNotificationTime;
    };
 

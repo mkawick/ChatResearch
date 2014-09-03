@@ -193,11 +193,12 @@ bool  Diplodocus< InputChain, OutputChain >::AddOutputChainData( BasePacket* t, 
 }
 
 template< typename InputChain, typename OutputChain >
-bool     Diplodocus< InputChain, OutputChain >::DelayPacketToGateway( BasePacket* packet, U32 connectionId, float delayInSecs )
+bool     Diplodocus< InputChain, OutputChain >::DelayPacketToGateway( BasePacket* packet, U32 connectionId, U32 gatewayId, float delayInSecs )
 {
    DelayedPacket dp;
    dp.packet = packet;
    dp.connectionId = connectionId;
+   dp.gatewayId = gatewayId;
    dp.delay = delayInSecs;
    time( &dp.beginTime );
    m_delayedGatewayPackets.push_back( dp );
@@ -288,11 +289,11 @@ void     Diplodocus< InputChain, OutputChain >::SetupClientConnectionForDeletion
 //---------------------------------------------------------------
 
 template< typename InputChain, typename OutputChain >
-bool     Diplodocus< InputChain, OutputChain >::SendPacketToGateway( BasePacket* packet, U32 connectionId, float delayInSecs )
+bool     Diplodocus< InputChain, OutputChain >::SendPacketToGateway( BasePacket* packet, U32 connectionId, U32 gatewayId, float delayInSecs )
 {
    if( delayInSecs > 0 )
    {
-      return DelayPacketToGateway( packet, connectionId, delayInSecs );
+      return DelayPacketToGateway( packet, connectionId, gatewayId, delayInSecs );
    }
    PacketGatewayWrapper* wrapper = new PacketGatewayWrapper();
    wrapper->SetupPacket( packet, connectionId );
@@ -306,6 +307,9 @@ bool     Diplodocus< InputChain, OutputChain >::SendPacketToGateway( BasePacket*
       {
          ChainLink & chainedInput = *itInputs++;
          InputChainType* connection = static_cast< InputChainType* >( chainedInput.m_interface );
+         if( connection->GetServerId() != gatewayId )
+            continue;
+
          if( connection->AddOutputChainData( wrapper, connectionId ) == true )
          {
             chainId = connection->GetChainedId();
@@ -367,9 +371,9 @@ bool  Diplodocus< InputChain, OutputChain >::HandlePacketToOtherServer( BasePack
 //---------------------------------------------------------------
 
 template< typename InputChain, typename OutputChain >
-bool  Diplodocus< InputChain, OutputChain >::SendErrorToClient( U32 connectionId, PacketErrorReport::ErrorType error, int subType )
+bool  Diplodocus< InputChain, OutputChain >::SendErrorToClient( U32 connectionId, U32 gatewayId, PacketErrorReport::ErrorType error, int subType )
 {
-   SendPacketToGateway( new PacketErrorReport( error, subType ), connectionId );
+   SendPacketToGateway( new PacketErrorReport( error, subType ), connectionId, gatewayId );
    return false;
 }
 
@@ -740,7 +744,7 @@ void     Diplodocus< InputChain, OutputChain >::UpdatePendingGatewayPackets()
       
       if( difftime( currentTime, dp.beginTime ) >= dp.delay )
       {
-         if( SendPacketToGateway( dp.packet, dp.connectionId, 0 ) == false )
+         if( SendPacketToGateway( dp.packet, dp.connectionId, dp.gatewayId, 0 ) == false )
          {
             factory.CleanupPacket( dp.packet );
          }

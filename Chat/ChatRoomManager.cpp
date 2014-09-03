@@ -929,12 +929,12 @@ bool   ChatRoomManager::DeleteRoom( const PacketChatDeleteChatChannelFromGameSer
 
 //---------------------------------------------------------------
 
-bool     ChatRoomManager::SendMessageToClient( BasePacket* packet, U32 connectionId ) const
+bool     ChatRoomManager::SendMessageToClient( BasePacket* packet, U32 connectionId, U32 gatewayId ) const
 {
    PacketGatewayWrapper* wrapper = new PacketGatewayWrapper();
    wrapper->SetupPacket( packet, connectionId );
 
-   m_chatServer->SendMessageToClient( wrapper, connectionId );
+   m_chatServer->SendMessageToClient( wrapper, connectionId, gatewayId );
    return true;
 }
 
@@ -954,6 +954,7 @@ bool     ChatRoomManager::DeleteRoom( const string& channelUuid, const string& u
       return false;
    }
    U32 connectionId = userSender->GetConnectionId();
+   U32 gatewayId = userSender->GetGatewayId();
 
    stringhash  keyLookup = GenerateUniqueHash( channelUuid );
    ChannelMapIterator channelIter = m_channelMap.find( keyLookup );
@@ -965,7 +966,7 @@ bool     ChatRoomManager::DeleteRoom( const string& channelUuid, const string& u
       text += channelUuid;
       text += " but the channel does not exist in ChatRoomManager";
       m_chatServer->Log( text, 1 );
-      m_chatServer->SendErrorToClient( connectionId, PacketErrorReport::ErrorType_BadChatChannel );
+      m_chatServer->SendErrorToClient( connectionId, gatewayId, PacketErrorReport::ErrorType_BadChatChannel );
       return false;
    }
 
@@ -979,7 +980,7 @@ bool     ChatRoomManager::DeleteRoom( const string& channelUuid, const string& u
    }
    else 
    {
-      m_chatServer->SendErrorToClient( connectionId, PacketErrorReport::ErrorType_ChatChannelCannotBeDeleted );
+      m_chatServer->SendErrorToClient( connectionId, gatewayId, PacketErrorReport::ErrorType_ChatChannelCannotBeDeleted );
    }
 
    return true;
@@ -1058,6 +1059,7 @@ bool     ChatRoomManager::UserSendP2PChat( const string& senderUuid, const strin
 
    ChatUser* userSender = m_chatServer->GetUserByUuid( senderIter->second.userUuid );
    U32 connectionId = userSender->GetConnectionId();
+   U32 gatewayId = userSender->GetGatewayId();
 
    UserMapIterator receiverIter = m_userMap.find( receiverHash );
    if( receiverIter == m_userMap.end() )
@@ -1069,7 +1071,7 @@ bool     ChatRoomManager::UserSendP2PChat( const string& senderUuid, const strin
       text += " but the receiver does not exist in ChatRoomManager";
       m_chatServer->Log( text, 1 );
       // this is totally fine.. you can send a message to another player who is not online
-      m_chatServer->SendErrorToClient( connectionId, PacketErrorReport::ErrorType_UserNotOnline );
+      m_chatServer->SendErrorToClient( connectionId, gatewayId, PacketErrorReport::ErrorType_UserNotOnline );
    }
    else
    {
@@ -1120,10 +1122,11 @@ bool     ChatRoomManager::UserSendsChatToChannel( const string& senderUuid, cons
    }
 
    U32 connectionId = userSender->GetConnectionId();
+   U32 gatewayId = userSender->GetGatewayId();
 
    if( channelUuid.size() == 0 )
    {
-      m_chatServer->SendErrorToClient( connectionId, PacketErrorReport::ErrorType_NoChatChannel );
+      m_chatServer->SendErrorToClient( connectionId, gatewayId, PacketErrorReport::ErrorType_NoChatChannel );
       return false;
    }
 
@@ -1144,7 +1147,7 @@ bool     ChatRoomManager::UserSendsChatToChannel( const string& senderUuid, cons
    ChatRoom& channel = channelIter->second;
    if( channel.userBasics.size() < 1 )
    {
-      m_chatServer->SendErrorToClient( connectionId, PacketErrorReport::ErrorType_YouAreTheOnlyPersonInThatChatChannel  );
+      m_chatServer->SendErrorToClient( connectionId, gatewayId, PacketErrorReport::ErrorType_YouAreTheOnlyPersonInThatChatChannel  );
       string text = " User ";
       text += senderUuid;
       text += " tried to send text on chat channel ";
@@ -1170,6 +1173,9 @@ bool     ChatRoomManager::UserSendsChatToChannel( const string& senderUuid, cons
    return true;
 }
 
+//---------------------------------------------------------------------
+//---------------------------------------------------------------------
+
 bool     ChatRoomManager::RequestChatRoomInfo( const PacketChatListAllMembersInChatChannel* packet, U32 connectionId )
 {
    const string& channelUuid = packet->chatChannelUuid.c_str();
@@ -1178,7 +1184,11 @@ bool     ChatRoomManager::RequestChatRoomInfo( const PacketChatListAllMembersInC
    ChannelMapIterator channelIter = m_channelMap.find( channelHash );
    if( channelIter == m_channelMap.end() )
    {
-      m_chatServer->SendErrorToClient( connectionId, PacketErrorReport::ErrorType_BadChatChannel );
+      ChatUser* userSender = m_chatServer->GetUserById( connectionId );
+      if( userSender != NULL )
+      {
+         m_chatServer->SendErrorToClient( connectionId, userSender->GetGatewayId(), PacketErrorReport::ErrorType_BadChatChannel );
+      }
       return false;
    }
 
@@ -1194,7 +1204,11 @@ bool     ChatRoomManager::RequestChatRoomInfo( const PacketChatListAllMembersInC
       userList.insert( ub.userUuid, ub.userName );
    }
 
-   SendMessageToClient( response, connectionId );
+   ChatUser* userSender = m_chatServer->GetUserById( connectionId );
+   if( userSender != NULL )
+   {
+      SendMessageToClient( response, connectionId, userSender->GetGatewayId() );
+   }
 
    return true;
 }
@@ -1235,7 +1249,7 @@ bool     ChatRoomManager::RenameChatRoom( const string& channelUuid, const strin
    {
       errorText += " but that channel does not exist in ChatRoomManager";
       m_chatServer->Log( errorText, 1 );
-      m_chatServer->SendErrorToClient( connectionId, PacketErrorReport::ErrorType_NoChatChannel );
+      m_chatServer->SendErrorToClient( connectionId, userRequester->GetGatewayId(), PacketErrorReport::ErrorType_NoChatChannel );
       return false;
    }
 
@@ -1422,7 +1436,7 @@ bool     ChatRoomManager::AddUserToRoom( const string& channelUuid, const string
    {
       errorText += " but the added user does not exist in ChatRoomManager";
       m_chatServer->Log( errorText, 1 );
-      m_chatServer->SendErrorToClient( connectionId, PacketErrorReport::ErrorType_UserUnknown );
+      m_chatServer->SendErrorToClient( connectionId, userRequester->GetGatewayId(), PacketErrorReport::ErrorType_UserUnknown );
       return false;
    }
 
@@ -1432,7 +1446,7 @@ bool     ChatRoomManager::AddUserToRoom( const string& channelUuid, const string
    {
       errorText += " but the added user is blocking group invites";
       m_chatServer->Log( errorText, 1 );
-      m_chatServer->SendErrorToClient( connectionId, PacketErrorReport::ErrorType_ChatChannel_UserNotAcceptingInvites );
+      m_chatServer->SendErrorToClient( connectionId, userRequester->GetGatewayId(), PacketErrorReport::ErrorType_ChatChannel_UserNotAcceptingInvites );
       return false;
    }
 
@@ -1442,7 +1456,7 @@ bool     ChatRoomManager::AddUserToRoom( const string& channelUuid, const string
    {
       errorText += " but that channel does not exist in ChatRoomManager";
       m_chatServer->Log( errorText, 1 );
-      m_chatServer->SendErrorToClient( connectionId, PacketErrorReport::ErrorType_NoChatChannel );
+      m_chatServer->SendErrorToClient( connectionId, userRequester->GetGatewayId(), PacketErrorReport::ErrorType_NoChatChannel );
       return false;
    }
 
@@ -1454,7 +1468,7 @@ bool     ChatRoomManager::AddUserToRoom( const string& channelUuid, const string
       {
          errorText += " but that added user is already in that channel";
          m_chatServer->Log( errorText, 1 );
-         m_chatServer->SendErrorToClient( connectionId, PacketErrorReport::ErrorType_CannotAddUserToChannel_AlreadyExists );
+         m_chatServer->SendErrorToClient( connectionId, userRequester->GetGatewayId(), PacketErrorReport::ErrorType_CannotAddUserToChannel_AlreadyExists );
          return false;
       }
       it++;
@@ -1503,7 +1517,7 @@ bool     ChatRoomManager::UserAddsSelfToGroup( const string& channelUuid, const 
    {
       errorText += " but the added user does not exist in ChatRoomManager";
       m_chatServer->Log( errorText, 1 );
-      m_chatServer->SendErrorToClient( connectionId, PacketErrorReport::ErrorType_UserUnknown );
+      m_chatServer->SendErrorToClient( connectionId, 0, PacketErrorReport::ErrorType_UserUnknown );
       return false;
    }
 
@@ -1516,7 +1530,7 @@ bool     ChatRoomManager::UserAddsSelfToGroup( const string& channelUuid, const 
    {
       errorText += " but that channel does not exist in ChatRoomManager";
       m_chatServer->Log( errorText, 1 );
-      m_chatServer->SendErrorToClient( connectionId, PacketErrorReport::ErrorType_NoChatChannel );
+      m_chatServer->SendErrorToClient( connectionId, 0, PacketErrorReport::ErrorType_NoChatChannel );
       return false;
    }
 
@@ -1528,7 +1542,7 @@ bool     ChatRoomManager::UserAddsSelfToGroup( const string& channelUuid, const 
       {
          errorText += " but that added user is already in that channel";
          m_chatServer->Log( errorText, 1 );
-         m_chatServer->SendErrorToClient( connectionId, PacketErrorReport::ErrorType_CannotAddUserToChannel_AlreadyExists );
+         m_chatServer->SendErrorToClient( connectionId, 0, PacketErrorReport::ErrorType_CannotAddUserToChannel_AlreadyExists );
          return false;
       }
       it++;

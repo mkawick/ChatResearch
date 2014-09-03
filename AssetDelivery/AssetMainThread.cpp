@@ -258,18 +258,18 @@ bool     AssetMainThread::LoadAllAssetManifests()
 
 //---------------------------------------------------------------
 
-bool     AssetMainThread::AddInputChainData( BasePacket* packet, U32 connectionId )
+bool     AssetMainThread::AddInputChainData( BasePacket* packet, U32 gatewayId )
 {
    if( packet->packetType == PacketType_GatewayInformation )
    {
       PacketCleaner cleaner( packet );
-      return HandleCommandFromGateway( packet, connectionId );
+      return HandleCommandFromGateway( packet, gatewayId );
    }
 
    if( packet->packetType == PacketType_ServerJobWrapper )
    {
       PacketCleaner cleaner( packet );
-      HandlePacketFromOtherServer( packet, connectionId );
+      HandlePacketFromOtherServer( packet, gatewayId );
       return true;
    }
 
@@ -278,7 +278,7 @@ bool     AssetMainThread::AddInputChainData( BasePacket* packet, U32 connectionI
       PacketCleaner cleaner( packet );
       PacketGatewayWrapper* wrapper = static_cast< PacketGatewayWrapper* >( packet );
       BasePacket* unwrappedPacket = wrapper->pPacket;
-      //U32 connectionIdToUse = wrapper->connectionId;
+      U32 connectionId = wrapper->connectionId;
       
       if( unwrappedPacket->packetType == PacketType_Asset)
       {
@@ -326,7 +326,7 @@ bool     AssetMainThread::AddInputChainData( BasePacket* packet, U32 connectionI
                return true;
             if( found->second.LoginKeyMatches( loginKey ) == false )
             {
-               SendErrorToClient( connectionId, PacketErrorReport::ErrorType_Asset_BadLoginKey );
+               SendErrorToClient( connectionId, gatewayId, PacketErrorReport::ErrorType_Asset_BadLoginKey );
             }
             else
             {
@@ -358,7 +358,7 @@ bool     AssetMainThread::AddInputChainData( BasePacket* packet, U32 connectionI
 
 //---------------------------------------------------------------
 
-bool  AssetMainThread::HandlePacketFromOtherServer( BasePacket* packet, U32 connectionId )// not thread safe
+bool  AssetMainThread::HandlePacketFromOtherServer( BasePacket* packet, U32 gatewayId )// not thread safe
 {
    if( packet->packetType != PacketType_ServerJobWrapper )
    {
@@ -420,6 +420,7 @@ bool     AssetMainThread::ConnectUser( PacketPrepareForUserLogin* loginPacket )
       ut.userName =        loginPacket->userName.c_str();
       ut.uuid =            loginPacket->uuid.c_str();
       ut.userTicket =      loginPacket->loginKey.c_str();
+      ut.gatewayId =       gatewayId;
       ut.connectionId =    0;
       ut.gameProductId =   loginPacket->gameProductId;
       ut.userId =          loginPacket->userId;

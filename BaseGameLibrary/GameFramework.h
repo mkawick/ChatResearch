@@ -73,7 +73,7 @@ public:
    //----------------------------------------------
 
    bool     SendErrorToClient( U32 connectionId, int errorCode, int errorSubCode );
-   bool     SendGameData( U32 connectionId, const MarshalledData* );
+   bool     SendGameData( U32 connectionId, U32 gatewayId, const MarshalledData* );
    bool     SendChatData( BasePacket* ); // we will own this data after
    bool     SendToAnotherServer( BasePacket* );// based on packet type... see SetupConnectionToAnotherServer
    bool     InformClientWhoThisServerIs( U32 connectionId );

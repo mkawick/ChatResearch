@@ -574,6 +574,13 @@ static void SummonWar_OnReportGameResult(unsigned int gameID, int playerCount, u
 */
    const char *gameName = SummonWar_GameName;
 
+   printf( "  Receive ReportGameResult for %s game %d:" );
+   for( int p = 0; p < playerCount; ++p )
+   {
+      printf( "  %d(%d)", pResults[p], pFactions[p] );
+   }
+   printf( "\n" );
+   
    /*
    summonwar::CWorld *pWorld = dynamic_cast<summonwar::CWorld*>( gameData->m_pGameWorld );
    bool bForfeit = false;
@@ -1141,7 +1148,7 @@ static void OnRequestGameProfile_SummonWar( UserStatsMainThread *pUserStats, U32
 }
 
 
-bool OnRequestUserProfileStats_SummonWar(UserStatsMainThread *pUserStats, U32 connectionId, unsigned int profileUserId )
+bool OnRequestUserProfileStats_SummonWar(UserStatsMainThread *pUserStats, U32 connectionId, U32 gatewayId, unsigned int profileUserId )
 {
    PacketUserStats_RequestUserProfileStatsResponse* response = new PacketUserStats_RequestUserProfileStatsResponse;
    response->profileUserId = profileUserId;
@@ -1183,7 +1190,7 @@ bool OnRequestUserProfileStats_SummonWar(UserStatsMainThread *pUserStats, U32 co
       mysql_free_result(res);
    }
 
-   pUserStats->SendPacketToGateway( response, connectionId );
+   pUserStats->SendPacketToGateway( response, connectionId, gatewayId );
    return true;
 }
 

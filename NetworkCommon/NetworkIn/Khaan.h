@@ -92,7 +92,7 @@ public:
    void           SetOutboudBufferSize( U32 size );
 public:
 
-   //void           SetupLibeventCallbacks( event_base* libEvent, int socket );
+   virtual U32    GetServerId() { return 0; } // only for inheritance purposes. KS2S implements this
    void           RegisterToReceiveNetworkTraffic();
    virtual bool	OnDataReceived( const U8* data, int length );
 

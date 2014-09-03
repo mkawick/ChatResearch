@@ -42,6 +42,7 @@ public:
                GetUserInfo() const { return m_userInfo; }
 
    void        SetConnectionId( U32 id ) { m_userInfo.connectionId = id; }
+   void        SetGatewayId( U32 id ) { m_userInfo.gatewayId = id; }
 
    bool        IsLoggedOut() const { return m_isLoggedOut; }
    void        Relog();

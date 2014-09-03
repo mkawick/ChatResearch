@@ -212,16 +212,9 @@ bool     DiplodocusPurchase::AddInputChainData( BasePacket* packet, U32 connecti
       if( unwrappedPacket->packetType == PacketType_Purchase )
       {
          bool found = false;
-         UAADMapIterator it = m_userTickets.begin();
-         while( it != m_userTickets.end() )
-         {
-            if( it->second.GetUserTicket().connectionId == connectionIdToUse )
-            {
-               found = true;
-               break;
-            }
-            it++;
-         }
+         UAADMapIterator it = GetUserByConnectionId( connectionIdToUse );
+         if( it != m_userTickets.end() )
+            found = true;
          if( found == false )
          {
             cout << "packet from unknown connection" << connectionIdToUse << endl;
@@ -243,6 +236,8 @@ bool     DiplodocusPurchase::AddInputChainData( BasePacket* packet, U32 connecti
    return false;
 }
 
+
+
 bool  DiplodocusPurchase::GetUser( const string& uuid, UserAccountPurchase*& user )
 {
    U64 hashForUser = GenerateUniqueHash( uuid );
@@ -256,6 +251,25 @@ bool  DiplodocusPurchase::GetUser( const string& uuid, UserAccountPurchase*& use
    }
    return false;
 }
+
+
+DiplodocusPurchase::UAADMapIterator   
+DiplodocusPurchase::GetUserByConnectionId( U32 connectionId )
+{
+   Threading::MutexLock locker( m_mutex );
+   UAADMapIterator it = m_userTickets.begin();
+   while( it != m_userTickets.end() )
+   {
+      if( it->second.GetUserTicket().connectionId == connectionId )
+      {
+         return it;
+      }
+      it++;
+   }
+
+   return it;
+}
+
 
 //---------------------------------------------------------------
 
@@ -326,7 +340,9 @@ bool     DiplodocusPurchase::ConnectUser( PacketPrepareForUserLogin* loginPacket
    UAADMapIterator it = m_userTickets.find( hashForUser );
    if( it != m_userTickets.end() )// user may be reloggin and such.. no biggie.. just ignore
    {
-      it->second.SetConnectionId( loginPacket->connectionId );
+      it->second.SetConnectionId( connectionId );
+      it->second.SetGatewayId( gatewayId );
+      it->second.ClearUserLogout();
       return false;
    }
 
@@ -339,6 +355,7 @@ bool     DiplodocusPurchase::ConnectUser( PacketPrepareForUserLogin* loginPacket
       ut.uuid =            loginPacket->uuid.c_str();
       ut.userTicket =      loginPacket->loginKey.c_str();
       ut.connectionId =    loginPacket->connectionId;
+      ut.gatewayId =       gatewayId;
       ut.gameProductId =   loginPacket->gameProductId;
       ut.userId =          loginPacket->userId;
       ut.languageId =      loginPacket->languageId;
@@ -512,8 +529,12 @@ bool     DiplodocusPurchase::AddOutputChainData( BasePacket* packet, U32 connect
       if( m_connectionIdGateway == 0 )
          return false;
 
-      Threading::MutexLock locker( m_inputChainListMutex );
+      U32 gatewayId = m_connectionIdGateway;
+      UAADMapIterator it = GetUserByConnectionId( connectionId );
+      if( it != m_userTickets.end() )
+         gatewayId = it->second.GetUserTicket().gatewayId;  
 
+      Threading::MutexLock locker( m_inputChainListMutex );
       ChainLinkIteratorType itInputs = m_listOfInputs.begin();
       if( itInputs != m_listOfInputs.end() )// only one output currently supported.
       {
@@ -523,7 +544,7 @@ bool     DiplodocusPurchase::AddOutputChainData( BasePacket* packet, U32 connect
          if( interfacePtr->DoesNameMatch( "KhaanPurchase" ) )
          {
             KhaanPurchase* khaan = static_cast< KhaanPurchase* >( interfacePtr );
-            if( khaan->GetServerId() == m_connectionIdGateway )
+            if( khaan->GetServerId() == gatewayId )
             {
                khaan->AddOutputChainData( packet );
                //khaan->Update();// the gateway may not have a proper connection id.

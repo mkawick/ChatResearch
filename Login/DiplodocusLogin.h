@@ -148,7 +148,7 @@ private:
    bool     LogUserOut( U32 connectionId, bool wasDisconnectedByError );
    bool     LoadUserAccount( const string& userName, const string& password, const string& loginKey, U8 gameProductId, U32 connectionId, U32 gatewayId );
    bool     SetupQueryForLogin( const string& userName, const string& password, U8 gameProductId, U32 connectionId );
-   bool     CreateUserAccount( U32 connectionId, const string& email, const string& password, const string& username, const string& deviceAccountId, const string& deviceId, U8 languageId, U8 gameProductId );
+   bool     CreateUserAccount( U32 connectionId, U32 gatewayId, const string& email, const string& password, const string& username, const string& deviceAccountId, const string& deviceId, U8 languageId, U8 gameProductId );
    U32      FindUserAlreadyInGame( const string& username, U8 gameProductId );
 
    void     TellUserThatAccountAlreadyMatched( const CreateAccountResultsAggregator* aggregator );

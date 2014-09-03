@@ -67,14 +67,14 @@ void  DiplodocusChat :: Init()
 
 //---------------------------------------------------------------
 
-ChatUser* DiplodocusChat::CreateNewUser( U32 connectionId )
+ChatUser* DiplodocusChat::CreateNewUser( U32 connectionId, U32 gatewayId )
 {
    // Threading::MutexLock locker( m_mutex ); // must be locked from the outside
    UserMapIterator it = m_users.find( connectionId );
    if( it != m_users.end() )
       return it->second;
 
-   ChatUser* user = new ChatUser( connectionId );
+   ChatUser* user = new ChatUser( connectionId, gatewayId );
    m_users.insert( UserMapPair( connectionId, user ) );
 
    return user;
@@ -82,7 +82,7 @@ ChatUser* DiplodocusChat::CreateNewUser( U32 connectionId )
 
 //---------------------------------------------------------------
 
-ChatUser* DiplodocusChat::UpdateExistingUsersConnectionId( const string& uuid, U32 connectionId )
+ChatUser* DiplodocusChat::UpdateExistingUsersConnectionId( const string& uuid, U32 connectionId, U32 gatewayId )
 {
    // Threading::MutexLock locker( m_mutex ); // must be locked from the outside
    UserMapIterator it = m_users.begin(); 
@@ -92,6 +92,7 @@ ChatUser* DiplodocusChat::UpdateExistingUsersConnectionId( const string& uuid, U
       {
          ChatUser* user = it->second;
          user->SetConnectionId( connectionId );
+         user->SetGatewayId( gatewayId );
          m_users.insert( UserMapPair( connectionId, user ) );
          m_users.erase( it );
          return user;
@@ -198,14 +199,17 @@ string      DiplodocusChat::GetUserUuidByConnectionId( U32 connectionId )
    return user->GetUuid();
 }
 
-void        DiplodocusChat::GetUserConnectionId( const string& uuid, U32& connectionId )
+void        DiplodocusChat::GetUserConnectionId( const string& uuid, U32& connectionId, U32& gatewayId )
 {
    Threading::MutexLock locker( m_mutex );
    connectionId = 0;
 
    ChatUser* user = GetUserByUuid( uuid );
    if( user )
+   {
       connectionId = user->GetConnectionId();
+      gatewayId = user->GetGatewayId();
+   }
 }
 
 string      DiplodocusChat::GetUserName( const string& uuid )
@@ -294,10 +298,19 @@ bool     DiplodocusChat::HandleChatPacket( BasePacket* packet, U32 connectionId 
 
 //---------------------------------------------------------------
 
-bool     DiplodocusChat::HandleInvitationPacket( BasePacket* packet, U32 connectionId )
+bool     DiplodocusChat::HandleInvitationPacket( BasePacket* packet, U32 connectionId, U32 gatewayId )
 {
+   UserMapIterator it = m_users.find( connectionId );
+   if( it != m_users.end() )
+   {
+      ChatUser* user = it->second;
+      if( user )
+      {
+         gatewayId = user->GetGatewayId();
+      }
+   }
    PacketInvitation* invitation = static_cast< PacketInvitation* > ( packet );
-   if( m_invitationManager->HandlePacketRequest( invitation, connectionId ) == false )
+   if( m_invitationManager->HandlePacketRequest( invitation, connectionId, gatewayId ) == false )
    {
       PacketFactory factory;
       factory.CleanupPacket( packet );
@@ -307,7 +320,7 @@ bool     DiplodocusChat::HandleInvitationPacket( BasePacket* packet, U32 connect
 }
 //---------------------------------------------------------------
 
-bool     DiplodocusChat::HandleLoginPacket( BasePacket* packet, U32 connectionId )
+bool     DiplodocusChat::HandleLoginPacket( BasePacket* packet, U32 gatewayId )
 {
    //packet->
    U32 packetType = packet->packetType;
@@ -341,16 +354,17 @@ bool     DiplodocusChat::HandleLoginPacket( BasePacket* packet, U32 connectionId
             string uuid = pPacket->uuid;
             U32 whichGateway = pPacket->gatewayId;
             
-            cout << "Prep for logon: " << connectionId << ", " << pPacket->userName << ", " << uuid << ", " << pPacket->password << endl;
+            cout << "Prep for logon: " << userConnectionId << ", " << pPacket->userName << ", " << uuid << ", " << pPacket->password << endl;
             
             LockMutex();
             // TODO: verify that the user isn't already in the list and if s/he is, assign the new connectionId.
-            ChatUser* user = UpdateExistingUsersConnectionId( uuid, userConnectionId );
+            ChatUser* user = UpdateExistingUsersConnectionId( uuid, userConnectionId, whichGateway );
             //ChatUser* user = GetUserByUsername( pPacket->userName );
             if( user == NULL )
             {
-               user = CreateNewUser( userConnectionId );
+               user = CreateNewUser( userConnectionId, whichGateway );
             }
+
             user->Init( pPacket->userId, pPacket->userName, pPacket->uuid, pPacket->lastLoginTime );            
             user->LoggedIn();
             UnlockMutex();
@@ -451,7 +465,7 @@ bool   DiplodocusChat::AddOutputChainData( BasePacket* packet, U32 connectionId 
 
 //---------------------------------------------------------------
 
-bool     DiplodocusChat::SendMessageToClient( BasePacket* packet, U32 connectionId )
+bool     DiplodocusChat::SendMessageToClient( BasePacket* packet, U32 connectionId, U32 gatewayId )
 {
    if( packet->packetType == PacketType_GatewayWrapper )// this is already wrapped up and ready for the gateway... send it on.
    {
@@ -460,7 +474,7 @@ bool     DiplodocusChat::SendMessageToClient( BasePacket* packet, U32 connection
       if( itInputs != m_connectedClients.end() )// only one output currently supported.
       {
          KhaanChat* khaan = static_cast< KhaanChat* >( itInputs->second );
-         //if( khaan->GetConnectionId() == connectionId )
+         if( khaan->GetServerId() == connectionId )
          {
             khaan->AddOutputChainData( packet );
             MarkConnectionAsNeedingUpdate( khaan->GetChainedId() );
@@ -580,7 +594,7 @@ bool  DiplodocusChat::HandlePacketFromOtherServer( BasePacket* packet, U32 conne
    }
    if( packetType == PacketType_Invitation )
    {
-      if( HandleInvitationPacket( unwrappedPacket, connectionId ) == false )
+      if( HandleInvitationPacket( unwrappedPacket, connectionId, 0 ) == false )
       {
          factory.CleanupPacket( packet );
       }
@@ -603,6 +617,7 @@ bool  DiplodocusChat::HandlePacketFromClient( BasePacket* packet )
    BasePacket* unwrappedPacket = wrapper->pPacket;
 
    U32 connectionId = wrapper->connectionId;
+   //wrapper->
 
    Threading::MutexLock locker( m_mutex );
    UserMapIterator it = m_users.find( connectionId );
@@ -614,7 +629,7 @@ bool  DiplodocusChat::HandlePacketFromClient( BasePacket* packet )
          // could be a switch but we only have two cases.
          if( unwrappedPacket->packetType == PacketType_Invitation )
          {
-            m_invitationManager->HandlePacketRequest( unwrappedPacket, connectionId );
+            m_invitationManager->HandlePacketRequest( unwrappedPacket, connectionId, user->GetGatewayId() );
          }
          else
          {
@@ -736,9 +751,9 @@ bool     DiplodocusChat::AddQueryToOutput( PacketDbQuery* dbQuery, U32 connectio
 
 //---------------------------------------------------------------
 
-bool     DiplodocusChat::SendErrorToClient( U32 connectionId, PacketErrorReport::ErrorType error )
+bool     DiplodocusChat::SendErrorToClient( U32 connectionId, U32 gatewayId, PacketErrorReport::ErrorType error )
 {
-   return Diplodocus< KhaanChat >:: SendErrorToClient( connectionId, error, 0 );
+   return Diplodocus< KhaanChat >:: SendErrorToClient( connectionId, gatewayId, error, 0 );
 }
 
 //---------------------------------------------------------------

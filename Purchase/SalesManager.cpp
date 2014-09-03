@@ -186,7 +186,7 @@ bool     SalesManager::HandleResult( const PacketDbQueryResult* dbResult )
       }
       else
       {
-         m_parent->SendErrorToClient( purchaseTracking->connectionId, PacketErrorReport::ErrorType_Purchase_ItemNotAvailable );
+         m_parent->SendErrorToClient( purchaseTracking->connectionId, purchaseTracking->gatewayId, PacketErrorReport::ErrorType_Purchase_ItemNotAvailable );
       }
       if( doesPlayerHaveEnoughMoney == true )
       {
@@ -206,7 +206,7 @@ bool     SalesManager::HandleResult( const PacketDbQueryResult* dbResult )
       }
       else
       {
-         m_parent->SendErrorToClient( purchaseTracking->connectionId, PacketErrorReport::ErrorType_Purchase_UserDoesNotHaveEnoughToTrade );
+         m_parent->SendErrorToClient( purchaseTracking->connectionId, purchaseTracking->gatewayId, PacketErrorReport::ErrorType_Purchase_UserDoesNotHaveEnoughToTrade );
          SendTournamentPurchaseResultBackToServer( purchaseTracking->fromOtherServerId, purchaseTracking->fromOtherServerTransactionId, PacketErrorReport::ErrorType_Purchase_UserDoesNotHaveEnoughToTrade );
          m_usersBeingServiced.erase( purchaseTracking->userUuid );
          delete purchaseTracking;
@@ -222,7 +222,7 @@ bool     SalesManager::HandleResult( const PacketDbQueryResult* dbResult )
 
       if( dbResult->successfulQuery == true )
       {
-         m_parent->SendErrorToClient( purchaseTracking->connectionId, PacketErrorReport::ErrorType_Purchase_Success );
+         m_parent->SendErrorToClient( purchaseTracking->connectionId, purchaseTracking->gatewayId, PacketErrorReport::ErrorType_Purchase_Success );
          SendTournamentPurchaseResultBackToServer( purchaseTracking->fromOtherServerId, purchaseTracking->fromOtherServerTransactionId, PacketErrorReport::ErrorType_Purchase_Success );
          packet->success = true;
       }
@@ -231,9 +231,9 @@ bool     SalesManager::HandleResult( const PacketDbQueryResult* dbResult )
          packet->success = false;
       }
 
-      m_parent->SendPacketToGateway( packet, purchaseTracking->connectionId );
+      m_parent->SendPacketToGateway( packet, purchaseTracking->connectionId, purchaseTracking->gatewayId );
 
-      NotifyLoginToReloadUserInvertory( purchaseTracking->userUuid, purchaseTracking->connectionId );
+      NotifyLoginToReloadUserInventory( purchaseTracking->userUuid, purchaseTracking->connectionId );
 
       m_usersBeingServiced.erase( purchaseTracking->userUuid );
       delete purchaseTracking;
@@ -260,7 +260,7 @@ bool     SalesManager::HandleResult( const PacketDbQueryResult* dbResult )
          UserAccountPurchase* user = NULL;
          if( m_parent->GetUser( userUuid, user ) == true )
          {
-            NotifyLoginToReloadUserInvertory( userUuid, user->GetUserTicket().connectionId );
+            NotifyLoginToReloadUserInventory( userUuid, user->GetUserTicket().connectionId );
          }
       }
       return true;
@@ -269,9 +269,9 @@ bool     SalesManager::HandleResult( const PacketDbQueryResult* dbResult )
    return false;
 }
 
-void     SalesManager::NotifyLoginToReloadUserInvertory( const string& userUuid, U32 connectionId )
+void     SalesManager::NotifyLoginToReloadUserInventory( const string& userUuid, U32 connectionId )
 {
-   cout << "SalesManager::NotifyLoginToReloadUserInvertory" << endl;
+   cout << "SalesManager::NotifyLoginToReloadUserInventory" << endl;
    cout << "UserUuid:" << userUuid << endl;
    cout << "connectionId:" << connectionId << endl;
 
@@ -291,7 +291,7 @@ void     SalesManager::VerifyThatUserHasEnoughMoneyForEntry2( const PacketDbQuer
    
    if( dbResult->successfulQuery == false )
    {
-      m_parent->SendErrorToClient( purchaseTracking->connectionId, PacketErrorReport::ErrorType_Purchase_UserDoesNotHaveEnoughToTrade );
+      m_parent->SendErrorToClient( purchaseTracking->connectionId, purchaseTracking->gatewayId, PacketErrorReport::ErrorType_Purchase_UserDoesNotHaveEnoughToTrade );
       SendTournamentPurchaseResultBackToServer( purchaseTracking->fromOtherServerId, purchaseTracking->fromOtherServerTransactionId, PacketErrorReport::ErrorType_Purchase_UserDoesNotHaveEnoughToTrade );
       delete purchaseTracking;
       m_usersBeingServiced.erase( purchaseTracking->userUuid );
@@ -356,7 +356,7 @@ void     SalesManager::VerifyThatUserHasEnoughMoneyForEntry2( const PacketDbQuer
    }
    else
    {
-      m_parent->SendErrorToClient( purchaseTracking->connectionId, PacketErrorReport::ErrorType_Purchase_UserDoesNotHaveEnoughToTrade );
+      m_parent->SendErrorToClient( purchaseTracking->connectionId, purchaseTracking->gatewayId, PacketErrorReport::ErrorType_Purchase_UserDoesNotHaveEnoughToTrade );
       SendTournamentPurchaseResultBackToServer( purchaseTracking->fromOtherServerId, purchaseTracking->fromOtherServerTransactionId, PacketErrorReport::ErrorType_Purchase_UserDoesNotHaveEnoughToTrade );
       m_usersBeingServiced.erase( purchaseTracking->userUuid );
       delete purchaseTracking;
@@ -482,14 +482,14 @@ bool     SalesManager::PerformSale( const string& purchaseUuid, const UserTicket
    ExchangeEntry ee;
    if( FindItem( purchaseUuid, ee ) == false )
    {
-      m_parent->SendErrorToClient( userPurchasing.connectionId, PacketErrorReport::ErrorType_Purchase_BadPurchaseId );
+      m_parent->SendErrorToClient( userPurchasing.connectionId, userPurchasing.gatewayId, PacketErrorReport::ErrorType_Purchase_BadPurchaseId );
       SendTournamentPurchaseResultBackToServer( serverIdentifier, serverTransactionUuid, PacketErrorReport::ErrorType_Purchase_BadPurchaseId );
       return false;
    }
 
    if( m_usersBeingServiced.find( userPurchasing.uuid ) != m_usersBeingServiced.end() )
    {
-      m_parent->SendErrorToClient( userPurchasing.connectionId, PacketErrorReport::ErrorType_Purchase_StoreBusy );
+      m_parent->SendErrorToClient( userPurchasing.connectionId, userPurchasing.gatewayId, PacketErrorReport::ErrorType_Purchase_StoreBusy );
       SendTournamentPurchaseResultBackToServer( serverIdentifier, serverTransactionUuid, PacketErrorReport::ErrorType_Purchase_StoreBusy );
       return false;
    }
@@ -499,7 +499,7 @@ bool     SalesManager::PerformSale( const string& purchaseUuid, const UserTicket
       int secondsUntil = GetDiffTimeFromRightNow( ee.beginDate.c_str() );
       if( secondsUntil < 0 )
       {
-         m_parent->SendErrorToClient( userPurchasing.connectionId, PacketErrorReport::ErrorType_Purchase_TimePeriodHasNotBegunYet );
+         m_parent->SendErrorToClient( userPurchasing.connectionId, userPurchasing.gatewayId, PacketErrorReport::ErrorType_Purchase_TimePeriodHasNotBegunYet );
          SendTournamentPurchaseResultBackToServer( serverIdentifier, serverTransactionUuid, PacketErrorReport::ErrorType_Purchase_TimePeriodHasNotBegunYet );
          return false;
       }
@@ -509,7 +509,7 @@ bool     SalesManager::PerformSale( const string& purchaseUuid, const UserTicket
       int secondsUntil = GetDiffTimeFromRightNow( ee.endDate.c_str() );
       if( secondsUntil > 0 )
       {
-         m_parent->SendErrorToClient( userPurchasing.connectionId, PacketErrorReport::ErrorType_Purchase_TimePeriodHasExpired );
+         m_parent->SendErrorToClient( userPurchasing.connectionId, userPurchasing.gatewayId, PacketErrorReport::ErrorType_Purchase_TimePeriodHasExpired );
          SendTournamentPurchaseResultBackToServer( serverIdentifier, serverTransactionUuid, PacketErrorReport::ErrorType_Purchase_TimePeriodHasExpired );
          return false;
       }
@@ -521,6 +521,7 @@ bool     SalesManager::PerformSale( const string& purchaseUuid, const UserTicket
    purchaseLookup->userUuid = userPurchasing.uuid;
    purchaseLookup->exchangeUuid = purchaseUuid;
    purchaseLookup->connectionId = userPurchasing.connectionId;
+   purchaseLookup->gatewayId = userPurchasing.gatewayId;
    purchaseLookup->fromOtherServerId = serverIdentifier;
    purchaseLookup->fromOtherServerTransactionId = serverTransactionUuid;
    
@@ -549,14 +550,14 @@ bool     SalesManager::PerformSale( const SerializedVector< PurchaseServerDebitI
 
    if( itemsToSpend.size() == 0 )
    {
-      m_parent->SendErrorToClient( userPurchasing.connectionId, PacketErrorReport::ErrorType_Purchase_NoTradeItemsSpecified );
+      m_parent->SendErrorToClient( userPurchasing.connectionId, userPurchasing.gatewayId, PacketErrorReport::ErrorType_Purchase_NoTradeItemsSpecified );
       SendTournamentPurchaseResultBackToServer( serverIdentifier, serverTransactionUuid, PacketErrorReport::ErrorType_Purchase_NoTradeItemsSpecified );
       return false;
    }
 
    if( m_usersBeingServiced.find( userPurchasing.uuid ) != m_usersBeingServiced.end() )
    {
-      m_parent->SendErrorToClient( userPurchasing.connectionId, PacketErrorReport::ErrorType_Purchase_StoreBusy );
+      m_parent->SendErrorToClient( userPurchasing.connectionId, userPurchasing.gatewayId, PacketErrorReport::ErrorType_Purchase_StoreBusy );
       SendTournamentPurchaseResultBackToServer( serverIdentifier, serverTransactionUuid, PacketErrorReport::ErrorType_Purchase_StoreBusy );
       return false;
    }
@@ -568,7 +569,7 @@ bool     SalesManager::PerformSale( const SerializedVector< PurchaseServerDebitI
    {
       if( validationList.find( itemsToSpend[i].productUuidToSpend ) != validationList.end() )
       {
-         m_parent->SendErrorToClient( userPurchasing.connectionId, PacketErrorReport::ErrorType_Purchase_DuplicateItemsForPayment );
+         m_parent->SendErrorToClient( userPurchasing.connectionId, userPurchasing.gatewayId, PacketErrorReport::ErrorType_Purchase_DuplicateItemsForPayment );
          SendTournamentPurchaseResultBackToServer( serverIdentifier, serverTransactionUuid, PacketErrorReport::ErrorType_Purchase_DuplicateItemsForPayment );
          return false;
       }
@@ -582,6 +583,7 @@ bool     SalesManager::PerformSale( const SerializedVector< PurchaseServerDebitI
    PurchaseTracking* purchaseLookup = new PurchaseTracking;
    purchaseLookup->userUuid = userPurchasing.uuid;
    purchaseLookup->connectionId = userPurchasing.connectionId;
+   purchaseLookup->gatewayId = userPurchasing.gatewayId;
    purchaseLookup->fromOtherServerId = serverIdentifier;
    purchaseLookup->fromOtherServerTransactionId = serverTransactionUuid;
    purchaseLookup->itemsToSpend = itemsToSpend;

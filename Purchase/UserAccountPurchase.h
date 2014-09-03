@@ -15,6 +15,7 @@ public:
    string   uuid;
    string   userName;// just for debugging purposes
    U32      connectionId;/// only after this person has logged in
+   U32      gatewayId;//
    string   userTicket;
    string   dateOfLastRequest;// once the client tells us what this is
    U8       gameProductId;
@@ -59,6 +60,7 @@ public:
    bool              LoginKeyMatches( const string& loginKey ) const;
    const UserTicket& GetUserTicket() const { return m_userTicket; }
    void              SetConnectionId( U32 connId ) { m_userTicket.connectionId = connId; }
+   void              SetGatewayId( U32 id ) { m_userTicket.gatewayId = id; }
 
    void              SetServer( DiplodocusPurchase* assetManager ) { m_purchaseManager = assetManager; }
    void              SetSalesManager( SalesManager* manager ) { m_salesManager = manager; }
@@ -69,6 +71,7 @@ public:
    bool              MakeRefund( const PacketTournament_PurchaseTournamentEntryRefund* packet, U32 connectionId );
 
    void              UserLoggedOut();
+   void              ClearUserLogout();
    bool              LogoutExpired();
    void              Update();
 

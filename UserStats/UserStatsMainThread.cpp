@@ -106,7 +106,7 @@ int      UserStatsMainThread::MainLoop_OutputProcessing()
 
 //---------------------------------------------------------------
 
-bool     UserStatsMainThread::AddInputChainData( BasePacket* packet, U32 connectionId )
+bool     UserStatsMainThread::AddInputChainData( BasePacket* packet, U32 gatewayId )
 {
    U8 packetType = packet->packetType;
 
@@ -121,7 +121,7 @@ bool     UserStatsMainThread::AddInputChainData( BasePacket* packet, U32 connect
    case PacketType_ServerJobWrapper:
       {
          PacketCleaner cleaner( packet );
-         HandlePacketFromOtherServer( packet, connectionId );
+         HandlePacketFromOtherServer( packet, gatewayId );
          return true;
       }
  
@@ -131,7 +131,7 @@ bool     UserStatsMainThread::AddInputChainData( BasePacket* packet, U32 connect
    case PacketType_GatewayWrapper:
       {
          PacketCleaner cleaner( packet );
-         HandlePacketFromClient( packet, connectionId ); // TODO: place packets in deque
+         HandlePacketFromClient( packet, gatewayId ); // TODO: place packets in deque
          return true;
       }
    }
@@ -140,7 +140,7 @@ bool     UserStatsMainThread::AddInputChainData( BasePacket* packet, U32 connect
 
 //---------------------------------------------------------------
 
-bool  UserStatsMainThread::HandlePacketFromClient( BasePacket* packet, U32 connectionId )// not thread safe
+bool  UserStatsMainThread::HandlePacketFromClient( BasePacket* packet, U32 gatewayId )// not thread safe
 {
    if( packet->packetType != PacketType_GatewayWrapper )
    {
@@ -153,6 +153,7 @@ bool  UserStatsMainThread::HandlePacketFromClient( BasePacket* packet, U32 conne
 
    U8 packetType = unwrappedPacket->packetType;
    U8 packetSubType = unwrappedPacket->packetSubType;
+   U32 connectionId = wrapper->connectionId;
 
    if( packetType == PacketType_UserStats )
    {
@@ -167,7 +168,7 @@ bool  UserStatsMainThread::HandlePacketFromClient( BasePacket* packet, U32 conne
             response->stats.insert( "stat1", "100" );            
             response->stats.insert( "stat2", "1000" );
             response->stats.insert( "stat3", "-9" );
-            SendPacketToGateway( response, connectionId );
+            SendPacketToGateway( response, connectionId, gatewayId );
             //DbQuery
          }
          break;
@@ -223,7 +224,7 @@ bool  UserStatsMainThread::HandlePacketFromClient( BasePacket* packet, U32 conne
 
             if( s_StatsPlugins[pRequestUserProfileStats->gameType].onRequestUserProfileStats != NULL )
             {
-               if( s_StatsPlugins[pRequestUserProfileStats->gameType].onRequestUserProfileStats(this,connectionId,pRequestUserProfileStats->profileUserId) )
+               if( s_StatsPlugins[pRequestUserProfileStats->gameType].onRequestUserProfileStats(this,connectionId,gatewayId,pRequestUserProfileStats->profileUserId) )
                {
                   break;
                }
@@ -232,7 +233,7 @@ bool  UserStatsMainThread::HandlePacketFromClient( BasePacket* packet, U32 conne
             PacketUserStats_RequestUserProfileStatsResponse* response = new PacketUserStats_RequestUserProfileStatsResponse;
             response->profileUserId = pRequestUserProfileStats->profileUserId;
             response->gameType = pRequestUserProfileStats->gameType;
-            SendPacketToGateway( response, connectionId );
+            SendPacketToGateway( response, connectionId, gatewayId );
          }
          break;
       }
@@ -471,12 +472,20 @@ bool     UserStatsMainThread::SendMessageToClient( BasePacket* packet, U32 conne
       ClientMap tempInputContainer = m_connectedClients;
       m_inputChainListMutex.unlock();
 
+      U32 gatewayId = 0;
+      // we need to look the user connection up.
+
       ClientMapIterator itInputs = tempInputContainer.begin();
       if( itInputs != tempInputContainer.end() )// only one output currently supported.
       {
          KhaanServerToServer* khaan = static_cast< KhaanServerToServer* >( itInputs->second );
-         khaan->AddOutputChainData( packet );
-         m_clientsNeedingUpdate.push_back( khaan->GetChainedId() );
+         if( khaan->DoesNameMatch( "KhaanServerToServer" ) &&
+            khaan->GetServerId() == gatewayId )
+         {
+            khaan->AddOutputChainData( packet );
+            m_clientsNeedingUpdate.push_back( khaan->GetChainedId() );
+            return true;
+         }
          itInputs++;
       }
       return true;

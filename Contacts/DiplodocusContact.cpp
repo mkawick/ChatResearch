@@ -33,7 +33,7 @@ DiplodocusContact::DiplodocusContact( const string& serverName, U32 serverId ): 
                                              m_invitationManagerNeedsUpdate( false ),
                                              m_userLookupNeedsUpdate( false )
 {
-   SetSleepTime( 45 );
+   SetSleepTime( 30 );
    time_t currentTime;
    time( &currentTime );
    m_timestampDailyStatServerStatisics = ZeroOutHours( currentTime );
@@ -174,7 +174,7 @@ void     DiplodocusContact::HandleExipiredInvitations( const PacketDbQueryResult
 
 //---------------------------------------------------------------
 
-bool     DiplodocusContact::AddInputChainData( BasePacket* packet, U32 connectionId )
+bool     DiplodocusContact::AddInputChainData( BasePacket* packet, U32 gatewayId )
 {
   /* packets handled
 
@@ -192,13 +192,13 @@ bool     DiplodocusContact::AddInputChainData( BasePacket* packet, U32 connectio
    if( packet->packetType == PacketType_GatewayInformation )
    {
       PacketCleaner cleaner( packet );
-      return HandleCommandFromGateway( packet, connectionId );
+      return HandleCommandFromGateway( packet, gatewayId );
    }
 
    if( packet->packetType == PacketType_ServerJobWrapper )
    {
       PacketCleaner cleaner( packet );
-      HandlePacketFromOtherServer( packet, connectionId );
+      HandlePacketFromOtherServer( packet, gatewayId );
       return true;
    }
 
@@ -206,15 +206,14 @@ bool     DiplodocusContact::AddInputChainData( BasePacket* packet, U32 connectio
    {
       PacketGatewayWrapper* wrapper = static_cast< PacketGatewayWrapper* >( packet );
       BasePacket* unwrappedPacket = wrapper->pPacket;
-      U32 connectionIdToUse = wrapper->connectionId;
-      connectionIdToUse = connectionIdToUse;
+      U32 connectionId = wrapper->connectionId;
 
       if( unwrappedPacket->packetType == PacketType_Contact )
       {
          UserContactMapIterator found = m_users.find( connectionId );
          if( found == m_users.end() )
          {
-            SendErrorToClient( connectionId, PacketErrorReport::ErrorType_Contact_BadLoginKey );
+            SendErrorToClient( connectionId, gatewayId, PacketErrorReport::ErrorType_Contact_BadLoginKey );
             return false;
          }
 
@@ -292,7 +291,7 @@ string      DiplodocusContact::GetUserUuidByConnectionId( U32 connectionId )
    return found->second.GetUserInfo().uuid;
 }
 
-void        DiplodocusContact::GetUserConnectionId( const string& uuid, U32& connectionId )
+void        DiplodocusContact::GetUserConnectionId( const string& uuid, U32& connectionId, U32& gatewayId )
 {
    connectionId = 0;
 
@@ -323,7 +322,7 @@ bool     DiplodocusContact::HandleCommandFromGateway( BasePacket* packet, U32 co
 //---------------------------------------------------------------
 
 
-bool  DiplodocusContact::HandlePacketFromOtherServer( BasePacket* packet, U32 connectionId )// not thread safe
+bool  DiplodocusContact::HandlePacketFromOtherServer( BasePacket* packet, U32 gatewayId )// not thread safe
 {
    if( packet->packetType != PacketType_ServerJobWrapper )
    {
@@ -332,8 +331,8 @@ bool  DiplodocusContact::HandlePacketFromOtherServer( BasePacket* packet, U32 co
 
    PacketServerJobWrapper* wrapper = static_cast< PacketServerJobWrapper* >( packet );
    BasePacket* unwrappedPacket = wrapper->pPacket;
-   U32  serverIdLookup = wrapper->serverId;
-   serverIdLookup = serverIdLookup;
+   U32   serverIdLookup = wrapper->serverId;
+   //U32   connectionId = wrapper->connectionId;
 
    //bool success = false;
 
@@ -356,7 +355,8 @@ bool  DiplodocusContact::HandlePacketFromOtherServer( BasePacket* packet, U32 co
    }
    else if( unwrappedPacket->packetType == PacketType_Contact )
    {
-      return HandlePacketRequests( static_cast< PacketContact* >( packet ), connectionId );
+      PacketContact* contact = static_cast< PacketContact* >( packet );
+      return HandlePacketRequests( contact, gatewayId, 0 );
    }
 
    return false;
@@ -676,19 +676,23 @@ bool     DiplodocusContact::ConnectUser( PacketPrepareForUserLogin* loginPacket 
       it = m_users.begin();
       while( it != m_users.end() )
       {
-         if( it->second.GetUserInfo().uuid == loginPacket->uuid ) 
+         UserContact& user = it->second;
+         if( user.GetUserInfo().uuid == loginPacket->uuid ) 
          {
+            user.ClearLoggedOut();
             found = true;
-            U32 id = it->second.GetUserInfo().id;
+            U32 id = user.GetUserInfo().id;
             UserIdToContactMapIterator itIdToContact = m_userLookupById.find( id );
             if( itIdToContact != m_userLookupById.end() )
             {
                itIdToContact->second = connectionId;
             }
-            it->second.SetConnectionId( connectionId );
-            it->second.FinishLoginBySendingUserFriendsAndInvitations();
+            user.SetConnectionId( connectionId );
+            user.FinishLoginBySendingUserFriendsAndInvitations();
+            user.SetGatewayId( gatewayId );
             
-            m_users.insert( UserContactPair( connectionId, it->second ) );
+            m_users.insert( UserContactPair( connectionId, user ) );
+            
             m_users.erase( it );
             break;
          }
@@ -710,7 +714,7 @@ bool     DiplodocusContact::ConnectUser( PacketPrepareForUserLogin* loginPacket 
       ui.passwordHash =    loginPacket->password;
       ui.id =              loginPacket->userId;
 
-      UserContact user( ui, connectionId );
+      UserContact user( ui, connectionId, loginPacket->gatewayId );
       user.SetServer( this );
 
       m_mutex.lock();
@@ -756,7 +760,7 @@ bool     DiplodocusContact::UpdateUserProfile( const PacketUserUpdateProfile* pr
 
 //---------------------------------------------------------------
 
-bool     DiplodocusContact::HandlePacketRequests( PacketContact* packet, U32 connectionId )
+bool     DiplodocusContact::HandlePacketRequests( PacketContact* packet, U32 connectionId, U32 gatewayId )
 {
    UserContactMapIterator it = m_users.find( connectionId );
    if( it == m_users.end() )
@@ -901,7 +905,7 @@ void     DiplodocusContact::ClearStats()
 
 //---------------------------------------------------------------
 
-bool     DiplodocusContact::SendMessageToClient( BasePacket* packet, U32 connectionId )
+bool     DiplodocusContact::SendMessageToClient( BasePacket* packet, U32 connectionId, U32 gatewayId )
 {
    if( packet->packetType == PacketType_GatewayWrapper )// this is already wrapped up and ready for the gateway... send it on.
    {
@@ -911,8 +915,11 @@ bool     DiplodocusContact::SendMessageToClient( BasePacket* packet, U32 connect
       if( itInputs != m_connectedClients.end() )// only one output currently supported.
       {
          KhaanContact* khaan = static_cast< KhaanContact* >( itInputs->second );
-         khaan->AddOutputChainData( packet );
-         m_clientsNeedingUpdate.push_back( khaan->GetChainedId() );
+         if( khaan->GetClassName() == "KhaanContact" )
+         {
+            khaan->AddOutputChainData( packet );
+            m_clientsNeedingUpdate.push_back( khaan->GetChainedId() );
+         }
          itInputs++;
       }
       return true;
@@ -939,9 +946,9 @@ bool     DiplodocusContact::SendMessageToClient( BasePacket* packet, U32 connect
 }
 
 
-bool     DiplodocusContact::SendErrorToClient( U32 connectionId, PacketErrorReport::ErrorType error )
+bool     DiplodocusContact::SendErrorToClient( U32 connectionId, U32 gatewayId, PacketErrorReport::ErrorType error )
 {
-   return Diplodocus< KhaanContact >:: SendErrorToClient( connectionId, error, 0 );
+   return Diplodocus< KhaanContact >:: SendErrorToClient( connectionId, gatewayId, error, 0 );
 }
 
 //---------------------------------------------------------------

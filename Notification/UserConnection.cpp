@@ -149,7 +149,7 @@ void  UserConnection::StoreListOfDevices( const PacketDbQueryResult* dbResult )
 {
    if( dbResult->successfulQuery == false )
    {
-      m_mainThread->SendErrorToClient( m_userInfo.connectionId, PacketErrorReport::ErrorType_Notification_NoDevicesListed );
+      m_mainThread->SendErrorToClient( m_userInfo.connectionId, m_userInfo.gatewayId, PacketErrorReport::ErrorType_Notification_NoDevicesListed );
       return;
    }
    m_deviceList.clear();
@@ -179,7 +179,7 @@ void  UserConnection::StoreDevicesPerGameList( const PacketDbQueryResult* dbResu
 {
    if( dbResult->successfulQuery == false )
    {
-      m_mainThread->SendErrorToClient( m_userInfo.connectionId, PacketErrorReport::ErrorType_Notification_NoDevicesEnabledForThisGame );
+      m_mainThread->SendErrorToClient( m_userInfo.connectionId, m_userInfo.gatewayId, PacketErrorReport::ErrorType_Notification_NoDevicesEnabledForThisGame );
       return;
    }
 
@@ -294,7 +294,7 @@ bool     UserConnection::FindDeviceAndUpdate( RegisteredDeviceList deviceList, c
          DeviceNotificationsIterator   deviceEnabledIt = FindDeviceNotificationByUserDeviceId( userDeviceId );
          if( deviceEnabledIt != m_deviceEnabledList.end() )
          {
-            m_mainThread->SendErrorToClient( m_userInfo.connectionId, PacketErrorReport::ErrorType_Notification_DeviceAlreadyRegistered );
+            m_mainThread->SendErrorToClient( m_userInfo.connectionId, m_userInfo.gatewayId, PacketErrorReport::ErrorType_Notification_DeviceAlreadyRegistered );
             SendNewDeviceRegistrationResponse( deviceIt->uuid );
          }
          else
@@ -364,7 +364,7 @@ void     UserConnection::RegisterNewDevice( const PacketNotification_RegisterDev
 {
    if( registerDevice->deviceId.size() < 8 )
    {
-      m_mainThread->SendErrorToClient( m_userInfo.connectionId, PacketErrorReport::ErrorType_Notification_DeviceIdIncorrect );
+      m_mainThread->SendErrorToClient( m_userInfo.connectionId, m_userInfo.gatewayId, PacketErrorReport::ErrorType_Notification_DeviceIdIncorrect );
       return;
    }
 
@@ -440,7 +440,7 @@ void  UserConnection::CreateEnabledNotificationEntry( const PacketDbQueryResult*
    if( dbResult->successfulQuery == false )
    {
       delete rd;
-      m_mainThread->SendErrorToClient( m_userInfo.connectionId, PacketErrorReport::ErrorType_Notification_CannotInsertNewDevice );
+      m_mainThread->SendErrorToClient( m_userInfo.connectionId, m_userInfo.gatewayId, PacketErrorReport::ErrorType_Notification_CannotInsertNewDevice );
       return;
    }
 
@@ -504,7 +504,7 @@ void  UserConnection::UpdateDevice( const PacketNotification_UpdateDevice* updat
 {
    if( updateDevicePacket->deviceUuid.size() < 1 )
    {
-      m_mainThread->SendErrorToClient( m_userInfo.connectionId, PacketErrorReport::ErrorType_Notification_DeviceIdIncorrect );
+      m_mainThread->SendErrorToClient( m_userInfo.connectionId, m_userInfo.gatewayId, PacketErrorReport::ErrorType_Notification_DeviceIdIncorrect );
       return;
    }
 
@@ -523,7 +523,7 @@ void  UserConnection::UpdateDevice( const PacketNotification_UpdateDevice* updat
       text += updateDevicePacket->deviceUuid.c_str();
       text += " but the device does not exist in UserConnection";
       m_mainThread->Log( text, 1 );
-      m_mainThread->SendErrorToClient( m_userInfo.connectionId, PacketErrorReport::ErrorType_Notification_DeviceIdIncorrect );
+      m_mainThread->SendErrorToClient( m_userInfo.connectionId, m_userInfo.gatewayId, PacketErrorReport::ErrorType_Notification_DeviceIdIncorrect );
       return;
    }
    
@@ -553,7 +553,7 @@ void  UserConnection::UpdateDevice( const PacketNotification_UpdateDevice* updat
       text += updateDevicePacket->deviceUuid.c_str();
       text += " but the device does not exist in UserConnection";
       m_mainThread->Log( text, 1 );
-      m_mainThread->SendErrorToClient( m_userInfo.connectionId, PacketErrorReport::ErrorType_Notification_DeviceIdIncorrect );
+      m_mainThread->SendErrorToClient( m_userInfo.connectionId, m_userInfo.gatewayId, PacketErrorReport::ErrorType_Notification_DeviceIdIncorrect );
       return;
    }
 
@@ -840,10 +840,11 @@ UserConnection::DeviceNotificationsIterator
 bool     UserConnection::SendMessageToClient( BasePacket* packet ) const
 {
    U32 connectionId = m_userInfo.connectionId;
+   U32 gatewayId = m_userInfo.gatewayId;
    PacketGatewayWrapper* wrapper = new PacketGatewayWrapper();
    wrapper->SetupPacket( packet, connectionId );
 
-   m_mainThread->SendMessageToClient( wrapper, connectionId );
+   m_mainThread->SendMessageToClient( wrapper, connectionId, gatewayId );
    return true;
 }
 

@@ -25,7 +25,7 @@ struct StatsPlugin
    void (*onRequestGlobalFactionStats)(UserStatsMainThread*, U32 connectionId);
    void (*onRequestGameProfile)(UserStatsMainThread *pUserStats, U32 connectionId,
                                              unsigned int profileUserId, unsigned int requestUserId );
-   bool (*onRequestUserProfileStats)(UserStatsMainThread *pUserStats, U32 connectionId, unsigned int profileUserId );
+   bool (*onRequestUserProfileStats)(UserStatsMainThread *pUserStats, U32 connectionId, U32 gatewayId, unsigned int profileUserId );
    
    void (*onShutdown)();
 };

@@ -269,11 +269,31 @@
 				>
 			</File>
 			<File
+				RelativePath=".\server_stats_fluxx.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\server_stats_foodfight.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\server_stats_nightfall.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\server_stats_pennyarcade.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\server_stats_plugins.cpp"
 				>
 			</File>
 			<File
 				RelativePath=".\server_stats_summonwar.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\server_stats_tantocuore.cpp"
 				>
 			</File>
 			<File

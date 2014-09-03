@@ -139,7 +139,7 @@ bool     UserAccountAssetDelivery::GetListOfAssetCategories( const PacketAsset_G
    m_assetManager->GetListOfAssetCategories( listOfStrings );
    if( listOfStrings.size() == 0 )
    {
-      m_assetManager->SendErrorToClient( m_userTicket.connectionId, PacketErrorReport::ErrorType_Asset_NoCategoriesAvailable );
+      m_assetManager->SendErrorToClient( m_userTicket.connectionId, m_userTicket.gatewayId, PacketErrorReport::ErrorType_Asset_NoCategoriesAvailable );
       return false;
    }
 
@@ -167,7 +167,7 @@ bool     UserAccountAssetDelivery::GetListOfAssets( const PacketAsset_GetListOfA
    const AssetOrganizer*   assetOrganizer = m_assetManager->GetAssetOrganizer( packet->assetCategory );
    if( assetOrganizer == NULL )
    {
-      m_assetManager->SendErrorToClient( m_userTicket.connectionId, PacketErrorReport::ErrorType_Asset_UnknownAssetCategory );
+      m_assetManager->SendErrorToClient( m_userTicket.connectionId, m_userTicket.gatewayId, PacketErrorReport::ErrorType_Asset_UnknownAssetCategory );
       return false;
    }
 
@@ -239,7 +239,7 @@ bool     UserAccountAssetDelivery::GetAsset( const PacketAsset_RequestAsset* pac
             if( size == 0 )
             {
                cout << " Attempt to send 0 length file: " << packet->assetHash << endl;
-               m_assetManager->SendErrorToClient( m_userTicket.connectionId, PacketErrorReport::ErrorType_Asset_unknown1 );
+               m_assetManager->SendErrorToClient( m_userTicket.connectionId, m_userTicket.gatewayId, PacketErrorReport::ErrorType_Asset_unknown1 );
                return false;
             }
 
@@ -250,7 +250,7 @@ bool     UserAccountAssetDelivery::GetAsset( const PacketAsset_RequestAsset* pac
       else
       {
          cout << " Attempt to load unknown file: " << packet->assetHash << endl;
-         m_assetManager->SendErrorToClient( m_userTicket.connectionId, PacketErrorReport::ErrorType_Asset_UnknownAsset );
+         m_assetManager->SendErrorToClient( m_userTicket.connectionId, m_userTicket.gatewayId, PacketErrorReport::ErrorType_Asset_UnknownAsset );
       }
    }
    else

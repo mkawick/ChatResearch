@@ -37,10 +37,12 @@ struct InvitationQueryLookup
 class UserContact
 {
 public:
-   UserContact( const UserInfo& info, U32 connectionId );
+   UserContact( const UserInfo& info, U32 connectionId, U32 gatewayId );
    ~UserContact();
 
    const UserInfo& GetUserInfo() const { return m_userInfo;}
+   void  SetGatewayId( U32 id ) { m_gatewayId = id; }
+   U32   GetGatewayId() const { return m_gatewayId; }
    void  SetConnectionId( U32 newConnectionId ) { m_connectionId = newConnectionId; m_userInfo.connectionId = newConnectionId; } // be super cautios here. this is meant for users who relog in.
 
    void  Init(); // send queries
@@ -55,6 +57,7 @@ public:
    void  UserLoggedOut();
 
    bool  IsLoggedOut() const { return m_isLoggedOut; }
+   void  ClearLoggedOut() { m_isLoggedOut = false; }
    int   SecondsExpiredSinceLoggedOut();
 
    void  Update();
@@ -122,6 +125,7 @@ private:
 
 
    U32                  m_connectionId;
+   U32                  m_gatewayId;
    
    UserInfo             m_userInfo;
    bool                 m_requiresUpdate;

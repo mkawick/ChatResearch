@@ -88,6 +88,7 @@ public:
    string   exchangeUuid;
    
    U32      connectionId;
+   U32      gatewayId;
 
    U32      fromOtherServerId;
    string   fromOtherServerTransactionId;
@@ -145,7 +146,7 @@ private:
    bool     RequestAllProducts();
    bool     SendTournamentPurchaseResultBackToServer( U32 serverIdentifier, string serverTransactionUuid, int result );
    void     VerifyThatUserHasEnoughMoneyForEntry2( const PacketDbQueryResult* dbResult );
-   void     NotifyLoginToReloadUserInvertory( const string& userUuid, U32 connectionId );
+   void     NotifyLoginToReloadUserInventory( const string& userUuid, U32 connectionId );
 
    bool                             m_isServicingExchangeRates;
    bool                             m_isInitializing, m_hasSendProductRequest;

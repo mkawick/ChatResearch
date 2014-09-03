@@ -22,11 +22,11 @@ class PacketDbQuery;
 class PacketSendingInterface
 {
 public:
-   virtual bool     SendMessageToClient( BasePacket* packet, U32 connectionId ) = 0;
+   virtual bool     SendMessageToClient( BasePacket* packet, U32 connectionId, U32 gatewayId ) = 0;
    virtual bool     AddQueryToOutput( PacketDbQuery* packet, U32 connectionId ) = 0;
    
-   virtual bool     SendErrorToClient( U32 connectionId, PacketErrorReport::ErrorType error ) = 0;
-   virtual void     GetUserConnectionId( const string& uuid, U32& connectionId ) = 0;
+   virtual bool     SendErrorToClient( U32 connectionId, U32 gatewayId, PacketErrorReport::ErrorType error ) = 0;
+   virtual void     GetUserConnectionId( const string& uuid, U32& connectionId, U32& gatewayId ) = 0;
    virtual string   GetUserName( const string& uuid ) = 0;
    virtual string   GetUserUuidByConnectionId( U32 connectionId ) = 0;
 
@@ -62,7 +62,7 @@ public:
 
    bool           Update();
 
-   bool           HandlePacketRequest( const BasePacket* pPacket, U32 connectionId );
+   bool           HandlePacketRequest( const BasePacket* pPacket, U32 connectionId, U32 gatewayId );
 
    ///-----------------------------------------------------------
 
@@ -88,17 +88,17 @@ protected:
 
 protected:
 
-   bool           EchoHandler( U32 connectionId );
-   bool           InviteUserToChatRoom( const PacketInvitation_InviteUser* invitation, U32 connectionId );
-   bool           CancelInvitation( const PacketInvitation_CancelInvitation* invitation, U32 connectionId );
-   bool           RejectInvitation( const PacketInvitation_RejectInvitation* invitation, U32 connectionId );
-   bool           AcceptInvitation( const PacketInvitation_AcceptInvitation* invitation, U32 connectionId );
-   bool           RequestListOfInvitations( const PacketInvitation_GetListOfInvitations* request, U32 connectionId );
-   bool           RequestListOfIntivationsToGroup( const PacketInvitation_GetListOfInvitationsForGroup* request, U32 connectionId );
+   bool           EchoHandler( U32 connectionId, U32 gatewayId );
+   bool           InviteUserToChatRoom( const PacketInvitation_InviteUser* invitation, U32 connectionId, U32 gatewayId );
+   bool           CancelInvitation( const PacketInvitation_CancelInvitation* invitation, U32 connectionId, U32 gatewayId );
+   bool           RejectInvitation( const PacketInvitation_RejectInvitation* invitation, U32 connectionId, U32 gatewayId );
+   bool           AcceptInvitation( const PacketInvitation_AcceptInvitation* invitation, U32 connectionId, U32 gatewayId );
+   bool           RequestListOfInvitations( const PacketInvitation_GetListOfInvitations* request, U32 connectionId, U32 gatewayId );
+   bool           RequestListOfIntivationsToGroup( const PacketInvitation_GetListOfInvitationsForGroup* request, U32 connectionId, U32 gatewayId );
 
    void           DeleteAllInvitationsToThisGroup( const string& groupUuid, const string& inviteeUuid );
    bool           ProcessDbResult( PacketDbQueryResult* dbResult );
-   bool           SendMessageToClient( BasePacket* packet, U32 connectionId ) const;
+   bool           SendMessageToClient( BasePacket* packet, U32 connectionId, U32 gatewayId ) const;
 
    void           AddInvitationToStorage( Invitation& inv );
    void           InsertInvitationIntoDb( const Invitation& inv );
@@ -125,7 +125,7 @@ protected:
 
 protected:
    template< typename PacketType >
-   void           SendUserHisInvitations( const InvitationMap& listOfInvitations, MatchInvitationType compare, const string& userUuid, U32 connectionId );
+   void           SendUserHisInvitations( const InvitationMap& listOfInvitations, MatchInvitationType compare, const string& userUuid, U32 connectionId, U32 gatewayId );
 };
 
 ///////////////////////////////////////////////////////////////////

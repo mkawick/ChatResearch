@@ -266,7 +266,7 @@ void  GameFramework::UseCommandlineOverrides( int argc, const char* argv[] )
 
 //-----------------------------------------------------
 
-bool  GameFramework::SendGameData( U32 connectionId, const MarshalledData* data )
+bool  GameFramework::SendGameData( U32 connectionId, U32 gatewayId, const MarshalledData* data )
 {
    const int MaxSize = PacketGameplayRawData::MaxBufferSize  - sizeof( PacketGatewayWrapper );
 

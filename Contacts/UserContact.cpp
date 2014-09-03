@@ -48,8 +48,9 @@ typedef Enigmosaurus <TableUser_PlusAvatarIconId> UserPlusAvatarTable;
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
-UserContact::UserContact( const UserInfo& info, U32 connectionId ): 
+UserContact::UserContact( const UserInfo& info, U32 connectionId, U32 gatewayId ): 
                m_connectionId( connectionId ),
+               m_gatewayId( gatewayId ),
                m_userInfo( info ), 
                m_requiresUpdate( false ),
                m_isLoggedOut( false ),
@@ -396,7 +397,7 @@ bool  UserContact::HandleDbQueryResult( const PacketDbQueryResult* dbResult )
       {
          if( dbResult->successfulQuery == false || dbResult->bucket.bucket.size() == 0 )
          {
-            m_contactServer->SendErrorToClient( m_connectionId, PacketErrorReport::ErrorType_Contact_Invitation_ProblemFindingUser );
+            m_contactServer->SendErrorToClient( m_connectionId, m_gatewayId, PacketErrorReport::ErrorType_Contact_Invitation_ProblemFindingUser );
             return true;
          }
 
@@ -445,7 +446,7 @@ bool  UserContact::HandleDbQueryResult( const PacketDbQueryResult* dbResult )
       {
          if( dbResult->successfulQuery == false || dbResult->bucket.bucket.size() == 0 )
          {
-            m_contactServer->SendErrorToClient( m_connectionId, PacketErrorReport::ErrorType_Contact_Invitation_BadInvitation );
+            m_contactServer->SendErrorToClient( m_connectionId, m_gatewayId, PacketErrorReport::ErrorType_Contact_Invitation_BadInvitation );
             return true;
          }
 
@@ -456,7 +457,7 @@ bool  UserContact::HandleDbQueryResult( const PacketDbQueryResult* dbResult )
       {
          if( dbResult->successfulQuery == false || dbResult->bucket.bucket.size() == 0 )
          {
-            m_contactServer->SendErrorToClient( m_connectionId, PacketErrorReport::ErrorType_Contact_Invitation_BadInvitation );
+            m_contactServer->SendErrorToClient( m_connectionId, m_gatewayId, PacketErrorReport::ErrorType_Contact_Invitation_BadInvitation );
             return true;
          }
          FinishDecliningingInvitation( dbResult );
@@ -585,7 +586,7 @@ bool     UserContact::YourFriendsOnlineStatusChange( U32 connectionId, const str
    packet->friendInfo.avatarId = avatarId;
    //packet->friendInfo.markedAsFavorite = ;
    // PacketContact_FriendOnlineStatusChange
-    m_contactServer->SendPacketToGateway( packet, m_connectionId );
+    m_contactServer->SendPacketToGateway( packet, m_connectionId, m_gatewayId );
 
     return true;
 }
@@ -606,7 +607,7 @@ bool     UserContact::GetListOfContacts()
       packet->friends.insert( ui.uuid, FriendInfo( ui.userName, ui.motto, ui.avatarId, isLoggedIn, ui.favorite, ui.note ) );
    }
    
-   m_contactServer->SendPacketToGateway( packet, m_connectionId );
+   m_contactServer->SendPacketToGateway( packet, m_connectionId, m_gatewayId );
    
    return true;
 }
@@ -632,7 +633,7 @@ bool  UserContact::ListOfInvitationsReceived_SendToClient()
       packet->invitations.insert( invite.uuid, ii );
    }
    
-   m_contactServer->SendPacketToGateway( packet, m_connectionId );
+   m_contactServer->SendPacketToGateway( packet, m_connectionId, m_gatewayId );
 
    return true;
 }
@@ -658,7 +659,7 @@ bool  UserContact::ListOfInvitationsSent_SendToClient()
       packet->invitations.insert( invite.uuid, ii );
    }
    
-   m_contactServer->SendPacketToGateway( packet, m_connectionId );
+   m_contactServer->SendPacketToGateway( packet, m_connectionId, m_gatewayId );
 
    return true;
 }
@@ -813,20 +814,20 @@ bool     UserContact::InviteUser( const PacketContact_InviteContact* packet )
       const UserInfo& fr = *it++;
       if( fr.userName == inviteeName || fr.uuid == inviteeUuid )
       {
-         m_contactServer->SendErrorToClient( m_connectionId, PacketErrorReport::ErrorType_Contact_Invitation_InviteeAlreadyFriend );
+         m_contactServer->SendErrorToClient( m_connectionId, m_gatewayId, PacketErrorReport::ErrorType_Contact_Invitation_InviteeAlreadyFriend );
          return false;
       }
    }
 
    if( inviteeUuid == m_userInfo.uuid )
    {
-       m_contactServer->SendErrorToClient( m_connectionId, PacketErrorReport::ErrorType_Contact_Invitation_CannotInviteSelf );
+       m_contactServer->SendErrorToClient( m_connectionId, m_gatewayId, PacketErrorReport::ErrorType_Contact_Invitation_CannotInviteSelf );
        return false;
    }
 
    if( inviteeUuid.size() == 0 && inviteeName.size() == 0 )
    {
-       m_contactServer->SendErrorToClient( m_connectionId, PacketErrorReport::ErrorType_Contact_Invitation_InvalidUser );
+       m_contactServer->SendErrorToClient( m_connectionId, m_gatewayId, PacketErrorReport::ErrorType_Contact_Invitation_InvalidUser );
        return false;
    }
 
@@ -835,14 +836,14 @@ bool     UserContact::InviteUser( const PacketContact_InviteContact* packet )
    bool alreadyExists = DoesPendingInvitationExist( inviteeUuid, inviteeName );
    if( alreadyExists )
    {
-      m_contactServer->SendErrorToClient( m_connectionId, PacketErrorReport::ErrorType_Contact_Invitation_InviteeAlreadyInvited );
+      m_contactServer->SendErrorToClient( m_connectionId, m_gatewayId, PacketErrorReport::ErrorType_Contact_Invitation_InviteeAlreadyInvited );
       return false;
    }
 
    bool  didHeInviteMe = HaveIAlreadyBeenInvited( inviteeUuid );
    if( didHeInviteMe == true )
    {
-      m_contactServer->SendErrorToClient( m_connectionId, PacketErrorReport::ErrorType_Contact_Invitation_InviteeSentYouInvitation );
+      m_contactServer->SendErrorToClient( m_connectionId, m_gatewayId, PacketErrorReport::ErrorType_Contact_Invitation_InviteeSentYouInvitation );
       return false;
    }
 
@@ -859,7 +860,7 @@ bool     UserContact::InviteUser( const PacketContact_InviteContact* packet )
    {
       if( contact->IsBlockingFriendInvites() == true )
       {
-         m_contactServer->SendErrorToClient( m_connectionId, PacketErrorReport::ErrorType_UserIsBlockingFriendInvites );
+         m_contactServer->SendErrorToClient( m_connectionId, m_gatewayId, PacketErrorReport::ErrorType_UserIsBlockingFriendInvites );
          return false;
       }
       else
@@ -970,7 +971,7 @@ bool  UserContact::RemoveSentInvitation( const PacketContact_RemoveInvitation* p
    if( found == false || 
       invitationUuid.size() == 0 )
    {
-      m_contactServer->SendErrorToClient( m_connectionId, PacketErrorReport::ErrorType_Contact_Invitation_BadInvitation );
+      m_contactServer->SendErrorToClient( m_connectionId, m_gatewayId, PacketErrorReport::ErrorType_Contact_Invitation_BadInvitation );
       return false;
    }
 
@@ -1015,9 +1016,9 @@ bool  UserContact::PerformSearch( const PacketContact_SearchForUser* packet )
    {
       // do not add any contacts
       PacketContact_SearchForUserResult* response = new PacketContact_SearchForUserResult;
-      m_contactServer->SendPacketToGateway( response, m_connectionId );
+      m_contactServer->SendPacketToGateway( response, m_connectionId, m_gatewayId );
 
-      m_contactServer->SendErrorToClient( m_connectionId, PacketErrorReport::ErrorType_Contact_BadSearchString );
+      m_contactServer->SendErrorToClient( m_connectionId, m_gatewayId, PacketErrorReport::ErrorType_Contact_BadSearchString );
       return false;
    }
 
@@ -1025,9 +1026,9 @@ bool  UserContact::PerformSearch( const PacketContact_SearchForUser* packet )
    {
       // do not add any contacts
       PacketContact_SearchForUserResult* response = new PacketContact_SearchForUserResult;
-      m_contactServer->SendPacketToGateway( response, m_connectionId );
+      m_contactServer->SendPacketToGateway( response, m_connectionId, m_gatewayId );
 
-      m_contactServer->SendErrorToClient( m_connectionId, PacketErrorReport::ErrorType_Contact_SearchRequestHasTooMany );
+      m_contactServer->SendErrorToClient( m_connectionId, m_gatewayId, PacketErrorReport::ErrorType_Contact_SearchRequestHasTooMany );
       return false;
    }
 
@@ -1082,7 +1083,7 @@ bool  UserContact::RemoveContact( const PacketContact_ContactRemove* packet )
 
    if( found == false )
    {
-      m_contactServer->SendErrorToClient( m_connectionId, PacketErrorReport::ErrorType_Contact_NotAUserContact );
+      m_contactServer->SendErrorToClient( m_connectionId, m_gatewayId, PacketErrorReport::ErrorType_Contact_NotAUserContact );
       return false;
    }
 
@@ -1137,7 +1138,7 @@ bool  UserContact::EchoHandler()
 {
    cout << " Echo " << endl;
    PacketContact_EchoToClient* echo = new PacketContact_EchoToClient;
-   m_contactServer->SendPacketToGateway( echo, m_connectionId );
+   m_contactServer->SendPacketToGateway( echo, m_connectionId, m_gatewayId );
    return true;
 }
 
@@ -1166,7 +1167,7 @@ bool  UserContact::AddNotationToContact( const PacketContact_SetNotationOnUser* 
 
    if( found == false )
    {
-      m_contactServer->SendErrorToClient( m_connectionId, PacketErrorReport::ErrorType_Contact_NotAUserContact );
+      m_contactServer->SendErrorToClient( m_connectionId, m_gatewayId, PacketErrorReport::ErrorType_Contact_NotAUserContact );
       return false;
    }
 
@@ -1359,8 +1360,8 @@ void  UserContact::FinishSearchResult( const PacketDbQueryResult* dbResult )
    PacketContact_SearchForUserResult* response = new PacketContact_SearchForUserResult;
    if( dbResult->successfulQuery == false || dbResult->bucket.bucket.size() == 0 )
    {
-      m_contactServer->SendPacketToGateway( response, m_connectionId );
-      m_contactServer->SendErrorToClient( m_connectionId, PacketErrorReport::ErrorType_Contact_NoSearchResult );
+      m_contactServer->SendPacketToGateway( response, m_connectionId, m_gatewayId );
+      m_contactServer->SendErrorToClient( m_connectionId, m_gatewayId, PacketErrorReport::ErrorType_Contact_NoSearchResult );
       return;
    }
 
@@ -1376,7 +1377,7 @@ void  UserContact::FinishSearchResult( const PacketDbQueryResult* dbResult )
       foundList.insert( uuid, FriendInfo( userName, 0, false ) );// we never inform users if someone is online during a search.. privacy and spamming reasons
    }
 
-   m_contactServer->SendPacketToGateway( response, m_connectionId );
+   m_contactServer->SendPacketToGateway( response, m_connectionId, m_gatewayId );
 }
 
 //------------------------------------------------------------------------------------------------
@@ -1430,7 +1431,7 @@ void     UserContact::YouHaveBeenInvitedToBeAFriend( const string& userName, con
    packet->info.uuid = uuid;
    packet->info.message = message;
 
-   m_contactServer->SendPacketToGateway( packet, m_connectionId );
+   m_contactServer->SendPacketToGateway( packet, m_connectionId, m_gatewayId );
 
    InitContactsAndInvitations();
 
@@ -1447,7 +1448,7 @@ void     UserContact::InvitationAccepted( const string& sentFromuserName, const 
    packet->toUsername = sentToUserName;
    packet->message = message;
 
-   m_contactServer->SendPacketToGateway( packet, m_connectionId );
+   m_contactServer->SendPacketToGateway( packet, m_connectionId, m_gatewayId );
 
    if( accepted == true )
    {

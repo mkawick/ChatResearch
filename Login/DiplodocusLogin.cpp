@@ -119,7 +119,7 @@ void     DiplodocusLogin::InputRemovalInProgress( IChainedInterface * chainedInp
 
 //---------------------------------------------------------------
 
-bool     DiplodocusLogin:: AddInputChainData( BasePacket* packet, U32 connectionId )
+bool     DiplodocusLogin:: AddInputChainData( BasePacket* packet, U32 gatewayId )
 {
    if( m_printFunctionNames )
    {
@@ -171,7 +171,7 @@ bool     DiplodocusLogin:: AddInputChainData( BasePacket* packet, U32 connection
          case PacketLogin::LoginType_CreateAccount:
             {
                PacketCreateAccount* createAccount = static_cast<PacketCreateAccount*>( actualPacket );
-               CreateUserAccount( userConnectionId, createAccount->userEmail, createAccount->password, createAccount->userName, createAccount->deviceAccountId, createAccount->deviceId, createAccount->languageId, createAccount->gameProductId );
+               CreateUserAccount( userConnectionId, gatewayId, createAccount->userEmail, createAccount->password, createAccount->userName, createAccount->deviceAccountId, createAccount->deviceId, createAccount->languageId, createAccount->gameProductId );
             }
             break;
          case PacketLogin::LoginType_ListOfAggregatePurchases:
@@ -842,12 +842,12 @@ void     DiplodocusLogin:: TellUserThatAccountAlreadyMatched( const CreateAccoun
 
    if( aggregator->GetMatchingRecordType( CreateAccountResultsAggregator::MatchingRecord_Name ) )
    {
-      SendErrorToClient( aggregator->GetConnectionId(), PacketErrorReport::ErrorType_CreateFailed_DuplicateUsername );  // E_NETWORK_DUPLICATE_USERNAME
+      SendErrorToClient( aggregator->GetConnectionId(), aggregator->GetGatewayId(), PacketErrorReport::ErrorType_CreateFailed_DuplicateUsername );  // E_NETWORK_DUPLICATE_USERNAME
       return;
    }
    if( aggregator->GetMatchingRecordType( CreateAccountResultsAggregator::MatchingRecord_Email ) )
    {
-      SendErrorToClient( aggregator->GetConnectionId(), PacketErrorReport::ErrorType_CreateFailed_DuplicateEmail );  // E_NETWORK_DUPLICATE_USERNAME
+      SendErrorToClient( aggregator->GetConnectionId(), aggregator->GetGatewayId(), PacketErrorReport::ErrorType_CreateFailed_DuplicateEmail );  // E_NETWORK_DUPLICATE_USERNAME
       return;
    }
 }
@@ -997,7 +997,7 @@ void     DiplodocusLogin:: CreateNewPendingUserAccount( const CreateAccountResul
    dbQuery->escapedStrings.insert( boost::lexical_cast< string >( static_cast< int > ( aggregator->m_languageId ) ) );
    AddQueryToOutput( dbQuery );
 
-   SendErrorToClient( aggregator->m_connectionId, PacketErrorReport::ErrorType_CreateAccount_Success );
+   SendErrorToClient( aggregator->m_connectionId, aggregator->GetGatewayId(), PacketErrorReport::ErrorType_CreateAccount_Success );
 }
 
 //---------------------------------------------------------------
@@ -1054,7 +1054,7 @@ void     DiplodocusLogin:: UpdatePendingUserRecord( const CreateAccountResultsAg
 
    AddQueryToOutput( dbQuery );
 
-   SendErrorToClient( aggregator->m_connectionId, PacketErrorReport::ErrorType_CreateAccount_AccountUpdated );
+   SendErrorToClient( aggregator->m_connectionId, aggregator->GetGatewayId(), PacketErrorReport::ErrorType_CreateAccount_AccountUpdated );
 }
 
 //---------------------------------------------------------------
@@ -1102,12 +1102,12 @@ void     DiplodocusLogin:: CreateNewUserAccount( const CreateAccountResultsAggre
 
    AddQueryToOutput( dbQuery );
 
-   SendErrorToClient( aggregator->m_connectionId, PacketErrorReport::ErrorType_CreateAccount_Success );
+   SendErrorToClient( aggregator->m_connectionId, aggregator->GetGatewayId(), PacketErrorReport::ErrorType_CreateAccount_Success );
 }
 
 //---------------------------------------------------------------
 
-bool        DiplodocusLogin:: CreateUserAccount( U32 connectionId, const string& email, const string& password, const string& userName, const string& deviceAccountId, const string& deviceId, U8 languageId, U8 gameProductId )
+bool        DiplodocusLogin:: CreateUserAccount( U32 connectionId, U32 gatewayId, const string& email, const string& password, const string& userName, const string& deviceAccountId, const string& deviceId, U8 languageId, U8 gameProductId )
 {
    if( m_printFunctionNames == true )
    {
@@ -1130,12 +1130,12 @@ bool        DiplodocusLogin:: CreateUserAccount( U32 connectionId, const string&
 
    if( password.size() < 6 )
    {
-      SendErrorToClient( connectionId, PacketErrorReport::ErrorType_CreateFailed_BadPassword );
+      SendErrorToClient( connectionId, gatewayId, PacketErrorReport::ErrorType_CreateFailed_BadPassword );
       return false;
    }
    if( email.size() < 3 ) // currently user name can be null
    {
-      SendErrorToClient( connectionId, PacketErrorReport::ErrorType_CreateFailed_DisallowedUsername );
+      SendErrorToClient( connectionId, gatewayId, PacketErrorReport::ErrorType_CreateFailed_DisallowedUsername );
       return false;
    }
 
@@ -1156,11 +1156,11 @@ bool        DiplodocusLogin:: CreateUserAccount( U32 connectionId, const string&
    std::size_t found = lowercase_username.find( "playdek" );
    if (found!=std::string::npos)
    {
-      SendErrorToClient( connectionId, PacketErrorReport::ErrorType_CreateFailed_DisallowedUsername );
+      SendErrorToClient( connectionId, gatewayId, PacketErrorReport::ErrorType_CreateFailed_DisallowedUsername );
       return false;
    }
 
-   CreateAccountResultsAggregator* aggregator = new CreateAccountResultsAggregator( connectionId, lowercase_useremail, password, userName, deviceAccountId, deviceId, languageId, gameProductId ); 
+   CreateAccountResultsAggregator* aggregator = new CreateAccountResultsAggregator( connectionId, gatewayId, lowercase_useremail, password, userName, deviceAccountId, deviceId, languageId, gameProductId ); 
    //aggregator->isExpectingGkHash = isExpectingGkHash;
 
    LockMutex();
@@ -1585,7 +1585,7 @@ bool     DiplodocusLogin:: HandleRequestListOfProducts( U32 connectionId, Packet
       if( response->products.size() == numProductsPerPacket )
       {
          numPacketsSent++;
-         SendPacketToGateway( response, connectionId );
+         SendPacketToGateway( response, connectionId, connection->GetGatewayId() );
          if( numPacketsSent* numProductsPerPacket < totalCount )
          {
             response = new PacketRequestListOfProductsResponse();
@@ -1602,7 +1602,7 @@ bool     DiplodocusLogin:: HandleRequestListOfProducts( U32 connectionId, Packet
 
    if( response != NULL )
    {
-      SendPacketToGateway( response, connectionId );
+      SendPacketToGateway( response, connectionId, connection->GetGatewayId() );
    }
    return true;
 }
@@ -1648,7 +1648,7 @@ bool  DiplodocusLogin::ThrottleUser( U32 userConnectionId, const PacketLoginDebu
    delay *= 500; // milliseconds;
    PacketLoginThrottlePackets* throttler = new PacketLoginThrottlePackets;
    throttler->delayBetweenPacketsMs = delay;
-   return SendPacketToGateway( throttler, userConnectionId );
+   return SendPacketToGateway( throttler, userConnectionId, connection->GetGatewayId() );
 }
 
 //---------------------------------------------------------------
@@ -1706,7 +1706,7 @@ bool   DiplodocusLogin:: HandleCheats( U32 connectionId, const PacketCheat* chea
    if( connection == NULL || connection->status != ConnectionToUser::LoginStatus_LoggedIn )
    {
       Log( "Login server: major problem with cheats... user not set properly", 4 );
-      SendErrorToClient( connectionId, PacketErrorReport::ErrorType_Cheat_BadPermissions );
+      SendErrorToClient( connectionId, connection->GetGatewayId(), PacketErrorReport::ErrorType_Cheat_BadPermissions );
       return false;
    }
    
@@ -1748,9 +1748,12 @@ bool  DiplodocusLogin:: ForceUserLogoutAndBlock( U32 connectionId )
    {
       cout << "fn: " << __FUNCTION__ << endl;
    }
-
-   SendErrorToClient( connectionId, PacketErrorReport::ErrorType_UserBadLogin );
-
+   
+   ConnectionToUser* connection = GetUserConnection( connectionId );
+   if( connection )
+   {
+      SendErrorToClient( connectionId, connection->GetGatewayId(), PacketErrorReport::ErrorType_UserBadLogin );
+   }
    string                     userName;
    string                     uuid;
    string                     lastLoginTime;
@@ -1762,7 +1765,6 @@ bool  DiplodocusLogin:: ForceUserLogoutAndBlock( U32 connectionId )
    int                        languageId = 1;
    U8 gameProductId = 0;
 
-   ConnectionToUser* connection = GetUserConnection( connectionId );
    if( connection )
    {
       userName =              connection->m_userName;
@@ -1789,7 +1791,7 @@ bool  DiplodocusLogin:: ForceUserLogoutAndBlock( U32 connectionId )
    loginStatus->wasLoginSuccessful = false;
    loginStatus->adminLevel = 0;
    
-   SendPacketToGateway( loginStatus, connectionId );
+   SendPacketToGateway( loginStatus, connectionId, connection->GetGatewayId() );
    const bool isLoggedIn = false; 
    const bool wasDisconnectedByError = false;
 
@@ -2271,7 +2273,7 @@ void     DiplodocusLogin:: UpdateUserRecord( CreateAccountResultsAggregator* agg
       cout << "GK Hash:  " << aggregator->m_gamekitHashId << endl;
       cout << "-----------------------------------" << endl;
 
-      SendErrorToClient( aggregator->GetConnectionId(), PacketErrorReport::ErrorType_CreateFailed_UserCreateAccountPending );
+      SendErrorToClient( aggregator->GetConnectionId(), aggregator->GetGatewayId(), PacketErrorReport::ErrorType_CreateFailed_UserCreateAccountPending );
    }
 }
 
@@ -2448,7 +2450,7 @@ bool     DiplodocusLogin:: HandleDbResult( PacketDbQueryResult* dbResult )
             {
                if( HandleUserLoginResult( connectionId, dbResult ) == false )
                {
-                  SendErrorToClient( connectionId, PacketErrorReport::ErrorType_UserBadLogin );  
+                  SendErrorToClient( connectionId, connection->GetGatewayId(), PacketErrorReport::ErrorType_UserBadLogin );  
                   string str = "User not valid and db query failed, userName: ";
                   str += connection->m_userName;
                   str += ", uuid: ";

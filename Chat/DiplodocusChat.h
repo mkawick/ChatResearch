@@ -43,14 +43,14 @@ public:
 
    // from both the ChatUser and the ChatChannelManager
    // PacketSendingInterface   
-   bool     SendMessageToClient( BasePacket* packet, U32 connectionId );
+   bool     SendMessageToClient( BasePacket* packet, U32 connectionId, U32 gatewayId );
    bool     AddQueryToOutput( PacketDbQuery* packet, U32 connectionId );
-   bool     SendErrorToClient( U32 connectionId, PacketErrorReport::ErrorType error );
+   bool     SendErrorToClient( U32 connectionId, U32 gatewayId, PacketErrorReport::ErrorType error );
 
    //-------------------------------------
 public:
 // utility functions used by the ChatChannelManager
-   ChatUser*   UpdateExistingUsersConnectionId( const string& uuid, U32 connectionId );
+   ChatUser*   UpdateExistingUsersConnectionId( const string& uuid, U32 connectionId, U32 gatewayId );
    ChatUser*   GetUser( U32 connectionId );
    ChatUser*   GetUserById( U32 userId );
    ChatUser*   GetUserByUuid( const string& userName );
@@ -58,15 +58,15 @@ public:
    ChatUser*   GetUserByConnectionId( U32 ConnectionId );
 
    string      GetUserUuidByConnectionId( U32 connectionId );
-   void        GetUserConnectionId( const string& uuid, U32& connectionId );
+   void        GetUserConnectionId( const string& uuid, U32& connectionId, U32& gatewayId );
    string      GetUserName( const string& uuid );
 
    //-------------------------------------
 private:
-   ChatUser*    CreateNewUser( U32 connectionId );
+   ChatUser*    CreateNewUser( U32 connectionId, U32 gatewayId );
 
    bool     HandleChatPacket( BasePacket* packet, U32 connectionId );
-   bool     HandleInvitationPacket( BasePacket* packet, U32 connectionId );
+   bool     HandleInvitationPacket( BasePacket* packet, U32 connectionId, U32 gatewayId );
    bool     HandleLoginPacket( BasePacket* packet, U32 connectionId );
    bool     HandlePacketFromOtherServer( BasePacket* packet, U32 connectionId );
    bool     HandlePacketFromClient( BasePacket* packet );

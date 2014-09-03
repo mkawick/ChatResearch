@@ -13,11 +13,15 @@ class    ChatRoomManager;
 class ChatUser
 {
 public:
-   ChatUser( U32 connectionId );
+   ChatUser( U32 connectionId, U32 gatewayId );
    ~ChatUser();
 
    void           SetConnectionId( U32 connId ) { m_connectionId = connId; }
    U32            GetConnectionId() const { return m_connectionId; }
+
+   void           SetGatewayId( U32 id ) { m_gatewayId = id; }
+   U32            GetGatewayId() const { return m_gatewayId; }
+
    U32            GetUserId() const { return m_userId ; }
    string         GetUserName() const { return m_userName; }
    string         GetUuid() const { return m_uuid; }
@@ -89,6 +93,7 @@ private:
 
    int                        m_userId; // the db identity
    U32                        m_connectionId;
+   U32                        m_gatewayId;
 
    bool                       m_isLoggedIn;
    time_t                     m_loggedOutTime;

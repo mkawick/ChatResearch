@@ -22,12 +22,14 @@ public:
       MatchingRecord_Gamekithash = 4
    };
 
-   CreateAccountResultsAggregator( U32 _connectionId, const string& email, const string& _password, const string& _username, const string& _gamekitHashId, 
+   CreateAccountResultsAggregator( U32 _connectionId, U32 _gatewayId, const string& email, 
+                                 const string& _password, const string& _username, const string& _gamekitHashId, 
                                  const string& _deviceId, U8 _languageId, U8 _gameProductId, int numQueriesToComplete = 3 ) : 
          m_numQueriesToAggregate( numQueriesToComplete ), 
          m_numUserRecordsMatching( 0 ), 
          m_numPendingUserRecordsMatching( 0 ),
          m_connectionId( _connectionId ), 
+         m_gatewayId( _gatewayId ), 
          m_useremail( email ), 
          m_password( _password ), 
          m_username( _username ), 
@@ -48,6 +50,7 @@ public:
 
    bool     HandleResult( const PacketDbQueryResult* dbResult );
    U32      GetConnectionId() const { return m_connectionId; }
+   U32      GetGatewayId() const { return m_gatewayId; }
    bool     IsComplete() const;
    bool     HasFoundAnyMatchingRecords() const;
    bool     HasFoundMatchingGKHashInUserTable() const;
@@ -70,6 +73,7 @@ public:
    int            m_numUserRecordsMatching;
    int            m_numPendingUserRecordsMatching;
    U32            m_connectionId;
+   U32            m_gatewayId;
    string         m_useremail;
    string         m_password;
    string         m_username;

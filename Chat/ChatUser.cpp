@@ -43,8 +43,9 @@ void ChatUser::Set( InvitationManager* mgr )
 ///////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////
 
-ChatUser::ChatUser( U32 connectionId ) : m_userId ( 0 ), 
+ChatUser::ChatUser( U32 connectionId, U32 gatewayId ) : m_userId ( 0 ), 
                                           m_connectionId( connectionId ),
+                                          m_gatewayId( gatewayId ),
                                           m_isLoggedIn( false ),
                                           m_initialRequestForInfoSent( false ),
                                           m_blockContactInvitations( false ),
@@ -331,7 +332,7 @@ void     ChatUser::QueryChatChannelHistory( const string& channelUuid, int numRe
 
    if( channelUuid.size() == 0 )
    {
-      m_chatServer->SendErrorToClient( m_connectionId, PacketErrorReport::ErrorType_BadChatChannel );
+      m_chatServer->SendErrorToClient( m_connectionId, m_gatewayId, PacketErrorReport::ErrorType_BadChatChannel );
       return;
    }
 
@@ -406,7 +407,7 @@ void     ChatUser::QueryChatP2PHistory( const string& userUuid, int numRecords, 
    
    if( userUuid.size() == 0 )
    {
-      m_chatServer->SendErrorToClient( m_connectionId, PacketErrorReport::ErrorType_NoChatHistoryExistsForThisUser  );
+      m_chatServer->SendErrorToClient( m_connectionId, m_gatewayId, PacketErrorReport::ErrorType_NoChatHistoryExistsForThisUser  );
       return;
    }
 
@@ -636,7 +637,7 @@ void     ChatUser::LoadUserProfile( const PacketDbQueryResult * dbResult )
 {
    if( dbResult->bucket.bucket.size() == 0 )
    {
-      m_chatServer->SendErrorToClient( m_connectionId, PacketErrorReport::ErrorType_UserUnknown );
+      m_chatServer->SendErrorToClient( m_connectionId, m_gatewayId, PacketErrorReport::ErrorType_UserUnknown );
       return;
    }
    UserProfileTable            enigma( dbResult->bucket );
@@ -658,7 +659,7 @@ void     ChatUser::SendChatChannelHistoryToClient( const PacketDbQueryResult * d
 {
    if( dbResult->bucket.bucket.size() == 0 )
    {
-      m_chatServer->SendErrorToClient( m_connectionId, PacketErrorReport::ErrorType_NoChatHistoryExistsOnSelectedChannel );
+      m_chatServer->SendErrorToClient( m_connectionId, m_gatewayId, PacketErrorReport::ErrorType_NoChatHistoryExistsOnSelectedChannel );
       //return;
    }
 
@@ -676,7 +677,7 @@ void     ChatUser::SendChatp2pHistoryToClient( PacketDbQueryResult * dbResult )
 {
    if( dbResult->bucket.bucket.size() == 0 )
    {
-      m_chatServer->SendErrorToClient( m_connectionId, PacketErrorReport::ErrorType_NoChatHistoryExistsForThisUser );
+      m_chatServer->SendErrorToClient( m_connectionId, m_gatewayId, PacketErrorReport::ErrorType_NoChatHistoryExistsForThisUser );
       //return;
    }
 
@@ -976,7 +977,7 @@ bool     ChatUser::SendMessageToClient( BasePacket* packet ) const
    PacketGatewayWrapper* wrapper = new PacketGatewayWrapper();
    wrapper->SetupPacket( packet, m_connectionId );
 
-   m_chatServer->SendMessageToClient( wrapper, m_connectionId );
+   m_chatServer->SendMessageToClient( wrapper, m_connectionId, m_gatewayId );
    return true;
 }
 
@@ -1032,7 +1033,7 @@ void     ChatUser::RequestChatChannels()
 
 bool     ChatUser::SendErrorMessage( PacketErrorReport::ErrorType error )
 {
-   return m_chatServer->SendErrorToClient( m_connectionId, error );
+   return m_chatServer->SendErrorToClient( m_connectionId, m_gatewayId, error );
 }
 
 ///////////////////////////////////////////////////////////////////

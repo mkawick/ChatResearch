@@ -35,6 +35,7 @@ struct DelayedPacket
 {
    BasePacket* packet;
    U32         connectionId;
+   U32         gatewayId;
    float       delay;
    time_t      beginTime;
 };
@@ -100,10 +101,10 @@ public:
 
    bool           AddInputChainData( BasePacket* t, U32 filingData );
    bool           AddOutputChainData( BasePacket* t, U32 filingData );
-   bool           SendPacketToGateway( BasePacket* packet, U32 connectionId, float delayInSecs = 0 );
+   bool           SendPacketToGateway( BasePacket* packet, U32 connectionId, U32 gatewayId, float delayInSecs = 0 );
    bool           HandlePacketToOtherServer( BasePacket* packet, U32 connectionId );// not thread safe
 
-   bool           SendErrorToClient( U32 connectionId, PacketErrorReport::ErrorType error, int subType = 0 );
+   bool           SendErrorToClient( U32 connectionId, U32 gatewayId, PacketErrorReport::ErrorType error, int subType = 0 );
 
    void           NotifyFinishedRemoving( IChainedInterface* obj );
 
@@ -127,7 +128,7 @@ protected:
 
    void           MarkAllConnectionsAsNeedingUpdate( BaseOutputContainer& listOfClients );
    void           MarkConnectionAsNeedingUpdate( int connectionId );
-   bool           DelayPacketToGateway( BasePacket* packet, U32 connectionId, float delayInSecs );
+   bool           DelayPacketToGateway( BasePacket* packet, U32 connectionId, U32 gatewayId, float delayInSecs );
 
    virtual void   SetupClientConnectionForDeletion( InputChainType* chain );
    void           SetupClientWaitingToBeRemoved( InputChainType* chainedInput );

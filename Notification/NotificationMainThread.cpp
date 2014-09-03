@@ -118,18 +118,22 @@ bool   NotificationMainThread::AddOutputChainData( BasePacket* packet, U32 conne
 }
 //---------------------------------------------------------------
 
-bool     NotificationMainThread::SendMessageToClient( BasePacket* packet, U32 connectionId )
+bool     NotificationMainThread::SendMessageToClient( BasePacket* packet, U32 connectionId, U32 gatewayId )
 {
    if( packet->packetType == PacketType_GatewayWrapper )// this is already wrapped up and ready for the gateway... send it on.
    {
       Threading::MutexLock locker( m_mutex );
 
       ClientMapIterator itInputs = m_connectedClients.begin();
-      if( itInputs != m_connectedClients.end() )// only one output currently supported.
+      while( itInputs != m_connectedClients.end() )// only one output currently supported.
       {
          KhaanServerToServer* khaan = static_cast< KhaanServerToServer* >( itInputs->second );
-         khaan->AddOutputChainData( packet );
-         m_clientsNeedingUpdate.push_back( khaan->GetChainedId() );
+         if( khaan->DoesNameMatch( "KhaanServerToServer" ) && khaan->GetServerId() == gatewayId )
+         {
+            khaan->AddOutputChainData( packet );
+            m_clientsNeedingUpdate.push_back( khaan->GetChainedId() );
+            return true;
+         }
          itInputs++;
       }
       return true;
@@ -185,7 +189,7 @@ bool  NotificationMainThread::HandlePacketFromOtherServer( BasePacket* packet, U
 
 //---------------------------------------------------------------
 
-bool     NotificationMainThread::HandlePacketFromGateway( BasePacket* packet, U32 connectionId )
+bool     NotificationMainThread::HandlePacketFromGateway( BasePacket* packet, U32 gatewayId )
 {
    if( packet->packetType != PacketType_GatewayWrapper )
    {
@@ -194,8 +198,7 @@ bool     NotificationMainThread::HandlePacketFromGateway( BasePacket* packet, U3
 
    PacketServerJobWrapper* wrapper = static_cast< PacketServerJobWrapper* >( packet );
    BasePacket* unwrappedPacket = wrapper->pPacket;
-   U32  serverIdLookup = wrapper->serverId;
-   serverIdLookup = serverIdLookup;
+   U32  connectionId = wrapper->serverId;
 
    U8 packetType = unwrappedPacket->packetType;
    
@@ -220,7 +223,6 @@ bool     NotificationMainThread::ConnectUser( const PacketPrepareForUserLogin* l
    U32 gatewayId = loginPacket->gatewayId;
    cout << "Prep for logon: " << connectionId << ", " << loginPacket->userName << ", " << uuid << ", " << loginPacket->password << endl;
 
-
    UserConnectionIterator it = m_userConnectionMap.find( connectionId );// don't do anything if this user is already logged in.
    if( it != m_userConnectionMap.end() )
       return false;
@@ -235,6 +237,7 @@ bool     NotificationMainThread::ConnectUser( const PacketPrepareForUserLogin* l
          {
             found = true;
             it->second.SetConnectionId( connectionId );
+            it->second.SetGatewayId( gatewayId );
             
             it->second.Relog();
             m_userConnectionMap.insert( UserConnectionPair( connectionId, it->second ) );
@@ -263,7 +266,6 @@ bool     NotificationMainThread::ConnectUser( const PacketPrepareForUserLogin* l
 bool     NotificationMainThread::DisconnectUser( const PacketPrepareForUserLogout* loginPacket )
 {
    U32 connectionId = loginPacket->connectionId;
-   cout << "Prep for logout: " << connectionId << ", " << loginPacket->uuid << endl;
 
    m_mutex.lock();
    UserConnectionIterator it = m_userConnectionMap.find( connectionId );
@@ -357,16 +359,26 @@ void  NotificationMainThread::RunQueryAndNotification( Database::Deltadromeus* d
                   audioFile, 
                   (GameNotification)notificationType,
                   additionalText );
+            }
+            else if( device_platform == 2 ) // Android
+            {
+               NotifyUserDirect_Android( user_id,
+                  (const unsigned char*)row[0],
+                  game_type,
+                  game_id,
+                  badge_count,
+                  (GameNotification)notificationType,
+                  additionalText );
+            }
 
-               if( shouldSetupResendNotifications == true &&
-                  repeatFrequencyInHours > 0 )
-               {
-                  SetupUserNotificationResend( user_id, game_type, device_id, 60 * repeatFrequencyInHours );
-               }
+            if( shouldSetupResendNotifications == true && repeatFrequencyInHours > 0 )
+            {
+               SetupUserNotificationResend( user_id, game_type, device_id, 60 * 60 * repeatFrequencyInHours );
             }
          }
          mysql_free_result(res);
       }
+
 
       //NotifyUser(unwrappedPacket->userId, unwrappedPacket->gameType, unwrappedPacket->gameId,
       //            (GameNotification)unwrappedPacket->notificationType, unwrappedPacket->additionalText.c_str());
@@ -395,7 +407,6 @@ bool     NotificationMainThread::HandleNotification( const PacketNotification_Se
                               unwrappedPacket->notificationType,
                               unwrappedPacket->additionalText.c_str(),
                               true );
-
    //
    return false;
 }
@@ -419,18 +430,18 @@ void     NotificationMainThread::PeriodicCheckForNewNotifications()
       std::map<UserNotificationKey,UserNotificationRecord>::iterator itt = m_PendingNotifications.begin();
       for( ; itt != m_PendingNotifications.end(); ++itt )
       {
-         if( itt->second.resendNotificationDelay == 0 )
+         if( itt->second.resendNotificationDelaySeconds == 0 )
          {
             continue;
          }
 
-         if( (unsigned int)(itt->second.lastNotificationTime-currentTime) < itt->second.resendNotificationDelay )
+         if( (unsigned int)(itt->second.lastNotificationTime-currentTime) < itt->second.resendNotificationDelaySeconds )
          {
             continue;
          }
 
          itt->second.lastNotificationTime = currentTime;
-         itt->second.resendNotificationDelay = 0;
+         itt->second.resendNotificationDelaySeconds = 0;
 
          
          unsigned int user_id = itt->first.userId;
@@ -455,7 +466,7 @@ void     NotificationMainThread::PeriodicCheckForNewNotifications()
 
 //---------------------------------------------------------------
 //---------------------------------------------------------------
-/*
+
 bool     NotificationMainThread::AddQueryToOutput( PacketDbQuery* query )
 {
    ChainLinkIteratorType itOutputs = m_listOfOutputs.begin();
@@ -473,53 +484,7 @@ bool     NotificationMainThread::AddQueryToOutput( PacketDbQuery* query )
    PacketFactory factory;
    factory.CleanupPacket( packet );/// normally, we'd leave this up to the invoker to cleanup. 
    return false;
-}*/
-////////////////////////////////////////////////////////////////////////////////////////
-
-bool     NotificationMainThread::AddQueryToOutput( PacketDbQuery* dbQuery )
-{
-   PacketFactory factory;
-   m_outputChainListMutex.lock();
-   BaseOutputContainer tempOutputContainer = m_listOfOutputs;
-   m_outputChainListMutex.unlock();
-
-   ChainLinkIteratorType itOutputs = tempOutputContainer.begin();
-   while( itOutputs != tempOutputContainer.end() )// only one output currently supported.
-   {
-      ChainType* outputPtr = static_cast< ChainType*> ( (*itOutputs).m_interface );
-      ChainedInterface* interfacePtr = static_cast< ChainedInterface* >( outputPtr );
-      if( interfacePtr->DoesNameMatch( "Deltadromeus" ) )
-      {
-         bool isValidConnection = false;
-         Database::Deltadromeus* delta = static_cast< Database::Deltadromeus* >( outputPtr );
-         if( dbQuery->dbConnectionType != 0 )
-         {
-            if( delta->WillYouTakeThisQuery( dbQuery->dbConnectionType ) )
-            {
-               isValidConnection = true;
-            }
-         }
-         else // if this query is not set, default to true
-         {
-            isValidConnection = true;
-         }
-         if( isValidConnection == true )
-         {
-            if( outputPtr->AddInputChainData( dbQuery, m_chainId ) == true )
-            {
-               return true;
-            }
-         }
-      }
-      itOutputs++;
-   }
-
-   BasePacket* deleteMe = static_cast< BasePacket*>( dbQuery );
-
-   factory.CleanupPacket( deleteMe );
-   return false;
 }
-
 
 //---------------------------------------------------------------
 
@@ -645,7 +610,7 @@ bool NotificationMainThread::HandleUpdateNotificationCount( const PacketNotifica
          record.lastNotificationGameId = 0;
          record.lastNotificationType = 0;
          record.lastNotificationText.clear();
-         record.resendNotificationDelay = 0;
+         record.resendNotificationDelaySeconds = 0;
          record.lastNotificationTime = 0;
 
          m_PendingNotifications.insert(i, std::pair<UserNotificationKey,UserNotificationRecord>(key,record) );
@@ -660,7 +625,7 @@ bool NotificationMainThread::HandleUpdateNotificationCount( const PacketNotifica
          i->second.lastNotificationGameId = 0;
          i->second.lastNotificationType = 0;
          i->second.lastNotificationText.clear();
-         i->second.resendNotificationDelay = 0;
+         i->second.resendNotificationDelaySeconds = 0;
          i->second.lastNotificationTime = 0;
       }
       else
@@ -690,7 +655,7 @@ int NotificationMainThread::CalculateBadgeNumberFromPendingNotifications( unsign
       record.lastNotificationGameId = 0;
       record.lastNotificationType = 0;
       record.lastNotificationText.clear();
-      record.resendNotificationDelay = 0;
+      record.resendNotificationDelaySeconds = 0;
       record.lastNotificationTime = 0;
 
       m_PendingNotifications.insert(i, std::pair<UserNotificationKey,UserNotificationRecord>(key,record));
@@ -719,7 +684,7 @@ bool NotificationMainThread::StoreLastUserNotification( unsigned int userId, uns
       record.lastNotificationGameId = gameId;
       record.lastNotificationType = notificationType;
       record.lastNotificationText = additionalText;
-      record.resendNotificationDelay = 0;
+      record.resendNotificationDelaySeconds = 0;
       record.lastNotificationTime = 0;
 
       m_PendingNotifications.insert(i, std::pair<UserNotificationKey,UserNotificationRecord>(key,record));
@@ -729,16 +694,16 @@ bool NotificationMainThread::StoreLastUserNotification( unsigned int userId, uns
       i->second.lastNotificationGameId = gameId;
       i->second.lastNotificationType = notificationType;
       i->second.lastNotificationText = additionalText;
-      i->second.resendNotificationDelay = 0;
+      i->second.resendNotificationDelaySeconds = 0;
       i->second.lastNotificationTime = 0;
    }
 
    return true;
 }
 
- bool NotificationMainThread::SetupUserNotificationResend( unsigned int userId, unsigned int gameType,
-                                                         unsigned int deviceId, unsigned delayTime )
- {
+bool NotificationMainThread::SetupUserNotificationResend( unsigned int userId, unsigned int gameType,
+                                                         unsigned int deviceId, unsigned delayTimeSeconds )
+{
    UserNotificationKey key;
    key.userId = userId;
    key.gameType = gameType;
@@ -750,7 +715,7 @@ bool NotificationMainThread::StoreLastUserNotification( unsigned int userId, uns
    }
    else
    {
-      i->second.resendNotificationDelay = delayTime;
+      i->second.resendNotificationDelaySeconds = delayTimeSeconds;
       time( &i->second.lastNotificationTime );
    }
 

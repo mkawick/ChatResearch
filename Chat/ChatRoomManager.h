@@ -189,7 +189,7 @@ private:
    //void           HandleChatChannelCreateResult( PacketDbQueryResult* dbResult, ChatChannelDbJob& job );
    string         CreateNewRoom( const string& channelName, const string userUuid, U32 serverId, U8 gameType, U32 gameInstanceId );
    bool           DeleteRoom( const string& chanelUuid );
-   bool           SendMessageToClient( BasePacket* packet, U32 connectionId ) const;
+   bool           SendMessageToClient( BasePacket* packet, U32 connectionId, U32 gatewayId ) const;
    
    bool           LoadSingleRoom( const string& channelUuid );
 

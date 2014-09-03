@@ -92,6 +92,8 @@ private:
    typedef pair< U64, UserAccountPurchase >     UAADPair;
    typedef UAADMap::iterator                    UAADMapIterator;
 
+   UAADMapIterator         GetUserByConnectionId( U32 connectionId );
+
    deque< U32 >                     m_serversNeedingUpdate;
    UAADMap                          m_userTickets;
    SalesManager*                    m_salesManager;

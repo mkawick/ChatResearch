@@ -51,11 +51,11 @@ public:
    void     InvitationManagerNeedsUpdate() { m_invitationManagerNeedsUpdate = true; }
    void     UserLookupNeedsUpdate() { m_userLookupNeedsUpdate = true; }
 
-   bool     SendMessageToClient( BasePacket* packet, U32 connectionId );
+   bool     SendMessageToClient( BasePacket* packet, U32 connectionId, U32 gatewayId );
    bool     AddQueryToOutput( PacketDbQuery* packet, U32 connectionId );
-   bool     SendErrorToClient( U32 connectionId, PacketErrorReport::ErrorType error );
+   bool     SendErrorToClient( U32 connectionId, U32 gatewayId, PacketErrorReport::ErrorType error );
    string   GetUserUuidByConnectionId( U32 connectionId );
-   void     GetUserConnectionId( const string& uuid, U32& connectionId );
+   void     GetUserConnectionId( const string& uuid, U32& connectionId, U32& gatewayId );
    string   GetUserName( const string& uuid );
 
 private:
@@ -67,7 +67,7 @@ private:
    
    bool     HandleCommandFromGateway( BasePacket* packet, U32 connectionId );
    bool     HandlePacketFromOtherServer( BasePacket* packet, U32 connectionId );
-   bool     HandlePacketRequests( PacketContact* packet, U32 connectionId );
+   bool     HandlePacketRequests( PacketContact* packet, U32 connectionId, U32 gatewayId );
    //bool     HandleDbQueryResult( PacketDbQueryResult* result );
 
    bool     ConnectUser( PacketPrepareForUserLogin* login );

@@ -27,7 +27,7 @@
 #endif
 
 
-static const char *Waterdeep_GameName = "waterdeep";
+static const char *Fluxx_GameName = "fluxx";
 
 static MYSQL *s_pMysqlStats = NULL;
 
@@ -60,7 +60,7 @@ static bool RunSqlStatsQuery( const char *fmt, ...)
 
 
 
-static void Waterdeep_OnReportGameResult(unsigned int gameID, int playerCount, unsigned int *pResults, unsigned int *pFactions)
+static void Fluxx_OnReportGameResult(unsigned int gameID, int playerCount, unsigned int *pResults, unsigned int *pFactions)
 {
    /*
 #if USE_MYSQL_DATABASE
@@ -68,7 +68,7 @@ static void Waterdeep_OnReportGameResult(unsigned int gameID, int playerCount, u
    const char *gameName = GameDatabaseName(GAME_SELECT_SUMMONWAR);
 #endif
 */
-   const char *gameName = Waterdeep_GameName;
+   const char *gameName = Fluxx_GameName;
 
    /*
    summonwar::CWorld *pWorld = dynamic_cast<summonwar::CWorld*>( gameData->m_pGameWorld );
@@ -393,13 +393,13 @@ static void OnRequestGameProfile_SummonWar( UserStatsMainThread *pUserStats, U32
 */
 
 
-bool OnRequestUserProfileStats_Waterdeep(UserStatsMainThread *pUserStats, U32 connectionId, U32 gatewayId, unsigned int profileUserId )
+bool OnRequestUserProfileStats_Fluxx(UserStatsMainThread *pUserStats, U32 connectionId, U32 gatewayId, unsigned int profileUserId )
 {
    PacketUserStats_RequestUserProfileStatsResponse* response = new PacketUserStats_RequestUserProfileStatsResponse;
    response->profileUserId = profileUserId;
-   response->gameType = GameProductId_WATERDEEP;
+   response->gameType = GameProductId_FLUXX;
 
-   const char *gameName = Waterdeep_GameName;
+   const char *gameName = Fluxx_GameName;
 
    char query[256];
    sprintf(query, "SELECT * FROM stats_%s WHERE user_id=\'%u\'", gameName, profileUserId);
@@ -411,70 +411,37 @@ bool OnRequestUserProfileStats_Waterdeep(UserStatsMainThread *pUserStats, U32 co
       MYSQL_ROW row = mysql_fetch_row(res);
       if (row)
       {
-         if( row[1] != NULL && row[2] != NULL && row[3] != NULL )
+         if( row[1] != NULL )
          {
-            RatingGlicko2 glicko_rating;
-            float rating = 0.0f, deviation = 0.0f, volatility = 0.0f;
-            sscanf(row[1], "%f", &rating);
-            sscanf(row[2], "%f", &deviation);
-            sscanf(row[3], "%f", &volatility);
-
-            glicko_rating.SetRating( rating );
-            glicko_rating.SetDeviation( deviation );
-            glicko_rating.SetVolatility( volatility );
-
-            char rating_buffer[16];
-            sprintf( rating_buffer, "%u", glicko_rating.GetDisplayRating() );
-            response->userProfileStats.insert( "rating", rating_buffer );
+            response->userProfileStats.insert( "completed", row[1] );
          }
-
+         if( row[2] != NULL )
+         {
+            response->userProfileStats.insert( "wins_2p", row[2] );
+         }
+         if( row[3] != NULL )
+         {
+            response->userProfileStats.insert( "losses_2p", row[3] );
+         }
          if( row[4] != NULL )
          {
-            response->userProfileStats.insert( "completed", row[4] );
+            response->userProfileStats.insert( "wins_3p", row[4] );
          }
          if( row[5] != NULL )
          {
-            response->userProfileStats.insert( "wins_2p", row[5] );
+            response->userProfileStats.insert( "losses_3p", row[5] );
          }
          if( row[6] != NULL )
          {
-            response->userProfileStats.insert( "losses_2p", row[6] );
+            response->userProfileStats.insert( "wins_4p", row[6] );
          }
          if( row[7] != NULL )
          {
-            response->userProfileStats.insert( "wins_3p", row[7] );
+            response->userProfileStats.insert( "losses_4p", row[7] );
          }
          if( row[8] != NULL )
          {
-            response->userProfileStats.insert( "losses_3p", row[8] );
-         }
-         if( row[9] != NULL )
-         {
-            response->userProfileStats.insert( "wins_4p", row[9] );
-         }
-         if( row[10] != NULL )
-         {
-            response->userProfileStats.insert( "losses_4p", row[10] );
-         }
-         if( row[11] != NULL )
-         {
-            response->userProfileStats.insert( "wins_5p", row[11] );
-         }
-         if( row[12] != NULL )
-         {
-            response->userProfileStats.insert( "losses_5p", row[12] );
-         }
-         if( row[13] != NULL )
-         {
-            response->userProfileStats.insert( "wins_6p", row[13] );
-         }
-         if( row[14] != NULL )
-         {
-            response->userProfileStats.insert( "losses_6p", row[14] );
-         }
-         if( row[15] != NULL )
-         {
-            response->userProfileStats.insert( "forfeits", row[15] );
+            response->userProfileStats.insert( "forfeits", row[8] );
          }
 
       }
@@ -490,11 +457,11 @@ bool OnRequestUserProfileStats_Waterdeep(UserStatsMainThread *pUserStats, U32 co
 
 
 
-void Waterdeep_StatsPluginInit( StatsPlugin *pluginData, MYSQL *mysqlStats )
+void Fluxx_StatsPluginInit( StatsPlugin *pluginData, MYSQL *mysqlStats )
 {
    s_pMysqlStats = mysqlStats;
 
-   pluginData->pGameName = Waterdeep_GameName;
+   pluginData->pGameName = Fluxx_GameName;
 
    //pluginData->onReportGameResult = SummonWar_OnReportGameResult;
    pluginData->onReportGameResult = NULL;
@@ -505,7 +472,7 @@ void Waterdeep_StatsPluginInit( StatsPlugin *pluginData, MYSQL *mysqlStats )
    pluginData->onRequestGlobalFactionStats = NULL;
    //pluginData->onRequestGameProfile = OnRequestGameProfile_SummonWar;
    pluginData->onRequestGameProfile = NULL;
-   pluginData->onRequestUserProfileStats = OnRequestUserProfileStats_Waterdeep;
+   pluginData->onRequestUserProfileStats = OnRequestUserProfileStats_Fluxx;
 
 
 }

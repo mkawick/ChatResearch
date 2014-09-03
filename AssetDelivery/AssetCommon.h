@@ -28,6 +28,7 @@ public:
    string   uuid;
    string   userName;// just for debugging purposes
    U32      connectionId;/// only after this person has logged in
+   U32      gatewayId;
    string   userTicket;
    Manifest manifest;
    string   dateOfLastRequest;// once the client tells us what this is
