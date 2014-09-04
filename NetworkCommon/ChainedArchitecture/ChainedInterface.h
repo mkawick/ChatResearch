@@ -48,11 +48,22 @@ class ChainedInterface : public IChainedInterface
 protected:
    typedef ChainedInterface<Type> ChainType;
 public:
+   enum ChainedType
+   {
+      ChainedType_Default,
+      ChainedType_InboundSocketConnector, // khaan
+      ChainedType_OutboundSocketConnector,// fruitadens
+      ChainedType_MainThreadContainer,    // normal diplodocus
+      ChainedType_DatabaseConnector,      // deltadromeus
+      ChainedType_AlternateThreadContainer,// Diplodocus Server to Server
+      ChainedType_Other
+   };
+public:
    ChainedInterface();
 
    virtual const char*    GetClassName() const { return "ChainedInterface"; }
    bool           DoesNameMatch( const char* name ) const { return strcmp( GetClassName(), name ) == 0; }
-
+   ChainedType    GetChainedType() const { return m_chainedType; }
 
    U32            GetChainedId() const { return m_chainId; }
    U32				GetConnectionId() const { return m_connectionId; }
@@ -113,6 +124,7 @@ protected:
    static U32                       m_chainIdCounter;
    U32                              m_chainId;
    U32                              m_connectionId;
+   ChainedType                      m_chainedType;
 
 protected:
    void           CleanupAllEvents();
@@ -132,7 +144,9 @@ U32 ChainedInterface< Type >::m_chainIdCounter = 30;//0x7fffffff;
 //----------------------------------------------------------------
 
 template < typename Type > 
-ChainedInterface< Type >::ChainedInterface() : m_chainId ( m_chainIdCounter++ ), m_connectionId( 0 )
+ChainedInterface< Type >::ChainedInterface() : m_chainId ( m_chainIdCounter++ ), 
+                                                m_connectionId( 0 ), 
+                                                m_chainedType( ChainedType_Default )
 {
 }
 

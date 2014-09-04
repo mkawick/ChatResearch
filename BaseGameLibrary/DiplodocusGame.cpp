@@ -88,7 +88,7 @@ struct st_mysql * DiplodocusGame::GetDBConnection( Database::Deltadromeus::DbCon
    {
       ChainType* outputPtr = static_cast< ChainType*> ( (*itOutputs).m_interface );
       ChainedInterface* interfacePtr = static_cast< ChainedInterface* >( outputPtr );
-      if( interfacePtr->DoesNameMatch( "Deltadromeus" ) )
+      if( interfacePtr->GetChainedType() == ChainedType_DatabaseConnector )
       {
          Database::Deltadromeus* delta = static_cast< Database::Deltadromeus* >( outputPtr );
          if( type != 0 )

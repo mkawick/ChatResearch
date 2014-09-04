@@ -486,7 +486,7 @@ bool     DiplodocusPurchase::AddQueryToOutput( PacketDbQuery* dbQuery )
    {
       ChainType* outputPtr = static_cast< ChainType*> ( (*itOutputs).m_interface );
       ChainedInterface* interfacePtr = static_cast< ChainedInterface* >( outputPtr );
-      if( interfacePtr->DoesNameMatch( "Deltadromeus" ) )
+      if( interfacePtr->GetChainedType() == ChainedType_DatabaseConnector )
       {
          bool isValidConnection = false;
          Database::Deltadromeus* delta = static_cast< Database::Deltadromeus* >( outputPtr );
@@ -541,7 +541,7 @@ bool     DiplodocusPurchase::AddOutputChainData( BasePacket* packet, U32 connect
          ChainType* inputPtr = static_cast< ChainType*> ( (*itInputs).m_interface );
          ChainedInterface* interfacePtr = static_cast< ChainedInterface* >( inputPtr );
          itInputs++;
-         if( interfacePtr->DoesNameMatch( "KhaanPurchase" ) )
+         if( interfacePtr->GetChainedType() == ChainedType_InboundSocketConnector )
          {
             KhaanPurchase* khaan = static_cast< KhaanPurchase* >( interfacePtr );
             if( khaan->GetServerId() == gatewayId )

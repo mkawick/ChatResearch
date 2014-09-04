@@ -238,6 +238,7 @@ Deltadromeus::Deltadromeus() : Threading::CChainedThread< BasePacket* >(),
    m_DbConnection( NULL )
    
 {
+   m_chainedType = ChainedType_DatabaseConnector;
    /// this could be simpler... but I want to make this easier to maintain
    for( int i=0; i<DbConnectionType_Count; i++ )
    {

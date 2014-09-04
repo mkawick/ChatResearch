@@ -44,6 +44,7 @@ Khaan ::Khaan( int socketId, bufferevent* be, int connectionId ) : ChainedInterf
                                                                   m_expectedBytes( 0 ),
                                                                   m_versionNumberMinor( NetworkVersionMinor )
 {
+   m_chainedType = ChainedType_InboundSocketConnector;
    m_tempBuffer[0] = 0;
    m_tempBuffer[1] = 0;
 

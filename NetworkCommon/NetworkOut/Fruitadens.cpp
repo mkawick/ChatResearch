@@ -58,6 +58,7 @@ Fruitadens :: Fruitadens( const char* name, bool processOnlyOneIncommingPacketPe
                m_bytesInOverflow( 0 )
                
 {
+   m_chainedType = ChainedType_OutboundSocketConnector;
    m_name = name;
    memset( &m_ipAddress, 0, sizeof( m_ipAddress ) );
 

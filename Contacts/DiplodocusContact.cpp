@@ -381,7 +381,7 @@ bool     DiplodocusContact::AddOutputChainData( BasePacket* packet, U32 connecti
       {
          ChainLink& chainedInput = *itInputs++;
          ChainedInterface* interfacePtr = static_cast< ChainedInterface* >( chainedInput.m_interface );
-         if( interfacePtr->DoesNameMatch( "KhaanContact" ) )
+         if( interfacePtr->GetChainedType() == ChainedType_InboundSocketConnector )
          {
             KhaanServerToServer* khaan = static_cast< KhaanServerToServer* >( interfacePtr );
             if( khaan->GetServerId() == m_connectionIdGateway )
@@ -587,31 +587,6 @@ void     DiplodocusContact::ExpireOldInvitations()
 int      DiplodocusContact::CallbackFunction()
 {
    UpdateDbResults();
-
-  /* while( m_serversNeedingUpdate.size() )
-   {
-      U32 serverId = m_serversNeedingUpdate.front();
-      m_serversNeedingUpdate.pop_front();
-
-      Threading::MutexLock locker( m_mutex );
-      ChainLinkIteratorType itInputs = m_listOfInputs.begin();
-      while( itInputs != m_listOfInputs.end() )
-      {
-         ChainLink& chainedInput = *itInputs++;
-         ChainedInterface* interfacePtr = static_cast< ChainedInterface* >( chainedInput.m_interface );
-         if( interfacePtr->DoesNameMatch( "KhaanContact" ) )
-         {
-            KhaanContact* khaan = static_cast< KhaanContact* >( interfacePtr );
-            if( khaan->GetServerId() == serverId )
-            {
-               if( khaan->Update() == false )
-               {
-                 // m_serversNeedingUpdate.push_back( serverId );
-               }
-            }
-         }
-      }
-   }*/
 
    CleanupOldClientConnections( "KhaanContact" );
 
@@ -824,7 +799,7 @@ bool     DiplodocusContact::AddQueryToOutput( PacketDbQuery* dbQuery )
    {
       ChainType* outputPtr = static_cast< ChainType*> ( (*itOutputs).m_interface );
       ChainedInterface* interfacePtr = static_cast< ChainedInterface* >( outputPtr );
-      if( interfacePtr->DoesNameMatch( "Deltadromeus" ) )
+      if( interfacePtr->GetChainedType() == ChainedType_DatabaseConnector )
       {
          bool isValidConnection = false;
          Database::Deltadromeus* delta = static_cast< Database::Deltadromeus* >( outputPtr );
@@ -868,7 +843,7 @@ bool     DiplodocusContact::AddQueryToOutput( PacketDbQuery* dbQuery, U32 connec
    {
       ChainType* outputPtr = static_cast< ChainType*> ( (*itOutputs).m_interface );
       ChainedInterface* interfacePtr = static_cast< ChainedInterface* >( outputPtr );
-      if( interfacePtr->DoesNameMatch( "Deltadromeus" ) )
+      if( interfacePtr->GetChainedType() == ChainedType_DatabaseConnector )
       {
          bool isValidConnection = false;
          Database::Deltadromeus* delta = static_cast< Database::Deltadromeus* >( outputPtr );
@@ -924,7 +899,7 @@ bool     DiplodocusContact::SendMessageToClient( BasePacket* packet, U32 connect
       if( itInputs != m_connectedClients.end() )// only one output currently supported.
       {
          KhaanContact* khaan = static_cast< KhaanContact* >( itInputs->second );
-         if( khaan->DoesNameMatch( "KhaanContact" ) && 
+         if( khaan->GetChainedType() == ChainedType_InboundSocketConnector ) && 
             khaan->GetServerId() == gatewayId )
          {
             khaan->AddOutputChainData( packet );

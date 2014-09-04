@@ -27,6 +27,7 @@ using boost::format;
 DiplodocusServerToServer::DiplodocusServerToServer( const string& serverName, U32 serverId, U8 gameProductId, ServerType type ) : Diplodocus< KhaanServerToServer >( serverName, serverId, gameProductId, type ), 
                                     m_jobIdTracker( 32 ) // 32 is a non-zero value useful for test only
 {
+   m_chainedType = ChainedType_AlternateThreadContainer;
    SetConnectionId( ServerToServerConnectionId );
 }
 

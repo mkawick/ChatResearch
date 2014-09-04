@@ -307,7 +307,9 @@ bool     Diplodocus< InputChain, OutputChain >::SendPacketToGateway( BasePacket*
       {
          ChainLink & chainedInput = *itInputs++;
          InputChainType* connection = static_cast< InputChainType* >( chainedInput.m_interface );
-         if( connection->GetServerId() != gatewayId )
+         if( gatewayId && 
+            connection->GetChainedType() == ChainedType_InboundSocketConnector && 
+            connection->GetServerId() != gatewayId )
             continue;
 
          if( connection->AddOutputChainData( wrapper, connectionId ) == true )
@@ -399,6 +401,7 @@ Diplodocus< InputChain, OutputChain >::Diplodocus( string serverName, U32 server
                                     m_serverName( serverName ),
                                     m_numTotalConnections( 0 )
 {
+   m_chainedType = ChainedType_MainThreadContainer;
    time( &m_timeOfLastTitleUpdate );
    m_uptime = m_timeOfLastTitleUpdate;
 }

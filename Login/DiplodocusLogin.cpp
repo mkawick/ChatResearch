@@ -294,7 +294,7 @@ bool     DiplodocusLogin:: AddQueryToOutput( PacketDbQuery* dbQuery )
    {
       ChainType* outputPtr = static_cast< ChainType*> ( (*itOutputs).m_interface );
       ChainedInterface* interfacePtr = static_cast< ChainedInterface* >( outputPtr );
-      if( interfacePtr->DoesNameMatch( "Deltadromeus" ) )
+      if( interfacePtr->GetChainedType() == ChainedType_DatabaseConnector )
       {
          bool isValidConnection = false;
          Database::Deltadromeus* delta = static_cast< Database::Deltadromeus* >( outputPtr );
@@ -2004,7 +2004,7 @@ bool  DiplodocusLogin:: SendLoginStatusToOtherServers( const string& userName,
       ChainType*  outputPtr = static_cast< ChainType*> ( (*itOutputs).m_interface );
       itOutputs++;
 
-      if( outputPtr->DoesNameMatch( "FruitadensLogin" ) != true )
+      if( outputPtr->GetChainedType() != ChainedType_OutboundSocketConnector )
       {
          continue;
       }
@@ -2065,7 +2065,7 @@ bool  DiplodocusLogin:: SendLoginStatusTo_Non_GameServers( const string& userNam
       itOutputs++;
 
       //cout << outputPtr->GetClassName() << endl;
-      if( outputPtr->DoesNameMatch( "FruitadensLogin" ) != true )
+      if( outputPtr->GetChainedType() != ChainedType_OutboundSocketConnector )
       {
          continue;
       }
@@ -2128,7 +2128,7 @@ bool  DiplodocusLogin:: SendLoginStatusTo_GameServers( const string& userName,
       ChainType*  outputPtr = static_cast< ChainType*> ( (*itOutputs).m_interface );
       itOutputs++;
 
-      if( outputPtr->DoesNameMatch( "FruitadensLogin" ) != true )
+      if( outputPtr->GetChainedType() != ChainedType_OutboundSocketConnector )
       {
          continue;
       }
