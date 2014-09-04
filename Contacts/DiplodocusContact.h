@@ -72,6 +72,7 @@ private:
 
    bool     ConnectUser( PacketPrepareForUserLogin* login );
    bool     DisconnectUser( PacketPrepareForUserLogout* login );
+   bool     UpdateUser( const string& userUuid, U32 connectionId, U32 gatewayId );
 
    bool     UpdateUserProfile( const PacketUserUpdateProfile* profile );
 
@@ -98,7 +99,6 @@ private:
    typedef pair< U32, U32 >            UserIdToContactPair;
    typedef UserIdToContactMap::iterator  UserIdToContactMapIterator;
 
-   deque< U32 >                     m_serversNeedingUpdate;
    deque< PacketDbQueryResult* >    m_dbQueries;
    UserContactMap                   m_users;
    UserIdToContactMap               m_userLookupById;

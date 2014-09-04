@@ -332,7 +332,15 @@ int indexForRotatingGatewayIndex = -1;
 void     DiplodocusLoadBalancer::HandleRerouteRequest( U32 connectionId )
 {
    m_inputChainListMutex.lock();
-   int numGatewayRoutes = m_gatewayRoutes.size();
+   //int numGatewayRoutes = m_gatewayRoutes.size();
+   int numGatewayRoutes = 0;
+   list< GatewayInfo >::iterator it = m_gatewayRoutes.begin();
+   while( it != m_gatewayRoutes.end() )
+   {
+      if( it->type == GatewayInfo::Type_Normal )
+         numGatewayRoutes++;
+      it++;
+   }
    ConnectionMap localMap = m_connectionMap;
    m_inputChainListMutex.unlock();
 
@@ -364,7 +372,10 @@ void     DiplodocusLoadBalancer::HandleRerouteRequest( U32 connectionId )
          while( it != m_gatewayRoutes.end() )
          {
 #ifdef HACK_FOR_MULTIPLE_GATEWAY_TESTING
-            if( offsetIndex != 0 && it != m_gatewayRoutes.end() )
+            if( offsetIndex != 0 && 
+               it != m_gatewayRoutes.end() && 
+               it->type == GatewayInfo::Type_Normal 
+               )
             {
                offsetIndex--;
                it++;

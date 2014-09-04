@@ -68,7 +68,7 @@ void     DiplodocusContact::ServerWasIdentified( IChainedInterface* khaan )
 
    InputChainType* localKhaan = static_cast< InputChainType* >( khaan );
    localKhaan->AddOutputChainData( packet, 0 );
-   m_serversNeedingUpdate.push_back( localKhaan->GetServerId() );
+   m_clientsNeedingUpdate.push_back( localKhaan->GetChainedId() );
 }
 
 /////////////////////////////////////////////////////////////////////////////////
@@ -238,6 +238,7 @@ bool     DiplodocusContact::AddInputChainData( BasePacket* packet, U32 gatewayId
 
  UserContact* DiplodocusContact::GetUser( U32 userId )
 {
+   Threading::MutexLock Locker( m_mutex );
    UserIdToContactMapIterator it = m_userLookupById.find( userId );
    if( it == m_userLookupById.end() )
       return NULL;
@@ -388,7 +389,7 @@ bool     DiplodocusContact::AddOutputChainData( BasePacket* packet, U32 connecti
                khaan->AddOutputChainData( packet );
                //khaan->Update();// the gateway may not have a proper connection id.
 
-               m_serversNeedingUpdate.push_back( khaan->GetServerId() );
+               m_clientsNeedingUpdate.push_back( khaan->GetChainedId() );
                return true;
             }
          }
@@ -587,7 +588,7 @@ int      DiplodocusContact::CallbackFunction()
 {
    UpdateDbResults();
 
-   while( m_serversNeedingUpdate.size() )
+  /* while( m_serversNeedingUpdate.size() )
    {
       U32 serverId = m_serversNeedingUpdate.front();
       m_serversNeedingUpdate.pop_front();
@@ -605,12 +606,12 @@ int      DiplodocusContact::CallbackFunction()
             {
                if( khaan->Update() == false )
                {
-                  m_serversNeedingUpdate.push_back( serverId );
+                 // m_serversNeedingUpdate.push_back( serverId );
                }
             }
          }
       }
-   }
+   }*/
 
    CleanupOldClientConnections( "KhaanContact" );
 
@@ -659,6 +660,43 @@ void     DiplodocusContact::UpdateAllConnections()
 
 //---------------------------------------------------------------
 
+bool  DiplodocusContact::UpdateUser( const string& userUuid, U32 connectionId, U32 gatewayId)
+{
+   Threading::MutexLock Locker( m_mutex );
+   UserContactMapIterator it = m_users.begin();
+   while( it != m_users.end() )
+   {
+      UserContact& user = it->second;
+      if( user.GetUserInfo().uuid == userUuid ) 
+      {
+         user.ClearLoggedOut();
+         U32 id = user.GetUserInfo().id;
+         UserIdToContactMapIterator itIdToContact = m_userLookupById.find( id );
+         if( itIdToContact != m_userLookupById.end() )
+         {
+            itIdToContact->second = connectionId;
+         }
+         user.SetConnectionId( connectionId );
+         user.SetGatewayId( gatewayId );
+
+         m_users.insert( UserContactPair( connectionId, user ) );            
+         m_users.erase( it );
+
+         UserContactMapIterator found = m_users.find( connectionId );
+         assert( found != m_users.end() );
+
+         found->second.FinishLoginBySendingUserFriendsAndInvitations();  
+
+         return true;
+      }
+      it++;
+   }
+
+   return false;
+}
+
+//---------------------------------------------------------------
+
 bool     DiplodocusContact::ConnectUser( PacketPrepareForUserLogin* loginPacket )
 {
    U32 connectionId = loginPacket->connectionId;
@@ -670,39 +708,10 @@ bool     DiplodocusContact::ConnectUser( PacketPrepareForUserLogin* loginPacket 
    if( it != m_users.end() )
       return false;
 
-   bool found = false;
-   // if the user is already here but relogged, simply 
-   m_mutex.lock();
-      it = m_users.begin();
-      while( it != m_users.end() )
-      {
-         UserContact& user = it->second;
-         if( user.GetUserInfo().uuid == loginPacket->uuid ) 
-         {
-            user.ClearLoggedOut();
-            found = true;
-            U32 id = user.GetUserInfo().id;
-            UserIdToContactMapIterator itIdToContact = m_userLookupById.find( id );
-            if( itIdToContact != m_userLookupById.end() )
-            {
-               itIdToContact->second = connectionId;
-            }
-            user.SetConnectionId( connectionId );
-            user.FinishLoginBySendingUserFriendsAndInvitations();
-            user.SetGatewayId( gatewayId );
-            
-            m_users.insert( UserContactPair( connectionId, user ) );
-            
-            m_users.erase( it );
-            break;
-         }
-         it++;
-      }
-   m_mutex.unlock();
-
-   if( found == false )
+   // if the user is already here but relogged, simply has a new connectionId
+   bool wasUpdated = UpdateUser( uuid, connectionId, gatewayId );
+   if( wasUpdated == false )
    {
-
       UserInfo ui;
       ui.userName =        loginPacket->userName;
       ui.uuid =            loginPacket->uuid.c_str();
@@ -714,7 +723,7 @@ bool     DiplodocusContact::ConnectUser( PacketPrepareForUserLogin* loginPacket 
       ui.passwordHash =    loginPacket->password;
       ui.id =              loginPacket->userId;
 
-      UserContact user( ui, connectionId, loginPacket->gatewayId );
+      UserContact user( ui, connectionId, gatewayId );
       user.SetServer( this );
 
       m_mutex.lock();
@@ -915,7 +924,8 @@ bool     DiplodocusContact::SendMessageToClient( BasePacket* packet, U32 connect
       if( itInputs != m_connectedClients.end() )// only one output currently supported.
       {
          KhaanContact* khaan = static_cast< KhaanContact* >( itInputs->second );
-         if( khaan->GetClassName() == "KhaanContact" )
+         if( khaan->DoesNameMatch( "KhaanContact" ) && 
+            khaan->GetServerId() == gatewayId )
          {
             khaan->AddOutputChainData( packet );
             m_clientsNeedingUpdate.push_back( khaan->GetChainedId() );
