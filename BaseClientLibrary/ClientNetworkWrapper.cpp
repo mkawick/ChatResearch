@@ -839,9 +839,10 @@ void     ClientNetworkWrapper::UpdateNotifications()
             break;
          case ClientSideNetworkCallback::NotificationType_DeviceIDUpdated:
             {
-               notify->UpdatedDeviceID();
+               string deviceUuid = keyValueIt->value; 
+               notify->UpdatedDeviceID( deviceUuid );
             }
-               break;
+            break;
          case ClientSideNetworkCallback::NotificationType_DeviceRemoved:
             {
                string channelUuid = qn.genericKeyValuePairs.find( "channelUuid" );
@@ -3830,7 +3831,7 @@ bool     ClientNetworkWrapper::HandlePacketReceived( BasePacket* packetIn )
                   static_cast<PacketNotification_RegisterDeviceResponse*>( packetIn );
                m_thisDeviceUuid = response->deviceUuid.c_str();
                
-               Notification( ClientSideNetworkCallback::NotificationType_DeviceIDUpdated );
+               Notification( ClientSideNetworkCallback::NotificationType_DeviceIDUpdated, m_thisDeviceUuid );
             }
             break;
             case PacketNotification::NotificationType_RequestListOfDevicesResponse:

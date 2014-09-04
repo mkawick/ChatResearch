@@ -71,11 +71,11 @@ public:
 
    virtual void  ChatChannelMembers( const string& channelName, const string& channelUuid, const SerializedKeyValueVector< string >& info ) {}
 
-   virtual void  AssetCategoriesLoaded() {}
+   virtual void  AssetCategoriesLoaded(){}
    virtual void  AssetManifestAvailable( const string& category ) {}
    virtual bool  AssetLoaded( const string& name, const U8* buffer, int size ) { return true; }
    virtual void  TournamentListAvalable() const {}
-   virtual void  TournamentPurchaseResult( const string& tournamentUuid, int result ) const {}
+   virtual void  TournamentPurchaseResult( const string& tournamentUuid, int result ){}
 
    virtual void  OnError( int code, int subCode, const char* text = NULL ){}
    virtual void  QosChange( const string& text, int errorCode, int param1, int param2 ){}
@@ -84,7 +84,7 @@ public:
    virtual void  ProductsForSale( const SerializedKeyValueVector< PurchaseInfo >& thingsToBuy ) {}
    virtual void  PurchaseReceiptResponse( const string& transactionId, int errorCode ) {}
 
-   virtual void  UpdatedDeviceID() {}
+   virtual void  UpdatedDeviceID( const string& deviceUuid ) {}
    virtual void  ListOfDevicesUpdated() {}
    virtual void  DeviceRemoved( const string& uuid, bool success ) {}
    virtual void  UserStats( const string& userUuid, const SerializedKeyValueVector< BoundedString64 >& stats, U8 gameId ) {}

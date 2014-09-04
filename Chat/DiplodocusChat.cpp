@@ -471,10 +471,11 @@ bool     DiplodocusChat::SendMessageToClient( BasePacket* packet, U32 connection
    {
       Threading::MutexLock locker( m_inputChainListMutex );
       ClientMapIterator itInputs = m_connectedClients.begin();
-      if( itInputs != m_connectedClients.end() )// only one output currently supported.
+      while( itInputs != m_connectedClients.end() )// only one output currently supported.
       {
          KhaanChat* khaan = static_cast< KhaanChat* >( itInputs->second );
-         if( khaan->GetServerId() == connectionId )
+         if( khaan->GetChainedType() == ChainedType_InboundSocketConnector && 
+            khaan->GetServerId() == gatewayId )
          {
             khaan->AddOutputChainData( packet );
             MarkConnectionAsNeedingUpdate( khaan->GetChainedId() );

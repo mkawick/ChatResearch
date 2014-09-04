@@ -369,7 +369,10 @@ void     UserConnection::RegisterNewDevice( const PacketNotification_RegisterDev
    }
 
    if( FindDeviceAndUpdate( m_deviceList, registerDevice ) == true )
+   {
+      m_mainThread->SendErrorToClient( m_userInfo.connectionId, m_userInfo.gatewayId, PacketErrorReport::ErrorType_Notification_DeviceAlreadyRegistered );
       return;
+   }
 
    U32 xorValue = GetCurrentMilliseconds();
    string newDeviceUuid = GenerateUUID( xorValue );

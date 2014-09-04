@@ -896,10 +896,10 @@ bool     DiplodocusContact::SendMessageToClient( BasePacket* packet, U32 connect
       Threading::MutexLock locker( m_mutex );
 
       ClientMapIterator itInputs = m_connectedClients.begin();
-      if( itInputs != m_connectedClients.end() )// only one output currently supported.
+      while( itInputs != m_connectedClients.end() )// only one output currently supported.
       {
          KhaanContact* khaan = static_cast< KhaanContact* >( itInputs->second );
-         if( khaan->GetChainedType() == ChainedType_InboundSocketConnector ) && 
+         if( khaan->GetChainedType() == ChainedType_InboundSocketConnector && 
             khaan->GetServerId() == gatewayId )
          {
             khaan->AddOutputChainData( packet );

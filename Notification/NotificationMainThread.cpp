@@ -128,7 +128,8 @@ bool     NotificationMainThread::SendMessageToClient( BasePacket* packet, U32 co
       while( itInputs != m_connectedClients.end() )// only one output currently supported.
       {
          KhaanServerToServer* khaan = static_cast< KhaanServerToServer* >( itInputs->second );
-         if( khaan->DoesNameMatch( "KhaanServerToServer" ) && khaan->GetServerId() == gatewayId )
+         if( khaan->GetChainedType() == ChainedType_InboundSocketConnector && 
+            khaan->GetServerId() == gatewayId )
          {
             khaan->AddOutputChainData( packet );
             m_clientsNeedingUpdate.push_back( khaan->GetChainedId() );

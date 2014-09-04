@@ -493,7 +493,7 @@ bool     AssetMainThread::AddOutputChainData( BasePacket* packet, U32 connection
       {
          ChainLink& chainedInput = *itInputs++;
          ChainedInterface* interfacePtr = static_cast<ChainedInterface*>( chainedInput.m_interface );
-         if( interfacePtr->DoesNameMatch( "KhaanAsset" ) )
+         if( interfacePtr->GetChainedType() == ChainedType_InboundSocketConnector )
          {
             KhaanAsset* khaan = static_cast< KhaanAsset* >( interfacePtr );
             if( khaan->GetServerId() == m_connectionIdGateway )

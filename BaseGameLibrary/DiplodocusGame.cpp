@@ -373,7 +373,7 @@ bool   DiplodocusGame::AddOutputChainData( BasePacket* packet, U32 connectionId 
       {
          ChainLink& chainedInput = *itInputs++;
          ChainedInterface* interfacePtr = static_cast< ChainedInterface* >( chainedInput.m_interface );  
-         if( interfacePtr->DoesNameMatch( "KhaanGame" ) )
+         if( interfacePtr->GetChainedType() == ChainedType_InboundSocketConnector )
          {
             KhaanGame* khaan = static_cast< KhaanGame* >( interfacePtr );
             if( khaan->GetServerId() == gatewayId )
@@ -491,7 +491,7 @@ int   DiplodocusGame::CallbackFunction()
       {
          ChainLink& chainedInput = *itInputs++;
          ChainedInterface* interfacePtr = static_cast< ChainedInterface* >( chainedInput.m_interface );  
-         if( interfacePtr->DoesNameMatch( "KhaanGame" ) )
+         if( interfacePtr->GetChainedType() == ChainedType_InboundSocketConnector )
          {
             KhaanGame* khaan = static_cast< KhaanGame* >( interfacePtr );
             if( khaan->GetServerId() == serverId )
