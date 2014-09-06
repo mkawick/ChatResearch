@@ -445,6 +445,26 @@
 					>
 				</File>
 			</Filter>
+			<Filter
+				Name="General"
+				>
+				<File
+					RelativePath="..\NetworkCommon\General\FixedLengthString.h"
+					>
+				</File>
+				<File
+					RelativePath="..\NetworkCommon\General\FixedLengthString.inl"
+					>
+				</File>
+				<File
+					RelativePath="..\NetworkCommon\General\server_log.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\NetworkCommon\General\server_log.h"
+					>
+				</File>
+			</Filter>
 		</Filter>
 		<File
 			RelativePath=".\ReadMe.txt"

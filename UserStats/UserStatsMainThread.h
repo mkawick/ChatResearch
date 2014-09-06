@@ -18,6 +18,11 @@ class PacketDbQuery;
 class PacketDbQueryResult;
 ///////////////////////////////////////////////////////////////////
 
+struct ConnectionPair
+{
+   ConnectionPair( U32 connId, U32 gateId ) : connectionId( connId ), gatewayId( gateId ){}
+   U32 connectionId, gatewayId;
+};
 
 class UserStatsMainThread : public Diplodocus< KhaanServerToServer >
 {
@@ -52,6 +57,7 @@ private:
 
 
    deque< PacketDbQueryResult* > m_dbQueries;
+   deque< ConnectionPair > m_userConnectionList;
 };
 
 ///////////////////////////////////////////////////////////////////

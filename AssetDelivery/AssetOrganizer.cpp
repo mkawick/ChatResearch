@@ -481,6 +481,9 @@ bool  FillInAsset( string& line, AssetDefinition& asset )
 
    if( listOfStuff.size() != 0 )
    {
+      if( listOfStuff[ 1 ].size() == 0 )
+         return true; // empty value
+
       const string& potentionalKey = ConvertStringToLower( listOfStuff[ 0 ] );
       const string& value = ConvertStringToLower( listOfStuff[ 1 ] );
       const string undecoratedValue = RemoveEnds( listOfStuff[ 1 ] );
@@ -553,11 +556,11 @@ bool  FillInAsset( string& line, AssetDefinition& asset )
             asset.name = undecoratedValue;
             return true;
          }
-         else if( potentionalKey == "filters" )
+         else if( potentionalKey.substr( 0, 6 ) == "filter" )// allows for plural
          {
             return ParseListOfItems( asset.filters, value, ",", "[]{}" );
          }
-         else if( potentionalKey == "gates" )
+         else if( potentionalKey.substr( 0, 4 ) == "gate" )// allows for plural
          {
             return ParseListOfItems( asset.gates, value, ",", "[]{}" );
          }
@@ -566,13 +569,13 @@ bool  FillInAsset( string& line, AssetDefinition& asset )
             asset.compressionType = value;
             return true;
          }
-         else if( potentionalKey == "notes" )
+         else if( potentionalKey.substr( 0, 4 ) == "note" )// allows for plural
          {
             return true;// ignore notes
          }
          else
          {
-            return false; // no other usable keys
+            return true; // no other usable keys, ignore
          }
       }
       else
@@ -1012,6 +1015,7 @@ void  AssetOrganizer::Update()
       if( m_assetFileModificationTime != fileTime )
       {
          LoadAssetManifest();
+         m_allFilesAreNowLoaded = false;
       }
    }
 

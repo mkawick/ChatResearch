@@ -2,6 +2,8 @@
 
 #include <stdarg.h>
 #include <stdio.h>
+#include <iostream>
+#include <fstream>
 
 #if !defined(_WIN32)
 
@@ -31,20 +33,40 @@ void LogClose()
 
 #else
 
-void LogOpen() {}
+ofstream fileStream;
+void LogOpen() 
+{
+   string outputFilename  = "c:/temp/";
+   outputFilename += PACKAGE_NAME;
+   outputFilename += ".log";
+/*   myfile.open ("example.txt");
+  myfile << "Writing this to a file.\n";
+  myfile.close();*/
+   fileStream.open( outputFilename );
+}
 
 void LogMessage(int priority, const char *fmt, ...)
 {
+   if( fileStream.isOpen() == false )
+      LogOpen();
+
    //TODO: Hook into the windows event logger.
    va_list args;
    va_start(args, fmt);
 
-   vprintf(fmt, args);
+   char buffer[256];
+   vsprintf(buffer, fmt, args);
 
    va_end(args);
+
+   cout << buffer << endl;
+   fileStream << buffer << endl;
 }
 
-void LogClose() {}
+void LogClose() 
+{
+   fileStream.close();
+}
 
 #endif   //_WIN32
 

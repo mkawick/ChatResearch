@@ -108,6 +108,7 @@ int      UserStatsMainThread::MainLoop_OutputProcessing()
 
 bool     UserStatsMainThread::AddInputChainData( BasePacket* packet, U32 gatewayId )
 {
+   // out of process call
    U8 packetType = packet->packetType;
 
    switch( packetType )
@@ -146,6 +147,7 @@ bool  UserStatsMainThread::HandlePacketFromClient( BasePacket* packet, U32 gatew
    {
       return false;
    }
+
    PacketGatewayWrapper* wrapper = static_cast< PacketGatewayWrapper* >( packet );
    BasePacket* unwrappedPacket = wrapper->pPacket;
    //U32  serverIdLookup = wrapper->serverId;
@@ -295,8 +297,13 @@ bool     UserStatsMainThread::HandleLoginPacket( BasePacket* packet, U32 serverI
       case PacketLogin::LoginType_PrepareForUserLogin:
          {
             PacketPrepareForUserLogin* loginPacket = static_cast< PacketPrepareForUserLogin* > ( packet );
-            U32 userConnectionId = loginPacket->connectionId;
+            U32 connectionId = loginPacket->connectionId;
             U32 gatewayId = loginPacket->gatewayId;
+
+            m_inputChainListMutex.lock();
+            m_userConnectionList.push_front( ConnectionPair( connectionId, gatewayId ) );
+            m_inputChainListMutex.unlock();
+
             cout << " --------------------------------- " << endl;
             cout << "Prep for User login: " << endl;
             cout << "    id: " << loginPacket->userId << endl;
@@ -309,12 +316,27 @@ bool     UserStatsMainThread::HandleLoginPacket( BasePacket* packet, U32 serverI
       case PacketLogin::LoginType_PrepareForUserLogout:
          {
             PacketPrepareForUserLogout* pPacket = static_cast< PacketPrepareForUserLogout* > ( packet );
+            U32 connectionId = pPacket->connectionId;
+
             cout << " --------------------------------- " << endl;
             cout << "Prep for logout: " << pPacket->connectionId << ", " << pPacket->uuid << endl;
             
             cout << "User login: " << endl;
             cout << "  uuid: " << pPacket->uuid << endl;
             cout << " --------------------------------- " << endl;
+
+            m_inputChainListMutex.lock();   
+            deque< ConnectionPair >::iterator it = m_userConnectionList.begin();
+            while( it != m_userConnectionList.end() )
+            {
+               if( it->connectionId == connectionId )
+               {
+                  m_userConnectionList.erase( it );
+                  break;
+               }
+               it++;
+            }
+            m_inputChainListMutex.unlock();
             
          }
          return true;
@@ -334,7 +356,7 @@ bool     UserStatsMainThread::HandleUserStatPacket( BasePacket* packet, U32 serv
    {
       switch( packetSubType )
       {
-      case PacketUserStats::UserStatsType_RequestListOfUserStats:
+    /*  case PacketUserStats::UserStatsType_RequestListOfUserStats:
          {
             PacketUserStats_RequestListOfUserStats* stats = static_cast< PacketUserStats_RequestListOfUserStats* >( packet );
             PacketUserStats_RequestListOfUserStatsResponse* response = new PacketUserStats_RequestListOfUserStatsResponse;
@@ -377,7 +399,7 @@ bool     UserStatsMainThread::HandleUserStatPacket( BasePacket* packet, U32 serv
             }
             cout << "End user stats" << endl;
          }
-         break;
+         break;*/
       case PacketUserStats::UserStatsType_ReportGameResult:
          {
             PacketUserStats_ReportGameResult *pReportResult = static_cast< PacketUserStats_ReportGameResult* >( packet );
@@ -468,11 +490,21 @@ bool     UserStatsMainThread::SendMessageToClient( BasePacket* packet, U32 conne
 {
    if( packet->packetType == PacketType_GatewayWrapper )// this is already wrapped up and ready for the gateway... send it on.
    {
-      m_inputChainListMutex.lock();
-      ClientMap tempInputContainer = m_connectedClients;
-      m_inputChainListMutex.unlock();
-
       U32 gatewayId = 0;
+      m_inputChainListMutex.lock();
+      ClientMap tempInputContainer = m_connectedClients;    
+
+      deque< ConnectionPair >::iterator it = m_userConnectionList.begin();
+      while( it != m_userConnectionList.end() )
+      {
+         if( it->connectionId == connectionId )
+         {
+            gatewayId = it->gatewayId;
+            break;
+         }
+         it++;
+      }
+      m_inputChainListMutex.unlock();
       // we need to look the user connection up.
 
       ClientMapIterator itInputs = tempInputContainer.begin();
@@ -514,7 +546,6 @@ bool     UserStatsMainThread::SendMessageToClient( BasePacket* packet, U32 conne
 bool  UserStatsMainThread::SendGameData( U32 connectionId, int packetSize, const U8* packet )
 {
    const int MaxSize = PacketGameplayRawData::MaxBufferSize  - sizeof( PacketGatewayWrapper );
-
    return SendRawData< PacketGameplayRawData, UserStatsMainThread > 
       ( packet, packetSize, PacketGameplayRawData::Game, MaxSize, GetServerId(), GetGameProductId(), "raw", connectionId, this );
 }

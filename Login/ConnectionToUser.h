@@ -29,7 +29,8 @@ struct ConnectionToUser
 
    ConnectionToUser( const string& name, const string& pword, const string& key );
    void     SetManager( DiplodocusLogin* manager )  { m_userManager = manager; }
-   void     ClearLoggingOutStatus() { m_loggedOutTime = 0; }
+   bool     IsLoggingOut() const { return m_loggedOutTime != 0 && status == LoginStatus_Invalid; }
+   void     ClearLoggingOutStatus() { m_loggedOutTime = 0; m_isReadyToBeCleanedUp = false; }
    bool     CanContinueLogginIn() const { return m_isActive && ( m_isReadyToBeCleanedUp == false ); }
 
    time_t   GetLoginTime() const { return m_loginTime; }

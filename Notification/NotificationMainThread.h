@@ -96,11 +96,7 @@ private:
 
       inline bool operator<(const UserNotificationKey &rhs) const
       {
-         if( rhs.userId >= userId ) 
-         {
-            return gameType < rhs.gameType;
-         }
-         return userId < rhs.userId;
+         return (userId != rhs.userId) ? userId < rhs.userId : gameType < rhs.gameType;
       }
 
       inline bool operator==(const UserNotificationKey &rhs) const

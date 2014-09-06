@@ -482,15 +482,18 @@ bool  ParseListOfItems( vector< string >& listOfStuff, string text, const char* 
 
 string RemoveEnds( std::string s, const char* charsToStrip )
 {
+   if( s.size() == 0 )
+      return s;
+
    int len = static_cast< int > ( strlen( charsToStrip ) );
 
    for( int i=0; i<len; i++ )
    {
-      while( *s.begin() == charsToStrip[i] )
+      while( s.size() && *s.begin() == charsToStrip[i] )
       {
          s = s.substr(1, s.size());
       }
-      while( *s.rbegin() == charsToStrip[i] )
+      while( s.size() && *s.rbegin() == charsToStrip[i] )
       {
          s = s.substr(0, s.size()-1);
       }

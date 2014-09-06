@@ -394,7 +394,7 @@ bool     DiplodocusLogin:: LogUserIn( const PacketLoginFromGateway* packet, U32 
       if( connection )
       {
          connection->SetGatewayId( gatewayId );
-         if( connection->GetLoginStatus() == ConnectionToUser::LoginStatus_Invalid )// already failed. Screw this hacker
+         if( connection->IsLoggingOut() == false )// already failed. Screw this hacker
          {
             // user may attempt hacking.. only 3 attempts allowed
             if( connection->GetLoginAttemptCount () > 3 )
@@ -786,7 +786,7 @@ void     DiplodocusLogin:: RemoveOldConnections()
          {
             cout << "fn: " << __FUNCTION__ << endl;
          }*/
-         const int normalExpireTime = 3; // seconds
+         const int normalExpireTime = 18; // seconds
          if( difftime( testTimer, connection.m_loggedOutTime ) >= normalExpireTime )
          {
             FinalizeLogout( temp->first, false );

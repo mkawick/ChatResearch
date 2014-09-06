@@ -91,7 +91,7 @@ bool        Fruitadens :: AddOutputChainData( BasePacket* packet, U32 filingData
 
 bool  Fruitadens :: Connect( const char* serverName, int port )// work off of DNS
 {
-   cout << m_name << " connecting to " << serverName << " : " << port  << endl;
+   LogMessage( 1, m_name.c_str(), " connecting to ", " : " );
    if( SetupConnection( serverName, port ) == false )
    {
       assert( 0 );
@@ -161,7 +161,7 @@ bool  Fruitadens :: SetupConnection( const char* serverName, int port )
    if ((host_entry = gethostbyname( serverName )) == NULL)
    {
       notification += " cannot resolve the hostname ";
-      Log( notification.c_str() );
+      LogMessage( 1, notification.c_str() );
 
       m_hasFailedCritically = true;
       Cleanup();
@@ -191,7 +191,7 @@ bool  Fruitadens :: CreateSocket()
    if (m_clientSocket == SOCKET_ERROR)
    {
       notification += " cannot open a socket ";
-      Log( notification.c_str() );
+      LogMessage( 1, notification.c_str() );
 
       m_hasFailedCritically = true;
       Cleanup();
@@ -328,11 +328,11 @@ void  Fruitadens::SocketHasDisconnectedDuringRecv( int error_number )
 {
    m_isConnected = false;
    //m_hasFailedCritically = true;
-   cout << "***********************************************************" << endl;
-   cout << "Socket has been reset" << endl;
-   cout << "Socket error was: " << hex << error_number << dec << endl;   
-   cout << "attempting a reconnect" << endl;
-   cout << "***********************************************************" << endl;
+   LogMessage( 1, "***********************************************************" );
+   LogMessage( 1, "Socket has been reset" );
+   LogMessage( 1, "Socket error was: ", error_number );   
+   LogMessage( 1, "attempting a reconnect" );
+   LogMessage( 1, "***********************************************************" );
    closesocket( m_clientSocket );
 
    InitialDisconnectionCallback();
@@ -364,7 +364,7 @@ void  Fruitadens::PostProcessInputPackets( int bytesRead )
          // copy remainder into temp buffer.
          m_bytesInOverflow = bytesRead - preOffset;
          memcpy( m_overflowBuffer, m_receiveBuffer + preOffset, m_bytesInOverflow );
-         cout << "--- Overflow packets: " << m_bytesInOverflow << endl;
+         LogMessage( 1, "--- Overflow packets: ", m_bytesInOverflow );
          return;
       }
 
@@ -373,7 +373,7 @@ void  Fruitadens::PostProcessInputPackets( int bytesRead )
       bool parseResult = factory.Parse( m_receiveBuffer, readSize, &packetIn, m_networkVersionOverride );
       if( offset + size < readSize )
       {
-         cout << "Super bad parsing error." << endl;
+         LogMessage( 1, "Super bad parsing error." );
       }
 
       if( parseResult == true )
@@ -383,7 +383,7 @@ void  Fruitadens::PostProcessInputPackets( int bytesRead )
       }
       else
       {
-         cout << "Unknown packet type" << endl;
+         LogMessage( 1, "Unknown packet type" );
       }
     /*  else 
       {
@@ -668,12 +668,11 @@ bool  FruitadensServer :: HandleS2SIdentitfyPacket( BasePacket* packetIn )
             m_connectedGameProductId = unwrappedPacket->gameProductId;
 
             //std::string ip_txt( inet_ntoa( m_ipAddress.sin_addr ) );
-            cout << endl;
-            cout << "*********  Connected as client to " << unwrappedPacket->serverName << "  **************" << endl;
-            cout << "    " << unwrappedPacket->serverAddress << " : " << static_cast<U32>( unwrappedPacket->serverPort ) << endl;
-            cout << "    type " << static_cast<U32>( m_connectedGameProductId ) << " -- server ID = " << m_connectedServerId << endl;
-            cout << "    isGame = " << boolalpha << unwrappedPacket->isGameServer << ", isController : " << unwrappedPacket->isController << noboolalpha << endl;
-            cout << "**************************************************" << endl;
+            LogMessage( 1, "\n*********  Connected as client to %s  **************", unwrappedPacket->serverName.c_str() );
+            LogMessage( 1, "    %s:%d", unwrappedPacket->serverAddress.c_str(), static_cast<U32>( unwrappedPacket->serverPort ) );
+            LogMessage( 1, "    type %d -- server ID = %d", static_cast<U32>( m_connectedGameProductId ), m_connectedServerId );
+            LogMessage( 1, "    isGame = %s, isController = %s", unwrappedPacket->isGameServer?"true":"false", unwrappedPacket->isController?"true":"false" );
+            LogMessage( 1, "**************************************************" );
          }
 
          handled2SPacket = true;

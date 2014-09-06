@@ -16,6 +16,7 @@ using boost::format;
 #include "../NetworkCommon/Utils/CommandLineParser.h"
 #include "../NetworkCommon/Packets/ServerToServerPacket.h"
 #include "../NetworkCommon/NetworkUtils.h"
+#include "../NetworkCommon/Logging/server_log.h"
 
 #include "../NetworkCommon/Daemon/Daemonizer.h"
 
@@ -209,6 +210,8 @@ int main( int argc, const char* argv[] )
          assetOnly = false, 
          assetBlock = false; 
 
+   FileLogOpen( serverName.c_str() );
+
    try 
    {
       assetPort =          boost::lexical_cast<int>( assetDeliveryPortString );
@@ -226,7 +229,7 @@ int main( int argc, const char* argv[] )
    } 
    catch( boost::bad_lexical_cast const& ) 
    {
-       std::cout << "Error: input string was not valid" << std::endl;
+       LogMessage( 1, "Error: input string was not valid" );
    }
 
    
@@ -240,22 +243,22 @@ int main( int argc, const char* argv[] )
    }
    if( assetOnlyString == "1" || assetOnlyString == "true" || assetOnlyString == "TRUE" )
    {
-      cout << " ----------------------------------------------- " << endl;
-      cout << " Asset only server" << endl;
+      LogMessage( 1, " ----------------------------------------------- " );
+      LogMessage( 1, " Asset only server" );
       
       assetOnly = true;
    }
    if( assetBlockString == "1" || assetBlockString == "true" || assetBlockString == "TRUE" )
    {
-      cout << " ----------------------------------------------- " << endl;
-      cout << " prevents talking to asset server" << endl;
+      LogMessage( 1, " ----------------------------------------------- " );
+      LogMessage( 1, " prevents talking to asset server" );
       assetBlock = true;
    }
 
    if( assetOnly && assetBlock )
    {
-      cout << " ----------------------------------------------- " << endl;
-      cout << " CONFIGURATION PROBLEM: you cannot have both asset.only and asset.block flags set" << endl;
+      LogMessage( 1, " ----------------------------------------------- " );
+      LogMessage( 1, " CONFIGURATION PROBLEM: you cannot have both asset.only and asset.block flags set" );
       return 1;
    }
 
@@ -264,13 +267,13 @@ int main( int argc, const char* argv[] )
    U64 serverUniqueHashValue = GenerateUniqueHash( serverName );
    U32 serverId = (U32)serverUniqueHashValue;
 
-   cout << serverName << endl;
-   cout << "Server stack version " << ServerStackVersion << endl;
-   cout << "ServerId " << serverId << endl;
-   cout << "External ip address: " << externalIpAddressString << endl;
-   cout << "Network protocol version: " << (int)NetworkVersionMajor << ":" << (int)NetworkVersionMinor << endl;
+   LogMessage( 1, serverName.c_str() );
+   LogMessage( 1, "Server stack version " , ServerStackVersion );
+   LogMessage( 1, "ServerId " , serverId );
+   LogMessage( 1, "External ip address: " , externalIpAddressString.c_str() );
+   LogMessage( 1, "Network protocol version: " , (int)NetworkVersionMajor , ":" , (int)NetworkVersionMinor );
    
-   cout << "------------------------------------------------------------------" << endl << endl << endl;
+   LogMessage( 1, "------------------------------------------------------------------" );
 
    InitializeSockets();
    bool isBusy = IsPortBusy( listenPort );
@@ -296,7 +299,7 @@ int main( int argc, const char* argv[] )
       if( assetOnly == true )
       {
          gatewayServer->AllowUnauthenticatedConnections();
-         cout << " Asset only server does not require authentication " << endl;
+         LogMessage( 1, " Asset only server does not require authentication " );
       }
       
       //--------------------------------------------------------------
@@ -319,7 +322,7 @@ int main( int argc, const char* argv[] )
          PrepConnection< FruitadensGateway, MainGatewayThread > ( assetDeliveryIpAddressString, assetPort,        "asset",          gatewayServer, ServerType_Asset, true );
       }
 
-      cout << "---------------------------- finished connecting ----------------------------" << endl;
+      LogMessage( 1, "---------------------------- finished connecting ----------------------------" );
 
       FruitadensServerToServer* connection = PrepConnection< FruitadensServerToServer, MainGatewayThread > ( loadBalancerAddressString, balancerPort,    "balancer",       gatewayServer, ServerType_LoadBalancer, false );
       
@@ -329,13 +332,13 @@ int main( int argc, const char* argv[] )
    }
    else
    {
-      cout << "***********************************************" << endl;
-      cout << " error: that server port is busy " << endl;
-      cout << "  port: " << listenPort << endl;
-      cout << " Note: you may have an instance already running" << endl;
-      cout << "        we must exit now" << endl;
-      cout << "***********************************************" << endl;
-      cout << endl << "Press any key to exit" << endl;
+      LogMessage( 1, "***********************************************" );
+      LogMessage( 1, " error: that server port is busy " );
+      LogMessage( 1, "  port: ", listenPort );
+      LogMessage( 1, " Note: you may have an instance already running" );
+      LogMessage( 1, "        we must exit now" );
+      LogMessage( 1, "***********************************************" );
+      LogMessage( 1, "\nPress any key to exit" );
       getch();
    }
    

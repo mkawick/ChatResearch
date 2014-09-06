@@ -303,6 +303,10 @@
 			Name="NetworkCommon"
 			>
 			<File
+				RelativePath="..\NetworkCommon\Logging\client_log.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\NetworkCommon\DataTypes.h"
 				>
 			</File>

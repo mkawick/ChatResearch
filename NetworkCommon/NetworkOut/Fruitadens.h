@@ -4,6 +4,7 @@
 
 #include "../DataTypes.h"
 #include "../ChainedArchitecture/ChainedThread.h"
+#include "../Logging/server_log.h"
 #include "../ServerType.h"
 #include <string>
 

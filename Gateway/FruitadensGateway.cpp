@@ -361,20 +361,20 @@ void  FruitadensGateway::PreprocessPacketsForOutput( BasePacket* packet )
       if( packetSubType == PacketLogin::LoginType_Login )
       {
          PacketLogin* login = static_cast< PacketLogin* >( testPacket );
-         cout << "------------- User login -------------" << endl;
-         cout << "User: " << login->userName <<endl;
-         //cout << "email: " << login->user
-         cout << "uuid: " << login->uuid <<endl;
-         cout << "pass: " << login->password <<endl;
-         cout << "--------------------------------------" << endl;
-         //cout << "Converting login types" << endl;
+         LogMessage( 1, "------------- User login -------------" );
+         LogMessage( 1, "User: %s", login->userName.c_str() );
+         //LogMessage( 1, "email: ", login->user
+         LogMessage( 1, "uuid: %s", login->uuid.c_str() );
+         LogMessage( 1, "pass: %s", login->password.c_str() );
+         LogMessage( 1, "--------------------------------------" );
+         //LogMessage( 1, "Converting login types" );
          //PacketLogin* login = static_cast< PacketLogin* >( testPacket );
          PacketLoginFromGateway* newLogin = new PacketLoginFromGateway;
          newLogin->copy( *login );
          newLogin->gatewayId = m_serverId;
          delete login;
          wrapper->pPacket = newLogin;
-         //cout << "done converting login types" << endl;
+         //LogMessage( 1, "done converting login types" );
       }
    }
 }
@@ -406,7 +406,7 @@ void  FruitadensGateway::PostProcessInputPackets( int bytesRead )
          // copy remainder into temp buffer.
          m_bytesInOverflow = bytesRead - preOffset;
          memcpy( m_overflowBuffer, m_receiveBuffer + preOffset, m_bytesInOverflow );
-         cout << "--- Overflow packets: " << m_bytesInOverflow << endl;
+         LogMessage( 1, "--- Overflow packets: %d", m_bytesInOverflow );
          return;
       }
 
