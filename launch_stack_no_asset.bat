@@ -1,5 +1,5 @@
 pushd ..\..\SummonWar\main\
-start ..\..\SummonWar\main\WorkArea/game_serverD.exe listen.port=21000 s2s.port=21002 chat.port=7402 dblist=[user:10.16.4.44:3306:incinerator:Cm8235:playdek,game:10.16.4.44:3306:incinerator:Cm8235:playdek_game_summonwar_gary]
+start ..\..\SummonWar\main\WorkArea/game_serverD.exe listen.port=21000 s2s.port=21002 chat.port=7402 purchase.port=7702 dblist=[user:10.16.4.44:3306:incinerator:Cm8235:playdek,game:10.16.4.44:3306:incinerator:Cm8235:playdek_game_summonwar_gary]
 popd
 
 start ./Debug/LoadBalancer.exe  listen.port=9500 s2s.port=9502
@@ -27,15 +27,20 @@ ping -n 1 -w 1000 127.0.0.1 > nul
 	
 start ./Debug/NotificationServer.exe listen.port=7900 s2s.port=7902 db.address=10.16.4.44 db.port=3306 db.username=incinerator db.password=Cm8235 
 
+ping -n 1 -w 1000 127.0.0.1 > nul
+
+
+start ./Debug/UserStatsServer.exe listen.port=12000 s2s.port=12002 db.address=10.16.4.44 db.port=3306 db.username=incinerator db.password=Cm8235 db.schema=playdek
 
 ping -n 1 -w 1000 127.0.0.1 > nul
+
 	
 start ./Debug/AnalyticsServer.exe listen.port=7800 s2s.port=7802 db.address=10.16.4.44 db.port=3306 db.username=incinerator db.password=Cm8235 
 
 
 REM start ./debug/GameServer.exe db.port=16384 listen.port=21000
 
-start ./Debug/GatewayServer.exe listen.port=9600 chat.address=localhost chat.port=7400 login.port=7600 server.name="Main Gateway" asset.block=true balancer.port=9502 chat.port=7400 print.packets=true games=[localhost:21000:summon_war,192.168.1.1:21100:MFM] 
+start ./Debug/GatewayServer.exe listen.port=9600 chat.address=localhost chat.port=7400 login.port=7600 server.name="Gateway1" asset.block=true balancer.port=9502 chat.port=7400 print.packets=true games=[localhost:21000:summon_war,192.168.1.1:21100:MFM] 
 
 REM start C:\projects\Mber\ServerStack\Debug/GatewayServer.exe listen.port=9601 asset.port=7300 server.name="Asset-Only-Gateway" asset.only=true balancer.port=9502
 

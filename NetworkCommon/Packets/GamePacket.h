@@ -3,6 +3,7 @@
 
 #include "BasePacket.h"
 #include "ChatPacket.h"
+#include "PacketFactory.h"
 
 class PacketGameToServer : public BasePacket 
 {
@@ -398,9 +399,6 @@ class PacketGameplayRawData : public PacketGameToServer
 {
 public:
    PacketGameplayRawData(): PacketGameToServer( PacketType_Gameplay, GamePacketType_RawGameData ), size( 0 ), index( 1 ), dataType( Game ) { data[0] = 0; }
-   //PacketGameplayRawData( PacketGameplayRawData& packet ) ;
-   //~PacketGameplayRawData();
-   //PacketGameplayRawData& operator = ( PacketGameplayRawData& packet ) ;
 
    bool  SerializeIn( const U8* data, int& bufferOffset, int minorVersion ); // allocates memory
    bool  SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const;
@@ -459,4 +457,6 @@ public:
 
 
 ///////////////////////////////////////////////////////////////
+
+#include "GamePacket.inl"
 

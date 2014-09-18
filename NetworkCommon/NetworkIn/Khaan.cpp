@@ -33,12 +33,13 @@ Khaan ::Khaan( int socketId, bufferevent* be, int connectionId ) : ChainedInterf
                                                                   m_listeningPort( 0 ),
                                                                   m_timeOfConnection( 0 ),
                                                                   m_timeOfDisconnection( 0 ),
+                                                                  m_maxBytesToSend( 2 * 1024 ),
                                                                   m_useLibeventToSend( true ),
                                                                   m_criticalFailure( false ),
                                                                   m_denyAllFutureData( false ),
-                                                                  m_isInTelnetMode( false ),
-                                                                  m_isDisconnected( false ),
                                                                   m_outboundBuffer( NULL ),
+                                                                  m_isDisconnected( false ),
+                                                                  m_isInTelnetMode( false ),
                                                                   m_isExpectingMoreDataInPreviousPacket( false ),
                                                                   m_expectedBytesReceivedSoFar( 0 ),
                                                                   m_expectedBytes( 0 ),
@@ -163,7 +164,7 @@ bool	Khaan :: Update()
 
    if( m_packetsOut.size() || m_packetsIn.size() )// we didn't finish
    {
-      cout << "Remaining packet out count: " << m_packetsOut.size() << endl;
+      LogMessage( LOG_PRIO_INFO, "Remaining packet out count: %d", m_packetsOut.size() );
       return false;
    }
    if( m_denyAllFutureData && m_packetsOut.size() == 0 ) // shut it down
@@ -287,7 +288,7 @@ void  Khaan::SendTelnetInstructions()
 
 int	Khaan :: UpdateOutwardPacketList()
 {
-   if( m_packetsOut.size() == 0 || m_isDisconnected )
+   if( m_isDisconnected )
       return 0;
 
    m_outputChainListMutex.lock();
@@ -295,11 +296,11 @@ int	Khaan :: UpdateOutwardPacketList()
    m_packetsOut.clear();
    m_outputChainListMutex.unlock();
 
-   int length;
-   int numPacketsPackaged = 0;
-   int offset = 0;
+   if( localQueue.size() == 0 )
+      return 0;
 
-   
+   int length;
+   int offset = 0;
    PacketFactory factory;
 
    int totalBytesLeftToWrite = m_maxBytesToSend;
@@ -315,10 +316,6 @@ int	Khaan :: UpdateOutwardPacketList()
 
       BasePacket* packet = localQueue.front();
       packet->SerializeOut( m_outboundBuffer, length, m_versionNumberMinor );
-    /*  if( packet->packetType == 9 )
-      {
-         sizeOfHeader = sizeOfHeader;
-      }*/
       
       totalBytesLeftToWrite -= length;
       if( totalBytesLeftToWrite < 0 )
@@ -365,14 +362,6 @@ bool Khaan :: AddOutputChainData( BasePacket* packet, U32 filingData )
 
    m_outputChainListMutex.lock();
    m_packetsOut.push_back( packet );
-   if( packet->packetType == 221 )
-   {
-      cout << "Bad packet:" << endl;
-      cout << "Type" << (int)packet->packetType << endl;
-      cout << "Subtype" << (int)packet->packetSubType << endl;
-      cout << "Game id" << (int)packet->gameProductId << endl;
-      assert( packet->packetType != 221 );
-   }
    m_outputChainListMutex.unlock();
    return true; 
 }
@@ -425,7 +414,7 @@ void     Khaan :: OnDataAvailable( struct bufferevent* bufferEventObj, void* arg
    if( This->m_isDisconnected )
       return;
 
-   //cout << "Data avail:" << endl;
+   //LogMessage( LOG_PRIO_INFO, "Data avail:" );
    struct evbuffer *input = bufferevent_get_input( bufferEventObj );
    size_t readLength = evbuffer_get_length( input );
    const U32   MaxBufferSize = 12*1024;// allowing for massive, reads that should never happen
@@ -438,6 +427,7 @@ void     Khaan :: OnDataAvailable( struct bufferevent* bufferEventObj, void* arg
       U8* tempBuffer = new U8 [ readLength ];
 
       size_t      numBytesReceived = bufferevent_read( bufferEventObj, tempBuffer, readLength );
+      numBytesReceived = numBytesReceived;
       This->OnDataReceived( tempBuffer, static_cast< int>( readLength ) );
 
       delete [] tempBuffer;
@@ -457,12 +447,12 @@ void     Khaan :: OnDataAvailable( struct bufferevent* bufferEventObj, void* arg
       
       if( totalBytes > 0 && This->m_isDisconnected == false )
       {
-       /*  cout << "data=[" << endl;
+       /*  LogMessage( LOG_PRIO_INFO, "data=[" );
          for( U32 i=0; i<totalBytes; i++ )
          {
-            cout << (int)( dataBuffer[i] ) << " ";
+            LogMessage( LOG_PRIO_INFO, (int)( dataBuffer[i] ) << " ";
          }
-         cout << "]" << endl;*/
+         LogMessage( LOG_PRIO_INFO, "]" );*/
 
          This->OnDataReceived( dataBuffer, static_cast< int>( totalBytes ) );
       }
@@ -517,11 +507,12 @@ void     Khaan :: ClearAllPacketsIn()
    m_packetsIn.clear();
    m_inputChainListMutex.unlock();
 
+   PacketFactory factory;
    while( localQueue.size() )
    {
       BasePacket* packet = localQueue.front();
       localQueue.pop_front();
-      delete packet;
+      factory.CleanupPacket( packet );
    }
 }
 
@@ -534,11 +525,12 @@ void     Khaan :: ClearAllPacketsOut()
    m_packetsOut.clear();
    m_outputChainListMutex.unlock();
 
+   PacketFactory factory;
    while( localQueue.size() )
    {
       BasePacket* packet = localQueue.front();
       localQueue.pop_front();
-      delete packet;
+      factory.CleanupPacket( packet );
    }
 }
 
@@ -553,11 +545,11 @@ void	   Khaan::OnSocketError( struct bufferevent* bufferEventObj, short events, 
    {
       /* Client disconnected, remove the read event and the
       * free the Khaan structure. */
-      cout << "Client disconnected." << endl;
+      LogMessage( LOG_PRIO_INFO, "Client disconnected." );
    }
    else 
    {
-      cout << "Client socket error, disconnecting." << endl;
+      LogMessage( LOG_PRIO_ERR, "Client socket error, disconnecting." );
    }
 
    //khaan->m_isDisconnected = true; // prevents handling of future data... just in case

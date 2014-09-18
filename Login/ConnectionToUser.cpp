@@ -55,11 +55,11 @@ ConnectionToUser:: ConnectionToUser( const string& name, const string& pword, co
                      m_showWinLossRecord( true ),
                      m_marketingOptOut( false ),
                      m_showGenderProfile( false ),
-                     m_isSavingUserProfile( false ),
-                     m_hasRequestedPurchasesFromClient( false ),
                      m_displayOnlineStatusToOtherUsers( false ),
                      m_blockContactInvitations( false ),
-                     m_blockGroupInvitations( false )
+                     m_blockGroupInvitations( false ),
+                     m_isSavingUserProfile( false ),
+                     m_hasRequestedPurchasesFromClient( false )
                      {}
 
 //-----------------------------------------------------------------
@@ -81,13 +81,21 @@ bool  ConnectionToUser::HandleAdminRequestUserProfile( const PacketDbQueryResult
          UserPlusProfileTable             enigma( dbResult->bucket );
          ConnectionToUser& conn = it->second;
          conn.CopyUserSettings( enigma, 0 );
-         //if( dbResult->serverLookup != 0 )
-         {
-            conn.PackUserProfileRequestAndSendToClient( m_connectionId, m_gatewayId );
-         }
          if( *isFullProfile )
          {
             RequestListOfPurchases( conn.m_userUuid );
+         }
+         else
+         {
+            if( conn.m_userUuid == m_userUuid )
+            {
+               conn.PackUserProfileRequestAndSendToClient( m_connectionId, m_gatewayId );
+            }
+            else
+            {
+               
+               conn.PackOtherUserProfileRequestAndSendToClient( m_connectionId, m_gatewayId );
+            }
          }
       }
       else
@@ -107,7 +115,7 @@ bool  ConnectionToUser::HandleAdminRequestUserProfile( const PacketDbQueryResult
 
 bool  ConnectionToUser::EchoHandler()
 {
-   cout << " Echo " << endl;
+   LogMessage( LOG_PRIO_INFO, " Echo " );
    PacketLogin_EchoToClient* echo = new PacketLogin_EchoToClient;
    m_userManager->SendPacketToGateway( echo, m_connectionId, m_gatewayId );
    return true;
@@ -260,7 +268,7 @@ void  ConnectionToUser::SaveUpdatedProfile( const PacketUpdateUserProfile* profi
       TellContactServerToReloadUserProfile();
       
    }
-   PackUserProfileRequestAndSendToClient( m_connectionId );
+   PackUserProfileRequestAndSendToClient( m_connectionId, m_gatewayId );
 
    m_isSavingUserProfile = false;
 }
@@ -311,7 +319,7 @@ void  ConnectionToUser::WriteUserProfile()
    query += boost::lexical_cast<string>( m_showGenderProfile?1:0 );
    query += ",mber_avatar=";
    query += boost::lexical_cast<string>( m_avatarIcon );
-   if( m_userMotto.size() == NULL )
+   if( m_userMotto.size() == 0 )
    {
       query += ",motto=NULL,";
    }
@@ -390,7 +398,7 @@ bool  ConnectionToUser::FinalizeLogout()
    m_isLoggingOut = false;
    m_isReadyToBeCleanedUp = true;
 
-   cout << "User "<< m_userName << ":" << m_userUuid << " logout at " << GetDateInUTC() << endl;
+   LogMessage( LOG_PRIO_INFO, "User %s:%s logout at %s", m_userName.c_str(), m_userUuid.c_str(), GetDateInUTC().c_str() );
 
    //m_userManager->SendPacketToGateway( logout, m_connectionId, m_gatewayId );
    return m_userManager->AddQueryToOutput( dbQuery );
@@ -487,7 +495,7 @@ bool    ConnectionToUser:: SuccessfulLoginFinished( U32 connectId, bool isRelogg
    if( m_isActive == false )
    {
       success = false; // we only have this one condition right now.
-      cout << "User is inactive and will not be able to login" << endl;
+      LogMessage( LOG_PRIO_ERR, "User is inactive and will not be able to login" );
    }
 
    PacketLoginToGateway* loginStatus = new PacketLoginToGateway();
@@ -531,11 +539,11 @@ bool    ConnectionToUser:: SuccessfulLoginFinished( U32 connectId, bool isRelogg
 
    if( success == true )
    {
-      cout << "User successfull login at " << GetDateInUTC() << endl;
+      LogMessage( LOG_PRIO_INFO, "User successful login at %s", GetDateInUTC().c_str() );
    }
    else
    {
-      cout << "User unsuccessfull login at " << GetDateInUTC() << endl;
+      LogMessage( LOG_PRIO_INFO, "User unsuccessful login at %s", GetDateInUTC().c_str() );
    }
    return success;//SendLoginStatusToOtherServers( userName, userUuid, m_connectionId, m_gameProductId, m_lastLoginTime, active, email, passwordHash, userId, loginKey, true, false );
 }
@@ -578,8 +586,8 @@ bool     ConnectionToUser:: HandleRequestForListOfPurchases( const PacketListOfU
 {
    if( purchase->userUuid == m_userUuid )
    {
-      cout << "HandleRequestForListOfPurchases: SendListOfProductsToClientAndAsset" << endl;
-      SendListOfProductsToClientAndAsset( m_connectionId );
+      LogMessage( LOG_PRIO_INFO, "HandleRequestForListOfPurchases: SendListOfProductsToClientAndAsset" );
+      SendListOfProductsToClientAndAsset( m_connectionId, m_gatewayId );
    }
 
    return true;
@@ -587,20 +595,20 @@ bool     ConnectionToUser:: HandleRequestForListOfPurchases( const PacketListOfU
 
 //---------------------------------------------------------------
 
-void     ConnectionToUser:: SendListOfProductsToClientAndAsset( U32 m_connectionId )
+void     ConnectionToUser:: SendListOfProductsToClientAndAsset( U32 connectionId, U32 gatewayId )
 {
    // Also, we must send before because the client is likely to begin requesting assets immediately and we 
    // will hand back the wrong assts in that case.
-   m_userManager->SendListOfUserProductsToAssetServer( m_connectionId );
+   m_userManager->SendListOfUserProductsToAssetServer( connectionId );
 
-   SendListOfOwnedProductsToClient( m_connectionId );
+   SendListOfOwnedProductsToClient( connectionId, gatewayId );
 }
 
 //---------------------------------------------------------------
 
-void     ConnectionToUser:: SendListOfOwnedProductsToClient( U32 m_connectionId )
+void     ConnectionToUser:: SendListOfOwnedProductsToClient( U32 connectionId, U32 gatewayId )
 {
-   cout << "Sending user his/her list of products" << endl;
+   LogMessage( LOG_PRIO_INFO, "Sending user his/her list of products" );
 
    PacketListOfUserAggregatePurchases* purchases = new PacketListOfUserAggregatePurchases;
 
@@ -631,7 +639,7 @@ void     ConnectionToUser:: SendListOfOwnedProductsToClient( U32 m_connectionId 
    }
 
    int num = purchases->purchases.size();
-   cout << "SendListOfOwnedProductsToClient:: list of products: num=" << num << endl;
+   LogMessage( LOG_PRIO_INFO, "SendListOfOwnedProductsToClient:: list of products: num= %d", num );
   /* for( int i=0; i< num; i++ )
    {
       const PurchaseEntry& pe = purchases->purchases[i];
@@ -639,9 +647,9 @@ void     ConnectionToUser:: SendListOfOwnedProductsToClient( U32 m_connectionId 
       cout << i << ") Uuid:    " << pe.productUuid << endl;
       cout << "   name:        " << pe.name << endl;
    }*/
-   cout << "endlist" << endl << endl;
+   //cout << "endlist" << endl << endl;
 
-   m_userManager->SendPacketToGateway( purchases, m_connectionId, m_gatewayId );
+   m_userManager->SendPacketToGateway( purchases, connectionId, gatewayId );
 }
 
 
@@ -686,8 +694,8 @@ bool     ConnectionToUser:: AddPurchase( const PacketAddPurchaseEntry* purchase 
          WriteProductToUserRecord( m_userUuid, productUuid, price, numToGive, m_userUuid, "add purchase entry to self by admin" );
          AddToProductsOwned( productInfo.productId, productInfo.lookupName, productUuid, numToGive, productInfo.vendorUuid );
         
-         cout << "AddPurchase: SendListOfProductsToClientAndAsset" << endl;
-         SendListOfProductsToClientAndAsset( m_connectionId );
+         LogMessage( LOG_PRIO_INFO, "AddPurchase: SendListOfProductsToClientAndAsset" );
+         SendListOfProductsToClientAndAsset( m_connectionId, m_gatewayId );
          return true;
       }
 
@@ -708,13 +716,13 @@ bool     ConnectionToUser:: AddPurchase( const PacketAddPurchaseEntry* purchase 
          WriteProductToUserRecord( it->second.m_userUuid, productUuid, price, numToGive, m_userUuid, "add purchase entry by admin" );
 
          it->second.AddToProductsOwned( productInfo.productId, productInfo.lookupName, productUuid, numToGive, productInfo.vendorUuid );
-         it->second.SendListOfOwnedProductsToClient( m_connectionId );
+         it->second.SendListOfOwnedProductsToClient( m_connectionId, m_gatewayId );
 
          ConnectionToUser* loadedConnection = m_userManager->GetLoadedUserConnectionByUuid( m_userUuid );
          if( loadedConnection )
          {
             loadedConnection->AddToProductsOwned( productInfo.productId, productInfo.lookupName, productInfo.uuid, 1, productInfo.vendorUuid );
-            loadedConnection->SendListOfOwnedProductsToClient( m_connectionId );
+            loadedConnection->SendListOfOwnedProductsToClient( m_connectionId, m_gatewayId );
          }
          return true;
       }
@@ -732,11 +740,11 @@ bool     ConnectionToUser:: AddPurchase( const PacketAddPurchaseEntry* purchase 
 bool     ConnectionToUser:: StoreUserPurchases( const PacketListOfUserAggregatePurchases* deviceReportedPurchases )// only works for self
 {
    int numItems = deviceReportedPurchases->purchases.size();
-   cout << " ************************ " << endl;
-   cout << " user purchases reported for user: " << m_userName << " : " << m_userUuid << endl;
+   LogMessage( LOG_PRIO_INFO, "**************************" );
+   LogMessage( LOG_PRIO_INFO, " user purchases reported for user: %s : %s", m_userName.c_str(), m_userUuid.c_str() );
    if( numItems == 0 )
    {
-      cout << "   None" << endl;
+      LogMessage( LOG_PRIO_INFO, "   None" );
    }
 
    bool resendUserPurchaseList = false;
@@ -751,13 +759,13 @@ bool     ConnectionToUser:: StoreUserPurchases( const PacketListOfUserAggregateP
       //----------------
       if( purchaseEntry.name.size() == 0 )// we can't do anything with this.
       {
-         cout << "   ***Invalid product id...title: " << purchaseEntry.productUuid << "   name: " << purchaseEntry.name << endl;
+         LogMessage( LOG_PRIO_ERR, "   ***Invalid product id...title: %s   name: %s", purchaseEntry.productUuid.c_str(), purchaseEntry.name.c_str() );
       }
       else
       {
          if( purchaseEntry.productUuid.size() == 0 )
          {
-            cout << "   ***Invalid product id...title: " << purchaseEntry.productUuid << "   name: " << purchaseEntry.name << endl;
+            LogMessage( LOG_PRIO_INFO, "   ***Invalid product id...title: %s   name: %s", purchaseEntry.productUuid.c_str(), purchaseEntry.name.c_str() );
             m_userManager->SendErrorToClient( m_connectionId, m_gatewayId, PacketErrorReport::ErrorType_Purchase_ProductUnknown ); 
             continue;
          }
@@ -772,17 +780,17 @@ bool     ConnectionToUser:: StoreUserPurchases( const PacketListOfUserAggregateP
             resendUserPurchaseList = true;
          }
       }
-      cout << "  " << i << ":   title: " << purchaseEntry.name << endl;
+      LogMessage( LOG_PRIO_INFO, "  %d:   title: %s", i, purchaseEntry.name.c_str() );
       
    }
 
-   cout << " ************************ " << endl;
+   LogMessage( LOG_PRIO_INFO, "************************* " );
 
 
    if( resendUserPurchaseList )
    {
-      cout << "StoreUserPurchases: SendListOfProductsToClientAndAsset" << endl;
-      SendListOfProductsToClientAndAsset( m_connectionId );
+      LogMessage( LOG_PRIO_INFO, "StoreUserPurchases: SendListOfProductsToClientAndAsset" );
+      SendListOfProductsToClientAndAsset( m_connectionId, m_gatewayId );
    }
 
    return true;
@@ -822,7 +830,7 @@ bool     ConnectionToUser:: StoreOffProductInUserRecord ( int userManagerIndex,
 {
    if( numPurchased <= 0 )
    {
-      cout << "Quantity listed as too low... must be at least 1. Rejected entry: " << productUuid << endl;
+      LogMessage( LOG_PRIO_ERR, "Quantity listed as too low... must be at least 1. Rejected entry: %d", productUuid.c_str() ) ;
       return false;
    }
 
@@ -881,7 +889,7 @@ void     ConnectionToUser:: AddCurrentlyLoggedInProductToUserPurchases()// only 
    const char* loggedInGameProductName = FindProductName( m_gameProductId );
    if( loggedInGameProductName == NULL )
    {
-      cout << "Major error: user logging in with a product not identified" << endl;
+      LogMessage( LOG_PRIO_ERR, "Major error: user logging in with a product not identified %d", m_gameProductId );
       m_userManager->SendErrorToClient( m_connectionId, m_gatewayId, PacketErrorReport::ErrorType_Login_CannotAddCurrentProductToUser ); 
       
       return;
@@ -891,7 +899,7 @@ void     ConnectionToUser:: AddCurrentlyLoggedInProductToUserPurchases()// only 
    bool found = m_userManager->GetProductByProductId( m_gameProductId, productInfo );
    if( found == false )
    {
-      cout << "Major error: user logging in with a product not in our list of loaded products" << endl;
+      LogMessage( LOG_PRIO_ERR, "Major error: user logging in with a product not in our list of loaded products %d", m_gameProductId );
       return;
    }
 
@@ -966,7 +974,7 @@ void     ConnectionToUser:: StoreListOfUsersProductsFromDB( PacketDbQueryResult*
 {
    if( m_userManager->IsPrintingFunctionNames() )
    {
-      cout << "StoreListOfUsersProductsFromDB" << endl;
+      LogMessage( LOG_PRIO_ERR, "StoreListOfUsersProductsFromDB" );
    }
    bool  didFindGameProduct = false;
 
@@ -995,7 +1003,7 @@ void     ConnectionToUser:: StoreListOfUsersProductsFromDB( PacketDbQueryResult*
 
    if( m_userManager->IsPrintingVerbose() )
    {
-      cout << "** products from DB ** " << endl;
+      LogMessage( LOG_PRIO_ERR, "** products from DB ** " );
    }
    while( it != enigma.end() )
    {
@@ -1009,9 +1017,9 @@ void     ConnectionToUser:: StoreListOfUsersProductsFromDB( PacketDbQueryResult*
 
       if( m_userManager->IsPrintingVerbose() )
       {
-         cout << index << ") vendorUuid:    " << productVendorUuid << endl;
-         cout << "   productUuid:        " << productUuid << endl;
-         cout << "   string lookup name: " << stringLookupName << endl;
+         LogMessage( LOG_PRIO_INFO, "%d) vendorUuid:    %s", index, productVendorUuid.c_str() );
+         LogMessage( LOG_PRIO_INFO, "   productUuid:        ", productUuid.c_str() );
+         LogMessage( LOG_PRIO_INFO, "   string lookup name: ", stringLookupName.c_str() );
       }
       if( m_gameProductId == productId )
       {
@@ -1027,7 +1035,7 @@ void     ConnectionToUser:: StoreListOfUsersProductsFromDB( PacketDbQueryResult*
    }
    if( m_userManager->IsPrintingVerbose() )
    {
-      cout << "** end products from DB ** " << endl;
+      LogMessage( LOG_PRIO_INFO, "** end products from DB ** " );
    }
 
    if( didFindGameProduct == false && shouldAddLoggedInProduct == true && loadedForSelf == true )
@@ -1037,13 +1045,13 @@ void     ConnectionToUser:: StoreListOfUsersProductsFromDB( PacketDbQueryResult*
 
    if( m_userManager->IsPrintingFunctionNames() )
    {
-      cout << "StoreListOfUsersProductsFromDB: SendListOfProductsToClientAndAsset" << endl;
+      LogMessage( LOG_PRIO_INFO, "StoreListOfUsersProductsFromDB: SendListOfProductsToClientAndAsset" );
    }
-   userWhoGetsProducts->SendListOfProductsToClientAndAsset( m_connectionId );
+   userWhoGetsProducts->SendListOfProductsToClientAndAsset( m_connectionId, m_gatewayId );
 
    if( loadedForSelf == false )
    {
-      userWhoGetsProducts->PackOtherUserProfileRequestAndSendToClient( m_connectionId );
+      userWhoGetsProducts->PackOtherUserProfileRequestAndSendToClient( m_connectionId, m_gatewayId );
    }
 
    if( m_hasRequestedPurchasesFromClient == false )
@@ -1066,10 +1074,10 @@ void     ConnectionToUser:: RequestListOfProductsFromClient()
 
 bool     ConnectionToUser:: HandleCheats( const PacketCheat* cheat )
 {
-   cout << endl << "---- Cheat received ----" << endl;
+   LogMessage( LOG_PRIO_INFO, "\n---- Cheat received ----" );
    if( m_adminLevel < 1 )
    {
-      cout << "user admin level is too low" << endl;
+      LogMessage( LOG_PRIO_ERR, "user admin level is too low" );
       return false;
    }
 
@@ -1082,14 +1090,15 @@ bool     ConnectionToUser:: HandleCheats( const PacketCheat* cheat )
 
    
    //int count = 0;
+   string str;
    std::vector<std::string>::iterator it =  strings.begin();
    while( it != strings.end() )
    {
-      cout << *it++ ;
+      str += *it++;
       if( it != strings.end() )
-         cout << ", ";
+         str += ", ";
    }
-   cout << endl;
+   LogMessage( LOG_PRIO_INFO, str.c_str() );
 
    string command = *strings.begin();
    string param = *(strings.begin()+1);
@@ -1152,8 +1161,8 @@ bool     ConnectionToUser:: HandleCheat_AddProduct( const string& productName )
       if( loadedConnection )
       {
          loadedConnection->AddToProductsOwned( productInfo.productId, productInfo.lookupName, productInfo.uuid, 1, productInfo.vendorUuid );
-         cout << "HandleCheat_AddProduct: SendListOfProductsToClientAndAsset" << endl;
-         loadedConnection->SendListOfProductsToClientAndAsset( m_connectionId );
+         LogMessage( LOG_PRIO_INFO, "HandleCheat_AddProduct: SendListOfProductsToClientAndAsset" );
+         loadedConnection->SendListOfProductsToClientAndAsset( m_connectionId, m_gatewayId );
       }
    }
 
@@ -1185,7 +1194,7 @@ void  ConnectionToUser:: PackUserSettings( type* response )
 }
 
 
-void     ConnectionToUser:: PackUserProfileRequestAndSendToClient( U32 m_connectionId, U32 gatewayId )
+void     ConnectionToUser:: PackUserProfileRequestAndSendToClient( U32 connectionId, U32 gatewayId )
 {
    PacketRequestUserProfileResponse* response = new PacketRequestUserProfileResponse;
    // string userName, string email, string userUuid, string m_lastLoginTime, string m_loggedOutTime, int m_adminLevel, bool m_isActive, bool showWinLossRecord, bool marketingOptOut, bool showGenderProfile
@@ -1205,12 +1214,12 @@ void     ConnectionToUser:: PackUserProfileRequestAndSendToClient( U32 m_connect
 
    if( gatewayId == 0 )
       gatewayId = m_gatewayId;
-   m_userManager->SendPacketToGateway( response, m_connectionId, gatewayId );
+   m_userManager->SendPacketToGateway( response, connectionId, gatewayId );
 }
 
 //-----------------------------------------------------------------
 
-void     ConnectionToUser:: PackOtherUserProfileRequestAndSendToClient( U32 m_connectionId )
+void     ConnectionToUser:: PackOtherUserProfileRequestAndSendToClient( U32 connectionId, U32 gatewayId )
 {
    PacketRequestOtherUserProfileResponse* response = new PacketRequestOtherUserProfileResponse;
 
@@ -1245,7 +1254,7 @@ void     ConnectionToUser:: PackOtherUserProfileRequestAndSendToClient( U32 m_co
       it++;
    }
 
-   m_userManager->SendPacketToGateway( response, m_connectionId, m_gatewayId );
+   m_userManager->SendPacketToGateway( response, connectionId, gatewayId );
 }
 
 //-----------------------------------------------------------------
@@ -1253,7 +1262,7 @@ void     ConnectionToUser:: PackOtherUserProfileRequestAndSendToClient( U32 m_co
 
 void     ConnectionToUser:: ClearAllProductsOwned()
 {
-   cout << "ClearAllProductsOwned for user " << m_userName << ":" << m_userUuid << endl;
+   LogMessage( LOG_PRIO_INFO, "ClearAllProductsOwned for user %s : %s", m_userName.c_str(), m_userUuid.c_str() );
    productsOwned.clear();
    productVendorUuids.clear();
 }

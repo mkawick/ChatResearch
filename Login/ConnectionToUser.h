@@ -31,6 +31,7 @@ struct ConnectionToUser
    void     SetManager( DiplodocusLogin* manager )  { m_userManager = manager; }
    bool     IsLoggingOut() const { return m_loggedOutTime != 0 && status == LoginStatus_Invalid; }
    void     ClearLoggingOutStatus() { m_loggedOutTime = 0; m_isReadyToBeCleanedUp = false; }
+   void     SetLoggedOutTime( time_t logoutTime ) { m_loggedOutTime = logoutTime; }
    bool     CanContinueLogginIn() const { return m_isActive && ( m_isReadyToBeCleanedUp == false ); }
 
    time_t   GetLoginTime() const { return m_loginTime; }
@@ -42,6 +43,12 @@ struct ConnectionToUser
    void     SetGatewayId( U32 gatewayId ) { m_gatewayId = gatewayId; }
    U32      GetGatewayId() const { return m_gatewayId; }
 
+   const string& GetId() const            { return m_id; }
+   const string& GetUuid() const          { return m_userUuid; }
+   const string& GetName() const          { return m_userName; }
+   const string& GetPasswordHash() const  { return m_passwordHash; }
+   const string& GetEmail() const         { return m_email; }
+
    //------------------------------------------------
 
    void     LoginResult( PacketDbQueryResult* dbResult );
@@ -50,6 +57,7 @@ struct ConnectionToUser
    
    bool     StoreProductInfo( PacketDbQueryResult* dbResult );
    bool     IsReadyToBeCleanedUp() const { return m_isReadyToBeCleanedUp; }
+   void     ForceCleanupState() { m_isReadyToBeCleanedUp = true; }
 
    //------------------------------------------------
    
@@ -174,12 +182,12 @@ protected:
    void     PackUserProfileRequestAndSendToClient( U32 connectionId, U32 gatewayId = 0 );
    template < typename type >
    void     PackUserSettings( type* response );
-   void     PackOtherUserProfileRequestAndSendToClient( U32 connectionId );
+   void     PackOtherUserProfileRequestAndSendToClient( U32 connectionId, U32 gatewayId );
 
    void     ClearAllProductsOwned();
    bool     AddToProductsOwned( int productDbId, const string& productName, const string& productUuid, float quantity, const string& vendorUuid );
-   void     SendListOfProductsToClientAndAsset( U32 connectionId );
-   void     SendListOfOwnedProductsToClient( U32 connectionId );
+   void     SendListOfProductsToClientAndAsset( U32 connectionId, U32 gateway );
+   void     SendListOfOwnedProductsToClient( U32 connectionId, U32 gateway );
    void     TellContactServerToReloadUserProfile();
    void     RequestListOfProductsFromClient();
 

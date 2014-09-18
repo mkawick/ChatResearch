@@ -70,8 +70,8 @@ private:
    bool     HandlePacketRequests( PacketContact* packet, U32 connectionId, U32 gatewayId );
    //bool     HandleDbQueryResult( PacketDbQueryResult* result );
 
-   bool     ConnectUser( PacketPrepareForUserLogin* login );
-   bool     DisconnectUser( PacketPrepareForUserLogout* login );
+   bool     ConnectUser( const PacketPrepareForUserLogin* login );
+   bool     DisconnectUser( const PacketPrepareForUserLogout* login );
    bool     UpdateUser( const string& userUuid, U32 connectionId, U32 gatewayId );
 
    bool     UpdateUserProfile( const PacketUserUpdateProfile* profile );
@@ -120,10 +120,10 @@ private:
    U32                              m_secondsBetweenSendingInvitationAndExpiration;
 
    UserLookupManager*               m_userLookup;
-   bool                             m_invitationManagerNeedsUpdate;
+   bool                             m_userLookupNeedsUpdate;
 
    InvitationManager*               m_invitationManager;
-   bool                             m_userLookupNeedsUpdate;
+   bool                             m_invitationManagerNeedsUpdate;
 
    enum QueryType 
    {

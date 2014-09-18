@@ -145,6 +145,7 @@ bool     ChatUser::HandleClientRequest( BasePacket* packet )
          case PacketChatToServer::ChatType_EchoToServer:
             {
                PacketChatToServer* chat = static_cast< PacketChatToServer* >( packet );
+               chat = chat;
                EchoHandler();
             }
             break;
@@ -485,6 +486,7 @@ bool  ChatUser:: RequestUserProfileInfo()
    dbQuery->query += "'";
 
    bool success = m_chatServer->AddQueryToOutput( dbQuery, m_connectionId );
+   success = success;
 
    return true;
 }
@@ -780,7 +782,7 @@ void     ChatUser::SendChatHistorySinceLastLogin( const vector< MissedChatChanne
    cout << "SendChatHistorySinceLastLogin for user " << m_userName << endl;
    cout << " history size = " << history.size() << endl;
 
-   const int maxNumMessagesPerPacket = 20;
+   const U32 maxNumMessagesPerPacket = 20;
    if( history.size() == 0 )
    {
       //m_chatServer->SendErrorToClient( m_connectionId, PacketErrorReport::ErrorType_NoChatHistoryExistsForThisUser );
@@ -792,7 +794,7 @@ void     ChatUser::SendChatHistorySinceLastLogin( const vector< MissedChatChanne
    while( history.size() - startingIndex > maxNumMessagesPerPacket )
    {
       PacketChatMissedHistoryResult* result = new PacketChatMissedHistoryResult;
-      for( int i=0; i< maxNumMessagesPerPacket; i++ )
+      for( U32 i=0; i< maxNumMessagesPerPacket; i++ )
       {
          result->history.push_back( history [ startingIndex ] );
          startingIndex++;

@@ -17,9 +17,13 @@ public:
    };
    typedef list< DataRow >  DataSet;
 public:
-   BasePacketDbQuery( int packet_type = PacketType_DbQuery, int packet_sub_type = QueryType_Query ): BasePacket( packet_type, packet_sub_type ), id( 0 ), lookup( 0 ), serverLookup( 0 ), dbConnectionType( 0 ), customData( NULL ) {}
-   //BasePacketDbQuery( const BasePacketDbQuery& query ) : BasePacket( query.packetType, query.packetSubType), id( query.id ), lookup( query.lookup ), serverLookup( query.serverLookup ), hitsTempDb( query.hitsTempDb ), customData( query.customData )  {}
-   //~BasePacketDbQuery();
+   BasePacketDbQuery( int packet_type = PacketType_DbQuery, int packet_sub_type = QueryType_Query ): 
+               BasePacket( packet_type, packet_sub_type ), 
+               lookup( 0 ), 
+               id( 0 ),                
+               serverLookup( 0 ), 
+               dbConnectionType( 0 ), 
+               customData( NULL ) {}
 
    bool  SerializeIn( const U8* data, int& bufferOffset, int minorVersion );
    bool  SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const;
@@ -29,7 +33,6 @@ public:
    U32      serverLookup;
    U8       dbConnectionType;
    string   meta;
-
    void*          customData;
 
 private: 

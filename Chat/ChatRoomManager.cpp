@@ -32,17 +32,18 @@ const int maxNumPlayersInChatRoom = 32;
 ///////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////
 
-ChatRoomManager::ChatRoomManager(): m_dbIdTracker( 0 ),
-                                          m_isInitialized( false ),
-                                          m_numChannelsToLoad( 0 ),
-                                          m_numUsersToLoadPerQueryForInitialLoad( 1000 ),
-                                          m_offsetIndex_QueryForInitialLoad( 0 ),
-                                          m_isPullingAllUsersAndChannels( false ),
-                                          m_numChannelChatsSent( 0 ),
-                                          m_numP2PChatsSent( 0 ),
-                                          m_numChangesToChatRoom( 0 ),
-                                          m_dbIdentifier( 0 )
+ChatRoomManager::ChatRoomManager(): m_isInitialized( false ),
+                                    m_dbIdTracker( 0 ),
+                                    m_numChannelsToLoad( 0 ),
+                                    m_numUsersToLoadPerQueryForInitialLoad( 1000 ),
+                                    m_offsetIndex_QueryForInitialLoad( 0 ),
+                                    m_isPullingAllUsersAndChannels( false ),
+                                    m_numChannelChatsSent( 0 ),
+                                    m_numP2PChatsSent( 0 ),
+                                    m_numChangesToChatRoom( 0 ),
+                                    m_dbIdentifier( 0 )
 {
+   time(& m_initializationTimeStamp );
    //m_inboundPackets.reserve( 120 );// absolutely arbitrary.. it seems big enough and log(n) means that this will never be reallocated much
 }
 
@@ -274,7 +275,8 @@ bool     ChatRoomManager::ProcessDbResult( PacketDbQueryResult* dbResult, ChatRo
 
       }
       break;
-      
+   default:
+      return false;
    }
    return true;
 }
@@ -883,7 +885,7 @@ bool     ChatRoomManager::LoadSingleRoom( const string& channelUuid )
    cout << "LoadSingleRoom " << channelUuid << endl;
 
    string queryString = "SELECT * FROM chat_channel WHERE uuid='%s'";
-   U32 serverId = 0;
+   //U32 serverId = 0;
    
    list< string > sanitizedStrings;
    sanitizedStrings.push_back( channelUuid );
@@ -1330,7 +1332,7 @@ bool     ChatRoomManager::AddUserToRoom( const PacketChatAddUserToChatChannelGam
    const string addedUserUuid = request->userUuid.c_str(); // user to remove
 
    string errorText = " AddUserToRoom: Game server ";
-   errorText += boost::lexical_cast< string >( request->gameInstanceId );
+   errorText += boost::lexical_cast< string >( gameInstanceId );
    errorText += " tried to add another user ";
    errorText += addedUserUuid;
    errorText += " to channel ";
@@ -1348,7 +1350,7 @@ bool     ChatRoomManager::AddUserToRoom( const PacketChatAddUserToChatChannelGam
    {
       errorText += " but channel does not exist ";
       m_chatServer->Log( errorText, 1 );
-      PackageAndSendToOtherServer( response, request->gameInstanceId );
+      PackageAndSendToOtherServer( response, gameInstanceId );
       return false;
    }
 
@@ -1358,7 +1360,7 @@ bool     ChatRoomManager::AddUserToRoom( const PacketChatAddUserToChatChannelGam
    {
       if( userIt->userUuid == addedUserUuid )
       {
-         PackageAndSendToOtherServer( response, request->gameInstanceId );// failure
+         PackageAndSendToOtherServer( response, gameInstanceId );// failure
          return false;
       }
       userIt++;
@@ -1370,7 +1372,7 @@ bool     ChatRoomManager::AddUserToRoom( const PacketChatAddUserToChatChannelGam
    {
       errorText += " but the added user does not exist in ChatRoomManager";
       m_chatServer->Log( errorText, 1 );
-      PackageAndSendToOtherServer( response, request->gameInstanceId );// failure
+      PackageAndSendToOtherServer( response, gameInstanceId );// failure
       return false;
    }
 
@@ -1380,7 +1382,7 @@ bool     ChatRoomManager::AddUserToRoom( const PacketChatAddUserToChatChannelGam
    AddUserToRoomAndWriteToDB( channelUuid, addedUserUuid, userName );
 
    response->success = true;
-   PackageAndSendToOtherServer( response, request->gameInstanceId );
+   PackageAndSendToOtherServer( response, gameInstanceId );
 
    // tell all clients that a user was added to the chat channel   
    userIt = channelMapData.userBasics.begin();
@@ -1522,6 +1524,7 @@ bool     ChatRoomManager::UserAddsSelfToGroup( const string& channelUuid, const 
    }
 
    const UsersChatRoomList& recipient = addedUserIter->second;
+   bool isOnline = recipient.isOnline; isOnline = isOnline;// just for the compiler warning
 
 
    stringhash channelHash = GenerateUniqueHash( channelUuid );   
@@ -1686,7 +1689,7 @@ bool     ChatRoomManager::RemoveUserFromRoom( const PacketChatRemoveUserFromChat
    if( channelIter == m_channelMap.end() )
    {
       string errorText = " RemoveUserFromRoom: Game server ";
-      errorText += boost::lexical_cast< string >( request->gameInstanceId );
+      errorText += boost::lexical_cast< string >( gameInstanceId );
       errorText += " tried to remove user ";
       errorText += userUuid;
       errorText += " from channel ";
@@ -1695,7 +1698,7 @@ bool     ChatRoomManager::RemoveUserFromRoom( const PacketChatRemoveUserFromChat
       m_chatServer->Log( errorText, 1 );
        
 
-      PackageAndSendToOtherServer( response, request->gameInstanceId );
+      PackageAndSendToOtherServer( response, gameInstanceId );
       return false;
    }
 
@@ -1711,17 +1714,17 @@ bool     ChatRoomManager::RemoveUserFromRoom( const PacketChatRemoveUserFromChat
    }
    if( userIt == channelMapData.userBasics.end() )
    {
-      PackageAndSendToOtherServer( response, request->gameInstanceId );
+      PackageAndSendToOtherServer( response, gameInstanceId );
       return false;
    }
 
    const string& channelName = channelMapData.name;
    const string& channelUuid = channelMapData.uuid;
-   const string& userName = userIt->userName;
+   //const string& userName = userIt->userName;//
    RemoveUserFromRoomAndWriteToDB( channelUuid, userUuid );
 
    response->success = false;
-   PackageAndSendToOtherServer( response, request->gameInstanceId );
+   PackageAndSendToOtherServer( response, gameInstanceId );
   
    // tell all clients that a user was removed from the chat channel   
    userIt = channelMapData.userBasics.begin();

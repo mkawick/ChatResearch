@@ -7,6 +7,8 @@
 #include "../Packets/PacketFactory.h"
 #include "../Packets/PacketFactory.h"
 
+#include "../Logging/server_log.h"
+
 #if PLATFORM != PLATFORM_WINDOWS
 #include <arpa/inet.h>
 #include <stdarg.h>
@@ -39,7 +41,7 @@ bool        Diplodocus< InputChain, OutputChain >::InitializeNetworking()
    }
 
    if ( InitializeSockets() == false ) {
-      std::cout << "Socket startup failed with error " << endl;
+      LogMessage( LOG_PRIO_ERR, "Socket startup failed with error " );
       return false;
    }
 
@@ -93,13 +95,13 @@ bool        Diplodocus< InputChain, OutputChain >::SetupListeningSocket()
 
    m_isListeningWorking = true;
 
-   cout << " ******************************* " << endl;
-   cout << " >This server is now listening " << endl;
-   cout << "    name:              " << m_serverName << endl;
-   cout << "    id:                " << m_serverId << endl;
-   cout << "    connection type:   " << GetServerTypeName( m_serverType ) << "  " << m_serverType << endl;
-   cout << "    listening on port: " << m_listeningPort << endl;
-   cout << " ******************************* " << endl;
+   LogMessage( LOG_PRIO_INFO, " ******************************* " );
+   LogMessage( LOG_PRIO_INFO, " >This server is now listening " );
+   LogMessage( LOG_PRIO_INFO, "    name:              %s", m_serverName.c_str() );
+   LogMessage( LOG_PRIO_INFO, "    id:                %u", m_serverId );
+   LogMessage( LOG_PRIO_INFO, "    connection type:   %s  %d", GetServerTypeName( m_serverType ), m_serverType );
+   LogMessage( LOG_PRIO_INFO, "    listening on port: %d", m_listeningPort );
+   LogMessage( LOG_PRIO_INFO, " ******************************* " );
 
 	return true;
 }
@@ -114,11 +116,11 @@ bool     Diplodocus< InputChain, OutputChain >::Run()
 
    if( libEvent == NULL )
    {
-      cout << "Uninitialized networking. Please invoke SetupListening before Run" << endl;
+      LogMessage( LOG_PRIO_ERR, "Uninitialized networking. Please invoke SetupListening before Run" );
       return false;
    }
 
-   cout << endl << "Networking is setup and working .. begin accepting connections" << endl;
+   LogMessage( LOG_PRIO_INFO, "\nNetworking is setup and working .. begin accepting connections" );
    // Start the event loop. this is a blocking call.
    event_base_dispatch( libEvent );
 
@@ -298,9 +300,8 @@ bool     Diplodocus< InputChain, OutputChain >::SendPacketToGateway( BasePacket*
    PacketGatewayWrapper* wrapper = new PacketGatewayWrapper();
    wrapper->SetupPacket( packet, connectionId );
  
-   U32 chainId = 0;
    { // be very careful here... this extra effort was made to prevent locks inside of locks
-      m_inputChainListMutex.lock();
+      Threading::MutexLock Locker( m_inputChainListMutex );
 
       ChainLinkIteratorType itInputs = m_listOfInputs.begin();
       while( itInputs != m_listOfInputs.end() )// only one output currently supported.
@@ -314,18 +315,12 @@ bool     Diplodocus< InputChain, OutputChain >::SendPacketToGateway( BasePacket*
 
          if( connection->AddOutputChainData( wrapper, connectionId ) == true )
          {
-            chainId = connection->GetChainedId();
-            break;
+            MarkConnectionAsNeedingUpdate( connection->GetChainedId() );
+            return true;
          }
       }
-      m_inputChainListMutex.unlock();
    }
 
-   if( chainId )
-   {
-      MarkConnectionAsNeedingUpdate( chainId );
-      return true;
-   }
    return false;
 }
 
@@ -560,7 +555,7 @@ void  Diplodocus< InputChain, OutputChain >::MarkAllConnectionsAsNeedingUpdate( 
 //---------------------------------------------------------------
 
 template< typename InputChain, typename OutputChain >
-void  Diplodocus< InputChain, OutputChain >::MarkConnectionAsNeedingUpdate( int chainId )
+void  Diplodocus< InputChain, OutputChain >::MarkConnectionAsNeedingUpdate( U32 chainId )
 {
    Threading::MutexLock locker( m_mutex );
 
@@ -844,52 +839,6 @@ int      Diplodocus< InputChain, OutputChain >::MainLoop_OutputProcessing()
    return 0; 
 }
 
-//------------------------------------------------------------------------------------------
-
-template< typename PacketType, typename Processor >
-bool  SendRawData( const U8* data, int size, int dataType, int maxPacketSize, U32 serverId, U8 productId, const string& identifier, U32 connectionId, Processor* sender ) // diplodocus supposedly
-{
-   PacketFactory factory;
-   const U8* workingData = data;
-   int remainingSize = size;
-   int numSends = remainingSize / maxPacketSize + 1;
-
-   while( numSends > 0 )
-   {
-      int sizeToSend = remainingSize;
-      if( sizeToSend > maxPacketSize )
-      {
-         sizeToSend = maxPacketSize;
-      }
-
-      PacketType* responsePacket = new PacketType();
-            
-      responsePacket->Prep( sizeToSend, workingData, numSends );
-      responsePacket->identifier       = identifier;
-      responsePacket->gameInstanceId   = serverId;
-      responsePacket->gameProductId    = productId;
-      responsePacket->dataType         = dataType;
-      
-      PacketGatewayWrapper* wrapper    = new PacketGatewayWrapper;
-      wrapper->SetupPacket( responsePacket, connectionId );
-
-      if( sender->AddOutputChainData( wrapper, connectionId ) == false )
-      {
-         BasePacket* tempPack = static_cast< BasePacket* >( wrapper );
-         factory.CleanupPacket( tempPack );
-         
-         return false;
-      }
-
-      remainingSize -= sizeToSend;
-      workingData += sizeToSend;// offset the pointer
-      numSends --;
-      if( remainingSize <= 0 )
-         break;
-   }
-   return true;
-}
-
 ////////////////////////////////////////////////////////////////////////
 
 template <typename return_type, typename type >
@@ -918,7 +867,7 @@ return_type* PrepConnection( const string& remoteIpaddress, U16 remotePort, cons
                                              localServer->GetServerType(), localServer->GetPort(), 
                                              gameProductId, localServer->IsGameServer(), localServer->IsControllerApp(), requiresS2SWrapper, 
                                              localServer->GetGatewayType(), localServer->GetExternalIpAddress() );
-   cout << "server (" << remoteServerName << "): " << remoteIpaddress << ":" << remotePort << endl;
+   LogMessage( LOG_PRIO_INFO, "server (%s): (%s:%d)", remoteServerName.c_str(), remoteIpaddress.c_str(), remotePort );
    serverOut->Connect( remoteIpaddress.c_str(), remotePort );
    serverOut->Resume();
 
@@ -934,11 +883,11 @@ void  ConnectToMultipleGames( CommandLineParser& parser, type* localServer, bool
    vector< string > gamesConfiguration;
    if( parser.FindValue( "games", gamesConfiguration ) == false )
    {
-      cout << "No games were listed. No connections will be made with any games" << endl;
+      LogMessage( LOG_PRIO_ERR, "No games were listed. No connections will be made with any games" );
    }
 
    //U8    gameProductId = 0;
-   cout << "games found = " << endl << "[ " << endl; 
+   LogMessage( LOG_PRIO_INFO, "games found = \n[\n" ); 
    vector< string >::iterator it = gamesConfiguration.begin();
    while( it != gamesConfiguration.end() )
    {
@@ -946,7 +895,7 @@ void  ConnectToMultipleGames( CommandLineParser& parser, type* localServer, bool
       vector< string > values;
       if( parser.SeparateStringIntoValues( str, values, 3 ) == true )
       {
-         cout << boost::format("%15s ={ %6s - %-6s }")  % values[0] % values[1] % values[2] << endl;
+         LogMessage( LOG_PRIO_INFO, (boost::format("%15s ={ %6s - %-6s }")  % values[0] % values[1] % values[2]).str().c_str() );
          string gameAddress = values[0];
          string gameName = values[2];
          int port = 0;
@@ -958,7 +907,7 @@ void  ConnectToMultipleGames( CommandLineParser& parser, type* localServer, bool
          } 
          catch( boost::bad_lexical_cast const& ) 
          {
-             cout << "Error: input string was not valid" << endl;
+             LogMessage( LOG_PRIO_ERR, "Error: input string was not valid" );
          }
          if( success )
          {
@@ -967,10 +916,10 @@ void  ConnectToMultipleGames( CommandLineParser& parser, type* localServer, bool
       }
       else
       {
-         cout << "Not enough gamesConfiguration for this game:" << str << endl;
+         LogMessage( LOG_PRIO_ERR, "Not enough gamesConfiguration for this game: %s", str.c_str() );
       }
    }
-   cout << "]" << endl;
+   LogMessage( LOG_PRIO_INFO, "]" );
 }
 
 ////////////////////////////////////////////////////////////////////////

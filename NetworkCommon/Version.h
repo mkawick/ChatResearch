@@ -1,2 +1,2 @@
 
-static const char* ServerStackVersion = "0.76";
+static const char* ServerStackVersion = "0.86";

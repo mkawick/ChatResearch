@@ -24,19 +24,22 @@ using boost::format;
 /////////////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////////////
 
-MainGatewayThread::MainGatewayThread( const string& serverName, U32 serverId ) : Diplodocus< KhaanGateway > ( serverName, serverId, 0, ServerType_Gateway ), StatTrackingConnections(),
+MainGatewayThread::MainGatewayThread( const string& serverName, U32 serverId ) : 
+                                          Diplodocus< KhaanGateway > ( serverName, serverId, 0, ServerType_Gateway ), 
+                                          StatTrackingConnections(),
                                           m_highestNumSimultaneousUsersWatermark( 0 ),
                                           m_connectionIdTracker( 0 ),
+                                          m_connectionIdBeginningRange( 0 ),
+                                          m_connectionIdCountIds( 0 ),
                                           m_printPacketTypes( false ),
                                           m_printFunctionNames( false ),
-                                          m_reroutePort( 0 ),
+                                          m_connectionsRequireAuthentication( false ),
                                           m_isServerDownForMaintenence( false ),
                                           m_hasInformedConnectedClientsThatServerIsDownForMaintenence( false ),
                                           m_serverIsAvaitingLB_Approval( true ),
-                                          m_scheduledMaintnenceEnd( 0 ),
                                           m_scheduledMaintnenceBegins( 0 ),
-                                          m_connectionIdBeginningRange( 0 ),
-                                          m_connectionIdCountIds( 0 )
+                                          m_scheduledMaintnenceEnd( 0 ),                                          
+                                          m_reroutePort( 0 )
 {
    SetSleepTime( 16 );// 30 fps
    SetSendHelloPacketOnLogin( true );
@@ -69,7 +72,7 @@ void   MainGatewayThread::NotifyFinishedAdding( IChainedInterface* obj )
    //obj->
    if( m_printFunctionNames )
    {
-      LogMessage( 1, " NotifyFinishedAdding: added obj " );
+      LogMessage( LOG_PRIO_INFO, " NotifyFinishedAdding: added obj " );
    }
    //m_listOfInputs
 } 
@@ -83,7 +86,7 @@ U32      MainGatewayThread::GetNextConnectionId()
 
    if( m_printFunctionNames )
    {
-      LogMessage( 1, "MainGatewayThread::GetNextConnectionId" );
+      LogMessage( LOG_PRIO_INFO, "MainGatewayThread::GetNextConnectionId" );
    }
    m_inputChainListMutex.lock();
    U32 returnValue = m_connectionIdTracker;
@@ -120,11 +123,11 @@ bool  MainGatewayThread::AddInputChainData( BasePacket* packet, U32 connectionId
 {
    if( m_printFunctionNames )
    {
-      LogMessage( 1, "MainGatewayThread::AddInputChainData" );
+      LogMessage( LOG_PRIO_INFO, "MainGatewayThread::AddInputChainData" );
    }
    if( m_printPacketTypes )
    {
-      LogMessage( 1, "Packet to servers: %d:%d", (int)packet->packetType, (int)packet->packetSubType );
+      LogMessage( LOG_PRIO_INFO, "Packet to servers: %d:%d", (int)packet->packetType, (int)packet->packetSubType );
    }
    PrintDebugText( "AddInputChainData", 1);
    ConnectionMapIterator connIt = m_connectionMap.find( connectionId );
@@ -147,21 +150,21 @@ bool  MainGatewayThread::AddInputChainData( BasePacket* packet, U32 connectionId
          int type = ( packet->packetType );
          const char* packetTypeName = GetPacketTypename( (PacketType)type );
 
-         LogMessage( 1, "to servers Packet: %s %d:%d", packetTypeName, type, (int)packet->packetSubType );
+         LogMessage( LOG_PRIO_INFO, "to servers Packet: %s %d:%d", packetTypeName, type, (int)packet->packetSubType );
       
         /* string printer = "Packet to servers: ";
          printer += packetTypeName;
          printer += ":";
          printer += (int)packet->packetSubType;
-         LogMessage( 1, printer.c_str() );
-         LogMessage( 1, printer.c_str() );*/
+         LogMessage( LOG_PRIO_INFO, printer.c_str() );
+         LogMessage( LOG_PRIO_INFO, printer.c_str() );*/
       }
 
       Threading::MutexLock locker( m_inputChainListMutex );
       m_packetsToBeSentInternally.push_back( wrapper );
       if( m_printPacketTypes )
       {
-         LogMessage( 1, "    Packet to servers: true" );
+         LogMessage( LOG_PRIO_INFO, "    Packet to servers: true" );
       }
       return true;
    }
@@ -171,7 +174,7 @@ bool  MainGatewayThread::AddInputChainData( BasePacket* packet, U32 connectionId
       factory.CleanupPacket( packet );// it dies here. we should log this and try to disconnect the user
       if( m_printPacketTypes )
       {
-         LogMessage( 1, "    Packet to servers: false" );
+         LogMessage( LOG_PRIO_INFO, "    Packet to servers: false" );
       }
       return false;
    }
@@ -183,16 +186,16 @@ void     MainGatewayThread::InputConnected( IChainedInterface * chainedInput )
 {
    if( m_printFunctionNames )
    {
-      LogMessage( 1, "MainGatewayThread::InputConnected" );
+      LogMessage( LOG_PRIO_INFO, "MainGatewayThread::InputConnected" );
    }
    KhaanGateway* khaan = static_cast< KhaanGateway* >( chainedInput );
    string currentTime = GetDateInUTC();
 
    string printer = "Accepted connection at time:" + currentTime + " from " + inet_ntoa( khaan->GetIPAddress().sin_addr );
-   LogMessage( 1, printer.c_str() );
+   LogMessage( LOG_PRIO_INFO, printer.c_str() );
    if( m_printFunctionNames )
    {
-      LogMessage( 1, printer.c_str() );
+      LogMessage( LOG_PRIO_INFO, printer.c_str() );
    }
    PrintDebugText( "** InputConnected" , 1 );
    if( IsGatewayReady() == false )
@@ -223,7 +226,7 @@ void     MainGatewayThread::InputConnected( IChainedInterface * chainedInput )
    {
       m_highestNumSimultaneousUsersWatermark = numCurrentConnections;
    }
-   LogMessage( 1, "Highest watermark = ", m_highestNumSimultaneousUsersWatermark );
+   LogMessage( LOG_PRIO_INFO, "Highest watermark = %u", m_highestNumSimultaneousUsersWatermark );
 
    //khaan->SendThroughLibEvent( true );
 }
@@ -234,22 +237,23 @@ void     MainGatewayThread::InputRemovalInProgress( IChainedInterface * chainedI
 {
    if( m_printFunctionNames )
    {
-      LogMessage( 1, "MainGatewayThread::InputRemovalInProgress" );
+      LogMessage( LOG_PRIO_INFO, "MainGatewayThread::InputRemovalInProgress" );
    }
    KhaanGateway* khaan = static_cast< KhaanGateway* >( chainedInput );
    U32 connectionId = khaan->GetConnectionId();
+   connectionId = connectionId;
 
    SetupClientWaitingToBeRemoved( khaan );
 
    string currentTime = GetDateInUTC();
    string printer = "Client disconnection at time:" + currentTime + " from " + inet_ntoa( khaan->GetIPAddress().sin_addr );
-   LogMessage( 1, printer.c_str() );
+   LogMessage( LOG_PRIO_ERR, printer.c_str() );
    if( m_printFunctionNames )
    {
-      LogMessage( 1, printer.c_str() );
+      LogMessage( LOG_PRIO_ERR, printer.c_str() );
    }
 
-   PrintDebugText( "** InputRemovalInProgress" , 1 );
+   LogMessage( LOG_PRIO_ERR, "** InputRemovalInProgress" );
 
    // send notice to the login server
    // must be done before we clear the lists of ids
@@ -352,12 +356,14 @@ void     MainGatewayThread::OutputConnected( IChainedInterface * chainPtr )
 {
    FruitadensGateway* fruity = static_cast< FruitadensGateway* >( chainPtr );
    ServerType serverType = fruity->GetConnectedServerType();
+   serverType = serverType;
 }
 
 void     MainGatewayThread::OutputRemovalInProgress( IChainedInterface * chainPtr )
 {
    FruitadensGateway* fruity = static_cast< FruitadensGateway* >( chainPtr );
    ServerType serverType = fruity->GetConnectedServerType();
+   serverType = serverType;
 }
 
 //-----------------------------------------------------
@@ -395,14 +401,14 @@ void     MainGatewayThread::BroadcastPacketToAllUsers( const string& errorText, 
 void     MainGatewayThread::PrintFunctionNames( bool printingOn ) 
 {
    m_printFunctionNames = printingOn; 
-   LogMessage( 1, "Gateway side function name printing is " );
+   LogMessage( LOG_PRIO_INFO, "Gateway side function name printing is " );
    if( m_printFunctionNames == true )
    {
-      LogMessage( 1, "enabled" );
+      LogMessage( LOG_PRIO_INFO, "enabled" );
    }
    else
    {
-      LogMessage( 1, "disabled" );
+      LogMessage( LOG_PRIO_INFO, "disabled" );
    }
 }
 
@@ -412,14 +418,14 @@ void     MainGatewayThread::PrintFunctionNames( bool printingOn )
 void     MainGatewayThread::PrintPacketTypes( bool printingOn ) 
 {
    m_printPacketTypes = printingOn; 
-   LogMessage( 1, "Gateway side packet printing is " );
+   LogMessage( LOG_PRIO_INFO, "Gateway side packet printing is " );
    if( m_printPacketTypes == true )
    {
-      LogMessage( 1, "enabled" );
+      LogMessage( LOG_PRIO_INFO, "enabled" );
    }
    else
    {
-      LogMessage( 1, "disabled" );
+      LogMessage( LOG_PRIO_INFO, "disabled" );
    }
 }
 
@@ -429,7 +435,7 @@ void     MainGatewayThread::SetupReroute( const string& address, U16 port )
 {
    if( m_printFunctionNames )
    {
-      LogMessage( 1, "MainGatewayThread::SetupReroute" );
+      LogMessage( LOG_PRIO_INFO, "MainGatewayThread::SetupReroute" );
    }
    m_rerouteAddress = address;
    m_reroutePort = port;
@@ -462,7 +468,7 @@ bool     MainGatewayThread::OrderOutputs()
 {
    if( m_printFunctionNames )
    {
-      LogMessage( 1, "MainGatewayThread::OrderOutputs" );
+      LogMessage( LOG_PRIO_INFO, "MainGatewayThread::OrderOutputs" );
    }
 
    if( m_orderedOutputPacketHandlers.size() > 0 )
@@ -497,7 +503,7 @@ bool     MainGatewayThread::PushPacketToProperOutput( BasePacket* packet )
 {
    if( m_printFunctionNames )
    {
-      LogMessage( 1, "MainGatewayThread::PushPacketToProperOutput" );
+      LogMessage( LOG_PRIO_INFO, "MainGatewayThread::PushPacketToProperOutput" );
    }
 
    U32 packetType = packet->packetType;
@@ -516,16 +522,16 @@ bool     MainGatewayThread::PushPacketToProperOutput( BasePacket* packet )
 
    if( listOfOutputs.size() == 0 )
    {
-      LogMessage( 1, " *** packet received with which we cannot deal. ***" );
-      LogMessage( 1, "     type: %d", packetType );
-      LogMessage( 1, "     sub type: %d", packetSubType );
+      LogMessage( LOG_PRIO_INFO, " *** packet received with which we cannot deal. ***" );
+      LogMessage( LOG_PRIO_INFO, "     type: %d", packetType );
+      LogMessage( LOG_PRIO_INFO, "     sub type: %d", packetSubType );
 
       
       string typeString = "     type: " + packetType;
       string subTypeString = "     sub type: " + packetSubType;
-      LogMessage( 1, " *** packet received with which we cannot deal. ***" );
-      LogMessage( 1, typeString.c_str() );
-      LogMessage( 1, subTypeString.c_str() );
+      LogMessage( LOG_PRIO_INFO, " *** packet received with which we cannot deal. ***" );
+      LogMessage( LOG_PRIO_INFO, typeString.c_str() );
+      LogMessage( LOG_PRIO_INFO, subTypeString.c_str() );
       return false;
    }
 
@@ -552,7 +558,7 @@ void     MainGatewayThread::SortOutgoingPackets()
 {
    if( m_printFunctionNames )
    {
-      LogMessage( 1, "MainGatewayThread::SortOutgoingPackets" );
+      LogMessage( LOG_PRIO_INFO, "MainGatewayThread::SortOutgoingPackets" );
    }
 
    m_inputChainListMutex.lock();
@@ -578,7 +584,7 @@ int       MainGatewayThread::CallbackFunction()
 {
    if( m_printFunctionNames )
    {
-      LogMessage( 1, "MainGatewayThread::CallbackFunction" );
+      LogMessage( LOG_PRIO_INFO, "MainGatewayThread::CallbackFunction" );
    }
 
    
@@ -621,7 +627,7 @@ void  MainGatewayThread::CleanupOldConnections()
 {
    if( m_printFunctionNames )
    {
-      LogMessage( 1, "MainGatewayThread::CleanupOldConnections" );
+      LogMessage( LOG_PRIO_INFO, "MainGatewayThread::CleanupOldConnections" );
    }
 
    CleanupOldClientConnections( "KhaanGateway" );
@@ -633,7 +639,7 @@ void  MainGatewayThread::RunHourlyAverages()
 {
    if( m_printFunctionNames )
    {
-      LogMessage( 1, "MainGatewayThread::RunHourlyAverages" );
+      LogMessage( LOG_PRIO_INFO, "MainGatewayThread::RunHourlyAverages" );
    }
 
    if( m_connectionMap.size() == 0 )
@@ -674,7 +680,7 @@ void  MainGatewayThread::SendStatsToLoadBalancer()
 {
    if( m_printFunctionNames )
    {
-      LogMessage( 1, "MainGatewayThread::SendStatsToLoadBalancer" );
+      LogMessage( LOG_PRIO_INFO, "MainGatewayThread::SendStatsToLoadBalancer" );
    }
 
    time_t currentTime;
@@ -730,7 +736,7 @@ void  MainGatewayThread::RequestNewConenctionIdsFromLoadBalancer()
 {
    if( m_printFunctionNames )
    {
-      LogMessage( 1, "MainGatewayThread::RequestNewConenctionIdsFromLoadBalancer" );
+      LogMessage( LOG_PRIO_INFO, "MainGatewayThread::RequestNewConenctionIdsFromLoadBalancer" );
    }
 
    time_t currentTime;
@@ -786,7 +792,7 @@ bool  MainGatewayThread::AddOutputChainData( BasePacket* packetIn, U32 serverTyp
 {
    if( m_printFunctionNames )
    {
-      LogMessage( 1, "MainGatewayThread::AddOutputChainData" );
+      LogMessage( LOG_PRIO_INFO, "MainGatewayThread::AddOutputChainData" );
    }
 
    //PrintDebugText( "AddOutputChainData" ); 
@@ -795,9 +801,9 @@ bool  MainGatewayThread::AddOutputChainData( BasePacket* packetIn, U32 serverTyp
    if( packetIn->packetType == PacketType_GatewayWrapper )
    {
       PacketGatewayWrapper* wrapper = static_cast< PacketGatewayWrapper* >( packetIn );
-      U32 id = wrapper->connectionId;
+      //U32 id = wrapper->connectionId;
 
-      //LogMessage( 1, "packet to client stored" );
+      //LogMessage( LOG_PRIO_INFO, "packet to client stored" );
       //Threading::MutexLock locker( m_inputChainListMutex );
       m_inputChainListMutex.lock();
       m_clientBoundTempStorage.push_back( packetIn );
@@ -816,7 +822,7 @@ bool  MainGatewayThread::AddOutputChainData( BasePacket* packetIn, U32 serverTyp
          PacketServerToServer_GatewayRequestLB_ConnectionIdsResponse* response = 
             static_cast< PacketServerToServer_GatewayRequestLB_ConnectionIdsResponse* > ( contentPacket );
 
-         LogMessage( 1, "Connection id block assigned = ( %d:%d )", response->beginningId, response->countId );
+         LogMessage( LOG_PRIO_INFO, "Connection id block assigned = ( %d:%d )", response->beginningId, response->countId );
          if( m_connectionIdBeginningRange == 0 )// this is our working set
          {
             m_connectionIdBeginningRange = response->beginningId;
@@ -844,10 +850,10 @@ bool  MainGatewayThread::AddOutputChainData( BasePacket* packetIn, U32 serverTyp
    }
    else// the following really cannot happen.. but just in case
    {
-      LogMessage( 1, "MainGatewayThread::AddOutputChainData packet not processed" );
+      LogMessage( LOG_PRIO_INFO, "MainGatewayThread::AddOutputChainData packet not processed" );
       int type = ( packetIn->packetType );
       const char* packetTypeName = GetPacketTypename( (PacketType)type );
-      LogMessage( 1, "To client  packet: %s %d : %d", packetTypeName, type, (int)packetIn->packetSubType );
+      LogMessage( LOG_PRIO_INFO, "To client  packet: %s %d : %d", packetTypeName, type, (int)packetIn->packetSubType );
       PacketFactory factory;
       factory.CleanupPacket( packetIn );
       //assert( 0 );
@@ -924,17 +930,19 @@ void  MainGatewayThread::HandlePacketToKhaan( KhaanGateway* khaan, BasePacket* p
 {
    if( m_printFunctionNames )
    {
-      LogMessage( 1, "MainGatewayThread::HandlePacketToKhaan" );
+      LogMessage( LOG_PRIO_INFO, "MainGatewayThread::HandlePacketToKhaan" );
    }
-     // LogMessage( 1, "Packet to client: ", (int)packet->packetType, ":", (int)packet->packetSubType );
+     // LogMessage( LOG_PRIO_INFO, "Packet to client: ", (int)packet->packetType, ":", (int)packet->packetSubType );
 
    PrintDebugText( "HandlePacketToKhaan" );
    U32 connectionId = khaan->GetConnectionId();
+   connectionId = connectionId;
+
    if( packet->packetType == PacketType_Login )
    { 
       if( packet->packetType == PacketLogin::LoginType_InformClientOfLoginStatus)
       {
-         LogMessage( 1, "Stopping" );
+         LogMessage( LOG_PRIO_INFO, "Stopping" );
       }
       if( packet->packetSubType == PacketLogin::LoginType_InformGatewayOfLoginStatus )
       {
@@ -956,7 +964,7 @@ void  MainGatewayThread::HandlePacketToKhaan( KhaanGateway* khaan, BasePacket* p
       {
          int type = ( packet->packetType );
          const char* packetTypeName = GetPacketTypename( (PacketType)type );
-         LogMessage( 1, "To client  packet: %s %d:%d", packetTypeName, type, (int)packet->packetSubType );
+         LogMessage( LOG_PRIO_INFO, "To client  packet: %s %d:%d", packetTypeName, type, (int)packet->packetSubType );
       }
       if( packet->packetType == PacketType_ErrorReport )
       {
@@ -1058,12 +1066,12 @@ void  LogCertainPackets( BasePacket* packet )
       packet->packetSubType == PacketChatToServer::ChatType_AddUserToChatChannelResponse )
    {
       PacketChatAddUserToChatChannelResponse* ptr = static_cast< PacketChatAddUserToChatChannelResponse* >( packet );
-      LogMessage( 1, "PacketChatAddUserToChatChannelResponse begin" );
-      LogMessage( 1, " channel name: %s", ptr->channelName.c_str() );
-      LogMessage( 1, " channel uuid: %s", ptr->channelUuid.c_str() );
-      LogMessage( 1, " channel useruuid: %s", ptr->userUuid.c_str() );
-      LogMessage( 1, " channel user name: %s", ptr->userName.c_str() );
-      LogMessage( 1, "PacketChatAddUserToChatChannelResponse end" );
+      LogMessage( LOG_PRIO_INFO, "PacketChatAddUserToChatChannelResponse begin" );
+      LogMessage( LOG_PRIO_INFO, " channel name: %s", ptr->channelName.c_str() );
+      LogMessage( LOG_PRIO_INFO, " channel uuid: %s", ptr->channelUuid.c_str() );
+      LogMessage( LOG_PRIO_INFO, " channel useruuid: %s", ptr->userUuid.c_str() );
+      LogMessage( LOG_PRIO_INFO, " channel user name: %s", ptr->userName.c_str() );
+      LogMessage( LOG_PRIO_INFO, "PacketChatAddUserToChatChannelResponse end" );
    }
 }
 
@@ -1074,7 +1082,7 @@ void  MainGatewayThread::AddClientConnectionNeedingUpdate( U32 connectionId )
    return;
    if( m_printFunctionNames )
    {
-      LogMessage( 1, "MainGatewayThread::AddClientConnectionNeedingUpdate" );
+      LogMessage( LOG_PRIO_INFO, "MainGatewayThread::AddClientConnectionNeedingUpdate" );
    }
 
    ConnectionIdQueue::iterator it = m_connectionsNeedingUpdate.begin();
@@ -1092,8 +1100,8 @@ void  MainGatewayThread::MoveClientBoundPacketsFromTempToKhaan()
 {
    if( m_printFunctionNames )
    {
-      LogMessage( 1, "MainGatewayThread::MoveClientBoundPacketsFromTempToKhaan" );
-      LogMessage( 1, "MainLoop_OutputProcessing" );
+      LogMessage( LOG_PRIO_INFO, "MainGatewayThread::MoveClientBoundPacketsFromTempToKhaan" );
+      LogMessage( LOG_PRIO_INFO, "MainLoop_OutputProcessing" );
    }
 
    m_inputChainListMutex.lock();

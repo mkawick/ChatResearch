@@ -40,6 +40,8 @@ const char* GetServerTypeName( ServerType type )
       return "Analytics";
    case ServerType_Test:
       return "Test";
+   case ServerType_Starter:
+      return "starter";
    case ServerType_Notification:
       return "Notification";
    case ServerType_UserStats:

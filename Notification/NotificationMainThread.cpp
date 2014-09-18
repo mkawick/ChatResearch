@@ -24,6 +24,7 @@ using namespace std;
 #include "NotificationMainThread.h"
 
 #include "../NetworkCommon/Database/StringLookup.h"
+#include "../NetworkCommon/NetworkIn/DiplodocusTools.h"
 
 #include "server_notify.h"
 
@@ -35,7 +36,7 @@ using namespace std;
 ///////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////
 
-NotificationMainThread::NotificationMainThread( const string& serverName, U32 serverId ): Queryer(), Diplodocus< KhaanServerToServer >( serverName, serverId, 0,  ServerType_Notification ), m_database( NULL )
+NotificationMainThread::NotificationMainThread( const string& serverName, U32 serverId ): Queryer(), ChainedType( serverName, serverId, 0,  ServerType_Notification ), m_database( NULL )
 {
    time( &m_lastNotificationCheck_TimeStamp );
    m_lastNotificationCheck_TimeStamp = ZeroOutMinutes( m_lastNotificationCheck_TimeStamp );
@@ -54,7 +55,7 @@ void     NotificationMainThread :: Init( const string& iosPathToCertAndKeyFile )
    SSL_load_error_strings();
    OpenSSL_add_all_algorithms();
 
-   Diplodocus::Init();
+   ChainedType::Init();
    
    NotifyIosInit( iosPathToCertAndKeyFile.c_str() ); 
    NotifyAndroidInit(); 
@@ -110,7 +111,7 @@ bool   NotificationMainThread::AddOutputChainData( BasePacket* packet, U32 conne
          Threading::MutexLock locker( m_mutex );
          m_dbQueries.push_back( result );
         /* if( result->customData != NULL )
-            cout << "AddOutputChainData: Non-null custom data " << endl;*/
+            cout << "AddOutputChainData: Non-null custom data " );*/
       }
       return true;
    }
@@ -192,7 +193,8 @@ bool  NotificationMainThread::HandlePacketFromOtherServer( BasePacket* packet, U
 
 bool     NotificationMainThread::HandlePacketFromGateway( BasePacket* packet, U32 gatewayId )
 {
-   if( packet->packetType != PacketType_GatewayWrapper )
+   U8 packetType = packet->packetType;
+   if( packetType != PacketType_GatewayWrapper )
    {
       return false;
    }
@@ -200,8 +202,8 @@ bool     NotificationMainThread::HandlePacketFromGateway( BasePacket* packet, U3
    PacketServerJobWrapper* wrapper = static_cast< PacketServerJobWrapper* >( packet );
    BasePacket* unwrappedPacket = wrapper->pPacket;
    U32  connectionId = wrapper->serverId;
+   packetType = unwrappedPacket->packetType;
 
-   U8 packetType = unwrappedPacket->packetType;
    
    {// local scope
       Threading::MutexLock locker( m_mutex );
@@ -222,8 +224,9 @@ bool     NotificationMainThread::ConnectUser( const PacketPrepareForUserLogin* l
    U32 connectionId = loginPacket->connectionId;
    string uuid = loginPacket->uuid;
    U32 gatewayId = loginPacket->gatewayId;
-   cout << "Prep for logon: " << connectionId << ", " << loginPacket->userName << ", " << uuid << ", " << loginPacket->password << endl;
-
+   //LogMessage( LOG_PRIO_INFO, "Prep for logon: %d, %s, %s, %s", connectionId, loginPacket->userName.c_str(), uuid.c_str(), loginPacket->password.c_str() );
+   LogMessage_LoginPacket( loginPacket );
+   
    UserConnectionIterator it = m_userConnectionMap.find( connectionId );// don't do anything if this user is already logged in.
    if( it != m_userConnectionMap.end() )
       return false;
@@ -264,9 +267,12 @@ bool     NotificationMainThread::ConnectUser( const PacketPrepareForUserLogin* l
 
 //---------------------------------------------------------------
 
-bool     NotificationMainThread::DisconnectUser( const PacketPrepareForUserLogout* loginPacket )
+bool     NotificationMainThread::DisconnectUser( const PacketPrepareForUserLogout* logoutPacket )
 {
-   U32 connectionId = loginPacket->connectionId;
+   //LogMessage( LOG_PRIO_INFO, "Prep for logout: %d, %s", logoutPacket->connectionId, logoutPacket->uuid.c_str() );
+   LogMessage_LogoutPacket( logoutPacket );
+
+   U32 connectionId = logoutPacket->connectionId;
 
    m_mutex.lock();
    UserConnectionIterator it = m_userConnectionMap.find( connectionId );
@@ -307,7 +313,7 @@ void  NotificationMainThread::RunQueryAndNotification( Database::Deltadromeus* d
       query += "' AND user_device_notification.is_enabled='1' ";
       query += "AND user_device.is_enabled='1'";
 
-      //cout << query << endl;
+      //cout << query );
 
 
       MYSQL *mysql = database->GetDbHandle();
@@ -315,10 +321,8 @@ void  NotificationMainThread::RunQueryAndNotification( Database::Deltadromeus* d
       int ret = mysql_query( mysql, query.c_str() );
       if (ret != 0)
       {
-         cout << "Error " << mysql_error(mysql)
-              << " (code " << ret << ") executing DB query: \""
-              << query << "\"" << endl;
-         cout << "        error: " << mysql_error(mysql) << endl;
+         LogMessage( LOG_PRIO_ERR, "Error %s (code %d) executing DB query: \"%s\"", mysql_error(mysql), ret, query.c_str() );
+         //cout << "        error: " << mysql_error(mysql) );
          return;
       }
 

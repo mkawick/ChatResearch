@@ -50,11 +50,11 @@ class Mutex
 public:
    Mutex();
    ~Mutex();
-   bool  lock() const;
-   bool  unlock() const;
+   bool     lock() const;
+   bool     unlock() const;
 
-   bool  IsLocked() const { return m_isLocked; }
-   int	 NumPendingLockRequests() const { return m_pendingLockReqs; }
+   bool     IsLocked() const { return m_isLocked; }
+   int	   NumPendingLockRequests() const { return m_pendingLockReqs; }
 
 private:
    mutable ThreadMutex    m_mutex;
@@ -128,6 +128,7 @@ public:
 
    void              SetPriority( ePriority );
    bool              IsRunning() const { return m_running; }
+   bool              IsPaused() const { return m_isPaused; }
    bool              IsThreadLocked() const { return m_mutex.IsLocked(); }
    int				   GetSleepTime() const { return m_sleepTime; }
    void              SetSleepTime( int ms ) { m_sleepTime = ms; }
@@ -140,9 +141,10 @@ public:
 protected:
    // allowing constness to be maintained with mutable
    mutable Mutex     m_mutex;
-   void LockMutex() const { m_mutex.lock(); }
-   void UnlockMutex() const { m_mutex.unlock(); }
    bool              m_isPaused;
+
+   void              LockMutex() const { m_mutex.lock(); }
+   void              UnlockMutex() const { m_mutex.unlock(); }
 
 protected:
 

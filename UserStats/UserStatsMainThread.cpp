@@ -1,10 +1,14 @@
-#include "UserStatsMainThread.h"
+// UserStatsMainThread.cpp
 
 #include <iostream>
 #include <time.h>
 #include <string>
 using namespace std;
 
+#include <boost/format.hpp>
+#include <boost/lexical_cast.hpp>
+
+#include "UserStatsMainThread.h"
 
 #include "../NetworkCommon/Packets/ServerToServerPacket.h"
 #include "../NetworkCommon/Packets/PacketFactory.h"
@@ -18,12 +22,10 @@ using namespace std;
 #include "../NetworkCommon/Packets/GamePacket.h"
 
 #include "server_stats_plugins.h"
+#include "../NetworkCommon/NetworkIn/DiplodocusTools.h"
 
-#include <boost/format.hpp>
-#include <boost/lexical_cast.hpp>
-//using namespace boost;
 
-UserStatsMainThread::UserStatsMainThread( const string& serverName, U32 serverId ): Diplodocus< KhaanServerToServer >( serverName, serverId, 0,  ServerType_UserStats )
+UserStatsMainThread::UserStatsMainThread( const string& serverName, U32 serverId ): ChainedType( serverName, serverId, 0,  ServerType_UserStats )
 {
    //time( &m_timestampStatsPrint );
    //m_timestampSelectPreferredGateway = m_timestampStatsPrint;
@@ -35,7 +37,7 @@ UserStatsMainThread::~UserStatsMainThread()
 
 void UserStatsMainThread::Init()
 {
-   Diplodocus::Init();
+   ChainedType::Init();
 
    DbHandle *pStatDB = GetDbConnectionByType( Database::Deltadromeus::DbConnectionType_StatData );
 
@@ -311,19 +313,21 @@ bool     UserStatsMainThread::HandleLoginPacket( BasePacket* packet, U32 serverI
             cout << "  uuid: " << loginPacket->uuid << endl;
             cout << "  login time: " << loginPacket->lastLoginTime << endl;
             cout << " --------------------------------- " << endl;
+            LogMessage_LoginPacket( loginPacket );
          }
          return true;
       case PacketLogin::LoginType_PrepareForUserLogout:
          {
-            PacketPrepareForUserLogout* pPacket = static_cast< PacketPrepareForUserLogout* > ( packet );
-            U32 connectionId = pPacket->connectionId;
+            PacketPrepareForUserLogout* logoutPacket = static_cast< PacketPrepareForUserLogout* > ( packet );
+            U32 connectionId = logoutPacket->connectionId;
 
-            cout << " --------------------------------- " << endl;
-            cout << "Prep for logout: " << pPacket->connectionId << ", " << pPacket->uuid << endl;
+           /* cout << " --------------------------------- " << endl;
+            cout << "Prep for logout: " << logoutPacket->connectionId << ", " << logoutPacket->uuid << endl;
             
             cout << "User login: " << endl;
-            cout << "  uuid: " << pPacket->uuid << endl;
-            cout << " --------------------------------- " << endl;
+            cout << "  uuid: " << logoutPacket->uuid << endl;
+            cout << " --------------------------------- " << endl;*/
+            LogMessage_LogoutPacket( logoutPacket );
 
             m_inputChainListMutex.lock();   
             deque< ConnectionPair >::iterator it = m_userConnectionList.begin();
@@ -411,6 +415,16 @@ bool     UserStatsMainThread::HandleUserStatPacket( BasePacket* packet, U32 serv
             }
          }
          break;
+      case PacketUserStats::UserStatsType_ReportUserForfeit:
+         {
+            PacketUserStats_ReportUserForfeit *pReportForfeit = static_cast< PacketUserStats_ReportUserForfeit* >( packet );
+
+            if( s_StatsPlugins[pReportForfeit->gameType].onReportUserForfeit != NULL )
+            {
+               s_StatsPlugins[pReportForfeit->gameType].onReportUserForfeit( pReportForfeit->gameId, pReportForfeit->userId );
+            }
+         }
+         break;
       }
    }
 
@@ -477,7 +491,7 @@ void     UserStatsMainThread::UpdateDbResults()
       BasePacket* packet = static_cast<BasePacket*>( dbResult );
 
       U32 connectionId = dbResult->id;
-
+      connectionId = connectionId;
 
       factory.CleanupPacket( packet );
 
@@ -563,8 +577,7 @@ bool     UserStatsMainThread::AddQueryToOutput( PacketDbQuery* dbQuery )
    while( itOutputs != tempOutputContainer.end() )// only one output currently supported.
    {
       ChainType* outputPtr = static_cast< ChainType*> ( (*itOutputs).m_interface );
-      ChainedInterface* interfacePtr = static_cast< ChainedInterface* >( outputPtr );
-      if( interfacePtr->GetChainedType() == ChainedType_DatabaseConnector )
+      if( outputPtr->GetChainedType() == ChainedType_DatabaseConnector )
       {
          bool isValidConnection = false;
          Database::Deltadromeus* delta = static_cast< Database::Deltadromeus* >( outputPtr );
@@ -607,10 +620,10 @@ DbHandle*   UserStatsMainThread::GetDbConnectionByType( Database::Deltadromeus::
       ChainLinkIteratorType itOutputs = m_listOfOutputs.begin();
       while( itOutputs != m_listOfOutputs.end() )// only one output currently supported.
       {
-         ChainedInterface* interfacePtr = static_cast< ChainedInterface* >( (*itOutputs).m_interface );
-         if( interfacePtr->DoesNameMatch( searchName ) )
+         ChainType* outputPtr = static_cast< ChainType*> ( (*itOutputs).m_interface );
+         if( outputPtr->DoesNameMatch( searchName ) )
          {
-            Database::Deltadromeus* delta = static_cast< Database::Deltadromeus* >( interfacePtr );
+            Database::Deltadromeus* delta = static_cast< Database::Deltadromeus* >( outputPtr );
             return delta->GetDbHandle();
          }
          itOutputs++;
@@ -622,10 +635,11 @@ DbHandle*   UserStatsMainThread::GetDbConnectionByType( Database::Deltadromeus::
    ChainLinkIteratorType itOutputs = m_listOfOutputs.begin();
    while( itOutputs != m_listOfOutputs.end() )// only one output currently supported.
    {
-      ChainedInterface* interfacePtr = static_cast< ChainedInterface* >( (*itOutputs).m_interface );
-      if( interfacePtr->DoesNameMatch( searchName ) )
+      //ChainedInterface* interfacePtr = static_cast< ChainedInterface* >( (*itOutputs).m_interface );
+      ChainType* outputPtr = static_cast< ChainType*> ( (*itOutputs).m_interface );
+      if( outputPtr->DoesNameMatch( searchName ) )
       {
-         Database::Deltadromeus* delta = static_cast< Database::Deltadromeus* >( interfacePtr );
+         Database::Deltadromeus* delta = static_cast< Database::Deltadromeus* >( outputPtr );
          if( delta->GetConnectionType() == type ) // exact match
             return delta->GetDbHandle();
       }
@@ -636,10 +650,11 @@ DbHandle*   UserStatsMainThread::GetDbConnectionByType( Database::Deltadromeus::
    itOutputs = m_listOfOutputs.begin();
    while( itOutputs != m_listOfOutputs.end() )// only one output currently supported.
    {
-      ChainedInterface* interfacePtr = static_cast< ChainedInterface* >( (*itOutputs).m_interface );
-      if( interfacePtr->DoesNameMatch( searchName ) )
+      //ChainedInterface* interfacePtr = static_cast< ChainedInterface* >( (*itOutputs).m_interface );
+      ChainType* outputPtr = static_cast< ChainType*> ( (*itOutputs).m_interface );
+      if( outputPtr->DoesNameMatch( searchName ) )
       {
-         Database::Deltadromeus* delta = static_cast< Database::Deltadromeus* >( interfacePtr );
+         Database::Deltadromeus* delta = static_cast< Database::Deltadromeus* >( outputPtr );
          if( delta->WillYouTakeThisQuery( type ) ) // bit operator here.. inexact match
             return delta->GetDbHandle();
       }

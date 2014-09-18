@@ -75,7 +75,7 @@ void FixedLengthString <str_length> :: copy( const char* str )
       buffer[0] = 0;
       return;
    }
-   int len = strlen( str ); 
+   int len = (int) strlen( str );
    if( len > str_length ) 
    {
       len = str_length;
@@ -97,7 +97,7 @@ bool  FixedLengthString <str_length> :: isEqual( const char* str, bool compareCa
          return true;
       return false;
    }
-   int len = strlen( str ); 
+   int len = (int) strlen( str );
    if( len > str_length ) 
    {
       return false;
@@ -192,8 +192,7 @@ template < int str_length >
 bool  BoundedLengthString <str_length> :: SerializeIn( const U8* inputBuffer, int& bufferOffset, int minorVersion )
 {
    U16 size;
-   memcpy( &size, (const char*)( inputBuffer + bufferOffset ), sizeof( size ) );
-   bufferOffset += sizeof( size );
+   Serialize::In( inputBuffer, bufferOffset, size, minorVersion );
    m_length = size;
    if( size == 0 )
    {
@@ -215,8 +214,7 @@ template < int str_length >
 bool  BoundedLengthString <str_length> :: SerializeOut( U8* outputBuffer, int& bufferOffset, int minorVersion ) const
 {
    U16 size = m_length;
-   memcpy( (char*)( outputBuffer + bufferOffset ), &size, sizeof( size ) );
-   bufferOffset += sizeof( size );
+   Serialize::Out( outputBuffer, bufferOffset, size, minorVersion );
 
    if( m_length > 0 )
    {
@@ -237,7 +235,7 @@ void BoundedLengthString <str_length> :: copy( const char* str )
       m_length = 0;
       return;
    }
-   m_length = strlen( str ); 
+   m_length = (int) strlen( str );
    if( m_length > str_length ) 
    {
       m_length = str_length;
@@ -259,7 +257,7 @@ bool  BoundedLengthString <str_length> :: isEqual( const char* str, bool compare
          return true;
       return false;
    }
-   int len = strlen( str ); 
+   int len = (int) strlen( str );
    if( len > str_length ) 
    {
       return false;

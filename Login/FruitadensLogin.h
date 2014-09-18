@@ -10,6 +10,8 @@ public:
 
    const char*  GetClassName() const { return "FruitadensLogin"; }
 
+   //int       CallbackFunction();
+
 private:
    bool     FilterOutwardPacket( BasePacket* packet ) const;
    int      MainLoop_OutputProcessing();

@@ -26,6 +26,7 @@ using boost::format;
 #include "../NetworkCommon/Database/Deltadromeus.h"
 
 #include "../NetworkCommon/Logging/server_log.h"
+#include "../NetworkCommon/NetworkIn/DiplodocusTools.h"
 
 #include <boost/lexical_cast.hpp>
 
@@ -34,14 +35,15 @@ using boost::format;
 #include "FruitadensLogin.h"
 
 //#define _DEMO_13_Aug_2013
+const int normalLogoutExpireTime = 18; // seconds
 
 
 //////////////////////////////////////////////////////////
 
 DiplodocusLogin:: DiplodocusLogin( const string& serverName, U32 serverId )  : 
                   Queryer(),
-                  StatTrackingConnections(),
                   Diplodocus< KhaanLogin >( serverName, serverId, 0, ServerType_Login ), 
+                  StatTrackingConnections(),
                   m_isInitialized( false ), 
                   m_isInitializing( true ),
                   m_autoAddProductFromWhichUsersLogin( true ),
@@ -56,7 +58,6 @@ DiplodocusLogin:: DiplodocusLogin( const string& serverName, U32 serverId )  :
    SetSleepTime( 19 );
    LogOpen();
    LogMessage( LOG_PRIO_INFO, "Login::Login server created" );
-   cout << "Login::Login server created" << endl;
 
    time( &m_initializingProductListTimeStamp );
 
@@ -111,9 +112,9 @@ void     DiplodocusLogin::InputRemovalInProgress( IChainedInterface * chainedInp
 
    string currentTime = GetDateInUTC();
    string printer = "Client disconnection at time:" + currentTime + " from " + inet_ntoa( khaan->GetIPAddress().sin_addr );
-   cout << printer << endl;
+   LogMessage( LOG_PRIO_INFO, printer.c_str() );
 
-   PrintDebugText( "** InputRemovalInProgress" , 1 );
+   LogMessage( LOG_PRIO_ERR, "** InputRemovalInProgress" );
 }
 
 
@@ -132,7 +133,7 @@ bool     DiplodocusLogin:: AddInputChainData( BasePacket* packet, U32 gatewayId 
    {
       string text = "Login server: received junk packets. Type: ";
       text += packet->packetType;
-      Log( text, 4 );
+      LogMessage( LOG_PRIO_ERR, text.c_str() );
       return false;
    }
 
@@ -293,8 +294,7 @@ bool     DiplodocusLogin:: AddQueryToOutput( PacketDbQuery* dbQuery )
    while( itOutputs != tempOutputContainer.end() )// only one output currently supported.
    {
       ChainType* outputPtr = static_cast< ChainType*> ( (*itOutputs).m_interface );
-      ChainedInterface* interfacePtr = static_cast< ChainedInterface* >( outputPtr );
-      if( interfacePtr->GetChainedType() == ChainedType_DatabaseConnector )
+      if( outputPtr->GetChainedType() == ChainedType_DatabaseConnector )
       {
          bool isValidConnection = false;
          Database::Deltadromeus* delta = static_cast< Database::Deltadromeus* >( outputPtr );
@@ -328,66 +328,57 @@ bool     DiplodocusLogin:: AddQueryToOutput( PacketDbQuery* dbQuery )
 
 //---------------------------------------------------------------
 
-bool     DiplodocusLogin:: LogUserIn( const PacketLoginFromGateway* packet, U32 connectionId )
-//LogUserIn( const string& userName, const string& password, const string& loginKey, U8 gameProductId, U32 connectionId, U32 gatewayId )
+bool  DiplodocusLogin:: IsUserInLoginHistory( const string& userName, const string& password, const string& loginKey, U8 gameProductId, U32 connectionId, U32 gatewayId )
 {
-   const string& userName = packet->userName; 
-   const string& password = packet->password;
-   const string& loginKey = packet->loginKey;
-   U8 gameProductId = packet->gameProductId;
-   U32 gatewayId = packet->gatewayId;
-
-   if( m_printFunctionNames )
-   {
-      cout << "fn: " << __FUNCTION__ << endl;
-
-      cout << endl << "***********************" << endl;
-      cout << "attempt to login user: "<< userName << ", pwHash:" << password << " for game id=" << (int) gameProductId << " and conn: " << connectionId << endl;
-      cout << "***********************" << endl;
-   }
-
-   cout << "User login: " << endl;
-   cout << "User: " << packet->userName <<endl;
-   cout << "uuid: " << packet->uuid <<endl;
-   cout << "pass: " << packet->password <<endl;
-   cout << "--------------------------------------" << endl;
-   if( gameProductId == 0 )
-   {
-      cout << "User logging in without a product id" << endl;
-   }
-   if( packet->gatewayId == 0 )
-   {
-      cout << "User logging in without a gateway id" << endl;
-   }
-   
-   if( IsUserConnectionValid( connectionId ) )
-   {
-      // should we boot this user for hacking? Or is it bad code?
-      Log( "Second attempt was made at login", 4 );
-      //InformUserOfSuccessfulLogout();// someone is hacking our server
-      ForceUserLogoutAndBlock( connectionId );
-   }
-
-   if( userName.size() == 0 )
-   {
-      // should we boot this user for hacking? Or is it bad code?
-      Log( "invalid attempt at login: userName was empty", 4 );
-      return false;
-   }
-
-   // Before we add the user, let's verify that s/he isn't already logged in with a different connectionId. 
-
    U32 oldConnectionId = FindUserAlreadyInGame( userName, gameProductId );
    if( oldConnectionId != 0 )
    {
+      ConnectionToUser* oldConnection = GetUserConnection( oldConnectionId );
+      string uuid;
+      if( oldConnection )
+      {
+         uuid = oldConnection->m_userUuid;
+
+         bool thisUserLoggedInSuccessfully = false;
+         if( oldConnection->GetUuid().size() > 0 )
+            thisUserLoggedInSuccessfully = true;
+
+         LogMessage( LOG_PRIO_INFO, "User was already in list of users" );
+         if( oldConnection->GetPasswordHash() == password )
+         {
+            LogMessage( LOG_PRIO_INFO, "User name and password match" );
+            if( thisUserLoggedInSuccessfully == false )// it was an invalid login again with the same bad password
+               return false;// do the normal login and leave the bad login alone... it will clean itself up.
+            
+            // if we have the same password but it failed last time...
+            // the following happens below.
+            //ForceUserLogoutAndBlock( oldConnectionId, oldConnection->GetGatewayId() );// force disconnect on the new id
+            //return true;// do not load
+         }
+         else
+         {
+            if( thisUserLoggedInSuccessfully == false )// he had an invalid login last time, but we are trying a different password
+               return false;// do the normal login and leave the bad login alone... it will clean itself up.
+
+            // this means that our passwords do not math 
+            LogMessage( LOG_PRIO_ERR, "ERROR: Hacker alert: User name and password do not match on a relog" );
+            LogMessage( LOG_PRIO_ERR, "ERROR: Could also be a user just correcting his/her password" );
+            ForceUserLogoutAndBlock( connectionId, gatewayId );// force disconnect on the old id
+            //return true;
+         }
+         
+         // clear old connection and establish new one
+         ForceUserLogoutAndBlock( oldConnectionId, oldConnection->GetGatewayId() );// force disconnect
+      }
+
       // should we boot this user for hacking? Or is it bad code?
-      Log( "Second login from the same product attempt was made", 4 );
-      Log( userName.c_str(), 4 );
-      ForceUserLogoutAndBlock( oldConnectionId );// force disconnect
-      //return false;
+      LogMessage( LOG_PRIO_INFO, "Second login from the same product attempt was made" );
+      LogMessage( LOG_PRIO_INFO, "    user: %s", userName.c_str() );
+      LogMessage( LOG_PRIO_INFO, "    uuid: %s", uuid.c_str() );
+      LogMessage( LOG_PRIO_INFO, "    pass: %s", password.c_str() );
+      LogMessage( LOG_PRIO_INFO, " product: %u", gameProductId );
 
-      Log( "Reconnect user", 1 );
-
+      LogMessage( LOG_PRIO_INFO, "Reconnect user" );
       ReinsertUserConnection( oldConnectionId, connectionId );// and we remove the old connection
 
       ConnectionToUser* connection = GetUserConnection( connectionId );
@@ -399,8 +390,8 @@ bool     DiplodocusLogin:: LogUserIn( const PacketLoginFromGateway* packet, U32 
             // user may attempt hacking.. only 3 attempts allowed
             if( connection->GetLoginAttemptCount () > 3 )
             {
-               ForceUserLogoutAndBlock( connectionId );// force disconnect
-               return false;
+               ForceUserLogoutAndBlock( connectionId, gatewayId );// force disconnect
+               return true;
             }
             return SetupQueryForLogin( userName, password, gameProductId, connectionId );
          }
@@ -411,42 +402,14 @@ bool     DiplodocusLogin:: LogUserIn( const PacketLoginFromGateway* packet, U32 
             const bool isLoggedIn = true; 
             const bool wasDisconnectedByError = false;
 
-            SendLoginStatusTo_Non_GameServers( connection->m_userName, 
-                                             connection->m_userUuid, 
-                                             connectionId, 
-                                             gameProductId, 
-                                             connection->m_lastLoginTime, 
-                                             connection->m_isActive, 
-                                             connection->m_email, 
-                                             connection->m_passwordHash, 
-                                             connection->m_id, 
-                                             connection->m_loginKey, 
-                                             connection->m_languageId, 
-                                             isLoggedIn, 
-                                             wasDisconnectedByError,
-                                             connection->GetGatewayId() );
-
-            if( connection->SuccessfulLoginFinished( connectionId, true ) == true )
-            {
-               m_uniqueUsers.insert( connection->m_userUuid );
-               UpdateLastLoggedInTime( connectionId ); // update the user logged in time
-            }
-            SendLoginStatusTo_GameServers( connection->m_userName, 
-                                             connection->m_userUuid, 
-                                             connectionId, 
-                                             gameProductId, 
-                                             connection->m_lastLoginTime, 
-                                             connection->m_isActive, 
-                                             connection->m_email, 
-                                             connection->m_passwordHash, 
-                                             connection->m_id, 
-                                             connection->m_loginKey, 
-                                             connection->m_languageId, 
-                                             isLoggedIn, 
-                                             wasDisconnectedByError,
-                                             connection->GetGatewayId()  );
-            m_numSuccessfulLogins++;
+            BroadcastLoginStatus( connectionId, 
+                                gameProductId, 
+                                isLoggedIn, 
+                                wasDisconnectedByError,
+                                gatewayId );
             m_numRelogins ++;
+            return true;
+            
          }
          else
          {
@@ -458,8 +421,129 @@ bool     DiplodocusLogin:: LogUserIn( const PacketLoginFromGateway* packet, U32 
       }
       else
       {
-         cout << "Error: could not find user by connectionId after verifying that s/he exists" << endl;
+         LogMessage( LOG_PRIO_ERR, "Error: could not find user by connectionId after verifying that s/he exists" );
       }
+   }
+   return false;
+}
+
+bool  DiplodocusLogin:: BroadcastLoginStatus( U32 connectionId, 
+                                               U8 gameProductId, 
+                                               bool isLoggedIn, 
+                                               bool wasDisconnectedByError,
+                                               U32 gatewayId )
+{
+   ConnectionToUser* connection = GetUserConnection( connectionId );
+   if( connection )
+   {
+      SendLoginStatusTo_Non_GameServers( connection->m_userName, 
+                                          connection->m_userUuid, 
+                                          connectionId, 
+                                          gameProductId, 
+                                          connection->m_lastLoginTime, 
+                                          connection->m_isActive, 
+                                          connection->m_email, 
+                                          connection->m_passwordHash, 
+                                          connection->m_id, 
+                                          connection->m_loginKey, 
+                                          connection->m_languageId, 
+                                          isLoggedIn, 
+                                          wasDisconnectedByError,
+                                          gatewayId );
+
+      LogMessage( LOG_PRIO_INFO, "--------------------------------------------" );
+      LogMessage( LOG_PRIO_INFO, "User login:      %s", connection->m_userName.c_str() );
+      LogMessage( LOG_PRIO_INFO, "User uuid:       %s", connection->m_userUuid.c_str() );
+      LogMessage( LOG_PRIO_INFO, "lastLoginTime =  %s", connection->m_lastLoginTime.c_str() );
+      LogMessage( LOG_PRIO_INFO, "--------------------------------------------" );
+      if( connection->SuccessfulLoginFinished( connectionId, false ) == true )
+      {
+         LogMessage( LOG_PRIO_INFO, "User connection success" );
+         m_uniqueUsers.insert( connection->m_userUuid );
+
+         UpdateLastLoggedInTime( connectionId ); // update the user logged in time
+         SendLoginStatusTo_GameServers( connection->m_userName, 
+                                          connection->m_userUuid, 
+                                          connectionId, 
+                                          gameProductId, 
+                                          connection->m_lastLoginTime, 
+                                          connection->m_isActive, 
+                                          connection->m_email, 
+                                          connection->m_passwordHash, 
+                                          connection->m_id, 
+                                          connection->m_loginKey, 
+                                          connection->m_languageId, 
+                                          isLoggedIn, 
+                                          wasDisconnectedByError,
+                                          gatewayId );
+         m_numSuccessfulLogins++;
+         //m_numRelogins ++;
+      }
+      return true;
+   }
+   return false;
+}
+
+//---------------------------------------------------------------
+
+bool     DiplodocusLogin:: LogUserIn( const PacketLoginFromGateway* loginPacket, U32 connectionId )
+{
+   const string& userName = loginPacket->userName; 
+   const string& password = loginPacket->password;
+   const string& loginKey = loginPacket->loginKey;
+   U8 gameProductId = loginPacket->gameProductId;
+   U32 gatewayId = loginPacket->gatewayId;
+
+   if( m_printFunctionNames )
+   {
+      cout << "fn: " << __FUNCTION__ << endl;
+
+      LogMessage( LOG_PRIO_INFO, "***********************" );
+      LogMessage( LOG_PRIO_INFO, "attempt to login user: %s, pwHash:%s for game id=%d and conn: %d", userName.c_str(), password.c_str(), (int) gameProductId, connectionId );
+      LogMessage( LOG_PRIO_INFO, "***********************" );
+   }
+
+   LogMessage( LOG_PRIO_INFO, "User login " );
+   LogMessage( LOG_PRIO_INFO, "    User: %s", loginPacket->userName.c_str() );
+   LogMessage( LOG_PRIO_INFO, "    uuid: %s", loginPacket->uuid.c_str() );
+   LogMessage( LOG_PRIO_INFO, "    pass: %s", loginPacket->password.c_str() );
+   
+   LogMessage( LOG_PRIO_INFO, "--------------------------------------" );
+   if( gameProductId == 0 )
+   {
+      LogMessage( LOG_PRIO_ERR, "User logging in without a product id" );
+   }
+   if( loginPacket->gatewayId == 0 )
+   {
+      LogMessage( LOG_PRIO_ERR, "User logging in without a gateway id" );
+   }
+   
+   if( IsUserConnectionValid( connectionId ) )
+   {
+      // should we boot this user for hacking? Or is it bad code?
+      LogMessage( LOG_PRIO_INFO, "Second attempt was made at login from the same connection ID" );
+      //InformUserOfSuccessfulLogout();// someone is hacking our server
+      ForceUserLogoutAndBlock( connectionId, gatewayId );
+   }
+
+   if( userName.size() == 0 )
+   {
+      // should we boot this user for hacking? Or is it bad code?
+      LogMessage( LOG_PRIO_ERR, "invalid attempt at login: userName was empty" );
+      return false;
+   }
+
+   if( password.size() == 0 )
+   {
+      // should we boot this user for hacking? Or is it bad code?
+      LogMessage( LOG_PRIO_ERR, "invalid attempt at login: password was empty" );
+      return false;
+   }
+
+   // Before we add the user, let's verify that s/he isn't already logged in with a different connectionId. 
+   if( IsUserInLoginHistory( userName, password, loginKey, gameProductId, connectionId, gatewayId ) )
+   {
+      return true;
    }
    else
    {
@@ -526,8 +610,13 @@ bool     DiplodocusLogin:: HandleUserLoginResult( U32 connectionId, const Packet
       if( dbResult->successfulQuery == false || dbResult->GetBucket().size() == 0 )
       {
          connection->ClearLoggingOutStatus();
-         Log( "Connect user: Cannot continue logging in", 1 );
-         Log( "User record not fouond", 1 );
+         LogMessage( LOG_PRIO_ERR, "Connect user: Cannot continue logging in" );
+         LogMessage( LOG_PRIO_ERR, "User record not found" );
+         LogMessage( LOG_PRIO_ERR, "Name :%s ", connection->GetName().c_str() );
+         LogMessage( LOG_PRIO_ERR, "Email :%s ", connection->GetEmail().c_str() );
+         LogMessage( LOG_PRIO_ERR, "Uuid :%s ", connection->GetUuid().c_str() );
+         LogMessage( LOG_PRIO_ERR, "PwdHash :%s ", connection->GetPasswordHash().c_str() );
+         LogMessage( LOG_PRIO_ERR, "Id :%s ", connection->GetId().c_str() );
          return false;
       }
       // ---------------------------------
@@ -538,7 +627,7 @@ bool     DiplodocusLogin:: HandleUserLoginResult( U32 connectionId, const Packet
       if( connection->CanContinueLogginIn() == false )
       {
          connection->ClearLoggingOutStatus();
-         Log( "Connect user: Cannot continue logging in", 1 );
+         LogMessage( LOG_PRIO_ERR, "Connect user: Cannot continue logging in" );
          return false;
       }
 
@@ -547,66 +636,15 @@ bool     DiplodocusLogin:: HandleUserLoginResult( U32 connectionId, const Packet
          const bool isLoggedIn = true; 
          const bool wasDisconnectedByError = false;
 
-        /* SendLoginStatusToOtherServers( connection->m_userName, 
-                                       connection->m_userUuid, 
-                                       connectionId, 
-                                       connection->m_gameProductId, 
-                                       connection->m_lastLoginTime, 
-                                       connection->m_isActive, 
-                                       connection->m_email, 
-                                       connection->m_passwordHash, 
-                                       connection->m_id,
-                                       connection->m_loginKey, 
-                                       connection->m_languageId, 
-                                       isLoggedIn, 
-                                       wasDisconnectedByError);*/
-
-         SendLoginStatusTo_Non_GameServers( connection->m_userName, 
-                                             connection->m_userUuid, 
-                                             connectionId, 
-                                             connection->m_gameProductId, 
-                                             connection->m_lastLoginTime, 
-                                             connection->m_isActive, 
-                                             connection->m_email, 
-                                             connection->m_passwordHash, 
-                                             connection->m_id, 
-                                             connection->m_loginKey, 
-                                             connection->m_languageId, 
-                                             isLoggedIn, 
-                                             wasDisconnectedByError,
-                                             connection->GetGatewayId() );
-
-         cout << "--------------------------------------------" << endl;
-         cout << "User login: " << connection->m_userName << endl;
-         cout << "User uuid: " << connection->m_userUuid << endl;
-         cout << "lastLoginTime = " << connection->m_lastLoginTime << endl;
-         cout << "--------------------------------------------" << endl;
-         if( connection->SuccessfulLoginFinished( connectionId, false ) == true )
-         {
-            Log( "User connection success", 1 );
-            m_uniqueUsers.insert( connection->m_userUuid );
-
-            UpdateLastLoggedInTime( dbResult->id ); // update the user logged in time
-            SendLoginStatusTo_GameServers( connection->m_userName, 
-                                             connection->m_userUuid, 
-                                             connectionId, 
-                                             connection->m_gameProductId, 
-                                             connection->m_lastLoginTime, 
-                                             connection->m_isActive, 
-                                             connection->m_email, 
-                                             connection->m_passwordHash, 
-                                             connection->m_id, 
-                                             connection->m_loginKey, 
-                                             connection->m_languageId, 
-                                             isLoggedIn, 
-                                             wasDisconnectedByError,
-                                             connection->GetGatewayId() );
-            return true;
-         }
-         else
-         {
-            Log( "User connection failure", 1 );
-         }         
+         return BroadcastLoginStatus( connectionId, 
+                                connection->m_gameProductId, 
+                                isLoggedIn, 
+                                wasDisconnectedByError,
+                                connection->GetGatewayId() );
+      }
+      else
+      {
+         LogMessage( LOG_PRIO_INFO, "User connection failure %s", connection->m_userName.c_str() );
       }
    }
 
@@ -645,7 +683,7 @@ bool     DiplodocusLogin:: LogUserOut( U32 connectionId, bool wasDisconnectedByE
    }
    else
    {
-      Log( "Attempt to log user out failed: user record not found", 1 );
+      LogMessage( LOG_PRIO_INFO, "Attempt to log user out failed: user record not found: %d", connectionId );
       return false;
    }
    return true;
@@ -786,8 +824,8 @@ void     DiplodocusLogin:: RemoveOldConnections()
          {
             cout << "fn: " << __FUNCTION__ << endl;
          }*/
-         const int normalExpireTime = 18; // seconds
-         if( difftime( testTimer, connection.m_loggedOutTime ) >= normalExpireTime )
+         
+         if( difftime( testTimer, connection.m_loggedOutTime ) >= normalLogoutExpireTime )
          {
             FinalizeLogout( temp->first, false );
             m_userConnectionMap.erase( temp );
@@ -833,12 +871,12 @@ void     DiplodocusLogin:: TellUserThatAccountAlreadyMatched( const CreateAccoun
       cout << "fn: " << __FUNCTION__ << endl;
    }
 
-   cout << "-----------------------------------" << endl;
-   cout << "Account create: Error... user eamil already in use" << endl;
-   cout << "Username: " << aggregator->m_username << endl;
-   cout << "Email:    " << aggregator->m_useremail << endl;
-   cout << "GK Hash:  " << aggregator->m_gamekitHashId << endl;
-   cout << "-----------------------------------" << endl;
+   LogMessage( LOG_PRIO_ERR, "-----------------------------------" );
+   LogMessage( LOG_PRIO_ERR, "Account create: Error... user eamil already in use" );
+   LogMessage( LOG_PRIO_ERR, "Username: %s", aggregator->m_username.c_str() );
+   LogMessage( LOG_PRIO_ERR, "Email:    %s", aggregator->m_useremail.c_str() );
+   LogMessage( LOG_PRIO_ERR, "GK Hash:  %s", aggregator->m_gamekitHashId.c_str() );
+   LogMessage( LOG_PRIO_ERR, "-----------------------------------" );
 
    if( aggregator->GetMatchingRecordType( CreateAccountResultsAggregator::MatchingRecord_Name ) )
    {
@@ -960,13 +998,12 @@ void     DiplodocusLogin:: CreateNewPendingUserAccount( const CreateAccountResul
    {
       cout << "fn: " << __FUNCTION__ << endl;
    }
-
-   cout << "-----------------------------------" << endl;
-   cout << "Account create: Create pending user account" << endl;
-   cout << "Username: " << aggregator->m_username << endl;
-   cout << "Email:    " << aggregator->m_useremail << endl;
-   cout << "GK Hash:  " << aggregator->m_gamekitHashId << endl;
-   cout << "-----------------------------------" << endl;
+   LogMessage( LOG_PRIO_INFO, "-----------------------------------" );
+   LogMessage( LOG_PRIO_INFO, "Account create: Create pending user account" );
+   LogMessage( LOG_PRIO_INFO, "Username: ", aggregator->m_username.c_str() );
+   LogMessage( LOG_PRIO_INFO, "Email:    ", aggregator->m_useremail.c_str() );
+   LogMessage( LOG_PRIO_INFO, "GK Hash:  ", aggregator->m_gamekitHashId.c_str() );
+   LogMessage( LOG_PRIO_INFO, "-----------------------------------" );
 
    string query = "INSERT INTO user_temp_new_user (user_name, user_name_match, user_pw_hash, user_email, user_gamekit_hash, game_id, language_id) "
                                  "VALUES ('%s', '%s', '%s', '%s', '%s', '%s', '%s')";
@@ -1009,12 +1046,12 @@ void     DiplodocusLogin:: UpdatePendingUserRecord( const CreateAccountResultsAg
       cout << "fn: " << __FUNCTION__ << endl;
    }
 
-   cout << "-----------------------------------" << endl;
-   cout << "Account create: Update pending user account" << endl;
-   cout << "Username: " << aggregator->m_username << endl;
-   cout << "Email:    " << aggregator->m_useremail << endl;
-   cout << "GK Hash:  " << aggregator->m_gamekitHashId << endl;
-   cout << "-----------------------------------" << endl;
+   LogMessage( LOG_PRIO_INFO, "-----------------------------------" );
+   LogMessage( LOG_PRIO_INFO, "Account create: Update pending user account" );
+   LogMessage( LOG_PRIO_INFO, "Username: ", aggregator->m_username.c_str() );
+   LogMessage( LOG_PRIO_INFO, "Email:    ", aggregator->m_useremail.c_str() );
+   LogMessage( LOG_PRIO_INFO, "GK Hash:  ", aggregator->m_gamekitHashId.c_str() );
+   LogMessage( LOG_PRIO_INFO, "-----------------------------------" );
 
    string query = "UPDATE user_temp_new_user SET user_name='%s', user_name_match='%s', "
          "user_pw_hash='%s', user_email='%s', user_gamekit_hash='%s', game_id='%s', "
@@ -1027,7 +1064,7 @@ void     DiplodocusLogin:: UpdatePendingUserRecord( const CreateAccountResultsAg
       query += boost::lexical_cast< U32 >( aggregator->m_pendingUserRecordMatchingName );
    else 
    {
-      cout << "Bad update user record in user account creation" << endl;
+      LogMessage( LOG_PRIO_ERR, "Bad update user record in user account creation" );
       assert( 0 );
    }
    query += "'";
@@ -1120,11 +1157,11 @@ bool        DiplodocusLogin:: CreateUserAccount( U32 connectionId, U32 gatewayId
       str += userName;
       str += ", email: ";
       str += email;
-      Log( str, 4 );
+      LogMessage( LOG_PRIO_ERR, str.c_str() );
 
-      Log( "--- shutting down user", 4 );
+      LogMessage( LOG_PRIO_ERR, "--- shutting down user" );
 
-      ForceUserLogoutAndBlock( connectionId );
+      ForceUserLogoutAndBlock( connectionId, gatewayId );
       return false;
    }
 
@@ -1369,7 +1406,7 @@ bool        DiplodocusLogin:: StoreUserPurchases( U32 connectionId, const Packet
    ConnectionToUser* connection = GetUserConnection( connectionId );
    if( connection == NULL )
    {
-      cout << "Error: could not find user by connection id" << endl;
+      LogMessage( LOG_PRIO_ERR, "Error: could not find user by connection id: %d", connectionId );
       return false;
    }
 
@@ -1396,7 +1433,7 @@ bool   DiplodocusLogin:: RequestListOfPurchases( U32 connectionId, const PacketL
    ConnectionToUser* connection = GetUserConnection( connectionId );
    if( connection == NULL || connection->status != ConnectionToUser::LoginStatus_LoggedIn )
    {
-      Log( "Login server.RequestListOfPurchases: major problem logged in user", 4 );
+      LogMessage( LOG_PRIO_ERR, "Login server.RequestListOfPurchases: major problem logged in user" );
       return false;
    }
 
@@ -1416,7 +1453,7 @@ bool   DiplodocusLogin:: RequestListOfPurchasesUpdate( const PacketListOfUserPur
    ConnectionToUser* connection = GetUserConnection( userInventory->userConnectionId );
    if( connection == NULL || connection->status != ConnectionToUser::LoginStatus_LoggedIn )
    {
-      Log( "Login server.RequestListOfPurchases: major problem logged in user", 4 );
+      LogMessage( LOG_PRIO_ERR, "Login server.RequestListOfPurchases: major problem logged in user" );
       return false;
    }
 
@@ -1436,7 +1473,7 @@ bool   DiplodocusLogin:: AddPurchase( U32 connectionId, const PacketAddPurchaseE
    ConnectionToUser* connection = GetUserConnection( connectionId );
    if( connection == NULL || connection->status != ConnectionToUser::LoginStatus_LoggedIn )
    {
-      Log( "Login server.AddPurchase: major problem logged in user", 4 );
+      LogMessage( LOG_PRIO_ERR, "Login server.AddPurchase: major problem logged in user" );
       return false;
    }
 
@@ -1456,7 +1493,7 @@ bool     DiplodocusLogin:: RequestProfile( U32 connectionId, const PacketRequest
    ConnectionToUser* connection = GetUserConnection( connectionId );
    if( connection == NULL || connection->status != ConnectionToUser::LoginStatus_LoggedIn )
    {
-      Log( "Login server.RequestProfile: major problem logged in user", 4 );
+      LogMessage( LOG_PRIO_ERR, "Login server.RequestProfile: major problem logged in user" );
       return false;
    }
 
@@ -1475,7 +1512,7 @@ bool     DiplodocusLogin:: UpdateProfile( U32 connectionId, const PacketUpdateUs
    ConnectionToUser* connection = GetUserConnection( connectionId );
    if( connection == NULL || connection->status != ConnectionToUser::LoginStatus_LoggedIn )
    {
-      Log( "Login server.UpdateProfile: major problem logged in user", 4 );
+      LogMessage( LOG_PRIO_ERR, "Login server.UpdateProfile: major problem logged in user" );
       return false;
    }
 
@@ -1494,7 +1531,7 @@ bool     DiplodocusLogin:: UpdateProfile( U32 connectionId, const PacketUpdateSe
    ConnectionToUser* connection = GetUserConnection( connectionId );
    if( connection == NULL || connection->status != ConnectionToUser::LoginStatus_LoggedIn )
    {
-      Log( "Login server.UpdateProfile: major problem logged in user", 4 );
+      LogMessage( LOG_PRIO_ERR, "Login server.UpdateProfile: major problem logged in user" );
       return false;
    }
 
@@ -1556,7 +1593,7 @@ bool     DiplodocusLogin:: HandleRequestListOfProducts( U32 connectionId, Packet
    ConnectionToUser* connection = GetUserConnection( connectionId );
    if( connection == NULL || connection->status != ConnectionToUser::LoginStatus_LoggedIn )
    {
-      Log( "Login server.HandleRequestListOfProducts: major problem logged in user", 4 );
+      LogMessage( LOG_PRIO_ERR, "Login server.HandleRequestListOfProducts: major problem logged in user" );
       return false;
    }
 
@@ -1619,7 +1656,7 @@ bool  DiplodocusLogin:: RequestOthersProfile( U32 connectionId, const PacketRequ
    ConnectionToUser* connection = GetUserConnection( connectionId );
    if( connection == NULL || connection->status != ConnectionToUser::LoginStatus_LoggedIn )
    {
-      Log( "Login server.RequestProfile: major problem logged in user", 4 );
+     LogMessage( LOG_PRIO_ERR, "Login server.RequestProfile: major problem logged in user" );
       return false;
    }
 
@@ -1638,7 +1675,7 @@ bool  DiplodocusLogin::ThrottleUser( U32 userConnectionId, const PacketLoginDebu
    ConnectionToUser* connection = GetUserConnection( userConnectionId );
    if( connection == NULL || connection->status != ConnectionToUser::LoginStatus_LoggedIn )
    {
-      Log( "Login server.ThrottleUser: major problem logged in user", 4 );
+      LogMessage( LOG_PRIO_ERR, "Login server.ThrottleUser: major problem logged in user" );
       return false;
    }
 
@@ -1664,7 +1701,7 @@ bool     DiplodocusLogin::EchoHandler( U32 userConnectionId )
    if( connection == NULL || connection->status != ConnectionToUser::LoginStatus_LoggedIn )
    {
       //Log( "Login server.RequestProfile: major problem logged in user", 4 );
-      cout << "echo failed to find user" << endl;
+      LogMessage( LOG_PRIO_ERR, "echo failed to find user" );
       return false;
    }
 
@@ -1705,7 +1742,7 @@ bool   DiplodocusLogin:: HandleCheats( U32 connectionId, const PacketCheat* chea
    ConnectionToUser* connection = GetUserConnection( connectionId );
    if( connection == NULL || connection->status != ConnectionToUser::LoginStatus_LoggedIn )
    {
-      Log( "Login server: major problem with cheats... user not set properly", 4 );
+      LogMessage( LOG_PRIO_ERR, "Login server: major problem with cheats... user not set properly" );
       SendErrorToClient( connectionId, connection->GetGatewayId(), PacketErrorReport::ErrorType_Cheat_BadPermissions );
       return false;
    }
@@ -1742,7 +1779,7 @@ bool     DiplodocusLogin:: UpdateProductFilterName( int index, string newVendorU
 
 //---------------------------------------------------------------
 
-bool  DiplodocusLogin:: ForceUserLogoutAndBlock( U32 connectionId )
+bool  DiplodocusLogin:: ForceUserLogoutAndBlock( U32 connectionId, U32 gatewayId )
 {
    if( m_printFunctionNames == true )
    {
@@ -1752,7 +1789,7 @@ bool  DiplodocusLogin:: ForceUserLogoutAndBlock( U32 connectionId )
    ConnectionToUser* connection = GetUserConnection( connectionId );
    if( connection )
    {
-      SendErrorToClient( connectionId, connection->GetGatewayId(), PacketErrorReport::ErrorType_UserBadLogin );
+      SendErrorToClient( connectionId, gatewayId, PacketErrorReport::ErrorType_UserBadLogin );
    }
    string                     userName;
    string                     uuid;
@@ -1786,17 +1823,17 @@ bool  DiplodocusLogin:: ForceUserLogoutAndBlock( U32 connectionId )
    loginStatus->uuid = uuid;
    loginStatus->lastLogoutTime = GetDateInUTC();
    loginStatus->loginKey = loginKey;
-   loginStatus->languageId = connection->m_languageId;
+   loginStatus->languageId = languageId;
 
    loginStatus->wasLoginSuccessful = false;
    loginStatus->adminLevel = 0;
    
-   SendPacketToGateway( loginStatus, connectionId, connection->GetGatewayId() );
+   SendPacketToGateway( loginStatus, connectionId, gatewayId );
    const bool isLoggedIn = false; 
    const bool wasDisconnectedByError = false;
 
    SendLoginStatusToOtherServers( userName, uuid, connectionId, gameProductId, lastLoginTime, active, email, passwordHash, userId, loginKey, languageId, isLoggedIn, wasDisconnectedByError,
-                                             connection->GetGatewayId() );
+                                             gatewayId );
 
    return true;
 }
@@ -2008,7 +2045,6 @@ bool  DiplodocusLogin:: SendLoginStatusToOtherServers( const string& userName,
       {
          continue;
       }
-      FruitadensLogin* login = static_cast< FruitadensLogin* >( outputPtr ); 
       SendLoginStatus( outputPtr, 
                         userName, 
                        userUuid, 
@@ -2058,7 +2094,7 @@ bool  DiplodocusLogin:: SendLoginStatusTo_Non_GameServers( const string& userNam
 
    // send this to every other listening server
    BaseOutputContainer::iterator itOutputs = m_listOfOutputs.begin();
-   cout << "SendLoginStatusTo_Non_GameServers for user: " << userName << endl;
+   LogMessage( LOG_PRIO_ERR, "SendLoginStatusTo_Non_GameServers for user: %s", userName.c_str() );
    while( itOutputs != m_listOfOutputs.end() )
    {
       ChainType*  outputPtr = static_cast< ChainType*> ( (*itOutputs).m_interface );
@@ -2094,7 +2130,7 @@ bool  DiplodocusLogin:: SendLoginStatusTo_Non_GameServers( const string& userNam
 
    if( m_printFunctionNames == true )
    {
-      cout << "fn: " << __FUNCTION__ " exit " << endl;
+      cout << "fn: " << __FUNCTION__ << " exit " << endl;
    }
 
    return true;
@@ -2122,7 +2158,7 @@ bool  DiplodocusLogin:: SendLoginStatusTo_GameServers( const string& userName,
 
    // send this to every other listening server
    BaseOutputContainer::iterator itOutputs = m_listOfOutputs.begin();
-   cout << "SendLoginStatusTo_GameServers for user: " << userName << endl;
+   LogMessage( LOG_PRIO_ERR, "SendLoginStatusTo_GameServers for user: %s", userName.c_str() );
    while( itOutputs != m_listOfOutputs.end() )
    {
       ChainType*  outputPtr = static_cast< ChainType*> ( (*itOutputs).m_interface );
@@ -2156,7 +2192,7 @@ bool  DiplodocusLogin:: SendLoginStatusTo_GameServers( const string& userName,
 
    if( m_printFunctionNames == true )
    {
-      cout << "fn: " << __FUNCTION__ " exit " << endl;
+      cout << "fn: " << __FUNCTION__ << " exit " << endl;
    }
    return true;
 }
@@ -2266,12 +2302,12 @@ void     DiplodocusLogin:: UpdateUserRecord( CreateAccountResultsAggregator* agg
    }
    else
    {
-      cout << "-----------------------------------" << endl;
-      cout << "Account create: error creating pending user account" << endl;
-      cout << "Username: " << aggregator->m_username << endl;
-      cout << "Email:    " << aggregator->m_useremail << endl;
-      cout << "GK Hash:  " << aggregator->m_gamekitHashId << endl;
-      cout << "-----------------------------------" << endl;
+      LogMessage( LOG_PRIO_ERR, "-----------------------------------" );
+      LogMessage( LOG_PRIO_ERR, "Account create: error creating pending user account" );
+      LogMessage( LOG_PRIO_ERR, "Username: ", aggregator->m_username.c_str() );
+      LogMessage( LOG_PRIO_ERR, "Email:    ", aggregator->m_useremail.c_str() );
+      LogMessage( LOG_PRIO_ERR, "GK Hash:  ", aggregator->m_gamekitHashId.c_str() );
+      LogMessage( LOG_PRIO_ERR, "-----------------------------------" );
 
       SendErrorToClient( aggregator->GetConnectionId(), aggregator->GetGatewayId(), PacketErrorReport::ErrorType_CreateFailed_UserCreateAccountPending );
    }
@@ -2331,6 +2367,7 @@ bool     DiplodocusLogin::AddOutputChainData( BasePacket* packet, U32 connection
       PacketServerToServerWrapper* wrapper = static_cast< PacketServerToServerWrapper* >( packet );
 
       U32 connectedServerId = wrapper->serverId;
+      connectedServerId = connectedServerId;
       if( connectionId == m_serverId || connectionId == 0 )// outgoing... we are send it
       {
          return HandlePacketToOtherServer( wrapper, connectionId );
@@ -2428,10 +2465,10 @@ bool     DiplodocusLogin:: HandleDbResult( PacketDbQueryResult* dbResult )
       if( connection == NULL )
       {
          string str = "Login server: Something seriously wrong where the db query came back from the server but no record.. ";
-         Log( str, 4 );
+         LogMessage( LOG_PRIO_ERR, str.c_str() );
          str = "was apparently requested or at least it was not stored properly: userName was :";
          str += dbResult->meta;
-         Log( str, 4 );
+         LogMessage( LOG_PRIO_ERR, str.c_str() );
          return false;
       }
    }
@@ -2453,13 +2490,23 @@ bool     DiplodocusLogin:: HandleDbResult( PacketDbQueryResult* dbResult )
                   SendErrorToClient( connectionId, connection->GetGatewayId(), PacketErrorReport::ErrorType_UserBadLogin );  
                   string str = "User not valid and db query failed, userName: ";
                   str += connection->m_userName;
-                  str += ", uuid: ";
-                  str += connection->m_userUuid;
+                  str += ", password: ";
+                  str += connection->m_passwordHash;
+                  str += ", connectionId: ";
+                  str += connection->m_connectionId;
+                  str += ", gatewayId: ";
+                  str += connection->m_gatewayId;
+                  
                   cout << "Error:" << str << endl;
                   cout << connection->m_passwordHash << endl;
 
-                  Log( str, 4 );
-                  ForceUserLogoutAndBlock( connectionId );
+                  LogMessage( LOG_PRIO_ERR, str.c_str() );
+                  connection->ForceCleanupState();
+                  time_t currentTime;
+                  time( &currentTime );
+                  currentTime += normalLogoutExpireTime - 3;// give us 3 seconds to cleanup
+                  connection->SetLoggedOutTime( currentTime );
+                  ForceUserLogoutAndBlock( connectionId, connection->GetGatewayId() );
                   wasHandled = false;
                }
                else
@@ -2491,8 +2538,8 @@ bool     DiplodocusLogin:: HandleDbResult( PacketDbQueryResult* dbResult )
                   str += connection->m_userName;
                   str += ", uuid: ";
                   str += connection->m_userUuid;
-                  Log( str, 4 );
-                  ForceUserLogoutAndBlock( connectionId );
+                  LogMessage( LOG_PRIO_ERR, str.c_str() );
+                  ForceUserLogoutAndBlock( connectionId, connection->GetGatewayId() );
                   wasHandled = false;
                }
                else
@@ -2525,8 +2572,8 @@ bool     DiplodocusLogin:: HandleDbResult( PacketDbQueryResult* dbResult )
                   str += connection->m_userName;
                   str += ", uuid: ";
                   str += connection->m_userUuid;
-                  Log( str, 4 );
-                  ForceUserLogoutAndBlock( connectionId );
+                  LogMessage( LOG_PRIO_ERR, str.c_str() );
+                  ForceUserLogoutAndBlock( connectionId, connection->GetGatewayId() );
                   wasHandled = false;
                }
                else
@@ -2547,8 +2594,8 @@ bool     DiplodocusLogin:: HandleDbResult( PacketDbQueryResult* dbResult )
                   str += connection->m_userName;
                   str += ", uuid: ";
                   str += connection->m_userUuid;
-                  Log( str, 4 );
-                  ForceUserLogoutAndBlock( connectionId );
+                  LogMessage( LOG_PRIO_ERR, str.c_str() );
+                  ForceUserLogoutAndBlock( connectionId, connection->GetGatewayId() );
                   wasHandled = false;
                }
                else
@@ -2578,7 +2625,7 @@ bool     DiplodocusLogin:: HandleDbResult( PacketDbQueryResult* dbResult )
                {
                   string str = "Product not found ";
                   str += dbResult->meta;
-                  Log( str, 4 );
+                  LogMessage( LOG_PRIO_ERR, str.c_str() );
                   wasHandled = false;
                }
                else
@@ -2613,7 +2660,7 @@ void     DiplodocusLogin:: StoreAllProducts( const PacketDbQueryResult* dbResult
    ProductTable::iterator  it = enigma.begin();
    //if( m_printPacketTypes == true )
    {
-      cout << "products loaded: enigma size=" << enigma.size() << endl;
+      LogMessage( LOG_PRIO_INFO, "products loaded: enigma size=%d", enigma.size() );
    }
   // int numProducts = static_cast< int >( dbResult->bucket.size() );          
    while( it != enigma.end() )
@@ -2635,17 +2682,17 @@ void     DiplodocusLogin:: StoreAllProducts( const PacketDbQueryResult* dbResult
       {
          if( productDefn.vendorUuid.size() == 0 )
          {
-            cout << "Invalid product: " << id << ", name='" << productDefn.name << "', uuid='" << productDefn.uuid << "', filter='" << productDefn.vendorUuid << "'" << endl;
+            LogMessage( LOG_PRIO_ERR, "Invalid product: %d, name='%s', uuid='%s', filter='%s'", id, productDefn.name.c_str(), productDefn.uuid.c_str(), productDefn.vendorUuid.c_str() );
             continue;// invalid product
          }
          // the filter is still useful for preventing further additions
-         cout << "Invalid product: " << id << ", name='" << productDefn.name << "', uuid='" << productDefn.uuid << "', filter='" << productDefn.vendorUuid << "'" << endl;
+         LogMessage( LOG_PRIO_ERR, "Invalid product: %d, name='%s', uuid='%s', filter='%s'", id, productDefn.name.c_str(), productDefn.uuid.c_str(), productDefn.vendorUuid.c_str() );
       }
 
       if( FindProductByVendorUuid( productDefn.vendorUuid ) != DiplodocusLogin::ProductNotFound )
       {
-         cout << "Duplicate product found by vendor uuid" << endl;
-         cout << "Invalid product: " << id << ", name='" << productDefn.name << "', uuid='" << productDefn.uuid << "', filter='" << productDefn.vendorUuid << "'" << endl;
+         LogMessage( LOG_PRIO_ERR, "Duplicate product found by vendor uuid" );
+         LogMessage( LOG_PRIO_ERR, "Invalid product: %d, name='%s', uuid='%s', filter='%s'", id, productDefn.name.c_str(), productDefn.uuid.c_str(), productDefn.vendorUuid.c_str() );
       }
 
       std::string lowercase_productUUID = productDefn.vendorUuid; 
@@ -2674,7 +2721,7 @@ void     DiplodocusLogin:: StoreAllProducts( const PacketDbQueryResult* dbResult
 
    //if( m_printPacketTypes == true )
    {
-      cout << "products loaded: size=" << m_productList.size() << endl;
+      LogMessage( LOG_PRIO_ERR, "products loaded: size=%d", m_productList.size() );
    }
 
    m_isInitialized = true;
@@ -2726,8 +2773,8 @@ void     DiplodocusLogin:: StoreSingleProduct( const PacketDbQueryResult* dbResu
 
       if( FindProductByVendorUuid( vendorUuid ) != DiplodocusLogin::ProductNotFound )
       {
-         cout << "StoreSingleProduct failed" << endl;
-         cout << "New product already stored" << endl;
+         LogMessage( LOG_PRIO_ERR, "StoreSingleProduct failed" );
+         LogMessage( LOG_PRIO_ERR, "New product already stored" );
          return;
       }
 
@@ -2811,9 +2858,8 @@ void     DiplodocusLogin:: AddNewProductToDb( const PurchaseEntryExtended& produ
 
    if( FindProductByVendorUuid( lowercase_productUuidname ) != DiplodocusLogin::ProductNotFound )
    {
-      cout << "Duplicate product found by vendor uuid" << endl;
-      cout << "Invalid product: " << product.name << " " << lowercase_productUuidname << "', filter='" << lowercase_productUuidname << "'" << endl;
-
+      LogMessage( LOG_PRIO_ERR, "Duplicate product found by vendor uuid" );
+      LogMessage( LOG_PRIO_ERR, "Invalid product: %d, name='%s', uuid='%s', filter='%s'", product.name.c_str(), lowercase_productUuidname.c_str(), lowercase_productUuidname.c_str() );
       return;
    }
 
@@ -2827,9 +2873,9 @@ void     DiplodocusLogin:: AddNewProductToDb( const PurchaseEntryExtended& produ
    U32 hash = static_cast<U32>( GenerateUniqueHash( product.name ) );
    string newUuid = GenerateUUID( hash );   
 
-   cout << "New product entry: " << endl;
-   cout << " name: " << product.name << endl;
-   cout << " UUID: " << newUuid << endl;
+   LogMessage( LOG_PRIO_INFO, "New product entry: " );
+   LogMessage( LOG_PRIO_INFO, " name: %s", product.name.c_str() );
+   LogMessage( LOG_PRIO_INFO, " UUID: %s", newUuid.c_str() );
 
    dbQuery->query = "INSERT INTO product (product_id, uuid, name, filter_name, first_available) ";
    dbQuery->query += "VALUES( 0, '";// new products haven an id of 0

@@ -26,6 +26,8 @@ using boost::format;
 
 #include "../NetworkCommon/Daemon/Daemonizer.h"
 
+#include "../NetworkCommon/Logging/server_log.h"
+
 #include "KhaanLogin.h"
 #include "DiplodocusLogin.h"
 #include "FruitadensLogin.h"
@@ -226,6 +228,8 @@ int main( int argc, const char* argv[] )
          printPackets = false, 
          printFunctions = false;
 
+   FileLogOpen( serverName.c_str() );
+
    try 
    {
        listenPort = boost::lexical_cast<int>( listenPortString );
@@ -246,7 +250,7 @@ int main( int argc, const char* argv[] )
    } 
    catch( boost::bad_lexical_cast const& ) 
    {
-       std::cout << "Error: input string was not valid" << std::endl;
+       LogMessage( LOG_PRIO_INFO, "Error: input string was not valid" );
    }
 
    if( printPacketTypes == "1" || printPacketTypes == "true" || printPacketTypes == "TRUE" )
@@ -263,14 +267,14 @@ int main( int argc, const char* argv[] )
    U64 serverUniqueHashValue = GenerateUniqueHash( serverName );
    U32 serverId = (U32)serverUniqueHashValue;
 
-   cout << serverName << endl;
-   cout << "Server stack version " << ServerStackVersion << endl;
-   cout << "ServerId " << serverId << endl;
-   cout << "Db " << dbIpAddress << ":" << dbPortAddress << endl;
-   cout << "Network protocol version: " << (int)NetworkVersionMajor << ":" << (int)NetworkVersionMinor << endl;
-   
-   cout << "   flag: autoAddLoginProduct = " << std::boolalpha << autoAddLoginProduct << endl;
-   cout << "------------------------------------------------------------------" << endl << endl << endl;
+   LogMessage( LOG_PRIO_INFO, serverName.c_str() );
+   LogMessage( LOG_PRIO_INFO, "Server stack version %s" , ServerStackVersion );
+   LogMessage( LOG_PRIO_INFO, "ServerId %u" , serverId );
+   LogMessage( LOG_PRIO_INFO, "Db %s : %d", dbIpAddress.c_str(), dbPortAddress );
+   LogMessage( LOG_PRIO_INFO, "Network protocol version: %d:%d" , (int)NetworkVersionMajor , ":" , (int)NetworkVersionMinor );
+   LogMessage( LOG_PRIO_INFO, "   flag: autoAddLoginProduct = ", ConvertToTrueFalseString( autoAddLoginProduct ) );
+      
+   LogMessage( LOG_PRIO_INFO, "------------------------------------------------------------------" );
 
    InitializeSockets();
    bool isBusy = IsPortBusy( listenPort );
@@ -298,7 +302,7 @@ int main( int argc, const char* argv[] )
          delta->SetConnectionType( Database::Deltadromeus::DbConnectionType_All );
          if( delta->IsConnected() == false )
          {
-            cout << "Error: Database connection is invalid." << endl;
+            LogMessage( LOG_PRIO_ERR, "Error: Database connection is invalid." );
             getch();
             return 1;
          }
@@ -307,7 +311,9 @@ int main( int argc, const char* argv[] )
       
       //----------------------------------
 
-      PrepConnection< FruitadensLogin, DiplodocusLogin > ( chatIpAddressString, chatPort,                   "chat",           loginServer, ServerType_Chat, true );
+      FruitadensLogin* chatServer = PrepConnection< FruitadensLogin, DiplodocusLogin > ( chatIpAddressString, chatPort,                   "chat",           loginServer, ServerType_Chat, true );
+      //chatServer->SetExtensiveLogging();
+      //chatServer->SetSleepTime( 30 );
       PrepConnection< FruitadensLogin, DiplodocusLogin > ( contactIpAddressString, contactPort,             "contact",        loginServer, ServerType_Contact, true );
       PrepConnection< FruitadensLogin, DiplodocusLogin > ( assetIpAddressString, assetPort,                 "asset",          loginServer, ServerType_Asset, true );
       PrepConnection< FruitadensLogin, DiplodocusLogin > ( purchaseIpAddressString, purchasePort,           "purchase",       loginServer, ServerType_Purchase, true );
@@ -317,20 +323,21 @@ int main( int argc, const char* argv[] )
       
       ConnectToMultipleGames< FruitadensLogin, DiplodocusLogin > ( parser, loginServer, true );
 
+      //cout << "Chat is running: " << chatServer->IsRunning() << endl;
+      //cout << "Chat is paused: " << chatServer->IsPaused() << endl;
       loginServer->Init();
       loginServer->Resume();
       loginServer->Run();
    }
    else
    {
-      cout << "***********************************************" << endl;
-      cout << " error: that server port is busy " << endl;
-      cout << "  port: " << listenPort << endl;
-      //cout << "  port: " << listenS2SPort << endl;
-      cout << " Note: you may have an instance already running" << endl;
-      cout << "        we must exit now" << endl;
-      cout << "***********************************************" << endl;
-      cout << endl << "Press any key to exit" << endl;
+      LogMessage( LOG_PRIO_ERR, "***********************************************" );
+      LogMessage( LOG_PRIO_ERR, " error: that server port is busy " );
+      LogMessage( LOG_PRIO_ERR, "  port: %d", listenPort );
+      LogMessage( LOG_PRIO_ERR, " Note: you may have an instance already running" );
+      LogMessage( LOG_PRIO_ERR, "        we must exit now" );
+      LogMessage( LOG_PRIO_ERR, "***********************************************" );
+      LogMessage( LOG_PRIO_ERR, "\nPress any key to exit" );
       getch();
    }
    

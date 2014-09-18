@@ -13,6 +13,7 @@ using boost::format;
 
 #include "DiplodocusContact.h"
 #include "UserLookupManager.h"
+#include "../NetworkCommon/NetworkIn/DiplodocusTools.h"
 
 #include <iostream>
 using namespace std;
@@ -21,17 +22,21 @@ using namespace std;
 ///////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////
 
-DiplodocusContact::DiplodocusContact( const string& serverName, U32 serverId ): Diplodocus< KhaanContact >( serverName, serverId, 0,  ServerType_Contact ),
+DiplodocusContact::DiplodocusContact( const string& serverName, U32 serverId ): 
+                                             Diplodocus< KhaanContact >( serverName, serverId, 0,  ServerType_Contact ),
                                              StatTrackingConnections(),
+                                             PacketSendingInterface(),
                                              m_numSearches( 0 ),
                                              m_numInvitesSent( 0 ),
                                              m_numInvitesAccepted( 0 ),
                                              m_numInvitesRejected( 0 ),
                                              m_hasRequestedAdminSettings( false ),
+                                             m_isWaitingForAdminSettings( false ),
                                              m_timestampExpireOldInvitations( false ),
+                                             m_userLookup( NULL ),
+                                             m_userLookupNeedsUpdate( false ),
                                              m_invitationManager( NULL ),
-                                             m_invitationManagerNeedsUpdate( false ),
-                                             m_userLookupNeedsUpdate( false )
+                                             m_invitationManagerNeedsUpdate( false )
 {
    SetSleepTime( 30 );
    time_t currentTime;
@@ -333,6 +338,7 @@ bool  DiplodocusContact::HandlePacketFromOtherServer( BasePacket* packet, U32 ga
    PacketServerJobWrapper* wrapper = static_cast< PacketServerJobWrapper* >( packet );
    BasePacket* unwrappedPacket = wrapper->pPacket;
    U32   serverIdLookup = wrapper->serverId;
+   serverIdLookup = serverIdLookup;
    //U32   connectionId = wrapper->connectionId;
 
    //bool success = false;
@@ -379,11 +385,10 @@ bool     DiplodocusContact::AddOutputChainData( BasePacket* packet, U32 connecti
       ChainLinkIteratorType itInputs = m_listOfInputs.begin();
       while( itInputs != m_listOfInputs.end() )
       {
-         ChainLink& chainedInput = *itInputs++;
-         ChainedInterface* interfacePtr = static_cast< ChainedInterface* >( chainedInput.m_interface );
-         if( interfacePtr->GetChainedType() == ChainedType_InboundSocketConnector )
+         ChainType* inputPtr = static_cast< ChainType*> ( (*itInputs).m_interface );
+         if( inputPtr->GetChainedType() == ChainedType_InboundSocketConnector )
          {
-            KhaanServerToServer* khaan = static_cast< KhaanServerToServer* >( interfacePtr );
+            KhaanServerToServer* khaan = static_cast< KhaanServerToServer* >( inputPtr );
             if( khaan->GetServerId() == m_connectionIdGateway )
             {
                khaan->AddOutputChainData( packet );
@@ -393,6 +398,7 @@ bool     DiplodocusContact::AddOutputChainData( BasePacket* packet, U32 connecti
                return true;
             }
          }
+         itInputs++;
       }
       return false;
    }
@@ -672,13 +678,14 @@ bool  DiplodocusContact::UpdateUser( const string& userUuid, U32 connectionId, U
 
 //---------------------------------------------------------------
 
-bool     DiplodocusContact::ConnectUser( PacketPrepareForUserLogin* loginPacket )
+bool     DiplodocusContact::ConnectUser( const PacketPrepareForUserLogin* loginPacket )
 {
    U32 connectionId = loginPacket->connectionId;
    string uuid = loginPacket->uuid;
    U32 gatewayId = loginPacket->gatewayId;
-   cout << "Prep for logon: " << connectionId << ", " << loginPacket->userName << ", " << uuid << ", " << loginPacket->password << endl;
-
+   //LogMessage( LOG_PRIO_INFO, "Prep for logon: %d, %s, %s, %s", connectionId, loginPacket->userName.c_str(), uuid.c_str(), loginPacket->password.c_str() );
+   LogMessage_LoginPacket( loginPacket );
+   
    UserContactMapIterator it = m_users.find( connectionId );// don't do anything if this user is already logged in.
    if( it != m_users.end() )
       return false;
@@ -711,11 +718,12 @@ bool     DiplodocusContact::ConnectUser( PacketPrepareForUserLogin* loginPacket 
 
 //---------------------------------------------------------------
 
-bool     DiplodocusContact::DisconnectUser( PacketPrepareForUserLogout* loginPacket )
+bool     DiplodocusContact::DisconnectUser( const PacketPrepareForUserLogout* logoutPacket )
 {
-   cout << "Prep for logout: " << loginPacket->connectionId << ", " << loginPacket->uuid << endl;
+   //LogMessage( LOG_PRIO_INFO, "Prep for logout: %d, %s", logoutPacket->connectionId, logoutPacket->uuid.c_str() );
+   LogMessage_LogoutPacket( logoutPacket );
 
-   U32 connectionId = loginPacket->connectionId;
+   U32 connectionId = logoutPacket->connectionId;
 
    UserContactMapIterator it = m_users.find( connectionId );
    if( it == m_users.end() )
@@ -798,8 +806,7 @@ bool     DiplodocusContact::AddQueryToOutput( PacketDbQuery* dbQuery )
    while( itOutputs != m_listOfOutputs.end() )// only one output currently supported.
    {
       ChainType* outputPtr = static_cast< ChainType*> ( (*itOutputs).m_interface );
-      ChainedInterface* interfacePtr = static_cast< ChainedInterface* >( outputPtr );
-      if( interfacePtr->GetChainedType() == ChainedType_DatabaseConnector )
+      if( outputPtr->GetChainedType() == ChainedType_DatabaseConnector )
       {
          bool isValidConnection = false;
          Database::Deltadromeus* delta = static_cast< Database::Deltadromeus* >( outputPtr );
@@ -842,8 +849,7 @@ bool     DiplodocusContact::AddQueryToOutput( PacketDbQuery* dbQuery, U32 connec
    while( itOutputs != m_listOfOutputs.end() )// only one output currently supported.
    {
       ChainType* outputPtr = static_cast< ChainType*> ( (*itOutputs).m_interface );
-      ChainedInterface* interfacePtr = static_cast< ChainedInterface* >( outputPtr );
-      if( interfacePtr->GetChainedType() == ChainedType_DatabaseConnector )
+      if( outputPtr->GetChainedType() == ChainedType_DatabaseConnector )
       {
          bool isValidConnection = false;
          Database::Deltadromeus* delta = static_cast< Database::Deltadromeus* >( outputPtr );

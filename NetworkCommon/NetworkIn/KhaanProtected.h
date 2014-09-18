@@ -16,7 +16,7 @@ public:
    ~KhaanProtected();
 
    bool	   OnDataReceived( const U8* data, int length );
-   void     SetMainOutput( ChainedInterface* chain ) { m_mainOutputChain = chain; }
+   void     SetMainOutput( BasePacketChainedType* chain ) { m_mainOutputChain = chain; }
    //----------------------------------------------
 
 protected:   
@@ -32,7 +32,7 @@ protected:
    void  SendPacketToApp( BasePacket* packet );
 
    bool                       m_markedToBeCleanedup;
-   ChainedInterface*          m_mainOutputChain;
+   BasePacketChainedType*     m_mainOutputChain;
 };
 
 //////////////////////////////////////////////////////////////////////

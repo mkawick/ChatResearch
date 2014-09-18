@@ -148,6 +148,8 @@ bool     FruitadensGateway::AcceptsPacketType( U32 packetType ) const
          }
       }
       break;
+   default:
+      return false;
    }
 
    return false;
@@ -283,6 +285,8 @@ bool FruitadensGateway::FilterOutwardPacket( BasePacket* packet ) const
             }
          }
          break;
+      default:
+         return false;
       }
    }
    else if( packet->packetType == PacketType_ServerToServerWrapper )
@@ -318,10 +322,10 @@ int  FruitadensGateway::MainLoop_OutputProcessing()
       return 0;
    }
 
-   m_mutex.lock();
+   //m_mutex.lock();
    PacketQueue tempQueue = m_packetsReadyToSend;
    m_packetsReadyToSend.clear();
-   m_mutex.unlock();
+   //m_mutex.unlock();
 
    if( tempQueue.size() > 0 )
    {
@@ -361,20 +365,20 @@ void  FruitadensGateway::PreprocessPacketsForOutput( BasePacket* packet )
       if( packetSubType == PacketLogin::LoginType_Login )
       {
          PacketLogin* login = static_cast< PacketLogin* >( testPacket );
-         LogMessage( 1, "------------- User login -------------" );
-         LogMessage( 1, "User: %s", login->userName.c_str() );
-         //LogMessage( 1, "email: ", login->user
-         LogMessage( 1, "uuid: %s", login->uuid.c_str() );
-         LogMessage( 1, "pass: %s", login->password.c_str() );
-         LogMessage( 1, "--------------------------------------" );
-         //LogMessage( 1, "Converting login types" );
+         LogMessage( LOG_PRIO_INFO, "------------- User login -------------" );
+         LogMessage( LOG_PRIO_INFO, "User: %s", login->userName.c_str() );
+         //LogMessage( LOG_PRIO_INFO, "email: ", login->user
+         LogMessage( LOG_PRIO_INFO, "uuid: %s", login->uuid.c_str() );
+         LogMessage( LOG_PRIO_INFO, "pass: %s", login->password.c_str() );
+         LogMessage( LOG_PRIO_INFO, "--------------------------------------" );
+         //LogMessage( LOG_PRIO_INFO, "Converting login types" );
          //PacketLogin* login = static_cast< PacketLogin* >( testPacket );
          PacketLoginFromGateway* newLogin = new PacketLoginFromGateway;
          newLogin->copy( *login );
          newLogin->gatewayId = m_serverId;
          delete login;
          wrapper->pPacket = newLogin;
-         //LogMessage( 1, "done converting login types" );
+         //LogMessage( LOG_PRIO_INFO, "done converting login types" );
       }
    }
 }
@@ -406,7 +410,7 @@ void  FruitadensGateway::PostProcessInputPackets( int bytesRead )
          // copy remainder into temp buffer.
          m_bytesInOverflow = bytesRead - preOffset;
          memcpy( m_overflowBuffer, m_receiveBuffer + preOffset, m_bytesInOverflow );
-         LogMessage( 1, "--- Overflow packets: %d", m_bytesInOverflow );
+         LogMessage( LOG_PRIO_INFO, "--- Overflow packets: %d", m_bytesInOverflow );
          return;
       }
 

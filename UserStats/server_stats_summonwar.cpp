@@ -32,6 +32,8 @@
 
 #endif
 
+#include <boost/lexical_cast.hpp>
+
 #include "server_stats_plugins.h"
 
 #include "UserStatsMainThread.h"
@@ -65,7 +67,7 @@ static MYSQL *s_pMysqlStats = NULL;
 ///////////////////////////////////////////////////////////////////////////////////////////////////////
 ////
 ////  TEMP!
-////  copied from netmsg.g
+////  copied from netmsg.h
 ////
 
 #if defined(_MSC_VER)
@@ -574,7 +576,7 @@ static void SummonWar_OnReportGameResult(unsigned int gameID, int playerCount, u
 */
    const char *gameName = SummonWar_GameName;
 
-   printf( "  Receive ReportGameResult for %s game %d:" );
+   printf( "  Receive ReportGameResult for %s game %d:", gameName, gameID );
    for( int p = 0; p < playerCount; ++p )
    {
       printf( "  %d(%d)", pResults[p], pFactions[p] );
@@ -864,6 +866,20 @@ static void SummonWar_OnReportGameResult(unsigned int gameID, int playerCount, u
 
 }
 
+static void SummonWar_OnReportUserForfeit(unsigned int userID, unsigned int gameID)
+{
+   /*
+#if USE_MYSQL_DATABASE
+   struct st_mysql *mysqlUser = GetMysqlUserConnection();
+   const char *gameName = GameDatabaseName(GAME_SELECT_SUMMONWAR);
+#endif
+*/
+   const char *gameName = SummonWar_GameName;
+
+   printf( "  Receive ReportUserForfeit for %s user %d\n", gameName, userID );
+
+   RunSqlStatsQuery("UPDATE stats_%s SET forfeits=forfeits+1 WHERE user_id=\'%u\'", gameName, userID );
+}
 
 
 static void OnRequestPlayerFactionStats_SummonWar(UserStatsMainThread *pUserStats, U32 connectionId, unsigned int userId)
@@ -1012,24 +1028,27 @@ static void OnRequestGameProfile_SummonWar( UserStatsMainThread *pUserStats, U32
    msgUpdatePlayerProfile.playerData.userID = profileUserId;
    msgUpdatePlayerProfile.playerData.userState = 0;
    msgUpdatePlayerProfile.playerData.avatarIndex = 1;
-   //const char *gamekitId = pProfileUser->GetGameKitId();
-   //if (gamekitId)
-   //{
-   //   STRCPY( msgUpdatePlayerProfile.playerData.username.name,
-   //      sizeof(msgUpdatePlayerProfile.playerData.username.name), gamekitId);
-   //   msgUpdatePlayerProfile.playerData.username.type = GAME_PLAYER_NAME_GAMEKIT;
-   //}
-   //else
+   memset( msgUpdatePlayerProfile.playerData.username.displayName, 0,
+      sizeof(msgUpdatePlayerProfile.playerData.username.displayName) );
+   memset( msgUpdatePlayerProfile.playerData.username.gameKitHash, 0,
+      sizeof(msgUpdatePlayerProfile.playerData.username.gameKitHash) );
+   msgUpdatePlayerProfile.playerData.username.type = GAME_PLAYER_NAME_BASIC;
+
+   char query[256];
+   sprintf(query, "SELECT user_name FROM users WHERE user_id=\'%u\'", profileUserId);
+
+   mysql_query(s_pMysqlStats, query);
+   MYSQL_RES *user_res = mysql_store_result(s_pMysqlStats);
+   if( user_res )
    {
-      //const char *username = pProfileUser->GetName();
-      //STRCPY( msgUpdatePlayerProfile.playerData.username.displayName,
-      //   sizeof(msgUpdatePlayerProfile.playerData.username.displayName), username );
-      memset( msgUpdatePlayerProfile.playerData.username.displayName, 0,
-         sizeof(msgUpdatePlayerProfile.playerData.username.displayName) );
-      memset( msgUpdatePlayerProfile.playerData.username.gameKitHash, 0,
-         sizeof(msgUpdatePlayerProfile.playerData.username.gameKitHash) );
-      msgUpdatePlayerProfile.playerData.username.type = GAME_PLAYER_NAME_BASIC;
+      MYSQL_ROW user_row = mysql_fetch_row(user_res);
+      if( user_row )
+      {
+         strcpy( msgUpdatePlayerProfile.playerData.username.displayName, user_row[0] );
+      }
+      mysql_free_result(user_res);
    }
+
 
    //unsigned int inProgressGames = 0;
    //std::vector<CServerChannel*>::const_iterator game_itt = pProfileUser->GetChannelList().begin();
@@ -1048,7 +1067,6 @@ static void OnRequestGameProfile_SummonWar( UserStatsMainThread *pUserStats, U32
 
    const char *gameName = SummonWar_GameName;
 
-   char query[256];
    sprintf(query, "SELECT * FROM stats_%s WHERE user_id=\'%u\'", gameName, profileUserId);
 
    mysql_query(s_pMysqlStats, query);
@@ -1239,6 +1257,7 @@ void SummonWar_StatsPluginInit( StatsPlugin *pluginData, MYSQL *mysqlStats )
    //pluginData->onGameUpdate = SummonWar_OnGameUpdate;
    //pluginData->onHandleForfeitUserDecision = SummonWar_OnHandleForfeitUserDecision;
    pluginData->onReportGameResult = SummonWar_OnReportGameResult;
+   pluginData->onReportUserForfeit = SummonWar_OnReportUserForfeit;
 
    pluginData->onRequestPlayerFactionStats = OnRequestPlayerFactionStats_SummonWar;
    pluginData->onRequestGlobalFactionStats = OnRequestGlobalFactionStats_SummonWar;

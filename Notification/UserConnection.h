@@ -9,7 +9,7 @@
 
 struct ExtendedRegisteredDevice : public RegisteredDevice
 {
-   int      userDeviceId;
+   U32      userDeviceId;
    string   deviceId;
 };
 
@@ -50,7 +50,7 @@ public:
    void        UserLogged() { m_isLoggedOut = false; }
    void        UserLoggedOut();
 
-   bool        NeedsUpdate() { m_requiresUpdate = true; }
+   //bool        NeedsUpdate() { m_requiresUpdate = true; }
    void        Update();
 
 
@@ -114,7 +114,6 @@ private:
 
    RegisteredDeviceList                m_deviceList;
    DeviceNotificationsList             m_deviceEnabledList;
-   bool                                m_requiresUpdate;
 
    static NotificationMainThread* m_mainThread;
 };

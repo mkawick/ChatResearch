@@ -64,6 +64,7 @@ public:
    void        SetServerUniqueId( U32 id ) { m_serverId = id; }
 
    void        SetNetworkVersionOverride( U8 ver ) { m_networkVersionOverride = ver; }
+   void        SetExtensiveLogging( bool on = true ) { m_extensiveLogging = on; }
 
    virtual bool   NeedsProcessingTime() const { return true; }
    virtual void   HasBeenConnectedCallback();
@@ -94,7 +95,7 @@ protected:
    virtual bool   FilterOutwardPacket( BasePacket* packet ) const { return true; }// true means acceptable
 
    void           AttemptConnection();
-   void           SocketHasDisconnectedDuringRecv( int error_number );
+   virtual void   SocketHasDisconnectedDuringRecv( int error_number );
    virtual bool   HandleS2SIdentitfyPacket( BasePacket* packetIn );
 
    SocketType           m_clientSocket;
@@ -125,6 +126,7 @@ protected:
 
    U8       m_overflowBuffer[ MaxBufferSize ];
    int      m_bytesInOverflow;
+   bool     m_extensiveLogging;
 };
 
 //-------------------------------------------------------------------------
@@ -150,6 +152,7 @@ protected:
 
    bool        PackageLocalServerIdentificationToSend();
    bool        HandleS2SIdentitfyPacket( BasePacket* packetIn );
+   void        SocketHasDisconnectedDuringRecv( int error_number );
 
    bool        m_areLocalIdentifyingParamsSet;
    string      m_localServerName;
@@ -168,6 +171,14 @@ protected:
 
    bool        m_recentlyConnected;
    bool        m_recentlyDisconnected;
+
+   string      m_connectedServerName;
+   string      m_connectedServerIp;
+   U16         m_connectedServerPort;
+   bool        m_connectedIsGame;
+   bool        m_connectedIsController;
+   time_t      m_connectedServerTime;
+   time_t      m_disconnectedServerTime;
 };
 
 //-------------------------------------------------------------------------

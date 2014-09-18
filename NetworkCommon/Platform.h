@@ -17,6 +17,10 @@
 
 #elif defined(ANDROID)
 #include <pthread.h>
+#include <android/log.h>   //Logging
+#ifndef LOG_TAG
+#define  LOG_TAG    "MBER"
+#endif
 typedef unsigned int size_t;
 #define PLATFORM   PLATFORM_UNIX
 
@@ -24,3 +28,5 @@ typedef unsigned int size_t;
 #define PLATFORM   PLATFORM_UNIX
 #endif
 
+#define STRINGIFY(s) XSTRINGIFY(s)
+#define XSTRINGIFY(s) #s

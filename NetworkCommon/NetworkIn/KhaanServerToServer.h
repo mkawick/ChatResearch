@@ -15,6 +15,7 @@ public:
    const char* GetClassName() const { return "KhaanServerToServer"; }
 
    bool	   OnDataReceived( const U8* data, int length );
+   //bool	   Update();
 
    
    void     SetServerName( const string& name ) { m_serverName = name; }

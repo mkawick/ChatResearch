@@ -1,6 +1,7 @@
 #pragma once
 
 #include "../Platform.h"
+#include <string>
 
 #if PLATFORM == PLATFORM_WINDOWS
 
@@ -20,14 +21,17 @@
 
 #endif
 
+
+
 void LogOpen();
 
 // Writes a message to the server log. priority is one of the LOG_PRIO constants above.
 void LogMessage(int priority, const char *fmt, ...);
+void LogMessage(int priority, const std::string& str );
 
 void LogClose();
 
 
-void  FileLogOpen( const char* filename = 0L );
-void  FileLog( const char* text );
+void  FileLogOpen( const char* filename = 0L, bool erasePreviousContents = false );
+void  FileLog( int priority, const char* text );
 void  FileLogClose();

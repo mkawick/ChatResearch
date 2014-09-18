@@ -197,7 +197,9 @@ void     DiplodocusLoadBalancer::InputConnected( IChainedInterface * chainedInpu
    khaan->SetConnectionId( newId );
 
    khaan->SetMainOutput( this );
+   m_mutex.lock();
    m_connectionsNeedingUpdate.push_back( newId );
+   m_mutex.unlock();
 }
 
 ///////////////////////////////////////////////////////////////////
@@ -451,6 +453,8 @@ void     DiplodocusLoadBalancer::HandlePacketToKhaan( KhaanConnector* khaan, Bas
    U32 connectionId = khaan->GetConnectionId();
    khaan->AddOutputChainData( packet );
 
+   m_mutex.lock();
+   //MarkConnectionAsNeedingUpdate
    ConnectionIdQueue::iterator it = m_connectionsNeedingUpdate.begin();
    while( it != m_connectionsNeedingUpdate.end() )
    {
@@ -458,6 +462,7 @@ void     DiplodocusLoadBalancer::HandlePacketToKhaan( KhaanConnector* khaan, Bas
          return;
    }
    m_connectionsNeedingUpdate.push_back( connectionId );
+   m_mutex.unlock();
 }
 
 
@@ -471,6 +476,7 @@ int   DiplodocusLoadBalancer::MainLoop_OutputProcessing()
    // lookup packet info and pass it back to the proper socket if we can find it.
    if( m_connectionsNeedingUpdate.size() )
    {
+      m_mutex.lock();
       //PrintText( "MainLoop_OutputProcessing" );
 
       while( m_connectionsNeedingUpdate.size() > 0 )// this has the m_outputChainListMutex protection
@@ -488,6 +494,7 @@ int   DiplodocusLoadBalancer::MainLoop_OutputProcessing()
             }
          }
       }
+      m_mutex.unlock();
    }
    return 1;
 }

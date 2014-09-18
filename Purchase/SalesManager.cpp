@@ -21,7 +21,35 @@ using namespace std;
 #include "../NetworkCommon/Packets/LoginPacket.h"
 //#include "../NetworkCommon/Utils/TableWrapper.h"
 
-using namespace std;
+///////////////////////////////////////////////////////////////////////////////////////////
+
+void  ThreadSafeSetWrapper::Add( const string& uuid )
+{
+   m_mutex.lock();
+   m_set.insert( uuid );
+   m_mutex.unlock();
+}
+
+void  ThreadSafeSetWrapper::Remove( const string& uuid )
+{
+   m_mutex.lock();
+   m_set.erase( uuid );
+   m_mutex.unlock();
+}
+
+bool  ThreadSafeSetWrapper::Find( const string& uuid )
+{
+   bool isFound = false;
+   m_mutex.lock();
+   if( m_set.find( uuid ) != m_set.end() )
+   {
+      isFound = true;
+   }
+   m_mutex.unlock();
+   return isFound;
+}
+
+
 
 ///////////////////////////////////////////////////////////////////////////////////////////
 
@@ -114,7 +142,7 @@ string   FormatInsertIntoUserJoinProductSimple( const string& userUuid, const st
 
 void     SalesManager::UserLoggedOut( const string& uuid )
 {
-   m_usersBeingServiced.erase( uuid );
+   m_usersBeingServiced.Remove( uuid );
 }
 
 //---------------------------------------------------------------
@@ -130,7 +158,7 @@ bool     SalesManager::HandleResult( const PacketDbQueryResult* dbResult )
       ExchangeRateParser::iterator  it = enigma.begin();
       if( enigma.m_bucket.size() > 0 )
       {
-         //cout << " Successful query = " << m_queryString << endl;
+         //cout << " Successful query = " << m_queryString );
          exchangeRates.clear();
       }  
       while( it != enigma.end() )
@@ -144,7 +172,7 @@ bool     SalesManager::HandleResult( const PacketDbQueryResult* dbResult )
 
    if( lookupType == DiplodocusPurchase::QueryType_LoadAllProducts )
    {
-      cout << "product list loaded" << endl;
+      LogMessage( LOG_PRIO_INFO, "product list loaded" );
       ProductTable         enigma( dbResult->bucket );
       ProductTable::iterator  it = enigma.begin();
       while( it != enigma.end() )
@@ -154,7 +182,7 @@ bool     SalesManager::HandleResult( const PacketDbQueryResult* dbResult )
          m_productMapByUuid.insert( ProductUuidPair( p.uuid, p ) );
       }
       m_isInitializing = false;
-      cout << "Final size was: " << m_productMapByUuid.size() << endl;
+      LogMessage( LOG_PRIO_INFO, "Final product list size was: %d", m_productMapByUuid.size() );
       return true;
    }
 
@@ -208,7 +236,7 @@ bool     SalesManager::HandleResult( const PacketDbQueryResult* dbResult )
       {
          m_parent->SendErrorToClient( purchaseTracking->connectionId, purchaseTracking->gatewayId, PacketErrorReport::ErrorType_Purchase_UserDoesNotHaveEnoughToTrade );
          SendTournamentPurchaseResultBackToServer( purchaseTracking->fromOtherServerId, purchaseTracking->fromOtherServerTransactionId, PacketErrorReport::ErrorType_Purchase_UserDoesNotHaveEnoughToTrade );
-         m_usersBeingServiced.erase( purchaseTracking->userUuid );
+         m_usersBeingServiced.Remove( purchaseTracking->userUuid );
          delete purchaseTracking;
       }
       return true;
@@ -235,7 +263,7 @@ bool     SalesManager::HandleResult( const PacketDbQueryResult* dbResult )
 
       NotifyLoginToReloadUserInventory( purchaseTracking->userUuid, purchaseTracking->connectionId );
 
-      m_usersBeingServiced.erase( purchaseTracking->userUuid );
+      m_usersBeingServiced.Remove( purchaseTracking->userUuid );
       delete purchaseTracking;
 
       return true;
@@ -251,10 +279,10 @@ bool     SalesManager::HandleResult( const PacketDbQueryResult* dbResult )
 
    if( lookupType ==DiplodocusPurchase:: QueryType_PerformInventoryAddition )
    {
-      cout << "SalesManager handle query result: QueryType_PerformInventoryAddition " << endl;
-      cout << " Successful addition: " << boolalpha << dbResult->successfulQuery << noboolalpha << endl;
+      LogMessage( LOG_PRIO_INFO, "SalesManager handle query result: QueryType_PerformInventoryAddition " );
+      LogMessage( LOG_PRIO_INFO, " Successful addition: %s", ConvertToTrueFalseString( dbResult->successfulQuery ) );
       const string& userUuid = dbResult->meta;
-      m_usersBeingServiced.erase( userUuid );
+      m_usersBeingServiced.Remove( userUuid );
       if( dbResult->successfulQuery )
       {
          UserAccountPurchase* user = NULL;
@@ -271,9 +299,9 @@ bool     SalesManager::HandleResult( const PacketDbQueryResult* dbResult )
 
 void     SalesManager::NotifyLoginToReloadUserInventory( const string& userUuid, U32 connectionId )
 {
-   cout << "SalesManager::NotifyLoginToReloadUserInventory" << endl;
-   cout << "UserUuid:" << userUuid << endl;
-   cout << "connectionId:" << connectionId << endl;
+   LogMessage( LOG_PRIO_INFO, "SalesManager::NotifyLoginToReloadUserInventory" );
+   LogMessage( LOG_PRIO_INFO, "UserUuid: %s", userUuid.c_str() );
+   LogMessage( LOG_PRIO_INFO, "connectionId: %d", connectionId );
 
    PacketListOfUserPurchasesUpdated* purchasesUpdate = new PacketListOfUserPurchasesUpdated;
    purchasesUpdate->userUuid = userUuid;
@@ -285,7 +313,7 @@ void     SalesManager::NotifyLoginToReloadUserInventory( const string& userUuid,
 
 void     SalesManager::VerifyThatUserHasEnoughMoneyForEntry2( const PacketDbQueryResult* dbResult )
 {
-   cout << "SalesManager::VerifyThatUserHasEnoughMoneyForEntry2" << endl;
+   LogMessage( LOG_PRIO_INFO, "SalesManager::VerifyThatUserHasEnoughMoneyForEntry2" );
 
    PurchaseTracking* purchaseTracking = static_cast< PurchaseTracking* >( dbResult->customData );
    
@@ -294,7 +322,7 @@ void     SalesManager::VerifyThatUserHasEnoughMoneyForEntry2( const PacketDbQuer
       m_parent->SendErrorToClient( purchaseTracking->connectionId, purchaseTracking->gatewayId, PacketErrorReport::ErrorType_Purchase_UserDoesNotHaveEnoughToTrade );
       SendTournamentPurchaseResultBackToServer( purchaseTracking->fromOtherServerId, purchaseTracking->fromOtherServerTransactionId, PacketErrorReport::ErrorType_Purchase_UserDoesNotHaveEnoughToTrade );
       delete purchaseTracking;
-      m_usersBeingServiced.erase( purchaseTracking->userUuid );
+      m_usersBeingServiced.Remove( purchaseTracking->userUuid );
       return;
    }
 
@@ -358,7 +386,7 @@ void     SalesManager::VerifyThatUserHasEnoughMoneyForEntry2( const PacketDbQuer
    {
       m_parent->SendErrorToClient( purchaseTracking->connectionId, purchaseTracking->gatewayId, PacketErrorReport::ErrorType_Purchase_UserDoesNotHaveEnoughToTrade );
       SendTournamentPurchaseResultBackToServer( purchaseTracking->fromOtherServerId, purchaseTracking->fromOtherServerTransactionId, PacketErrorReport::ErrorType_Purchase_UserDoesNotHaveEnoughToTrade );
-      m_usersBeingServiced.erase( purchaseTracking->userUuid );
+      m_usersBeingServiced.Remove( purchaseTracking->userUuid );
       delete purchaseTracking;
    }
 
@@ -371,7 +399,7 @@ void     SalesManager::VerifyThatUserHasEnoughMoneyForEntry2( const PacketDbQuer
 
 bool     SalesManager::RequestAllProducts()
 {
-   cout << "Loading initial product list" << endl;
+   LogMessage( LOG_PRIO_INFO, "Loading initial product list" );
    PacketDbQuery* dbQuery = new PacketDbQuery;
    dbQuery->id = 0;
    dbQuery->lookup = DiplodocusPurchase::QueryType_LoadAllProducts;
@@ -449,7 +477,7 @@ bool     SalesManager::FindItem( const string& exchangeUuid, ExchangeEntry& ee )
 
 bool     SalesManager::SendTournamentPurchaseResultBackToServer( U32 serverIdentifier, string serverTransactionUuid, int result )
 {
-   cout << "SalesManager::SendTournamentPurchaseResultBackToServer" << endl;
+   LogMessage( LOG_PRIO_INFO, "SalesManager::SendTournamentPurchaseResultBackToServer" );
    if( serverIdentifier == 0 )
       return false;
    assert( serverTransactionUuid.size() > 0 );
@@ -478,7 +506,7 @@ bool     SalesManager::SendTournamentPurchaseResultBackToServer( U32 serverIdent
 
 bool     SalesManager::PerformSale( const string& purchaseUuid, const UserTicket& userPurchasing, U32 serverIdentifier, string serverTransactionUuid )
 {
-   cout << "SalesManager::PerformSale2" << endl;
+   LogMessage( LOG_PRIO_INFO, "SalesManager::PerformSale2" );
    ExchangeEntry ee;
    if( FindItem( purchaseUuid, ee ) == false )
    {
@@ -487,7 +515,7 @@ bool     SalesManager::PerformSale( const string& purchaseUuid, const UserTicket
       return false;
    }
 
-   if( m_usersBeingServiced.find( userPurchasing.uuid ) != m_usersBeingServiced.end() )
+   if( m_usersBeingServiced.Find( userPurchasing.uuid ) == true )
    {
       m_parent->SendErrorToClient( userPurchasing.connectionId, userPurchasing.gatewayId, PacketErrorReport::ErrorType_Purchase_StoreBusy );
       SendTournamentPurchaseResultBackToServer( serverIdentifier, serverTransactionUuid, PacketErrorReport::ErrorType_Purchase_StoreBusy );
@@ -515,7 +543,7 @@ bool     SalesManager::PerformSale( const string& purchaseUuid, const UserTicket
       }
    }
 
-   m_usersBeingServiced.insert( userPurchasing.uuid );
+   m_usersBeingServiced.Add( userPurchasing.uuid );
 
    PurchaseTracking* purchaseLookup = new PurchaseTracking;
    purchaseLookup->userUuid = userPurchasing.uuid;
@@ -546,7 +574,7 @@ bool     SalesManager::PerformSale( const string& purchaseUuid, const UserTicket
 
 bool     SalesManager::PerformSale( const SerializedVector< PurchaseServerDebitItem >& itemsToSpend, const UserTicket& userPurchasing, U32 serverIdentifier, string serverTransactionUuid )
 {
-   cout << "SalesManager::PerformSale1" << endl;
+   LogMessage( LOG_PRIO_INFO, "SalesManager::PerformSale1" );
 
    if( itemsToSpend.size() == 0 )
    {
@@ -555,7 +583,7 @@ bool     SalesManager::PerformSale( const SerializedVector< PurchaseServerDebitI
       return false;
    }
 
-   if( m_usersBeingServiced.find( userPurchasing.uuid ) != m_usersBeingServiced.end() )
+   if( m_usersBeingServiced.Find( userPurchasing.uuid ) == true )
    {
       m_parent->SendErrorToClient( userPurchasing.connectionId, userPurchasing.gatewayId, PacketErrorReport::ErrorType_Purchase_StoreBusy );
       SendTournamentPurchaseResultBackToServer( serverIdentifier, serverTransactionUuid, PacketErrorReport::ErrorType_Purchase_StoreBusy );
@@ -578,7 +606,7 @@ bool     SalesManager::PerformSale( const SerializedVector< PurchaseServerDebitI
    
    //---------------------------------
 
-   m_usersBeingServiced.insert( userPurchasing.uuid );
+   m_usersBeingServiced.Add( userPurchasing.uuid );
 
    PurchaseTracking* purchaseLookup = new PurchaseTracking;
    purchaseLookup->userUuid = userPurchasing.uuid;
@@ -611,12 +639,12 @@ bool     SalesManager::PerformSale( const SerializedVector< PurchaseServerDebitI
 
 bool     SalesManager::PerformSimpleInventoryAddition( const string& userUuid, string productUuid, int count, bool translateFromIAP )
 {
-   cout << "SalesManager::PerformSimpleInventoryAddition" << endl;
-   if( m_usersBeingServiced.find( userUuid ) != m_usersBeingServiced.end() )
+   LogMessage( LOG_PRIO_INFO, "SalesManager::PerformSimpleInventoryAddition" );
+   if( m_usersBeingServiced.Find( userUuid ) == true )
    {
-      cout << "Error: SalesManager::PerformSimpleInventoryAddition " << endl;
-      cout << "user already being serviced and cannot add inventory item " << endl;
-      cout << " User uuid: " << userUuid << endl;
+      LogMessage( LOG_PRIO_ERR, "Error: SalesManager::PerformSimpleInventoryAddition " );
+      LogMessage( LOG_PRIO_ERR, "user already being serviced and cannot add inventory item " );
+      LogMessage( LOG_PRIO_ERR, " User uuid: %s", userUuid.c_str() );
       return false;
    }
 
@@ -646,11 +674,11 @@ bool     SalesManager::PerformSimpleInventoryAddition( const string& userUuid, s
       }
       if( translated == false )
       {
-         cout << "SalesManager::PerformSimpleInventoryAddition failed to find IAP" << endl;
+         LogMessage( LOG_PRIO_INFO, "SalesManager::PerformSimpleInventoryAddition failed to find IAP" );
          return false;
       }
    }
-   m_usersBeingServiced.insert( userUuid ); // << insertion
+   m_usersBeingServiced.Add( userUuid ); // << insertion
 
    PacketDbQuery* dbQuery = new PacketDbQuery;
    dbQuery->id = 0;

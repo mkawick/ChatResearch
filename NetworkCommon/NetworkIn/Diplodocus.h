@@ -17,8 +17,11 @@
 #include "../ServerType.h"
 #include "../ChainedArchitecture/ChainedThread.h"
 #include "../ChainedArchitecture/ChainedInterface.h"
-#include <map>
+
 #include <time.h>
+
+#include <map>
+#include <deque>
 
 ////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -127,7 +130,7 @@ public:
 protected:
 
    void           MarkAllConnectionsAsNeedingUpdate( BaseOutputContainer& listOfClients );
-   void           MarkConnectionAsNeedingUpdate( int connectionId );
+   void           MarkConnectionAsNeedingUpdate( U32 connectionId );
    bool           DelayPacketToGateway( BasePacket* packet, U32 connectionId, U32 gatewayId, float delayInSecs );
 
    virtual void   SetupClientConnectionForDeletion( InputChainType* chain );
@@ -136,10 +139,10 @@ protected:
 
    typedef typename std::map< U32, InputChainType* >        ClientMap;// posssibly change this to a hash lookup once the client is logged in
    typedef typename ClientMap::iterator                     ClientMapIterator;
-   typedef typename pair< U32, InputChainType* >            ClientLookup;
+   typedef typename std::pair< U32, InputChainType* >       ClientLookup;
    
    ClientMap                                                m_connectedClients; // this is a duplicate of the chained list, but with mapping
-   deque< U32 >                                             m_clientsNeedingUpdate;
+   std::deque< U32 >                                             m_clientsNeedingUpdate;
 
    list< DelayedPacket >                  m_delayedGatewayPackets;
 

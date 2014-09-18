@@ -30,12 +30,12 @@ public:
    FriendInfo(): avatarId( 0 ), isOnline( false ) {}
    FriendInfo( const string& name, int avatar, bool online ): userName( name ), avatarId( avatar ), isOnline( online )  {}
    FriendInfo( const string& name, const string& _motto, int avatar, bool online, bool favorite, const string& notes ): 
-            userName( name ), 
+            userName( name ),
+            notesAboutThisUser( notes ),
             motto( _motto ),
             avatarId( avatar ), 
             isOnline( online ),
-            markedAsFavorite( favorite ),
-            notesAboutThisUser( notes ){}
+            markedAsFavorite( favorite ){}
 
    bool  SerializeIn( const U8* data, int& bufferOffset, int minorVersion );
    bool  SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const;

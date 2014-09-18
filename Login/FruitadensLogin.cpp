@@ -94,32 +94,58 @@ bool FruitadensLogin::FilterOutwardPacket( BasePacket* packet ) const
 
    return false;
 }
+/*
+int       FruitadensLogin::CallbackFunction()
+{
+   ProcessEvents();
+
+   m_inputChainListMutex.lock();
+   LogMessage( LOG_PRIO_INFO, "FruitadensLogin: MainLoop_InputProcessing enter" );
+   MainLoop_InputProcessing();
+   LogMessage( LOG_PRIO_INFO, "FruitadensLogin: MainLoop_InputProcessing exit" );
+   m_inputChainListMutex.unlock();
+
+   //-------------------------------
+
+   m_outputChainListMutex.lock();
+   LogMessage( LOG_PRIO_INFO, "FruitadensLogin: MainLoop_OutputProcessing enter" );
+   MainLoop_OutputProcessing();
+   LogMessage( LOG_PRIO_INFO, "FruitadensLogin: MainLoop_OutputProcessing exit" );
+   m_outputChainListMutex.unlock();
+
+   return 0;
+}*/
 
 //-----------------------------------------------------------------------------------------
 
 int  FruitadensLogin::MainLoop_OutputProcessing()
 {
+   if( m_extensiveLogging )
+   {
+      LogMessage( LOG_PRIO_INFO, "FruitadensLogin: OutputLoop enter" );
+   }
    if( m_isConnected == false )
    {
       return 0;
    }
 
-   m_mutex.lock();
+   //m_mutex.lock();
    PacketQueue tempQueue = m_packetsReadyToSend;
    m_packetsReadyToSend.clear();
-   m_mutex.unlock();
+   //m_mutex.unlock();
 
    if( tempQueue.size() > 0 )
    {
+      if( m_extensiveLogging )
+      {
+         LogMessage( LOG_PRIO_INFO, "FruitadensLogin:sending packets: %u ", tempQueue.size() );
+      }
       PacketFactory factory;      
       while( tempQueue.size() )
       {
          BasePacket* packet = tempQueue.front();
          tempQueue.pop_front();
          
-         //SerializePacketOut( packet );
-
-         
          if( packet->packetType == PacketType_ServerToServerWrapper )         
          {
             SerializePacketOut( packet );
@@ -135,33 +161,11 @@ int  FruitadensLogin::MainLoop_OutputProcessing()
          factory.CleanupPacket( packet );
       }
    }
-/*
-   if( m_packetsReadyToSend.size() > 0 )
+
+   if( m_extensiveLogging )
    {
-      PacketFactory factory;
-      m_mutex.lock();
-      while( m_packetsReadyToSend.size() )
-      {
-         BasePacket* packet = m_packetsReadyToSend.front();
-         m_packetsReadyToSend.pop_front();
-
-         if( packet->packetType == PacketType_ServerToServerWrapper )         
-         {
-            SerializePacketOut( packet );
-         }
-         else
-         {
-            PacketServerToServerWrapper wrapper;
-            wrapper.serverId = m_serverId;
-            wrapper.pPacket = packet;
-            SerializePacketOut( &wrapper );
-         }
-         
-         factory.CleanupPacket( packet );
-      }
-      m_mutex.unlock();
+      LogMessage( LOG_PRIO_INFO, "FruitadensLogin: OutputLoop exit" );
    }
-*/
    return 0;
 }
 

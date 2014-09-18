@@ -1092,6 +1092,7 @@ bool  ClientNetworkWrapper::RequestLogin( const string& userName, const string& 
    return true;
 }
 
+
 //-----------------------------------------------------------------------------
 
 bool     ClientNetworkWrapper::RequestAccountCreate( const string& userName, const string& userEmail, const string& password, int languageId, const string& deviceId, const string& gkHash )
@@ -2931,7 +2932,7 @@ bool     ClientNetworkWrapper::RequestAvatarById( U32 id, int fileVersion  )
    if( GetAsset( assetHash, asset ) == false )
       return false;
 
-   if( asset.category != "avatar" )
+   if( strcmp( asset.category.c_str(), "avatar" ) != 0 )
       return false;
 
    PacketAsset_RequestAsset assetRequest;
@@ -4626,6 +4627,46 @@ bool     ClientNetworkWrapper::UpdateAssetData( const string& hash, AssetInfoExt
 }
 
 ///////////////////////////////////////////////////////////////////////////////////
+
+bool  NetworkLayerExtended::RequestLoginBypassPasswordHash( const string& userName, const string& password )
+{
+   if( IsConnected() == false )
+   {
+      ReconnectAfterTalkingToLoadBalancer();
+   }
+   if( m_savedLoginInfo )
+   {
+      PacketCleaner cleaner( m_savedLoginInfo );
+      m_savedLoginInfo = NULL;
+   }
+
+   cout << " NetworkLayerExtended::RequestLogin : " << userName << endl;
+
+   PacketLogin* login = new PacketLogin;
+   login->loginKey = "deadbeef";// currently unused
+   login->uuid = userName;
+   login->userName = userName;
+   login->loginKey = password;
+   login->languageCode = "En";
+   login->password = password.c_str();
+   m_attemptedUsername = userName;
+
+   m_isLoggingIn = true;
+
+   if( m_requiresGatewayDiscovery == false &&
+      SerializePacketOut( login ) == true )
+   {
+      PacketCleaner cleaner( login );
+      cout << " RequestLogin send packet" << endl;
+   }
+   else
+   {
+      m_savedLoginInfo = login;
+      cout << " RequestLogin saved packet to send later" << endl;
+   }
+
+   return true;
+}
 
 bool  NetworkLayerExtended::HandlePacketReceived( BasePacket* packetIn )
 {

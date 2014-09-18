@@ -43,7 +43,7 @@ using namespace std;
 void  LogEverything( const char* text )
 {
    //cout << text << endl;
-   //LogMessage(LOG_PRIO_ERR, "MySQL Initialization Failed\n");//
+   //LogMessage( LOG_PRIO_ERR, "MySQL Initialization Failed\n" );//
 }
 
 //---------------------------------------------------------------------------------------------------
@@ -113,7 +113,7 @@ void  DbJobBase::AddEscapedString( DbHandle* connection, const string& escapeMe 
 
    // be VERY CAREFUL on the last param here.... it's the size of the source string
    mysql_real_escape_string( connection, escapedVersion, escapeMe.c_str(), escapeMe.size() );
-   size_t escapedLen = strlen( escapedVersion );
+   int escapedLen = (int) strlen( escapedVersion );
    if( escapedLen == 0 )
       return;
 
@@ -122,7 +122,8 @@ void  DbJobBase::AddEscapedString( DbHandle* connection, const string& escapeMe 
       if( escapedLen > localBufferLen )
       {
          const string searchString = "%s";
-         const size_t searchStringLen = searchString.size();
+         size_t searchStringLen = searchString.size();
+         searchStringLen = searchStringLen;
          const char* ptr = strstr( m_query.c_str(), searchString.c_str() );
          if( ptr != NULL )
          {
@@ -162,10 +163,10 @@ bool  DbJob::SubmitQuery( MYSQL* connection, const string& dbName )
    {
       m_errorCondition = true;
       const char* errorText = mysql_error( connection );
-      cout << "DB Error: " << errorText << " on query " << m_query << endl;
+      LogMessage( LOG_PRIO_ERR, "DB Error: %s on query %s", errorText, m_query.c_str() );
 
       U32 errorCode = mysql_errno( connection );
-      cout << "DB Error code: " << errorCode << endl;
+      LogMessage( LOG_PRIO_ERR, "DB Error code: %d", errorCode );
       if( errorCode == CR_SERVER_LOST ||
          errorCode == CR_CONNECTION_ERROR ||
          errorCode == CR_SERVER_GONE_ERROR )
@@ -481,7 +482,6 @@ void     Deltadromeus::Connect()
    // This If is irrelevant and you don't need to show it. I kept it in for Fault Testing.
    if( !m_DbConnection )    // If instance didn't initialize say so and exit with fault.
    {
-      std::cout << stderr << "MySQL Initialization Failed" << endl;
       LogMessage(LOG_PRIO_ERR, "MySQL Initialization Failed\n");
       return;
    }
@@ -505,8 +505,7 @@ void     Deltadromeus::Connect()
    {
       m_isConnected = true;
       m_needsReconnection = false;
-      cout << "Successful" << output << endl;
-      //LogMessage(LOG_PRIO_ERR, "Successful%s\n", output.c_str());
+      LogMessage( LOG_PRIO_INFO, "Successful: %s", output.c_str() );
 
       //zeroMeansSuccess = mysql_set_character_set( m_DbConnection, "utf8" );
 
@@ -515,8 +514,7 @@ void     Deltadromeus::Connect()
    }
    else
    {
-      cout << "Failed" << output << endl;
-      LogMessage(LOG_PRIO_ERR, "Failed%s\n", output.c_str());
+      LogMessage( LOG_PRIO_ERR, "Failed %s", output.c_str());
    }
    
 
@@ -560,7 +558,7 @@ int     Deltadromeus::CallbackFunction()
          {
             m_isConnected = false;
             m_needsReconnection = true;
-            cout << "-> Bad connection leads to a reconnect and resetting the state of the query." << endl;
+            LogMessage( LOG_PRIO_ERR, "-> Bad connection leads to a reconnect and resetting the state of the query." );
             Connect();
             currentJob->ResetErrorState();// keep trying until the connection resets.
             currentJob->ResetToResubmitSameQuery();
@@ -583,7 +581,7 @@ int     Deltadromeus::CallbackFunction()
                }
                else
                {
-                  cout << "Result set rejected" << endl;
+                  LogMessage( LOG_PRIO_ERR, "Result set rejected" );
                   delete currentJob;// we gave the sender every opportunity to accept
                }
             }
@@ -693,14 +691,14 @@ bool  Database::ParseCommandLineIntoConnectionInfo( CommandLineParser& parser, v
    {
       if( parser.FindValue( "dblist", databaseConfiguration ) == false )
       {
-         cout << "Multiple dbs were not listed. " << endl;
+         LogMessage( LOG_PRIO_INFO, "Multiple dbs were not listed. " );
          return false;
       }
    }
 
    int NumFields = 6;
    U32 bitTrackingForDbConnections = 0;
-   cout << "databases found = " << endl << "[ " << endl; 
+   LogMessage( LOG_PRIO_INFO, "databases found = \n[\n" ); 
    vector< string >::iterator it = databaseConfiguration.begin();
    while( it != databaseConfiguration.end() )
    {
@@ -715,8 +713,8 @@ bool  Database::ParseCommandLineIntoConnectionInfo( CommandLineParser& parser, v
          const string& dbPassword = values[4];
          const string& dbSchema = values[5];
 
-         cout << boost::format("%s: %15s:%s ={ %6s - %-6s }-schema=%s")  % dbConnectionType % dbIpAddress % dbPort % dbUsername % dbPassword % dbSchema << endl;
-
+         string result( (boost::format("%s: %15s:%s ={ %6s - %-6s }-schema=%s")  % dbConnectionType % dbIpAddress % dbPort % dbUsername % dbPassword % dbSchema ).str() );
+         LogMessage( LOG_PRIO_INFO, result.c_str() );
          
          int port = 0;
          bool success = false;
@@ -727,7 +725,7 @@ bool  Database::ParseCommandLineIntoConnectionInfo( CommandLineParser& parser, v
          } 
          catch( boost::bad_lexical_cast const& ) 
          {
-             cout << "Error: input string was not valid" << endl;
+             LogMessage( LOG_PRIO_ERR, "Error: input string was not valid" );
          }
          std::transform( dbConnectionType.begin(), dbConnectionType.end(), dbConnectionType.begin(), ::tolower);
 
@@ -737,7 +735,7 @@ bool  Database::ParseCommandLineIntoConnectionInfo( CommandLineParser& parser, v
             dbType |= (U32)Database::Deltadromeus::DbConnectionType_GameData;
             if( dbType & bitTrackingForDbConnections )
             {
-               cout << "Error: duplicate connection types" << endl;
+               LogMessage( LOG_PRIO_ERR, "Error: duplicate connection types" );
                return false;
             }
          }
@@ -746,7 +744,7 @@ bool  Database::ParseCommandLineIntoConnectionInfo( CommandLineParser& parser, v
             dbType |= Database::Deltadromeus::DbConnectionType_UserData;
             if( dbType & bitTrackingForDbConnections )
             {
-               cout << "Error: duplicate connection types" << endl;
+               LogMessage( LOG_PRIO_ERR, "Error: duplicate connection types" );
                return false;
             }
          }
@@ -755,7 +753,7 @@ bool  Database::ParseCommandLineIntoConnectionInfo( CommandLineParser& parser, v
             dbType |= Database::Deltadromeus::DbConnectionType_StatData;
             if( dbType & bitTrackingForDbConnections )
             {
-               cout << "Error: duplicate connection types" << endl;
+               LogMessage( LOG_PRIO_ERR, "Error: duplicate connection types" );
                return false;
             }
          }
@@ -764,7 +762,7 @@ bool  Database::ParseCommandLineIntoConnectionInfo( CommandLineParser& parser, v
             dbType = Database::Deltadromeus::DbConnectionType_All;
             if( dbType & bitTrackingForDbConnections )
             {
-               cout << "Error: duplicate connection types" << endl;
+               LogMessage( LOG_PRIO_ERR, "Error: duplicate connection types" );
                return false;
             }
          }
@@ -781,10 +779,10 @@ bool  Database::ParseCommandLineIntoConnectionInfo( CommandLineParser& parser, v
       }
       else
       {
-         cout << "Not enough database configuration for this game:" << str << endl;
+         LogMessage( LOG_PRIO_ERR, "Not enough database configuration for this game: %s", str.c_str() );
       }
    }
-   cout << "]" << endl;
+   LogMessage( LOG_PRIO_INFO, "]" );
 
    return true;
 }

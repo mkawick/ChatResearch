@@ -1,6 +1,7 @@
 #include <stdarg.h>
 #include <stdio.h>
 #include <iostream>
+#include "../Platform.h"
 using namespace std;
 
 void LogMessage(int priority, const char *fmt, ...)
@@ -12,6 +13,9 @@ void LogMessage(int priority, const char *fmt, ...)
    vsprintf(buffer, fmt, args);
 
    va_end(args);
-
+#if defined(ANDROID)
+   __android_log_print(ANDROID_LOG_INFO,  LOG_TAG, "%s", buffer);
+#else
    cout << buffer << endl;
+#endif
 }

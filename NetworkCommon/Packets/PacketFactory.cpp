@@ -1249,6 +1249,11 @@ bool     PacketFactory::ParseUserStats( const U8* bufferIn, int& bufferOffset, c
          *packetOut = SerializeIn< PacketUserStats_ReportGameResult >( bufferIn, bufferOffset, networkMinorVersion );
       }
       return true;
+   case PacketUserStats::UserStatsType_ReportUserForfeit:
+      {
+         *packetOut = SerializeIn< PacketUserStats_ReportUserForfeit >( bufferIn, bufferOffset, networkMinorVersion );
+      }
+      return true;
    case PacketUserStats::UserStatsType_RequestGameFactionStats:
       {
          *packetOut = SerializeIn< PacketUserStats_RequestGameFactionStats >( bufferIn, bufferOffset, networkMinorVersion );

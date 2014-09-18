@@ -55,8 +55,8 @@ public:
    static void    Set( PacketSendingInterface* svr ) { m_mainServer = svr; }
    static void    Set( GroupLookupInterface* svr ) { m_groupLookup = svr; }
 
-   void           SetDbIdentifier( int dbIdentifier ) { m_dbIdentifier = dbIdentifier; }
-   int            GetDbIdentifier() const { return m_dbIdentifier; }
+   void           SetDbIdentifier( U32 dbIdentifier ) { m_dbIdentifier = dbIdentifier; }
+   U32            GetDbIdentifier() const { return m_dbIdentifier; }
 
    bool           HandleDbResult( PacketDbQueryResult* packet );
 
@@ -105,8 +105,8 @@ protected:
    void           DeleteInvitationFromDb( U32 invitationId );
    //void           SendInvitationToSenderAndRecipient( const Invitation& inv );
 
-   InvitationMapConstIterator  FindInvitation( const string& inviter, const string& invitationUuid ) const;
-   InvitationMapConstIterator  FindInvitation( const string& inviter, const string& invitee, const string& groupUuid ) const ;
+   InvitationMapIterator  FindInvitation( const string& inviter, const string& invitationUuid );
+   InvitationMapIterator  FindInvitation( const string& inviter, const string& invitee, const string& groupUuid );
    bool           IsThereAlreadyAnInvitationToThisGroupInvolvingTheseTwoUsers( const string& user1, const string& user2, const string& groupUuid ) const;
    
 
@@ -115,7 +115,7 @@ protected:
    Invitation::InvitationType          m_type;
    InvitationMap                       m_invitationMap;
 
-   int                                 m_dbIdentifier;
+   U32                                 m_dbIdentifier;
 
    bool                                m_initialRequestForAllInvitesSent;
    bool                                m_isInitialized;

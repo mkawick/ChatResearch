@@ -117,6 +117,18 @@ public:
    Product& operator = ( ProductTable::row  row );
 };
 
+class ThreadSafeSetWrapper
+{
+public: 
+   void  Add( const string& uuid );
+   void  Remove( const string& uuid );
+   bool  Find( const string& uuid );
+
+private:
+   set< string >        m_set;
+   Threading::Mutex     m_mutex;
+};
+
 ///////////////////////////////////////////////////////////////////////////////////////////
 
 class SalesManager : public QueryHandler< DiplodocusPurchase* >
@@ -151,7 +163,7 @@ private:
    bool                             m_isServicingExchangeRates;
    bool                             m_isInitializing, m_hasSendProductRequest;
    vector< ExchangeEntry >          exchangeRates;
-   set< string >                    m_usersBeingServiced;
+   ThreadSafeSetWrapper             m_usersBeingServiced;
 
    map< string, Product >           m_productMapByUuid;
    typedef map< string, Product >::iterator ProductMapByUuidIterator;

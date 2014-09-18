@@ -11,6 +11,7 @@
 #include "DiplodocusGame.h"
 #include "KhaanGame.h"
 #include "GameFramework.h"
+#include "../NetworkCommon/NetworkIn/DiplodocusTools.h"
 
 #include <iostream>
 #include <time.h>
@@ -52,7 +53,7 @@ void     DiplodocusGame::InputRemovalInProgress( IChainedInterface* chainedInput
 
    string currentTime = GetDateInUTC();
    string printer = "Client disconnection at time:" + currentTime + " from " + inet_ntoa( khaan->GetIPAddress().sin_addr );
-   cout << printer << endl;
+   LogMessage( LOG_PRIO_INFO, printer.c_str() );
 
    PrintDebugText( "** InputRemovalInProgress" , 1 );
 }
@@ -61,7 +62,7 @@ void     DiplodocusGame::InputRemovalInProgress( IChainedInterface* chainedInput
 
 void     DiplodocusGame::InputConnected( IChainedInterface* chainedInput )
 {
-   cout << "Gateway has connected" << endl;
+   LogMessage( LOG_PRIO_INFO, "Gateway has connected" );
    //m_connectionIdGateway = khaan->GetServerId();
 }
 
@@ -76,7 +77,8 @@ void     DiplodocusGame::ServerWasIdentified( IChainedInterface* khaan )
 
    ChainedType* localKhaan = static_cast< ChainedType* >( khaan );
    localKhaan->AddOutputChainData( packet, 0 );
-   m_serversNeedingUpdate.push_back( localKhaan->GetServerId() );
+   //m_serversNeedingUpdate.push_back( localKhaan->GetServerId() );
+   MarkConnectionAsNeedingUpdate( localKhaan->GetChainedId() );
 }
 
 //---------------------------------------------------------------
@@ -376,12 +378,11 @@ bool   DiplodocusGame::AddOutputChainData( BasePacket* packet, U32 connectionId 
          if( interfacePtr->GetChainedType() == ChainedType_InboundSocketConnector )
          {
             KhaanGame* khaan = static_cast< KhaanGame* >( interfacePtr );
-            if( khaan->GetServerId() == gatewayId )
+            if( khaan->GetChainedType() == ChainedType_InboundSocketConnector && 
+               khaan->GetServerId() == gatewayId )
             {
                khaan->AddOutputChainData( packet );
-               //khaan->Update();// the gateway may not have a proper connection id.
-
-               m_serversNeedingUpdate.push_back( khaan->GetServerId() );
+               MarkConnectionAsNeedingUpdate( khaan->GetChainedId() );
                return true;
             }
          }
@@ -398,7 +399,7 @@ bool   DiplodocusGame::AddOutputChainData( BasePacket* packet, U32 connectionId 
       return HandlePacketFromOtherServer( unwrappedPacket, serverIdLookup );
    }
 
-   cout << "Output layer is seonding unhandled packet up" << endl;
+   LogMessage( LOG_PRIO_INFO, "Output layer is seonding unhandled packet up" );
    return HandlePacketFromOtherServer( packet, connectionId );
 }
 
@@ -480,7 +481,7 @@ void     DiplodocusGame::UpdateAllTimers()
 int   DiplodocusGame::CallbackFunction()
 {
    // I would do this with a map, but we'll only ever have one or two of these.
-   while( m_serversNeedingUpdate.size() )
+ /*  while( m_serversNeedingUpdate.size() )
    {
       U32 serverId = m_serversNeedingUpdate.front();
       m_serversNeedingUpdate.pop_front();
@@ -503,7 +504,7 @@ int   DiplodocusGame::CallbackFunction()
             }
          }
       }
-   }
+   }*/
 
    CleanupOldClientConnections( "KhaanGame" );
 
@@ -768,7 +769,8 @@ void     DiplodocusGame::ConnectUser( const PacketPrepareForUserLogin* loginPack
    U32 connectionId = loginPacket->connectionId;
    string uuid = loginPacket->uuid;
    U32 gatewayId = loginPacket->gatewayId;
-   cout << "Prep for logon: " << connectionId << ", " << loginPacket->userName << ", " << uuid << ", " << loginPacket->password << endl;
+   //LogMessage( LOG_PRIO_INFO, "Prep for logon: %d, %s, %s, %s", connectionId, loginPacket->userName.c_str(), uuid.c_str(), loginPacket->password.c_str() );
+   LogMessage_LoginPacket( loginPacket );
 
    if( m_callbacks )
    {
@@ -793,7 +795,8 @@ void     DiplodocusGame::ConnectUser( const PacketPrepareForUserLogin* loginPack
 
 void  DiplodocusGame::DisconnectUser( const PacketPrepareForUserLogout* logoutPacket )
 {
-    cout << "Prep for logout: " << logoutPacket->connectionId << ", " << logoutPacket->uuid << endl;
+   //LogMessage( LOG_PRIO_INFO, "Prep for logout: %d, %s", logoutPacket->connectionId, logoutPacket->uuid.c_str() );
+   LogMessage_LogoutPacket( logoutPacket );
 
    U32 connectionId = logoutPacket->connectionId;
    bool  errorDisconnect = logoutPacket->wasDisconnectedByError;

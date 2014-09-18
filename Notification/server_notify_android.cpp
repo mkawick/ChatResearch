@@ -14,6 +14,10 @@
 #include <curl/curl.h>
 using namespace std;
 
+#include <stdio.h>
+#include <string.h>
+#include <stdarg.h> 
+
 //#include "server_database.h"
 //#include "server_gamedata.h"
 //#include "server_log.h"

@@ -6,6 +6,8 @@
 #include "../NetworkCommon/Packets/LoginPacket.h"
 #include "../NetworkCommon/Packets/PacketFactory.h"
 
+#include "../NetworkCommon/NetworkIn/DiplodocusTools.h"
+
 #include "AssetOrganizer.h"
 
 #include <iostream>
@@ -53,9 +55,9 @@ void     AssetMainThread::InputRemovalInProgress( IChainedInterface * chainedInp
 
    string currentTime = GetDateInUTC();
    string printer = "Client disconnection at time:" + currentTime + " from " + inet_ntoa( khaan->GetIPAddress().sin_addr );
-   cout << printer << endl;
+   LogMessage( LOG_PRIO_ERR, printer.c_str() );
 
-   PrintDebugText( "** InputRemovalInProgress" , 1 );
+   LogMessage( LOG_PRIO_ERR, "** InputRemovalInProgress" );
 }
 
 //---------------------------------------------------------------
@@ -111,7 +113,7 @@ bool  FillInAssetOrganizer( string& line, AssetOrganizer& assetDictionary )
             }
             else
             {
-               cout << "Invalid file :  " << assetDictionary.GetPath() << endl;
+               LogMessage( LOG_PRIO_INFO, "Invalid file :  %s", assetDictionary.GetPath().c_str() );
             }
          }
          else
@@ -170,8 +172,8 @@ bool  LoadListOfFiles( const string& assetManifestFile, AssetMainThread::Categor
    string line;
    if (!infile) 
    { 
-      std::cerr << "Error opening file!" << endl; 
-      std::cout << "file not found: " << assetManifestFile << endl; 
+      LogMessage( LOG_PRIO_ERR, "Error opening file!" ); 
+      LogMessage( LOG_PRIO_ERR, "file not found: %s", assetManifestFile.c_str() ); 
       return false; 
    }
 
@@ -187,7 +189,7 @@ bool  LoadListOfFiles( const string& assetManifestFile, AssetMainThread::Categor
       if( IsBracketedTag( line, bracketPairs ) ) // start a new asset or item
       {
          string tag = RemoveEnds( line, bracketPairs );
-         cout << "INVALID Tag in assets of assets file: " << tag << endl;
+         LogMessage( LOG_PRIO_ERR, "INVALID Tag in assets of assets file: %s", tag.c_str() );
          assert( tag == "file" );
 
          // we'll keep reading after this
@@ -323,7 +325,10 @@ bool     AssetMainThread::AddInputChainData( BasePacket* packet, U32 gatewayId )
             Threading::MutexLock locker( m_mutex );
             UAADMapIterator found = m_userTickets.find( userHash );
             if( found == m_userTickets.end() )
+            {
+               LogMessage( LOG_PRIO_INFO, "Request received but user not found: connId:%d, gatewayId:%d, uuid:%s, numUsersInList:%d", connectionId, gatewayId, uuid.c_str(), m_userTickets.size() );
                return true;
+            }
             if( found->second.LoginKeyMatches( loginKey ) == false )
             {
                SendErrorToClient( connectionId, gatewayId, PacketErrorReport::ErrorType_Asset_BadLoginKey );
@@ -395,20 +400,22 @@ bool  AssetMainThread::HandlePacketFromOtherServer( BasePacket* packet, U32 gate
 
 //---------------------------------------------------------------
 
-bool     AssetMainThread::ConnectUser( PacketPrepareForUserLogin* loginPacket )
+bool     AssetMainThread::ConnectUser( const PacketPrepareForUserLogin* loginPacket )
 {
    U32 connectionId = loginPacket->connectionId;
    string uuid = loginPacket->uuid;
    U32 gatewayId = loginPacket->gatewayId;
-   cout << "Prep for logon: " << connectionId << ", " << loginPacket->userName << ", " << uuid << ", " << loginPacket->password << endl;
-
+   LogMessage_LoginPacket( loginPacket );
+            
    U64 hashForUser = GenerateUniqueHash( loginPacket->uuid );
 
    Threading::MutexLock locker( m_mutex );
    UAADMapIterator it = m_userTickets.find( hashForUser );
    if( it != m_userTickets.end() )// user may be reloggin and such.. no biggie.. just ignore
    {
-      it->second.SetConnectionId( 0 );
+      it->second.ClearLoggedOutStatus();
+      it->second.SetConnectionId( connectionId );
+      it->second.SetGatewayId( gatewayId );
       return false;
    }
 
@@ -437,13 +444,14 @@ bool     AssetMainThread::ConnectUser( PacketPrepareForUserLogin* loginPacket )
 
 //---------------------------------------------------------------
 
-bool     AssetMainThread::DisconnectUser( PacketPrepareForUserLogout* loginPacket )
+bool     AssetMainThread::DisconnectUser( const PacketPrepareForUserLogout* logoutPacket )
 {
-   cout << "Prep for logout: " << loginPacket->connectionId << ", " << loginPacket->uuid << endl;
+   LogMessage_LogoutPacket( logoutPacket );
+   //LogMessage( LOG_PRIO_INFO, "Prep for logout: %d, %s", logoutPacket->connectionId, logoutPacket->uuid.c_str() );
 
-   U32 connectionId = loginPacket->connectionId;
+   U32 connectionId = logoutPacket->connectionId;
    connectionId = connectionId;
-   string uuid = loginPacket->uuid;
+   string uuid = logoutPacket->uuid;
    U64 hashForUser = GenerateUniqueHash( uuid );
 
    Threading::MutexLock locker( m_mutex );
@@ -491,11 +499,10 @@ bool     AssetMainThread::AddOutputChainData( BasePacket* packet, U32 connection
       ChainLinkIteratorType itInputs = m_listOfInputs.begin();
       while( itInputs != m_listOfInputs.end() )
       {
-         ChainLink& chainedInput = *itInputs++;
-         ChainedInterface* interfacePtr = static_cast<ChainedInterface*>( chainedInput.m_interface );
-         if( interfacePtr->GetChainedType() == ChainedType_InboundSocketConnector )
+         ChainType* inputPtr = static_cast< ChainType*> ( (*itInputs).m_interface );
+         if( inputPtr->GetChainedType() == ChainedType_InboundSocketConnector )
          {
-            KhaanAsset* khaan = static_cast< KhaanAsset* >( interfacePtr );
+            KhaanAsset* khaan = static_cast< KhaanAsset* >( inputPtr );
             if( khaan->GetServerId() == m_connectionIdGateway )
             {
                khaan->AddOutputChainData( packet );
@@ -505,6 +512,7 @@ bool     AssetMainThread::AddOutputChainData( BasePacket* packet, U32 connection
                return true;
             }
          }
+         itInputs++;
       }
       return false;
    }

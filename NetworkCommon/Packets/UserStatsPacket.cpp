@@ -178,6 +178,28 @@ bool  PacketUserStats_ReportGameResult::SerializeOut( U8* data, int& bufferOffse
 
 ///////////////////////////////////////////////////////////////
 
+bool  PacketUserStats_ReportUserForfeit::SerializeIn( const U8* data, int& bufferOffset, int minorVersion )
+{
+   PacketUserStats::SerializeIn( data, bufferOffset, minorVersion );
+   Serialize::In( data, bufferOffset, gameType, minorVersion );
+   Serialize::In( data, bufferOffset, userId, minorVersion );
+   Serialize::In( data, bufferOffset, gameId, minorVersion );
+
+   return true;
+}
+
+bool  PacketUserStats_ReportUserForfeit::SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const
+{
+   PacketUserStats::SerializeOut( data, bufferOffset, minorVersion );
+   Serialize::Out( data, bufferOffset, gameType, minorVersion );
+   Serialize::Out( data, bufferOffset, userId, minorVersion );
+   Serialize::Out( data, bufferOffset, gameId, minorVersion );
+
+   return true;
+}
+
+///////////////////////////////////////////////////////////////
+
 bool  PacketUserStats_RequestGameFactionStats::SerializeIn( const U8* data, int& bufferOffset, int minorVersion )
 {
    PacketUserStats::SerializeIn( data, bufferOffset, minorVersion );

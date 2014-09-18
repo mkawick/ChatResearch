@@ -19,6 +19,7 @@ using namespace std;
 #include "../NetworkCommon/Database/StringLookup.h"
 #include "../NetworkCommon/Database/Deltadromeus.h"
 #include "../NetworkCommon/NetworkIn/DiplodocusServerToServer.h"
+#include "../NetworkCommon/NetworkIn/DiplodocusTools.h"
 
 #include <iostream>
 #include <time.h>
@@ -28,9 +29,13 @@ using namespace std;
 ///////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////
 
-DiplodocusPurchase::DiplodocusPurchase( const string& serverName, U32 serverId ): Diplodocus< KhaanPurchase >( serverName, serverId, 0,  ServerType_Purchase ), 
-                              m_isWaitingForAdminSettings( false ),
-                              m_isInitializing( true )
+DiplodocusPurchase::DiplodocusPurchase( const string& serverName, U32 serverId ): 
+                              ChainedType( serverName, serverId, 0,  ServerType_Purchase ), 
+                              m_salesManager( NULL ),
+                              m_purchaseReceiptManager( NULL ),
+                              m_stringLookup( NULL ),
+                              m_isInitializing( true ),
+                              m_isWaitingForAdminSettings( false )
                                          
 {
    time( &m_initializingAdminSettingsTimeStamp );
@@ -93,9 +98,9 @@ void     DiplodocusPurchase::InputRemovalInProgress( IChainedInterface * chained
 
    string currentTime = GetDateInUTC();
    string printer = "Client disconnection at time:" + currentTime + " from " + inet_ntoa( khaan->GetIPAddress().sin_addr );
-   cout << printer << endl;
+   LogMessage( LOG_PRIO_ERR, printer.c_str() );
 
-   PrintDebugText( "** InputRemovalInProgress" , 1 );
+   LogMessage( LOG_PRIO_ERR, "** InputRemovalInProgress" );
 }
 
 
@@ -135,7 +140,7 @@ void     DiplodocusPurchase::HandleAdminSettings( const PacketDbQueryResult* dbR
 
    if( enigma.size() == 0 )
    {
-      cout << "No admin settings" << endl;
+      LogMessage( LOG_PRIO_INFO, "No admin settings" );
       return;
    }
    while( it != enigma.end() )
@@ -147,8 +152,8 @@ void     DiplodocusPurchase::HandleAdminSettings( const PacketDbQueryResult* dbR
       if( setting == "vendor.receipt_validation.apple" )
       {
          const string& endpoint = value;
-         cout << "Vendor: Apple receipt validation value" << endl;
-         cout << value << endl;
+         LogMessage( LOG_PRIO_INFO, "Vendor: Apple receipt validation value" );
+         LogMessage( LOG_PRIO_INFO, value.c_str() );
          
          m_purchaseReceiptManager->SetValidationEndpoint( endpoint, Platform_ios );
       }
@@ -217,7 +222,7 @@ bool     DiplodocusPurchase::AddInputChainData( BasePacket* packet, U32 connecti
             found = true;
          if( found == false )
          {
-            cout << "packet from unknown connection" << connectionIdToUse << endl;
+            LogMessage( LOG_PRIO_INFO, "packet from unknown connection", connectionIdToUse );
             PacketFactory factory;
             return true;
          }
@@ -327,13 +332,14 @@ bool  DiplodocusPurchase::HandlePacketFromOtherServer( BasePacket* packet, U32 c
 
 //---------------------------------------------------------------
 
-bool     DiplodocusPurchase::ConnectUser( PacketPrepareForUserLogin* loginPacket )
+bool     DiplodocusPurchase::ConnectUser( const PacketPrepareForUserLogin* loginPacket )
 {
    U32 connectionId = loginPacket->connectionId;
    string uuid = loginPacket->uuid;
    U32 gatewayId = loginPacket->gatewayId;
-   cout << "Prep for logon: " << connectionId << ", " << loginPacket->userName << ", " << uuid << ", " << loginPacket->password << endl;
-
+   //LogMessage( LOG_PRIO_INFO, "Prep for logon: %d, %s, %s, %s", connectionId, loginPacket->userName.c_str(), uuid.c_str(), loginPacket->password.c_str() );
+   LogMessage_LoginPacket( loginPacket );
+            
    U64 hashForUser = GenerateUniqueHash( loginPacket->uuid );
 
    Threading::MutexLock locker( m_mutex );
@@ -374,14 +380,15 @@ bool     DiplodocusPurchase::ConnectUser( PacketPrepareForUserLogin* loginPacket
 
 //---------------------------------------------------------------
 
-bool     DiplodocusPurchase::DisconnectUser( PacketPrepareForUserLogout* loginPacket )
+bool     DiplodocusPurchase::DisconnectUser( const PacketPrepareForUserLogout* logoutPacket )
 {
-   cout << "Prep for logout: " << loginPacket->connectionId << ", " << loginPacket->uuid << endl;
-
-   U32 connectionId = loginPacket->connectionId;
+   LogMessage_LogoutPacket( logoutPacket );
+   //LogMessage( LOG_PRIO_INFO, "Prep for logout: %d, %s", logoutPacket->connectionId, logoutPacket->uuid.c_str() );
+            
+   U32 connectionId = logoutPacket->connectionId;
    connectionId = connectionId;
 
-   string uuid = loginPacket->uuid;
+   string uuid = logoutPacket->uuid;
    U64 hashForUser = GenerateUniqueHash( uuid );
 
    Threading::MutexLock locker( m_mutex );
@@ -485,8 +492,7 @@ bool     DiplodocusPurchase::AddQueryToOutput( PacketDbQuery* dbQuery )
    while( itOutputs != tempOutputContainer.end() )// only one output currently supported.
    {
       ChainType* outputPtr = static_cast< ChainType*> ( (*itOutputs).m_interface );
-      ChainedInterface* interfacePtr = static_cast< ChainedInterface* >( outputPtr );
-      if( interfacePtr->GetChainedType() == ChainedType_DatabaseConnector )
+      if( outputPtr->GetChainedType() == ChainedType_DatabaseConnector )
       {
          bool isValidConnection = false;
          Database::Deltadromeus* delta = static_cast< Database::Deltadromeus* >( outputPtr );
@@ -539,11 +545,9 @@ bool     DiplodocusPurchase::AddOutputChainData( BasePacket* packet, U32 connect
       if( itInputs != m_listOfInputs.end() )// only one output currently supported.
       {
          ChainType* inputPtr = static_cast< ChainType*> ( (*itInputs).m_interface );
-         ChainedInterface* interfacePtr = static_cast< ChainedInterface* >( inputPtr );
-         itInputs++;
-         if( interfacePtr->GetChainedType() == ChainedType_InboundSocketConnector )
+         if( inputPtr->GetChainedType() == ChainedType_InboundSocketConnector )
          {
-            KhaanPurchase* khaan = static_cast< KhaanPurchase* >( interfacePtr );
+            KhaanPurchase* khaan = static_cast< KhaanPurchase* >( inputPtr );
             if( khaan->GetServerId() == gatewayId )
             {
                khaan->AddOutputChainData( packet );
@@ -554,6 +558,7 @@ bool     DiplodocusPurchase::AddOutputChainData( BasePacket* packet, U32 connect
                return true;
             }
          }
+         itInputs++;
       }
       return true;
    }

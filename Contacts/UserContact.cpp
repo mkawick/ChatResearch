@@ -58,9 +58,12 @@ UserContact::UserContact( const UserInfo& info, U32 connectionId, U32 gatewayId 
                m_friendListFilled( false ),
                m_friendRequestSentListFilled( false ),
                m_friendRequestReceivedListFilled( false ),
+               m_displayOnlineStatusToOtherUsers( false ),
+               m_blockContactInvitations( false ),
+               m_blockGroupInvitations( false ),
+               m_afterFriendQuery_SendListToClient( false ),
                m_contactServer( NULL ),
-               m_invitationQueryIndex( 0 ),
-               m_afterFriendQuery_SendListToClient( false )
+               m_invitationQueryIndex( 0 )
 {
    m_timeLoggedOut = 0;
 }
@@ -1065,7 +1068,7 @@ bool  UserContact::PerformSearch( const PacketContact_SearchForUser* packet )
 bool  UserContact::RemoveContact( const PacketContact_ContactRemove* packet )
 {
    const string contactUuid = packet->contactUuid.c_str();
-   const string& message = packet->message;
+   //const string& message = packet->message;
 
    bool found = false;
     // major problem here... they may not be friends
@@ -1374,6 +1377,7 @@ void  UserContact::FinishSearchResult( const PacketDbQueryResult* dbResult )
       const string& userName = row[ TableSimpleUser::Column_name ];
       const string& uuid = row[ TableSimpleUser::Column_uuid ];
       U32 userId = boost::lexical_cast< U32 >( row[ TableSimpleUser::Column_id ] );
+      userId = userId;
       foundList.insert( uuid, FriendInfo( userName, 0, false ) );// we never inform users if someone is online during a search.. privacy and spamming reasons
    }
 

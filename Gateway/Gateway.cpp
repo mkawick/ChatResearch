@@ -204,7 +204,7 @@ int main( int argc, const char* argv[] )
          listenPort = 9600,
          userStatsPort = 12000;
 
-   U16 reroutePort = 0;
+  // U16 reroutePort = 0;
    bool printPackets = false, 
          printFunctions = false,
          assetOnly = false, 
@@ -229,7 +229,7 @@ int main( int argc, const char* argv[] )
    } 
    catch( boost::bad_lexical_cast const& ) 
    {
-       LogMessage( 1, "Error: input string was not valid" );
+       LogMessage( LOG_PRIO_ERR, "Error: input string was not valid" );
    }
 
    
@@ -243,22 +243,22 @@ int main( int argc, const char* argv[] )
    }
    if( assetOnlyString == "1" || assetOnlyString == "true" || assetOnlyString == "TRUE" )
    {
-      LogMessage( 1, " ----------------------------------------------- " );
-      LogMessage( 1, " Asset only server" );
+      LogMessage( LOG_PRIO_INFO, " ----------------------------------------------- " );
+      LogMessage( LOG_PRIO_INFO, " Asset only server" );
       
       assetOnly = true;
    }
    if( assetBlockString == "1" || assetBlockString == "true" || assetBlockString == "TRUE" )
    {
-      LogMessage( 1, " ----------------------------------------------- " );
-      LogMessage( 1, " prevents talking to asset server" );
+      LogMessage( LOG_PRIO_INFO, " ----------------------------------------------- " );
+      LogMessage( LOG_PRIO_INFO, " prevents talking to asset server" );
       assetBlock = true;
    }
 
    if( assetOnly && assetBlock )
    {
-      LogMessage( 1, " ----------------------------------------------- " );
-      LogMessage( 1, " CONFIGURATION PROBLEM: you cannot have both asset.only and asset.block flags set" );
+      LogMessage( LOG_PRIO_INFO, " ----------------------------------------------- " );
+      LogMessage( LOG_PRIO_INFO, " CONFIGURATION PROBLEM: you cannot have both asset.only and asset.block flags set" );
       return 1;
    }
 
@@ -267,13 +267,13 @@ int main( int argc, const char* argv[] )
    U64 serverUniqueHashValue = GenerateUniqueHash( serverName );
    U32 serverId = (U32)serverUniqueHashValue;
 
-   LogMessage( 1, serverName.c_str() );
-   LogMessage( 1, "Server stack version " , ServerStackVersion );
-   LogMessage( 1, "ServerId " , serverId );
-   LogMessage( 1, "External ip address: " , externalIpAddressString.c_str() );
-   LogMessage( 1, "Network protocol version: " , (int)NetworkVersionMajor , ":" , (int)NetworkVersionMinor );
+   LogMessage( LOG_PRIO_INFO, serverName.c_str() );
+   LogMessage( LOG_PRIO_INFO, "Server stack version %s" , ServerStackVersion );
+   LogMessage( LOG_PRIO_INFO, "ServerId %u" , serverId );
+   LogMessage( LOG_PRIO_INFO, "External ip address: %s" , externalIpAddressString.c_str() );
+   LogMessage( LOG_PRIO_INFO, "Network protocol version: %d:%d" , (int)NetworkVersionMajor , ":" , (int)NetworkVersionMinor );
    
-   LogMessage( 1, "------------------------------------------------------------------" );
+   LogMessage( LOG_PRIO_INFO, "------------------------------------------------------------------" );
 
    InitializeSockets();
    bool isBusy = IsPortBusy( listenPort );
@@ -299,7 +299,7 @@ int main( int argc, const char* argv[] )
       if( assetOnly == true )
       {
          gatewayServer->AllowUnauthenticatedConnections();
-         LogMessage( 1, " Asset only server does not require authentication " );
+         LogMessage( LOG_PRIO_ERR, " Asset only server does not require authentication " );
       }
       
       //--------------------------------------------------------------
@@ -322,9 +322,10 @@ int main( int argc, const char* argv[] )
          PrepConnection< FruitadensGateway, MainGatewayThread > ( assetDeliveryIpAddressString, assetPort,        "asset",          gatewayServer, ServerType_Asset, true );
       }
 
-      LogMessage( 1, "---------------------------- finished connecting ----------------------------" );
+      LogMessage( LOG_PRIO_INFO, "---------------------------- finished connecting ----------------------------" );
 
       FruitadensServerToServer* connection = PrepConnection< FruitadensServerToServer, MainGatewayThread > ( loadBalancerAddressString, balancerPort,    "balancer",       gatewayServer, ServerType_LoadBalancer, false );
+      connection = connection;// compiler warning
       
       gatewayServer->Init();
       gatewayServer->Resume();   
@@ -332,13 +333,13 @@ int main( int argc, const char* argv[] )
    }
    else
    {
-      LogMessage( 1, "***********************************************" );
-      LogMessage( 1, " error: that server port is busy " );
-      LogMessage( 1, "  port: ", listenPort );
-      LogMessage( 1, " Note: you may have an instance already running" );
-      LogMessage( 1, "        we must exit now" );
-      LogMessage( 1, "***********************************************" );
-      LogMessage( 1, "\nPress any key to exit" );
+      LogMessage( LOG_PRIO_ERR, "***********************************************" );
+      LogMessage( LOG_PRIO_ERR, " error: that server port is busy " );
+      LogMessage( LOG_PRIO_ERR, "  port: %d", listenPort );
+      LogMessage( LOG_PRIO_ERR, " Note: you may have an instance already running" );
+      LogMessage( LOG_PRIO_ERR, "        we must exit now" );
+      LogMessage( LOG_PRIO_ERR, "***********************************************" );
+      LogMessage( LOG_PRIO_ERR, "\nPress any key to exit" );
       getch();
    }
    

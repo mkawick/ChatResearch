@@ -23,6 +23,8 @@
 #include "GameFramework.h"
 #include "../NetworkCommon/NetworkOut/FruitadensServerToServer.h"
 
+#include "../NetworkCommon/Logging/server_log.h"
+
 using namespace std;
 
 GameFramework* GameFramework::m_instance = NULL;
@@ -472,6 +474,26 @@ void GameFramework::SendGameResultToStatServer( int gameType, U32 gameId, int pl
    }
 }
 
+void GameFramework::SendUserForfeitToStatServer( int gameType, U32 userId, U32 gameId )
+{
+   if( m_userStatsServer )
+   {
+      PacketUserStats_ReportUserForfeit* packet = new PacketUserStats_ReportUserForfeit;
+      packet->gameType = gameType;
+      packet->userId = userId;
+      packet->gameId = gameId;
+
+      PacketServerToServerWrapper* wrapper = new PacketServerToServerWrapper;
+      wrapper->gameInstanceId = m_serverId;
+      wrapper->gameProductId = m_gameProductId;
+      wrapper->serverId = m_serverId;
+      wrapper->pPacket = packet;
+
+      m_userStatsServer->AddOutputChainData( wrapper, -1 );
+   }
+}
+
+
 void     GameFramework::LockGameMutex()
 {
    m_connectionManager->LockMutex();
@@ -509,25 +531,29 @@ void     GameFramework::AddTimer( U32 timerId, U32 callbackTimeMs ) // timers mu
 
 bool  GameFramework::Run()
 {
-   cout << "Game framework version 0.95" << endl;
+   FileLogOpen( GetServerName().c_str() );
+
+   LogMessage( LOG_PRIO_INFO, "Game framework version 1.01" );
 
   /* Database::Deltadromeus* delta = new Database::Deltadromeus;
    delta->SetConnectionInfo( m_dbIpAddress, m_dbPort, m_dbUsername, m_dbPassword, m_dbSchema );
    if( delta->IsConnected() == false )
    {
-      cout << "Error: Database connection is invalid." << endl;
+      LogMessage( 1, "Error: Database connection is invalid." );
       return false;
    }*/
 
-   cout << GetServerName() << ":" << endl;
-   cout << "Server stack version: " << ServerStackVersion << endl;
-   cout << "Version: " << m_version << endl;
-   cout << "ServerId: " << GetServerId() << endl;
-   cout << "Product Id: " << (int) GetGameProductId() << endl;
-   cout << "Db: " << m_dbIpAddress << ":" << m_dbPort << endl;
-   cout << "Network protocol version: " << (int)NetworkVersionMajor << ":" << (int)NetworkVersionMinor << endl;
+   LogMessage( LOG_PRIO_INFO, ( GetServerName() + ":" ).c_str() );
+   LogMessage( LOG_PRIO_INFO, "Server stack version: %s", ServerStackVersion );
+   LogMessage( LOG_PRIO_INFO, "Version: %s", m_version.c_str() );
+   LogMessage( LOG_PRIO_INFO, "ServerId: %d", GetServerId() );
+   LogMessage( LOG_PRIO_INFO, "Product Id: %d", (int) GetGameProductId() );
+   LogMessage( LOG_PRIO_INFO, "Db: %s:%d", m_dbIpAddress.c_str(), m_dbPort );
+   LogMessage( LOG_PRIO_INFO, "Network protocol version: %d:%d", (int)NetworkVersionMajor, (int)NetworkVersionMinor );
    
-   cout << "------------------------------------------------------------------" << endl << endl << endl;
+   LogMessage( LOG_PRIO_INFO, "------------------------------------------------------------------\n\n\n" );
+
+   
 
    //----------------------------------------------------------------
    m_connectionManager = new DiplodocusGame( GetServerName(), GetServerId(), GetGameProductId() );
@@ -544,7 +570,7 @@ bool  GameFramework::Run()
       delta->SetConnectionType( Database::Deltadromeus::DbConnectionType_All );
       if( delta->IsConnected() == false )
       {
-         cout << "Error: Database connection is invalid." << endl;
+         LogMessage( LOG_PRIO_ERR, "Error: Database connection is invalid." );
          return 1;
       }
       m_connectionManager->AddOutputChain( delta );

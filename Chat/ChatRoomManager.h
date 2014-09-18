@@ -93,8 +93,8 @@ public:
 
    void           Init();
 
-   void           SetDbIdentifier( int dbIdentifier ) { m_dbIdentifier = dbIdentifier; }
-   int            GetDbIdentifier() const { return m_dbIdentifier; }
+   void           SetDbIdentifier( U32 dbIdentifier ) { m_dbIdentifier = dbIdentifier; }
+   U32            GetDbIdentifier() const { return m_dbIdentifier; }
 
    static void    Set( InvitationManager* svr ) { m_invitationServer = svr; }
 
@@ -243,7 +243,7 @@ private:
    int                           m_numChannelChatsSent;
    int                           m_numP2PChatsSent;
    int                           m_numChangesToChatRoom;
-   int                           m_dbIdentifier;
+   U32                           m_dbIdentifier;
 
    static InvitationManager*     m_invitationServer;
 };

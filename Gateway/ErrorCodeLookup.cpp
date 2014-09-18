@@ -10,7 +10,7 @@ string  ErrorCodeLookup::GetString( int id )
       case PacketErrorReport::ErrorType_Generic:                                       return string( "generic" );
       case PacketErrorReport::ErrorType_Status:                                        return string( "status" );
       case PacketErrorReport::ErrorType_Login:                                         return string( "login" );
-      case PacketErrorReport::ErrorType_UserBadLogin:                                  return string( "bad login" );
+      case PacketErrorReport::ErrorType_UserBadLogin:                                  return string( "Username and password do not match" );
       case PacketErrorReport::ErrorType_UserDoesNotExist:                              return string( "user does not exist" );
       case PacketErrorReport::ErrorType_UserBlocked:                                   return string( "user blocked" );
       case PacketErrorReport::ErrorType_UserLoggedOut:                                 return string( "user logged out" );
@@ -21,14 +21,14 @@ string  ErrorCodeLookup::GetString( int id )
       case PacketErrorReport::ErrorType_BadChatChannel:                                return string( "Bad Chat Channel" );
       case PacketErrorReport::ErrorType_NoChatChannel:                                 return string( "No Chat Channel" );
       case PacketErrorReport::ErrorType_UserNotOnline:                                 return string( "User Not Online" );
-      case PacketErrorReport::ErrorType_NotAMemberOfThatChatChannel:                   return string( "Not A Member O fThat Chat Channel" );
+      case PacketErrorReport::ErrorType_NotAMemberOfThatChatChannel:                   return string( "Not A Member Of That Chat Channel" );
       case PacketErrorReport::ErrorType_YouAreTheOnlyPersonInThatChatChannel:          return string( "You Are The Only Person In That Chat Channel" );
       case PacketErrorReport::ErrorType_CannotAddUserToChannel_AlreadyExists:          return string( "Cannot Add User To Channel-Already Exists" );
       case PacketErrorReport::ErrorType_NoChatHistoryExistsOnSelectedChannel:          return string( "No Chat History Exists On Selected Channel" );
       case PacketErrorReport::ErrorType_NoChatHistoryExistsForThisUser:                return string( "No Chat History Exists For This User" );
       case PacketErrorReport::ErrorType_ChatChannelCannotBeCreated:                    return string( "Chat Channel Cannot Be Created" );
       case PacketErrorReport::ErrorType_ChatChannelCannotBeDeleted:                    return string( "Chat Channel Cannot Be Deleted" );
-      case PacketErrorReport::ErrorType_UserUnknown:                                   return string( "User Unknown" );
+      case PacketErrorReport::ErrorType_UserUnknown:                                   return string( "User name and password do not match" );
       case PacketErrorReport::ErrorType_UserIsBlockingFriendInvites:                   return string( "User Is Blocking Friend Invites" );
       case PacketErrorReport::ErrorType_CannotAddUserToChannel:                        return string( "CannotAddUserToChannel" );
       case PacketErrorReport::ErrorType_ChatChannel_UserNotAcceptingInvites:           return string( "User is not accepting chat channel invites" );

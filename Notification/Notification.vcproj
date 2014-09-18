@@ -393,6 +393,14 @@
 					>
 				</File>
 				<File
+					RelativePath="..\NetworkCommon\NetworkIn\DiplodocusTools.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\NetworkCommon\NetworkIn\DiplodocusTools.h"
+					>
+				</File>
+				<File
 					RelativePath="..\NetworkCommon\NetworkIn\Khaan.cpp"
 					>
 				</File>
@@ -535,14 +543,6 @@
 			>
 			<File
 				RelativePath=".\server_comms.h"
-				>
-			</File>
-			<File
-				RelativePath="..\NetworkCommon\General\server_log.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\NetworkCommon\General\server_log.h"
 				>
 			</File>
 			<File

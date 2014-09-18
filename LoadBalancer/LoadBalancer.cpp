@@ -23,6 +23,7 @@ using boost::format;
 #include "../NetworkCommon/NetworkIn/DiplodocusServerToServer.h"
 //#include "FruitadensGateway.h"
 
+#include "../NetworkCommon/Logging/server_log.h"
 using namespace std;
 
 #if PLATFORM == PLATFORM_WINDOWS
@@ -56,24 +57,22 @@ int main( int argc, const char* argv[] )
    parser.FindValue( "s2s.address", listenForS2SAddress );
 
 
+   FileLogOpen( serverName.c_str() );
+
    vector< string > params;
    if( parser.FindValue( "gateways", params ) )
    {
-      cout << "connections found = " << endl << "[ " << endl; 
+      LogMessage( LOG_PRIO_INFO, "connections found = [ " ); 
       vector< string >::iterator it = params.begin();
       while( it != params.end() )
       {
          string str = *it++;
          vector< string > values;
          parser.SeparateStringIntoValues( str, values, 3 );
-         cout << boost::format("%15s ={ %15s - %-10s }")  % str % values[0] % values[1] << endl; // values[2]
+         LogMessage( LOG_PRIO_INFO, (boost::format("%15s ={ %15s - %-10s }")  % str % values[0] % values[1] ).str().c_str() );
       }
-      cout << "]" << endl;
+      LogMessage( LOG_PRIO_INFO, "]" );
    }
-  /* else
-   {
-      assert(0);
-   }   */
 
    //--------------------------------------------------------------
 
@@ -85,7 +84,7 @@ int main( int argc, const char* argv[] )
    } 
    catch( boost::bad_lexical_cast const& ) 
    {
-       std::cout << "Error: input string was not valid" << std::endl;
+       LogMessage( LOG_PRIO_ERR, "Error: input string was not valid" );
    }
 
 
@@ -95,11 +94,11 @@ int main( int argc, const char* argv[] )
    U32 serverId = (U32)serverUniqueHashValue;
 
    cout << serverName << endl;
-   //cout << "Version " << version << endl;
-   cout << "Server stack version " << ServerStackVersion << endl;
-   cout << "ServerId " << serverId << endl;
-   cout << "Network protocol version: " << (int)NetworkVersionMajor << ":" << (int)NetworkVersionMinor << endl;
-   cout << "------------------------------------------------------------------" << endl << endl << endl;
+   LogMessage( LOG_PRIO_INFO, ( serverName + ":" ).c_str() );
+   LogMessage( LOG_PRIO_INFO, "Server stack version: %s", ServerStackVersion );
+   LogMessage( LOG_PRIO_INFO, "ServerId: %u", serverId );
+   LogMessage( LOG_PRIO_INFO, "Network protocol version: " , (int)NetworkVersionMajor , ":" , (int)NetworkVersionMinor );
+   LogMessage( LOG_PRIO_INFO, "------------------------------------------------------------------" );
 
    //--------------------------------------------------------------
 
@@ -130,7 +129,7 @@ int main( int argc, const char* argv[] )
       }
       
       
-      cout << "---------------------------- finished connecting ----------------------------" << endl;
+      LogMessage( LOG_PRIO_INFO, "---------------------------- finished connecting ----------------------------" );
 
       loadBalancer->SetupListening( listenPort );
 
@@ -145,14 +144,14 @@ int main( int argc, const char* argv[] )
    }
    else
    {
-      cout << "***********************************************" << endl;
-      cout << " error: that server port is busy " << endl;
-      cout << "  port: " << listenPort << endl;
-      cout << "  port: " << listenS2SPort << endl;
-      cout << " Note: you may have an instance already running" << endl;
-      cout << "        we must exit now" << endl;
-      cout << "***********************************************" << endl;
-      cout << endl << "Press any key to exit" << endl;
+      LogMessage( LOG_PRIO_ERR, "***********************************************" );
+      LogMessage( LOG_PRIO_ERR, " error: that server port is busy " );
+      LogMessage( LOG_PRIO_ERR, "  port: %d", listenPort );
+      LogMessage( LOG_PRIO_ERR, "  port: %d", listenS2SPort );
+      LogMessage( LOG_PRIO_ERR, " Note: you may have an instance already running" );
+      LogMessage( LOG_PRIO_ERR, "        we must exit now" );
+      LogMessage( LOG_PRIO_ERR, "***********************************************" );
+      LogMessage( LOG_PRIO_ERR, "\nPress any key to exit" );
       getch();
    }
    

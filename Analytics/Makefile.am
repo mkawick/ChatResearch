@@ -1,11 +1,11 @@
-bin_PROGRAMS = stat_serverd
+bin_PROGRAMS = analytics_serverd
 
-stat_serverddir = $(datadir)/@PACKAGE@
+analytics_serverddir = $(datadir)/@PACKAGE@
 
-stat_serverd_SOURCES = DiplodocusStat.cpp \
-KhaanStat.cpp \
-Stat.cpp \
-StatsCommon.cpp \
+analytics_serverd_SOURCES = Analytics.cpp \
+AnalyticsCommon.cpp \
+AnalyticsMainLoop.cpp \
+ConnectorAnalytics.cpp \
 ../NetworkCommon/NetworkUtils.cpp \
 ../NetworkCommon/ServerConstants.cpp \
 ../NetworkCommon/ServerType.cpp \
@@ -18,6 +18,7 @@ StatsCommon.cpp \
 ../NetworkCommon/NetworkIn/DiplodocusServerToServer.cpp \
 ../NetworkCommon/NetworkIn/Khaan.cpp \
 ../NetworkCommon/NetworkIn/KhaanServerToServer.cpp \
+../NetworkCommon/Packets/AnalyticsPacket.cpp \
 ../NetworkCommon/Packets/AssetPacket.cpp \
 ../NetworkCommon/Packets/BasePacket.cpp \
 ../NetworkCommon/Packets/ChatPacket.cpp \
@@ -26,14 +27,15 @@ StatsCommon.cpp \
 ../NetworkCommon/Packets/ContactPacket.cpp \
 ../NetworkCommon/Packets/DbPacket.cpp \
 ../NetworkCommon/Packets/GamePacket.cpp \
+../NetworkCommon/Packets/InvitationPacket.cpp \
 ../NetworkCommon/Packets/LoginPacket.cpp \
 ../NetworkCommon/Packets/NotificationPacket.cpp \
 ../NetworkCommon/Packets/PacketFactory.cpp \
 ../NetworkCommon/Packets/PurchasePacket.cpp \
 ../NetworkCommon/Packets/Serialize.cpp \
 ../NetworkCommon/Packets/ServerToServerPacket.cpp \
-../NetworkCommon/Packets/StatPacket.cpp \
 ../NetworkCommon/Packets/TournamentPacket.cpp \
+../NetworkCommon/Packets/UserStatsPacket.cpp \
 ../NetworkCommon/Stat/StatTrackingConnections.cpp \
 ../NetworkCommon/Utils/CommandLineParser.cpp \
 ../NetworkCommon/Utils/MemoryLeakTracker.cpp \
@@ -42,18 +44,18 @@ StatsCommon.cpp \
 ../NetworkCommon/Utils/Utils.cpp \
 ../NetworkCommon/Logging/server_log.cpp
 
-stat_serverd_CXXFLAGS = -std=c++0x
+analytics_serverd_CXXFLAGS = -std=c++0x
 
-stat_serverd_LDFLAGS = -L
+analytics_serverd_LDFLAGS = -L
 
-stat_serverd_LDADD = ../../libevent/linux-libs/libevent.a \
+analytics_serverd_LDADD = ../../libevent/linux-libs/libevent.a \
 ../../libevent/linux-libs/libevent_pthreads.a \
 ../../libevent/linux-libs/libevent_core.a \
 ../../libevent/linux-libs/libevent_extra.a \
 -lrt
 
 install-exec-hook:
-	chown root $(bindir)/stat_serverd
-	sudo chmod u+s $(bindir)/stat_serverd
+	chown root $(bindir)/analytics_serverd
+	sudo chmod u+s $(bindir)/analytics_serverd
 
 

@@ -456,6 +456,7 @@ class NetworkLayerExtended: public ClientNetworkWrapper
 public:
    NetworkLayerExtended( U8 gameProductId, bool connectToAssetServer ) : ClientNetworkWrapper( gameProductId, connectToAssetServer ){}
    
+   bool  RequestLoginBypassPasswordHash( const string& username, const string& password );
    bool  HandlePacketReceived( BasePacket* packetIn );
    void  SendAssetEcho();
    void  SendChatEcho();

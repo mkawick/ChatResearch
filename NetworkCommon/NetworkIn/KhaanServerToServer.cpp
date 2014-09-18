@@ -41,7 +41,7 @@ bool  KhaanServerToServer::HandleInwardSerializedPacket( const U8* data, int& of
       }
       
 #ifdef VERBOSE
-      cout<<  " KhaanServerToServer :: OnDataReceived( p=" << packetType << ":" << packetIn->packetSubType << ")"<< endl;
+      LogMessage( LOG_PRIO_INFO, " KhaanServerToServer :: OnDataReceived( p=%d:%d )", packetType, packetIn->packetSubType );
 #endif
 
       m_inputChainListMutex.lock();
@@ -60,26 +60,27 @@ bool  KhaanServerToServer::HandleInwardSerializedPacket( const U8* data, int& of
       memcpy( temp, data, strLength );
       temp[ maxStrLen ] = 0;
 
-      cout << "**************************************************" << endl;
-      cout << "*************** critical failure *****************" << endl;
-      cout << "Cannot parse packet: " << temp << " len=" << offset << endl;
-      cout << hex << "[" << endl;
-
+      LogMessage( LOG_PRIO_ERR, "**************************************************" );
+      LogMessage( LOG_PRIO_ERR, "*************** critical failure *****************" );
+      LogMessage( LOG_PRIO_ERR, "Cannot parse packet: %s  len=%d", temp, offset );
+      LogMessage( LOG_PRIO_ERR, "[" );
+     
       for(int i=0; i< strLength; i += 20 )
       {
          int remaining = strLength - i;
          if ( remaining > 10 )
             remaining = 10;
 
+         string str;
          for( int j=0; j<remaining; j++ )
          {
-            cout << temp[ i+j ] << " ";
+            str += ToHexString( temp[i+j] ) + " ";
          }
-         cout << endl;
+         LogMessage( LOG_PRIO_ERR, str.c_str() );
       }
-      cout << "]" << dec << endl;
-      cout << "**************************************************" << endl;
-      cout << "**************************************************" << endl;
+      LogMessage( LOG_PRIO_ERR, "]" );
+      LogMessage( LOG_PRIO_ERR, "**************************************************" );
+      LogMessage( LOG_PRIO_ERR, "**************************************************" );
       
       return false;
    }
@@ -201,9 +202,9 @@ void	KhaanServerToServer :: UpdateInwardPacketList()
             else
             {
                // assert( 0 );
-               cout << "ERROR: S2Sconnection packet was not dealt with 'list of outputs'" << endl;
-               cout << " Type: " << (int) subPacket->packetType << endl;
-               cout << " SubType: " << (int) subPacket->packetSubType << endl;
+               LogMessage( LOG_PRIO_ERR, "ERROR: S2Sconnection packet was not dealt with 'list of outputs'" );
+               LogMessage( LOG_PRIO_ERR, " Type: %d", (int) subPacket->packetType );
+               LogMessage( LOG_PRIO_ERR, " SubType: %d", (int) subPacket->packetSubType );
             }
          }
       }
@@ -219,9 +220,9 @@ void	KhaanServerToServer :: UpdateInwardPacketList()
          {
             U8 type = wrapper->pPacket->packetType;
             U8 subType = wrapper->pPacket->packetSubType;
-            cout << "ERROR: S2Sconnection gateway wrapped packet was not dealt with" << endl;
-            cout << " Type: " << (int) type << endl;
-            cout << " SubType: " << (int) subType << endl;
+            LogMessage( LOG_PRIO_ERR, "ERROR: S2Sconnection gateway wrapped packet was not dealt with" );
+            LogMessage( LOG_PRIO_ERR, " Type: %d", (int) type );
+            LogMessage( LOG_PRIO_ERR, " SubType: %d", (int) subType );
          }
       }
       else if ( packetType == PacketType_GatewayInformation )
@@ -231,17 +232,17 @@ void	KhaanServerToServer :: UpdateInwardPacketList()
             U8 type = packetIn->packetType;
             U8 subType = packetIn->packetSubType;
 
-            cout << "ERROR: S2Sconnection packet was not dealt with as a Gateway command" << endl;
-            cout << " Type: " << (int) type << endl;
-            cout << " SubType: " << (int) subType << endl;
+            LogMessage( LOG_PRIO_ERR, "ERROR: S2Sconnection packet was not dealt with as a Gateway command" );
+            LogMessage( LOG_PRIO_ERR, " Type: %d", (int) type );
+            LogMessage( LOG_PRIO_ERR, " SubType: %d", (int) subType );
          }
       }
       else
       {
          //assert( 0 );
-         cout << "ERROR: S2Sconnection packet was not dealt with .. no handler for type" << endl;
-         cout << " Type: " << (int) packetIn->packetType << endl;
-         cout << " SubType: " << (int) packetIn->packetSubType << endl;
+         LogMessage( LOG_PRIO_ERR, "ERROR: S2Sconnection packet was not dealt with .. no handler for type" );
+         LogMessage( LOG_PRIO_ERR, " Type: %d", (int) packetIn->packetType );
+         LogMessage( LOG_PRIO_ERR, " SubType: %d", (int) packetIn->packetSubType );
       }
 
       factory.CleanupPacket( packetIn );
@@ -254,7 +255,7 @@ void	KhaanServerToServer :: UpdateInwardPacketList()
 void  KhaanServerToServer :: RequestUpdate()
 {
 #ifdef VERBOSE
-   cout << " KhaanServerToServer :: RequestUpdate(" << endl;
+   LogMessage( LOG_PRIO_INFO, " KhaanServerToServer :: RequestUpdate(" );
 #endif
 
    ChainLinkIteratorType itOutputs = m_listOfOutputs.begin();
@@ -270,12 +271,47 @@ void  KhaanServerToServer :: RequestUpdate()
    
 }
 
+
+/////////////////////////////////////////////////////////////////
+/*
+bool	KhaanServerToServer :: Update()
+{
+   if( m_isDisconnected )
+      return false;
+
+   //LogMessage( LOG_PRIO_INFO, "KhaanChat::Update" );
+
+   if( m_packetsOut.size() )
+   {
+      LogMessage( LOG_PRIO_INFO, "KhaanChat::Update .. Remaining packets out: %d", m_packetsOut.size() );
+   }
+
+   UpdateInwardPacketList();
+   UpdateOutwardPacketList();
+
+   // I think that this makes sense
+   CleanupAllEvents();
+
+   if( m_packetsOut.size() || m_packetsIn.size() )// we didn't finish
+   {
+      LogMessage( LOG_PRIO_INFO, "Remaining packet out count: %d", m_packetsOut.size() );
+      return false;
+   }
+   if( m_denyAllFutureData && m_packetsOut.size() == 0 ) // shut it down
+   {
+      CloseConnection();
+      return false;
+   }
+
+   return true;
+}*/
+
 //---------------------------------------------------------------
 
 bool  KhaanServerToServer :: PassPacketOn( BasePacket* packet, U32 connectionId )
 {
 #ifdef VERBOSE
-   cout << " KhaanServerToServer :: PassPacketOn(" << endl;
+   LogMessage( LOG_PRIO_ERR, " KhaanServerToServer :: PassPacketOn(" );
 #endif
 
    ChainLinkIteratorType itOutputs = m_listOfOutputs.begin();
@@ -295,7 +331,7 @@ bool  KhaanServerToServer :: PassPacketOn( BasePacket* packet, U32 connectionId 
 bool  KhaanServerToServer :: HandleCommandFromGateway( BasePacket* packet, U32 connectionId )
 {
 #ifdef VERBOSE
-   cout << " KhaanServerToServer :: HandleCommandFromGateway(" << endl;
+   LogMessage( LOG_PRIO_ERR, " KhaanServerToServer :: HandleCommandFromGateway(" );
 #endif
 
    ChainLinkIteratorType itOutputs = m_listOfOutputs.begin();
@@ -328,16 +364,17 @@ void  KhaanServerToServer :: SaveOffServerIdentification( const PacketServerIden
    m_externalIpAddress = packet->externalIpAddress.c_str();
    U8 gameProductId = packet->gameProductId;
 
-   cout << "---------  Connected as S2S server to " << m_serverName << "  ------------------" << endl;
-   cout << "    " << m_serverAddress << " : " << static_cast<U32>( m_serverPort ) << endl;
-   cout << "    Time stamp: " << GetDateInUTC() << endl;
-   cout << "    type " << static_cast<U32>( gameProductId ) << " -- server ID = " << m_serverId << endl;
-   cout << "    isGame = " << boolalpha << m_isGameServer << ", isController : " << m_isController << noboolalpha << endl;
+   LogMessage( LOG_PRIO_INFO, "---------  Connected as S2S server to %s  ------------------", m_serverName.c_str() );
+   LogMessage( LOG_PRIO_INFO, "    IP:PORT                     %s : %d", m_serverAddress.c_str(), static_cast<U32>( m_serverPort ) );
+   LogMessage( LOG_PRIO_INFO, "    Time stamp:                 %s", GetDateInUTC().c_str() );
+   LogMessage( LOG_PRIO_INFO, "    type                        %d  ", static_cast<U32>( gameProductId ) );
+   LogMessage( LOG_PRIO_INFO, "    server ID =                 %u", m_serverId );
+   LogMessage( LOG_PRIO_INFO, "    isGame = %s, isController = %s", ConvertToTrueFalseString( m_isGameServer ), ConvertToTrueFalseString( m_isController ) );
    if( m_externalIpAddress.size() )
    {
-      cout << "    has external ip address: " << m_externalIpAddress << endl;
+      LogMessage( LOG_PRIO_INFO, "    has external ip address: %s", m_externalIpAddress.c_str() );
    }
-   cout << "------------------------------------------------------" << endl;
+   LogMessage( LOG_PRIO_INFO, "------------------------------------------------------" ) ;
 
    ChainLinkIteratorType itOutputs = m_listOfOutputs.begin();
    if( itOutputs != m_listOfOutputs.end() )// only one output currently supported.
@@ -360,10 +397,10 @@ void  KhaanServerToServer :: SaveOffServerIdentification( const PacketServerIden
 void   KhaanServerToServer ::PreCleanup()
 {
    Khaan::PreCleanup();
-   cout << "*********************************************" << endl;
-   cout << "    Server has disconnected, name = '" << m_serverName << "' : " << m_serverId << endl;
-   cout << "    Time stamp: " << GetDateInUTC() << endl;
-   cout << "*********************************************" << endl;
+   LogMessage( LOG_PRIO_ERR, "*********************************************" );
+   LogMessage( LOG_PRIO_ERR, "    Server has disconnected, name = \'%s\' : %d", m_serverName.c_str(), m_serverId );
+   LogMessage( LOG_PRIO_ERR, "    Time stamp: %s", GetDateInUTC().c_str() );
+   LogMessage( LOG_PRIO_ERR, "*********************************************" );
 }
 
 ///////////////////////////////////////////////////////////////////

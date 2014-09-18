@@ -6,6 +6,7 @@
 #include <sys/stat.h>
 #include <time.h>
 
+#include "../NetworkCommon/Utils/FileUtils.h"
 #include "../NetworkCommon/Utils/Utils.h"
 
 #if PLATFORM == PLATFORM_WINDOWS
@@ -366,29 +367,6 @@ bool  AssetDefinition:: LoadFile()
 
    isLoaded = true;
    return true;
-
-   //
-
-  /* ifstream file ( path.c_str(), ios::in|ios::binary|ios::ate);
-   if (file.is_open())
-   {
-      delete fileData;// delete any previous data
-      fileSize = file.tellg();
-      fileData = new U8 [fileSize];
-      file.seekg (0, ios::beg);
-      file.read ( reinterpret_cast< char* >( fileData ), fileSize);
-      file.close();
-      
-
-      fileModificationTime = GetFileModificationTime( path );
-   }
-   else
-   {
-      return false;
-   }
-
-   
-   return true;*/
 }
 
 
@@ -920,6 +898,7 @@ bool  AssetOrganizer::GetListOfAssets( int platformId, const set< string >& list
 
    int platformIndexOfAll = GetIndexOfPlatformAll();
    int productIndexOfMber = GetIndexOfPlatformMber();
+   productIndexOfMber = productIndexOfMber;
 
    int count = 0;
    // do we need to organize the assets by product id? There probably won't be enough but we can group them by product if we end up with a lot of assets.
@@ -1034,18 +1013,18 @@ void  AssetOrganizer::LoadAllAssets( time_t& currentTime )
    {
       m_lastFileLoadedTime = currentTime;
 
+      int maxNumToLoadPerSecond = 3;
       vector< AssetDefinition >::iterator it = m_assets.begin();
       while( it != m_assets.end() )
       {
          if( it->IsLoaded() == false )
          {
             it->LoadFile();
-            return;
+            maxNumToLoadPerSecond--;
+            if( maxNumToLoadPerSecond < 0 )
+               return;
          }
-         else
-         {
-            it++;
-         }
+         it++;
       }
       m_allFilesAreNowLoaded = true;
    }

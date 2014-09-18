@@ -93,11 +93,13 @@ int main(int argc, const char* argv[])
    U64 serverUniqueHashValue = GenerateUniqueHash( serverName );
    U32 serverId = (U32)serverUniqueHashValue;
 
-   cout << serverName << ":" << endl;
-   cout << "Server stack version " << ServerStackVersion << endl;
-   cout << "ServerId " << serverId << endl;
-   cout << "Network protocol version: " << (int)NetworkVersionMajor << ":" << (int)NetworkVersionMinor << endl;
-   cout << "------------------------------------------------------------------" << endl << endl << endl;
+   LogMessage( LOG_PRIO_INFO, serverName.c_str() );
+   LogMessage( LOG_PRIO_INFO, "Server stack version %s" , ServerStackVersion );
+   LogMessage( LOG_PRIO_INFO, "ServerId %u" , serverId );
+   LogMessage( LOG_PRIO_INFO, "Db %s : %d", dbIpAddress.c_str(), dbPortAddress );
+   LogMessage( LOG_PRIO_INFO, "Network protocol version: " , (int)NetworkVersionMajor , ":" , (int)NetworkVersionMinor );
+      
+   LogMessage( LOG_PRIO_INFO, "------------------------------------------------------------------" );
 
    //----------------------------------------------------------------
    DiplodocusGame*    middleware = new DiplodocusGame( serverName, serverId, GameProductId_MONKEYS_FROM_MARS );

@@ -147,6 +147,7 @@ private:
    bool     LogUserIn( const PacketLoginFromGateway* packet, U32 connectionId ); //const string& username, const string& password, const string& loginKey, U8 gameProductId, U32 connectionId, U32 gatewayId );
    bool     LogUserOut( U32 connectionId, bool wasDisconnectedByError );
    bool     LoadUserAccount( const string& userName, const string& password, const string& loginKey, U8 gameProductId, U32 connectionId, U32 gatewayId );
+   bool     IsUserInLoginHistory( const string& userName, const string& password, const string& loginKey, U8 gameProductId, U32 connectionId, U32 gatewayId );
    bool     SetupQueryForLogin( const string& userName, const string& password, U8 gameProductId, U32 connectionId );
    bool     CreateUserAccount( U32 connectionId, U32 gatewayId, const string& email, const string& password, const string& username, const string& deviceAccountId, const string& deviceId, U8 languageId, U8 gameProductId );
    U32      FindUserAlreadyInGame( const string& username, U8 gameProductId );
@@ -167,7 +168,7 @@ private:
    bool     SuccessfulLogin( U32 connectionId, bool isReloggedIn = false );
    
    bool     AddBlankUserProfile( U32 connectionId );
-   bool     ForceUserLogoutAndBlock( U32 connectionId );
+   bool     ForceUserLogoutAndBlock( U32 connectionId, U32 gatewayId );
    bool     CreateAccount( const char* username, const char* emailAddress, const char* password, int userId, int gameId );
    bool     SendListOfOwnedGamesToGameServers( U32 connectionId, const KeyValueVector& kv_array );
 
@@ -223,16 +224,18 @@ private:
 
    typedef vector< ProductInfo >             ProductList;
 
-   UserConnectionMap          m_userConnectionMap;
-   UserCreateAccountMap       m_userAccountCreationMap;
-   bool                       m_isInitialized, m_isInitializing;
-   bool                       m_autoAddProductFromWhichUsersLogin;
+   
 
    bool                       IsUserConnectionValid( U32 id );
    ConnectionToUser*          GetUserConnection( U32 id );
    void                       ReinsertUserConnection( int oldIndex, int newIndex );
    bool                       AddUserConnection( UserConnectionPair );
    bool                       RemoveUserConnection( U32 id );
+
+   UserConnectionMap          m_userConnectionMap;
+   UserCreateAccountMap       m_userAccountCreationMap;
+   bool                       m_isInitialized, m_isInitializing;
+   bool                       m_autoAddProductFromWhichUsersLogin;
 
    ProductList                m_productList;
    StringLookup*              m_stringLookup;
@@ -320,6 +323,11 @@ private:
                                             bool isLoggedIn, 
                                             bool wasDisconnectedByError,
                                             U32 gatewayId );
+   bool     BroadcastLoginStatus( U32 connectionId, 
+                                               U8 gameProductId, 
+                                               bool isLoggedIn, 
+                                               bool wasDisconnectedByError,
+                                               U32 gatewayId );
 };
 
 //-----------------------------------------------------------------------------------------

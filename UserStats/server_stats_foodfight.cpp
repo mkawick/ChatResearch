@@ -11,6 +11,8 @@
 
 #endif
 
+#include <boost/lexical_cast.hpp>
+
 #include "server_stats_plugins.h"
 #include "server_rating_glicko2.h"
 
@@ -465,6 +467,7 @@ void Foodfight_StatsPluginInit( StatsPlugin *pluginData, MYSQL *mysqlStats )
 
    //pluginData->onReportGameResult = SummonWar_OnReportGameResult;
    pluginData->onReportGameResult = NULL;
+   pluginData->onReportUserForfeit = NULL;
 
    //pluginData->onRequestPlayerFactionStats = OnRequestPlayerFactionStats_SummonWar;
    pluginData->onRequestPlayerFactionStats = NULL;

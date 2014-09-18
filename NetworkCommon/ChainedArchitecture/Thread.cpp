@@ -17,6 +17,7 @@
 #endif
 
 #include "../Platform.h"
+#include "../Logging/server_log.h"
 #include "Thread.h"
 using namespace std;
 using namespace Threading;
@@ -44,7 +45,12 @@ Mutex::Mutex() :
         FALSE,             // initially not owned
         NULL);             // unnamed mutex
 #else
-   pthread_mutex_init( &m_mutex, NULL );
+   pthread_mutexattr_t  mattr; 
+
+   int ret = pthread_mutexattr_init( &mattr ); 
+   ret = pthread_mutexattr_setpshared( &mattr, PTHREAD_PROCESS_SHARED );
+
+   pthread_mutex_init( &m_mutex, &mattr );
 #endif
 }
 
@@ -125,7 +131,7 @@ void  CAbstractThread::Cleanup()
    CallbackOnCleanup();
    DestroyThread();
    
-#ifndef WIN32
+#if PLATFORM != PLATFORM_WINDOWS
    if( m_thread != (ThreadId)InvalidThread )
    {
       void* result;
@@ -168,7 +174,7 @@ void  CAbstractThread::SetPriority( ePriority priority )
       break;
 
    default:
-      cout << "thread priority set badly" << endl;
+      LogMessage( LOG_PRIO_ERR, "thread priority set badly" );
       assert( 0 );
    }
    
@@ -196,13 +202,7 @@ void CAbstractThread::Resume()
 int CAbstractThread::CreateThread()
 {
    int threadError = 0;
-#ifndef WIN32
-   pthread_attr_init( &m_attr );
-	pthread_attr_setdetachstate( &m_attr, PTHREAD_CREATE_DETACHED );
-	threadError = pthread_create( &m_thread, &m_attr, &CAbstractThread::ThreadFunction, (void*)this );
-   if( threadError == 0 )
-      m_running = true;
-#else
+#if PLATFORM == PLATFORM_WINDOWS
    m_threadId = 0;
    m_thread = ::CreateThread( 
             NULL,                               // default security attributes
@@ -215,6 +215,12 @@ int CAbstractThread::CreateThread()
       threadError = 1;
    else
       m_running = true;
+#else
+   pthread_attr_init( &m_attr );
+	pthread_attr_setdetachstate( &m_attr, PTHREAD_CREATE_DETACHED );
+	threadError = pthread_create( &m_thread, &m_attr, &CAbstractThread::ThreadFunction, (void*)this );
+   if( threadError == 0 )
+      m_running = true;   
 #endif
    return threadError;
 }

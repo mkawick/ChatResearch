@@ -406,6 +406,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\NetworkCommon\Packets\GamePacket.inl"
+				>
+			</File>
+			<File
 				RelativePath="..\NetworkCommon\Packets\InvitationPacket.h"
 				>
 			</File>

@@ -38,6 +38,8 @@
 #include "Utils/Utils.h"
 using namespace std;
 
+#include "./Logging/server_log.h"
+
 // prototypes
 
 
@@ -68,7 +70,7 @@ int		SetSocketToNonblock( int ListenSocket )
    DWORD nonBlocking = 1;
    if ( ioctlsocket( ListenSocket, FIONBIO, &nonBlocking ) != 0 )
    {
-      printf( "failed to set non-blocking socket\n" );
+      LogMessage( LOG_PRIO_ERR, "failed to set non-blocking socket\n" );
       return false;
    }
 
@@ -128,7 +130,7 @@ void GetLocalIpAddress( char* buffer, size_t buflen )
    gethostname( localHostname, MAXHOSTNAMELEN );
    if ( ( hostLocal = gethostbyname( localHostname ) ) == NULL ) 
    {  // get the host info
-      cout << "gethostbyname error" << endl;
+      LogMessage( LOG_PRIO_ERR, "gethostbyname error" );
    }
    struct in_addr **localAddrList = (struct in_addr **)hostLocal->h_addr_list;   
    strncpy( buffer, (char *)inet_ntoa(*localAddrList[0]), buflen );
@@ -153,15 +155,15 @@ bool IsPortBusy( int port )
    int iResult = getaddrinfo(NULL, portBuffer, &hints, &result);
    if( iResult != 0 ) 
    {
-     cout << "getaddrinfo failed with error: " << iResult << endl;
-     return true;
+      LogMessage( LOG_PRIO_ERR, "getaddrinfo failed with error: %d", iResult );
+      return true;
    }
 
    // Create a SOCKET for connecting to server
    int ListenSocket = socket( result->ai_family, result->ai_socktype, result->ai_protocol );
    if( ListenSocket == SOCKET_ERROR) 
    {
-      cout << "Failed to create socket" << endl;
+      LogMessage( LOG_PRIO_ERR, "Failed to create socket" );
       freeaddrinfo(result);
       return 1;
    }
@@ -170,7 +172,7 @@ bool IsPortBusy( int port )
    iResult = bind( ListenSocket, result->ai_addr, (int)result->ai_addrlen);
    if( iResult == SOCKET_ERROR ) 
    {
-      cout << "Failed to bind socket" << endl;
+      LogMessage( LOG_PRIO_ERR, "Failed to bind socket" );
       freeaddrinfo(result);
       closesocket( ListenSocket );
       return true;
@@ -182,7 +184,7 @@ bool IsPortBusy( int port )
    iResult = listen( ListenSocket, NumConnections );
    if( iResult == SOCKET_ERROR ) 
    {
-      cout << "Failed to listen to socket" << endl;
+      LogMessage( LOG_PRIO_ERR, "Failed to listen to socket" );
       closesocket( ListenSocket );
       return true;
    }

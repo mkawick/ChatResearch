@@ -9,6 +9,7 @@ using namespace std;
 #include <boost/format.hpp>
 #include <boost/lexical_cast.hpp>
 
+#include "../NetworkCommon/Utils/CommandLineParser.h"
 
 #include "PurchaseReceiptManager.h"
 
@@ -123,11 +124,11 @@ bool     PurchaseReceiptManager::HandleResult( const PacketDbQueryResult* dbResu
       ReceiptTempData* data = static_cast< ReceiptTempData* >( dbResult->customData );
       if( dbResult->successfulQuery == true )
       {
-         cout << "successful receipt additions" << endl;
+         LogMessage( LOG_PRIO_INFO, "successful receipt additions" );
       }
       else
       {
-         cout << "receipt additions failed Time: " << GetDateInUTC() << endl;
+         LogMessage( LOG_PRIO_ERR, "receipt additions failed Time: %s", GetDateInUTC().c_str() );
       }
       delete data;
       return true;

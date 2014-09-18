@@ -97,7 +97,7 @@ bool	KhaanGateway :: Update()
    {
       string loggingText = "Remaining packet out count: ";
       loggingText += boost::lexical_cast< string >( m_packetsOut.size() );
-      LogMessage( 1, loggingText.c_str() );
+      LogMessage( LOG_PRIO_INFO, loggingText.c_str() );
       return false;
    }
 
@@ -176,7 +176,7 @@ bool  KhaanGateway::IsPacketSafe( const U8* data, int& offset)
       if( m_numPacketsReceivedBeforeAuth > m_randomNumberOfPacketsBeforeLogin )
       {
          DenyAllFutureData ();
-         LogMessage( 1, "Gateway: hacker alert. Too many packet received without a login." );
+         LogMessage( LOG_PRIO_INFO, "Gateway: hacker alert. Too many packet received without a login." );
          CloseConnection();
       }
 

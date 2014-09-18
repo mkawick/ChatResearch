@@ -23,12 +23,13 @@ namespace Database
    struct DbConnectionInfo
    {
       DbConnectionInfo( const string& serverName, U16 port, const string& username, const string& password, const string& dbSchema, U8 type ) :
-                           m_serverName( serverName ),
+                           m_connectionType( type ),
                            m_port( port ),
+                           m_serverName( serverName ),
                            m_username( username ),
                            m_password( password ),
-                           m_dbSchema( dbSchema ),
-                           m_connectionType( type ){}
+                           m_dbSchema( dbSchema )
+                           {}
 
       DbConnectionInfo() : m_connectionType( 0 ), m_port( 0 ){}
 

@@ -29,6 +29,8 @@ void           PrintCurrentTime();
 std::string    Trim(const std::string& str,
                  const std::string& whitespace = " \t");
 
+const char*    ConvertToTrueFalseString( bool value ); 
+
 // use case:
 // const std::string foo = "    too much\t   \tspace\t\t\t  ";
 // std::cout << foo << std::endl;
@@ -49,7 +51,7 @@ const std::string    itos(int n);
 #if PLATFORM != PLATFORM_WINDOWS
 int kbhit();
 int getch();
-#define Sleep(a)           usleep(( useconds_t )(a * 1000))
+#define Sleep(microSeconds)           usleep(( useconds_t )(microSeconds * 1000))
 
 #define  SOCKET_ERROR   -1
 
@@ -184,8 +186,11 @@ bool  ParseListOfItems( std::vector< std::string >& listOfStuff, std::string tex
 std::string  RemoveEnds( std::string s, const char* charsToStrip = "\"\'" );
 
 const std::string  ConvertStringToLower( const std::string& str );
+std::string    ToHexString( U32 );
 
 void  PrintDebugText( const char* text, int extraCr = 0 );
 
 bool DoesFileExist ( const std::string& name ) ;
 time_t   GetFileModificationTime( const std::string& name );
+
+bool     CreateSubDirectory( std::string path );

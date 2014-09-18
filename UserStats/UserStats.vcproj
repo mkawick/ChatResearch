@@ -438,6 +438,14 @@
 					>
 				</File>
 				<File
+					RelativePath="..\NetworkCommon\NetworkIn\DiplodocusTools.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\NetworkCommon\NetworkIn\DiplodocusTools.h"
+					>
+				</File>
+				<File
 					RelativePath="..\NetworkCommon\NetworkIn\Khaan.cpp"
 					>
 				</File>

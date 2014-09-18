@@ -21,8 +21,8 @@ public:
    void      Update();
    static void Set( DiplodocusContact* contactMain ) { m_contactMain = contactMain; }
 
-   void      SetDbIdentifier( int dbIdentifier ) { m_dbIdentifier = dbIdentifier; }
-   int       GetDbIdentifier() const { return m_dbIdentifier; }
+   void      SetDbIdentifier( U32 dbIdentifier ) { m_dbIdentifier = dbIdentifier; }
+   U32       GetDbIdentifier() const { return m_dbIdentifier; }
 
    bool      HandleDbResult( PacketDbQueryResult* packet );
 

@@ -41,11 +41,13 @@ public:
    bool              LoginKeyMatches( const string& loginKey ) const;
    const UserTicket& GetUserTicket() const { return m_userTicket; }
    void              SetConnectionId( U32 connId ) { m_userTicket.connectionId = connId; }
+   void              SetGatewayId( U32 gatewayId ) { m_userTicket.gatewayId = gatewayId; }
 
    void              SetServer( AssetMainThread* assetManager ) { m_assetManager = assetManager; }
    bool              HandleRequestFromClient( const PacketAsset* packet );
 
    void              UserLoggedOut();
+   void              ClearLoggedOutStatus();
    bool              LogoutExpired();
    void              Update();
 

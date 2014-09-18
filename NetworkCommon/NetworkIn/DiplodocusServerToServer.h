@@ -16,6 +16,13 @@ public:
    U32   serverId;
 };
 
+struct PacketHolder
+{
+   PacketHolder( U32 id, BasePacket* pPack ) : chainIdOfInputConnection( id ), pPacket( pPack ) {}
+   U32         chainIdOfInputConnection;
+   BasePacket* pPacket;
+};
+
 //---------------------------------------------------------------
 
 class DiplodocusServerToServer : public Diplodocus< KhaanServerToServer >
@@ -45,8 +52,12 @@ private:
    //void	   UpdateAllConnections();
    void     SendJobsToUpperLayers();
    int      CallbackFunction();
+   void     HandleInputPackets();
 
    deque< PacketServerJobWrapper* >    m_unprocessedJobs;
+   //deque< Packet* >                    m_inputPacketsToHandle;
+   deque< PacketHolder >               m_idPacketsToHandle;
+
    deque<U32>     m_serversNeedingUpdate;
    U32            m_jobIdTracker;
 };

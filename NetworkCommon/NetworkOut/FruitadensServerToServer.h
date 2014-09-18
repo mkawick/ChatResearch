@@ -5,7 +5,7 @@
 
 class BasePacket;
 
-typedef ChainedInterface < BasePacket* > LinkedInterface;
+typedef ChainedInterface < BasePacket* > BasePacketChainedType;
 ///////////////////////////////////////////////////////////////
 
 class FruitadensServerToServer : public FruitadensServer
@@ -28,6 +28,6 @@ protected:
 ///////////////////////////////////////////////////////////////
 
 FruitadensServerToServer*     PrepS2SOutwardConnection( const string& ipaddress, U16 port, U32 serverId, const string& serverName, ServerType serverType, 
-                                                       LinkedInterface* diplodocus, const string& localAddress, U16 localPort, U32 gameProductId = 0 );
+                                                       BasePacketChainedType* diplodocus, const string& localAddress, U16 localPort, U32 gameProductId = 0 );
 
 ///////////////////////////////////////////////////////////////

@@ -26,6 +26,7 @@ public:
       UserStatsType_RecordUserStats, // from other servers only
       UserStatsType_RecordUserStatsResponse,
       UserStatsType_ReportGameResult,
+      UserStatsType_ReportUserForfeit,
    };
 public:
    PacketUserStats( int packet_type = PacketType_UserStats, int packet_sub_type = UserStatsType_Base ) : BasePacket( packet_type, packet_sub_type ) {}
@@ -134,6 +135,21 @@ public:
    unsigned int   forfeitFlags;
 };
 
+///////////////////////////////////////////////////////////////
+
+
+class PacketUserStats_ReportUserForfeit : public PacketUserStats
+{
+public:
+   PacketUserStats_ReportUserForfeit() : PacketUserStats( PacketType_UserStats, UserStatsType_ReportUserForfeit ){  }
+
+   bool  SerializeIn( const U8* data, int& bufferOffset, int minorVersion );
+   bool  SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const;
+
+   int            gameType;
+   U32            userId;
+   U32            gameId;
+};
 
 ///////////////////////////////////////////////////////////////
 

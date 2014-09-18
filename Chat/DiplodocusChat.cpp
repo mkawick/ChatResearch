@@ -23,16 +23,17 @@ using namespace std;
 #include "ChatUser.h"
 #include "ChatRoomManager.h"
 
+#include "../NetworkCommon/NetworkIn/DiplodocusTools.h"
 
 ///////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////
 
-DiplodocusChat::DiplodocusChat( const string& serverName, U32 serverId ): Diplodocus< KhaanChat >( serverName, serverId, 0,  ServerType_Chat ),
+DiplodocusChat::DiplodocusChat( const string& serverName, U32 serverId ): ChainedType( serverName, serverId, 0,  ServerType_Chat ),
                                              StatTrackingConnections(),
-                                             m_chatRoomManagerNeedsUpdate( true ),
-                                             m_invitationManagerNeedsUpdate( true ),
                                              m_chatRoomManager( NULL ),
-                                             m_invitationManager( NULL )
+                                             m_chatRoomManagerNeedsUpdate( true ),
+                                             m_invitationManager( NULL ),
+                                             m_invitationManagerNeedsUpdate( true )
 {
    this->SetSleepTime( 45 );
 
@@ -60,7 +61,7 @@ void  DiplodocusChat :: Init()
 
    ChatUser::Set( this );
    ChatUser::Set( m_chatRoomManager );
-   Diplodocus< KhaanChat >::Init();
+   ChainedType::Init();
 
    m_chatRoomManager->Set( m_invitationManager );
 }
@@ -243,9 +244,9 @@ void     DiplodocusChat::InputRemovalInProgress( IChainedInterface * chainedInpu
 
    string currentTime = GetDateInUTC();
    string printer = "Client disconnection at time:" + currentTime + " from " + inet_ntoa( khaan->GetIPAddress().sin_addr );
-   cout << printer << endl;
+   LogMessage( LOG_PRIO_ERR, printer.c_str() );
 
-   PrintDebugText( "** InputRemovalInProgress" , 1 );
+   LogMessage( LOG_PRIO_ERR, "** InputRemovalInProgress" );
 }
 
 //---------------------------------------------------------------
@@ -333,7 +334,7 @@ bool     DiplodocusChat::HandleLoginPacket( BasePacket* packet, U32 gatewayId )
     /*  case PacketLogin::LoginType_Login:
          {
             PacketLogin* pPacket = static_cast< PacketLogin* > ( packet );
-            cout << "Login: " << pPacket->userName << ", " << pPacket->uuid << ", " << pPacket->password << endl;
+            cout << "Login: " << pPacket->userName << ", " << pPacket->uuid << ", " << pPacket->password );
             //pPacket->connectionId;
             //m_chatRoomManager->CreateNewChannel( pPacket );
             
@@ -342,19 +343,21 @@ bool     DiplodocusChat::HandleLoginPacket( BasePacket* packet, U32 gatewayId )
       case PacketLogin::LoginType_Logout:
          {
             PacketLogout* pPacket = static_cast< PacketLogout* > ( packet );
-            cout << "Logout: " << pPacket->wasDisconnectedByError << endl;
+            cout << "Logout: " << pPacket->wasDisconnectedByError );
             //pPacket->connectionId;
             //m_chatRoomManager->CreateNewChannel( pPacket );
          }
          return true;*/
       case PacketLogin::LoginType_PrepareForUserLogin:
          {
-            PacketPrepareForUserLogin* pPacket = static_cast< PacketPrepareForUserLogin* > ( packet );
-            U32 userConnectionId = pPacket->connectionId;
-            string uuid = pPacket->uuid;
-            U32 whichGateway = pPacket->gatewayId;
+            PacketPrepareForUserLogin* loginPacket = static_cast< PacketPrepareForUserLogin* > ( packet );
+            U32 userConnectionId = loginPacket->connectionId;
+            string uuid = loginPacket->uuid;
+            U32 whichGateway = loginPacket->gatewayId;
             
-            cout << "Prep for logon: " << userConnectionId << ", " << pPacket->userName << ", " << uuid << ", " << pPacket->password << endl;
+            //LogMessage( LOG_PRIO_INFO, "Prep for logon: %d, %s, %s, %s", userConnectionId, pPacket->userName.c_str(), uuid.c_str(), pPacket->password.c_str() );
+            
+            LogMessage_LoginPacket( loginPacket );
             
             LockMutex();
             // TODO: verify that the user isn't already in the list and if s/he is, assign the new connectionId.
@@ -365,16 +368,17 @@ bool     DiplodocusChat::HandleLoginPacket( BasePacket* packet, U32 gatewayId )
                user = CreateNewUser( userConnectionId, whichGateway );
             }
 
-            user->Init( pPacket->userId, pPacket->userName, pPacket->uuid, pPacket->lastLoginTime );            
+            user->Init( loginPacket->userId, loginPacket->userName, loginPacket->uuid, loginPacket->lastLoginTime );            
             user->LoggedIn();
             UnlockMutex();
          }
          return true;
       case PacketLogin::LoginType_PrepareForUserLogout:
          {
-            PacketPrepareForUserLogout* pPacket = static_cast< PacketPrepareForUserLogout* > ( packet );
-            cout << "Prep for logout: " << pPacket->connectionId << ", " << pPacket->uuid << endl;
-            U32 userConnectionId = pPacket->connectionId;
+            PacketPrepareForUserLogout* logoutPacket = static_cast< PacketPrepareForUserLogout* > ( packet );
+            LogMessage_LogoutPacket( logoutPacket );
+            //LogMessage( LOG_PRIO_INFO, "Prep for logout: %d, %s", logoutPacket->connectionId, logoutPacket->uuid.c_str() );
+            U32 userConnectionId = logoutPacket->connectionId;
             LockMutex();
             UserMapIterator iter = m_users.find( userConnectionId );
          
@@ -385,7 +389,7 @@ bool     DiplodocusChat::HandleLoginPacket( BasePacket* packet, U32 gatewayId )
             else
             {
                string str = "Log user out failed: user not found. userUuid: ";
-               str += pPacket->uuid.c_str();
+               str += logoutPacket->uuid.c_str();
                Log( str, 4 );
             }
             UnlockMutex();
@@ -454,7 +458,7 @@ bool   DiplodocusChat::AddOutputChainData( BasePacket* packet, U32 connectionId 
 
          m_dbQueries.push_back( result );
        /*  if( result->customData != NULL )
-            cout << "AddOutputChainData: Non-null custom data " << endl;*/
+            cout << "AddOutputChainData: Non-null custom data " );*/
       }
       return true;
    }
@@ -522,7 +526,7 @@ void  DiplodocusChat::UpdateDbResults()
    {
       PacketDbQueryResult* dbResult = *it++;
     /*  if( dbResult->customData != NULL )
-            cout << "UpdateDbResults: Non-null custom data " << endl;*/
+            cout << "UpdateDbResults: Non-null custom data " );*/
       BasePacket* packet = static_cast<BasePacket*>( dbResult );
 
       U32 connectionId = dbResult->id;
@@ -636,6 +640,7 @@ bool  DiplodocusChat::HandlePacketFromClient( BasePacket* packet )
          {
          //PacketCleaner cleaner( packet );
             bool result = user->HandleClientRequest( unwrappedPacket );
+            result = result;
          }
 
          
@@ -717,8 +722,8 @@ bool     DiplodocusChat::AddQueryToOutput( PacketDbQuery* dbQuery, U32 connectio
    while( itOutputs != m_listOfOutputs.end() )// only one output currently supported.
    {
       ChainType* outputPtr = static_cast< ChainType*> ( (*itOutputs).m_interface );
-      ChainedInterface* interfacePtr = static_cast< ChainedInterface* >( outputPtr );
-      if( interfacePtr->GetChainedType() == ChainedType_DatabaseConnector )
+      //ChainedInterface* interfacePtr = static_cast< ChainedInterface* >( outputPtr );
+      if( outputPtr->GetChainedType() == ChainedType_DatabaseConnector )
       {
          bool isValidConnection = false;
          Database::Deltadromeus* delta = static_cast< Database::Deltadromeus* >( outputPtr );
@@ -754,7 +759,7 @@ bool     DiplodocusChat::AddQueryToOutput( PacketDbQuery* dbQuery, U32 connectio
 
 bool     DiplodocusChat::SendErrorToClient( U32 connectionId, U32 gatewayId, PacketErrorReport::ErrorType error )
 {
-   return Diplodocus< KhaanChat >:: SendErrorToClient( connectionId, gatewayId, error, 0 );
+   return ChainedType:: SendErrorToClient( connectionId, gatewayId, error, 0 );
 }
 
 //---------------------------------------------------------------

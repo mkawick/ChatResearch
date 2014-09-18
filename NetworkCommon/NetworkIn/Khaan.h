@@ -44,10 +44,11 @@ using namespace std;
 ///////////////////////////////////////////////////////////////
 
 class BasePacket;
+typedef ChainedInterface < BasePacket* >  BasePacketChainedType;
 //-----------------------------------------------------------------------------------
 
 // todo, add timeout feature in case the connection starts but we never receive the login packet.
-class Khaan : public ChainedInterface < BasePacket* >
+class Khaan : public BasePacketChainedType
 {
 public:
    

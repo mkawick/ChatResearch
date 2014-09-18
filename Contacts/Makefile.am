@@ -6,18 +6,23 @@ contacts_serverd_SOURCES = Contacts.cpp \
 DiplodocusContact.cpp \
 KhaanContact.cpp \
 UserContact.cpp \
+UserLookupManager.cpp \
 ../NetworkCommon/NetworkUtils.cpp \
 ../NetworkCommon/ServerConstants.cpp \
 ../NetworkCommon/ServerType.cpp \
 ../NetworkCommon/ChainedArchitecture/Thread.cpp \
 ../NetworkCommon/Daemon/Daemonizer.cpp \
+../NetworkCommon/Logging/server_log.cpp \
+../NetworkCommon/Invitations/InvitationManager.cpp \
 ../NetworkCommon/Database/Deltadromeus.cpp \
 ../NetworkCommon/Database/QueryHandler.cpp \
 ../NetworkCommon/NetworkIn/Diplodocus.cpp \
+../NetworkCommon/NetworkIn/DiplodocusTools.cpp \
 ../NetworkCommon/NetworkIn/DiplodocusServerToServer.cpp \
 ../NetworkCommon/NetworkIn/Khaan.cpp \
 ../NetworkCommon/NetworkIn/KhaanServerToServer.cpp \
 ../NetworkCommon/NetworkOut/Fruitadens.cpp \
+../NetworkCommon/Packets/AnalyticsPacket.cpp \
 ../NetworkCommon/Packets/AssetPacket.cpp \
 ../NetworkCommon/Packets/BasePacket.cpp \
 ../NetworkCommon/Packets/ChatPacket.cpp \
@@ -26,21 +31,21 @@ UserContact.cpp \
 ../NetworkCommon/Packets/ContactPacket.cpp \
 ../NetworkCommon/Packets/DbPacket.cpp \
 ../NetworkCommon/Packets/GamePacket.cpp \
+../NetworkCommon/Packets/InvitationPacket.cpp \
 ../NetworkCommon/Packets/LoginPacket.cpp \
 ../NetworkCommon/Packets/NotificationPacket.cpp \
 ../NetworkCommon/Packets/PacketFactory.cpp \
 ../NetworkCommon/Packets/PurchasePacket.cpp \
 ../NetworkCommon/Packets/Serialize.cpp \
 ../NetworkCommon/Packets/ServerToServerPacket.cpp \
-../NetworkCommon/Packets/StatPacket.cpp \
 ../NetworkCommon/Packets/TournamentPacket.cpp \
+../NetworkCommon/Packets/UserStatsPacket.cpp \
 ../NetworkCommon/Stat/StatTrackingConnections.cpp \
 ../NetworkCommon/Utils/CommandLineParser.cpp \
 ../NetworkCommon/Utils/MemoryLeakTracker.cpp \
 ../NetworkCommon/Utils/OsLevelUtils.cpp \
 ../NetworkCommon/Utils/TableWrapper.cpp \
-../NetworkCommon/Utils/Utils.cpp \
-../NetworkCommon/Logging/server_log.cpp
+../NetworkCommon/Utils/Utils.cpp 
 
 contacts_serverd_CXXFLAGS = -std=c++0x
 

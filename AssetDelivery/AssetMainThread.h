@@ -44,8 +44,8 @@ private:
 
    bool                    LoadAllAssetManifests();
    bool                    HandlePacketFromOtherServer( BasePacket* packet, U32 connectionId );
-   bool                    ConnectUser( PacketPrepareForUserLogin* loginPacket );
-   bool                    DisconnectUser( PacketPrepareForUserLogout* loginPacket );
+   bool                    ConnectUser( const PacketPrepareForUserLogin* loginPacket );
+   bool                    DisconnectUser( const PacketPrepareForUserLogout* loginPacket );
    bool                    StoreUserProductsOwned( PacketListOfUserProductsS2S* productNamesPacket );
 
    int                     CallbackFunction();

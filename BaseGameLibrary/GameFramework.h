@@ -86,6 +86,7 @@ public:
 
    void     SendGameResultToStatServer( int gameType, U32 gameId, int playerCount,
                                  unsigned int *pResultOrder, unsigned int *pPlayerFactions, unsigned int forfeitFlags );
+   void     SendUserForfeitToStatServer( int gameType, U32 userId, U32 gameId );
 
    DiplodocusGame*   GetGame() { return m_connectionManager; }
    void     LockGameMutex();

@@ -10,11 +10,22 @@
 
 #include <openssl/ssl.h>
 #include <openssl/err.h>
+#include "../NetworkCommon/Platform.h"
+
+#if PLATFORM == PLATFORM_WINDOWS
 #include <direct.h>
+#else
+   #include <sys/time.h>
+   #include <termios.h>
+   #include <unistd.h>
+   #include <fcntl.h>
+   #include <sys/types.h>
+   #include <sys/stat.h>  // not too sure about this
+#endif
 
 //#include "server_database.h"
 //#include "server_gamedata.h"
-#include "../NetworkCommon/General/server_log.h"
+#include "../NetworkCommon/Logging/server_log.h"
 #include "string_funcs.h"
 
 using namespace std;

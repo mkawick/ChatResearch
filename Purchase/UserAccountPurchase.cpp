@@ -160,24 +160,24 @@ bool  UserAccountPurchase::EchoHandler()
 
 bool  UserAccountPurchase::HandleReceipt( const PacketPurchase_ValidatePurchaseReceipt* receiptPacket )
 {
-   cout << "User purchase receipt" << endl;
-   cout <<  "  purchaseItemId: " << receiptPacket->purchaseItemId << endl;
-   cout <<  "  quantity      : " << receiptPacket->quantity << endl;
-   cout <<  "  transactionId : " << receiptPacket->transactionId << endl;
-   cout <<  "  platformId    : " << receiptPacket->platformId << endl;
-   cout << "Time received: " << GetDateInUTC() << endl;
+   LogMessage( LOG_PRIO_INFO, "User purchase receipt" );
+   LogMessage( LOG_PRIO_INFO, "  purchaseItemId: %s", receiptPacket->purchaseItemId.c_str() );
+   LogMessage( LOG_PRIO_INFO, "  quantity      : %d", receiptPacket->quantity );
+   LogMessage( LOG_PRIO_INFO, "  transactionId : %s", receiptPacket->transactionId.c_str() );
+   LogMessage( LOG_PRIO_INFO, "  platformId    : %d", receiptPacket->platformId );
+   LogMessage( LOG_PRIO_INFO, "  Time received : %s", GetDateInUTC().c_str() );
 
    const string& temp = receiptPacket->receipt;
    
    int maxStrLen = 200;
    int strLength = temp.size();
-   cout <<  "  receipt length: " << strLength << endl;
+   LogMessage( LOG_PRIO_INFO, "  receipt length: %d", strLength );
 
    if( strLength > maxStrLen )
       strLength = maxStrLen;
    
 
-   cout << "   receipt overview + [" << hex << endl;
+   LogMessage( LOG_PRIO_INFO, "   receipt overview + [" );
 
    for(int i=0; i< strLength; i += 20 )
    {
@@ -185,13 +185,14 @@ bool  UserAccountPurchase::HandleReceipt( const PacketPurchase_ValidatePurchaseR
       if ( remaining > 10 )
          remaining = 10;
 
+      string str;
       for( int j=0; j<remaining; j++ )
       {
-         cout << temp[ i+j ] << " ";
+         str += ToHexString( temp[i+j] ) + " ";
       }
-      cout << endl;
+      LogMessage( LOG_PRIO_ERR, str.c_str() );
    }
-   cout << "]" << dec << endl;
+   LogMessage( LOG_PRIO_INFO, "\n]" );
 
    bool  success = false;
    if( m_purchaseReceiptManager )
@@ -223,7 +224,7 @@ bool     UserAccountPurchase::MakePurchase( const PacketPurchase_Buy* packet )
 
 bool     UserAccountPurchase::MakePurchase( const PacketTournament_PurchaseTournamentEntry* packet, U32 connectionId )
 {
-   cout << "UserAccountPurchase::MakePurchase" << endl;
+   LogMessage( LOG_PRIO_INFO, "UserAccountPurchase::MakePurchase" );
    assert( m_salesManager != NULL || m_userTicket.connectionId == 0 );
 
    bool success = m_salesManager->PerformSale( packet->itemsToSpend, m_userTicket, connectionId, packet->uniqueTransactionId );
@@ -236,7 +237,7 @@ bool     UserAccountPurchase::MakePurchase( const PacketTournament_PurchaseTourn
 
 bool     UserAccountPurchase::MakeRefund( const PacketTournament_PurchaseTournamentEntryRefund* refundPacket, U32 connectionId )
 {
-   cout << "UserAccountPurchase::MakeRefund" << endl;
+   LogMessage( LOG_PRIO_INFO, "UserAccountPurchase::MakeRefund" );
    assert( m_salesManager != NULL || m_userTicket.connectionId == 0 );
    int num = refundPacket->itemsToRefund.size();
    for( int i=0; i<num; i++ )

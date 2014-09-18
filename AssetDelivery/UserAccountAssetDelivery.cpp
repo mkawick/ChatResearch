@@ -60,6 +60,15 @@ void  UserAccountAssetDelivery::Update()
 
    //---------------------------------------
 
+void     UserAccountAssetDelivery::ClearLoggedOutStatus()
+{
+   m_status = Status_initial_login;
+   m_readyForCleanup = false;
+   m_logoutTime = 0;
+}
+
+   //---------------------------------------
+
 void     UserAccountAssetDelivery::UserLoggedOut()
 {
    m_status = Status_awaiting_cleanup;
@@ -225,20 +234,20 @@ bool     UserAccountAssetDelivery::GetAsset( const PacketAsset_RequestAsset* pac
       {
          int version = packet->fileVersion;
          LoadedFile file;
-         cout << "User lookup file: " << asset->path << "; ver:" << version << endl;
+         LogMessage( LOG_PRIO_INFO, "User lookup file: %s; ver: %d", asset->path, version );
          if( asset->FindFile( version, file ) == true )
          {
             data = file.fileData;
             size = file.fileSize;
 
             const int MaxSize = PacketGameplayRawData::MaxBufferSize  - sizeof( PacketGatewayWrapper );
-            cout << "File being sent = " << asset->name << endl;
-            cout << "   path = " << asset->path << endl;
-            cout << "   size = " << size << endl;
+            LogMessage( LOG_PRIO_INFO, "File being sent = %s", asset->name.c_str() );
+            LogMessage( LOG_PRIO_INFO, "   path = %s", asset->path.c_str() );
+            LogMessage( LOG_PRIO_INFO, "   size = %d", size );
 
             if( size == 0 )
             {
-               cout << " Attempt to send 0 length file: " << packet->assetHash << endl;
+               LogMessage( LOG_PRIO_INFO, " Attempt to send 0 length file: %s", packet->assetHash.c_str() );
                m_assetManager->SendErrorToClient( m_userTicket.connectionId, m_userTicket.gatewayId, PacketErrorReport::ErrorType_Asset_unknown1 );
                return false;
             }
@@ -249,13 +258,13 @@ bool     UserAccountAssetDelivery::GetAsset( const PacketAsset_RequestAsset* pac
       }
       else
       {
-         cout << " Attempt to load unknown file: " << packet->assetHash << endl;
+         LogMessage( LOG_PRIO_INFO, " Attempt to load unknown file: %s", packet->assetHash.c_str() );
          m_assetManager->SendErrorToClient( m_userTicket.connectionId, m_userTicket.gatewayId, PacketErrorReport::ErrorType_Asset_UnknownAsset );
       }
    }
    else
    {
-      cout << " Attempt to load file but user is not connected: " << packet->assetHash << endl;
+      LogMessage( LOG_PRIO_INFO, " Attempt to load file but user is not connected: %s", packet->assetHash.c_str() );
       //m_assetManager->SendErrorToClient( m_userTicket.connectionId, ErrorType_Asset_UserDisconnected );
    }
 
@@ -266,7 +275,7 @@ bool     UserAccountAssetDelivery::GetAsset( const PacketAsset_RequestAsset* pac
 
 bool     UserAccountAssetDelivery::EchoHandler()
 {
-   cout << " Echo " << endl;
+   LogMessage( LOG_PRIO_INFO, " Echo " );
    PacketAsset_EchoToClient* echo = new PacketAsset_EchoToClient;
    U32 connectionId = m_userTicket.connectionId;
    PacketGatewayWrapper* wrapper = new PacketGatewayWrapper;

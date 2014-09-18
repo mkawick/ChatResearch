@@ -59,10 +59,11 @@ GroupLookupInterface*   InvitationManager::m_groupLookup;
 ///////////////////////////////////////////////////////////////////
 
 
-InvitationManager::InvitationManager( Invitation:: InvitationType type ) : m_dbIdentifier (0), 
-                                         m_isInitialized( false ),
+InvitationManager::InvitationManager( Invitation:: InvitationType type ) :  
+                                         m_type( type ),
+                                         m_dbIdentifier( 0 ),
                                          m_initialRequestForAllInvitesSent( false ),
-                                         m_type( type )
+                                         m_isInitialized( false )
 {
    time_t currentTime;
    time( &currentTime );
@@ -231,7 +232,7 @@ bool     InvitationManager::RemoveAnyRelatedInvitations( const string& groupUuid
 {
    // invitationUuid
    bool found = false;
-   InvitationMapConstIterator it = m_invitationMap.begin();
+   InvitationMapIterator it = m_invitationMap.begin();
    while( it != m_invitationMap.end() )
    {
       bool shouldAdvanceIter = true;
@@ -241,7 +242,8 @@ bool     InvitationManager::RemoveAnyRelatedInvitations( const string& groupUuid
          U32 invitationId = it->second.invitationId;
          const string inviteeUuid = it->second.inviteeUuid;
          const string inviterUuid = it->second.inviterUuid;
-         it = m_invitationMap.erase( it );
+         InvitationMapIterator temp = it++;
+         m_invitationMap.erase( temp );
          shouldAdvanceIter = false;
          DeleteInvitationFromDb( invitationId );
 
@@ -389,7 +391,7 @@ bool     InvitationManager::CancelInvitation( const PacketInvitation_CancelInvit
    }
 
 
-   InvitationMapConstIterator it = FindInvitation( senderUuid, invite->invitationUuid );
+   InvitationMapIterator it = FindInvitation( senderUuid, invite->invitationUuid );
    if( it == m_invitationMap.end() )
    {
       m_mainServer->SendErrorToClient( connectionId, gatewayId, PacketErrorReport::ErrorType_Invitation_DoesNotExist );
@@ -534,7 +536,7 @@ void  InvitationManager::DeleteAllInvitationsToThisGroup( const string& groupUui
    if( groupUuid.size() > 0 )
    {
       // remove all invitations to this group for this user and send notifications to all of those who invited him/her
-      InvitationMapConstIterator it = m_invitationMap.begin();
+      InvitationMapIterator it = m_invitationMap.begin();
       while( it != m_invitationMap.end() )
       {
          bool shouldAdvanceIter = true;
@@ -551,7 +553,8 @@ void  InvitationManager::DeleteAllInvitationsToThisGroup( const string& groupUui
                SendUserHisInvitations <PacketInvitation_GetListOfInvitationsResponse> ( m_invitationMap, IsUserInThisInvitation, inviterUuid, inviterConnectionId, inviterGatewayId );
             }
             DeleteInvitationFromDb( invitationId ); 
-            it = m_invitationMap.erase( it );
+            InvitationMapIterator temp = it++;
+            m_invitationMap.erase( temp );
             shouldAdvanceIter = false;
          }
          if( shouldAdvanceIter == true )
@@ -617,7 +620,7 @@ template< typename PacketType >
    }   
 
    int   currentOffset = 0;
-   int   totalCount = listOfInvitations.size();
+   //int   totalCount = listOfInvitations.size();
    int   countForThisUser = 0;
    InvitationMapConstIterator it = listOfInvitations.begin();
    while( it != listOfInvitations.end() )
@@ -727,10 +730,10 @@ void           InvitationManager::AddInvitationToStorage( Invitation& invite )
 
 ///////////////////////////////////////////////////////////////////
 
-InvitationManager::InvitationMapConstIterator  
-InvitationManager::FindInvitation( const string& inviter, const string& invitationUuid ) const 
+InvitationManager::InvitationMapIterator  
+InvitationManager::FindInvitation( const string& inviter, const string& invitationUuid ) 
 {
-   InvitationMapConstIterator it = m_invitationMap.begin();
+   InvitationMapIterator it = m_invitationMap.begin();
    while( it != m_invitationMap.end() )
    {
       const Invitation& invite = it->second;
@@ -748,10 +751,10 @@ InvitationManager::FindInvitation( const string& inviter, const string& invitati
 
 ///////////////////////////////////////////////////////////////////
 
-InvitationManager::InvitationMapConstIterator  
-InvitationManager::FindInvitation( const string& inviter, const string& invitee, const string& groupUuid ) const 
+InvitationManager::InvitationMapIterator  
+InvitationManager::FindInvitation( const string& inviter, const string& invitee, const string& groupUuid ) 
 {
-   InvitationMapConstIterator it = m_invitationMap.begin();
+   InvitationMapIterator it = m_invitationMap.begin();
    while( it != m_invitationMap.end() )
    {
       const Invitation& invite = it->second;

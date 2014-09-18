@@ -11,6 +11,8 @@
 #include <boost/algorithm/string/trim.hpp>
 #include "Utils.h"
 
+#include "../Logging/server_log.h"
+
 struct AcceptanceTest
 {
    static bool shouldRemove( char c )
@@ -291,7 +293,7 @@ bool  CommandLineParser::GetKeyValue( int index, string& key, int& value ) const
    } 
    catch( boost::bad_lexical_cast const& ) 
    {
-       cout << "Error: input string was not valid" << std::endl;
+       LogMessage( LOG_PRIO_ERR, "Error: input string was not valid" );
    }
 
    return true;
@@ -352,7 +354,7 @@ void  CommandLineParser::ProcessCommandLine( int num, const char* arguments[], V
          }
          else // no support for 0, 3 or more
          {
-            cout << "Command line parser detected too many params" << endl;
+            LogMessage( LOG_PRIO_ERR, "Command line parser detected too many params" );
             assert( 0 );
          }
          

@@ -29,7 +29,6 @@ NotificationMainThread* UserConnection::m_mainThread = NULL;
 
 UserConnection::UserConnection( const PacketPrepareForUserLogin* info ) : m_userInfo( *info ), 
                                  m_isLoggedOut( false ), 
-                                 m_requiresUpdate( true ),
                                  m_hasRequestedDevices( false )
 {
 }
@@ -75,7 +74,7 @@ void  UserConnection::RequestAllDevicesForUser()
    dbQuery->query += m_userInfo.uuid.c_str();
    dbQuery->query += "'";
 
-   //cout << dbQuery->query << endl;
+   //cout, dbQuery->query );
 
    m_mainThread->AddQueryToOutput( dbQuery );
 }
@@ -93,7 +92,7 @@ void  UserConnection::RequestAllDeviceNotification()
    dbQuery->query += m_userInfo.uuid.c_str();
    dbQuery->query += "')";
 
-   //cout << dbQuery->query << endl;
+   //cout, dbQuery->query );
 
    m_mainThread->AddQueryToOutput( dbQuery );
 }
@@ -351,10 +350,10 @@ void PrintDetailsOfDeviceRegistrationToConsole( const string& deviceId, U32 user
    string temp = deviceId.substr(0,20);
    string outString;
    RemoveSpecialCharacters( temp, outString );
-   cout << "/////////////////////////////////////////////////////////" << endl;
-   cout << " RegisterNewDevice: " << outString << endl;
-   cout << " Useruuid: " << userUuid << endl;
-   cout << " UserId: " << userId << endl;
+   LogMessage( LOG_PRIO_INFO, "----------------------------------------------------------" );
+   LogMessage( LOG_PRIO_INFO, " RegisterNewDevice: %s", outString.c_str() );
+   LogMessage( LOG_PRIO_INFO, " Useruuid: %s", userUuid.c_str() );
+   LogMessage( LOG_PRIO_INFO, " UserId: %d", userId );
 }
 
 //------------------------------------------------------------
@@ -390,10 +389,10 @@ void     UserConnection::RegisterNewDevice( const PacketNotification_RegisterDev
    query += boost::lexical_cast< string  >( m_userInfo.userId );
    query += "', '1' )";
 
-   cout << "/////////////////////////////////////////////////////////" << endl;
-   cout << " RegisterNewDevice: " << registerDevice->deviceId << endl;
-   cout << " Useruuid: " << m_userInfo.uuid << endl;
-   cout << " UserId: " << m_userInfo.userId << endl;
+   LogMessage( LOG_PRIO_INFO, "-------------------------------------------------------" );
+   LogMessage( LOG_PRIO_INFO, " RegisterNewDevice: %s", registerDevice->deviceId.c_str() );
+   LogMessage( LOG_PRIO_INFO, " Useruuid: %s", m_userInfo.uuid.c_str() );
+   LogMessage( LOG_PRIO_INFO, " UserId: %d", m_userInfo.userId );
 
 
    // we're going to assume that this new entry works fine. There is the potential for a uuid conflict, so we'll need to build that later.
@@ -473,12 +472,12 @@ void  UserConnection::CreateNewDeviceNotificationEntry( U32 userDeviceId, U32 ga
    query += devicetoa( (const unsigned char*)deviceId.c_str(), deviceId.size() );
    query += "')";
 
-   cout << "/////////////////////////////////////////////////////////" << endl;
-   cout << " CreateNewDeviceNotificationEntry: " << deviceId << endl;
-   cout << " user_device_id: " << userDeviceId << endl;
-   cout << " Useruuid: " << m_userInfo.uuid << endl;
-   cout << " UserId: " << m_userInfo.userId << endl;
-   //cout << query << endl;
+   LogMessage( LOG_PRIO_INFO, "---------------------------------------------------------" );
+   LogMessage( LOG_PRIO_INFO, " CreateNewDeviceNotificationEntry: %s", deviceId.c_str() );
+   LogMessage( LOG_PRIO_INFO, " user_device_id: %d", userDeviceId );
+   LogMessage( LOG_PRIO_INFO, " Useruuid: %s", m_userInfo.uuid.c_str() );
+   LogMessage( LOG_PRIO_INFO, " UserId: %d", m_userInfo.userId );
+   //cout, query );
 
    PacketDbQuery* dbQuery = new PacketDbQuery;
    dbQuery->id =           m_userInfo.connectionId;
@@ -511,7 +510,7 @@ void  UserConnection::UpdateDevice( const PacketNotification_UpdateDevice* updat
       return;
    }
 
-   bool deviceFound = false;
+   //bool deviceFound = false;
    U32   userDeviceId = 0;
    const string uuid = updateDevicePacket->deviceUuid.c_str();
 
@@ -648,17 +647,17 @@ void     DumpDevice( const string& userName, const string&  userUuid, const Exte
    string temp = rd.deviceId.substr( 0,numToCopy );
    string deviceOutStringId;
    RemoveSpecialCharacters( temp, deviceOutStringId );
-   cout << "User Name: " << userName << endl;
-   cout << "User Uuid: " << userUuid << endl;
-   cout << "   device id: " << deviceOutStringId << endl;
-   cout << "   device uuid: " << rd.uuid << endl;
-   cout << "   device iconId: " << rd.iconId << endl;
-   cout << "   device isEnabled: " << rd.isEnabled << endl;
-   cout << "   device idname " << rd.name << endl;
-   cout << "   device platformId: " << rd.platformId << endl;
-   cout << "   device productId: " << rd.productId << endl;
-   cout << "   device userDeviceId: " << rd.userDeviceId << endl;
-   cout << " --------------------------- " << endl;
+   LogMessage( LOG_PRIO_INFO, "User Name: %s", userName.c_str() );
+   LogMessage( LOG_PRIO_INFO, "User Uuid: %s", userUuid.c_str() );
+   LogMessage( LOG_PRIO_INFO, "   device id: %s", deviceOutStringId.c_str() );
+   LogMessage( LOG_PRIO_INFO, "   device uuid: %s", rd.uuid.c_str() );
+   LogMessage( LOG_PRIO_INFO, "   device iconId: ", rd.iconId );
+   LogMessage( LOG_PRIO_INFO, "   device isEnabled: %s", ConvertToTrueFalseString( rd.isEnabled ) );
+   LogMessage( LOG_PRIO_INFO, "   device idname %s", rd.name.c_str() );
+   LogMessage( LOG_PRIO_INFO, "   device platformId: %d", rd.platformId );
+   LogMessage( LOG_PRIO_INFO, "   device productId: %d", rd.productId );
+   LogMessage( LOG_PRIO_INFO, "   device userDeviceId: %d", rd.userDeviceId );
+   LogMessage( LOG_PRIO_INFO, "---------------------------------------" );
 }
 //------------------------------------------------------------
 
@@ -697,7 +696,7 @@ void        UserConnection::RequestDevicesList( const PacketNotification_Request
 
 void        UserConnection::RemoveDevice( const PacketNotification_RemoveDevice* removal )
 {
-   cout << "Remove device" << endl;
+   LogMessage( LOG_PRIO_INFO, "Remove device" );
    PacketNotification_RemoveDeviceResponse* response = new PacketNotification_RemoveDeviceResponse;
    response->success = false;
    const string lookupUuid = removal->deviceUuid.c_str();
@@ -723,7 +722,7 @@ void        UserConnection::RemoveDevice( const PacketNotification_RemoveDevice*
          dbQuery->query += "'";
          dbQuery->isFireAndForget = true;
 
-         cout << dbQuery->query << endl;
+         LogMessage( LOG_PRIO_INFO, dbQuery->query.c_str() );
 
          m_mainThread->AddQueryToOutput( dbQuery );
 
@@ -737,7 +736,7 @@ void        UserConnection::RemoveDevice( const PacketNotification_RemoveDevice*
          dbQuery->query += "'";
          dbQuery->isFireAndForget = true;
 
-         cout << dbQuery->query << endl;
+         LogMessage( LOG_PRIO_INFO, dbQuery->query.c_str() );
 
          m_mainThread->AddQueryToOutput( dbQuery );
 

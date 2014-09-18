@@ -14,14 +14,17 @@
 
 #if PLATFORM == PLATFORM_WINDOWS
    #include <windows.h>
+   #include <direct.h>
    #include <mmsystem.h>
    #include <sys/stat.h>
+   #include <sys/types.h>
 #pragma warning (disable:4996)
 #else
    #include <sys/time.h>
    #include <termios.h>
    #include <unistd.h>
    #include <fcntl.h>
+   #include <sys/types.h>
    #include <sys/stat.h>  // not too sure about this
 #endif
 
@@ -32,18 +35,22 @@
 #include <boost/format.hpp>
 #include <boost/tokenizer.hpp>
 #include <boost/range/algorithm/remove_if.hpp>
+//#include <boost/filesystem.hpp>
 
 #include <climits>
 #include <boost/random.hpp>
 #include <boost/generator_iterator.hpp>
 //#include <boost/chrono/.hpp>
 
-#if PLATFORM != PLATFORM_WINDOWS
+#if PLATFORM == PLATFORM_WINDOWS
+#define mkdir(a,b) _mkdir(a)
+#else
    #ifndef min
    #define min(a,b)            (((a) < (b)) ? (a) : (b))
    #endif
 #define _stat stat
 #endif
+
 
 using namespace std;
 
@@ -265,6 +272,13 @@ std::string    Trim( const std::string& str,
    return str.substr( begin, end-begin + 1 );
 }
 
+const char*    ConvertToTrueFalseString( bool value ) 
+{ 
+   if( value == true ) 
+      return "true"; 
+   return "false"; 
+}
+
 //-------------------------------------------------------------------------
 
 std::string    Reduce( const std::string& str,
@@ -425,6 +439,18 @@ const string  ConvertStringToLower( const string& str )
    return retString;
 }
 
+std::string    ToHexString( U32 value )
+{
+   std::stringstream stream;
+   if( value == 0 )
+      stream << "00";
+   else
+   {
+      stream << std::hex << value;
+   }
+   return stream.str();
+}
+
 const string itos(int n)
 {
    const int max_size = std::numeric_limits<int>::digits10 + 1 /*sign*/ + 1 /*0-terminator*/;
@@ -536,4 +562,52 @@ time_t   GetFileModificationTime( const std::string& name )
    }
    return 0;
 }
+/*
+static int do_mkdir(const char *path, mode_t mode)
+{
+    Stat            st;
+    int             status = 0;
+
+    if (stat(path, &st) != 0)
+    {
+        if (mkdir(path, mode) != 0 && errno != EEXIST)
+            status = -1;
+    }
+    else if (!S_ISDIR(st.st_mode))
+    {
+        errno = ENOTDIR;
+        status = -1;
+    }
+
+    return(status);
+}*/
+
+bool     CreateSubDirectory( std::string dir_path )
+{
+    size_t pre=0,pos;
+    std::string dir;
+    int mdret;
+    int mode = 0777;
+
+    if(dir_path[dir_path.size()-1]!='/')
+    {
+        // force trailing / so we can handle everything in loop
+        dir_path+='/';
+    }
+
+    while((pos=dir_path.find_first_of('/',pre))!=std::string::npos)
+    {
+        dir=dir_path.substr(0,pos++);
+        pre=pos;
+        if(dir.size()==0) continue; // if leading / first time is 0 length
+        if((mdret=mkdir( dir_path.c_str(), mode )) && 
+           errno!=EEXIST)
+        {
+            return true;
+        }
+    }
+    return false;
+}
+
+
 //////////////////////////////////////////////////////////////////////////

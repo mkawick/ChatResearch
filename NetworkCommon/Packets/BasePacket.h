@@ -71,9 +71,9 @@ public:
    BasePacket( int packet_type = PacketType_Base, int packet_sub_type = BasePacket_Type ) :
       packetType( packet_type ),
       packetSubType( packet_sub_type ),
+      gameProductId( 0 ),
       versionNumberMajor( NetworkVersionMajor ),
       versionNumberMinor( NetworkVersionMinor ),
-      gameProductId( 0 ),
       //packetSize( 0 ),
       gameInstanceId( 0 )
       {

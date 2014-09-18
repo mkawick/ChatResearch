@@ -21,6 +21,8 @@ struct StatsPlugin
 {
    const char *pGameName;
    void (*onReportGameResult)(unsigned int gameID, int playerCount, unsigned int *pResults, unsigned int *pFactions);
+   void (*onReportUserForfeit)(unsigned int userID, unsigned int gameID);
+
    void (*onRequestPlayerFactionStats)(UserStatsMainThread *pUserStats, U32 connectionId, unsigned int userId);
    void (*onRequestGlobalFactionStats)(UserStatsMainThread*, U32 connectionId);
    void (*onRequestGameProfile)(UserStatsMainThread *pUserStats, U32 connectionId,

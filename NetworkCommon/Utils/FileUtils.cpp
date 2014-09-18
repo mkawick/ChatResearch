@@ -2,10 +2,28 @@
 
 #include "FileUtils.h"
 
+#include "../Platform.h"
 #include <sys/stat.h>
 #include <time.h>
 
 #include <assert.h>
+
+#if PLATFORM == PLATFORM_UNIX
+#include <ftw.h>
+#include <sys/types.h>
+#include <unistd.h>
+#include <fcntl.h> 
+
+//typedef int (*DirectoryCallbackFunction) (const char *fpath, const struct stat *sb, int typeflag );
+vector <string> globalDirectoryList;
+#include <vector>
+#include <string>
+using namespace std;
+
+#elif PLATFORM == PLATFORM_WINDOWS
+//typedef stat _stat;
+
+#endif
 
 //////////////////////////////////////////////////////////////////////////
 
@@ -26,30 +44,42 @@ bool  LoadFile( const string& path, U8*& fileData, int& fileSize )
       fileSize = 0;
       return false;
    }
-
    
    return true;
 }
+
+#if PLATFORM == PLATFORM_UNIX
+
+int DirectoryCallbackFunction (const char *fpath, const struct stat *sb, int typeflag )
+{
+   if( typeflag == FTW_D )
+   {
+      globalDirectoryList.push_back( fpath );
+   }
+   return 0;
+}
+
+#endif
 
 //////////////////////////////////////////////////////////////////////////
 
 void    FindAllSubDirectories ( string baseDir, vector <string>& directoryList )
 {
-   const int LONGEST_PATH = 256;
+   //const int LONGEST_PATH = 256;
 
    assert( baseDir.size() != 0 );
    directoryList.clear();
    directoryList.push_back( baseDir );
 
    std::replace( baseDir.begin(), baseDir.end(), '\\', '/' );
-
    
    if( *baseDir.rbegin() != '/' )
       baseDir += "/";
 
    string searchString = baseDir + "*.";
 
-   int ret = chdir ( baseDir.c_str() );
+   ///int ret = 
+      chdir ( baseDir.c_str() );
 
  #if PLATFORM == PLATFORM_WINDOWS
    WIN32_FIND_DATAA FindFileData;
@@ -81,7 +111,7 @@ void    FindAllSubDirectories ( string baseDir, vector <string>& directoryList )
       FindClose(hFind);
    }
 #else
-      DIR *dir;
+   /*   DIR *dir;
     class dirent *ent;
     class stat st;
 
@@ -103,16 +133,31 @@ void    FindAllSubDirectories ( string baseDir, vector <string>& directoryList )
 
         out.push_back(full_file_name);
     }
-    closedir(dir);
+    closedir(dir);*/
+   
+   globalDirectoryList.clear();
+   if (ftw(baseDir.c_str(), DirectoryCallbackFunction, 20 ) == -1) 
+   {
+      perror("nftw");
+      return ;
+   }
+
+   vector <string> ::iterator it = globalDirectoryList.begin();
+   while( it != globalDirectoryList.end() )
+   {
+      directoryList.push_back( *it++ );
+   }
+   globalDirectoryList.clear();
+   
 #endif
 }
 
 //////////////////////////////////////////////////////////////////////////
 
-bool DoesFileExist ( const std::string& name, time_t& lastModifiedTime ) 
+bool  DoesFileExist ( const std::string& name, time_t& lastModifiedTime ) 
 {
-  struct _stat buffer;
-  bool result = ( _stat( name.c_str(), &buffer ) == 0 ); 
+  struct stat buffer;
+  bool result = ( stat( name.c_str(), &buffer ) == 0 ); 
   if( result == true )
      lastModifiedTime = buffer.st_mtime;
   else
@@ -122,7 +167,7 @@ bool DoesFileExist ( const std::string& name, time_t& lastModifiedTime )
 
 //////////////////////////////////////////////////////////////////////////
 
-void    FindFilesInSubdirectories( const vector< string >& directoriesToSearch, const string& filename, vector <FileVersion>& fileList )
+void  FindFilesInSubdirectories( const vector< string >& directoriesToSearch, const string& filename, vector <FileVersion>& fileList )
 {
 
    assert( directoriesToSearch.size() != 0 );
@@ -174,6 +219,8 @@ void    FindFilesInSubdirectories( const vector< string >& subdirectories, const
    }
 }
 
+//////////////////////////////////////////////////////////////////////////
+
 void  FindFilesInSubdirectories( const string& filePath, vector< FileVersion >& fullyQualifiedPaths )
 {
    fullyQualifiedPaths.clear();
@@ -192,6 +239,8 @@ void  FindFilesInSubdirectories( const string& filePath, vector< FileVersion >& 
 
    FindFilesInSubdirectories ( subdirectories, file, fullyQualifiedPaths );
 }
+
+//////////////////////////////////////////////////////////////////////////
 
 void  PrintFileDetails( const string& fileName, vector< FileVersion >& fileDetails )
 {

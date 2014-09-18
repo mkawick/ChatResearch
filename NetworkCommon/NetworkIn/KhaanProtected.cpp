@@ -10,6 +10,7 @@ using namespace std;
 #include "../Packets/LoginPacket.h"
 #include "../Packets/PacketFactory.h"
 #include "../Utils/CommandLineParser.h"
+#include "../Logging/server_log.h"
 
 //-----------------------------------------------------------------------------------------
 
@@ -35,12 +36,12 @@ void  KhaanProtected::SendPacketToApp( BasePacket* packet )
    {
       //IChainedInterface* outputPtr = (*itOutput).m_interface;
       //FruitadensGateway* fruity = static_cast< FruitadensGateway* >( outputPtr );
-      ChainedInterface* chain = static_cast< ChainedInterface* >( (*itOutput).m_interface );
+      ChainType* chain = static_cast< ChainType* >( (*itOutput).m_interface );
       chain->AddInputChainData( packet, m_connectionId );
    }
    else
    {
-      cout << "Major problem: KhaanProtected::SendPacketToApp is not connected to output" << endl;
+      LogMessage( LOG_PRIO_ERR, "Major problem: KhaanProtected::SendPacketToApp is not connected to output" );
       PacketFactory factory;
       factory.CleanupPacket( packet );
    }
@@ -111,11 +112,10 @@ bool  KhaanProtected::HandleInwardSerializedPacket( const U8* data, int& offset 
 
 void  DumpBadData( const U8* buffer, U32 numReceivedBytes, U32 bytesParsed )
 {
-   cout << "error on Gateway receiving packet info" << endl;
-   cout << "size of parsed packet: " << bytesParsed << " > length of bytes input: " << numReceivedBytes << endl;
-   cout << "This is clearly a hacker packet " << endl;
-   cout << "Terminating all future data" << endl;
-   cout << std::hex << endl;
+   LogMessage( LOG_PRIO_ERR, "error on Gateway receiving packet info" );
+   LogMessage( LOG_PRIO_ERR, "size of parsed packet: %d > length of bytes input: %d", bytesParsed, numReceivedBytes );
+   LogMessage( LOG_PRIO_ERR, "This is clearly a hacker packet " );
+   LogMessage( LOG_PRIO_ERR, "Terminating all future data" );
 
    if( numReceivedBytes > 100 )
       numReceivedBytes = 100;
@@ -125,15 +125,16 @@ void  DumpBadData( const U8* buffer, U32 numReceivedBytes, U32 bytesParsed )
    
    for( int i=0; i<numRows; i++ )
    {
+      string str;
       for( int j=0; j< bytesPerRow; j++ )
       {
-         cout << (*buffer);
+         str += " " + ToHexString( *buffer );
          buffer ++;
       }
-      cout << endl;
+      
+      LogMessage( LOG_PRIO_ERR, str.c_str() );
    }
 
-   cout << std::dec << endl;
 }
 
 //-----------------------------------------------------------------------------------------

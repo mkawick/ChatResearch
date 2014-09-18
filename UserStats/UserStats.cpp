@@ -118,6 +118,8 @@ int main( int argc, const char* argv[] )
 
    parser.FindValue( "stat.port", statPortString );
    parser.FindValue( "stat.address", statIpAddressString );
+   
+   FileLogOpen( serverName.c_str() );
 
    int   listenPort = 8800, 
          dbPortAddress = 3306,
@@ -132,7 +134,7 @@ int main( int argc, const char* argv[] )
    } 
    catch( boost::bad_lexical_cast const& ) 
    {
-       std::cout << "Error: input string was not valid" << std::endl;
+       LogMessage( LOG_PRIO_INFO, "Error: input string was not valid" );
    }
 
    //----------------------------------------------------------------
@@ -140,13 +142,13 @@ int main( int argc, const char* argv[] )
    U64 serverUniqueHashValue = GenerateUniqueHash( serverName );
    U32 serverId = (U32)serverUniqueHashValue;
 
-   cout << serverName << ":" << endl;
-   cout << "Server stack version " << ServerStackVersion << endl;
-   cout << "ServerId " << serverId << endl;
-   cout << "Db " << dbIpAddress << ":" << dbPortAddress << endl;
-   cout << "Network protocol version: " << (int)NetworkVersionMajor << ":" << (int)NetworkVersionMinor << endl;
-   
-   cout << "------------------------------------------------------------------" << endl << endl << endl;
+   LogMessage( LOG_PRIO_INFO, serverName.c_str() );
+   LogMessage( LOG_PRIO_INFO, "Server stack version %s" , ServerStackVersion );
+   LogMessage( LOG_PRIO_INFO, "ServerId %u" , serverId );
+   LogMessage( LOG_PRIO_INFO, "Db %s : %d", dbIpAddress.c_str(), dbPortAddress );
+   LogMessage( LOG_PRIO_INFO, "Network protocol version: %d:%d" , (int)NetworkVersionMajor , ":" , (int)NetworkVersionMinor );
+      
+   LogMessage( LOG_PRIO_INFO, "------------------------------------------------------------------" );
 
    InitializeSockets();
    bool isBusy = IsPortBusy( listenPort ) | IsPortBusy( listenS2SPort );
@@ -197,14 +199,14 @@ int main( int argc, const char* argv[] )
     }
    else
    {
-      cout << "***********************************************" << endl;
-      cout << " error: that server port is busy " << endl;
-      cout << "  port: " << listenPort << endl;
-      cout << "  port: " << listenS2SPort << endl;
-      cout << " Note: you may have an instance already running" << endl;
-      cout << "        we must exit now" << endl;
-      cout << "***********************************************" << endl;
-      cout << endl << "Press any key to exit" << endl;
+      LogMessage( LOG_PRIO_ERR, "***********************************************" );
+      LogMessage( LOG_PRIO_ERR, " error: that server port is busy " );
+      LogMessage( LOG_PRIO_ERR, "  port: %d", listenPort );
+      LogMessage( LOG_PRIO_ERR, "  port: %d", listenS2SPort );
+      LogMessage( LOG_PRIO_ERR, " Note: you may have an instance already running" );
+      LogMessage( LOG_PRIO_ERR, "        we must exit now" );
+      LogMessage( LOG_PRIO_ERR, "***********************************************" );
+      LogMessage( LOG_PRIO_ERR, "\nPress any key to exit" );
       getch();
    }
 

@@ -78,8 +78,8 @@ private:
    void                    HandleAdminSettings( const PacketDbQueryResult* dbResult );
 
    bool                    HandlePacketFromOtherServer( BasePacket* packet, U32 connectionId );
-   bool                    ConnectUser( PacketPrepareForUserLogin* loginPacket );
-   bool                    DisconnectUser( PacketPrepareForUserLogout* loginPacket );
+   bool                    ConnectUser( const PacketPrepareForUserLogin* loginPacket );
+   bool                    DisconnectUser( const PacketPrepareForUserLogout* loginPacket );
    bool                    StoreUserProductsOwned( PacketListOfUserProductsS2S* productNamesPacket );
    bool                    HandlePurchaseRequest( const PacketTournament_PurchaseTournamentEntry* packet, U32 connectionId );
    bool                    HandlePurchaseRefund( const PacketTournament_PurchaseTournamentEntryRefund* packet, U32 connectionId );

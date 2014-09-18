@@ -44,7 +44,7 @@ namespace HTTP
       string         m_notificationUrl;
       
       virtual bool  Notify( const string& deviceId, const string& message ) = 0;// always custom
-      virtual string   PrepJsonStrings( const string& deviceId, const NotificationSender::KeyValueMap& keyValues ) = 0;
+      virtual string   PrepJsonStrings( const string& deviceId, const KeyValueMap& keyValues ) = 0;
    };
 
    ////////////////////////////////////////////////////////////////////////////////

@@ -2,6 +2,7 @@
 #include <sstream>
 #include <iostream>
 
+#include "../Platform.h"
 #if PLATFORM == PLATFORM_WINDOWS
 #pragma warning( disable:4996 )// stupid api rewrite warnings
 #endif
@@ -17,7 +18,7 @@ using boost::format;
 
 #include "HTTPSender.h"
 
-#include "../General/server_log.h"
+#include "../Logging/server_log.h"
 #include "../Utils/Utils.h"
 
 static string   printResponseData; //will hold the response text
@@ -646,7 +647,7 @@ bool     AppleReceiptValidator::ValidateReceipt( const char* receipt )
 
       curl_easy_setopt( curl, CURLOPT_URL, m_validationUrl.c_str() );
       curl_easy_setopt( curl, CURLOPT_HTTPHEADER, curlStringList );
-      curl_easy_setopt( curl, CURLOPT_SSL_VERIFYPEER, FALSE ); // --insecure or -k
+      curl_easy_setopt( curl, CURLOPT_SSL_VERIFYPEER, false ); // --insecure or -k
       curl_easy_setopt( curl, CURLOPT_POST, true );
       
       curl_easy_setopt( curl, CURLOPT_POSTFIELDS, body.c_str() );
