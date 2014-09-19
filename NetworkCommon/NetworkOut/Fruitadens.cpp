@@ -81,15 +81,15 @@ bool        Fruitadens :: AddOutputChainData( BasePacket* packet, U32 filingData
    if( FilterOutwardPacket( packet ) == false )
       return false;
 
-   bool didLock = false;
-   if( m_outputChainListMutex.IsLocked() == false )
+   //bool didLock = false;
+   //if( m_outputChainListMutex.IsLocked() == false )
    {
-      didLock = true;
+      //didLock = true;
       m_outputChainListMutex.lock();
    }
 
    m_packetsReadyToSend.push_back( packet );
-   if( didLock == true )
+   //if( didLock == true )
    {
       m_outputChainListMutex.unlock();
    }

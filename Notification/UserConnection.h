@@ -84,7 +84,9 @@ private:
    void        StoreListOfDevices( const PacketDbQueryResult* result );
    void        StoreDevicesPerGameList( const PacketDbQueryResult* result );
    void        CreateEnabledNotificationEntry( const PacketDbQueryResult* dbResult );
-   bool        FindDeviceAndUpdate( RegisteredDeviceList deviceList, const PacketNotification_RegisterDevice* registerDevice );
+   bool        FindDeviceAndUpdate( RegisteredDeviceList& deviceList, const PacketNotification_RegisterDevice* registerDevice );
+
+   void        TestNotification( const char* text, U32 type );
    void        RegisterNewDevice( const PacketNotification_RegisterDevice* registerDevice );
    void        SendNewDeviceRegistrationResponse( const string& uuid );
 

@@ -42,6 +42,10 @@ public:
    bool     AddQueryToOutput( PacketDbQuery* packet );
    void     ServerWasIdentified( IChainedInterface* khaan );
 
+   void     SetupNotificationsToSendImmediately();
+   bool     StoreLastUserNotification( unsigned int userId, unsigned int gameType, int gameId,
+                                       unsigned int notificationType, string additionalText );
+
 private:
 
    bool     HandlePacketFromOtherServer( BasePacket* packet, U32 connectionId );
@@ -67,8 +71,7 @@ private:
 
    bool     HandleUpdateNotificationCount( const PacketNotification_UpdateNotificationCount* unwrappedPacket );
    int      CalculateBadgeNumberFromPendingNotifications( unsigned int userId, unsigned int gameType, int gameId );
-   bool     StoreLastUserNotification( unsigned int userId, unsigned int gameType, int gameId,
-                                       unsigned int notificationType, string additionalText );
+   
    bool     SetupUserNotificationResend( unsigned int userId, unsigned int gameType, unsigned int deviceId, unsigned delayTimeSeconds );
 
    typedef  map< U32, UserConnection >    UserConnectionMap;

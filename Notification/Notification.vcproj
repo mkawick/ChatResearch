@@ -461,6 +461,14 @@
 					>
 				</File>
 				<File
+					RelativePath="..\NetworkCommon\Utils\StringUtils.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\NetworkCommon\Utils\StringUtils.h"
+					>
+				</File>
+				<File
 					RelativePath="..\NetworkCommon\Utils\TableWrapper.cpp"
 					>
 				</File>

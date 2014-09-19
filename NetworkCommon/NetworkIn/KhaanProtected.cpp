@@ -12,6 +12,8 @@ using namespace std;
 #include "../Utils/CommandLineParser.h"
 #include "../Logging/server_log.h"
 
+#include "../Utils/StringUtils.h"
+
 //-----------------------------------------------------------------------------------------
 
 KhaanProtected::KhaanProtected( int id, bufferevent* be ): Khaan( id, be ),
@@ -125,14 +127,16 @@ void  DumpBadData( const U8* buffer, U32 numReceivedBytes, U32 bytesParsed )
    
    for( int i=0; i<numRows; i++ )
    {
-      string str;
-      for( int j=0; j< bytesPerRow; j++ )
+      string str = BufferToHexString( buffer, bytesPerRow );
+     /* for( int j=0; j< bytesPerRow; j++ )
       {
          str += " " + ToHexString( *buffer );
          buffer ++;
       }
-      
+      */
+
       LogMessage( LOG_PRIO_ERR, str.c_str() );
+      buffer += bytesPerRow;
    }
 
 }

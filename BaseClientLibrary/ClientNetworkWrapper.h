@@ -465,6 +465,7 @@ public:
    void  SendGameEcho();
    void  SendPurchaseEcho();
    void  SendNotification( U8 type, string additionalText = "" );
+   void  SendNotificationTest( U8 type, string message = "" );
    void  SendGameTest();
    void  SetNetworkVersionOverride( U8 ver );
 

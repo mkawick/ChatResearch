@@ -16,9 +16,12 @@ using boost::format;
 #include "../NetworkCommon/Packets/PacketFactory.h"
 #include "../NetworkCommon/Packets/DbPacket.h"
 #include "../NetworkCommon/Utils/Utils.h"
+#include "../NetworkCommon/Utils/StringUtils.h"
 
 #include "NotificationMainThread.h"
 #include "NotificationCommon.h"
+
+#include "server_notify.h"
 
 //////////////////////////////////////////////////////////////
 
@@ -218,6 +221,12 @@ bool  UserConnection::HandleRequestFromClient( const BasePacket* packet )
       {
          switch( packet->packetSubType )
          {
+         case PacketNotification::NotificationType_TestNotification:
+            {
+               const PacketNotification_TestNotification* test = static_cast< const PacketNotification_TestNotification* >( packet );
+               TestNotification( test->message, test->type );
+            }
+            break;
          case PacketNotification::NotificationType_RegisterDevice:
             {
                const PacketNotification_RegisterDevice* registerDevice = static_cast< const PacketNotification_RegisterDevice* >( packet );
@@ -280,14 +289,18 @@ static const char *devicetoa(const unsigned char *device, int device_len)
 
 //------------------------------------------------------------
 
-bool     UserConnection::FindDeviceAndUpdate( RegisteredDeviceList deviceList, const PacketNotification_RegisterDevice* registerDevice )
+bool     UserConnection::FindDeviceAndUpdate( RegisteredDeviceList& deviceList, const PacketNotification_RegisterDevice* potentialDevice )
 {
+   string printableDeviceId = BufferToHexString( potentialDevice->deviceId, 16 );
+   LogMessage( LOG_PRIO_INFO, "Device stats: assignedUuid:%s, deviceId[%s], %s", potentialDevice->assignedUuid.c_str(), printableDeviceId.c_str(), FindPlatformName( potentialDevice->platformId ) );
+   
+   // potentialDevice
    RegisteredDeviceIterator   deviceIt = deviceList.begin();
    while( deviceIt != deviceList.end() )
    {
-      //if( deviceIt->deviceId == registerDevice->deviceId )
-      if( deviceIt->uuid == registerDevice->assignedUuid )
+      if( deviceIt->uuid == potentialDevice->assignedUuid )
       {
+         LogMessage( LOG_PRIO_INFO, "FindDeviceAndUpdate: device matched by assignedUuid, update info beginning" );
          // look up the  device notification and if it exists, report this error.
          U32 userDeviceId = deviceIt->userDeviceId;
          DeviceNotificationsIterator   deviceEnabledIt = FindDeviceNotificationByUserDeviceId( userDeviceId );
@@ -298,19 +311,23 @@ bool     UserConnection::FindDeviceAndUpdate( RegisteredDeviceList deviceList, c
          }
          else
          {
+            LogMessage( LOG_PRIO_INFO, "FindDeviceAndUpdate: CreateNewDeviceNotificationEntry because we did find the notification id" );
             //otherwise, we are logging in from a new game and we need to create a new entry... you are logging in from the same game but a different device
             CreateNewDeviceNotificationEntry( userDeviceId, m_userInfo.gameProductId, deviceIt->deviceId );
          }
 
-         if( registerDevice->deviceName.size() && deviceIt->name.size() == 0 )
+         if( potentialDevice->deviceName.size() && deviceIt->name.size() == 0 )
          {
-            GrandfatherInOldDevices( deviceIt, registerDevice->deviceName );
+            LogMessage( LOG_PRIO_INFO, "FindDeviceAndUpdate: GrandfatherInOldDevices. Existing device name is empty" );
+            GrandfatherInOldDevices( deviceIt, potentialDevice->deviceName );
          }
+         LogMessage( LOG_PRIO_INFO, "FindDeviceAndUpdate: return true" );
          return true;
       }
       deviceIt++;
    }
 
+   LogMessage( LOG_PRIO_INFO, "FindDeviceAndUpdate: return false... assignedUuid %s not found", potentialDevice->assignedUuid.c_str() );
    return false;
 }
 
@@ -347,27 +364,40 @@ void RemoveSpecialCharacters(const string& str, string& outString)
 void PrintDetailsOfDeviceRegistrationToConsole( const string& deviceId, U32 userId, const string& userUuid )
 {
    // clean up the string before printing... not too much and remove beeps.
-   string temp = deviceId.substr(0,20);
-   string outString;
-   RemoveSpecialCharacters( temp, outString );
+   string temp = BufferToHexString( reinterpret_cast< const U8* >( deviceId.c_str() ), 20 );
+ /*  string outString;
+   RemoveSpecialCharacters( temp, outString );*/
    LogMessage( LOG_PRIO_INFO, "----------------------------------------------------------" );
-   LogMessage( LOG_PRIO_INFO, " RegisterNewDevice: %s", outString.c_str() );
+   LogMessage( LOG_PRIO_INFO, " RegisterNewDevice: [%s]", temp.c_str() );
    LogMessage( LOG_PRIO_INFO, " Useruuid: %s", userUuid.c_str() );
    LogMessage( LOG_PRIO_INFO, " UserId: %d", userId );
 }
 
 //------------------------------------------------------------
+
+void     UserConnection::TestNotification( const char* text, U32 type )
+{
+   m_mainThread->StoreLastUserNotification( m_userInfo.userId, m_userInfo.gameProductId, 5,
+      type, text );
+
+   m_mainThread->SetupNotificationsToSendImmediately();
+
+}
+
+//------------------------------------------------------------
 //------------------------------------------------------------
 
-void     UserConnection::RegisterNewDevice( const PacketNotification_RegisterDevice* registerDevice )
+void     UserConnection::RegisterNewDevice( const PacketNotification_RegisterDevice* potentialDevice )
 {
-   if( registerDevice->deviceId.size() < 8 )
+   LogMessage( LOG_PRIO_INFO, "RegisterNewDevice: user: %s, userId: %u, connectionId: %u, gatewayId: %u", m_userInfo.userName.c_str(), m_userInfo.userId, m_userInfo.connectionId, m_userInfo.gatewayId );
+
+   if( potentialDevice->deviceId.size() < 8 )
    {
       m_mainThread->SendErrorToClient( m_userInfo.connectionId, m_userInfo.gatewayId, PacketErrorReport::ErrorType_Notification_DeviceIdIncorrect );
       return;
    }
 
-   if( FindDeviceAndUpdate( m_deviceList, registerDevice ) == true )
+   if( FindDeviceAndUpdate( m_deviceList, potentialDevice ) == true )
    {
       m_mainThread->SendErrorToClient( m_userInfo.connectionId, m_userInfo.gatewayId, PacketErrorReport::ErrorType_Notification_DeviceAlreadyRegistered );
       return;
@@ -382,27 +412,29 @@ void     UserConnection::RegisterNewDevice( const PacketNotification_RegisterDev
    query += "', '";
    query += newDeviceUuid;
    query += "', x'";
-   query += devicetoa( (const unsigned char*)registerDevice->deviceId.c_str(), registerDevice->deviceId.size() );
+   query += devicetoa( (const unsigned char*)potentialDevice->deviceId.c_str(), potentialDevice->deviceId.size() );
    query += "', '%s', '1', '"; // device name, icon id
-   query += boost::lexical_cast< string  >( (int) registerDevice->platformId );
+   query += boost::lexical_cast< string  >( (int) potentialDevice->platformId );
    query += "', '";
    query += boost::lexical_cast< string  >( m_userInfo.userId );
    query += "', '1' )";
 
-   LogMessage( LOG_PRIO_INFO, "-------------------------------------------------------" );
-   LogMessage( LOG_PRIO_INFO, " RegisterNewDevice: %s", registerDevice->deviceId.c_str() );
+
+   PrintDetailsOfDeviceRegistrationToConsole( potentialDevice->deviceId, m_userInfo.userId, m_userInfo.uuid );
+  /* LogMessage( LOG_PRIO_INFO, "-------------------------------------------------------" );
+   LogMessage( LOG_PRIO_INFO, " RegisterNewDevice: [%s]", BufferToHexString( potentialDevice->deviceId, 16 ).c_str() );
    LogMessage( LOG_PRIO_INFO, " Useruuid: %s", m_userInfo.uuid.c_str() );
-   LogMessage( LOG_PRIO_INFO, " UserId: %d", m_userInfo.userId );
+   LogMessage( LOG_PRIO_INFO, " UserId: %d", m_userInfo.userId );*/
 
 
    // we're going to assume that this new entry works fine. There is the potential for a uuid conflict, so we'll need to build that later.
    ExtendedRegisteredDevice* rd = new ExtendedRegisteredDevice;
       rd->userDeviceId =  0;// we need to look this up
-      rd->name =      registerDevice->deviceName;
+      rd->name =      potentialDevice->deviceName;
       rd->uuid =      newDeviceUuid;
       rd->iconId =    1;
-      rd->deviceId =  registerDevice->deviceId.c_str();
-      rd->platformId = registerDevice->platformId;
+      rd->deviceId =  potentialDevice->deviceId.c_str();
+      rd->platformId = potentialDevice->platformId;
       rd->isEnabled =  true;
 
    PacketDbQuery* dbQuery = new PacketDbQuery;
@@ -413,7 +445,7 @@ void     UserConnection::RegisterNewDevice( const PacketNotification_RegisterDev
    dbQuery->query =        query;
    dbQuery->customData  =  rd;
 
-   dbQuery->escapedStrings.insert( registerDevice->deviceName );
+   dbQuery->escapedStrings.insert( potentialDevice->deviceName );
    m_mainThread->AddQueryToOutput( dbQuery );
 
 
@@ -463,6 +495,9 @@ void  UserConnection::CreateEnabledNotificationEntry( const PacketDbQueryResult*
 // we do not make all of the same error checks here... it's too costly and assumed to have already have been performed
 void  UserConnection::CreateNewDeviceNotificationEntry( U32 userDeviceId, U32 gameType, const string& deviceId )
 {
+   string printableDeviceId = BufferToHexString( reinterpret_cast< const U8* >( deviceId.c_str() ), 20 );
+   LogMessage( LOG_PRIO_INFO, "CreateNewDeviceNotificationEntry: user: %s, userId: %u, userDeviceId: %u, gameType: %d, deviceId: [%s]", m_userInfo.userName.c_str(), m_userInfo.userId, userDeviceId, gameType, printableDeviceId.c_str() );
+
    string query( "INSERT INTO user_device_notification ( user_device_id, game_type, is_enabled, device_id) " );
    query += " VALUES( ";
    query += boost::lexical_cast< string  >( userDeviceId );
@@ -473,7 +508,7 @@ void  UserConnection::CreateNewDeviceNotificationEntry( U32 userDeviceId, U32 ga
    query += "')";
 
    LogMessage( LOG_PRIO_INFO, "---------------------------------------------------------" );
-   LogMessage( LOG_PRIO_INFO, " CreateNewDeviceNotificationEntry: %s", deviceId.c_str() );
+   LogMessage( LOG_PRIO_INFO, " CreateNewDeviceNotificationEntry: [%s]", printableDeviceId.c_str() );
    LogMessage( LOG_PRIO_INFO, " user_device_id: %d", userDeviceId );
    LogMessage( LOG_PRIO_INFO, " Useruuid: %s", m_userInfo.uuid.c_str() );
    LogMessage( LOG_PRIO_INFO, " UserId: %d", m_userInfo.userId );

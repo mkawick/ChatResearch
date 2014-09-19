@@ -4847,6 +4847,16 @@ void  NetworkLayerExtended::SendNotification( U8 type, string additionalText )
    SerializePacketOut( &packet );
 }
 
+void  NetworkLayerExtended::SendNotificationTest( U8 type, string message )
+{
+   PrintFunctionName( __FUNCTION__ );
+   PacketNotification_TestNotification packet;
+   packet.message = message;
+   packet.type = type;
+
+   SerializePacketOut( &packet );
+}
+
 void  NetworkLayerExtended::SendGameTest()
 {
    PrintFunctionName( __FUNCTION__ );
