@@ -428,7 +428,7 @@ bool     AssetMainThread::ConnectUser( const PacketPrepareForUserLogin* loginPac
       ut.uuid =            loginPacket->uuid.c_str();
       ut.userTicket =      loginPacket->loginKey.c_str();
       ut.gatewayId =       gatewayId;
-      ut.connectionId =    0;
+      ut.connectionId =    connectionId;
       ut.gameProductId =   loginPacket->gameProductId;
       ut.userId =          loginPacket->userId;
 
@@ -438,6 +438,8 @@ bool     AssetMainThread::ConnectUser( const PacketPrepareForUserLogin* loginPac
       //m_mutex.lock(); // locked from above
       m_userTickets.insert( UAADPair( hashForUser, user ) );
       //m_mutex.unlock();
+
+      LogMessage( LOG_PRIO_INFO, "Login: User: %s, uuid: %s, gatewayId: %d, userId: %d, connId: %d", ut.userName.c_str(), ut.uuid.c_str(), ut.gatewayId, ut.userId, ut.connectionId );
    }
    return true;
 }

@@ -41,13 +41,10 @@ ConnectionToUser:: ConnectionToUser( const string& name, const string& pword, co
                      m_avatarIcon( 0 ),
                      m_loginAttemptCount( 0 ),
                      status( LoginStatus_Pending ), 
-                     m_gameProductId( 0 ),
-                     m_connectionId( 0 ),
                      m_loginTime( 0 ),
                      m_loggedOutTime( 0 ),
                      m_isLoggingOut( false ),
                      m_isReadyToBeCleanedUp( false ),
-                     m_gatewayId( 0 ),
                      m_timeZone( 0 ),
                      m_languageId( 1 ),
                      m_adminLevel( 0 ),
@@ -60,7 +57,11 @@ ConnectionToUser:: ConnectionToUser( const string& name, const string& pword, co
                      m_blockGroupInvitations( false ),
                      m_isSavingUserProfile( false ),
                      m_hasRequestedPurchasesFromClient( false )
-                     {}
+{
+   m_connectionDetails.gameProductId = 0;
+   m_connectionDetails.connectionId = 0;
+   m_connectionDetails.gatewayId = 0;
+}
 
 //-----------------------------------------------------------------
 
@@ -73,7 +74,7 @@ bool  ConnectionToUser::HandleAdminRequestUserProfile( const PacketDbQueryResult
    {
       if( dbResult->GetBucket().size() == 0 )// no records found
       {
-         m_userManager->SendErrorToClient( m_connectionId, m_gatewayId, PacketErrorReport::ErrorType_Cheat_BadUserLookup );
+         m_userManager->SendErrorToClient( m_connectionDetails.connectionId, m_connectionDetails.gatewayId, PacketErrorReport::ErrorType_Cheat_BadUserLookup );
          return false;
       }
       if( dbResult->successfulQuery == true )
@@ -89,12 +90,12 @@ bool  ConnectionToUser::HandleAdminRequestUserProfile( const PacketDbQueryResult
          {
             if( conn.m_userUuid == m_userUuid )
             {
-               conn.PackUserProfileRequestAndSendToClient( m_connectionId, m_gatewayId );
+               conn.PackUserProfileRequestAndSendToClient( m_connectionDetails.connectionId, m_connectionDetails.gatewayId );
             }
             else
             {
                
-               conn.PackOtherUserProfileRequestAndSendToClient( m_connectionId, m_gatewayId );
+               conn.PackOtherUserProfileRequestAndSendToClient( m_connectionDetails.connectionId, m_connectionDetails.gatewayId );
             }
          }
       }
@@ -117,7 +118,7 @@ bool  ConnectionToUser::EchoHandler()
 {
    LogMessage( LOG_PRIO_INFO, " Echo " );
    PacketLogin_EchoToClient* echo = new PacketLogin_EchoToClient;
-   m_userManager->SendPacketToGateway( echo, m_connectionId, m_gatewayId );
+   m_userManager->SendPacketToGateway( echo, m_connectionDetails.connectionId, m_connectionDetails.gatewayId );
    return true;
 }
 
@@ -140,7 +141,7 @@ bool  ConnectionToUser::LoginResult( const PacketDbQueryResult* dbResult )
    }
 
    CopyUserSettings( enigma, dbResult->serverLookup );
-   m_connectionId =                   dbResult->id;
+   m_connectionDetails.connectionId =                   dbResult->id;
    if( m_loginKey.size() == 0 )
    {
       U32 hash = static_cast<U32>( GenerateUniqueHash( boost::lexical_cast< string >( dbResult->id ) + m_email ) );
@@ -201,7 +202,7 @@ void  ConnectionToUser::CopyUserSettings( UserPlusProfileTable& enigma, U8 produ
       m_timeZone =                       boost::lexical_cast< int >( tz );
    }
 
-   m_gameProductId =                  productId;
+   m_connectionDetails.gameProductId = productId;
 }
 
 //-----------------------------------------------------------------
@@ -210,7 +211,7 @@ void  ConnectionToUser::SaveUpdatedProfile( const PacketUpdateUserProfile* profi
 {
    if( m_isSavingUserProfile )
    {
-      m_userManager->SendErrorToClient( m_connectionId, m_gatewayId, PacketErrorReport::ErrorType_Login, PacketErrorReport::ErrorType_Login_ProfileIsAlreadyBeingUpdated );
+      m_userManager->SendErrorToClient( m_connectionDetails.connectionId, m_connectionDetails.gatewayId, PacketErrorReport::ErrorType_Login, PacketErrorReport::ErrorType_Login_ProfileIsAlreadyBeingUpdated );
       return;
    }
 
@@ -268,7 +269,7 @@ void  ConnectionToUser::SaveUpdatedProfile( const PacketUpdateUserProfile* profi
       TellContactServerToReloadUserProfile();
       
    }
-   PackUserProfileRequestAndSendToClient( m_connectionId, m_gatewayId );
+   PackUserProfileRequestAndSendToClient( m_connectionDetails.connectionId, m_connectionDetails.gatewayId );
 
    m_isSavingUserProfile = false;
 }
@@ -278,10 +279,10 @@ void  ConnectionToUser::SaveUpdatedProfile( const PacketUpdateUserProfile* profi
 void  ConnectionToUser::WriteUserBasicsToAccount()
 {
    PacketDbQuery* dbQuery = new PacketDbQuery;
-   dbQuery->id =           m_connectionId;
+   dbQuery->id =           m_connectionDetails.connectionId;
    dbQuery->lookup =       DiplodocusLogin::QueryType_UpdateUsers; 
    dbQuery->meta =         "";
-   dbQuery->serverLookup = m_gameProductId;
+   dbQuery->serverLookup = m_connectionDetails.gameProductId;
    dbQuery->isFireAndForget = true;
 
    string query = "UPDATE playdek.users SET user_name='%s',user_email='%s',user_pw_hash='%s',active=";
@@ -303,10 +304,10 @@ void  ConnectionToUser::WriteUserBasicsToAccount()
 void  ConnectionToUser::WriteUserProfile()
 {
    PacketDbQuery* dbQuery = new PacketDbQuery;
-   dbQuery->id =           m_connectionId;
+   dbQuery->id =           m_connectionDetails.connectionId;
    dbQuery->lookup =       DiplodocusLogin::QueryType_UpdateUserProfile;
    dbQuery->meta =         "";
-   dbQuery->serverLookup = m_gameProductId;
+   dbQuery->serverLookup = m_connectionDetails.gameProductId;
    dbQuery->isFireAndForget = true;
 
    string query = "UPDATE playdek.user_profile SET admin_level=";
@@ -345,7 +346,7 @@ void  ConnectionToUser::WriteUserProfile()
 
 void     ConnectionToUser::UpdateConnectionId( U32 connectId )
 {
-   m_connectionId = connectId;
+   m_connectionDetails.connectionId = connectId;
 }
 
 //-----------------------------------------------------------------
@@ -371,7 +372,7 @@ bool  ConnectionToUser::BeginLogout( bool wasDisconnectedByError )
       PacketLogoutToClient* logout = new PacketLogoutToClient();
       logout->userName =            m_userName;// just for loggin purposes
       logout->uuid =                m_userUuid;
-      m_userManager->SendPacketToGateway( logout, m_connectionId, m_gatewayId );
+      m_userManager->SendPacketToGateway( logout, m_connectionDetails.connectionId, m_connectionDetails.gatewayId );
    }
 
    return FinalizeLogout();
@@ -387,7 +388,7 @@ bool  ConnectionToUser::FinalizeLogout()
       return false;
 
    PacketDbQuery* dbQuery = new PacketDbQuery;
-   dbQuery->id =              m_connectionId;
+   dbQuery->id =              m_connectionDetails.connectionId;
    dbQuery->lookup =          DiplodocusLogin::QueryType_UserLogout;
    dbQuery->isFireAndForget = true;// no result is needed
    
@@ -400,7 +401,7 @@ bool  ConnectionToUser::FinalizeLogout()
 
    LogMessage( LOG_PRIO_INFO, "User %s:%s logout at %s", m_userName.c_str(), m_userUuid.c_str(), GetDateInUTC().c_str() );
 
-   //m_userManager->SendPacketToGateway( logout, m_connectionId, m_gatewayId );
+   //m_userManager->SendPacketToGateway( logout, m_connectionDetails.connectionId, m_connectionDetails.gatewayId );
    return m_userManager->AddQueryToOutput( dbQuery );
 }
 
@@ -450,7 +451,7 @@ int   ConnectionToUser::FindProductVendorUuid( string text )
 bool  ConnectionToUser::UpdateLastLoggedInTime()
 {
    PacketDbQuery* dbQuery = new PacketDbQuery;
-   dbQuery->id =              m_connectionId ;
+   dbQuery->id =              m_connectionDetails.connectionId ;
    dbQuery->lookup =          DiplodocusLogin::QueryType_UpdateLastLoggedInTime;
    dbQuery->isFireAndForget = true;// no result is needed
 
@@ -467,7 +468,7 @@ bool  ConnectionToUser::UpdateLastLoggedInTime()
 bool  ConnectionToUser::UpdateLastLoggedOutTime()
 {
    PacketDbQuery* dbQuery = new PacketDbQuery;
-   dbQuery->id =              m_connectionId ;
+   dbQuery->id =              m_connectionDetails.connectionId ;
    dbQuery->lookup =          DiplodocusLogin::QueryType_UpdateLastLoggedOutTime;
    dbQuery->isFireAndForget = true;// no result is needed
 
@@ -524,11 +525,11 @@ bool    ConnectionToUser:: SuccessfulLoginFinished( U32 connectId, bool isRelogg
    packetDelay = 0.9f;// based on testing, the contact server and others can take a long time to process logout
 #endif
 
-   m_userManager->SendPacketToGateway( loginStatus, m_connectionId, m_gatewayId, packetDelay );// two second delay
+   m_userManager->SendPacketToGateway( loginStatus, m_connectionDetails.connectionId, m_connectionDetails.gatewayId, packetDelay );// two second delay
 
    if( loginStatus->adminLevel > 0 )
    {
-      m_userManager->SendErrorToClient( m_connectionId, m_gatewayId, PacketErrorReport::ErrorType_Login, PacketErrorReport::StatusSubtype_UserIsAdminAccount );
+      m_userManager->SendErrorToClient( m_connectionDetails.connectionId, m_connectionDetails.gatewayId, PacketErrorReport::ErrorType_Login, PacketErrorReport::StatusSubtype_UserIsAdminAccount );
    }
 
   // RequestListOfGames( userUuid );
@@ -545,7 +546,7 @@ bool    ConnectionToUser:: SuccessfulLoginFinished( U32 connectId, bool isRelogg
    {
       LogMessage( LOG_PRIO_INFO, "User unsuccessful login at %s", GetDateInUTC().c_str() );
    }
-   return success;//SendLoginStatusToOtherServers( userName, userUuid, m_connectionId, m_gameProductId, m_lastLoginTime, active, email, passwordHash, userId, loginKey, true, false );
+   return success;//SendLoginStatusToOtherServers( userName, userUuid, m_connectionDetails.connectionId, m_connectionDetails.gameProductId, m_lastLoginTime, active, email, passwordHash, userId, loginKey, true, false );
 }
 
 //---------------------------------------------------------------
@@ -564,10 +565,10 @@ bool     ConnectionToUser:: RequestListOfPurchases( const string& user_uuid )
       return PackageListOfProducts();
    }*/
 
-   if( m_userUuid.size() && m_connectionId != 0 )
+   if( m_userUuid.size() && m_connectionDetails.connectionId != 0 )
    {
       PacketDbQuery* dbQuery = new PacketDbQuery;
-      dbQuery->id =     m_connectionId ;
+      dbQuery->id =     m_connectionDetails.connectionId ;
       dbQuery->lookup = DiplodocusLogin::QueryType_UserListOfUserProducts;
       dbQuery->meta = user_uuid;
 
@@ -587,7 +588,7 @@ bool     ConnectionToUser:: HandleRequestForListOfPurchases( const PacketListOfU
    if( purchase->userUuid == m_userUuid )
    {
       LogMessage( LOG_PRIO_INFO, "HandleRequestForListOfPurchases: SendListOfProductsToClientAndAsset" );
-      SendListOfProductsToClientAndAsset( m_connectionId, m_gatewayId );
+      SendListOfProductsToClientAndAsset( m_connectionDetails.connectionId, m_connectionDetails.gatewayId );
    }
 
    return true;
@@ -659,8 +660,8 @@ void     ConnectionToUser:: TellContactServerToReloadUserProfile()
 {
    PacketUserUpdateProfile* profile = new PacketUserUpdateProfile;
    PackUserSettings( profile );
-   profile->connectionId = m_connectionId;
-   if( m_userManager->SendPacketToOtherServer( profile, m_connectionId ) == false )
+   profile->connectionId = m_connectionDetails.connectionId;
+   if( m_userManager->SendPacketToOtherServer( profile, m_connectionDetails.connectionId ) == false )
    {
       PacketFactory factory;
       BasePacket* packet = static_cast< BasePacket* >( profile );
@@ -679,7 +680,7 @@ bool     ConnectionToUser:: AddPurchase( const PacketAddPurchaseEntry* purchase 
       bool success = m_userManager->FindProductByUuid( productUuid, productInfo );
       if( success == false )
       {
-         m_userManager->SendErrorToClient( m_connectionId, m_gatewayId, PacketErrorReport::ErrorType_Cheat_ProductUnknown );
+         m_userManager->SendErrorToClient( m_connectionDetails.connectionId, m_connectionDetails.gatewayId, PacketErrorReport::ErrorType_Cheat_ProductUnknown );
          return false;
       }
 
@@ -695,7 +696,7 @@ bool     ConnectionToUser:: AddPurchase( const PacketAddPurchaseEntry* purchase 
          AddToProductsOwned( productInfo.productId, productInfo.lookupName, productUuid, numToGive, productInfo.vendorUuid );
         
          LogMessage( LOG_PRIO_INFO, "AddPurchase: SendListOfProductsToClientAndAsset" );
-         SendListOfProductsToClientAndAsset( m_connectionId, m_gatewayId );
+         SendListOfProductsToClientAndAsset( m_connectionDetails.connectionId, m_connectionDetails.gatewayId );
          return true;
       }
 
@@ -706,7 +707,7 @@ bool     ConnectionToUser:: AddPurchase( const PacketAddPurchaseEntry* purchase 
       UserConnectionMapIterator  it = FindUser( userEmail, userUuid, userName );
       if( it == adminUserData.end() )
       {
-         m_userManager->SendErrorToClient( m_connectionId, m_gatewayId, PacketErrorReport::ErrorType_Cheat_BadUserLookup );
+         m_userManager->SendErrorToClient( m_connectionDetails.connectionId, m_connectionDetails.gatewayId, PacketErrorReport::ErrorType_Cheat_BadUserLookup );
          return true;
       }
       else
@@ -716,20 +717,20 @@ bool     ConnectionToUser:: AddPurchase( const PacketAddPurchaseEntry* purchase 
          WriteProductToUserRecord( it->second.m_userUuid, productUuid, price, numToGive, m_userUuid, "add purchase entry by admin" );
 
          it->second.AddToProductsOwned( productInfo.productId, productInfo.lookupName, productUuid, numToGive, productInfo.vendorUuid );
-         it->second.SendListOfOwnedProductsToClient( m_connectionId, m_gatewayId );
+         it->second.SendListOfOwnedProductsToClient( m_connectionDetails.connectionId, m_connectionDetails.gatewayId );
 
          ConnectionToUser* loadedConnection = m_userManager->GetLoadedUserConnectionByUuid( m_userUuid );
          if( loadedConnection )
          {
             loadedConnection->AddToProductsOwned( productInfo.productId, productInfo.lookupName, productInfo.uuid, 1, productInfo.vendorUuid );
-            loadedConnection->SendListOfOwnedProductsToClient( m_connectionId, m_gatewayId );
+            loadedConnection->SendListOfOwnedProductsToClient( m_connectionDetails.connectionId, m_connectionDetails.gatewayId );
          }
          return true;
       }
    }
    else
    {
-      m_userManager->SendErrorToClient( m_connectionId, m_gatewayId, PacketErrorReport::ErrorType_Cheat_BadPermissions );
+      m_userManager->SendErrorToClient( m_connectionDetails.connectionId, m_connectionDetails.gatewayId, PacketErrorReport::ErrorType_Cheat_BadPermissions );
    }
    return false;
 }
@@ -766,7 +767,7 @@ bool     ConnectionToUser:: StoreUserPurchases( const PacketListOfUserAggregateP
          if( purchaseEntry.productUuid.size() == 0 )
          {
             LogMessage( LOG_PRIO_INFO, "   ***Invalid product id...title: %s   name: %s", purchaseEntry.productUuid.c_str(), purchaseEntry.name.c_str() );
-            m_userManager->SendErrorToClient( m_connectionId, m_gatewayId, PacketErrorReport::ErrorType_Purchase_ProductUnknown ); 
+            m_userManager->SendErrorToClient( m_connectionDetails.connectionId, m_connectionDetails.gatewayId, PacketErrorReport::ErrorType_Purchase_ProductUnknown ); 
             continue;
          }
 
@@ -790,7 +791,7 @@ bool     ConnectionToUser:: StoreUserPurchases( const PacketListOfUserAggregateP
    if( resendUserPurchaseList )
    {
       LogMessage( LOG_PRIO_INFO, "StoreUserPurchases: SendListOfProductsToClientAndAsset" );
-      SendListOfProductsToClientAndAsset( m_connectionId, m_gatewayId );
+      SendListOfProductsToClientAndAsset( m_connectionDetails.connectionId, m_connectionDetails.gatewayId );
    }
 
    return true;
@@ -886,20 +887,20 @@ void     ConnectionToUser:: AddConversionProductsToUserPurchases( const ProductI
 
 void     ConnectionToUser:: AddCurrentlyLoggedInProductToUserPurchases()// only works for self
 {
-   const char* loggedInGameProductName = FindProductName( m_gameProductId );
+   const char* loggedInGameProductName = FindProductName( m_connectionDetails.gameProductId );
    if( loggedInGameProductName == NULL )
    {
-      LogMessage( LOG_PRIO_ERR, "Major error: user logging in with a product not identified %d", m_gameProductId );
-      m_userManager->SendErrorToClient( m_connectionId, m_gatewayId, PacketErrorReport::ErrorType_Login_CannotAddCurrentProductToUser ); 
+      LogMessage( LOG_PRIO_ERR, "Major error: user logging in with a product not identified %d", m_connectionDetails.gameProductId );
+      m_userManager->SendErrorToClient( m_connectionDetails.connectionId, m_connectionDetails.gatewayId, PacketErrorReport::ErrorType_Login_CannotAddCurrentProductToUser ); 
       
       return;
    }
 
    ProductInfo productInfo;
-   bool found = m_userManager->GetProductByProductId( m_gameProductId, productInfo );
+   bool found = m_userManager->GetProductByProductId( m_connectionDetails.gameProductId, productInfo );
    if( found == false )
    {
-      LogMessage( LOG_PRIO_ERR, "Major error: user logging in with a product not in our list of loaded products %d", m_gameProductId );
+      LogMessage( LOG_PRIO_ERR, "Major error: user logging in with a product not in our list of loaded products %d", m_connectionDetails.gameProductId );
       return;
    }
 
@@ -916,7 +917,7 @@ void     ConnectionToUser:: WriteProductToUserRecord( const string& productVendo
    //**  find the item in the user record and add it to the db if not **
    if( userProductIndex == DiplodocusLogin::ProductNotFound )// the user doesn't have the record, but the rest of the DB does.
    {
-      m_userManager->SendErrorToClient( m_connectionId, m_gatewayId, PacketErrorReport::ErrorType_Cheat_ProductUnknown ); 
+      m_userManager->SendErrorToClient( m_connectionDetails.connectionId, m_connectionDetails.gatewayId, PacketErrorReport::ErrorType_Cheat_ProductUnknown ); 
       return;
    }
 
@@ -929,7 +930,7 @@ void     ConnectionToUser:: WriteProductToUserRecord( const string& productVendo
    }
    else
    {
-      m_userManager->SendErrorToClient( m_connectionId, m_gatewayId, PacketErrorReport::ErrorType_Cheat_ProductUnknown ); 
+      m_userManager->SendErrorToClient( m_connectionDetails.connectionId, m_connectionDetails.gatewayId, PacketErrorReport::ErrorType_Cheat_ProductUnknown ); 
    }
 }
 
@@ -964,7 +965,7 @@ void     ConnectionToUser:: WriteProductToUserRecord( const string& userUuid, co
 
    m_userManager->AddQueryToOutput( dbQuery );
 
-   m_userManager->SendErrorToClient( m_connectionId, m_gatewayId, PacketErrorReport::ErrorType_Status, PacketErrorReport::StatusSubtype_ProductAdded );
+   m_userManager->SendErrorToClient( m_connectionDetails.connectionId, m_connectionDetails.gatewayId, PacketErrorReport::ErrorType_Status, PacketErrorReport::StatusSubtype_ProductAdded );
 }
 
 
@@ -1021,7 +1022,7 @@ void     ConnectionToUser:: StoreListOfUsersProductsFromDB( PacketDbQueryResult*
          LogMessage( LOG_PRIO_INFO, "   productUuid:        ", productUuid.c_str() );
          LogMessage( LOG_PRIO_INFO, "   string lookup name: ", stringLookupName.c_str() );
       }
-      if( m_gameProductId == productId )
+      if( m_connectionDetails.gameProductId == productId )
       {
          didFindGameProduct = true;
       }
@@ -1047,11 +1048,11 @@ void     ConnectionToUser:: StoreListOfUsersProductsFromDB( PacketDbQueryResult*
    {
       LogMessage( LOG_PRIO_INFO, "StoreListOfUsersProductsFromDB: SendListOfProductsToClientAndAsset" );
    }
-   userWhoGetsProducts->SendListOfProductsToClientAndAsset( m_connectionId, m_gatewayId );
+   userWhoGetsProducts->SendListOfProductsToClientAndAsset( m_connectionDetails.connectionId, m_connectionDetails.gatewayId );
 
    if( loadedForSelf == false )
    {
-      userWhoGetsProducts->PackOtherUserProfileRequestAndSendToClient( m_connectionId, m_gatewayId );
+      userWhoGetsProducts->PackOtherUserProfileRequestAndSendToClient( m_connectionDetails.connectionId, m_connectionDetails.gatewayId );
    }
 
    if( m_hasRequestedPurchasesFromClient == false )
@@ -1066,7 +1067,7 @@ void     ConnectionToUser:: StoreListOfUsersProductsFromDB( PacketDbQueryResult*
 void     ConnectionToUser:: RequestListOfProductsFromClient()
 {
    PacketListOfUserPurchasesRequest* purchaseRequest = new PacketListOfUserPurchasesRequest;
-   m_userManager->SendPacketToGateway( purchaseRequest, m_connectionId, m_gatewayId );
+   m_userManager->SendPacketToGateway( purchaseRequest, m_connectionDetails.connectionId, m_connectionDetails.gatewayId );
 }
 
 
@@ -1113,7 +1114,7 @@ bool     ConnectionToUser:: HandleCheats( const PacketCheat* cheat )
    }
    else
    {
-      return m_userManager->SendErrorToClient( m_connectionId, m_gatewayId, PacketErrorReport::ErrorType_Cheat_UnrecognizedCommand );
+      return m_userManager->SendErrorToClient( m_connectionDetails.connectionId, m_connectionDetails.gatewayId, PacketErrorReport::ErrorType_Cheat_UnrecognizedCommand );
    }
    // 
    return true;
@@ -1135,7 +1136,7 @@ bool     ConnectionToUser:: HandleCheat_RemoveAll( const string& command )
 
    m_userManager->AddQueryToOutput( dbQuery );
 
-   m_userManager->SendErrorToClient( m_connectionId, m_gatewayId, PacketErrorReport::ErrorType_Status, PacketErrorReport::StatusSubtype_AllProductsRemoved );
+   m_userManager->SendErrorToClient( m_connectionDetails.connectionId, m_connectionDetails.gatewayId, PacketErrorReport::ErrorType_Status, PacketErrorReport::StatusSubtype_AllProductsRemoved );
    return true;
 }
 
@@ -1146,7 +1147,7 @@ bool     ConnectionToUser:: HandleCheat_AddProduct( const string& productName )
    int productIndex = m_userManager->FindProductByName( productName );
    if( productIndex == DiplodocusLogin::ProductNotFound )
    {
-      m_userManager->SendErrorToClient( m_connectionId, m_gatewayId, PacketErrorReport::ErrorType_Cheat_ProductUnknown );
+      m_userManager->SendErrorToClient( m_connectionDetails.connectionId, m_connectionDetails.gatewayId, PacketErrorReport::ErrorType_Cheat_ProductUnknown );
       return false;
    }
 
@@ -1162,7 +1163,7 @@ bool     ConnectionToUser:: HandleCheat_AddProduct( const string& productName )
       {
          loadedConnection->AddToProductsOwned( productInfo.productId, productInfo.lookupName, productInfo.uuid, 1, productInfo.vendorUuid );
          LogMessage( LOG_PRIO_INFO, "HandleCheat_AddProduct: SendListOfProductsToClientAndAsset" );
-         loadedConnection->SendListOfProductsToClientAndAsset( m_connectionId, m_gatewayId );
+         loadedConnection->SendListOfProductsToClientAndAsset( m_connectionDetails.connectionId, m_connectionDetails.gatewayId );
       }
    }
 
@@ -1213,7 +1214,7 @@ void     ConnectionToUser:: PackUserProfileRequestAndSendToClient( U32 connectio
    response->profileKeyValues.insert( "mber_avatar", boost::lexical_cast< string >( avatarIcon ) );*/
 
    if( gatewayId == 0 )
-      gatewayId = m_gatewayId;
+      gatewayId = m_connectionDetails.gatewayId;
    m_userManager->SendPacketToGateway( response, connectionId, gatewayId );
 }
 
@@ -1305,19 +1306,19 @@ bool     ConnectionToUser:: RequestProfile( const PacketRequestUserProfile* prof
 {
    if( profileRequest->uuid == m_userUuid || profileRequest->userName == m_userName || profileRequest->userEmail == m_email )
    {
-      PackUserProfileRequestAndSendToClient( m_connectionId );
+      PackUserProfileRequestAndSendToClient( m_connectionDetails.connectionId );
       return true;
    }
    if( m_adminLevel < 1 )
    {
-      m_userManager->SendErrorToClient( m_connectionId, m_gatewayId, PacketErrorReport::ErrorType_Cheat_BadPermissions );
+      m_userManager->SendErrorToClient( m_connectionDetails.connectionId, m_connectionDetails.gatewayId, PacketErrorReport::ErrorType_Cheat_BadPermissions );
       return false;
    }
 
    UserConnectionMapIterator  it = FindUser( profileRequest->userEmail, profileRequest->uuid.c_str(), profileRequest->userName );
    if( it != adminUserData.end() )
    {
-      it->second.PackUserProfileRequestAndSendToClient( m_connectionId );
+      it->second.PackUserProfileRequestAndSendToClient( m_connectionDetails.connectionId );
       return true;
    }
 
@@ -1342,7 +1343,7 @@ void     ConnectionToUser:: RequestProfile( const string& email, const string& u
    string requestId = CreateLookupKey( email, uuid, name  );
   // submit request for user profile with this connection id
    PacketDbQuery* dbQuery = new PacketDbQuery;
-   dbQuery->id =           m_connectionId;
+   dbQuery->id =           m_connectionDetails.connectionId;
    dbQuery->lookup =       DiplodocusLogin::QueryType_AdminRequestUserProfile;
    dbQuery->meta =         boost::lexical_cast<string>( GenerateUniqueHash( requestId ) );
    dbQuery->serverLookup = asAdmin;
@@ -1371,7 +1372,7 @@ bool     ConnectionToUser:: UpdateProfile( const PacketUpdateUserProfile* update
 
    if( updateProfileRequest->adminLevel >= m_adminLevel )// you must have admin privilidges to change other user's profiles.
    {
-      m_userManager->SendErrorToClient( m_connectionId, m_gatewayId, PacketErrorReport::ErrorType_Cheat_BadPermissions );
+      m_userManager->SendErrorToClient( m_connectionDetails.connectionId, m_connectionDetails.gatewayId, PacketErrorReport::ErrorType_Cheat_BadPermissions );
       return false;
    }
     
@@ -1414,7 +1415,7 @@ bool     ConnectionToUser:: UpdateProfile( const PacketUpdateUserProfile* update
       return true;
    }
 
-   m_userManager->SendErrorToClient( m_connectionId, m_gatewayId, PacketErrorReport::ErrorType_Cheat_BadUserLookup_TryLoadingUserFirst );
+   m_userManager->SendErrorToClient( m_connectionDetails.connectionId, m_connectionDetails.gatewayId, PacketErrorReport::ErrorType_Cheat_BadUserLookup_TryLoadingUserFirst );
 
    return false;
 }
@@ -1496,9 +1497,9 @@ bool     ConnectionToUser:: UpdateProfile( const PacketUpdateSelfProfile* update
    }
 
    
-   PackUserProfileRequestAndSendToClient( m_connectionId );
+   PackUserProfileRequestAndSendToClient( m_connectionDetails.connectionId );
 
-   m_userManager->SendPacketToGateway( response, m_connectionId, m_gatewayId );
+   m_userManager->SendPacketToGateway( response, m_connectionDetails.connectionId, m_connectionDetails.gatewayId );
 
    if( response->success )
    {

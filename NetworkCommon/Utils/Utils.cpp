@@ -309,8 +309,8 @@ std::string    Reduce( const std::string& str,
 
 unsigned int split( const std::string &txt, std::vector<std::string> &strs, char ch )
 {
-   unsigned int pos = static_cast< unsigned int > ( txt.find( ch ) );
-   unsigned int initialPos = 0;
+   size_t pos = txt.find( ch ) ;
+   size_t initialPos = 0;
    strs.clear();
 
    // Decompose statement
@@ -320,7 +320,7 @@ unsigned int split( const std::string &txt, std::vector<std::string> &strs, char
       strs.push_back( temp );
       initialPos = pos + 1;
 
-      pos = static_cast< unsigned int > ( txt.find( ch, initialPos ) );
+      pos = txt.find( ch, initialPos ) ;
    }
 
    // Add the last one
@@ -444,6 +444,10 @@ std::string    ToHexString( U32 value )
    std::stringstream stream;
    if( value == 0 )
       stream << "00";
+   else if( value < 10 )
+   {
+      stream << "0" << std::hex << value;
+   }
    else
    {
       stream << std::hex << value;

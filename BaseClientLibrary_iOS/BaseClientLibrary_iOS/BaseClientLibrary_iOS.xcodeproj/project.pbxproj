@@ -346,7 +346,7 @@
 		34EA684117611D8B00F07E19 /* Project object */ = {
 			isa = PBXProject;
 			attributes = {
-				LastUpgradeCheck = 0460;
+				LastUpgradeCheck = 0510;
 				ORGANIZATIONNAME = Playdek;
 			};
 			buildConfigurationList = 34EA684417611D8B00F07E19 /* Build configuration list for PBXProject "BaseClientLibrary_iOS" */;
@@ -426,6 +426,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				VALID_ARCHS = armv7;
 			};
 			name = Debug;
 		};
@@ -433,6 +434,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				VALID_ARCHS = armv7;
 			};
 			name = Release;
 		};
@@ -465,7 +467,7 @@
 					"$(SRCROOT)/../../../libevent",
 				);
 				IPHONEOS_DEPLOYMENT_TARGET = 6.1;
-				ONLY_ACTIVE_ARCH = NO;
+				ONLY_ACTIVE_ARCH = YES;
 				SDKROOT = iphoneos;
 				STRIP_INSTALLED_PRODUCT = NO;
 			};

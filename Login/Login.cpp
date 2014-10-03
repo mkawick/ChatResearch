@@ -194,8 +194,8 @@ int main( int argc, const char* argv[] )
    parser.FindValue( "notification.port", notificationPortString );
    parser.FindValue( "notification.address", notificationIpAddressString );
 
-   parser.FindValue( "userstat.port", userStatsPortString );
-   parser.FindValue( "userstat.address", userStatsIpAddressString );
+   parser.FindValue( "userstats.port", userStatsPortString );
+   parser.FindValue( "userstats.address", userStatsIpAddressString );
 
    parser.FindValue( "autoAddLoginProduct", autoAddLoginProductString );
 

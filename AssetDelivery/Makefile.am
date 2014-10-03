@@ -41,15 +41,16 @@ UserAccountAssetDelivery.cpp \
 ../NetworkCommon/Utils/MemoryLeakTracker.cpp \
 ../NetworkCommon/Utils/OsLevelUtils.cpp \
 ../NetworkCommon/Utils/TableWrapper.cpp \
+../NetworkCommon/Utils/StringUtils.cpp \
 ../NetworkCommon/Utils/Utils.cpp \
 ../NetworkCommon/Logging/server_log.cpp
 
 asset_serverd_LDFLAGS = -L
 
-asset_serverd_LDADD = ../../libevent/linux-libs/libevent.a \
-../../libevent/linux-libs/libevent_pthreads.a \
-../../libevent/linux-libs/libevent_core.a \
-../../libevent/linux-libs/libevent_extra.a \
+asset_serverd_LDADD = /usr/local/lib/libevent.a \
+/usr/local/lib/libevent_core.a \
+/usr/local/lib/libevent_pthreads.a \
+/usr/local/lib/libevent_extra.a \
 -lrt
 
 install-exec-hook:

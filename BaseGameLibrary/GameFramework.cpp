@@ -231,8 +231,8 @@ void  GameFramework::UseCommandlineOverrides( int argc, const char* argv[] )
    m_parser->FindValue( "notification.port", notificationPort );
    m_parser->FindValue( "notification.address", m_notificationServerAddress );
 
-   m_parser->FindValue( "userstat.port", userStatsPort );
-   m_parser->FindValue( "userstat.address", m_userStatsIpAddress );
+   m_parser->FindValue( "userstats.port", userStatsPort );
+   m_parser->FindValue( "userstats.address", m_userStatsIpAddress );
 
    m_parser->FindValue( "purchase.port", purchasePort );
    m_parser->FindValue( "purchase.address", m_purchaseServerAddress );

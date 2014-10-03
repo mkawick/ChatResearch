@@ -9,6 +9,6 @@ AC_CONFIG_FILES([
 
 CXXFLAGS="$CXXFLAGS -DNDEBUG -Wall -I../../libevent -I../../libevent/include -I../../libevent/Mac-code -I../../boost -I/usr/include/mysql -DBIG_JOINS=1  -fno-strict-aliasing   -DUNIV_LINUX -DUNIV_LINUX"
 
-LDFLAGS="-rdynamic -L/usr/lib/mysql -lmysqlclient -lssl -lcrypto -lz"
+LDFLAGS="rdynamic "
 
 AC_OUTPUT

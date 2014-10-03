@@ -45,6 +45,7 @@ Khaan ::Khaan( int socketId, bufferevent* be, int connectionId ) : ChainedInterf
                                                                   m_expectedBytes( 0 ),
                                                                   m_versionNumberMinor( NetworkVersionMinor )
 {
+   //LogMessage( LOG_PRIO_INFO, "Khaan 1" );
    m_chainedType = ChainedType_InboundSocketConnector;
    m_tempBuffer[0] = 0;
    m_tempBuffer[1] = 0;
@@ -57,6 +58,7 @@ Khaan ::Khaan( int socketId, bufferevent* be, int connectionId ) : ChainedInterf
 
 Khaan ::~Khaan()
 {
+   //LogMessage( LOG_PRIO_INFO, "Khaan 2" );
    delete [] m_outboundBuffer;
    if( GetBufferEvent() )
       bufferevent_free( GetBufferEvent() );
@@ -72,22 +74,36 @@ Khaan ::~Khaan()
 
 void     Khaan::DenyAllFutureData() 
 { 
+   //LogMessage( LOG_PRIO_INFO, "Khaan 3" );
    m_denyAllFutureData = true; 
 }
 
 void   Khaan ::PreCleanup()
 {
+   //LogMessage( LOG_PRIO_INFO, "Khaan 4" );
    m_isDisconnected = true;
    if( m_listOfOutputs.size() == 0 )
+   {
+      //LogMessage( LOG_PRIO_INFO, "Khaan 4.. no outputs listed " );
       return;
+   }
 
    ChainLinkIteratorType output = m_listOfOutputs.begin();
 
    IChainedInterface* chain = (*output).m_interface;
    if( chain )
    {
+      //LogMessage( LOG_PRIO_INFO, "Khaan 4.. server->InputRemovalInProgress " );
       Diplodocus <Khaan> * server = static_cast< Diplodocus <Khaan> * >( chain );
       server->InputRemovalInProgress( this );
+   }
+
+   DenyAllFutureData();
+   if( HasDisconnected() == false )
+   {
+      time_t currentTime;
+      time( &currentTime );
+      SetTimeForDeletion( currentTime );
    }
 }
 
@@ -95,6 +111,7 @@ void   Khaan ::PreCleanup()
 
 void	Khaan :: SetIPAddress( const sockaddr_in& addr )
 {
+   //LogMessage( LOG_PRIO_INFO, "Khaan 5" );
 	m_ipAddress = addr;
 }
 
@@ -102,6 +119,7 @@ void	Khaan :: SetIPAddress( const sockaddr_in& addr )
 
 bool     Khaan :: HasDeleteTimeElapsed( time_t& currentTime, int testTime ) const
 {
+   //LogMessage( LOG_PRIO_INFO, "Khaan 6" );
    if( m_timeOfDisconnection == 0 )
       return false;
 
@@ -119,6 +137,8 @@ bool	Khaan :: OnDataReceived( const U8* data, int length )
 {
    if( m_criticalFailure || m_isDisconnected )
       return false;
+
+   //LogMessage( LOG_PRIO_INFO, "Khaan 7" );
 
    BasePacket* packetIn = NULL;
    int offset = 0;
@@ -173,11 +193,14 @@ bool	Khaan :: Update()
       return false;
    }
 
+   //LogMessage( LOG_PRIO_INFO, "Khaan 8" );
+
    return true;
 }
 
 void  Khaan :: SetOutboudBufferSize( U32 size )
 {
+   ////LogMessage( LOG_PRIO_INFO, "Khaan 8.1" );
    if( size < 1024 )
       size = 1024;
    if( size > MaxBufferSize )
@@ -192,6 +215,7 @@ void  Khaan :: SetOutboudBufferSize( U32 size )
 
 void	Khaan :: UpdateInwardPacketList()
 {
+   //LogMessage( LOG_PRIO_INFO, "Khaan 9" );
    if( m_packetsIn.size() == 0 || m_isDisconnected )
       return;
 
@@ -226,6 +250,8 @@ int	Khaan :: SendData( const U8* buffer, int length )
 {
    if( m_isDisconnected )
       return -1;
+   //LogMessage( LOG_PRIO_INFO, "Khaan 10" );
+
 
    if( m_useLibeventToSend )
    {
@@ -299,6 +325,8 @@ int	Khaan :: UpdateOutwardPacketList()
    if( localQueue.size() == 0 )
       return 0;
 
+   //LogMessage( LOG_PRIO_INFO, "Khaan 11" );
+
    int length;
    int offset = 0;
    PacketFactory factory;
@@ -360,6 +388,8 @@ bool Khaan :: AddOutputChainData( BasePacket* packet, U32 filingData )
    if( m_criticalFailure )
       return false;
 
+   //LogMessage( LOG_PRIO_INFO, "Khaan 12" );
+
    m_outputChainListMutex.lock();
    m_packetsOut.push_back( packet );
    m_outputChainListMutex.unlock();
@@ -384,6 +414,8 @@ void     Khaan :: RegisterToReceiveNetworkTraffic()
 {
    if( GetBufferEvent() == NULL )
       return;
+   //LogMessage( LOG_PRIO_INFO, "Khaan 13" );
+
 
    bufferevent_setcb( GetBufferEvent(), 
                       OnDataAvailable, 
@@ -413,6 +445,8 @@ void     Khaan :: OnDataAvailable( struct bufferevent* bufferEventObj, void* arg
    Khaan*      This = (Khaan*) arg;
    if( This->m_isDisconnected )
       return;
+
+   //LogMessage( LOG_PRIO_INFO, "Khaan 14" );
 
    //LogMessage( LOG_PRIO_INFO, "Data avail:" );
    struct evbuffer *input = bufferevent_get_input( bufferEventObj );
@@ -471,6 +505,7 @@ void     Khaan :: FlushReadBuffer()
 
 void     Khaan :: CloseConnection()
 {
+   //LogMessage( LOG_PRIO_INFO, "Khaan 15" );
    m_isDisconnected = true;
    if( GetBufferEvent() ) // this is set to NULL in Cleanup
    {
@@ -485,6 +520,7 @@ void     Khaan :: CloseConnection()
 
 void    Khaan :: Cleanup()
 {
+   //LogMessage( LOG_PRIO_INFO, "Khaan 16" );
    PreCleanup();
 
    CleanupAllChainDependencies();
@@ -502,6 +538,7 @@ void    Khaan :: Cleanup()
 
 void     Khaan :: ClearAllPacketsIn()
 {
+   //LogMessage( LOG_PRIO_INFO, "Khaan 17" );
    m_inputChainListMutex.lock();
    deque< BasePacket* > localQueue = m_packetsIn;
    m_packetsIn.clear();
@@ -520,6 +557,7 @@ void     Khaan :: ClearAllPacketsIn()
 
 void     Khaan :: ClearAllPacketsOut()
 {
+   //LogMessage( LOG_PRIO_INFO, "Khaan 18" );
    m_outputChainListMutex.lock();
    deque< BasePacket* > localQueue = m_packetsOut;
    m_packetsOut.clear();
@@ -539,6 +577,7 @@ void     Khaan :: ClearAllPacketsOut()
 // Called by libevent when there is an error on the underlying socket descriptor.
 void	   Khaan::OnSocketError( struct bufferevent* bufferEventObj, short events, void* context )
 {
+   //LogMessage( LOG_PRIO_INFO, "Khaan 19" );
    Khaan* khaan = (Khaan*) context;
 
    if (events & ( BEV_EVENT_EOF | BEV_EVENT_ERROR) )

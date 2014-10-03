@@ -15,6 +15,17 @@ class DiplodocusLogin;
 class PacketListOfUserPurchasesRequest;
 class PacketCheat;
 
+struct ConnectionIDDetails
+{
+   U8       gameProductId;
+   U32      connectionId;
+   U32      gatewayId;
+   time_t   m_loginTime;
+   time_t   m_loggedOutTime;
+   bool     m_isLoggingOut;
+   bool     m_isReadyToBeCleanedUp;
+};
+
 //////////////////////////////////////////////////////////////////////////
 
 struct ConnectionToUser
@@ -40,8 +51,8 @@ struct ConnectionToUser
    void     IncreaseLoginAttemptCount() { ++m_loginAttemptCount; }
    int      GetLoginAttemptCount() const { return m_loginAttemptCount; }
 
-   void     SetGatewayId( U32 gatewayId ) { m_gatewayId = gatewayId; }
-   U32      GetGatewayId() const { return m_gatewayId; }
+   void     SetGatewayId( U32 gatewayId ) { m_connectionDetails.gatewayId = gatewayId; }
+   U32      GetGatewayId() const { return m_connectionDetails.gatewayId; }
 
    const string& GetId() const            { return m_id; }
    const string& GetUuid() const          { return m_userUuid; }
@@ -116,14 +127,13 @@ struct ConnectionToUser
    int                     m_loginAttemptCount;
 
    LoginStatus             status;
-   U8                      m_gameProductId;
-   U32                     m_connectionId;
+
+   ConnectionIDDetails     m_connectionDetails;
    
    time_t                  m_loginTime;
    time_t                  m_loggedOutTime;
    bool                    m_isLoggingOut;
    bool                    m_isReadyToBeCleanedUp;
-   U32                     m_gatewayId;
 
    int                     m_timeZone;
    int                     m_languageId;

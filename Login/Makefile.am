@@ -50,10 +50,10 @@ login_serverd_CXXFLAGS = -std=c++0x
 
 login_serverd_LDFLAGS = -L
 
-login_serverd_LDADD = ../../libevent/linux-libs/libevent.a \
-../../libevent/linux-libs/libevent_pthreads.a \
-../../libevent/linux-libs/libevent_core.a \
-../../libevent/linux-libs/libevent_extra.a \
+login_serverd_LDADD = /usr/local/lib/libevent.a \
+/usr/local/lib/libevent_core.a \
+/usr/local/lib/libevent_pthreads.a \
+/usr/local/lib/libevent_extra.a \
 -lrt
 
 install-exec-hook:

@@ -3,10 +3,10 @@
 #include <iostream>
 
 #include "KhaanGame.h"
-#include "DiplodocusGame.h"
-#include "../NetworkCommon/Packets/PacketFactory.h"
-#include "../NetworkCommon/Packets/GamePacket.h"
-#include "../NetworkCommon/Packets/ServerToServerPacket.h"
+//#include "DiplodocusGame.h"
+//#include "../NetworkCommon/Packets/PacketFactory.h"
+//#include "../NetworkCommon/Packets/GamePacket.h"
+//#include "../NetworkCommon/Packets/ServerToServerPacket.h"
 
 //-----------------------------------------------------------------------------------------
 

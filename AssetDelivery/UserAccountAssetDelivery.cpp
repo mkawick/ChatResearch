@@ -234,7 +234,7 @@ bool     UserAccountAssetDelivery::GetAsset( const PacketAsset_RequestAsset* pac
       {
          int version = packet->fileVersion;
          LoadedFile file;
-         LogMessage( LOG_PRIO_INFO, "User lookup file: %s; ver: %d", asset->path, version );
+         LogMessage( LOG_PRIO_INFO, "User lookup file: %s; ver: %d", asset->path.c_str(), version );
          if( asset->FindFile( version, file ) == true )
          {
             data = file.fileData;

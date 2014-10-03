@@ -136,7 +136,7 @@ class PacketServerToServer_GatewayRequestLB_ConnectionIdsResponse : public BaseP
 public:
    PacketServerToServer_GatewayRequestLB_ConnectionIdsResponse( int packet_type = PacketType_ServerInformation, int packet_sub_type = PacketServerConnectionInfo::PacketServerIdentifier_GatewayRequestLB_ConnectionIdsResponse  ): BasePacket( packet_type, packet_sub_type ), 
       beginningId( 0 ), 
-      countId( NULL ) {}
+      countId( 0 ) {}
 
    bool  SerializeIn( const U8* data, int& bufferOffset, int minorVersion );
    bool  SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const;

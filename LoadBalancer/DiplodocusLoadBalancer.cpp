@@ -16,9 +16,9 @@ using namespace std;
 
 DiplodocusLoadBalancer::DiplodocusLoadBalancer( const string& serverName, U32 serverId ): 
    Diplodocus< KhaanConnector >( serverName, serverId, 0,  ServerType_LoadBalancer ), 
-   m_connectionIdTracker( 100 ),
    m_distributedConnectionIdPoint( 1001 ),
-   m_numConnectionIdsToDistrubute( 40 )
+   m_numConnectionIdsToDistrubute( 40 ),
+   m_connectionIdTracker( 100 )   
 {
    time( &m_timestampStatsPrint );
    m_timestampSelectPreferredGateway = m_timestampStatsPrint;
@@ -43,7 +43,7 @@ void  DiplodocusLoadBalancer::AddGatewayAddress( const string& address, U16 port
       if( it->address == address && 
           it->port == port )
       {
-         cout << "Duplicate entry for gateway connection found" << endl;
+         LogMessage( LOG_PRIO_ERR, "Duplicate entry for gateway connection found ( %s:%u )", address.c_str(), port );
          assert( 0 );
       }
       it++;
@@ -185,7 +185,7 @@ void     DiplodocusLoadBalancer::InputConnected( IChainedInterface * chainedInpu
 {
    KhaanConnector* khaan = static_cast< KhaanConnector* >( chainedInput );
    string currentTime = GetDateInUTC();
-   cout << "Accepted connection at time:" << currentTime << " from " << inet_ntoa( khaan->GetIPAddress().sin_addr ) << endl;
+   LogMessage( LOG_PRIO_INFO, "Accepted connection at time: %s from %s, ", currentTime.c_str(), inet_ntoa( khaan->GetIPAddress().sin_addr ) );
    //PrintText( "** InputConnected" , 1 );
 
    Threading::MutexLock locker( m_outputChainListMutex );
@@ -212,9 +212,9 @@ void     DiplodocusLoadBalancer::InputRemovalInProgress( IChainedInterface * cha
 
    string currentTime = GetDateInUTC();
    string printer = "Client disconnection at time:" + currentTime + " from " + inet_ntoa( khaan->GetIPAddress().sin_addr );
-   cout << printer << endl;
+   LogMessage( LOG_PRIO_INFO, printer );
 
-   PrintDebugText( "** InputRemovalInProgress" , 1 );
+   LogMessage( LOG_PRIO_INFO, "** InputRemovalInProgress" );
 }
 
 //---------------------------------------------------------------
@@ -361,7 +361,7 @@ void     DiplodocusLoadBalancer::HandleRerouteRequest( U32 connectionId )
    ConnectionMapIterator connIt = localMap.find( connectionId );
    if( connIt != localMap.end() )
    {
-      cout << "Telling user about the following connection destinations" << endl;
+      LogMessage( LOG_PRIO_INFO, "Telling user about the following connection destinations" );
       connIt->second->GetIPAddress();
       list< GatewayInfo >::iterator it = m_gatewayRoutes.begin();
       PacketRerouteRequestResponse* response = new PacketRerouteRequestResponse;
@@ -554,6 +554,8 @@ DiplodocusLoadBalancer::FindGateway( U32 serverId )
 
 void     DiplodocusLoadBalancer::NewServerConnection( const PacketServerIdentifier* gatewayInfo )
 {
+   LogMessage( LOG_PRIO_INFO, "NewServerConnection packet: %s, %u, %u", gatewayInfo->serverAddress.c_str(), gatewayInfo->serverPort, gatewayInfo->serverId );
+
    list< GatewayInfo >::iterator it = FindGateway( gatewayInfo->serverAddress, gatewayInfo->serverPort, gatewayInfo->serverId );// we may not have the serverId already stored
    if( it != m_gatewayRoutes.end() )
    {
@@ -562,9 +564,12 @@ void     DiplodocusLoadBalancer::NewServerConnection( const PacketServerIdentifi
       it->externalIpAddress = gatewayInfo->externalIpAddress.c_str();
       it->isVerified = true;
       it->isConnected = true;
+      LogMessage( LOG_PRIO_INFO, "Gateway reconnected");
+
       return;
    }
 
+   LogMessage( LOG_PRIO_INFO, "New Gateway connection");
    // clearly we don't have this gateway in our list. let's add it. We really don't need to remove these tho.
    AddGatewayAddress( gatewayInfo->serverAddress, gatewayInfo->serverPort );
    it = FindGateway( gatewayInfo->serverAddress, gatewayInfo->serverPort );
@@ -596,6 +601,8 @@ void     DiplodocusLoadBalancer::NewServerConnection( const PacketServerIdentifi
 
 void     DiplodocusLoadBalancer::ServerDisconnected( const PacketServerDisconnect* gatewayInfo )
 {
+   LogMessage( LOG_PRIO_INFO, "ServerDisconnected packet: %s, %u", gatewayInfo->serverAddress.c_str(), gatewayInfo->serverId );
+
    list< GatewayInfo >::iterator it = FindGateway( gatewayInfo->serverAddress, 0, gatewayInfo->serverId );
    if( it != m_gatewayRoutes.end() )
    {
@@ -607,6 +614,8 @@ void     DiplodocusLoadBalancer::ServerDisconnected( const PacketServerDisconnec
 
 void     DiplodocusLoadBalancer::ServerInfoUpdate( const PacketServerConnectionInfo* gatewayInfo )
 {
+   LogMessage( LOG_PRIO_INFO, "ServerInfoUpdate packet: %s, %u", gatewayInfo->serverAddress.c_str(), gatewayInfo->serverId );
+
    list< GatewayInfo >::iterator it = FindGateway( gatewayInfo->serverAddress, 0, gatewayInfo->serverId );
    if( it != m_gatewayRoutes.end() )
    {

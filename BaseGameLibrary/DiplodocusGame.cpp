@@ -1,4 +1,11 @@
 // DiplodocusGame.cpp
+
+#include <event2/listener.h>
+#include <event2/bufferevent.h>
+#include <boost/lexical_cast.hpp>
+#include <boost/format.hpp>
+using boost::format;
+
 #include "../NetworkCommon/NetworkOut/Fruitadens.h"
 #include "../NetworkCommon/NetworkOut/FruitadensServerToServer.h"
 #include "../NetworkCommon/Packets/ServerToServerPacket.h"
@@ -89,8 +96,7 @@ struct st_mysql * DiplodocusGame::GetDBConnection( Database::Deltadromeus::DbCon
    while( itOutputs != m_listOfOutputs.end() )// only one output currently supported.
    {
       ChainType* outputPtr = static_cast< ChainType*> ( (*itOutputs).m_interface );
-      ChainedInterface* interfacePtr = static_cast< ChainedInterface* >( outputPtr );
-      if( interfacePtr->GetChainedType() == ChainedType_DatabaseConnector )
+      if( outputPtr->GetChainedType() == ChainedType_DatabaseConnector )
       {
          Database::Deltadromeus* delta = static_cast< Database::Deltadromeus* >( outputPtr );
          if( type != 0 )
@@ -373,11 +379,10 @@ bool   DiplodocusGame::AddOutputChainData( BasePacket* packet, U32 connectionId 
       ChainLinkIteratorType itInputs = tempInputContainer.begin();
       while( itInputs != tempInputContainer.end() )
       {
-         ChainLink& chainedInput = *itInputs++;
-         ChainedInterface* interfacePtr = static_cast< ChainedInterface* >( chainedInput.m_interface );  
-         if( interfacePtr->GetChainedType() == ChainedType_InboundSocketConnector )
+         ChainType* outputPtr = static_cast< ChainType*> ( (*itInputs).m_interface );
+         if( outputPtr->GetChainedType() == ChainedType_InboundSocketConnector )
          {
-            KhaanGame* khaan = static_cast< KhaanGame* >( interfacePtr );
+            KhaanGame* khaan = static_cast< KhaanGame* >( outputPtr );
             if( khaan->GetChainedType() == ChainedType_InboundSocketConnector && 
                khaan->GetServerId() == gatewayId )
             {
@@ -386,6 +391,7 @@ bool   DiplodocusGame::AddOutputChainData( BasePacket* packet, U32 connectionId 
                return true;
             }
          }
+         itInputs++;
       }
       return false;
    }
@@ -480,32 +486,6 @@ void     DiplodocusGame::UpdateAllTimers()
 
 int   DiplodocusGame::CallbackFunction()
 {
-   // I would do this with a map, but we'll only ever have one or two of these.
- /*  while( m_serversNeedingUpdate.size() )
-   {
-      U32 serverId = m_serversNeedingUpdate.front();
-      m_serversNeedingUpdate.pop_front();
-
-      Threading::MutexLock locker( m_mutex );
-      ChainLinkIteratorType itInputs = m_listOfInputs.begin();
-      while( itInputs != m_listOfInputs.end() )
-      {
-         ChainLink& chainedInput = *itInputs++;
-         ChainedInterface* interfacePtr = static_cast< ChainedInterface* >( chainedInput.m_interface );  
-         if( interfacePtr->GetChainedType() == ChainedType_InboundSocketConnector )
-         {
-            KhaanGame* khaan = static_cast< KhaanGame* >( interfacePtr );
-            if( khaan->GetServerId() == serverId )
-            {
-               if( khaan->Update() == false )
-               {
-                  m_serversNeedingUpdate.push_back( serverId );
-               }
-            }
-         }
-      }
-   }*/
-
    CleanupOldClientConnections( "KhaanGame" );
 
    UpdateAllConnections();
@@ -534,7 +514,7 @@ bool  DiplodocusGame::HandlePacketFromOtherServer( BasePacket* packet, U32 conne
    BasePacket* unwrappedPacket = wrapper->pPacket;
    U32  serverIdLookup = wrapper->serverId;*/
 
-   bool success = false;
+   //bool success = false;
 
    if( packet->packetType == PacketType_Login )
    {

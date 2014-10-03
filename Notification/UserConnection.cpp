@@ -293,38 +293,82 @@ bool     UserConnection::FindDeviceAndUpdate( RegisteredDeviceList& deviceList, 
 {
    string printableDeviceId = BufferToHexString( potentialDevice->deviceId, 16 );
    LogMessage( LOG_PRIO_INFO, "Device stats: assignedUuid:%s, deviceId[%s], %s", potentialDevice->assignedUuid.c_str(), printableDeviceId.c_str(), FindPlatformName( potentialDevice->platformId ) );
+   LogMessage( LOG_PRIO_INFO, "NumUserDevices in storage: %u", deviceList.size() );
    
+   const string& vendorProvidedDeviceId = potentialDevice->deviceId;
+   const string& assignedUuid = potentialDevice->assignedUuid;
    // potentialDevice
-   RegisteredDeviceIterator   deviceIt = deviceList.begin();
-   while( deviceIt != deviceList.end() )
+   int count = 0;
+   if( assignedUuid.size() > 0 )// do we have a previously assignedUuid, this device may have been reset, so...
    {
-      if( deviceIt->uuid == potentialDevice->assignedUuid )
+      RegisteredDeviceIterator   deviceIt = deviceList.begin();
+      while( deviceIt != deviceList.end() )
       {
-         LogMessage( LOG_PRIO_INFO, "FindDeviceAndUpdate: device matched by assignedUuid, update info beginning" );
-         // look up the  device notification and if it exists, report this error.
-         U32 userDeviceId = deviceIt->userDeviceId;
-         DeviceNotificationsIterator   deviceEnabledIt = FindDeviceNotificationByUserDeviceId( userDeviceId );
-         if( deviceEnabledIt != m_deviceEnabledList.end() )
+         count++;
+         LogMessage( LOG_PRIO_INFO, " %d) Device: %s", count, assignedUuid.c_str() );
+         if( deviceIt->uuid == assignedUuid )
          {
-            m_mainThread->SendErrorToClient( m_userInfo.connectionId, m_userInfo.gatewayId, PacketErrorReport::ErrorType_Notification_DeviceAlreadyRegistered );
-            SendNewDeviceRegistrationResponse( deviceIt->uuid );
-         }
-         else
-         {
-            LogMessage( LOG_PRIO_INFO, "FindDeviceAndUpdate: CreateNewDeviceNotificationEntry because we did find the notification id" );
-            //otherwise, we are logging in from a new game and we need to create a new entry... you are logging in from the same game but a different device
-            CreateNewDeviceNotificationEntry( userDeviceId, m_userInfo.gameProductId, deviceIt->deviceId );
-         }
+            LogMessage( LOG_PRIO_INFO, "FindDeviceAndUpdate: device matched by assignedUuid, update info beginning" );
+            // look up the  device notification and if it exists, report this error.
+            U32 userDeviceId = deviceIt->userDeviceId;
+            DeviceNotificationsIterator   deviceEnabledIt = FindDeviceNotificationByUserDeviceId( userDeviceId );
+            if( deviceEnabledIt != m_deviceEnabledList.end() )
+            {
+               m_mainThread->SendErrorToClient( m_userInfo.connectionId, m_userInfo.gatewayId, PacketErrorReport::ErrorType_Notification_DeviceAlreadyRegistered );
+               SendNewDeviceRegistrationResponse( deviceIt->uuid );
+            }
+            else
+            {
+               LogMessage( LOG_PRIO_INFO, "FindDeviceAndUpdate: CreateNewDeviceNotificationEntry because we did find the notification id" );
+               //otherwise, we are logging in from a new game and we need to create a new entry... you are logging in from the same game but a different device
+               CreateNewDeviceNotificationEntry( userDeviceId, m_userInfo.gameProductId, deviceIt->deviceId );
+            }
 
-         if( potentialDevice->deviceName.size() && deviceIt->name.size() == 0 )
-         {
-            LogMessage( LOG_PRIO_INFO, "FindDeviceAndUpdate: GrandfatherInOldDevices. Existing device name is empty" );
-            GrandfatherInOldDevices( deviceIt, potentialDevice->deviceName );
+            if( potentialDevice->deviceName.size() && deviceIt->name.size() == 0 )
+            {
+               LogMessage( LOG_PRIO_INFO, "FindDeviceAndUpdate: GrandfatherInOldDevices. Existing device name is empty" );
+               GrandfatherInOldDevices( deviceIt, potentialDevice->deviceName );
+            }
+            LogMessage( LOG_PRIO_INFO, "FindDeviceAndUpdate: return true" );
+            return true;
          }
-         LogMessage( LOG_PRIO_INFO, "FindDeviceAndUpdate: return true" );
-         return true;
+         deviceIt++;
       }
-      deviceIt++;
+   }
+   else
+   {
+      LogMessage( LOG_PRIO_INFO, " Device lookup by vendor provided id because we have no assigned Uuid" );
+      // the device may have been wiped or something so let's look through the existing vendor ids and see if we have a match
+      RegisteredDeviceIterator   deviceIt = deviceList.begin();
+      while( deviceIt != deviceList.end() )
+      {
+         count++;
+         const string& previouslyRegisteredDeviceId = deviceIt->deviceId;
+         
+         if( previouslyRegisteredDeviceId == vendorProvidedDeviceId && 
+            deviceIt->platformId == potentialDevice->platformId) // we already have this device
+         {
+            LogMessage( LOG_PRIO_INFO, "FindDeviceAndUpdate: device matched by vendor provided device uuid" );
+            U32 userDeviceId = deviceIt->userDeviceId;
+            DeviceNotificationsIterator   deviceEnabledIt = FindDeviceNotificationByUserDeviceId( userDeviceId );
+            if( deviceEnabledIt != m_deviceEnabledList.end() )
+            {
+               m_mainThread->SendErrorToClient( m_userInfo.connectionId, m_userInfo.gatewayId, PacketErrorReport::ErrorType_Notification_DeviceAlreadyRegistered );
+               SendNewDeviceRegistrationResponse( deviceIt->uuid );
+            }
+            else
+            {
+               LogMessage( LOG_PRIO_INFO, "FindDeviceAndUpdate: CreateNewDeviceNotificationEntry because we did find the notification id" );
+               //otherwise, we are logging in from a new game and we need to create a new entry... you are logging in from the same game but a different device
+               CreateNewDeviceNotificationEntry( userDeviceId, m_userInfo.gameProductId, deviceIt->deviceId );
+            }
+            LogMessage( LOG_PRIO_INFO, "FindDeviceAndUpdate: return true" );
+      
+            return true;
+         }
+         deviceIt++;
+         
+      }
    }
 
    LogMessage( LOG_PRIO_INFO, "FindDeviceAndUpdate: return false... assignedUuid %s not found", potentialDevice->assignedUuid.c_str() );
@@ -363,12 +407,26 @@ void RemoveSpecialCharacters(const string& str, string& outString)
 
 void PrintDetailsOfDeviceRegistrationToConsole( const string& deviceId, U32 userId, const string& userUuid )
 {
+   LogMessage( LOG_PRIO_INFO, "Device id len = %u", deviceId.size() );
+   const U32 maxLen = 20;
+   char  tempDeviceId[ maxLen + 1 ];
+
+   U32 usableLen = maxLen;
+   if( deviceId.size() < usableLen )
+      usableLen = deviceId.size();
+
    // clean up the string before printing... not too much and remove beeps.
-   string temp = BufferToHexString( reinterpret_cast< const U8* >( deviceId.c_str() ), 20 );
+   
  /*  string outString;
    RemoveSpecialCharacters( temp, outString );*/
+
    LogMessage( LOG_PRIO_INFO, "----------------------------------------------------------" );
-   LogMessage( LOG_PRIO_INFO, " RegisterNewDevice: [%s]", temp.c_str() );
+   if( usableLen )
+   {
+      deviceId.copy( tempDeviceId, usableLen );
+      string temp = BufferToHexString( reinterpret_cast< const U8* >( tempDeviceId ), usableLen );
+      LogMessage( LOG_PRIO_INFO, " RegisterNewDevice: [%s]", temp.c_str() );
+   }
    LogMessage( LOG_PRIO_INFO, " Useruuid: %s", userUuid.c_str() );
    LogMessage( LOG_PRIO_INFO, " UserId: %d", userId );
 }
@@ -390,15 +448,18 @@ void     UserConnection::TestNotification( const char* text, U32 type )
 void     UserConnection::RegisterNewDevice( const PacketNotification_RegisterDevice* potentialDevice )
 {
    LogMessage( LOG_PRIO_INFO, "RegisterNewDevice: user: %s, userId: %u, connectionId: %u, gatewayId: %u", m_userInfo.userName.c_str(), m_userInfo.userId, m_userInfo.connectionId, m_userInfo.gatewayId );
+   PrintDetailsOfDeviceRegistrationToConsole( potentialDevice->deviceId, m_userInfo.userId, m_userInfo.uuid );
 
    if( potentialDevice->deviceId.size() < 8 )
    {
+      LogMessage( LOG_PRIO_ERR, "Error: device has no identifier" );
       m_mainThread->SendErrorToClient( m_userInfo.connectionId, m_userInfo.gatewayId, PacketErrorReport::ErrorType_Notification_DeviceIdIncorrect );
       return;
    }
 
    if( FindDeviceAndUpdate( m_deviceList, potentialDevice ) == true )
    {
+      LogMessage( LOG_PRIO_ERR, "Error: device is already in user's list" );
       m_mainThread->SendErrorToClient( m_userInfo.connectionId, m_userInfo.gatewayId, PacketErrorReport::ErrorType_Notification_DeviceAlreadyRegistered );
       return;
    }
@@ -421,6 +482,7 @@ void     UserConnection::RegisterNewDevice( const PacketNotification_RegisterDev
 
 
    PrintDetailsOfDeviceRegistrationToConsole( potentialDevice->deviceId, m_userInfo.userId, m_userInfo.uuid );
+   LogMessage( LOG_PRIO_INFO, " New device uuid: %s", newDeviceUuid.c_str() );
   /* LogMessage( LOG_PRIO_INFO, "-------------------------------------------------------" );
    LogMessage( LOG_PRIO_INFO, " RegisterNewDevice: [%s]", BufferToHexString( potentialDevice->deviceId, 16 ).c_str() );
    LogMessage( LOG_PRIO_INFO, " Useruuid: %s", m_userInfo.uuid.c_str() );

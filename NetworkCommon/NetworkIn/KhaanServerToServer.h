@@ -9,8 +9,8 @@
 class KhaanServerToServer : public Khaan
 {
 public:
-   KhaanServerToServer() : Khaan( 0, NULL ), m_serverId( 0 ), m_serverType( 0 ), m_isGameServer( false ), m_isController( false ), m_gatewayType( PacketServerIdentifier::GatewayType_None ) {}
-   KhaanServerToServer( int id, bufferevent* be ) : Khaan( id, be ), m_serverId( 0 ), m_serverType( 0 ), m_isGameServer( false ), m_isController( false ), m_gatewayType( PacketServerIdentifier::GatewayType_None )  {}
+   KhaanServerToServer();
+   KhaanServerToServer( int id, bufferevent* be );
 
    const char* GetClassName() const { return "KhaanServerToServer"; }
 

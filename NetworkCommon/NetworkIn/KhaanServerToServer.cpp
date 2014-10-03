@@ -25,6 +25,23 @@ using boost::format;
 ///////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////
 
+KhaanServerToServer::KhaanServerToServer() : 
+                     Khaan( 0, NULL ), 
+                     m_serverId( 0 ), 
+                     m_serverType( 0 ), 
+                     m_isGameServer( false ), 
+                     m_isController( false ), 
+                     m_gatewayType( PacketServerIdentifier::GatewayType_None ) 
+                     {}
+KhaanServerToServer::KhaanServerToServer( int id, bufferevent* be ) : 
+                     Khaan( id, be ), 
+                     m_serverId( 0 ), 
+                     m_serverType( 0 ), 
+                     m_isGameServer( false ), 
+                     m_isController( false ), 
+                     m_gatewayType( PacketServerIdentifier::GatewayType_None )  
+                     {}
+
 bool  KhaanServerToServer::HandleInwardSerializedPacket( const U8* data, int& offset )
 {
    BasePacket* packetIn = NULL;

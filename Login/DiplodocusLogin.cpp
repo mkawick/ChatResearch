@@ -562,8 +562,8 @@ bool  DiplodocusLogin:: LoadUserAccount( const string& userName, const string& p
       cout << "fn: " << __FUNCTION__ << endl;
    }
    ConnectionToUser conn( userName, password, loginKey );
-   conn.m_gameProductId = gameProductId;
-   conn.m_connectionId = connectionId;
+   conn.m_connectionDetails.gameProductId = gameProductId;
+   conn.m_connectionDetails.connectionId = connectionId;
    conn.SetGatewayId( gatewayId );
    AddUserConnection( UserConnectionPair( connectionId, conn ) );
 
@@ -637,7 +637,7 @@ bool     DiplodocusLogin:: HandleUserLoginResult( U32 connectionId, const Packet
          const bool wasDisconnectedByError = false;
 
          return BroadcastLoginStatus( connectionId, 
-                                connection->m_gameProductId, 
+                                connection->m_connectionDetails.gameProductId, 
                                 isLoggedIn, 
                                 wasDisconnectedByError,
                                 connection->GetGatewayId() );
@@ -712,7 +712,7 @@ void     DiplodocusLogin:: FinalizeLogout( U32 connectionId, bool wasDisconnecte
       SendLoginStatusToOtherServers( connection->m_userName, 
                                     connection->m_userUuid, 
                                     connectionId, 
-                                    connection->m_gameProductId, 
+                                    connection->m_connectionDetails.gameProductId, 
                                     connection->m_lastLoginTime, 
                                     connection->m_isActive, 
                                     connection->m_email, 
@@ -850,7 +850,7 @@ U32     DiplodocusLogin:: FindUserAlreadyInGame( const string& userName, U8 game
    {
       UserConnectionPair pairObj = *it++;
       ConnectionToUser& conn = pairObj.second;
-      if( conn.m_gameProductId == gameProductId && // optimized for simplest test first
+      if( conn.m_connectionDetails.gameProductId == gameProductId && // optimized for simplest test first
          
          ( conn.m_email == userName || conn.m_userName == userName ) )// we use these interchangably right now.
       {
@@ -1812,7 +1812,7 @@ bool  DiplodocusLogin:: ForceUserLogoutAndBlock( U32 connectionId, U32 gatewayId
       passwordHash =          connection->m_passwordHash;
       userId =                connection->m_id;
       email =                 connection->m_email;
-      gameProductId =         connection->m_gameProductId;
+      gameProductId =         connection->m_connectionDetails.gameProductId;
       loginKey =              connection->m_loginKey;
       languageId =            connection->m_languageId;
    }
@@ -2493,9 +2493,9 @@ bool     DiplodocusLogin:: HandleDbResult( PacketDbQueryResult* dbResult )
                   str += ", password: ";
                   str += connection->m_passwordHash;
                   str += ", connectionId: ";
-                  str += connection->m_connectionId;
+                  str += connectionId;
                   str += ", gatewayId: ";
-                  str += connection->m_gatewayId;
+                  str += connection->m_connectionDetails.gatewayId;
                   
                   cout << "Error:" << str << endl;
                   cout << connection->m_passwordHash << endl;

@@ -40,6 +40,7 @@ MainGatewayThread.cpp \
 ../NetworkCommon/Utils/CommandLineParser.cpp \
 ../NetworkCommon/Utils/MemoryLeakTracker.cpp \
 ../NetworkCommon/Utils/OsLevelUtils.cpp \
+../NetworkCommon/Utils/StringUtils.cpp \
 ../NetworkCommon/Utils/Utils.cpp 
 
 gateway_serverd_CXXFLAGS = -std=c++0x

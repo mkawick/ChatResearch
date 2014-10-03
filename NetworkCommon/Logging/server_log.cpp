@@ -135,7 +135,7 @@ void LogMessage(int priority, const char *printFormat, ...)
    char buffer[ logTempBufferSize ];
 
    va_start( args, printFormat );
-   vsprintf ( buffer, printFormat, args);
+   vsnprintf ( buffer, logTempBufferSize-1, printFormat, args);
    va_end( args );
 
    cout << buffer << endl;
@@ -175,7 +175,7 @@ void LogMessage(int priority, const char *fmt, ...)
    va_start(args, fmt);
 
    char buffer[ logTempBufferSize ];
-   vsprintf(buffer, fmt, args);
+   vsnprintf(buffer, logTempBufferSize-1, fmt, args);
 
    va_end(args);
 
@@ -199,9 +199,11 @@ void LogMessage( int priority, const char *printFormat, ...)
 {
    char buffer[ logTempBufferSize ];
 
+   //char* buffer = new 
+   
    va_list args;
    va_start( args, printFormat );
-   vsprintf ( buffer, printFormat, args);
+   vsnprintf ( buffer, logTempBufferSize-1, printFormat, args);
    va_end(args);
 
    cout << buffer << endl;

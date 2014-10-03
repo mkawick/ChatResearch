@@ -41,6 +41,7 @@ ConnectorAnalytics.cpp \
 ../NetworkCommon/Utils/MemoryLeakTracker.cpp \
 ../NetworkCommon/Utils/OsLevelUtils.cpp \
 ../NetworkCommon/Utils/TableWrapper.cpp \
+../NetworkCommon/Utils/StringUtils.cpp \
 ../NetworkCommon/Utils/Utils.cpp \
 ../NetworkCommon/Logging/server_log.cpp
 

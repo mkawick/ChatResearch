@@ -512,7 +512,11 @@ static bool sendGameEndedNotification(const unsigned char *deviceId, unsigned in
 
 bool NotifyIosInit( const char* pathToFiles )
 {
+   cout << "***************************************" << endl;
+   cout << " begin loading the ios certificate files " << endl;
    s_ApnIsInitialized = true;
+
+   cout << "path to ios Files from command-line: " << pathToFiles << endl;
 
    for (int i = 0; i < s_GameInfoCount; ++i)
    {
@@ -582,6 +586,8 @@ bool NotifyIosInit( const char* pathToFiles )
    }
 
    apnConnect();
+   cout << " end loading the ios certificate files " << endl;
+   cout << "***************************************" << endl;
 
    return true;
 }

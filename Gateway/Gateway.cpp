@@ -63,6 +63,9 @@ void  PrintInstructions()
    cout << "    contact.address   - contact server ipaddress" << endl;
    cout << "    contact.port      - contact server port" << endl;
 
+   cout << "    login.address     - login server ipaddress" << endl;
+   cout << "    login.port        - login server port" << endl;
+
    cout << "    purchase.address  - purchase server ipaddress" << endl;
    cout << "    purchase.port     - purchase server port" << endl;
 
@@ -172,8 +175,8 @@ int main( int argc, const char* argv[] )
    parser.FindValue( "notification.port", notificationPortString );
    parser.FindValue( "notification.address", notificationIpAddressString );
 
-   parser.FindValue( "userstat.port", userStatsPortString );
-   parser.FindValue( "userstat.address", userStatsIpAddressString );
+   parser.FindValue( "userstats.port", userStatsPortString );
+   parser.FindValue( "userstats.address", userStatsIpAddressString );
 
    //parser.FindValue( "reroute.port", reroutePortString );
    //parser.FindValue( "reroute.address", rerouteAddressString );

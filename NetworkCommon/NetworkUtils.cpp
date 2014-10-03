@@ -26,9 +26,14 @@
 
    #pragma warning( disable : 4996 )
 #else
-   #include <sys/socket.h>
-   #include <netinet/in.h>
    #include <arpa/inet.h>
+   #include <sys/socket.h>
+   #include <sys/types.h>
+   #include <netdb.h>
+   #include <ifaddrs.h>
+   #include <netinet/in.h>
+   #include <unistd.h>
+   #include <linux/if_link.h>
 #endif
 
 #include <stdio.h>
@@ -125,7 +130,9 @@ void GetLocalIpAddress( char* buffer, size_t buflen )
    assert( buflen >= 16 );
    struct hostent *hostLocal;
 
-#define  MAXHOSTNAMELEN  256
+   
+#if PLATFORM == PLATFORM_WINDOWS
+   const int  MAXHOSTNAMELEN = 256;
    char localHostname[ MAXHOSTNAMELEN ];
    gethostname( localHostname, MAXHOSTNAMELEN );
    if ( ( hostLocal = gethostbyname( localHostname ) ) == NULL ) 
@@ -134,10 +141,36 @@ void GetLocalIpAddress( char* buffer, size_t buflen )
    }
    struct in_addr **localAddrList = (struct in_addr **)hostLocal->h_addr_list;   
    strncpy( buffer, (char *)inet_ntoa(*localAddrList[0]), buflen );
+#else
+   struct ifaddrs *addrs, *tmp;
+   getifaddrs(&addrs);
+   tmp = addrs;
+
+   U32 maxBuffLen = 256;
+   char name[maxBuffLen];
+
+   while (tmp) 
+   {
+       if (tmp->ifa_addr && tmp->ifa_addr->sa_family == AF_INET)
+       {
+           struct sockaddr_in *pAddr = (struct sockaddr_in *)tmp->ifa_addr;
+           strncpy( name, tmp->ifa_name, maxBuffLen );
+           strncpy( buffer, inet_ntoa(pAddr->sin_addr), buflen );
+       }
+
+       tmp = tmp->ifa_next;
+   }
+
+   LogMessage( LOG_PRIO_INFO, "local addr name:%s; addr:%s", name, buffer );
+
+   freeifaddrs(addrs);
+#endif
+   
 }
 
 bool IsPortBusy( int port )
 {
+   LogMessage( LOG_PRIO_INFO, "IsPortBusy start (port : %d)", port );
    char portBuffer [256];
    sprintf( portBuffer, "%d", port );
    //itoa( port, portBuffer, 10 );
@@ -190,6 +223,8 @@ bool IsPortBusy( int port )
    }
 
    closesocket( ListenSocket );
+
+   LogMessage( LOG_PRIO_INFO, "IsPortBusy = false SUCCESS (port : %d)", port );
 
    return false;
 }
