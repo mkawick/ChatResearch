@@ -29,6 +29,7 @@ DiplodocusServerToServer::DiplodocusServerToServer( const string& serverName, U3
 {
    m_chainedType = ChainedType_AlternateThreadContainer;
    SetConnectionId( ServerToServerConnectionId );
+   SetSleepTime( 100 );
 }
 
 DiplodocusServerToServer::~DiplodocusServerToServer()
@@ -38,14 +39,11 @@ DiplodocusServerToServer::~DiplodocusServerToServer()
 
 //////////////////////////////////////////////////////////////////////////
 
-void  DiplodocusServerToServer::InputConnected( IChainedInterface* khaan ) 
+void  DiplodocusServerToServer::InputConnected( IChainedInterface* chainedInput ) 
 {
-  /* if( packet->packetType == PacketType_ServerJobWrapper )
-   {
-      HandlePacketFromOtherServer( packet, connectionId );
-      return true;
-   }*/
-   // we can basically ignore this until we have more into like connection info
+   cout << "DiplodocusServerToServer::InputConnected" << endl;
+   KhaanServerToServer* khaan = static_cast< KhaanServerToServer* >( chainedInput );
+   MarkConnectionAsNeedingUpdate( khaan->GetChainedId() );
 }
 
 
@@ -63,6 +61,8 @@ void  DiplodocusServerToServer::InputRemovalInProgress( IChainedInterface* chain
 
    LogMessage( LOG_PRIO_INFO, "** InputRemovalInProgress" );
 }
+
+//////////////////////////////////////////////////////////////////////////
 
 U32   DiplodocusServerToServer::FindServerIdByType( U32 type )
 {
@@ -85,6 +85,7 @@ U32   DiplodocusServerToServer::FindServerIdByType( U32 type )
 // this will always be data coming from other servers or at least from the outside in.
 bool   DiplodocusServerToServer::AddInputChainData( BasePacket* packet, U32 connectionId ) 
 {
+   cout << "DiplodocusServerToServer::AddInputChainData" << endl;
    //LogMessage( LOG_PRIO_INFO, "DiplodocusServerToServer::AddInputChainData( " );
    if( packet->packetType == PacketType_ServerToServerWrapper )
    {
@@ -134,6 +135,7 @@ bool   DiplodocusServerToServer::AddInputChainData( BasePacket* packet, U32 conn
 
 void  DiplodocusServerToServer::ServerWasIdentified( IChainedInterface* khaan )
 {
+   cout << "DiplodocusServerToServer::ServerWasIdentified" << endl;
    BasePacket* packet = NULL;
    PackageForServerIdentification( m_serverName, m_localIpAddress, m_externalIpAddress, m_serverId, m_serverType, m_listeningPort, m_gameProductId, m_isGame, m_isControllerApp, true, m_gatewayType, &packet );
    ChainedType* localKhaan = static_cast< ChainedType* >( khaan );
@@ -151,6 +153,14 @@ void  DiplodocusServerToServer::HandleInputPackets()
    deque< PacketHolder >  tempQueue = m_idPacketsToHandle;
    m_idPacketsToHandle.clear();
    UnlockMutex();
+
+   U32 numPacketsToProcess = tempQueue.size();
+   if( numPacketsToProcess== 0 )
+   {
+      return;
+   }
+
+   cout << "DiplodocusServerToServer::HandleInputPackets::numPacketsToProcess = " << numPacketsToProcess << endl;
 
    PacketFactory factory;
    while( tempQueue.size() )

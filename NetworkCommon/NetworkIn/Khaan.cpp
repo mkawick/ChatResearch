@@ -17,6 +17,7 @@
 #include "../Packets/PacketFactory.h"
 #include "../Utils/CommandLineParser.h"
 #include "../Utils/Utils.h"
+#include "../Utils/StringUtils.h"
 
 #include <boost/lexical_cast.hpp>
 #include <boost/format.hpp>
@@ -311,16 +312,34 @@ void  Khaan::SendTelnetInstructions()
 }
 
 /////////////////////////////////////////////////////////////////
+#define PRINT_BUFFER_INFO
+
+void  DumpOutput( U8* buffer, int offset, int length )
+{
+#ifdef PRINT_BUFFER_INFO
+      cout << "offset: " << offset << "   length: " << length << endl;
+      int bytesToPrint = length; if( bytesToPrint > 16 ) bytesToPrint = 16;
+      string str = BufferToHexString( buffer, bytesToPrint );
+      cout << " ->[ " << str << " ]" << endl;
+#endif
+}
+
+/////////////////////////////////////////////////////////////////
 
 int	Khaan :: UpdateOutwardPacketList()
 {
    if( m_isDisconnected )
       return 0;
 
+   if( m_packetsOut.size() == 0 )
+      return 0;
+
+   cout << "Khaan :: UpdateOutwardPacketList:: lock 1" << endl;
    m_outputChainListMutex.lock();
    deque< BasePacket* > localQueue = m_packetsOut;
    m_packetsOut.clear();
    m_outputChainListMutex.unlock();
+   cout << "Khaan :: UpdateOutwardPacketList:: unlock 1" << endl;
 
    if( localQueue.size() == 0 )
       return 0;
@@ -352,8 +371,11 @@ int	Khaan :: UpdateOutwardPacketList()
 
       sizeOfLastWrite = length - sizeOfHeader;
       Serialize::Out( m_outboundBuffer, offset, sizeOfLastWrite, m_versionNumberMinor );// write in the size
-
+      
       SendData( m_outboundBuffer, length );
+
+      DumpOutput( m_outboundBuffer, offset, length );
+
       localQueue.pop_front();
       TrackOutwardPacketType( packet ); 
       factory.CleanupPacket( packet );
@@ -361,6 +383,7 @@ int	Khaan :: UpdateOutwardPacketList()
 
    if( localQueue.size() ) // remainder
    {
+      cout << "Khaan :: UpdateOutwardPacketList:: lock 2" << endl;
       m_outputChainListMutex.lock();
       deque< BasePacket* >::reverse_iterator it = localQueue.rbegin();// reverse order
       while( it != localQueue.rend() )
@@ -369,6 +392,7 @@ int	Khaan :: UpdateOutwardPacketList()
          m_packetsOut.push_front( packet );
       }
       m_outputChainListMutex.unlock();
+      cout << "Khaan :: UpdateOutwardPacketList:: unlock 2" << endl;
    }
 
    return sizeSent;
@@ -390,9 +414,11 @@ bool Khaan :: AddOutputChainData( BasePacket* packet, U32 filingData )
 
    //LogMessage( LOG_PRIO_INFO, "Khaan 12" );
 
+   cout << "Khaan :: AddOutputChainData:: lock" << endl;
    m_outputChainListMutex.lock();
    m_packetsOut.push_back( packet );
    m_outputChainListMutex.unlock();
+   cout << "Khaan :: AddOutputChainData:: unlock" << endl;
    return true; 
 }
 
@@ -558,10 +584,12 @@ void     Khaan :: ClearAllPacketsIn()
 void     Khaan :: ClearAllPacketsOut()
 {
    //LogMessage( LOG_PRIO_INFO, "Khaan 18" );
+   cout << "Khaan :: ClearAllPacketsOut:: lock" << endl;
    m_outputChainListMutex.lock();
    deque< BasePacket* > localQueue = m_packetsOut;
    m_packetsOut.clear();
    m_outputChainListMutex.unlock();
+   cout << "Khaan :: ClearAllPacketsOut:: unlock" << endl;
 
    PacketFactory factory;
    while( localQueue.size() )

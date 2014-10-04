@@ -61,9 +61,11 @@ bool  KhaanServerToServer::HandleInwardSerializedPacket( const U8* data, int& of
       LogMessage( LOG_PRIO_INFO, " KhaanServerToServer :: OnDataReceived( p=%d:%d )", packetType, packetIn->packetSubType );
 #endif
 
+      cout << "Khaan :: HandleInwardSerializedPacket:: lock" << endl;
       m_inputChainListMutex.lock();
       m_packetsIn.push_back( packetIn );
       m_inputChainListMutex.unlock();
+      cout << "Khaan :: HandleInwardSerializedPacket:: unlock" << endl;
       RequestUpdate();
    } 
    else
@@ -173,8 +175,11 @@ bool	KhaanServerToServer :: OnDataReceived( const U8* data, int length )
 
 void	KhaanServerToServer :: UpdateInwardPacketList()
 {
-   if( m_packetsIn.size() == 0 )
+   U32 numPacketsToProcess = m_packetsIn.size();
+   if( numPacketsToProcess == 0 )
       return;
+
+   cout << "KhaanServerToServer::UpdateInwardPacketList::numPacketsToProcess = " << numPacketsToProcess << endl;
 
    int numOutputs = static_cast< int >( m_listOfOutputs.size() );
    if( numOutputs > 1 )
@@ -182,10 +187,12 @@ void	KhaanServerToServer :: UpdateInwardPacketList()
       assert( 0 );// need support for multiple outputs, each packet should be copied because of the memory ownership, or use shared pointers
    }
 
+   cout << "Khaan :: UpdateInwardPacketList:: lock" << endl;
    m_inputChainListMutex.lock();
    deque< BasePacket* > localQueue = m_packetsIn;
    m_packetsIn.clear();
    m_inputChainListMutex.unlock();
+   cout << "Khaan :: UpdateInwardPacketList:: unlock" << endl;
 
    PacketFactory factory;
 
@@ -196,6 +203,7 @@ void	KhaanServerToServer :: UpdateInwardPacketList()
       
       if( packetType == PacketType_ServerToServerWrapper )
       {
+         cout << "KhaanServerToServer::UpdateInwardPacketList::PacketType_ServerToServerWrapper" << endl;
          PacketServerToServerWrapper* wrapper = static_cast< PacketServerToServerWrapper* >( packetIn );
          BasePacket* subPacket = wrapper->pPacket;
 
@@ -227,6 +235,7 @@ void	KhaanServerToServer :: UpdateInwardPacketList()
       }
       else if( packetType == PacketType_GatewayWrapper )// here we simply push the server packet up to the next layer
       {
+         cout << "KhaanServerToServer::UpdateInwardPacketList::PacketType_GatewayWrapper" << endl;
          PacketGatewayWrapper* wrapper = static_cast< PacketGatewayWrapper* >( packetIn );
          //m_connectionId = wrapper->connectionId;
          if( PassPacketOn( wrapper, wrapper->connectionId ) == true )
@@ -331,6 +340,8 @@ bool  KhaanServerToServer :: PassPacketOn( BasePacket* packet, U32 connectionId 
    LogMessage( LOG_PRIO_ERR, " KhaanServerToServer :: PassPacketOn(" );
 #endif
 
+   cout << "DiplodocusServerToServer::PassPacketOn" << endl;
+
    ChainLinkIteratorType itOutputs = m_listOfOutputs.begin();
    if( itOutputs != m_listOfOutputs.end() )// only one output currently supported.
    {
@@ -347,6 +358,7 @@ bool  KhaanServerToServer :: PassPacketOn( BasePacket* packet, U32 connectionId 
 
 bool  KhaanServerToServer :: HandleCommandFromGateway( BasePacket* packet, U32 connectionId )
 {
+   cout << "DiplodocusServerToServer::HandleCommandFromGateway" << endl;
 #ifdef VERBOSE
    LogMessage( LOG_PRIO_ERR, " KhaanServerToServer :: HandleCommandFromGateway(" );
 #endif
@@ -367,6 +379,7 @@ bool  KhaanServerToServer :: HandleCommandFromGateway( BasePacket* packet, U32 c
 
 void  KhaanServerToServer :: SaveOffServerIdentification( const PacketServerIdentifier* packet )
 {
+   cout << "KhaanServerToServer :: SaveOffServerIdentification" << endl;
    //if( m_serverName == packet->serverName && m_serverId == packet->serverId ) // prevent dups from reporting.
    //   return;
 
@@ -415,7 +428,7 @@ void   KhaanServerToServer ::PreCleanup()
 {
    Khaan::PreCleanup();
    LogMessage( LOG_PRIO_ERR, "*********************************************" );
-   LogMessage( LOG_PRIO_ERR, "    Server has disconnected, name = \'%s\' : %d", m_serverName.c_str(), m_serverId );
+   LogMessage( LOG_PRIO_ERR, "    Server has disconnected, name = \'%s\' : %u", m_serverName.c_str(), m_serverId );
    LogMessage( LOG_PRIO_ERR, "    Time stamp: %s", GetDateInUTC().c_str() );
    LogMessage( LOG_PRIO_ERR, "*********************************************" );
 }

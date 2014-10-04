@@ -84,10 +84,8 @@ int  FruitadensServerToServer::MainLoop_OutputProcessing()
    if( m_packetsReadyToSend.size() > 0 )
    {
       PacketFactory factory;
-      m_mutex.lock();
-      PacketQueue packetQueue = m_packetsReadyToSend;
+      PacketQueue packetQueue = m_packetsReadyToSend;// threading protections are already in place
       m_packetsReadyToSend.clear();
-      m_mutex.unlock();
 
       while( packetQueue.size() )
       {

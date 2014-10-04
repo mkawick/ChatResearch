@@ -74,7 +74,6 @@ void   MainGatewayThread::NotifyFinishedAdding( IChainedInterface* obj )
    {
       LogMessage( LOG_PRIO_INFO, " NotifyFinishedAdding: added obj " );
    }
-   //m_listOfInputs
 } 
 
 /////////////////////////////////////////////////////////////////////////////////

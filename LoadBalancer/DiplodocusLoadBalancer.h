@@ -72,12 +72,13 @@ private:
    void     HandlePacketToKhaan( KhaanConnector* khaan, BasePacket* packet );
    U32      GetNextConnectionId();
 
-   int      MainLoop_InputProcessing();
-   int      MainLoop_OutputProcessing();
+   int      CallbackFunction();
    void     OutputCurrentStats();
    void     SelectPreferredGateways();
 
    //void     ServerWasIdentified( ChainType* chainedInput );
+   int      IncrementRotatingGatewayIndex();
+   ChainLinkIteratorType FindInputByConnectionId( U32 connectionId );
 
    void     NewServerConnection( const PacketServerIdentifier* );
    void     ServerDisconnected( const PacketServerDisconnect* );
@@ -93,14 +94,14 @@ private:
    typedef pair<int, int>     SocketToConnectionPair;
    typedef SocketToConnectionMap::iterator SocketToConnectionMapIterator;
 
-   typedef map< int, KhaanConnector* >    ConnectionMap;
+/*   typedef map< int, KhaanConnector* >    ConnectionMap;
    typedef pair< int, KhaanConnector* >   ConnectionPair;
-   typedef ConnectionMap::iterator        ConnectionMapIterator;
+   typedef ConnectionMap::iterator        ConnectionMapIterator;*/
 
    typedef std::deque< U32 >              ConnectionIdQueue;
 
-   ConnectionMap              m_connectionMap;
-   ConnectionIdQueue          m_connectionsNeedingUpdate;
+   //ConnectionMap              m_connectionMap;
+   //ConnectionIdQueue          m_connectionsNeedingUpdate;
 
    SocketToConnectionMap      m_socketToConnectionMap;
    SocketToConnectionMap      m_connectionToSocketMap;

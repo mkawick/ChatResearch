@@ -70,15 +70,16 @@ U32      DiplodocusLoadBalancer::GetNextConnectionId()
 
 ///////////////////////////////////////////////////////////////////
 
-int   DiplodocusLoadBalancer::MainLoop_InputProcessing()
+int       DiplodocusLoadBalancer::CallbackFunction()
 {
-   // m_inputChainListMutex.lock   // see CChainedThread<Type>::CallbackFunction()
    CommonUpdate();
 
    OutputCurrentStats();
 
    SelectPreferredGateways();
 
+   CleanupOldClientConnections( "KhaanConnector" );
+   UpdateAllConnections( "KhaanConnector" );
    return 1;
 }
 
@@ -188,18 +189,22 @@ void     DiplodocusLoadBalancer::InputConnected( IChainedInterface * chainedInpu
    LogMessage( LOG_PRIO_INFO, "Accepted connection at time: %s from %s, ", currentTime.c_str(), inet_ntoa( khaan->GetIPAddress().sin_addr ) );
    //PrintText( "** InputConnected" , 1 );
 
-   Threading::MutexLock locker( m_outputChainListMutex );
    U32 newId = GetNextConnectionId();
+ /*  m_inputChainListMutex.lock();
+   
    //m_socketToConnectionMap.insert( SocketToConnectionPair( khaan->GetSocketId(), newId ) );
    //m_connectionToSocketMap.insert( SocketToConnectionPair( newId, khaan->GetSocketId() ) );
    m_connectionMap.insert( ConnectionPair( newId, khaan ) );
+   m_inputChainListMutex.unlock();*/
 
    khaan->SetConnectionId( newId );
 
    khaan->SetMainOutput( this );
-   m_mutex.lock();
+
+   MarkConnectionAsNeedingUpdate( khaan->GetChainedId() );
+  /* m_mutex.lock();
    m_connectionsNeedingUpdate.push_back( newId );
-   m_mutex.unlock();
+   m_mutex.unlock();*/
 }
 
 ///////////////////////////////////////////////////////////////////
@@ -270,20 +275,12 @@ bool  DiplodocusLoadBalancer::HandlePacketFromOtherServer( BasePacket* packet, U
 
 bool     DiplodocusLoadBalancer::AddInputChainData( BasePacket* packet, U32 connectionId )
 {
-   m_inputChainListMutex.lock();
-   ConnectionMap localMap = m_connectionMap;
-   m_inputChainListMutex.unlock();
-
-   ConnectionMapIterator connIt = localMap.find( connectionId );
-   if( connIt != localMap.end() )
+   if( packet->packetType == PacketType_Base )
    {
-      if( packet->packetType == PacketType_Base )
+      if( packet->packetSubType == BasePacket::BasePacket_RerouteRequest )
       {
-         if( packet->packetSubType == BasePacket::BasePacket_RerouteRequest )
-         {
-            HandleRerouteRequest( connectionId );
-            return false;// delete the original data
-         }
+         HandleRerouteRequest( connectionId );
+         return false;// delete the original data
       }
    }
    if( packet->packetType == PacketType_ServerJobWrapper )
@@ -329,10 +326,9 @@ int indexForRotatingGatewayIndex = 1;
 int indexForRotatingGatewayIndex = -1;
 #endif // HACK_FOR_MULTIPLE_GATEWAY_TESTING
 
-///////////////////////////////////////////////////////////////////
-
-void     DiplodocusLoadBalancer::HandleRerouteRequest( U32 connectionId )
+int   DiplodocusLoadBalancer::IncrementRotatingGatewayIndex()
 {
+#ifdef HACK_FOR_MULTIPLE_GATEWAY_TESTING
    m_inputChainListMutex.lock();
    //int numGatewayRoutes = m_gatewayRoutes.size();
    int numGatewayRoutes = 0;
@@ -343,39 +339,62 @@ void     DiplodocusLoadBalancer::HandleRerouteRequest( U32 connectionId )
          numGatewayRoutes++;
       it++;
    }
-   ConnectionMap localMap = m_connectionMap;
    m_inputChainListMutex.unlock();
 
-   int offsetIndex = 0;
-#ifdef HACK_FOR_MULTIPLE_GATEWAY_TESTING
    //offsetIndex = 1;// never select the first one
    if( indexForRotatingGatewayIndex >= numGatewayRoutes )
       indexForRotatingGatewayIndex = 0;
 
-   offsetIndex = indexForRotatingGatewayIndex++;
+   return indexForRotatingGatewayIndex++;
 #endif // HACK_FOR_MULTIPLE_GATEWAY_TESTING
 
-   bool  hasNormal = false;
-   bool  hasAsset = false;
+   return 0;
+}
 
-   ConnectionMapIterator connIt = localMap.find( connectionId );
-   if( connIt != localMap.end() )
+DiplodocusLoadBalancer::ChainLinkIteratorType 
+DiplodocusLoadBalancer::FindInputByConnectionId( U32 connectionId )
+{
+   ChainLinkIteratorType itInputs = m_listOfInputs.begin();
+   while( itInputs != m_listOfInputs.end() )// only one output currently supported.
    {
+      const KhaanConnector* khaan = static_cast< const KhaanConnector* >( (*itInputs).m_interface );
+      if( khaan->GetConnectionId() == connectionId )
+      {
+         return itInputs;
+      }
+      itInputs++;
+   }
+   return itInputs;
+}
+
+///////////////////////////////////////////////////////////////////
+
+void     DiplodocusLoadBalancer::HandleRerouteRequest( U32 connectionId )
+{
+   int offsetIndex = IncrementRotatingGatewayIndex();
+
+   bool  hasNormal = false; // we're going to store one of each
+   bool  hasAsset = false;
+   {
+      ChainLinkIteratorType itInputs = FindInputByConnectionId( connectionId );
+      if( itInputs == m_listOfInputs.end() )
+      {
+         return;
+      }
+      KhaanConnector* khaan = static_cast< KhaanConnector* >( (*itInputs).m_interface );
+      const char* ipAddressOfClient = inet_ntoa( khaan->GetIPAddress().sin_addr );
+
       LogMessage( LOG_PRIO_INFO, "Telling user about the following connection destinations" );
-      connIt->second->GetIPAddress();
+      //connIt->second->GetIPAddress();
       list< GatewayInfo >::iterator it = m_gatewayRoutes.begin();
       PacketRerouteRequestResponse* response = new PacketRerouteRequestResponse;
+
       if( it != m_gatewayRoutes.end() )
       {
-         /*if( offsetIndex == 1 && m_gatewayRoutes.size() > 1 )
-         {
-            it++;
-         }*/
          while( it != m_gatewayRoutes.end() )
          {
 #ifdef HACK_FOR_MULTIPLE_GATEWAY_TESTING
             if( offsetIndex != 0 && 
-               it != m_gatewayRoutes.end() && 
                it->type == GatewayInfo::Type_Normal 
                )
             {
@@ -387,14 +406,9 @@ void     DiplodocusLoadBalancer::HandleRerouteRequest( U32 connectionId )
             if( it->isConnected == true )
             {
                bool  shouldPushAddress = false;
-               bool useLocalAddress = true;
-               if( IsOnSameNetwork( it->address, inet_ntoa( connIt->second->GetIPAddress().sin_addr ) ) )
-                  useLocalAddress = true;
-               else
-                  useLocalAddress = false;
-
                PacketRerouteRequestResponse::Address address;
-               if( useLocalAddress )
+
+               if( IsOnSameNetwork( it->address, ipAddressOfClient ) == true )
                   address.address = it->address;
                else
                   address.address = it->externalIpAddress;
@@ -433,12 +447,13 @@ void     DiplodocusLoadBalancer::HandleRerouteRequest( U32 connectionId )
                {
                   response->locations.push_back( address );
                }
+               if( hasNormal && hasAsset )
+                  break;
             }
             it++;
          }
       }
 
-      KhaanConnector* khaan = connIt->second;
       HandlePacketToKhaan( khaan, response );// all deletion and such is handled lower
    }
 }
@@ -450,10 +465,12 @@ void     DiplodocusLoadBalancer::HandleRerouteRequest( U32 connectionId )
 void     DiplodocusLoadBalancer::HandlePacketToKhaan( KhaanConnector* khaan, BasePacket* packet )
 {
    //PrintText( "HandlePacketToKhaan" );
-   U32 connectionId = khaan->GetConnectionId();
+   //U32 connectionId = khaan->GetConnectionId();
    khaan->AddOutputChainData( packet );
 
-   m_mutex.lock();
+   MarkConnectionAsNeedingUpdate( khaan->GetChainedId() );
+
+  /* Threading::Mutex locker( m_mutex ); // because of return
    //MarkConnectionAsNeedingUpdate
    ConnectionIdQueue::iterator it = m_connectionsNeedingUpdate.begin();
    while( it != m_connectionsNeedingUpdate.end() )
@@ -461,43 +478,11 @@ void     DiplodocusLoadBalancer::HandlePacketToKhaan( KhaanConnector* khaan, Bas
       if( *it++ == connectionId )
          return;
    }
-   m_connectionsNeedingUpdate.push_back( connectionId );
-   m_mutex.unlock();
+   m_connectionsNeedingUpdate.push_back( connectionId );*/
 }
 
 
 ///////////////////////////////////////////////////////////////////
-
-int   DiplodocusLoadBalancer::MainLoop_OutputProcessing()
-{
-   // mutex is locked already
-   CleanupOldClientConnections( "KhaanConnector" );
-
-   // lookup packet info and pass it back to the proper socket if we can find it.
-   if( m_connectionsNeedingUpdate.size() )
-   {
-      m_mutex.lock();
-      //PrintText( "MainLoop_OutputProcessing" );
-
-      while( m_connectionsNeedingUpdate.size() > 0 )// this has the m_outputChainListMutex protection
-      {
-         int connectionId = m_connectionsNeedingUpdate.front();
-         m_connectionsNeedingUpdate.pop_front();
-         ConnectionMapIterator connIt = m_connectionMap.find( connectionId );
-         if( connIt != m_connectionMap.end() )
-         {
-            KhaanConnector* khaan = connIt->second;
-            bool didFinish = khaan->Update();
-            if( didFinish == false )
-            {
-               //moreTimeNeededQueue.push_back( connectionId );
-            }
-         }
-      }
-      m_mutex.unlock();
-   }
-   return 1;
-}
 
 ///////////////////////////////////////////////////////////////////
 

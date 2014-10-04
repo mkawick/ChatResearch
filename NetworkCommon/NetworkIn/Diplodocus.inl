@@ -258,8 +258,7 @@ void     Diplodocus< InputChain, OutputChain >::SetupClientConnectionForDeletion
    if( chain )
    {
       // verify that this is still in the list
-      Threading::MutexLock locker( m_inputChainListMutex );
-      bool  found = false;
+      m_inputChainListMutex.lock();
       ChainLinkIteratorType itInputs = m_listOfInputs.begin();
       while( itInputs != m_listOfInputs.end() )
       {
@@ -267,24 +266,21 @@ void     Diplodocus< InputChain, OutputChain >::SetupClientConnectionForDeletion
          InputChainType* connection = static_cast< InputChainType* >( chainedInput.m_interface );
          if( connection == chain )
          {
-            found = true;
+            Khaan* khaan = static_cast< Khaan* >( chain );
+            if( khaan )
+            {
+               khaan->DenyAllFutureData();
+               if( khaan->HasDisconnected() == false )
+               {
+                  time_t currentTime;
+                  time( &currentTime );
+                  khaan->SetTimeForDeletion( currentTime );
+               }
+            } 
             break;
          }
       }
-      if( found == false )
-         return;
-
-      Khaan* khaan = static_cast< Khaan* >( chain );
-      if( khaan )
-      {
-         khaan->DenyAllFutureData();
-         if( khaan->HasDisconnected() == false )
-         {
-            time_t currentTime;
-            time( &currentTime );
-            khaan->SetTimeForDeletion( currentTime );
-         }
-      }     
+      m_inputChainListMutex.unlock();
    }
 }
 
@@ -451,15 +447,19 @@ void     Diplodocus< InputChain, OutputChain >::SetupListening( int port )
 template< typename InputChain, typename OutputChain >
 void	Diplodocus< InputChain, OutputChain >::AddClientConnection( InputChainType* client )
 {
+   cout << "AddClientConnection:1" << endl;
    LockMutex();
    m_connectedClients.insert(  ClientLookup ( client->GetChainedId(), client ) );
    UnlockMutex();
 
+   cout << "AddClientConnection:2" << endl;
    AddInputChain( client );   
 
    client->RegisterToReceiveNetworkTraffic();
 
+   cout << "AddClientConnection:3" << endl;
    InputConnected( client );
+   cout << "AddClientConnection:4" << endl;
    m_numTotalConnections ++;
 }
 
