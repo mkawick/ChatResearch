@@ -336,7 +336,6 @@ void  ChainedInterface<Type>::CleanupAllChainDependencies()
       while( itOutputs != m_listOfOutputs.end() )
       {
          ChainLink& chainedOutput = *itOutputs++;
-         //ChainedInterface<Type>* interfacePtr = static_cast< ChainedInterface<Type>* >( chainedOutput.m_interface );
          IChainedInterface* interfacePtr = chainedOutput.m_interface;
          ChainType* chainPtr = static_cast< ChainType* >( interfacePtr );
          chainPtr->RemoveInputChain( this );// note the input

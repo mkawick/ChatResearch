@@ -145,25 +145,36 @@ void  DumpBadData( const U8* buffer, U32 numReceivedBytes, U32 bytesParsed )
 
 bool	KhaanProtected::OnDataReceived( const U8* data, int length )
 {
+   cout << "OnDataReceived:1" << endl;
+
    if( m_isInTelnetMode== false && length < BasePacket::GetSize() )// why not sizeof? Because of the virtual pointer
       //&& m_authorizedConnection )
    {
+      cout << "OnDataReceived:too small:" << length << endl;
+      cout << "OnDataReceived:packet size reported :" << BasePacket::GetSize() << endl;
+      cout << "OnDataReceived:packet size:" << sizeof(BasePacket) << endl;
+      cout << "OnDataReceived:pointer size:" << sizeof( long* ) << endl;
+      
       m_isInTelnetMode = true;
       SendTelnetInstructions();
    }
 
+   cout << "OnDataReceived:2" << endl;
    if( m_isInTelnetMode == true )
    {
+      cout << "OnDataReceived:HandleTelnetModeData:" << length << endl;
       return HandleTelnetModeData( data, length );
    }
 
+   cout << "OnDataReceived:3" << endl;
    if( m_denyAllFutureData == true )
    {
       FlushReadBuffer();
       return false;
    }
 
-   if( length > MaxBufferSize )// special case
+   cout << "OnDataReceived:4" << endl;
+   if( ((U32)length) > MaxBufferSize )// special case
    {
       FlushReadBuffer();
 
@@ -172,6 +183,7 @@ bool	KhaanProtected::OnDataReceived( const U8* data, int length )
       return false;
    }
 
+   cout << "OnDataReceived:5" << endl;
    if( IsAuthorized() == false )
    {
       /*if( IsHandshaking( data, length ) == true )
@@ -197,6 +209,7 @@ bool	KhaanProtected::OnDataReceived( const U8* data, int length )
       }      
    }
 
+   cout << "OnDataReceived:6" << endl;
    int offset = 0;
    if( m_isExpectingMoreDataInPreviousPacket )
    {
@@ -234,7 +247,8 @@ bool	KhaanProtected::OnDataReceived( const U8* data, int length )
       m_isExpectingMoreDataInPreviousPacket = false;
    }
 
-   bool result = false;
+   cout << "OnDataReceived:7" << endl;
+   //bool result = false;
    
    //BasePacket* packetIn;
    // catch bad packets, buffer over runs, or other badly formed data.
@@ -255,5 +269,7 @@ bool	KhaanProtected::OnDataReceived( const U8* data, int length )
 
       HandleInwardSerializedPacket( data, offset );
    }
+
+   cout << "OnDataReceived:8" << endl;
    return true;
 }

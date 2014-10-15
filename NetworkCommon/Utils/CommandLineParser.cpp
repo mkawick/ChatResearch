@@ -10,6 +10,7 @@
 #include <boost/algorithm/string.hpp>
 #include <boost/algorithm/string/trim.hpp>
 #include "Utils.h"
+#include "StringUtils.h"
 
 #include "../Logging/server_log.h"
 

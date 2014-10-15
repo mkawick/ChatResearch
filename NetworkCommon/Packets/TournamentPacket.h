@@ -4,6 +4,7 @@
 #include "BasePacket.h"
 #include "PurchasePacket.h"
 
+#pragma pack( push, 4 )
 ///////////////////////////////////////////////////////////////////
 
 class TournamentInfo     //string userUuid.. will be sotred by id using uuid
@@ -270,3 +271,5 @@ public:
 };
 
 ///////////////////////////////////////////////////////////////////
+
+#pragma pack( pop )

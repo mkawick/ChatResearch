@@ -17,6 +17,7 @@ using boost::format;
 #include "../NetworkCommon/Utils/CommandLineParser.h"
 #include "../NetworkCommon/DataTypes.h"
 #include "../NetworkCommon/Utils/Utils.h"
+#include "../NetworkCommon/Utils/StringUtils.h"
 #include "../NetworkCommon/NetworkUtils.h"
 
 #include "../NetworkCommon/Daemon/Daemonizer.h"

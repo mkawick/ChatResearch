@@ -1,6 +1,7 @@
 
 #include "../NetworkCommon/Utils/TableWrapper.h"
 #include "../NetworkCommon/Utils/Utils.h"
+#include "../NetworkCommon/Utils/StringUtils.h"
 #include "StatusUpdate.h"
 
 #include "../NetworkCommon/Packets/ServerToServerPacket.h"

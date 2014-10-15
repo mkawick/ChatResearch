@@ -7,6 +7,7 @@
 #include "../NetworkCommon/Packets/PacketFactory.h"
 
 #include "../NetworkCommon/NetworkIn/DiplodocusTools.h"
+#include "../NetworkCommon/Utils/StringUtils.h"
 
 #include "AssetOrganizer.h"
 
@@ -36,15 +37,17 @@ AssetMainThread :: ~AssetMainThread()
 
 void     AssetMainThread::ServerWasIdentified( IChainedInterface* khaan )
 {
+  /* BasePacket* packet = NULL;
+   PackageForServerIdentification( m_serverName, m_localIpAddress, m_externalIpAddress, m_serverId, m_serverType, m_listeningPort, m_gameProductId, m_isGame, m_isControllerApp, true, m_gatewayType, &packet );
+     ChainedType* localKhaan = static_cast< ChainedType* >( khaan );
+   localKhaan->AddOutputChainData( packet, 0 );*/
+
    BasePacket* packet = NULL;
    PackageForServerIdentification( m_serverName, m_localIpAddress, m_externalIpAddress, m_serverId, m_serverType, m_listeningPort, m_gameProductId, m_isGame, m_isControllerApp, true, m_gatewayType, &packet );
-  /* khaan->AddOutputChainData( packet, 0 );
-   m_serversNeedingUpdate.push_back( static_cast<InputChainType*>( khaan )->GetServerId() );*/
-   ChainedType* localKhaan = static_cast< ChainedType* >( khaan );
-   localKhaan->AddOutputChainData( packet, 0 );
-
-   //Threading::MutexLock locker( m_mutex );
-   //m_serversNeedingUpdate.push_back( localKhaan->GetServerId() );
+   Khaan* localKhaan = static_cast< Khaan* >( khaan );
+   localKhaan->AddOutputChainDataNoLock( packet );
+   // this is not thread safe, but will be invoked from within the same thread.
+   m_clientsNeedingUpdate.push_back( localKhaan->GetChainedId() );
 }
 
 void     AssetMainThread::InputRemovalInProgress( IChainedInterface * chainedInput )
@@ -54,7 +57,7 @@ void     AssetMainThread::InputRemovalInProgress( IChainedInterface * chainedInp
    SetupClientWaitingToBeRemoved( khaan );
 
    string currentTime = GetDateInUTC();
-   string printer = "Client disconnection at time:" + currentTime + " from " + inet_ntoa( khaan->GetIPAddress().sin_addr );
+   string printer = "AssetMainThread::Client disconnection at time:" + currentTime + " from " + inet_ntoa( khaan->GetIPAddress().sin_addr );
    LogMessage( LOG_PRIO_ERR, printer.c_str() );
 
    LogMessage( LOG_PRIO_ERR, "** InputRemovalInProgress" );
@@ -262,6 +265,19 @@ bool     AssetMainThread::LoadAllAssetManifests()
 
 bool     AssetMainThread::AddInputChainData( BasePacket* packet, U32 gatewayId )
 {
+   m_mutex.lock();
+   m_inputPacketsToBeProcessed.push_back( PacketStorage( packet, gatewayId ) );
+   m_mutex.unlock();
+
+   return true;
+}
+//---------------------------------------------------------------
+
+bool     AssetMainThread::ProcessPacket( PacketStorage& storage )
+{
+   BasePacket* packet = storage.packet;
+   U32 gatewayId = storage.gatewayId;
+
    if( packet->packetType == PacketType_GatewayInformation )
    {
       PacketCleaner cleaner( packet );
@@ -550,6 +566,8 @@ int      AssetMainThread::CallbackFunction()
    ExpireOldConnections();
 
    UpdateAllConnections( "KhaanAsset" );
+
+   UpdateInputPacketToBeProcessed();
 
    CategorizedAssetLists::iterator it = m_assetsByCategory.begin();
    while( it != m_assetsByCategory.end() )

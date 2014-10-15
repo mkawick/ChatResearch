@@ -8,6 +8,7 @@
 
 #include "../NetworkCommon/Utils/FileUtils.h"
 #include "../NetworkCommon/Utils/Utils.h"
+#include "../NetworkCommon/Utils/StringUtils.h"
 
 #if PLATFORM == PLATFORM_WINDOWS
 #pragma warning (disable: 4996)

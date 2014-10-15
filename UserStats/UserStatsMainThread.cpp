@@ -23,6 +23,7 @@ using namespace std;
 
 #include "server_stats_plugins.h"
 #include "../NetworkCommon/NetworkIn/DiplodocusTools.h"
+#include "../NetworkCommon/Utils/StringUtils.h"
 
 
 UserStatsMainThread::UserStatsMainThread( const string& serverName, U32 serverId ): ChainedType( serverName, serverId, 0,  ServerType_UserStats )
@@ -49,9 +50,10 @@ void     UserStatsMainThread::ServerWasIdentified( IChainedInterface* khaan )
 {
    BasePacket* packet = NULL;
    PackageForServerIdentification( m_serverName, m_localIpAddress, m_externalIpAddress, m_serverId, m_serverType, m_listeningPort, m_gameProductId, m_isGame, m_isControllerApp, true, m_gatewayType, &packet );
-   ChainedType* localKhaan = static_cast< ChainedType* >( khaan );
-   localKhaan->AddOutputChainData( packet, 0 );
-   m_clientsNeedingUpdate.push_back( localKhaan->GetServerId() );
+   Khaan* localKhaan = static_cast< Khaan* >( khaan );
+   localKhaan->AddOutputChainDataNoLock( packet );
+   // this is not thread safe, but will be invoked from within the same thread.
+   m_clientsNeedingUpdate.push_back( localKhaan->GetChainedId() );
 }
 
 /////////////////////////////////////////////////////////////////////////////////
@@ -63,7 +65,7 @@ void     UserStatsMainThread::InputRemovalInProgress( IChainedInterface * chaine
    SetupClientWaitingToBeRemoved( khaan );
 
    string currentTime = GetDateInUTC();
-   string printer = "Client disconnection at time:" + currentTime + " from " + inet_ntoa( khaan->GetIPAddress().sin_addr );
+   string printer = "UserStatsMainThread::Client disconnection at time:" + currentTime + " from " + inet_ntoa( khaan->GetIPAddress().sin_addr );
    cout << printer << endl;
 
    PrintDebugText( "** InputRemovalInProgress" , 1 );
@@ -71,22 +73,19 @@ void     UserStatsMainThread::InputRemovalInProgress( IChainedInterface * chaine
 
 //---------------------------------------------------------------
 
-int      UserStatsMainThread::MainLoop_InputProcessing()
-{
-   return 0;
-}
-
-int      UserStatsMainThread::MainLoop_OutputProcessing()
+int      UserStatsMainThread::CallbackFunction()
 {
    //UpdateDbResults();
    
-    UpdateAllConnections( "KhaanServerToServer" );
+   UpdateAllConnections( "KhaanServerToServer" );
 
    time_t currentTime;
    time( &currentTime );
 
    int numClients = static_cast< int >( m_connectedClients.size() );
    UpdateConsoleWindow( m_timeOfLastTitleUpdate, m_uptime, m_numTotalConnections, numClients, m_listeningPort, m_serverName );
+
+   UpdateInputPacketToBeProcessed();
 
    CleanupOldClientConnections( "KhaanServerToServer" );
    
@@ -110,6 +109,19 @@ int      UserStatsMainThread::MainLoop_OutputProcessing()
 
 bool     UserStatsMainThread::AddInputChainData( BasePacket* packet, U32 gatewayId )
 {
+   m_mutex.lock();
+   m_inputPacketsToBeProcessed.push_back( PacketStorage( packet, gatewayId ) );
+   m_mutex.unlock();
+
+   return true;
+}
+
+//---------------------------------------------------------------
+
+bool     UserStatsMainThread:: ProcessPacket( PacketStorage& storage )
+{
+   BasePacket* packet = storage.packet;
+   U32 gatewayId = storage.gatewayId;
    // out of process call
    U8 packetType = packet->packetType;
 
@@ -138,6 +150,7 @@ bool     UserStatsMainThread::AddInputChainData( BasePacket* packet, U32 gateway
          return true;
       }
    }
+   PacketCleaner cleaner( packet );
    return false;
 }
 
@@ -189,14 +202,14 @@ bool  UserStatsMainThread::HandlePacketFromClient( BasePacket* packet, U32 gatew
             {
                if( s_StatsPlugins[pRequestFaction->gameType].onRequestGlobalFactionStats != NULL )
                {
-                  s_StatsPlugins[pRequestFaction->gameType].onRequestGlobalFactionStats( this, connectionId );
+                  s_StatsPlugins[pRequestFaction->gameType].onRequestGlobalFactionStats( this, connectionId, gatewayId );
                }
             }
             else
             {
                if( s_StatsPlugins[pRequestFaction->gameType].onRequestPlayerFactionStats != NULL )
                {
-                  s_StatsPlugins[pRequestFaction->gameType].onRequestPlayerFactionStats( this, connectionId, pRequestFaction->userId );
+                  s_StatsPlugins[pRequestFaction->gameType].onRequestPlayerFactionStats( this, connectionId, gatewayId, pRequestFaction->userId );
                }
             }
          }
@@ -212,7 +225,7 @@ bool  UserStatsMainThread::HandlePacketFromClient( BasePacket* packet, U32 gatew
 
             if( s_StatsPlugins[pRequestGameProfile->gameType].onRequestGameProfile != NULL )
             {
-               s_StatsPlugins[pRequestGameProfile->gameType].onRequestGameProfile( this, connectionId,
+               s_StatsPlugins[pRequestGameProfile->gameType].onRequestGameProfile( this, connectionId, gatewayId,
                   pRequestGameProfile->profileUserId, pRequestGameProfile->requestUserId );
             }
          }
@@ -557,11 +570,11 @@ bool     UserStatsMainThread::SendMessageToClient( BasePacket* packet, U32 conne
    return false;
 }
 
-bool  UserStatsMainThread::SendGameData( U32 connectionId, int packetSize, const U8* packet )
+bool  UserStatsMainThread::SendGameData( U32 connectionId, U32 gatewayId, int packetSize, const U8* packet )
 {
    const int MaxSize = PacketGameplayRawData::MaxBufferSize  - sizeof( PacketGatewayWrapper );
    return SendRawData< PacketGameplayRawData, UserStatsMainThread > 
-      ( packet, packetSize, PacketGameplayRawData::Game, MaxSize, GetServerId(), GetGameProductId(), "raw", connectionId, this );
+      ( packet, packetSize, PacketGameplayRawData::Game, MaxSize, GetServerId(), GetGameProductId(), "raw", connectionId, gatewayId, this );
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////

@@ -8,6 +8,7 @@
 #include "../NetworkCommon/Platform.h"
 #include "../NetworkCommon/Version.h"
 #include "../NetworkCommon/Utils/CommandLineParser.h"
+#include "../NetworkCommon/Utils/StringUtils.h"
 
 #if PLATFORM == PLATFORM_WINDOWS
 #pragma warning (disable:4996)

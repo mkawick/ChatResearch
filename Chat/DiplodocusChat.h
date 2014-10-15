@@ -65,10 +65,10 @@ public:
 private:
    ChatUser*    CreateNewUser( U32 connectionId, U32 gatewayId );
 
-   bool     HandleChatPacket( BasePacket* packet, U32 connectionId );
+   bool     HandleChatPacket( BasePacket* packet, U32 gatewayId );
    bool     HandleInvitationPacket( BasePacket* packet, U32 connectionId, U32 gatewayId );
-   bool     HandleLoginPacket( BasePacket* packet, U32 connectionId );
-   bool     HandlePacketFromOtherServer( BasePacket* packet, U32 connectionId );
+   bool     HandleLoginPacket( BasePacket* packet, U32 gatewayId );
+   bool     HandlePacketFromOtherServer( BasePacket* packet, U32 gatewayId );
    bool     HandlePacketFromClient( BasePacket* packet );
    void     PeriodicWriteToDB();
    void     RemoveLoggedOutUsers();
@@ -80,6 +80,7 @@ private:
    void     TrackCountStats( StatTracking stat, float value, int sub_category );
    void     RunHourlyStats();
    void     RunDailyStats();
+   bool     ProcessPacket( PacketStorage& storage );
    int      CallbackFunction();
 
    typedef map< U32, ChatUser* >  UserMap;
@@ -88,7 +89,6 @@ private:
    typedef pair< U32, ChatUser* > UserMapPair;
 
    map< U32, ChatUser* >         m_users;
-   deque< PacketDbQueryResult* > m_dbQueries;
 
    static const int              logoutTimeout = 2 * 60; // two minutes 
 

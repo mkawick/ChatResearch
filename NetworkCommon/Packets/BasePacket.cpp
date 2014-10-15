@@ -107,7 +107,7 @@ int   BasePacket::GetSize()
 { 
    return sizeof( BasePacket ) - 
       3 - //sizeof( padding )
-      sizeof( long*); // this accounts for the virtual pointer.
+      sizeof( long* ); // this accounts for the virtual pointer.
 }
 
 bool  BasePacket::SerializeIn( const U8* data, int& bufferOffset, int minorVersion )

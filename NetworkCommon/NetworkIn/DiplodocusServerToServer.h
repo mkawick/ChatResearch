@@ -50,12 +50,13 @@ private:
    virtual void  CreateJob( const KhaanServerToServer* khaan, BasePacket* packet );
 
    //void	   UpdateAllConnections();
+
+   bool     ProcessPacket( PacketStorage& storage );
    void     SendJobsToUpperLayers();
    int      CallbackFunction();
-   void     HandleInputPackets();
+   void     HandleIdentityInputPackets();
 
    deque< PacketServerJobWrapper* >    m_unprocessedJobs;
-   //deque< Packet* >                    m_inputPacketsToHandle;
    deque< PacketHolder >               m_idPacketsToHandle;
 
    deque<U32>     m_serversNeedingUpdate;

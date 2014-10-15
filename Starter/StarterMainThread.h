@@ -32,8 +32,6 @@ private:
    int      MainLoop_InputProcessing();
    int      MainLoop_OutputProcessing();
    void     UpdateDbResults();
-
-   deque< PacketDbQueryResult* > m_dbQueries;
 };
 
 ///////////////////////////////////////////////////////////////////

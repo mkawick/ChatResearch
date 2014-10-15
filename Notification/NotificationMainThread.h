@@ -66,8 +66,9 @@ private:
 
    void     RemoveExpiredConnections();
 
-   int      MainLoop_InputProcessing();
-   int      MainLoop_OutputProcessing();
+   void     UpdateDbResults();
+   int      CallbackFunction();
+   bool     ProcessPacket( PacketStorage& storage );
 
    bool     HandleUpdateNotificationCount( const PacketNotification_UpdateNotificationCount* unwrappedPacket );
    int      CalculateBadgeNumberFromPendingNotifications( unsigned int userId, unsigned int gameType, int gameId );

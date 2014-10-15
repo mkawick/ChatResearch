@@ -5,6 +5,7 @@
 using boost::format;
 
 #include "../NetworkCommon/Utils/CommandLineParser.h"
+#include "../NetworkCommon/Utils/StringUtils.h"
 #include "../NetworkCommon/Packets/ServerToServerPacket.h"
 #include "../NetworkCommon/Packets/ContactPacket.h"
 #include "../NetworkCommon/Packets/LoginPacket.h"
@@ -68,11 +69,17 @@ void     DiplodocusContact::Init()
 
 void     DiplodocusContact::ServerWasIdentified( IChainedInterface* khaan )
 {
-   BasePacket* packet = NULL;
+ /*  BasePacket* packet = NULL;
    PackageForServerIdentification( m_serverName, m_localIpAddress, m_externalIpAddress, m_serverId, m_serverType, m_listeningPort, m_gameProductId, m_isGame, m_isControllerApp, true, m_gatewayType, &packet );
 
    InputChainType* localKhaan = static_cast< InputChainType* >( khaan );
    localKhaan->AddOutputChainData( packet, 0 );
+   m_clientsNeedingUpdate.push_back( localKhaan->GetChainedId() );*/
+   BasePacket* packet = NULL;
+   PackageForServerIdentification( m_serverName, m_localIpAddress, m_externalIpAddress, m_serverId, m_serverType, m_listeningPort, m_gameProductId, m_isGame, m_isControllerApp, true, m_gatewayType, &packet );
+   Khaan* localKhaan = static_cast< Khaan* >( khaan );
+   localKhaan->AddOutputChainDataNoLock( packet );
+   // this is not thread safe, but will be invoked from within the same thread.
    m_clientsNeedingUpdate.push_back( localKhaan->GetChainedId() );
 }
 
@@ -85,7 +92,7 @@ void     DiplodocusContact::InputRemovalInProgress( IChainedInterface * chainedI
    SetupClientWaitingToBeRemoved( khaan );
 
    string currentTime = GetDateInUTC();
-   string printer = "Client disconnection at time:" + currentTime + " from " + inet_ntoa( khaan->GetIPAddress().sin_addr );
+   string printer = "DiplodocusContact::Client disconnection at time:" + currentTime + " from " + inet_ntoa( khaan->GetIPAddress().sin_addr );
    cout << printer << endl;
 
    PrintDebugText( "** InputRemovalInProgress" , 1 );
@@ -181,34 +188,43 @@ void     DiplodocusContact::HandleExipiredInvitations( const PacketDbQueryResult
 
 bool     DiplodocusContact::AddInputChainData( BasePacket* packet, U32 gatewayId )
 {
-  /* packets handled
+   cout << "DiplodocusContact:: AddInputChainData <<<" << endl;
+   m_mutex.lock();
+   m_inputPacketsToBeProcessed.push_back( PacketStorage( packet, gatewayId ) );
+   m_mutex.unlock();
+   
+   cout << "DiplodocusContact:: AddInputChainData >>>" << endl;
 
-      PacketType_Contact
+   return true;
+}
 
-      invite friend -> send notification to chat server
-      search friends
-      clear invite -> send notification to chat server
-      accept invite -> send notification to chat server
-      remove friend -> send notification to chat server?
-      get user profile info
-      get friend profile info
-      modify user profile  -> push to all friends? Probably not.*/
+//---------------------------------------------------------------
 
-   if( packet->packetType == PacketType_GatewayInformation )
+bool     DiplodocusContact:: ProcessPacket( PacketStorage& storage )
+{
+   BasePacket* packet = storage.packet;
+   U32 gatewayId = storage.gatewayId;
+
+   U8 packetType = packet->packetType;
+
+   cout << "DiplodocusContact:: ProcessPacket <<<" << endl;   
+
+   if( packetType == PacketType_GatewayInformation )
    {
-      PacketCleaner cleaner( packet );
+      cout << "DiplodocusContact:: ProcessPacket ..HandleCommandFromGateway" << endl;  
       return HandleCommandFromGateway( packet, gatewayId );
    }
 
-   if( packet->packetType == PacketType_ServerJobWrapper )
+   if( packetType == PacketType_ServerJobWrapper )
    {
-      PacketCleaner cleaner( packet );
+      cout << "DiplodocusContact:: ProcessPacket ..HandlePacketFromOtherServer" << endl;  
       HandlePacketFromOtherServer( packet, gatewayId );
       return true;
    }
 
    if( packet->packetType == PacketType_GatewayWrapper )
    {
+      cout << "DiplodocusContact:: ProcessPacket .. PacketType_GatewayWrapper" << endl;   
       PacketGatewayWrapper* wrapper = static_cast< PacketGatewayWrapper* >( packet );
       BasePacket* unwrappedPacket = wrapper->pPacket;
       U32 connectionId = wrapper->connectionId;
@@ -222,8 +238,11 @@ bool     DiplodocusContact::AddInputChainData( BasePacket* packet, U32 gatewayId
             return false;
          }
 
+         
+         cout << "DiplodocusContact:: HandleRequestFromClient <<<" << endl;
          PacketContact* packetContact = static_cast< PacketContact* >( unwrappedPacket );
-         bool result = found->second.HandleRequestFromClient( packetContact );
+         UserContact& user = found->second;
+         bool result = user.HandleRequestFromClient( packetContact );
          result = result;
         
          PacketCleaner cleaner( packet );
@@ -235,15 +254,20 @@ bool     DiplodocusContact::AddInputChainData( BasePacket* packet, U32 gatewayId
       }
 
       delete unwrappedPacket;
+      return true;
    }
-   return false;
+
+   cout << "DiplodocusContact:: ProcessPacket >>>" << endl;
+   PacketCleaner cleaner( packet );
+
+   return true;
 }
 
 //---------------------------------------------------------------
 
  UserContact* DiplodocusContact::GetUser( U32 userId )
 {
-   Threading::MutexLock Locker( m_mutex );
+   //Threading::MutexLock Locker( m_mutex );
    UserIdToContactMapIterator it = m_userLookupById.find( userId );
    if( it == m_userLookupById.end() )
       return NULL;
@@ -335,6 +359,8 @@ bool  DiplodocusContact::HandlePacketFromOtherServer( BasePacket* packet, U32 ga
       return false;
    }
 
+   cout << "DiplodocusContact::HandlePacketFromOtherServer <<<" << endl;
+
    PacketServerJobWrapper* wrapper = static_cast< PacketServerJobWrapper* >( packet );
    BasePacket* unwrappedPacket = wrapper->pPacket;
    U32   serverIdLookup = wrapper->serverId;
@@ -377,10 +403,14 @@ bool     DiplodocusContact::AddOutputChainData( BasePacket* packet, U32 connecti
 {
    if( packet->packetType == PacketType_GatewayWrapper )
    {
+      cout << "DiplodocusContact::AddOutputChainData.. PacketType_GatewayWrapper" << endl;
+      
       if( m_connectionIdGateway == 0 )
          return false;
 
-      Threading::MutexLock locker( m_mutex );
+      cout << "DiplodocusContact::AddOutputChainData.. locker( m_mutex ) <<<" << endl;
+      Threading::MutexLock locker( m_inputChainListMutex );
+      cout << "DiplodocusContact::AddOutputChainData.. locker( m_mutex ) >>>" << endl;
 
       ChainLinkIteratorType itInputs = m_listOfInputs.begin();
       while( itInputs != m_listOfInputs.end() )
@@ -391,6 +421,8 @@ bool     DiplodocusContact::AddOutputChainData( BasePacket* packet, U32 connecti
             KhaanServerToServer* khaan = static_cast< KhaanServerToServer* >( inputPtr );
             if( khaan->GetServerId() == m_connectionIdGateway )
             {
+               cout << "DiplodocusContact::AddOutputChainData.. khaan->AddOutputChainData" << endl;
+
                khaan->AddOutputChainData( packet );
                //khaan->Update();// the gateway may not have a proper connection id.
 
@@ -405,11 +437,15 @@ bool     DiplodocusContact::AddOutputChainData( BasePacket* packet, U32 connecti
 
    if( packet->packetType == PacketType_DbQuery )
    {
+      cout << "DiplodocusContact::AddOutputChainData.. PacketType_DbQuery" << endl;
       if( packet->packetSubType == BasePacketDbQuery::QueryType_Result )
       {
          PacketDbQueryResult* dbResult = static_cast<PacketDbQueryResult*>( packet );
 
+         cout << "DiplodocusContact::AddOutputChainData.. locker( m_mutex ) <<<" << endl;
          Threading::MutexLock locker( m_mutex );
+         cout << "DiplodocusContact::AddOutputChainData.. locker( m_mutex ) >>>" << endl;
+
          m_dbQueries.push_back( dbResult );
          return true;
       }
@@ -592,9 +628,10 @@ void     DiplodocusContact::ExpireOldInvitations()
 
 int      DiplodocusContact::CallbackFunction()
 {
-   UpdateDbResults();
-
    CleanupOldClientConnections( "KhaanContact" );
+
+   UpdateDbResults();
+   UpdateInputPacketToBeProcessed();
 
    UpdateAllConnections();
 
@@ -614,7 +651,7 @@ int      DiplodocusContact::CallbackFunction()
 
 void     DiplodocusContact::UpdateAllConnections()
 {
-   m_mutex.lock();
+   //m_mutex.lock();
    UserContactMapIterator it = m_users.begin();
    while( it != m_users.end() )
    {
@@ -634,7 +671,7 @@ void     DiplodocusContact::UpdateAllConnections()
          contact.Update();
       }
    }
-   m_mutex.unlock();
+   //m_mutex.unlock();
 
    Parent::UpdateAllConnections( "KhaanContact" );
 }
@@ -643,7 +680,7 @@ void     DiplodocusContact::UpdateAllConnections()
 
 bool  DiplodocusContact::UpdateUser( const string& userUuid, U32 connectionId, U32 gatewayId)
 {
-   Threading::MutexLock Locker( m_mutex );
+   //Threading::MutexLock Locker( m_mutex );
    UserContactMapIterator it = m_users.begin();
    while( it != m_users.end() )
    {
@@ -680,6 +717,7 @@ bool  DiplodocusContact::UpdateUser( const string& userUuid, U32 connectionId, U
 
 bool     DiplodocusContact::ConnectUser( const PacketPrepareForUserLogin* loginPacket )
 {
+   cout << "DiplodocusContact::ConnectUser <<<" << endl;
    U32 connectionId = loginPacket->connectionId;
    string uuid = loginPacket->uuid;
    U32 gatewayId = loginPacket->gatewayId;
@@ -690,6 +728,7 @@ bool     DiplodocusContact::ConnectUser( const PacketPrepareForUserLogin* loginP
    if( it != m_users.end() )
       return false;
 
+   cout << "DiplodocusContact::ConnectUser .. update user" << endl;
    // if the user is already here but relogged, simply has a new connectionId
    bool wasUpdated = UpdateUser( uuid, connectionId, gatewayId );
    if( wasUpdated == false )
@@ -705,14 +744,16 @@ bool     DiplodocusContact::ConnectUser( const PacketPrepareForUserLogin* loginP
       ui.passwordHash =    loginPacket->password;
       ui.id =              loginPacket->userId;
 
+      cout << "DiplodocusContact::ConnectUser .. new user" << endl;
       UserContact user( ui, connectionId, gatewayId );
       user.SetServer( this );
 
-      m_mutex.lock();
+      //m_mutex.lock();
       m_users.insert( UserContactPair( connectionId, user ) );
       m_userLookupById.insert( UserIdToContactPair( ui.id, connectionId ) );
-      m_mutex.unlock();
+      //m_mutex.unlock();
    }
+   cout << "DiplodocusContact::ConnectUser >>>" << endl;
    return true;
 }
 
@@ -720,6 +761,7 @@ bool     DiplodocusContact::ConnectUser( const PacketPrepareForUserLogin* loginP
 
 bool     DiplodocusContact::DisconnectUser( const PacketPrepareForUserLogout* logoutPacket )
 {
+   cout << "DiplodocusContact::DisconnectUser <<<" << endl;
    //LogMessage( LOG_PRIO_INFO, "Prep for logout: %d, %s", logoutPacket->connectionId, logoutPacket->uuid.c_str() );
    LogMessage_LogoutPacket( logoutPacket );
 
@@ -729,9 +771,12 @@ bool     DiplodocusContact::DisconnectUser( const PacketPrepareForUserLogout* lo
    if( it == m_users.end() )
       return false;
 
+   cout << "DiplodocusContact::DisconnectUser .. NeedsUpdate " << endl;
    it->second.NeedsUpdate();
+   cout << "DiplodocusContact::DisconnectUser .. UserLoggedOut " << endl;
    it->second.UserLoggedOut();
 
+   cout << "DiplodocusContact::DisconnectUser >>>" << endl;
    return true;
 }
 
@@ -739,13 +784,17 @@ bool     DiplodocusContact::DisconnectUser( const PacketPrepareForUserLogout* lo
 
 bool     DiplodocusContact::UpdateUserProfile( const PacketUserUpdateProfile* profile )
 {
+   cout << "DiplodocusContact::UpdateUserProfile <<<" << endl;
    U32 connectionId = profile->connectionId;
 
    UserContactMapIterator it = m_users.find( connectionId );
    if( it == m_users.end() )
       return false;
 
+   cout << "DiplodocusContact::UpdateProfile ---" << endl;
    it->second.UpdateProfile( profile );
+
+   cout << "DiplodocusContact::UpdateUserProfile >>>" << endl;
 
    return true;
 }
@@ -899,7 +948,7 @@ bool     DiplodocusContact::SendMessageToClient( BasePacket* packet, U32 connect
 {
    if( packet->packetType == PacketType_GatewayWrapper )// this is already wrapped up and ready for the gateway... send it on.
    {
-      Threading::MutexLock locker( m_mutex );
+      //Threading::MutexLock locker( m_inputChainListMutex );
 
       ClientMapIterator itInputs = m_connectedClients.begin();
       while( itInputs != m_connectedClients.end() )// only one output currently supported.
@@ -908,7 +957,7 @@ bool     DiplodocusContact::SendMessageToClient( BasePacket* packet, U32 connect
          if( khaan->GetChainedType() == ChainedType_InboundSocketConnector && 
             khaan->GetServerId() == gatewayId )
          {
-            khaan->AddOutputChainData( packet );
+            khaan->AddOutputChainData( packet, connectionId );
             m_clientsNeedingUpdate.push_back( khaan->GetChainedId() );
          }
          itInputs++;
@@ -918,7 +967,7 @@ bool     DiplodocusContact::SendMessageToClient( BasePacket* packet, U32 connect
 
    if( packet->packetType == PacketType_DbQuery )
    {
-      Threading::MutexLock locker( m_outputChainListMutex );
+      //Threading::MutexLock locker( m_outputChainListMutex );
       // we don't do much interpretation here, we simply pass output data onto our output, which should be the DB or other servers.
       ChainLinkIteratorType itOutputs = m_listOfOutputs.begin();
       while( itOutputs != m_listOfOutputs.end() )// only one output currently supported.

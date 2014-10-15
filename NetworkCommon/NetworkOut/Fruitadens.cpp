@@ -3,6 +3,7 @@
 #include "../ServerConstants.h"
 #include "../Packets/Serialize.h"
 #include "../Utils/Utils.h"
+#include "../Utils/StringUtils.h"
 #include "../NetworkUtils.h"
 
 #include <iostream>
@@ -79,21 +80,32 @@ Fruitadens::~Fruitadens()
 bool        Fruitadens :: AddOutputChainData( BasePacket* packet, U32 filingData )
 {
    if( FilterOutwardPacket( packet ) == false )
+   {
+      cout << "Fruitadens :: AddOutputChainData ... was filtered" << endl;
       return false;
+   }
 
    //bool didLock = false;
    //if( m_outputChainListMutex.IsLocked() == false )
    {
       //didLock = true;
+      //cout << "Fruitadens :: AddOutputChainData.. lock " << endl;
       m_outputChainListMutex.lock();
    }
-
-   m_packetsReadyToSend.push_back( packet );
+   AddOutputChainDataNoLock( packet );
+   
    //if( didLock == true )
    {
+      //cout << "Fruitadens :: AddOutputChainData.. unlock " << endl;
       m_outputChainListMutex.unlock();
    }
 
+   return true;
+}
+
+bool        Fruitadens :: AddOutputChainDataNoLock( BasePacket* packet )
+{
+   m_packetsReadyToSend.push_back( packet );
    return true;
 }
 
@@ -300,7 +312,7 @@ int   Fruitadens :: MainLoop_InputProcessing()
 
       // pull everything off of the socket as quickly as possible to prevent packet loss 
       // witnessed during the development of the asset server. Over 1/3 of packets were lost.   
-      numBytesReceived = static_cast< int >( recv( m_clientSocket, (char*) buffer, remainingBufferSize, NULL ) );
+      numBytesReceived = static_cast< int >( recv( m_clientSocket, (char*) buffer, remainingBufferSize, 0 ) );
 
       if( numBytesReceived != SOCKET_ERROR && numBytesReceived != 0 )
       {
@@ -409,6 +421,11 @@ void  Fruitadens::PostProcessInputPackets( int bytesRead )
 
       if( parseResult == true )
       {
+         int len = size;
+         if( len > 16 )
+            len = 16;
+         DumpBuffer( m_receiveBuffer, offset, len );
+
          m_numPacketsReceived ++;
          if( m_extensiveLogging == true )
             LogMessage( LOG_PRIO_ERR, "Fruitadens :: MainLoop_InputProcessing .. HandlePacketReceived before" );
@@ -703,6 +720,8 @@ void     FruitadensServer::InitialDisconnectionCallback()
 
 bool     FruitadensServer::PackageLocalServerIdentificationToSend()
 {
+   //cout << "FruitadensServer::PackageLocalServerIdentificationToSend" << endl;
+
    if( m_extensiveLogging == true )
       LogMessage( LOG_PRIO_INFO, "FruitadensServer::PackageLocalServerIdentificationToSend" );
 
@@ -726,9 +745,9 @@ bool     FruitadensServer::PackageLocalServerIdentificationToSend()
                                    &packet );
    if( m_extensiveLogging == true )
       LogMessage( LOG_PRIO_INFO, "FruitadensServer::PackageForServerIdentification .. AddOutputChainData" );
-   if( AddOutputChainData( packet, 0 ) == false )
+   if( AddOutputChainDataNoLock( packet ) == false )
    {
-      if( m_extensiveLogging == true )
+      //if( m_extensiveLogging == true )
       LogMessage( LOG_PRIO_INFO, "FruitadensServer::PackageForServerIdentification .. packet was filtered" );
       PacketFactory factory;
       factory.CleanupPacket( packet );

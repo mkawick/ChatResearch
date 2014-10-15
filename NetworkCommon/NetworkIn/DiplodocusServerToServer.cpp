@@ -56,7 +56,7 @@ void  DiplodocusServerToServer::InputRemovalInProgress( IChainedInterface* chain
    SetupClientWaitingToBeRemoved( khaan );
 
    string currentTime = GetDateInUTC();
-   string printer = "Client disconnection at time:" + currentTime + " from " + inet_ntoa( khaan->GetIPAddress().sin_addr );
+   string printer = "DiplodocusServerToServer::Client disconnection at time:" + currentTime + " from " + inet_ntoa( khaan->GetIPAddress().sin_addr );
    LogMessage( LOG_PRIO_INFO, printer.c_str() );
 
    LogMessage( LOG_PRIO_INFO, "** InputRemovalInProgress" );
@@ -83,11 +83,31 @@ U32   DiplodocusServerToServer::FindServerIdByType( U32 type )
 //////////////////////////////////////////////////////////////////////////
 
 // this will always be data coming from other servers or at least from the outside in.
-bool   DiplodocusServerToServer::AddInputChainData( BasePacket* packet, U32 connectionId ) 
+bool     DiplodocusServerToServer::AddInputChainData( BasePacket* packet, U32 gatewayId ) 
 {
-   cout << "DiplodocusServerToServer::AddInputChainData" << endl;
+   m_mutex.lock();
+   m_inputPacketsToBeProcessed.push_back( PacketStorage( packet, gatewayId ) );
+   m_mutex.unlock();
+
+   return true;
+}
+
+//---------------------------------------------------------------
+
+bool     DiplodocusServerToServer:: ProcessPacket( PacketStorage& storage )
+{
+   // we are already locked at this point.
+
+   BasePacket* packet = storage.packet;
+   U32 gatewayId = storage.gatewayId;
+   gatewayId = gatewayId;// compiler warning
+
+   U8 packetType = packet->packetType;
+   
+
+   cout << "DiplodocusServerToServer::ProcessPacket" << endl;
    //LogMessage( LOG_PRIO_INFO, "DiplodocusServerToServer::AddInputChainData( " );
-   if( packet->packetType == PacketType_ServerToServerWrapper )
+   if( packetType == PacketType_ServerToServerWrapper )
    {
       //HandleCommandFromGateway( packet, connectionId );
       PacketServerToServerWrapper* wrapper = static_cast< PacketServerToServerWrapper* >( packet );
@@ -95,36 +115,50 @@ bool   DiplodocusServerToServer::AddInputChainData( BasePacket* packet, U32 conn
       U32         serverId = wrapper->serverId;
 
       //LogMessage( LOG_PRIO_INFO, "AddInputChainData start lock" );
-      Threading::MutexLock locker( m_mutex );
-      //LogMessage( LOG_PRIO_INFO, "AddInputChainData finish lock" );
 
-      bool  found = false;
       KhaanServerToServer* khaan = NULL;
-      ChainLinkIteratorType itInputs = m_listOfInputs.begin();
-      while( itInputs != m_listOfInputs.end() )
+      // create scope for lock
       {
-         ChainLink& chainedInput = *itInputs++;
-	      IChainedInterface* interfacePtr = chainedInput.m_interface;
-         khaan = static_cast< KhaanServerToServer* >( interfacePtr );
+         //Threading::MutexLock locker( m_mutex );
+         LogMessage( LOG_PRIO_INFO, "ProcessPacket .. find input to send" );
 
-         if( serverId == khaan->GetServerId() )
+         bool  found = false;
+         
+         ChainLinkIteratorType itInputs = m_listOfInputs.begin();
+         while( itInputs != m_listOfInputs.end() )
          {
-            found = true;
-            break;
+            ChainLink& chainedInput = *itInputs++;
+	         IChainedInterface* interfacePtr = chainedInput.m_interface;
+            khaan = static_cast< KhaanServerToServer* >( interfacePtr );
+
+            if( serverId == khaan->GetServerId() )
+            {
+               found = true;
+               break;
+            }
          }
-      }
-      if( found == false || khaan == NULL )
-      {
-         //assert( 0 );
-         return false;
+         if( found == false || khaan == NULL )
+         {
+            LogMessage( LOG_PRIO_INFO, "ProcessPacket .. did not find input.. tossing result" );
+            PacketFactory factory;
+            factory.CleanupPacket( unwrappedPacket );
+            return false;
+         }
       }
       
 
+      LogMessage( LOG_PRIO_INFO, "ProcessPacket .. creating job" );
       // create job for this packet including the serverId, a unique job id, and so on. Keep in mind that the connection may disappear
       // during the servicing of this job
       CreateJob( khaan, unwrappedPacket );
 
       return true;
+   }
+   else
+   {
+      LogMessage( LOG_PRIO_INFO, "ProcessPacket .. packet is wrong type" );
+      PacketFactory factory;
+      factory.CleanupPacket( packet );
    }
 
    return true;
@@ -140,18 +174,18 @@ void  DiplodocusServerToServer::ServerWasIdentified( IChainedInterface* khaan )
    PackageForServerIdentification( m_serverName, m_localIpAddress, m_externalIpAddress, m_serverId, m_serverType, m_listeningPort, m_gameProductId, m_isGame, m_isControllerApp, true, m_gatewayType, &packet );
    ChainedType* localKhaan = static_cast< ChainedType* >( khaan );
    
-   LockMutex();
+   //LockMutex();
    m_idPacketsToHandle.push_back( PacketHolder( localKhaan->GetChainedId(), packet ) );
-   UnlockMutex();
+   //UnlockMutex();
 }
 
 //////////////////////////////////////////////////////////////////////////
 
-void  DiplodocusServerToServer::HandleInputPackets()
+void  DiplodocusServerToServer::HandleIdentityInputPackets()
 {
    LockMutex();
-   deque< PacketHolder >  tempQueue = m_idPacketsToHandle;
-   m_idPacketsToHandle.clear();
+      deque< PacketHolder >  tempQueue = m_idPacketsToHandle;
+      m_idPacketsToHandle.clear();
    UnlockMutex();
 
    U32 numPacketsToProcess = tempQueue.size();
@@ -168,28 +202,33 @@ void  DiplodocusServerToServer::HandleInputPackets()
       PacketHolder holder = tempQueue.front();
       tempQueue.pop_front();
 
-      m_inputChainListMutex.lock();
       KhaanServerToServer* localKhaan = NULL;
-      ChainLinkIteratorType itInputs = m_listOfInputs.begin();
-      while( itInputs != m_listOfInputs.end() )
+      LogMessage( LOG_PRIO_INFO, "DiplodocusServerToServer::HandleInputPackets .. entering lock" );
+      m_inputChainListMutex.lock();
       {
-         ChainLink& chainedInput = *itInputs++;
-
-         IChainedInterface* interfacePtr = chainedInput.m_interface;
-         KhaanServerToServer* tempKhaan = static_cast< KhaanServerToServer* >( interfacePtr );
-         if( tempKhaan->GetChainedId() == holder.chainIdOfInputConnection )
+         ChainLinkIteratorType itInputs = m_listOfInputs.begin();
+         while( itInputs != m_listOfInputs.end() )
          {
-            localKhaan = tempKhaan;
-            break;
+            ChainLink& chainedInput = *itInputs++;
+
+            IChainedInterface* interfacePtr = chainedInput.m_interface;
+            KhaanServerToServer* tempKhaan = static_cast< KhaanServerToServer* >( interfacePtr );
+            if( tempKhaan->GetChainedId() == holder.chainIdOfInputConnection )
+            {
+               localKhaan = tempKhaan;
+               break;
+            }
          }
       }
       m_inputChainListMutex.unlock();
+      LogMessage( LOG_PRIO_INFO, "DiplodocusServerToServer::HandleInputPackets .. exit lock" );
+
       if( localKhaan == NULL )
       {
          factory.CleanupPacket( holder.pPacket );
          continue;
       }
-    /*  //LogMessage( LOG_PRIO_INFO, "DiplodocusServerToServer::ServerWasIdentified .. return data to new client" );
+    /*  //LogMessage( LOG_PRIO_INFO, "DiplodocusServerToServer::HandleInputPackets .. return data to new client" );
       LogMessage( LOG_PRIO_INFO, "    m_serverName:     %s", m_serverName.c_str() );
       LogMessage( LOG_PRIO_INFO, "    m_localIpAddress: %s", m_localIpAddress.c_str() );
       LogMessage( LOG_PRIO_INFO, "    m_serverId:       %u", m_serverId );
@@ -197,10 +236,10 @@ void  DiplodocusServerToServer::HandleInputPackets()
       LogMessage( LOG_PRIO_INFO, "    m_serverType:     %u", m_serverType );
       LogMessage( LOG_PRIO_INFO, "    m_isControllerApp:%d", m_isControllerApp );*/
       
-      //LogMessage( LOG_PRIO_INFO, "DiplodocusServerToServer::ServerWasIdentified .. AddOutputChainData" );
+      LogMessage( LOG_PRIO_INFO, "DiplodocusServerToServer::HandleInputPackets .. AddOutputChainData" );
       
       localKhaan->AddOutputChainData( holder.pPacket, 0 );
-      //LogMessage( LOG_PRIO_INFO, "DiplodocusServerToServer::ServerWasIdentified .. MarkConnectionAsNeedingUpdate" );
+      LogMessage( LOG_PRIO_INFO, "DiplodocusServerToServer::HandleInputPackets .. MarkConnectionAsNeedingUpdate" );
       
       MarkConnectionAsNeedingUpdate( holder.chainIdOfInputConnection );
 
@@ -219,10 +258,10 @@ void  DiplodocusServerToServer::HandleInputPackets()
       idPacket->gatewayType   =     localKhaan->GetGatewayType();
       idPacket->externalIpAddress = localKhaan->GetExternalIpAddress();
       
-      //LogMessage( LOG_PRIO_INFO, "DiplodocusServerToServer::ServerWasIdentified .. CreateJob" );
+      LogMessage( LOG_PRIO_INFO, "DiplodocusServerToServer::HandleInputPackets .. CreateJob" );
       
       CreateJob( localKhaan, idPacket );
-      //LogMessage( LOG_PRIO_INFO, "DiplodocusServerToServer::ServerWasIdentified .. exit" );
+      LogMessage( LOG_PRIO_INFO, "DiplodocusServerToServer::HandleInputPackets .. exit" );
    }
 
 }
@@ -250,6 +289,11 @@ void     DiplodocusServerToServer::SendJobsToUpperLayers()
       m_unprocessedJobs.clear();
    UnlockMutex();
 
+   if( queueOfJobs.size() == 0 )
+   {
+      return;
+   }
+   cout << "DiplodocusServerToServer::SendJobsToUpperLayers:: jobs to send" << endl;
    PacketFactory factory;
    while( queueOfJobs.size() )
    {
@@ -259,9 +303,15 @@ void     DiplodocusServerToServer::SendJobsToUpperLayers()
       ChainLinkIteratorType itOutputs = m_listOfOutputs.begin();
       if( itOutputs != m_listOfOutputs.end() )// we should only have one of these
       {
-         if( static_cast< ChainType*> ( itOutputs->m_interface)->AddInputChainData( wrapper, wrapper->serverId ) == false )
+         if( static_cast< ChainType*> ( itOutputs->m_interface)->AddInputChainData( wrapper, wrapper->serverId ) == true )
          {
-            Log(" Bad S2S packet ", 4);
+            cout << "DiplodocusServerToServer::SendJobsToUpperLayers:: success" << endl;
+         }
+         else
+         {
+            BasePacket* pPacket = wrapper->pPacket;
+            LogMessage( LOG_PRIO_ERR, " Bad S2S Packet: %u: %u", (U32) pPacket->packetType, (U32) pPacket->packetSubType );
+            //Log(" Bad S2S packet ", 4);
             BasePacket* packet = static_cast< BasePacket* >( wrapper );
             factory.CleanupPacket( packet );
          }
@@ -331,7 +381,8 @@ int   DiplodocusServerToServer::CallbackFunction()
 {
    CleanupOldClientConnections( "KhaanServerToServer" );
 
-   HandleInputPackets();
+   UpdateInputPacketToBeProcessed();
+   HandleIdentityInputPackets();
    UpdateAllConnections( "KhaanServerToServer" );
    SendJobsToUpperLayers();
 

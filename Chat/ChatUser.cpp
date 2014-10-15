@@ -326,6 +326,7 @@ struct ChatHistoryLookupData
 
 void     ChatUser::QueryChatChannelHistory( const string& channelUuid, int numRecords, int startingIndex, const string& startingTimestamp  )
 {
+   cout << "ChatUser::QueryChatChannelHistory" << endl;
    // SELECT chat.text, user.name, chat.timestamp, chat.game_turn
    // FROM chat as chat, user as user
    // where chat_channel_id='ABCDEFGHIJKLMNOP' 
@@ -527,6 +528,7 @@ void     ChatUser::GetAllChatHistroySinceLastLogin()
 
 bool     ChatUser::HandleDbResult( PacketDbQueryResult * dbResult )
 {
+   cout << "ChatUser::HandleDbResult" << endl;
    BasePacket* packet = static_cast<BasePacket*>( dbResult );
    PacketCleaner cleaner( packet );
    //const int maxNumMessagesPerPacket = 20;
@@ -659,6 +661,7 @@ void     ChatUser::LoadUserProfile( const PacketDbQueryResult * dbResult )
 
 void     ChatUser::SendChatChannelHistoryToClient( const PacketDbQueryResult * dbResult )
 {
+   cout << "ChatUser::SendChatChannelHistoryToClient" << endl;
    if( dbResult->bucket.bucket.size() == 0 )
    {
       m_chatServer->SendErrorToClient( m_connectionId, m_gatewayId, PacketErrorReport::ErrorType_NoChatHistoryExistsOnSelectedChannel );
@@ -979,7 +982,9 @@ bool     ChatUser::SendMessageToClient( BasePacket* packet ) const
    PacketGatewayWrapper* wrapper = new PacketGatewayWrapper();
    wrapper->SetupPacket( packet, m_connectionId );
 
+   cout << "ChatUser::SendMessageToClient <<<" << endl;
    m_chatServer->SendMessageToClient( wrapper, m_connectionId, m_gatewayId );
+   cout << "ChatUser::SendMessageToClient >>>" << endl;
    return true;
 }
 

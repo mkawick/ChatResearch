@@ -6,6 +6,7 @@
 #include "../Packets/PacketFactory.h"
 #include "../Packets/ServerToServerPacket.h"
 #include "../Utils/Utils.h"
+#include "../Utils/StringUtils.h"
 
 #include "../NetworkOut/Fruitadens.h"
 

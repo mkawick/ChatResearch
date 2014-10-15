@@ -17,11 +17,15 @@
 #include <boost/lexical_cast.hpp>
 
 #include "DiplodocusGame.h"
-#include "FruitadensServerToServer.h"
+
 
 #include "../NetworkCommon/Version.h"
 #include "../NetworkCommon/Packets/ServerToServerPacket.h"
 #include "../NetworkCommon/NetworkIn/DiplodocusServerToServer.h"
+
+#include "../NetworkCommon/NetworkOut/FruitadensServerToServer.h"
+
+#include "../NetworkCommon/Utils/StringUtils.h"
 
 using namespace std;
 
@@ -108,13 +112,16 @@ int main(int argc, const char* argv[])
    middleware->SetupListening( listenPort );
    middleware->SetAsGame();
 
-   FruitadensServerToServer chatControl( "fruity to chat" );
-   chatControl.SetConnectedServerType( ServerType_Chat );
-   chatControl.SetServerId( static_cast< U32>( serverUniqueHashValue ) );
+   /*FruitadensServerToServer chatControl( "fruity to chat" );
+   chatControl.SetConnectedServerType( ServerType_Chat );*/
+   //chatControl.SetServerId( static_cast< U32>( serverUniqueHashValue ) );
    
-   chatControl.Connect( chatServerAddressForGames.c_str(), chatServerPort );
+  /* chatControl.Connect( chatServerAddressForGames.c_str(), chatServerPort );
    chatControl.Resume();
    chatControl.NotifyEndpointOfIdentification( serverName, listenAddressString, static_cast< U32 >( serverUniqueHashValue ), ServerType_GameInstance, listenPort, GameProductId_SUMMONWAR, true, false, true, false, "" );
+*/
+   FruitadensServerToServer* connection = PrepConnection< FruitadensServerToServer, DiplodocusGame > ( chatServerAddressForGames, chatServerPort,    "chat",       middleware, ServerType_Chat, false );
+   connection = connection;// compiler warning
 
    DiplodocusServerToServer* s2s = new DiplodocusServerToServer( serverName, serverId, 0, ServerType_GameInstance );
    s2s->SetAsGame();
@@ -122,7 +129,7 @@ int main(int argc, const char* argv[])
 
    //----------------------------------------------------------------
    s2s->AddOutputChain( middleware );
-   middleware->AddOutputChain( &chatControl );
+   //middleware->AddOutputChain( &chatControl );
 
    middleware->Init();
    middleware->Run();

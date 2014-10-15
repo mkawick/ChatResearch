@@ -73,6 +73,12 @@ void  KhaanGateway::PreCleanup()
       }
       // order really matters here... this function must come last
       static_cast< MainGatewayThread* >( m_mainOutputChain )->InputRemovalInProgress( this );
+
+      m_isDisconnected = true;
+      DenyAllFutureData();
+      time_t currentTime;
+      time( &currentTime );
+      SetTimeForDeletion( currentTime );
    }
 }
 
@@ -83,9 +89,12 @@ bool	KhaanGateway :: Update()
    if( m_isDisconnected ) // no update for you
       return false;
 
-   UpdateInwardPacketList();
+   if( m_hasPacketsReceived == true )
+   {
+      UpdateInwardPacketList();
+   }
 
-   if( ShouldDelayOutput() == false )
+   if(  m_hasPacketsToSend == true && ShouldDelayOutput() == false )
    {
       UpdateOutwardPacketList();
    }
@@ -93,7 +102,7 @@ bool	KhaanGateway :: Update()
    // I think that this makes sense
    CleanupAllEvents();
 
-   if( m_packetsOut.size() || m_packetsIn.size() )// we didn't finish
+   if( m_hasPacketsToSend || m_hasPacketsReceived )// we didn't finish
    {
       string loggingText = "Remaining packet out count: ";
       loggingText += boost::lexical_cast< string >( m_packetsOut.size() );

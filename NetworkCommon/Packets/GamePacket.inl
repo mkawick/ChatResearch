@@ -2,8 +2,9 @@
 ////////////////////////////////////////////////////////
 
 template< typename PacketType, typename Processor >
-bool  SendRawData( const U8* data, int size, int dataType, int maxPacketSize, U32 serverId, U8 productId, const string& identifier, U32 connectionId, Processor* sender ) // diplodocus supposedly
+bool  SendRawData( const U8* data, int size, int dataType, int maxPacketSize, U32 serverId, U8 productId, const string& identifier, U32 connectionId, U32 gatewayId, Processor* sender ) // diplodocus supposedly
 {
+   cout << "Send raw data <<< " << endl;
    PacketFactory factory;
    const U8* workingData = data;
    int remainingSize = size;
@@ -27,16 +28,21 @@ bool  SendRawData( const U8* data, int size, int dataType, int maxPacketSize, U3
       responsePacket->gameProductId    = productId;
       responsePacket->dataType         = dataType;
       
-      PacketGatewayWrapper* wrapper    = new PacketGatewayWrapper;
-      wrapper->SetupPacket( responsePacket, connectionId );
+     /* PacketGatewayWrapper* wrapper    = new PacketGatewayWrapper;
+      wrapper->SetupPacket( responsePacket, connectionId );*/
 
-      if( sender->AddOutputChainData( wrapper, connectionId ) == false )
+      cout << "Send raw data sending data" << endl;
+      // this will be wrapped by the invoked function
+      if( sender->SendPacketToGateway( responsePacket, connectionId, gatewayId ) == false )
       {
-         BasePacket* tempPack = static_cast< BasePacket* >( wrapper );
+         cout << "Send raw data >>> bad send " << endl;
+         cout << "   connectionId = " << connectionId << endl;
+         BasePacket* tempPack = static_cast< BasePacket* >( responsePacket );
          factory.CleanupPacket( tempPack );
          
          return false;
       }
+      cout << "Send raw data send good" << endl;
 
       remainingSize -= sizeToSend;
       workingData += sizeToSend;// offset the pointer
@@ -44,6 +50,7 @@ bool  SendRawData( const U8* data, int size, int dataType, int maxPacketSize, U3
       if( remainingSize <= 0 )
          break;
    }
+   cout << "Send raw data >>> " << endl;
    return true;
 }
 

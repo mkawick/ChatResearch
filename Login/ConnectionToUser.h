@@ -49,6 +49,7 @@ struct ConnectionToUser
 
    LoginStatus GetLoginStatus() const { return status; }
    void     IncreaseLoginAttemptCount() { ++m_loginAttemptCount; }
+   void     ClearLoginAttemptCount() { m_loginAttemptCount = 0; }
    int      GetLoginAttemptCount() const { return m_loginAttemptCount; }
 
    void     SetGatewayId( U32 gatewayId ) { m_connectionDetails.gatewayId = gatewayId; }

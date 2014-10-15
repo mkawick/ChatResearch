@@ -12,6 +12,8 @@
 #include <iostream>
 #endif
 
+#pragma pack( push, 4 )
+
 ////////////////////////////////////////////////////////
 
 template < int str_length = 16 >
@@ -120,3 +122,7 @@ typedef BoundedLengthString<   8 > BoundedStringTiny;
 ////////////////////////////////////////////////////////
 
 #include "FixedLengthString.inl"
+
+////////////////////////////////////////////////////////
+
+#pragma pack( pop )

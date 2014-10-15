@@ -108,7 +108,7 @@ ChatUser* DiplodocusChat::UpdateExistingUsersConnectionId( const string& uuid, U
 
 ChatUser* DiplodocusChat::GetUser( U32 connectionId )
 {
-   Threading::MutexLock locker( m_mutex );
+   //Threading::MutexLock locker( m_mutex );
    UserMapIterator it = m_users.find( connectionId );
    if( it == m_users.end() )
       return NULL;
@@ -131,7 +131,7 @@ ChatUser* DiplodocusChat::GetUser( U32 connectionId )
 
 ChatUser*   DiplodocusChat::GetUserById( U32 userId )
 {
-   Threading::MutexLock locker( m_mutex );
+   //Threading::MutexLock locker( m_mutex );
    UserMapIterator it = m_users.begin();
    while( it != m_users.end() )
    {
@@ -147,7 +147,7 @@ ChatUser*   DiplodocusChat::GetUserById( U32 userId )
 
 ChatUser*   DiplodocusChat::GetUserByUuid( const string& uuid )
 {
-   Threading::MutexLock locker( m_mutex );
+   //Threading::MutexLock locker( m_mutex );
    UserMapIterator it = m_users.begin(); 
    while( it != m_users.end() )
    {
@@ -163,7 +163,7 @@ ChatUser*   DiplodocusChat::GetUserByUuid( const string& uuid )
 
 ChatUser*   DiplodocusChat::GetUserByUsername( const string& userName )
 {
-   Threading::MutexLock locker( m_mutex );
+   //Threading::MutexLock locker( m_mutex );
    UserMapIterator it = m_users.begin(); 
    while( it != m_users.end() )
    {
@@ -179,7 +179,7 @@ ChatUser*   DiplodocusChat::GetUserByUsername( const string& userName )
 
 ChatUser*    DiplodocusChat::GetUserByConnectionId( U32 ConnectionId )
 {
-   Threading::MutexLock locker( m_mutex );
+   //Threading::MutexLock locker( m_mutex );
    UserMapIterator it = m_users.begin(); 
    while( it != m_users.end() )
    {
@@ -193,7 +193,7 @@ ChatUser*    DiplodocusChat::GetUserByConnectionId( U32 ConnectionId )
 
 string      DiplodocusChat::GetUserUuidByConnectionId( U32 connectionId )
 {
-   Threading::MutexLock locker( m_mutex );
+   //Threading::MutexLock locker( m_mutex );
    const ChatUser*  user = GetUserByConnectionId( connectionId );
    if( user == NULL )
       return string();
@@ -202,7 +202,7 @@ string      DiplodocusChat::GetUserUuidByConnectionId( U32 connectionId )
 
 void        DiplodocusChat::GetUserConnectionId( const string& uuid, U32& connectionId, U32& gatewayId )
 {
-   Threading::MutexLock locker( m_mutex );
+   //Threading::MutexLock locker( m_mutex );
    connectionId = 0;
 
    ChatUser* user = GetUserByUuid( uuid );
@@ -215,7 +215,7 @@ void        DiplodocusChat::GetUserConnectionId( const string& uuid, U32& connec
 
 string      DiplodocusChat::GetUserName( const string& uuid )
 {
-   Threading::MutexLock locker( m_mutex );
+   //Threading::MutexLock locker( m_mutex );
    const ChatUser*  user = GetUserByUuid( uuid );
    if( user == NULL )
       return string();
@@ -227,11 +227,18 @@ string      DiplodocusChat::GetUserName( const string& uuid )
 
 void     DiplodocusChat::ServerWasIdentified( IChainedInterface* khaan )
 {
+   /*
    BasePacket* packet = NULL;
    PackageForServerIdentification( m_serverName, m_localIpAddress, m_externalIpAddress, m_serverId, m_serverType, m_listeningPort, m_gameProductId, m_isGame, m_isControllerApp, true, m_gatewayType, &packet );
    ChainedType* localKhaan = static_cast< ChainedType* >( khaan );
    localKhaan->AddOutputChainData( packet, 0 );
-   m_clientsNeedingUpdate.push_back( localKhaan->GetServerId() );
+   m_clientsNeedingUpdate.push_back( localKhaan->GetServerId() );*/
+   BasePacket* packet = NULL;
+   PackageForServerIdentification( m_serverName, m_localIpAddress, m_externalIpAddress, m_serverId, m_serverType, m_listeningPort, m_gameProductId, m_isGame, m_isControllerApp, true, m_gatewayType, &packet );
+   Khaan* localKhaan = static_cast< Khaan* >( khaan );
+   localKhaan->AddOutputChainDataNoLock( packet );
+   // this is not thread safe, but will be invoked from within the same thread.
+   m_clientsNeedingUpdate.push_back( localKhaan->GetChainedId() );
 }
 
 /////////////////////////////////////////////////////////////////////////////////
@@ -243,7 +250,7 @@ void     DiplodocusChat::InputRemovalInProgress( IChainedInterface * chainedInpu
    SetupClientWaitingToBeRemoved( khaan );
 
    string currentTime = GetDateInUTC();
-   string printer = "Client disconnection at time:" + currentTime + " from " + inet_ntoa( khaan->GetIPAddress().sin_addr );
+   string printer = "DiplodocusChat::Client disconnection at time:" + currentTime + " from " + inet_ntoa( khaan->GetIPAddress().sin_addr );
    LogMessage( LOG_PRIO_ERR, printer.c_str() );
 
    LogMessage( LOG_PRIO_ERR, "** InputRemovalInProgress" );
@@ -251,7 +258,7 @@ void     DiplodocusChat::InputRemovalInProgress( IChainedInterface * chainedInpu
 
 //---------------------------------------------------------------
 
-bool     DiplodocusChat::HandleChatPacket( BasePacket* packet, U32 connectionId )
+bool     DiplodocusChat::HandleChatPacket( BasePacket* packet, U32 gatewayId )
 {
    U32 packetType = packet->packetType;
    U32 packetSubType = packet->packetSubType;
@@ -287,7 +294,8 @@ bool     DiplodocusChat::HandleChatPacket( BasePacket* packet, U32 connectionId 
       case PacketChatToServer::ChatType_ListAllMembersInChatChannel:
          {
             PacketChatListAllMembersInChatChannel* pPacket = static_cast< PacketChatListAllMembersInChatChannel* > ( packet );
-            m_chatRoomManager->RequestChatRoomInfo( pPacket, connectionId );
+            //pPacket->
+            m_chatRoomManager->RequestChatRoomInfo( pPacket, gatewayId );
          }
   /* ChatType_InviteUserToChatChannel,
    ChatType_InviteUserToChatChannelResponse,*/
@@ -405,25 +413,39 @@ bool     DiplodocusChat::HandleLoginPacket( BasePacket* packet, U32 gatewayId )
 
 bool     DiplodocusChat::AddInputChainData( BasePacket* packet, U32 connectionId )
 {
+   m_mutex.lock();
+   m_inputPacketsToBeProcessed.push_back( PacketStorage( packet, connectionId ) );
+   m_mutex.unlock();
+
+   return true;
+}
+
+//---------------------------------------------------------------
+
+//---------------------------------------------------------------
+
+bool     DiplodocusChat:: ProcessPacket( PacketStorage& storage )
+{
+   BasePacket* packet = storage.packet;
+   U32 gatewayId = storage.gatewayId;
+
    U8 packetType = packet->packetType;
+
+   cout << "DiplodocusChat:: ProcessPacket <<<" << endl;
 
    switch( packetType )
    {
    case PacketType_GatewayInformation:
       {
          PacketCleaner cleaner( packet );
-         HandleCommandFromGateway( packet, connectionId );
+         HandleCommandFromGateway( packet, gatewayId );
          return true;
       }
    case PacketType_ServerJobWrapper:
       {
          PacketCleaner cleaner( packet );
-         HandlePacketFromOtherServer( packet, connectionId );
+         HandlePacketFromOtherServer( packet, gatewayId );
          return true;
-      }
- 
-   case PacketType_DbQuery:
-      {
       }
    case PacketType_GatewayWrapper:
       {
@@ -432,6 +454,9 @@ bool     DiplodocusChat::AddInputChainData( BasePacket* packet, U32 connectionId
          return true;
       }
    }
+
+   cout << "DiplodocusChat:: ProcessPacket >>>" << endl;
+   PacketCleaner cleaner( packet );
    return false;
 }
 
@@ -450,11 +475,14 @@ bool   DiplodocusChat::AddOutputChainData( BasePacket* packet, U32 connectionId 
 
    if( packet->packetType == PacketType_DbQuery )
    {
+      cout << "DiplodocusChat::AddOutputChainData.. PacketType_DbQuery" << endl;
       if( packet->packetSubType == BasePacketDbQuery::QueryType_Result )
       {
          PacketDbQueryResult* result = static_cast<PacketDbQueryResult*>( packet );
 
+         cout << "DiplodocusChat::AddOutputChainData.. locker( m_mutex ) <<<" << endl;
          Threading::MutexLock locker( m_mutex );
+         cout << "DiplodocusChat::AddOutputChainData.. locker( m_mutex ) >>>" << endl;
 
          m_dbQueries.push_back( result );
        /*  if( result->customData != NULL )
@@ -473,7 +501,7 @@ bool     DiplodocusChat::SendMessageToClient( BasePacket* packet, U32 connection
 {
    if( packet->packetType == PacketType_GatewayWrapper )// this is already wrapped up and ready for the gateway... send it on.
    {
-      Threading::MutexLock locker( m_inputChainListMutex );
+      //Threading::MutexLock locker( m_inputChainListMutex );
       ClientMapIterator itInputs = m_connectedClients.begin();
       while( itInputs != m_connectedClients.end() )// only one output currently supported.
       {
@@ -517,8 +545,8 @@ void  DiplodocusChat::UpdateDbResults()
    PacketFactory factory;
 
    m_mutex.lock();
-   deque< PacketDbQueryResult* > tempQueue = m_dbQueries;
-   m_dbQueries.clear();
+      deque< PacketDbQueryResult* > tempQueue = m_dbQueries;
+      m_dbQueries.clear();
    m_mutex.unlock();
 
    deque< PacketDbQueryResult* >::iterator it = tempQueue.begin();
@@ -564,7 +592,7 @@ void  DiplodocusChat::UpdateDbResults()
 
 //---------------------------------------------------------------
 
-bool  DiplodocusChat::HandlePacketFromOtherServer( BasePacket* packet, U32 connectionId )// not thread safe
+bool  DiplodocusChat::HandlePacketFromOtherServer( BasePacket* packet, U32 gatewayId )// not thread safe
 {
    if( packet->packetType != PacketType_ServerJobWrapper )
    {
@@ -574,6 +602,7 @@ bool  DiplodocusChat::HandlePacketFromOtherServer( BasePacket* packet, U32 conne
    PacketServerJobWrapper* wrapper = static_cast< PacketServerJobWrapper* >( packet );
    BasePacket* unwrappedPacket = wrapper->pPacket;
    U32  serverIdLookup = wrapper->serverId;
+  // wrapper->
    serverIdLookup = serverIdLookup;
 
    U8 packetType = unwrappedPacket->packetType;
@@ -581,7 +610,7 @@ bool  DiplodocusChat::HandlePacketFromOtherServer( BasePacket* packet, U32 conne
    
    if( packetType == PacketType_Login )
    {
-      if( HandleLoginPacket( unwrappedPacket, connectionId ) == false )
+      if( HandleLoginPacket( unwrappedPacket, gatewayId ) == false )
       {
          factory.CleanupPacket( packet );
       }
@@ -591,7 +620,7 @@ bool  DiplodocusChat::HandlePacketFromOtherServer( BasePacket* packet, U32 conne
 
    if( packetType == PacketType_Chat )
    {
-      if( HandleChatPacket( unwrappedPacket, connectionId ) == false )
+      if( HandleChatPacket( unwrappedPacket, gatewayId ) == false )
       {
          factory.CleanupPacket( packet );
       }
@@ -599,7 +628,7 @@ bool  DiplodocusChat::HandlePacketFromOtherServer( BasePacket* packet, U32 conne
    }
    if( packetType == PacketType_Invitation )
    {
-      if( HandleInvitationPacket( unwrappedPacket, connectionId, 0 ) == false )
+      if( HandleInvitationPacket( unwrappedPacket, gatewayId, 0 ) == false )
       {
          factory.CleanupPacket( packet );
       }
@@ -618,35 +647,38 @@ bool  DiplodocusChat::HandlePacketFromClient( BasePacket* packet )
       return false;
    }
 
+   cout << "DiplodocusChat::HandlePacketFromClient <<<" << endl;
+
    PacketGatewayWrapper* wrapper = static_cast< PacketGatewayWrapper* >( packet );
    BasePacket* unwrappedPacket = wrapper->pPacket;
 
    U32 connectionId = wrapper->connectionId;
    //wrapper->
 
-   Threading::MutexLock locker( m_mutex );
+   ChatUser* user = NULL;
+   //m_mutex.lock();// no longer needed
    UserMapIterator it = m_users.find( connectionId );
-   if( it != m_users.end() )
+   user = it->second;
+   //m_mutex.unlock();
+   if( user )
    {
-      ChatUser* user = it->second;
-      if( user )
+      // could be a switch but we only have two cases.
+      if( unwrappedPacket->packetType == PacketType_Invitation )
       {
-         // could be a switch but we only have two cases.
-         if( unwrappedPacket->packetType == PacketType_Invitation )
-         {
-            m_invitationManager->HandlePacketRequest( unwrappedPacket, connectionId, user->GetGatewayId() );
-         }
-         else
-         {
-         //PacketCleaner cleaner( packet );
-            bool result = user->HandleClientRequest( unwrappedPacket );
-            result = result;
-         }
-
-         
-         return true;
+         m_invitationManager->HandlePacketRequest( unwrappedPacket, connectionId, user->GetGatewayId() );
       }
+      else
+      {
+      //PacketCleaner cleaner( packet );
+         bool result = user->HandleClientRequest( unwrappedPacket );
+         result = result;
+      }
+
+      cout << "DiplodocusChat::HandlePacketFromClient >>>+" << endl;
+      return true;
    }
+
+   cout << "DiplodocusChat::HandlePacketFromClient >>>-" << endl;
 
    return false;
 }
@@ -715,6 +747,7 @@ bool     DiplodocusChat::AddQueryToOutput( PacketDbQuery* dbQuery, U32 connectio
 }*/
 bool     DiplodocusChat::AddQueryToOutput( PacketDbQuery* dbQuery, U32 connectionId )
 {
+   cout << "DiplodocusChat::AddQueryToOutput <<<" << endl;
    PacketFactory factory;
    dbQuery->id = connectionId;
 
@@ -729,6 +762,7 @@ bool     DiplodocusChat::AddQueryToOutput( PacketDbQuery* dbQuery, U32 connectio
          Database::Deltadromeus* delta = static_cast< Database::Deltadromeus* >( outputPtr );
          if( dbQuery->dbConnectionType != 0 )
          {
+            cout << "DiplodocusChat::delta->WillYouTakeThisQuery <<<" << endl;
             if( delta->WillYouTakeThisQuery( dbQuery->dbConnectionType ) )
             {
                isValidConnection = true;
@@ -740,8 +774,10 @@ bool     DiplodocusChat::AddQueryToOutput( PacketDbQuery* dbQuery, U32 connectio
          }
          if( isValidConnection == true )
          {
+            cout << "DiplodocusChat::outputPtr->AddInputChainData <<<" << endl;
             if( outputPtr->AddInputChainData( dbQuery, m_chainId ) == true )
             {
+               cout << "DiplodocusChat::AddQueryToOutput >>>+" << endl;
                return true;
             }
          }
@@ -752,6 +788,7 @@ bool     DiplodocusChat::AddQueryToOutput( PacketDbQuery* dbQuery, U32 connectio
    BasePacket* deleteMe = static_cast< BasePacket*>( dbQuery );
 
    factory.CleanupPacket( deleteMe );
+   cout << "DiplodocusChat::AddQueryToOutput >>>-" << endl;
    return false;
 }
 
@@ -871,6 +908,8 @@ int      DiplodocusChat::CallbackFunction()
 
    int numClients = static_cast< int >( m_connectedClients.size() );
    UpdateConsoleWindow( m_timeOfLastTitleUpdate, m_uptime, m_numTotalConnections, numClients, m_listeningPort, m_serverName );
+
+   UpdateInputPacketToBeProcessed();
 
    PeriodicWriteToDB();
    RemoveLoggedOutUsers();

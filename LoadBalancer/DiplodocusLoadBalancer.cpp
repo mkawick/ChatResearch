@@ -16,6 +16,7 @@ using namespace std;
 
 DiplodocusLoadBalancer::DiplodocusLoadBalancer( const string& serverName, U32 serverId ): 
    Diplodocus< KhaanConnector >( serverName, serverId, 0,  ServerType_LoadBalancer ), 
+   m_printFunctionNames( false ),
    m_distributedConnectionIdPoint( 1001 ),
    m_numConnectionIdsToDistrubute( 40 ),
    m_connectionIdTracker( 100 )   
@@ -30,11 +31,31 @@ DiplodocusLoadBalancer::~DiplodocusLoadBalancer()
 {
 }
 
+/////////////////////////////////////////////////////////////////////////////////
+
+void     DiplodocusLoadBalancer::PrintFunctionNames( bool printingOn ) 
+{
+   m_printFunctionNames = printingOn; 
+   LogMessage( LOG_PRIO_INFO, "Load Balacer side function name printing is " );
+   if( m_printFunctionNames == true )
+   {
+      LogMessage( LOG_PRIO_INFO, "enabled" );
+   }
+   else
+   {
+      LogMessage( LOG_PRIO_INFO, "disabled" );
+   }
+}
+
 ///////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////
 
 void  DiplodocusLoadBalancer::AddGatewayAddress( const string& address, U16 port )
 {
+   if( m_printFunctionNames )
+   {
+      LogMessage( LOG_PRIO_INFO, "DiplodocusLoadBalancer::AddGatewayAddress" );
+   }
    assert( port > 0 && address.size() > 5 );
 
    list< GatewayInfo >::iterator it = m_gatewayRoutes.begin();
@@ -56,6 +77,10 @@ void  DiplodocusLoadBalancer::AddGatewayAddress( const string& address, U16 port
 
 U32      DiplodocusLoadBalancer::GetNextConnectionId()
 {
+   if( m_printFunctionNames )
+   {
+      LogMessage( LOG_PRIO_INFO, "DiplodocusLoadBalancer::GetNextConnectionId" );
+   }
    m_inputChainListMutex.lock();
    m_connectionIdTracker ++;
    if( m_connectionIdTracker >= ConnectionIdExclusion.low &&  m_connectionIdTracker <= ConnectionIdExclusion.high )
@@ -70,6 +95,27 @@ U32      DiplodocusLoadBalancer::GetNextConnectionId()
 
 ///////////////////////////////////////////////////////////////////
 
+void     DiplodocusLoadBalancer::UpdateAllPendingRerouteRequests()
+{
+   m_mutex.lock();
+   ConnectionIdQueue localQueue = m_pendingRequestsForReroute;
+   m_pendingRequestsForReroute.clear();
+   m_mutex.unlock();
+
+   if( localQueue.size() == 0 )
+      return;
+
+   while( localQueue.size() )
+   {
+      U32 connectionId = localQueue.front();
+      localQueue.pop_front();
+
+      HandleRerouteRequest( connectionId );
+   }
+}
+
+///////////////////////////////////////////////////////////////////
+
 int       DiplodocusLoadBalancer::CallbackFunction()
 {
    CommonUpdate();
@@ -77,6 +123,8 @@ int       DiplodocusLoadBalancer::CallbackFunction()
    OutputCurrentStats();
 
    SelectPreferredGateways();
+
+   UpdateAllPendingRerouteRequests();
 
    CleanupOldClientConnections( "KhaanConnector" );
    UpdateAllConnections( "KhaanConnector" );
@@ -145,6 +193,10 @@ void     DiplodocusLoadBalancer::SelectPreferredGateways()
    if( difftime( currentTime, m_timestampSelectPreferredGateway ) >= timeoutSelectPreferredGateway ) 
    {
       m_timestampSelectPreferredGateway = currentTime;
+      if( m_printFunctionNames )
+      {
+         LogMessage( LOG_PRIO_INFO, "DiplodocusLoadBalancer::SelectPreferredGateways" );
+      }
 
       if( m_gatewayRoutes.size() < 1 )
       {
@@ -184,6 +236,10 @@ void     DiplodocusLoadBalancer::SelectPreferredGateways()
 
 void     DiplodocusLoadBalancer::InputConnected( IChainedInterface * chainedInput )
 {
+   if( m_printFunctionNames )
+   {
+      LogMessage( LOG_PRIO_INFO, "DiplodocusLoadBalancer::InputConnected" );
+   }
    KhaanConnector* khaan = static_cast< KhaanConnector* >( chainedInput );
    string currentTime = GetDateInUTC();
    LogMessage( LOG_PRIO_INFO, "Accepted connection at time: %s from %s, ", currentTime.c_str(), inet_ntoa( khaan->GetIPAddress().sin_addr ) );
@@ -211,12 +267,16 @@ void     DiplodocusLoadBalancer::InputConnected( IChainedInterface * chainedInpu
 
 void     DiplodocusLoadBalancer::InputRemovalInProgress( IChainedInterface * chainedInput )
 {
+   if( m_printFunctionNames )
+   {
+      LogMessage( LOG_PRIO_INFO, "DiplodocusLoadBalancer::InputRemovalInProgress" );
+   }
    KhaanConnector* khaan = static_cast< KhaanConnector* >( chainedInput );
 
    SetupClientWaitingToBeRemoved( khaan );
 
    string currentTime = GetDateInUTC();
-   string printer = "Client disconnection at time:" + currentTime + " from " + inet_ntoa( khaan->GetIPAddress().sin_addr );
+   string printer = "DiplodocusLoadBalancer::Client disconnection at time:" + currentTime + " from " + inet_ntoa( khaan->GetIPAddress().sin_addr );
    LogMessage( LOG_PRIO_INFO, printer );
 
    LogMessage( LOG_PRIO_INFO, "** InputRemovalInProgress" );
@@ -275,11 +335,18 @@ bool  DiplodocusLoadBalancer::HandlePacketFromOtherServer( BasePacket* packet, U
 
 bool     DiplodocusLoadBalancer::AddInputChainData( BasePacket* packet, U32 connectionId )
 {
+   if( m_printFunctionNames )
+   {
+      LogMessage( LOG_PRIO_INFO, "DiplodocusLoadBalancer::AddInputChainData" );
+   }
    if( packet->packetType == PacketType_Base )
    {
       if( packet->packetSubType == BasePacket::BasePacket_RerouteRequest )
       {
-         HandleRerouteRequest( connectionId );
+         m_mutex.lock();
+         m_pendingRequestsForReroute.push_back( connectionId );
+         m_mutex.unlock();
+         
          return false;// delete the original data
       }
    }
@@ -371,6 +438,11 @@ DiplodocusLoadBalancer::FindInputByConnectionId( U32 connectionId )
 
 void     DiplodocusLoadBalancer::HandleRerouteRequest( U32 connectionId )
 {
+   if( m_printFunctionNames )
+   {
+      LogMessage( LOG_PRIO_INFO, "DiplodocusLoadBalancer::HandleRerouteRequest begin" );
+   }
+
    int offsetIndex = IncrementRotatingGatewayIndex();
 
    bool  hasNormal = false; // we're going to store one of each
@@ -464,21 +536,25 @@ void     DiplodocusLoadBalancer::HandleRerouteRequest( U32 connectionId )
 // assuming that everything is thread protected at this point
 void     DiplodocusLoadBalancer::HandlePacketToKhaan( KhaanConnector* khaan, BasePacket* packet )
 {
+   if( m_printFunctionNames )
+   {
+      LogMessage( LOG_PRIO_INFO, "DiplodocusLoadBalancer::HandlePacketToKhaan enter" );
+   }
    //PrintText( "HandlePacketToKhaan" );
    //U32 connectionId = khaan->GetConnectionId();
    khaan->AddOutputChainData( packet );
 
+   if( m_printFunctionNames )
+   {
+      LogMessage( LOG_PRIO_INFO, "DiplodocusLoadBalancer::HandlePacketToKhaan mid" );
+   }
+
    MarkConnectionAsNeedingUpdate( khaan->GetChainedId() );
 
-  /* Threading::Mutex locker( m_mutex ); // because of return
-   //MarkConnectionAsNeedingUpdate
-   ConnectionIdQueue::iterator it = m_connectionsNeedingUpdate.begin();
-   while( it != m_connectionsNeedingUpdate.end() )
+   if( m_printFunctionNames )
    {
-      if( *it++ == connectionId )
-         return;
+      LogMessage( LOG_PRIO_INFO, "DiplodocusLoadBalancer::HandlePacketToKhaan exit" );
    }
-   m_connectionsNeedingUpdate.push_back( connectionId );*/
 }
 
 
@@ -489,6 +565,10 @@ void     DiplodocusLoadBalancer::HandlePacketToKhaan( KhaanConnector* khaan, Bas
 list< GatewayInfo >::iterator 
 DiplodocusLoadBalancer::FindGateway( const string& ipAddress, U16 port, U32 serverId )
 {
+   if( m_printFunctionNames )
+   {
+      LogMessage( LOG_PRIO_INFO, "DiplodocusLoadBalancer::FindGateway" );
+   }
    list< GatewayInfo >::iterator it = m_gatewayRoutes.begin();
    while( it != m_gatewayRoutes.end() )
    {
@@ -521,6 +601,10 @@ DiplodocusLoadBalancer::FindGateway( const string& ipAddress, U16 port, U32 serv
 list< GatewayInfo >::iterator 
 DiplodocusLoadBalancer::FindGateway( U32 serverId )
 {
+   if( m_printFunctionNames )
+   {
+      LogMessage( LOG_PRIO_INFO, "DiplodocusLoadBalancer::FindGateway" );
+   }
    list< GatewayInfo >::iterator it = m_gatewayRoutes.begin();
    while( it != m_gatewayRoutes.end() )
    {
@@ -612,6 +696,10 @@ void     DiplodocusLoadBalancer::ServerInfoUpdate( const PacketServerConnectionI
 
 void     DiplodocusLoadBalancer::RequestConnectionIds( const PacketServerToServer_GatewayRequestLB_ConnectionIds* gatewayInfo )
 {
+   if( m_printFunctionNames )
+   {
+      LogMessage( LOG_PRIO_INFO, "DiplodocusLoadBalancer::RequestConnectionIds" );
+   }
    list< GatewayInfo >::iterator it = FindGateway( gatewayInfo->serverAddress, 0, gatewayInfo->serverId );
    if( it != m_gatewayRoutes.end() )
    {

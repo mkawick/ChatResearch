@@ -26,6 +26,7 @@ using boost::format;
 #include "../NetworkCommon/NetworkIn/DiplodocusServerToServer.h"
 #include "../NetworkCommon/Daemon/Daemonizer.h"
 #include "../NetworkCommon/NetworkUtils.h"
+#include "../NetworkCommon/Utils/StringUtils.h"
 
 #include "DiplodocusChat.h"
 

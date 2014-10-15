@@ -17,6 +17,7 @@ DiplodocusGame::DiplodocusGame( const string& serverName, U32 serverId, U8 gameP
 
 int      DiplodocusGame::CallbackFunction()
 {
+   UpdateInputPacketToBeProcessed();
    return 1;
 }
 
@@ -48,20 +49,8 @@ bool  DiplodocusGame::HandleCommandFromGateway( BasePacket* packet, U32 connecti
 //---------------------------------------------------------------
 
 // this will always be data coming from the gateway or at least from the outside in.
-bool   DiplodocusGame::AddInputChainData( BasePacket* packet, U32 connectionId ) 
+bool   DiplodocusGame::AddInputChainData( BasePacket* packet, U32 gatewayId ) 
 {
-   if( packet->packetType == PacketType_GatewayInformation )
-   {
-      HandleCommandFromGateway( packet, connectionId );
-      return false;
-   }
-
-   if( packet->packetType == PacketType_ServerJobWrapper )
-   {
-      HandlePacketFromOtherServer( packet, connectionId );
-      return true;
-   }
-
    if( packet->packetType == PacketType_GatewayWrapper )
    {
       PacketGatewayWrapper* wrapper = static_cast< PacketGatewayWrapper* >( packet );
@@ -89,7 +78,39 @@ bool   DiplodocusGame::AddInputChainData( BasePacket* packet, U32 connectionId )
          assert( 0 );
       }
    }
-   return false;
+   else
+   {
+      m_mutex.lock();
+      m_inputPacketsToBeProcessed.push_back( PacketStorage( packet, gatewayId ) );
+      m_mutex.unlock();
+   }
+   return true;
+}
+
+//---------------------------------------------------------------
+
+bool     DiplodocusGame:: ProcessPacket( PacketStorage& storage )
+{
+   BasePacket* packet = storage.packet;
+   U32 gatewayId = storage.gatewayId;
+
+   U8 packetType = packet->packetType;
+
+   if( packet->packetType == PacketType_GatewayInformation )
+   {
+      HandleCommandFromGateway( packet, gatewayId );
+      return false;
+   }
+
+   if( packet->packetType == PacketType_ServerJobWrapper )
+   {
+      HandlePacketFromOtherServer( packet, gatewayId );
+      return true;
+   }
+
+   PacketCleaner cleaner( packet );
+
+   return true;
 }
 
 //---------------------------------------------------------------

@@ -17,7 +17,7 @@ using boost::format;
 
 #include "../NetworkCommon/Version.h"
 #include "../NetworkCommon/Utils/Utils.h"
-
+#include "../NetworkCommon/Utils/StringUtils.h"
 #include "../NetworkCommon/Utils/CommandLineParser.h"
 
 #include "../NetworkCommon/Database/Deltadromeus.h"
@@ -311,7 +311,8 @@ int main( int argc, const char* argv[] )
       
       //----------------------------------
 
-      FruitadensLogin* chatServer = PrepConnection< FruitadensLogin, DiplodocusLogin > ( chatIpAddressString, chatPort,                   "chat",           loginServer, ServerType_Chat, true );
+      //FruitadensLogin* chatServer =
+         PrepConnection< FruitadensLogin, DiplodocusLogin > ( chatIpAddressString, chatPort,                   "chat",           loginServer, ServerType_Chat, true );
       //chatServer->SetExtensiveLogging();
       //chatServer->SetSleepTime( 30 );
       PrepConnection< FruitadensLogin, DiplodocusLogin > ( contactIpAddressString, contactPort,             "contact",        loginServer, ServerType_Contact, true );

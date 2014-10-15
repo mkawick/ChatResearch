@@ -11,6 +11,8 @@
 
 //#define _MEMLEAK_TESTING_
 
+#pragma pack(push,4)
+
 extern const U8   NetworkVersionMajor;
 extern const U8   NetworkVersionMinor;
 
@@ -107,6 +109,17 @@ cout << "BasePacket ~count: " << m_counter << endl;
 
    static int   GetSize();
 };
+
+
+///////////////////////////////////////////////////////////////
+
+struct PacketStorage
+{
+   BasePacket* packet;
+   U32         gatewayId;
+   PacketStorage( BasePacket* pPacket, U32 _gatewayId ) : packet( pPacket ), gatewayId( _gatewayId ) {}
+};
+
 
 ///////////////////////////////////////////////////////////////
 
@@ -539,3 +552,5 @@ public:
 bool  PackageForServerIdentification( const string& serverName, const string& ipAddress, const string& externalIpAddress, U32 serverId, U8 serverType, U16 serverPort, U8 gameProductId, bool isGameServer, bool isController, bool requiresWrapper, U8 gatewayType, BasePacket** packet );
 
 ///////////////////////////////////////////////////////////////
+
+#pragma pack( pop )

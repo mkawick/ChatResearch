@@ -7,6 +7,7 @@ using namespace std;
 #include <boost/lexical_cast.hpp>
 
 #include "../NetworkCommon/Utils/CommandLineParser.h"
+#include "../NetworkCommon/Utils/StringUtils.h"
 
 #include "PurchaseMainThread.h"
 
@@ -78,14 +79,10 @@ void     DiplodocusPurchase::ServerWasIdentified( IChainedInterface* khaan )
 {
    BasePacket* packet = NULL;
    PackageForServerIdentification( m_serverName, m_localIpAddress, m_externalIpAddress, m_serverId, m_serverType, m_listeningPort, m_gameProductId, m_isGame, m_isControllerApp, true, m_gatewayType, &packet );
-   //khaan->AddOutputChainData( packet, 0 );
-   //m_serversNeedingUpdate.push_back( static_cast<InputChainType*>( khaan )->GetServerId() );
-   ChainedType* localKhaan = static_cast< ChainedType* >( khaan );
-   localKhaan->AddOutputChainData( packet, 0 );
-   U32 chainId = localKhaan->GetChainedId();
-   //U32 connId = localKhaan->GetConnectionId();
-   //U32 serverId = localKhaan->GetServerId();
-   m_clientsNeedingUpdate.push_back( chainId );
+   Khaan* localKhaan = static_cast< Khaan* >( khaan );
+   localKhaan->AddOutputChainDataNoLock( packet );
+   // this is not thread safe, but will be invoked from within the same thread.
+   m_clientsNeedingUpdate.push_back( localKhaan->GetChainedId() );
 }
 
 /////////////////////////////////////////////////////////////////////////////////
@@ -97,7 +94,7 @@ void     DiplodocusPurchase::InputRemovalInProgress( IChainedInterface * chained
    SetupClientWaitingToBeRemoved( khaan );
 
    string currentTime = GetDateInUTC();
-   string printer = "Client disconnection at time:" + currentTime + " from " + inet_ntoa( khaan->GetIPAddress().sin_addr );
+   string printer = "DiplodocusPurchase::Client disconnection at time:" + currentTime + " from " + inet_ntoa( khaan->GetIPAddress().sin_addr );
    LogMessage( LOG_PRIO_ERR, printer.c_str() );
 
    LogMessage( LOG_PRIO_ERR, "** InputRemovalInProgress" );
@@ -193,20 +190,6 @@ string AssembleFullPath( const string& path, const string& fileName )
 
 bool     DiplodocusPurchase::AddInputChainData( BasePacket* packet, U32 connectionId )
 {
-   if( packet->packetType == PacketType_GatewayInformation )
-   {
-      PacketCleaner cleaner( packet );
-      HandleCommandFromGateway( packet, connectionId );
-      return true;
-   }
-
-   if( packet->packetType == PacketType_ServerJobWrapper )
-   {
-      PacketCleaner cleaner( packet );
-      HandlePacketFromOtherServer( packet, connectionId );
-      return true;
-   }
-
    if( packet->packetType == PacketType_GatewayWrapper )
    {
       PacketCleaner cleaner( packet );
@@ -237,7 +220,41 @@ bool     DiplodocusPurchase::AddInputChainData( BasePacket* packet, U32 connecti
       // we handle all packets from the gateway here.
       return true;
    }
+   else
+   {
+      m_mutex.lock();
+      m_inputPacketsToBeProcessed.push_back( PacketStorage( packet, connectionId ) );
+      m_mutex.unlock();
+   }
+   return true;
+}
+
+//---------------------------------------------------------------
+
+bool     DiplodocusPurchase:: ProcessPacket( PacketStorage& storage )
+{
+   BasePacket* packet = storage.packet;
+   U32 gatewayId = storage.gatewayId;
+
+   U8 packetType = packet->packetType;
+
+   if( packet->packetType == PacketType_GatewayInformation )
+   {
+      PacketCleaner cleaner( packet );
+      HandleCommandFromGateway( packet, gatewayId );
+      return true;
+   }
+
+   if( packet->packetType == PacketType_ServerJobWrapper )
+   {
+      PacketCleaner cleaner( packet );
+      HandlePacketFromOtherServer( packet, gatewayId );
+      return true;
+   }
+
    
+   
+   PacketCleaner cleaner( packet );
    return false;
 }
 
@@ -278,7 +295,7 @@ DiplodocusPurchase::GetUserByConnectionId( U32 connectionId )
 
 //---------------------------------------------------------------
 
-bool  DiplodocusPurchase::HandlePacketFromOtherServer( BasePacket* packet, U32 connectionId )// not thread safe
+bool  DiplodocusPurchase::HandlePacketFromOtherServer( BasePacket* packet, U32 gatewayId )// not thread safe
 {
    if( packet->packetType != PacketType_ServerJobWrapper )
    {
@@ -664,6 +681,8 @@ int      DiplodocusPurchase::CallbackFunction()
 
    CleanupOldClientConnections( "KhaanPurchase" );
    UpdateAllConnections( "KhaanPurchase" );
+
+   UpdateInputPacketToBeProcessed();
 
    time_t currentTime;
    time( &currentTime );

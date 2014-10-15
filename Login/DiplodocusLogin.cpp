@@ -6,6 +6,7 @@ using boost::format;
 
 #include "../NetworkCommon/Utils/TableWrapper.h"
 #include "../NetworkCommon/Utils/Utils.h"
+#include "../NetworkCommon/Utils/StringUtils.h"
 
 #include "../NetworkCommon/Database/StringLookup.h"
 
@@ -97,9 +98,35 @@ void     DiplodocusLogin:: ServerWasIdentified( IChainedInterface* khaan )
    }
    BasePacket* packet = NULL;
    PackageForServerIdentification( m_serverName, m_localIpAddress, m_externalIpAddress, m_serverId, m_serverType, m_listeningPort, m_gameProductId, m_isGame, m_isControllerApp, true, m_gatewayType, &packet );
-   ChainedType* localKhaan = static_cast< ChainedType* >( khaan );
-   localKhaan->AddOutputChainData( packet, 0 );
+   Khaan* localKhaan = static_cast< Khaan* >( khaan );
+   localKhaan->AddOutputChainDataNoLock( packet );
+   // this is not thread safe, but will be invoked from within the same thread.
    m_clientsNeedingUpdate.push_back( localKhaan->GetChainedId() );
+}
+
+/////////////////////////////////////////////////////////////////////////////////
+
+void     DiplodocusLogin::InputConnected( IChainedInterface* chainedInput )
+{
+   if( m_printFunctionNames )
+   {
+      cout << "fn: " << __FUNCTION__ << endl;
+   }
+   LogMessage( LOG_PRIO_INFO, "DiplodocusLogin::InputConnected" );
+   KhaanLogin* khaan = static_cast< KhaanLogin* >( chainedInput );
+   string currentTime = GetDateInUTC();
+
+   string printer = "Accepted connection at time:" + currentTime + " from " + inet_ntoa( khaan->GetIPAddress().sin_addr );
+   LogMessage( LOG_PRIO_INFO, printer.c_str() );
+   if( m_printFunctionNames )
+   {
+      LogMessage( LOG_PRIO_INFO, printer.c_str() );
+   }
+   PrintDebugText( "** InputConnected" , 1 );
+
+   int outputBufferSize = 128 * 1024;
+   LogMessage( LOG_PRIO_INFO, "DiplodocusLogin::SetOutputBufferSize( %d )", outputBufferSize );
+   khaan->SetOutboudBufferSize( outputBufferSize );
 }
 
 /////////////////////////////////////////////////////////////////////////////////
@@ -111,7 +138,7 @@ void     DiplodocusLogin::InputRemovalInProgress( IChainedInterface * chainedInp
    SetupClientWaitingToBeRemoved( khaan );
 
    string currentTime = GetDateInUTC();
-   string printer = "Client disconnection at time:" + currentTime + " from " + inet_ntoa( khaan->GetIPAddress().sin_addr );
+   string printer = "DiplodocusLogin::Client disconnection at time:" + currentTime + " from " + inet_ntoa( khaan->GetIPAddress().sin_addr );
    LogMessage( LOG_PRIO_INFO, printer.c_str() );
 
    LogMessage( LOG_PRIO_ERR, "** InputRemovalInProgress" );
@@ -136,6 +163,19 @@ bool     DiplodocusLogin:: AddInputChainData( BasePacket* packet, U32 gatewayId 
       LogMessage( LOG_PRIO_ERR, text.c_str() );
       return false;
    }
+
+   m_mutex.lock();
+   m_inputPacketsToBeProcessed.push_back( PacketStorage( packet, gatewayId ) );
+   m_mutex.unlock();
+   return true;
+}
+
+//---------------------------------------------------------------
+
+bool     DiplodocusLogin:: ProcessPacket( PacketStorage& storage )
+{
+   BasePacket* packet = storage.packet;
+   U32 gatewayId = storage.gatewayId;
 
    PacketGatewayWrapper* wrapper = static_cast< PacketGatewayWrapper * >( packet );
    U32   userConnectionId = wrapper->connectionId;
@@ -641,6 +681,8 @@ bool     DiplodocusLogin:: HandleUserLoginResult( U32 connectionId, const Packet
                                 isLoggedIn, 
                                 wasDisconnectedByError,
                                 connection->GetGatewayId() );
+         
+         connection->ClearLoginAttemptCount();
       }
       else
       {
@@ -735,7 +777,7 @@ bool  DiplodocusLogin:: IsUserConnectionValid( U32 connectionId )
    {
       cout << "fn: " << __FUNCTION__ << endl;
    }
-   Threading::MutexLock locker( m_inputChainListMutex );
+   //Threading::MutexLock locker( m_inputChainListMutex );
    UserConnectionMapConstIterator it = m_userConnectionMap.find( connectionId );
    if( it != m_userConnectionMap.end() )
       return true;
@@ -749,7 +791,7 @@ ConnectionToUser*     DiplodocusLogin:: GetUserConnection( U32 connectionId )
       cout << "fn: " << __FUNCTION__ << endl;
    }
 
-   Threading::MutexLock locker( m_inputChainListMutex );
+   //Threading::MutexLock locker( m_inputChainListMutex );
    UserConnectionMapIterator it = m_userConnectionMap.find( connectionId );
    if( it != m_userConnectionMap.end() )
    {
@@ -764,7 +806,7 @@ void    DiplodocusLogin:: ReinsertUserConnection( int oldIndex, int newIndex )
    {
       cout << "fn: " << __FUNCTION__ << endl;
    }
-   Threading::MutexLock locker( m_inputChainListMutex );
+   //Threading::MutexLock locker( m_inputChainListMutex );
     UserConnectionMapIterator it = m_userConnectionMap.find( oldIndex );
     if( it != m_userConnectionMap.end() )
     {
@@ -780,7 +822,7 @@ bool     DiplodocusLogin:: AddUserConnection( DiplodocusLogin:: UserConnectionPa
       cout << "fn: " << __FUNCTION__ << endl;
    }
 
-   Threading::MutexLock locker( m_inputChainListMutex );
+   //Threading::MutexLock locker( m_inputChainListMutex );
    pair.second.SetManager( this );
    m_userConnectionMap.insert( pair );
    return true;
@@ -793,7 +835,7 @@ bool     DiplodocusLogin:: RemoveUserConnection( U32 connectionId )
       cout << "fn: " << __FUNCTION__ << endl;
    }
 
-   Threading::MutexLock locker( m_inputChainListMutex );
+   //Threading::MutexLock locker( m_inputChainListMutex );
    UserConnectionMapIterator it = m_userConnectionMap.find( connectionId );
    if( it != m_userConnectionMap.end() )
    {
@@ -843,7 +885,7 @@ U32     DiplodocusLogin:: FindUserAlreadyInGame( const string& userName, U8 game
       cout << "fn: " << __FUNCTION__ << endl;
    }
 
-   Threading::MutexLock locker( m_inputChainListMutex );
+   //Threading::MutexLock locker( m_inputChainListMutex );
 
    UserConnectionMapIterator it = m_userConnectionMap.begin();
    while( it != m_userConnectionMap.end() )
@@ -1402,7 +1444,7 @@ bool        DiplodocusLogin:: StoreUserPurchases( U32 connectionId, const Packet
       cout << "fn: " << __FUNCTION__ << endl;
    }
 
-   Threading::MutexLock locker( m_inputChainListMutex );
+   //Threading::MutexLock locker( m_inputChainListMutex );
    ConnectionToUser* connection = GetUserConnection( connectionId );
    if( connection == NULL )
    {
@@ -1718,7 +1760,7 @@ ConnectionToUser*     DiplodocusLogin:: GetLoadedUserConnectionByUuid( const str
       cout << "fn: " << __FUNCTION__ << endl;
    }
 
-   Threading::MutexLock locker( m_inputChainListMutex );
+   //Threading::MutexLock locker( m_inputChainListMutex );
    UserConnectionMapIterator it = m_userConnectionMap.begin();
    while( it != m_userConnectionMap.end() )
    {
@@ -1831,6 +1873,14 @@ bool  DiplodocusLogin:: ForceUserLogoutAndBlock( U32 connectionId, U32 gatewayId
    SendPacketToGateway( loginStatus, connectionId, gatewayId );
    const bool isLoggedIn = false; 
    const bool wasDisconnectedByError = false;
+
+   
+   if( connection )
+   {
+      time_t currentTime;
+      time( &currentTime );
+      connection->SetLoggedOutTime( currentTime );
+   }
 
    SendLoginStatusToOtherServers( userName, uuid, connectionId, gameProductId, lastLoginTime, active, email, passwordHash, userId, loginKey, languageId, isLoggedIn, wasDisconnectedByError,
                                              gatewayId );
@@ -2406,8 +2456,8 @@ void     DiplodocusLogin::UpdateDbResults()
    PacketFactory factory;
 
    m_mutex.lock();
-   deque< PacketDbQueryResult* > tempQueue = m_dbQueries;
-   m_dbQueries.clear();
+      deque< PacketDbQueryResult* > tempQueue = m_dbQueries;
+      m_dbQueries.clear();
    m_mutex.unlock();
 
    if( tempQueue.size() )
@@ -2452,7 +2502,7 @@ bool     DiplodocusLogin:: HandleDbResult( PacketDbQueryResult* dbResult )
       {
          UpdateUserRecord( aggregator );
          delete aggregator;
-         Threading::MutexLock locker( m_inputChainListMutex );
+         //Threading::MutexLock locker( m_inputChainListMutex );
          m_userAccountCreationMap.erase( createIt );
       }
       return true;
@@ -2782,7 +2832,7 @@ void     DiplodocusLogin:: StoreSingleProduct( const PacketDbQueryResult* dbResu
    }
 
    // now that we've added the new product, see which users needed it.
-   Threading::MutexLock locker( m_inputChainListMutex );
+   //Threading::MutexLock locker( m_inputChainListMutex );
    UserConnectionMapIterator userIt = m_userConnectionMap.begin();
    while( userIt != m_userConnectionMap.end() )
    {
@@ -3124,6 +3174,8 @@ int      DiplodocusLogin:: CallbackFunction()
    time_t currentTime;
    time( &currentTime );
    m_stringLookup->Update( currentTime );
+
+   UpdateInputPacketToBeProcessed();
 
    CleanupOldClientConnections( "KhaanLogin" );
    UpdateAllConnections( "KhaanLogin" );

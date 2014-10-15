@@ -60,6 +60,8 @@ public:
    ~DiplodocusLoadBalancer();
    const char* GetClassName() const { return "DiplodocusLoadBalancer"; }
 
+   void     PrintFunctionNames( bool printingOn = true );
+
    void     AddGatewayAddress( const string& address, U16 port );
 
    bool     AddInputChainData( BasePacket* packet, U32 socketId );
@@ -73,6 +75,7 @@ private:
    U32      GetNextConnectionId();
 
    int      CallbackFunction();
+   void     UpdateAllPendingRerouteRequests();
    void     OutputCurrentStats();
    void     SelectPreferredGateways();
 
@@ -94,14 +97,11 @@ private:
    typedef pair<int, int>     SocketToConnectionPair;
    typedef SocketToConnectionMap::iterator SocketToConnectionMapIterator;
 
-/*   typedef map< int, KhaanConnector* >    ConnectionMap;
-   typedef pair< int, KhaanConnector* >   ConnectionPair;
-   typedef ConnectionMap::iterator        ConnectionMapIterator;*/
 
-   typedef std::deque< U32 >              ConnectionIdQueue;
+   typedef std::deque< U32 >  ConnectionIdQueue;
+   bool                       m_printFunctionNames;
 
-   //ConnectionMap              m_connectionMap;
-   //ConnectionIdQueue          m_connectionsNeedingUpdate;
+   ConnectionIdQueue          m_pendingRequestsForReroute;
 
    SocketToConnectionMap      m_socketToConnectionMap;
    SocketToConnectionMap      m_connectionToSocketMap;

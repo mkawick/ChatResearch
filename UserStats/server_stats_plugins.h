@@ -23,9 +23,9 @@ struct StatsPlugin
    void (*onReportGameResult)(unsigned int gameID, int playerCount, unsigned int *pResults, unsigned int *pFactions);
    void (*onReportUserForfeit)(unsigned int userID, unsigned int gameID);
 
-   void (*onRequestPlayerFactionStats)(UserStatsMainThread *pUserStats, U32 connectionId, unsigned int userId);
-   void (*onRequestGlobalFactionStats)(UserStatsMainThread*, U32 connectionId);
-   void (*onRequestGameProfile)(UserStatsMainThread *pUserStats, U32 connectionId,
+   void (*onRequestPlayerFactionStats)(UserStatsMainThread *pUserStats, U32 connectionId, U32 gatewayId, unsigned int userId);
+   void (*onRequestGlobalFactionStats)(UserStatsMainThread*, U32 connectionId, U32 gatewayId );
+   void (*onRequestGameProfile)(UserStatsMainThread *pUserStats, U32 connectionId, U32 gatewayId,
                                              unsigned int profileUserId, unsigned int requestUserId );
    bool (*onRequestUserProfileStats)(UserStatsMainThread *pUserStats, U32 connectionId, U32 gatewayId, unsigned int profileUserId );
    

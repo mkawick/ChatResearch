@@ -17,6 +17,7 @@ using boost::format;
 #include "../NetworkCommon/Utils/CommandLineParser.h"
 #include "../NetworkCommon/Packets/ServerToServerPacket.h"
 #include "../NetworkCommon/NetworkUtils.h"
+#include "../NetworkCommon/Utils/StringUtils.h"
 
 #include "KhaanConnector.h"
 #include "DiplodocusLoadBalancer.h"
@@ -31,6 +32,24 @@ using namespace std;
 
 #include <conio.h>
 #endif
+/*
+#pragma pack(push, 1)
+struct Test1 { U8 byte; long* ptr; };
+#pragma pack(pop)
+
+#pragma pack(push, 2)
+struct Test2 { U8 byte; long* ptr; };
+#pragma pack(pop)
+
+#pragma pack(push, 4)
+struct Test3 { U8 byte; long* ptr; };
+#pragma pack(pop)
+
+#pragma pack(push, 8)
+struct Test4 { U8 byte; long* ptr; };
+#pragma pack(pop)
+
+struct Test5 { U8 byte; long* ptr; };*/
 
 ////////////////////////////////////////////////////////////////////////
 
@@ -40,6 +59,16 @@ using namespace std;
 
 int main( int argc, const char* argv[] )
 {
+ /*  cout << "BasePacket::GetSize() :" << BasePacket::GetSize() << endl;
+   cout << "sizeof(BasePacket):" << sizeof(BasePacket) << endl;
+   cout << "sizeof( long* ):" << sizeof( long* ) << endl;
+
+   cout << "sizeof( Test1 ):" << sizeof( Test1 ) << endl;
+   cout << "sizeof( Test2 ):" << sizeof( Test2 ) << endl;
+   cout << "sizeof( Test3 ):" << sizeof( Test3 ) << endl;
+   cout << "sizeof( Test4 ):" << sizeof( Test4 ) << endl;
+   cout << "sizeof( Test5 ):" << sizeof( Test5 ) << endl;*/
+
    CommandLineParser    parser( argc, argv );
 
    string serverName = "LoadBalancer";
@@ -47,6 +76,8 @@ int main( int argc, const char* argv[] )
    string listenAddressString = "localhost";
    string listenForS2SPort = "9502";
    string listenForS2SAddress = "localHost";
+
+   string printFunctionsString = "false";
 
    //---------------------------------------
    
@@ -56,6 +87,7 @@ int main( int argc, const char* argv[] )
    parser.FindValue( "s2s.port", listenForS2SPort );
    parser.FindValue( "s2s.address", listenForS2SAddress );
 
+   parser.FindValue( "print.functions", printFunctionsString );
 
    FileLogOpen( serverName.c_str() );
 
@@ -77,6 +109,7 @@ int main( int argc, const char* argv[] )
    //--------------------------------------------------------------
 
    int listenPort = 9500, listenS2SPort = 9502;
+   bool  printFunctions = false;
    try 
    {
        listenPort = boost::lexical_cast<int>( listenPortString );
@@ -87,7 +120,10 @@ int main( int argc, const char* argv[] )
        LogMessage( LOG_PRIO_ERR, "Error: input string was not valid" );
    }
 
-
+   if( printFunctionsString == "1" || printFunctionsString == "true" || printFunctionsString == "TRUE" )
+   {
+      printFunctions = true;
+   }
    //--------------------------------------------------------------
 
    U64 serverUniqueHashValue = GenerateUniqueHash( serverName );
@@ -111,6 +147,7 @@ int main( int argc, const char* argv[] )
       DiplodocusLoadBalancer* loadBalancer = new DiplodocusLoadBalancer( serverName, serverId );
       loadBalancer->SetGatewayType( PacketServerIdentifier::GatewayType_None );
       loadBalancer->SetAsGame( false );
+      loadBalancer->PrintFunctionNames( printFunctions );
 
 
       vector< string >::iterator it = params.begin();

@@ -38,13 +38,15 @@ Khaan ::Khaan( int socketId, bufferevent* be, int connectionId ) : ChainedInterf
                                                                   m_useLibeventToSend( true ),
                                                                   m_criticalFailure( false ),
                                                                   m_denyAllFutureData( false ),
-                                                                  m_outboundBuffer( NULL ),
                                                                   m_isDisconnected( false ),
                                                                   m_isInTelnetMode( false ),
                                                                   m_isExpectingMoreDataInPreviousPacket( false ),
+                                                                  m_hasPacketsReceived( false ),
+                                                                  m_hasPacketsToSend( false ),
                                                                   m_expectedBytesReceivedSoFar( 0 ),
                                                                   m_expectedBytes( 0 ),
-                                                                  m_versionNumberMinor( NetworkVersionMinor )
+                                                                  m_versionNumberMinor( NetworkVersionMinor ),
+                                                                  m_outboundBuffer( NULL )
 {
    //LogMessage( LOG_PRIO_INFO, "Khaan 1" );
    m_chainedType = ChainedType_InboundSocketConnector;
@@ -97,6 +99,7 @@ void   Khaan ::PreCleanup()
       //LogMessage( LOG_PRIO_INFO, "Khaan 4.. server->InputRemovalInProgress " );
       Diplodocus <Khaan> * server = static_cast< Diplodocus <Khaan> * >( chain );
       server->InputRemovalInProgress( this );
+      m_listOfOutputs.clear();
    }
 
    DenyAllFutureData();
@@ -112,7 +115,7 @@ void   Khaan ::PreCleanup()
 
 void	Khaan :: SetIPAddress( const sockaddr_in& addr )
 {
-   //LogMessage( LOG_PRIO_INFO, "Khaan 5" );
+   ////LogMessage( LOG_PRIO_INFO, "Khaan 5" );
 	m_ipAddress = addr;
 }
 
@@ -120,9 +123,10 @@ void	Khaan :: SetIPAddress( const sockaddr_in& addr )
 
 bool     Khaan :: HasDeleteTimeElapsed( time_t& currentTime, int testTime ) const
 {
-   //LogMessage( LOG_PRIO_INFO, "Khaan 6" );
    if( m_timeOfDisconnection == 0 )
       return false;
+
+   //LogMessage( LOG_PRIO_INFO, "Khaan 6 %ul ,  %ul : %d  ", currentTime, m_timeOfDisconnection, testTime );
 
    if( difftime( currentTime, m_timeOfDisconnection ) >= testTime ) // once per second
    {
@@ -146,9 +150,11 @@ bool	Khaan :: OnDataReceived( const U8* data, int length )
    PacketFactory parser;
    if( parser.Parse( data, offset, &packetIn, m_versionNumberMinor ) == true )
    {
-      m_packetsIn.push_back( packetIn );
+      Threading::MutexLock  locker( m_inputChainListMutex );
+         m_packetsIn.push_back( packetIn );
+         m_hasPacketsReceived = true;
  
-      ChainLinkIteratorType itOutputs = m_listOfOutputs.begin();
+     /* ChainLinkIteratorType itOutputs = m_listOfOutputs.begin();
       while( itOutputs != m_listOfOutputs.end() )
       {
          ChainLink& chain = *itOutputs++;
@@ -158,14 +164,14 @@ bool	Khaan :: OnDataReceived( const U8* data, int length )
          te.type = ThreadEvent_NeedsService;
          te.identifier = m_chainId;
          static_cast< ChainType*> ( interfacePtr )->PushInputEvent( &te );
-      }
+      }*/
    }
 
-   if( packetIn )
+ /*  if( packetIn )
    {
       PacketFactory factory;
       factory.CleanupPacket( packetIn );
-   }
+   }*/
 
    return true;
 }
@@ -177,18 +183,24 @@ bool	Khaan :: Update()
    if( m_isDisconnected )
       return false;
 
-   UpdateInwardPacketList();
-   UpdateOutwardPacketList();
+   if( m_hasPacketsReceived == true )
+   {
+      UpdateInwardPacketList();
+   }
+   if( m_hasPacketsToSend == true )
+   {
+      UpdateOutwardPacketList();
+   }
 
    // I think that this makes sense
    CleanupAllEvents();
 
-   if( m_packetsOut.size() || m_packetsIn.size() )// we didn't finish
+   if( m_hasPacketsToSend || m_hasPacketsReceived )// we didn't finish
    {
       LogMessage( LOG_PRIO_INFO, "Remaining packet out count: %d", m_packetsOut.size() );
       return false;
    }
-   if( m_denyAllFutureData && m_packetsOut.size() == 0 ) // shut it down
+   if( m_denyAllFutureData && m_hasPacketsToSend == false ) // shut it down
    {
       CloseConnection();
       return false;
@@ -201,7 +213,7 @@ bool	Khaan :: Update()
 
 void  Khaan :: SetOutboudBufferSize( U32 size )
 {
-   ////LogMessage( LOG_PRIO_INFO, "Khaan 8.1" );
+   //LogMessage( LOG_PRIO_INFO, "Khaan 8.1" );
    if( size < 1024 )
       size = 1024;
    if( size > MaxBufferSize )
@@ -217,7 +229,7 @@ void  Khaan :: SetOutboudBufferSize( U32 size )
 void	Khaan :: UpdateInwardPacketList()
 {
    //LogMessage( LOG_PRIO_INFO, "Khaan 9" );
-   if( m_packetsIn.size() == 0 || m_isDisconnected )
+   if( m_hasPacketsReceived == false || m_isDisconnected )
       return;
 
    int numOutputs = static_cast<int>( m_listOfOutputs.size() );
@@ -226,21 +238,26 @@ void	Khaan :: UpdateInwardPacketList()
       assert( 0 );// need support for multiple outputs, each packet should be copied because of the memory ownership, or use shared pointers
    }
 
-   ChainLinkIteratorType output = m_listOfOutputs.begin();
-   IChainedInterface* chain = (*output).m_interface;
-
-   if( chain )
    {
-      while( m_packetsIn.size() > 0 )
+      Threading::MutexLock  locker( m_inputChainListMutex );
+      ChainLinkIteratorType output = m_listOfOutputs.begin();
+      if( output != m_listOfOutputs.end() )
       {
-         BasePacket* packet = m_packetsIn.front();
-      
-         TrackInwardPacketType( packet );
+         IChainedInterface* chain = (*output).m_interface;
+         if( chain )
+         {
+            m_hasPacketsReceived = false;
 
-         Threading::MutexLock  locker( m_inputChainListMutex );
-         static_cast< ChainType*> ( chain )->AddInputChainData( packet, m_socketId );
+            while( m_packetsIn.size() > 0 )
+            {
+               BasePacket* packet = m_packetsIn.front();
+            
+               TrackInwardPacketType( packet );
+               static_cast< ChainType*> ( chain )->AddInputChainData( packet, m_socketId );
 
-         m_packetsIn.pop_front();
+               m_packetsIn.pop_front();
+            }
+         }
       }
    }
 }
@@ -312,34 +329,22 @@ void  Khaan::SendTelnetInstructions()
 }
 
 /////////////////////////////////////////////////////////////////
-#define PRINT_BUFFER_INFO
 
-void  DumpOutput( U8* buffer, int offset, int length )
-{
-#ifdef PRINT_BUFFER_INFO
-      cout << "offset: " << offset << "   length: " << length << endl;
-      int bytesToPrint = length; if( bytesToPrint > 16 ) bytesToPrint = 16;
-      string str = BufferToHexString( buffer, bytesToPrint );
-      cout << " ->[ " << str << " ]" << endl;
-#endif
-}
 
 /////////////////////////////////////////////////////////////////
 
 int	Khaan :: UpdateOutwardPacketList()
 {
-   if( m_isDisconnected )
+   if( m_hasPacketsToSend == false || m_isDisconnected )
       return 0;
 
-   if( m_packetsOut.size() == 0 )
-      return 0;
-
-   cout << "Khaan :: UpdateOutwardPacketList:: lock 1" << endl;
+   //cout << "Khaan :: UpdateOutwardPacketList:: lock 1" << endl;
    m_outputChainListMutex.lock();
-   deque< BasePacket* > localQueue = m_packetsOut;
-   m_packetsOut.clear();
+      deque< BasePacket* > localQueue = m_packetsOut;
+      m_packetsOut.clear();
+      m_hasPacketsToSend = false;
    m_outputChainListMutex.unlock();
-   cout << "Khaan :: UpdateOutwardPacketList:: unlock 1" << endl;
+   //cout << "Khaan :: UpdateOutwardPacketList:: unlock 1" << endl;
 
    if( localQueue.size() == 0 )
       return 0;
@@ -374,7 +379,7 @@ int	Khaan :: UpdateOutwardPacketList()
       
       SendData( m_outboundBuffer, length );
 
-      DumpOutput( m_outboundBuffer, offset, length );
+      DumpBuffer( m_outboundBuffer, offset, length );
 
       localQueue.pop_front();
       TrackOutwardPacketType( packet ); 
@@ -383,16 +388,17 @@ int	Khaan :: UpdateOutwardPacketList()
 
    if( localQueue.size() ) // remainder
    {
-      cout << "Khaan :: UpdateOutwardPacketList:: lock 2" << endl;
+      //cout << "Khaan :: UpdateOutwardPacketList:: lock 2" << endl;
       m_outputChainListMutex.lock();
-      deque< BasePacket* >::reverse_iterator it = localQueue.rbegin();// reverse order
-      while( it != localQueue.rend() )
-      {
-         BasePacket* packet = *it++;
-         m_packetsOut.push_front( packet );
-      }
+         deque< BasePacket* >::reverse_iterator it = localQueue.rbegin();// reverse order
+         while( it != localQueue.rend() )
+         {
+            BasePacket* packet = *it++;
+            m_packetsOut.push_front( packet );
+         }
+         m_hasPacketsToSend = true;
       m_outputChainListMutex.unlock();
-      cout << "Khaan :: UpdateOutwardPacketList:: unlock 2" << endl;
+      //cout << "Khaan :: UpdateOutwardPacketList:: unlock 2" << endl;
    }
 
    return sizeSent;
@@ -416,9 +422,20 @@ bool Khaan :: AddOutputChainData( BasePacket* packet, U32 filingData )
 
    cout << "Khaan :: AddOutputChainData:: lock" << endl;
    m_outputChainListMutex.lock();
-   m_packetsOut.push_back( packet );
+      AddOutputChainDataNoLock( packet );
    m_outputChainListMutex.unlock();
    cout << "Khaan :: AddOutputChainData:: unlock" << endl;
+   return true; 
+}
+
+/////////////////////////////////////////////////////////////////
+
+bool Khaan :: AddOutputChainDataNoLock( BasePacket* packet ) 
+{ 
+   if( m_criticalFailure )
+      return false;
+   m_packetsOut.push_back( packet );
+   m_hasPacketsToSend = true;
    return true; 
 }
 
@@ -546,6 +563,9 @@ void     Khaan :: CloseConnection()
 
 void    Khaan :: Cleanup()
 {
+   if( m_bufferEvent == NULL )
+      return;
+
    //LogMessage( LOG_PRIO_INFO, "Khaan 16" );
    PreCleanup();
 
@@ -564,10 +584,14 @@ void    Khaan :: Cleanup()
 
 void     Khaan :: ClearAllPacketsIn()
 {
+   if( m_packetsIn.size() == 0 )// slight threading risk here... needs flag optimization
+      return;
+
    //LogMessage( LOG_PRIO_INFO, "Khaan 17" );
    m_inputChainListMutex.lock();
    deque< BasePacket* > localQueue = m_packetsIn;
    m_packetsIn.clear();
+   m_hasPacketsReceived = false;
    m_inputChainListMutex.unlock();
 
    PacketFactory factory;
@@ -583,13 +607,17 @@ void     Khaan :: ClearAllPacketsIn()
 
 void     Khaan :: ClearAllPacketsOut()
 {
+   if( m_hasPacketsToSend == false )// slight threading risk here... needs flag optimization
+      return;
+
    //LogMessage( LOG_PRIO_INFO, "Khaan 18" );
-   cout << "Khaan :: ClearAllPacketsOut:: lock" << endl;
+   //cout << "Khaan :: ClearAllPacketsOut:: lock" << endl;
    m_outputChainListMutex.lock();
-   deque< BasePacket* > localQueue = m_packetsOut;
-   m_packetsOut.clear();
+      deque< BasePacket* > localQueue = m_packetsOut;
+      m_packetsOut.clear();
+      m_hasPacketsToSend = false;
    m_outputChainListMutex.unlock();
-   cout << "Khaan :: ClearAllPacketsOut:: unlock" << endl;
+   //cout << "Khaan :: ClearAllPacketsOut:: unlock" << endl;
 
    PacketFactory factory;
    while( localQueue.size() )
@@ -612,7 +640,7 @@ void	   Khaan::OnSocketError( struct bufferevent* bufferEventObj, short events, 
    {
       /* Client disconnected, remove the read event and the
       * free the Khaan structure. */
-      LogMessage( LOG_PRIO_INFO, "Client disconnected." );
+      //LogMessage( LOG_PRIO_INFO, "Client disconnected." );
    }
    else 
    {

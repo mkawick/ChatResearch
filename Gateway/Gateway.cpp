@@ -13,6 +13,7 @@ using boost::format;
 #include <cstdio>
 #include "../NetworkCommon/Version.h"
 #include "../NetworkCommon/Utils/Utils.h"
+#include "../NetworkCommon/Utils/StringUtils.h"
 #include "../NetworkCommon/Utils/CommandLineParser.h"
 #include "../NetworkCommon/Packets/ServerToServerPacket.h"
 #include "../NetworkCommon/NetworkUtils.h"
@@ -93,11 +94,9 @@ void  PrintInstructions()
 
 int main( int argc, const char* argv[] )
 {
-   daemonize( "gateway_serverd" );
-
    CommandLineParser    parser( argc, argv );
 
-   string serverName = "Gateway server";
+   string serverName = "gateway_serverd";
 
    string loadBalancerPortString = "9502";
    string loadBalancerAddressString = "localhost";
@@ -189,6 +188,8 @@ int main( int argc, const char* argv[] )
 
    parser.FindValue( "asset.only", assetOnlyString );
    parser.FindValue( "asset.block", assetBlockString );
+
+   daemonize( serverName.c_str() );
 
    vector< string > params;
   /* if( parser.FindValue( "games", params ) )
@@ -298,6 +299,7 @@ int main( int argc, const char* argv[] )
       gatewayServer->PrintPacketTypes( printPackets );
       gatewayServer->PrintFunctionNames( printFunctions );
       gatewayServer->SetupListening( listenPort );
+      
 
       if( assetOnly == true )
       {
@@ -312,7 +314,8 @@ int main( int argc, const char* argv[] )
          ConnectToMultipleGames< FruitadensGateway, MainGatewayThread > ( parser, gatewayServer, true );
 
          PrepConnection< FruitadensGateway, MainGatewayThread > ( chatIpAddressString,          chatPort,         "chat",           gatewayServer, ServerType_Chat, true );
-         PrepConnection< FruitadensGateway, MainGatewayThread > ( loginIpAddressString,         loginPort,        "logon",          gatewayServer, ServerType_Login, true );
+         FruitadensGateway*login = PrepConnection< FruitadensGateway, MainGatewayThread > ( loginIpAddressString,         loginPort,        "logon",          gatewayServer, ServerType_Login, true );
+         //login->SetExtensiveLogging();
          PrepConnection< FruitadensGateway, MainGatewayThread > ( contactIpAddressString,       contactPort,      "contact",        gatewayServer, ServerType_Contact, true );
          PrepConnection< FruitadensGateway, MainGatewayThread > ( purchaseIpAddressString,      purchasePort,     "purchase",       gatewayServer, ServerType_Purchase, true );
          PrepConnection< FruitadensGateway, MainGatewayThread > ( analyticsIpAddressString,     analyticsPort,    "analytics",      gatewayServer, ServerType_Analytics, true );

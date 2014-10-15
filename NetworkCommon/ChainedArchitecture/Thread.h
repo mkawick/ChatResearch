@@ -14,13 +14,22 @@
 
 #endif
 
+#ifndef CLIENT_ONLY
+#include <boost/thread/recursive_mutex.hpp>
+//#include <boost/thread/mutex.hpp>
+typedef boost::recursive_mutex ThreadMutex;
+#define  MUTEX_DEFINED
+#endif
+
 #if PLATFORM == PLATFORM_WINDOWS
 #define WIN32_LEAN_AND_MEAN
 #define _WINSOCKAPI_ // preventing issues with winsock, only
 #include <winsock2.h>
 
-
+#      ifndef MUTEX_DEFINED
 typedef HANDLE             ThreadMutex;
+#      endif
+
 typedef HANDLE             ThreadId;
 
 #elif PLATFORM == PLATFORM_MAC || PLATFORM == PLATFORM_UNIX
@@ -30,7 +39,10 @@ typedef HANDLE             ThreadId;
 #include <sched.h>
 #include <unistd.h>
 
+#      ifndef MUTEX_DEFINED
 typedef pthread_mutex_t    ThreadMutex;
+#      endif
+
 typedef pthread_t          ThreadId;
 typedef pthread_attr_t     ThreadAttributes;
 
@@ -58,6 +70,7 @@ public:
 
 private:
    mutable ThreadMutex    m_mutex;
+   //mutable boost::recursive_mutex    m_mutex;
    mutable bool           m_isLocked;
    mutable int            m_pendingLockReqs;
 };

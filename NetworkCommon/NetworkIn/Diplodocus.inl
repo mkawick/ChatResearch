@@ -100,6 +100,7 @@ bool        Diplodocus< InputChain, OutputChain >::SetupListeningSocket()
    LogMessage( LOG_PRIO_INFO, "    name:              %s", m_serverName.c_str() );
    LogMessage( LOG_PRIO_INFO, "    id:                %u", m_serverId );
    LogMessage( LOG_PRIO_INFO, "    connection type:   %s  %d", GetServerTypeName( m_serverType ), m_serverType );
+   LogMessage( LOG_PRIO_INFO, "    listening on port: %d", m_localIpAddress.c_str() );
    LogMessage( LOG_PRIO_INFO, "    listening on port: %d", m_listeningPort );
    LogMessage( LOG_PRIO_INFO, " ******************************* " );
 
@@ -216,6 +217,8 @@ void  Diplodocus< InputChain, OutputChain >::CleanupOldClientConnections( const 
    time_t currentTime;
    time( &currentTime );
 
+   list< Khaan* > listOfInputsToBeDeleted;
+
    m_inputChainListMutex.lock();
    ChainLinkIteratorType itInputs = m_listOfInputs.begin();
    while( itInputs != m_listOfInputs.end() )
@@ -230,14 +233,26 @@ void  Diplodocus< InputChain, OutputChain >::CleanupOldClientConnections( const 
          {
             if( khaan->HasDeleteTimeElapsed( currentTime ) == true )
             {
-               khaan->RemoveOutputChain( this );
-               khaan->CloseConnection();
-               delete khaan;
+               listOfInputsToBeDeleted.push_back( khaan );
+               m_listOfInputs.erase( oldConnIt );
             }
          }
+         
       }
    }
    m_inputChainListMutex.unlock();
+
+   // this external loop exists because of the lock within a lock that linux hates
+   list< Khaan* >::iterator itDeletedInputs = listOfInputsToBeDeleted.begin();
+   while( itDeletedInputs != listOfInputsToBeDeleted.end() )
+   {
+      Khaan* khaan = *itDeletedInputs++;
+      FinalRemoveInputChain( khaan->GetConnectionId() );
+      
+      khaan->RemoveOutputChain( this );
+      khaan->CloseConnection();
+      delete khaan;
+   }
 }
 
 //---------------------------------------------------------------
@@ -258,7 +273,7 @@ void     Diplodocus< InputChain, OutputChain >::SetupClientConnectionForDeletion
    if( chain )
    {
       // verify that this is still in the list
-      m_inputChainListMutex.lock();
+     /* m_inputChainListMutex.lock();
       ChainLinkIteratorType itInputs = m_listOfInputs.begin();
       while( itInputs != m_listOfInputs.end() )
       {
@@ -270,7 +285,7 @@ void     Diplodocus< InputChain, OutputChain >::SetupClientConnectionForDeletion
             if( khaan )
             {
                khaan->DenyAllFutureData();
-               if( khaan->HasDisconnected() == false )
+               //if( khaan->HasDisconnected() == false )
                {
                   time_t currentTime;
                   time( &currentTime );
@@ -280,12 +295,24 @@ void     Diplodocus< InputChain, OutputChain >::SetupClientConnectionForDeletion
             break;
          }
       }
-      m_inputChainListMutex.unlock();
+      m_inputChainListMutex.unlock();*/
+      Khaan* khaan = static_cast< Khaan* >( chain );
+      //if( khaan )
+      {
+         khaan->DenyAllFutureData();
+         //if( khaan->HasDisconnected() == false )
+         {
+            time_t currentTime;
+            time( &currentTime );
+            khaan->SetTimeForDeletion( currentTime );
+         }
+      } 
    }
 }
 
 //---------------------------------------------------------------
 
+// this should always be invoked from within the thread space of the main thread.
 template< typename InputChain, typename OutputChain >
 bool     Diplodocus< InputChain, OutputChain >::SendPacketToGateway( BasePacket* packet, U32 connectionId, U32 gatewayId, float delayInSecs )
 {
@@ -293,11 +320,16 @@ bool     Diplodocus< InputChain, OutputChain >::SendPacketToGateway( BasePacket*
    {
       return DelayPacketToGateway( packet, connectionId, gatewayId, delayInSecs );
    }
-   PacketGatewayWrapper* wrapper = new PacketGatewayWrapper();
-   wrapper->SetupPacket( packet, connectionId );
+
+   PacketGatewayWrapper* wrapper = static_cast< PacketGatewayWrapper*> ( packet );
+   if( packet->packetType != PacketType_GatewayWrapper )
+   {
+      wrapper = new PacketGatewayWrapper();
+      wrapper->SetupPacket( packet, connectionId );
+   }
  
    { // be very careful here... this extra effort was made to prevent locks inside of locks
-      Threading::MutexLock Locker( m_inputChainListMutex );
+      //Threading::MutexLock Locker( m_inputChainListMutex );
 
       ChainLinkIteratorType itInputs = m_listOfInputs.begin();
       while( itInputs != m_listOfInputs.end() )// only one output currently supported.
@@ -309,6 +341,7 @@ bool     Diplodocus< InputChain, OutputChain >::SendPacketToGateway( BasePacket*
             connection->GetServerId() != gatewayId )
             continue;
 
+         //cout << "Diplodocus::SendPacketToGateway" << endl;
          if( connection->AddOutputChainData( wrapper, connectionId ) == true )
          {
             MarkConnectionAsNeedingUpdate( connection->GetChainedId() );
@@ -334,6 +367,7 @@ bool  Diplodocus< InputChain, OutputChain >::HandlePacketToOtherServer( BasePack
 
    if( itInputs != m_listOfInputs.end() )
    {
+      //cout << "Diplodocus::HandlePacketToOtherServer 1" << endl;
       ChainType* inputPtr = static_cast< ChainType*> ( itInputs->m_interface );
       if( inputPtr->AddOutputChainData( packet, connectionId ) == true )
       {
@@ -352,6 +386,7 @@ bool  Diplodocus< InputChain, OutputChain >::HandlePacketToOtherServer( BasePack
 
    if( itOutputs != m_listOfOutputs.end() )
    {
+      //cout << "Diplodocus::HandlePacketToOtherServer 2" << endl;
       ChainType* outputPtr = static_cast< ChainType*> ( itOutputs->m_interface );
       if( outputPtr->AddOutputChainData( packet, connectionId ) == true )
       {
@@ -447,19 +482,19 @@ void     Diplodocus< InputChain, OutputChain >::SetupListening( int port )
 template< typename InputChain, typename OutputChain >
 void	Diplodocus< InputChain, OutputChain >::AddClientConnection( InputChainType* client )
 {
-   cout << "AddClientConnection:1" << endl;
+   //cout << "AddClientConnection:1" << endl;
    LockMutex();
    m_connectedClients.insert(  ClientLookup ( client->GetChainedId(), client ) );
    UnlockMutex();
 
-   cout << "AddClientConnection:2" << endl;
+   //cout << "AddClientConnection:2" << endl;
    AddInputChain( client );   
 
    client->RegisterToReceiveNetworkTraffic();
 
-   cout << "AddClientConnection:3" << endl;
+   //cout << "AddClientConnection:3" << endl;
    InputConnected( client );
-   cout << "AddClientConnection:4" << endl;
+   //cout << "AddClientConnection:4" << endl;
    m_numTotalConnections ++;
 }
 
@@ -710,7 +745,7 @@ void	Diplodocus< InputChain, OutputChain >::UpdateAllConnections( const char* co
       {
          ChainLink & chainedInput = *itInputs++;
          InputChainType* connection = static_cast< InputChainType* >( chainedInput.m_interface );
-         if( connection->DoesNameMatch( connectionName ) )
+         if( connection->IsConnected() == true && connection->DoesNameMatch( connectionName ) == true  )
          {
             connection->Update();
          }
@@ -796,6 +831,30 @@ void  Diplodocus< InputChain, OutputChain >::NotifyFinishedRemoving( IChainedInt
       }*/
    }
    UnlockMutex();
+}
+
+//------------------------------------------------------------------------------------------
+
+template< typename InputChain, typename OutputChain >
+void     Diplodocus< InputChain, OutputChain >::UpdateInputPacketToBeProcessed()
+{
+   if( m_inputPacketsToBeProcessed.size() > 0 )
+   { 
+      LogMessage( LOG_PRIO_INFO, "Diplodocus::UpdateInputPacketToBeProcessed <<<" );
+      m_mutex.lock();
+      deque< PacketStorage > packetQueue = m_inputPacketsToBeProcessed;
+      m_inputPacketsToBeProcessed.clear();
+      m_mutex.unlock();
+
+      LogMessage( LOG_PRIO_INFO, "Diplodocus::UpdateInputPacketToBeProcessed ---" );
+
+      deque< PacketStorage >::iterator it = packetQueue.begin();
+      while( it != packetQueue.end() )
+      {
+         ProcessPacket( *it++ );
+      }
+      LogMessage( LOG_PRIO_INFO, "Diplodocus::UpdateInputPacketToBeProcessed >>>" );
+   }
 }
 
 //------------------------------------------------------------------------------------------

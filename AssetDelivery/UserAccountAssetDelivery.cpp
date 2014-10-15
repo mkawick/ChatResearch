@@ -253,7 +253,7 @@ bool     UserAccountAssetDelivery::GetAsset( const PacketAsset_RequestAsset* pac
             }
 
             return SendRawData< PacketGameplayRawData, AssetMainThread > 
-               ( data, size, PacketGameplayRawData::Asset, MaxSize, m_assetManager->GetServerId(), asset->productId, asset->hash, connectionId, m_assetManager );
+               ( data, size, PacketGameplayRawData::Asset, MaxSize, m_assetManager->GetServerId(), asset->productId, asset->hash, connectionId, m_userTicket.gatewayId, m_assetManager );
          }
       }
       else

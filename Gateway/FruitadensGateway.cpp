@@ -41,7 +41,7 @@ void  FruitadensGateway::FindGateway()
 {
    if( m_gateway == NULL )
    {
-      Threading::MutexLock locker( m_inputChainListMutex );
+      //Threading::MutexLock locker( m_inputChainListMutex );
       // we don't do much interpretation here, we simply pass output data onto our output, which should be the DB or other servers.
       ChainLinkIteratorType itInput = m_listOfInputs.begin();
       if( itInput != m_listOfInputs.end() )// only one input currently supported.

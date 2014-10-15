@@ -9,6 +9,12 @@
 #include <deque>
 #include <memory.h>
 #include <iostream>
+#include <ctime>
+
+#ifndef CLIENT_ONLY
+#include <boost/thread/thread_time.hpp>
+#include <boost/thread/recursive_mutex.hpp>
+#endif
 
 #include "../ServerConstants.h"
 
@@ -36,21 +42,27 @@ const int mutexTimeout = 1000;
 //////////////////////////////////////////////////////////////////////////////////////////////
 
 Mutex::Mutex() :
+      m_mutex(),
       m_isLocked( false ),
-	  m_pendingLockReqs( 0 )
+	   m_pendingLockReqs( 0 )
 {
-#if PLATFORM == PLATFORM_WINDOWS
-   m_mutex = CreateMutex( 
-        NULL,              // default security attributes
-        FALSE,             // initially not owned
-        NULL);             // unnamed mutex
-#else
-   pthread_mutexattr_t  mattr; 
+#ifndef MUTEX_DEFINED 
+   #if PLATFORM == PLATFORM_WINDOWS
+      m_mutex = CreateMutex( 
+           NULL,              // default security attributes
+           FALSE,             // initially not owned
+           NULL);             // unnamed mutex
+   #else
+      m_mutex = PTHREAD_MUTEX_INITIALIZER;
 
-   int ret = pthread_mutexattr_init( &mattr ); 
-   ret = pthread_mutexattr_setpshared( &mattr, PTHREAD_PROCESS_SHARED );
+      pthread_mutexattr_t  mutexAttribute; 
+      int ret = pthread_mutexattr_init( &mutexAttribute ); 
+      pthread_mutexattr_settype( &mutexAttribute, PTHREAD_MUTEX_RECURSIVE );
+      //ret = pthread_mutexattr_setpshared( &mutexAttribute, PTHREAD_PROCESS_SHARED );
+      ret = ret;// compiler warning
 
-   pthread_mutex_init( &m_mutex, &mattr );
+      pthread_mutex_init( &m_mutex, &mutexAttribute );
+   #endif
 #endif
 }
 
@@ -58,16 +70,20 @@ Mutex::Mutex() :
 
 Mutex::~Mutex()
 {
-   // WAIT_OBJECT_0
-   // WAIT_ABANDONED
-#if PLATFORM == PLATFORM_WINDOWS
-   DWORD dwWaitResult = WaitForSingleObject(
-                                            m_mutex,
-                                            timeoutUponDeleteMs);  // time-out interval
-   CloseHandle( m_mutex );
+#ifndef MUTEX_DEFINED 
+   #if PLATFORM == PLATFORM_WINDOWS
+      DWORD dwWaitResult = WaitForSingleObject(
+                                               m_mutex,
+                                               timeoutUponDeleteMs);  // time-out interval
+      CloseHandle( m_mutex );
+   #else
+      //pthread_join( m)
+      pthread_mutex_destroy( &m_mutex );
+   #endif
 #else
-   //pthread_join( m)
-   pthread_mutex_destroy( &m_mutex );
+   //boost::system_time futureTime;
+   //m_mutex.timed_lock( boost::posix_time::milliseconds(200) );
+   m_mutex.lock();
 #endif
 }
 
@@ -76,12 +92,18 @@ Mutex::~Mutex()
 bool  Mutex::lock() const
 {
    m_pendingLockReqs++;
-#if PLATFORM == PLATFORM_WINDOWS
-   DWORD dwWaitResult = WaitForSingleObject( m_mutex, mutexTimeout );
-   // many error conditions including timeout.
+
+#ifndef MUTEX_DEFINED    
+   #if PLATFORM == PLATFORM_WINDOWS
+      DWORD dwWaitResult = WaitForSingleObject( m_mutex, mutexTimeout );
+      // many error conditions including timeout.
+   #else
+      pthread_mutex_lock( &m_mutex );
+   #endif
 #else
-   pthread_mutex_lock( &m_mutex );
+   m_mutex.lock();
 #endif
+
    m_isLocked = true;
 
    return true;
@@ -94,11 +116,16 @@ bool  Mutex::unlock() const
    m_isLocked = false;
    m_pendingLockReqs--;
 
-#if PLATFORM == PLATFORM_WINDOWS
-   if( ReleaseMutex( m_mutex ) )
-      return true;
+#ifndef MUTEX_DEFINED    
+   
+   #if PLATFORM == PLATFORM_WINDOWS
+      if( ReleaseMutex( m_mutex ) )
+         return true;
+   #else
+      pthread_mutex_unlock( &m_mutex );
+   #endif
 #else
-   pthread_mutex_unlock( &m_mutex );
+   m_mutex.unlock();
 #endif
 
    return false;

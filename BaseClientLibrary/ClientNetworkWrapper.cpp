@@ -7,6 +7,7 @@
 #include "ClientNetworkWrapper.h"
 
 #include "../NetworkCommon/Utils/Utils.h"
+#include "../NetworkCommon/Utils/StringUtils.h"
 #include "../NetworkCommon/NetworkUtils.h"
 #include "../NetworkCommon/Packets/CheatPacket.h"
 #include "../NetworkCommon/Packets/UserStatsPacket.h"
@@ -262,7 +263,7 @@ void     ClientNetworkWrapper::ReconnectAfterTalkingToLoadBalancer()
 void     ClientNetworkWrapper::Disconnect()
 {
    PrintFunctionName( __FUNCTION__ );
-   bool isConnected = IsConnected();
+   bool isConnected = IsConnected() | m_requiresGatewayDiscovery;
    cout << "Disconnect::isConnected = " << boolalpha << isConnected << noboolalpha << endl;
    if( isConnected == true )
    {

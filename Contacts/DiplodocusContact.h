@@ -63,6 +63,7 @@ private:
    int      CallbackFunction();
    void     UpdateAllConnections();
    void     UpdateDbResults();
+   bool     ProcessPacket( PacketStorage& storage );
 
    
    bool     HandleCommandFromGateway( BasePacket* packet, U32 connectionId );
@@ -99,7 +100,6 @@ private:
    typedef pair< U32, U32 >            UserIdToContactPair;
    typedef UserIdToContactMap::iterator  UserIdToContactMapIterator;
 
-   deque< PacketDbQueryResult* >    m_dbQueries;
    UserContactMap                   m_users;
    UserIdToContactMap               m_userLookupById;
 

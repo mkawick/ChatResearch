@@ -7,7 +7,7 @@
 
 #include "StringLookup.h"
 #include "../Utils/Utils.h"
-
+#include "../Utils/StringUtils.h"
 #include "../Utils/TableWrapper.h"
 
 //---------------------------------------------------------------

@@ -60,6 +60,7 @@ private:
    void     ConnectUser( const PacketPrepareForUserLogin* loginPacket );
    void     DisconnectUser( const PacketPrepareForUserLogout* logoutPacket );
    void     IsUserAllowedToUseThisProduct( const PacketListOfGames* packet );
+   bool     ProcessPacket( PacketStorage& storage );
 
    typedef pair< int, UserSession* >      ConnectionPair;
    typedef map< int, UserSession* >       ConnectionMap;

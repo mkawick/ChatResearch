@@ -3,6 +3,7 @@
 #include "ServerGameData.h"
 #include "DiplodocusGame.h"
 #include "../NetworkCommon/Utils/Utils.h"
+#include "../NetworkCommon/Utils/StringUtils.h"
 
 
 ///////////////////////////////////////////////////////////////

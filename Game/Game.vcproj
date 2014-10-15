@@ -64,7 +64,7 @@
 				AdditionalDependencies="../Debug/PacketLibrary.lib libmysql.lib"
 				OutputFile="$(OutDir)\$(ProjectName)Server.exe"
 				LinkIncremental="2"
-				AdditionalLibraryDirectories="..\w32libs\lib"
+				AdditionalLibraryDirectories="..\w32libs\lib;../../boost/lib32-msvc-9.0"
 				IgnoreDefaultLibraryNames="libcmt.lib"
 				GenerateDebugInformation="true"
 				SubSystem="1"
@@ -142,6 +142,7 @@
 				AdditionalDependencies="../Release/PacketLibrary.lib  libmysql.lib"
 				OutputFile="$(OutDir)\$(ProjectName)Server.exe"
 				LinkIncremental="1"
+				AdditionalLibraryDirectories="../../boost/lib32-msvc-9.0"
 				IgnoreDefaultLibraryNames="libcpmt.lib libcmt.lib"
 				GenerateDebugInformation="true"
 				SubSystem="1"
@@ -265,10 +266,6 @@
 				>
 			</File>
 			<File
-				RelativePath=".\FruitadensServerToServer.cpp"
-				>
-			</File>
-			<File
 				RelativePath=".\Game.cpp"
 				>
 			</File>
@@ -292,10 +289,6 @@
 			</File>
 			<File
 				RelativePath=".\DiplodocusGame.h"
-				>
-			</File>
-			<File
-				RelativePath=".\FruitadensServerToServer.h"
 				>
 			</File>
 			<File
@@ -421,6 +414,14 @@
 					RelativePath="..\NetworkCommon\NetworkOut\Fruitadens.h"
 					>
 				</File>
+				<File
+					RelativePath="..\NetworkCommon\NetworkOut\FruitadensServerToServer.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\NetworkCommon\NetworkOut\FruitadensServerToServer.h"
+					>
+				</File>
 			</Filter>
 			<Filter
 				Name="Utils"
@@ -443,6 +444,14 @@
 				</File>
 				<File
 					RelativePath="..\NetworkCommon\Utils\OsLevelUtils.h"
+					>
+				</File>
+				<File
+					RelativePath="..\NetworkCommon\Utils\StringUtils.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\NetworkCommon\Utils\StringUtils.h"
 					>
 				</File>
 				<File

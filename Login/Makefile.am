@@ -44,6 +44,7 @@ Login.cpp \
 ../NetworkCommon/Utils/CommandLineParser.cpp \
 ../NetworkCommon/Utils/OsLevelUtils.cpp \
 ../NetworkCommon/Utils/TableWrapper.cpp \
+../NetworkCommon/Utils/StringUtils.cpp \
 ../NetworkCommon/Utils/Utils.cpp 
 
 login_serverd_CXXFLAGS = -std=c++0x

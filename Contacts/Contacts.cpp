@@ -18,6 +18,7 @@ using boost::format;
 #include "../NetworkCommon/Utils/CommandLineParser.h"
 #include "../NetworkCommon/DataTypes.h"
 #include "../NetworkCommon/Utils/Utils.h"
+#include "../NetworkCommon/Utils/StringUtils.h"
 #include "../NetworkCommon/Database/Deltadromeus.h"
 #include "../NetworkCommon/Daemon/Daemonizer.h"
 #include "../NetworkCommon/NetworkIn/DiplodocusServerToServer.h"

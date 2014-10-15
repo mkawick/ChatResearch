@@ -20,6 +20,7 @@ using boost::format;
 
 #include "../Logging/server_log.h"
 #include "../Utils/Utils.h"
+#include "../Utils/StringUtils.h"
 
 static string   printResponseData; //will hold the response text
 namespace HTTP

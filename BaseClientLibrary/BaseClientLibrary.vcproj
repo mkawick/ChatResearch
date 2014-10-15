@@ -41,7 +41,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				PreprocessorDefinitions="WIN32;_DEBUG;_LIB"
+				PreprocessorDefinitions="WIN32;_DEBUG;_LIB;CLIENT_ONLY"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="1"
@@ -105,7 +105,7 @@
 				Optimization="2"
 				EnableIntrinsicFunctions="true"
 				AdditionalIncludeDirectories="..\w32libs\include"
-				PreprocessorDefinitions="WIN32;NDEBUG;_LIB"
+				PreprocessorDefinitions="WIN32;NDEBUG;_LIB;CLIENT_ONLY"
 				RuntimeLibrary="0"
 				BufferSecurityCheck="false"
 				EnableFunctionLevelLinking="true"
@@ -375,6 +375,14 @@
 				</File>
 				<File
 					RelativePath="..\NetworkCommon\Utils\CommandLineParser.h"
+					>
+				</File>
+				<File
+					RelativePath="..\NetworkCommon\Utils\StringUtils.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\NetworkCommon\Utils\StringUtils.h"
 					>
 				</File>
 				<File

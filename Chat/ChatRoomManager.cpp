@@ -19,6 +19,7 @@ using boost::format;
 #include "../NetworkCommon/Packets/DbPacket.h"
 #include "../NetworkCommon/Packets/PacketFactory.h"
 #include "../NetworkCommon/Packets/ServerToServerPacket.h"
+#include "../NetworkCommon/Utils/StringUtils.h"
 #include "DiplodocusChat.h"
 #include "ChatUser.h"
 
@@ -1178,7 +1179,7 @@ bool     ChatRoomManager::UserSendsChatToChannel( const string& senderUuid, cons
 //---------------------------------------------------------------------
 //---------------------------------------------------------------------
 
-bool     ChatRoomManager::RequestChatRoomInfo( const PacketChatListAllMembersInChatChannel* packet, U32 connectionId )
+bool     ChatRoomManager::RequestChatRoomInfo( const PacketChatListAllMembersInChatChannel* packet, U32 gatewayId )
 {
    const string& channelUuid = packet->chatChannelUuid.c_str();
    stringhash channelHash = GenerateUniqueHash( channelUuid );
@@ -1186,11 +1187,11 @@ bool     ChatRoomManager::RequestChatRoomInfo( const PacketChatListAllMembersInC
    ChannelMapIterator channelIter = m_channelMap.find( channelHash );
    if( channelIter == m_channelMap.end() )
    {
-      ChatUser* userSender = m_chatServer->GetUserById( connectionId );
+     /* ChatUser* userSender = m_chatServer->GetUserById( connectionId );
       if( userSender != NULL )
       {
          m_chatServer->SendErrorToClient( connectionId, userSender->GetGatewayId(), PacketErrorReport::ErrorType_BadChatChannel );
-      }
+      }*/
       return false;
    }
 
@@ -1206,11 +1207,12 @@ bool     ChatRoomManager::RequestChatRoomInfo( const PacketChatListAllMembersInC
       userList.insert( ub.userUuid, ub.userName );
    }
 
-   ChatUser* userSender = m_chatServer->GetUserById( connectionId );
+   m_chatServer->Log( "RequestChatRoomInfo unimplemented", 1 );
+  /* ChatUser* userSender = m_chatServer->GetUserById( connectionId );
    if( userSender != NULL )
    {
       SendMessageToClient( response, connectionId, userSender->GetGatewayId() );
-   }
+   }*/
 
    return true;
 }

@@ -14,6 +14,7 @@ using boost::format;
 
 #include "../NetworkCommon/Utils/CommandLineParser.h"
 #include "../NetworkCommon/Utils/Utils.h"
+#include "../NetworkCommon/Utils/StringUtils.h"
 #include <boost/lexical_cast.hpp>
 
 #include "DiplodocusLogin.h"

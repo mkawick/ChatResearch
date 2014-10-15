@@ -13,6 +13,7 @@ using boost::format;
 #endif
 
 #include "../NetworkCommon/Utils/CommandLineParser.h"
+#include "../NetworkCommon/Utils/StringUtils.h"
 #include "../NetworkCommon/Packets/BasePacket.h"
 #include "../NetworkCommon/Packets/LoginPacket.h"
 #include "UserContact.h"

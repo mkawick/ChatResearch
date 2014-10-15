@@ -54,6 +54,7 @@ namespace Database
    {
    public:
       DbJobBase( Database::JobId id, const std::string& query, U32 senderKey = 0, U32 senderIdentifier = 0 );
+      virtual ~DbJobBase(){} // compiler warnings in gcc fixed. no other reason
       virtual bool      SubmitQuery( DbHandle* connection, const string& dbName ) = 0;
 
       //------------------------------------------------------------------

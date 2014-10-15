@@ -14,6 +14,7 @@ using namespace std;
 #include "AssetMainThread.h"
 #include "../NetworkCommon/NetworkIn/DiplodocusServerToServer.h"
 #include "../NetworkCommon/NetworkUtils.h"
+#include "../NetworkCommon/Utils/StringUtils.h"
 
 #if PLATFORM == PLATFORM_WINDOWS
 #include <conio.h>

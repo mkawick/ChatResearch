@@ -49,6 +49,7 @@ private:
    bool                    StoreUserProductsOwned( PacketListOfUserProductsS2S* productNamesPacket );
 
    int                     CallbackFunction();
+   bool                    ProcessPacket( PacketStorage& storage );
    void                    ExpireOldConnections();
 
    void                    AddServerNeedingUpdate( U32 serverId );

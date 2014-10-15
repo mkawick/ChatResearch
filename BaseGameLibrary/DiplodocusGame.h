@@ -83,6 +83,7 @@ public:
 private:
    int      CallbackFunction();
    void     UpdateAllConnections();
+   bool     ProcessPacket( PacketStorage& storage );
 
    void     UpdateAllTimers();
 

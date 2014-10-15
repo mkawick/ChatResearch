@@ -7,6 +7,7 @@ using namespace std;
 #include <boost/lexical_cast.hpp>
 
 #include "../NetworkCommon/Utils/CommandLineParser.h"
+#include "../NetworkCommon/Utils/StringUtils.h"
 
 #include "UserAccountPurchase.h"
 #include "PurchaseMainThread.h"

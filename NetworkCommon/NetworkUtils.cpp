@@ -33,7 +33,12 @@
    #include <ifaddrs.h>
    #include <netinet/in.h>
    #include <unistd.h>
-   #include <linux/if_link.h>
+
+   #include <errno.h>
+#endif
+
+#if PLATFORM == PLATFORM_LINUX
+#include <linux/if_link.h>
 #endif
 
 #include <stdio.h>
@@ -170,10 +175,9 @@ void GetLocalIpAddress( char* buffer, size_t buflen )
 
 bool IsPortBusy( int port )
 {
-   LogMessage( LOG_PRIO_INFO, "IsPortBusy start (port : %d)", port );
+   LogMessage( LOG_PRIO_INFO, "IsPortBusy (port : %d)", port );
    char portBuffer [256];
    sprintf( portBuffer, "%d", port );
-   //itoa( port, portBuffer, 10 );
 
    struct addrinfo *result = NULL;
    struct addrinfo hints;
@@ -185,10 +189,11 @@ bool IsPortBusy( int port )
    hints.ai_flags = AI_PASSIVE;
 
    // Resolve the server address and port
-   int iResult = getaddrinfo(NULL, portBuffer, &hints, &result);
+   int iResult = getaddrinfo( NULL, portBuffer, &hints, &result );
    if( iResult != 0 ) 
    {
       LogMessage( LOG_PRIO_ERR, "getaddrinfo failed with error: %d", iResult );
+      LogMessage( LOG_PRIO_ERR, "Errno: %d", errno );
       return true;
    }
 
@@ -197,8 +202,21 @@ bool IsPortBusy( int port )
    if( ListenSocket == SOCKET_ERROR) 
    {
       LogMessage( LOG_PRIO_ERR, "Failed to create socket" );
+      LogMessage( LOG_PRIO_ERR, "Errno: %d", errno );
       freeaddrinfo(result);
       return 1;
+   }
+
+   // make is sharable so that you can quickly rebind
+   int optval = 1;
+   iResult = setsockopt( ListenSocket, SOL_SOCKET, SO_REUSEADDR, reinterpret_cast< const char*> ( &optval ), sizeof( optval ) );
+   if( iResult == SOCKET_ERROR ) 
+   {
+      LogMessage( LOG_PRIO_ERR, "Failed to setsockopt" );
+      LogMessage( LOG_PRIO_ERR, "Errno: %d", errno );
+      freeaddrinfo(result);
+      closesocket( ListenSocket );
+      return true;
    }
 
    // Setup the TCP listening socket
@@ -206,6 +224,7 @@ bool IsPortBusy( int port )
    if( iResult == SOCKET_ERROR ) 
    {
       LogMessage( LOG_PRIO_ERR, "Failed to bind socket" );
+      LogMessage( LOG_PRIO_ERR, "Errno: %d", errno );
       freeaddrinfo(result);
       closesocket( ListenSocket );
       return true;
@@ -218,13 +237,14 @@ bool IsPortBusy( int port )
    if( iResult == SOCKET_ERROR ) 
    {
       LogMessage( LOG_PRIO_ERR, "Failed to listen to socket" );
+      LogMessage( LOG_PRIO_ERR, "Errno: %d", errno );
       closesocket( ListenSocket );
       return true;
    }
 
    closesocket( ListenSocket );
 
-   LogMessage( LOG_PRIO_INFO, "IsPortBusy = false SUCCESS (port : %d)", port );
+   LogMessage( LOG_PRIO_INFO, "Port is free (port : %d)", port );
 
    return false;
 }

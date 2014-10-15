@@ -5,6 +5,10 @@
 #include "ChatPacket.h"
 #include "PacketFactory.h"
 
+#pragma pack( push, 4 )
+
+///////////////////////////////////////////////////////////////
+
 class PacketGameToServer : public BasePacket 
 {
 public:
@@ -460,3 +464,5 @@ public:
 
 #include "GamePacket.inl"
 
+
+#pragma pack( pop )

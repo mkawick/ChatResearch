@@ -37,7 +37,7 @@ public:
    bool     AddInputChainData( BasePacket* packet, U32 connectionId );
    bool     AddOutputChainData( BasePacket* packet, U32 connectionId );
    bool     SendMessageToClient( BasePacket* packet, U32 connectionId );
-   bool     SendGameData( U32 connectionId, int packetSize, const U8* packet );
+   bool     SendGameData( U32 connectionId, U32 gatewayId, int packetSize, const U8* packet );
    bool     AddQueryToOutput( PacketDbQuery* dbQuery );
 
    void     ServerWasIdentified( IChainedInterface* khaan );
@@ -46,17 +46,15 @@ public:
    DbHandle*   GetDbConnectionByType( Database::Deltadromeus::DbConnectionType type );
 
 private:
-   int      MainLoop_InputProcessing();
-   int      MainLoop_OutputProcessing();
+   int      CallbackFunction();
    void     UpdateDbResults();
+   bool     ProcessPacket( PacketStorage& storage );
 
    bool     HandlePacketFromClient( BasePacket* packet, U32 connectionId );
    bool     HandlePacketFromOtherServer( BasePacket* packet, U32 connectionId );// not thread safe
    bool     HandleLoginPacket( BasePacket* packet, U32 connectionId );
    bool     HandleUserStatPacket( BasePacket* packet, U32 connectionId );
 
-
-   deque< PacketDbQueryResult* > m_dbQueries;
    deque< ConnectionPair > m_userConnectionList;
 };
 

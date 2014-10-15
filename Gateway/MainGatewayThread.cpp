@@ -12,6 +12,7 @@ using boost::format;
 #include "../NetworkCommon/Packets/PacketFactory.h"
 #include "../NetworkCommon/Packets/AnalyticsPacket.h"
 #include "../NetworkCommon/Utils/CommandLineParser.h"
+#include "../NetworkCommon/Utils/StringUtils.h"
 #include "../NetworkCommon/Logging/server_log.h"
 //#include "../NetworkCommon/ChainedArchitecture/ChainedInterface.h"
 
@@ -87,9 +88,9 @@ U32      MainGatewayThread::GetNextConnectionId()
    {
       LogMessage( LOG_PRIO_INFO, "MainGatewayThread::GetNextConnectionId" );
    }
-   m_inputChainListMutex.lock();
+   m_mutex.lock();
    U32 returnValue = m_connectionIdTracker;
-   m_inputChainListMutex.unlock();
+   m_mutex.unlock();
 
    m_connectionIdTracker ++;
 
@@ -128,7 +129,7 @@ bool  MainGatewayThread::AddInputChainData( BasePacket* packet, U32 connectionId
    {
       LogMessage( LOG_PRIO_INFO, "Packet to servers: %d:%d", (int)packet->packetType, (int)packet->packetSubType );
    }
-   PrintDebugText( "AddInputChainData", 1);
+   //PrintDebugText( "AddInputChainData", 1);
    ConnectionMapIterator connIt = m_connectionMap.find( connectionId );
    if( connIt != m_connectionMap.end() )
    {
@@ -159,7 +160,7 @@ bool  MainGatewayThread::AddInputChainData( BasePacket* packet, U32 connectionId
          LogMessage( LOG_PRIO_INFO, printer.c_str() );*/
       }
 
-      Threading::MutexLock locker( m_inputChainListMutex );
+      Threading::MutexLock locker( m_mutex );
       m_packetsToBeSentInternally.push_back( wrapper );
       if( m_printPacketTypes )
       {
@@ -245,20 +246,20 @@ void     MainGatewayThread::InputRemovalInProgress( IChainedInterface * chainedI
    SetupClientWaitingToBeRemoved( khaan );
 
    string currentTime = GetDateInUTC();
-   string printer = "Client disconnection at time:" + currentTime + " from " + inet_ntoa( khaan->GetIPAddress().sin_addr );
-   LogMessage( LOG_PRIO_ERR, printer.c_str() );
+   string printer = "MainGatewayThread::Client disconnection at time:" + currentTime + " from " + inet_ntoa( khaan->GetIPAddress().sin_addr );
+   //LogMessage( LOG_PRIO_ERR, printer.c_str() );
    if( m_printFunctionNames )
    {
       LogMessage( LOG_PRIO_ERR, printer.c_str() );
    }
 
-   LogMessage( LOG_PRIO_ERR, "** InputRemovalInProgress" );
+   LogMessage( LOG_PRIO_ERR, "InputRemovalInProgress exit" );
 
    // send notice to the login server
    // must be done before we clear the lists of ids
-   PacketLogout* logout = new PacketLogout();
+   /*PacketLogout* logout = new PacketLogout();
    logout->wasDisconnectedByError = true;
-   AddInputChainData( logout, connectionId );
+   AddInputChainData( logout, connectionId );*/
 }
 
 /////////////////////////////////////////////////////////////////////////////////
@@ -279,6 +280,20 @@ void     MainGatewayThread::UpdateRemovedConnections()
    // the connection will be removed later after a small period of time.
    m_clientsWaitingToBeRemoved.clear();
 }*/
+
+//-----------------------------------------------------
+
+void  MainGatewayThread::FinalRemoveInputChain( U32 connectionId )
+{
+   // this function is normally not invoked inside of a mutex.lock block.
+   if( m_printFunctionNames )
+   {
+      LogMessage( LOG_PRIO_INFO, "MainGatewayThread::FinalRemoveInputChain" );
+   }
+   PacketLogout* logout = new PacketLogout();
+   logout->wasDisconnectedByError = true;
+   AddInputChainData( logout, connectionId );
+}
 
 //-----------------------------------------------------
 
@@ -369,7 +384,6 @@ void     MainGatewayThread::OutputRemovalInProgress( IChainedInterface * chainPt
 
 void     MainGatewayThread::BroadcastPacketToAllUsers( const string& errorText, int errorState, int param1, int param2, U8 matchingGameId )
 {
-   //m_inputChainListMutex.lock();
    Threading::MutexLock locker( m_inputChainListMutex );
    ConnectionMapIterator nextIt = m_connectionMap.begin();
    while( nextIt != m_connectionMap.end() )
@@ -514,6 +528,7 @@ bool     MainGatewayThread::PushPacketToProperOutput( BasePacket* packet )
       packetSubType = wrapper->pPacket->packetSubType;
    }
 
+   cout << "MainGatewayThread::PushPacketToProperOutput 2 " << endl;
    assert( packetType < m_orderedOutputPacketHandlers.size() );
 
    OutputConnectorList& listOfOutputs = m_orderedOutputPacketHandlers[ packetType ];
@@ -526,25 +541,29 @@ bool     MainGatewayThread::PushPacketToProperOutput( BasePacket* packet )
       LogMessage( LOG_PRIO_INFO, "     sub type: %d", packetSubType );
 
       
-      string typeString = "     type: " + packetType;
-      string subTypeString = "     sub type: " + packetSubType;
+     /* string typeString = "     type: " + packetType;
+      string subTypeString = "     sub type: " + packetSubType;*/
       LogMessage( LOG_PRIO_INFO, " *** packet received with which we cannot deal. ***" );
-      LogMessage( LOG_PRIO_INFO, typeString.c_str() );
-      LogMessage( LOG_PRIO_INFO, subTypeString.c_str() );
+      //LogMessage( LOG_PRIO_INFO, typeString.c_str() );
+      //LogMessage( LOG_PRIO_INFO, subTypeString.c_str() );
       return false;
    }
 
+   cout << "MainGatewayThread::PushPacketToProperOutput 3 " << endl;
    OutputConnectorList::iterator it = listOfOutputs.begin();
    while( it != listOfOutputs.end() )
    {
       FruitadensGateway* fruity = *it++;
       U32 unusedParam = -1;
+      cout << "MainGatewayThread::PushPacketToProperOutput begin" << endl;
       if( fruity->AddOutputChainData( packet, unusedParam ) == true )
       {
          return true;
       }
+      cout << "MainGatewayThread::PushPacketToProperOutput success" << endl;
    }
  
+   cout << "MainGatewayThread::PushPacketToProperOutput 4 " << endl;
    
    return false;
 }
@@ -560,10 +579,10 @@ void     MainGatewayThread::SortOutgoingPackets()
       LogMessage( LOG_PRIO_INFO, "MainGatewayThread::SortOutgoingPackets" );
    }
 
-   m_inputChainListMutex.lock();
+   m_mutex.lock();
    PacketQueue localQue = m_packetsToBeSentInternally;
    m_packetsToBeSentInternally.clear();
-   m_inputChainListMutex.unlock();
+   m_mutex.unlock();
 
    PacketFactory factory;
    while( localQue.size() )
@@ -586,8 +605,6 @@ int       MainGatewayThread::CallbackFunction()
       LogMessage( LOG_PRIO_INFO, "MainGatewayThread::CallbackFunction" );
    }
 
-   
-
    CommonUpdate();
 
    SendStatsToLoadBalancer();
@@ -595,9 +612,9 @@ int       MainGatewayThread::CallbackFunction()
    m_outputChainListMutex.lock();
    BaseOutputContainer tempContainer = m_listOfOutputs;
    m_outputChainListMutex.unlock();
+
    StatTrackingConnections::SendStatsToStatServer( tempContainer, m_serverName, m_serverId, m_serverType );
    
-
    CleanupOldConnections();
   
    //UpdateRemovedConnections();
@@ -608,7 +625,16 @@ int       MainGatewayThread::CallbackFunction()
    MoveClientBoundPacketsFromTempToKhaan();
    //UpdateAllClientConnections();
 
+  /* bool shouldPrint = m_listOfInputs.size() > 0;
+   if( shouldPrint )
+   {
+      cout << "entering UpdateAllConnections " << endl;
+   }*/
    UpdateAllConnections( "KhaanGateway" );
+ /*  if( shouldPrint )
+   {
+      cout << "exiting UpdateAllConnections " << endl;
+   }*/
 
    //CheckOnServerStatusChanges();
 
@@ -697,7 +723,7 @@ void  MainGatewayThread::SendStatsToLoadBalancer()
       m_outputChainListMutex.unlock();
 
       // we'll keep this because we may be connected to multiple load balancers
-      bool statsSent = false;
+      //bool statsSent = false;
       ChainLinkIteratorType itOutput = tempContainer.begin();
       while( itOutput != tempContainer.end() )
       {
@@ -713,7 +739,7 @@ void  MainGatewayThread::SendStatsToLoadBalancer()
             U32 unusedParam = -1;
             if( fruity->AddOutputChainData( packet, unusedParam ) == true )
             {
-               statsSent = true;
+               //statsSent = true;
                PrintDebugText( "SendStatsToLoadBalancer" ); 
                return;
             }
@@ -753,7 +779,7 @@ void  MainGatewayThread::RequestNewConenctionIdsFromLoadBalancer()
       m_outputChainListMutex.unlock();
 
       // we'll keep this because we may be connected to multiple load balancers
-      bool statsSent = false;
+      //bool statsSent = false;
       ChainLinkIteratorType itOutput = tempContainer.begin();
       while( itOutput != tempContainer.end() )
       {
@@ -769,7 +795,7 @@ void  MainGatewayThread::RequestNewConenctionIdsFromLoadBalancer()
             U32 unusedParam = -1;
             if( fruity->AddOutputChainData( packet, unusedParam ) == true )
             {
-               statsSent = true;
+               //statsSent = true;
                PrintDebugText( "SendStatsToLoadBalancer" ); 
                return;
             }
@@ -799,14 +825,13 @@ bool  MainGatewayThread::AddOutputChainData( BasePacket* packetIn, U32 serverTyp
    // pass through only
    if( packetIn->packetType == PacketType_GatewayWrapper )
    {
-      PacketGatewayWrapper* wrapper = static_cast< PacketGatewayWrapper* >( packetIn );
+      //PacketGatewayWrapper* wrapper = static_cast< PacketGatewayWrapper* >( packetIn );
       //U32 id = wrapper->connectionId;
 
       //LogMessage( LOG_PRIO_INFO, "packet to client stored" );
-      //Threading::MutexLock locker( m_inputChainListMutex );
-      m_inputChainListMutex.lock();
+      m_mutex.lock();
       m_clientBoundTempStorage.push_back( packetIn );
-      m_inputChainListMutex.unlock();
+      m_mutex.unlock();
 
       //AddClientConnectionNeedingUpdate( id );
       
@@ -829,9 +854,9 @@ bool  MainGatewayThread::AddOutputChainData( BasePacket* packetIn, U32 serverTyp
             if( m_connectionIdTracker == 0 )
             {
                // this will probably only ever happen once
-               m_inputChainListMutex.lock();
+               m_mutex.lock();
                m_connectionIdTracker = m_connectionIdBeginningRange;
-               m_inputChainListMutex.unlock();
+               m_mutex.unlock();
             }
             m_connectionIdCountIds = response->countId;
          }
@@ -870,7 +895,7 @@ void  MainGatewayThread::CheckOnConnectionIdBlocks()
 
    int timeToWait = timeoutCheckOnConnectionIdBlocks;
    if( m_connectionIdBeginningRange == 0 ) // we may need a lock here
-      timeToWait = 15;
+      timeToWait = 10;
 
    if( difftime( currentTime, m_timestampRequestConnectionIdBlocks ) >= timeToWait ) 
    {
@@ -909,6 +934,7 @@ bool  MainGatewayThread::RequestMoreConnectionIdsFromLoadBalancer()
          packet->serverId = GetServerId();
 
          U32 unusedParam = -1;
+         cout << "MainGatewayThread::RequestMoreConnectionIdsFromLoadBalancer" << endl;
          if( fruity->AddOutputChainData( packet, unusedParam ) == false )
          {
             PacketFactory factory;
@@ -970,7 +996,7 @@ void  MainGatewayThread::HandlePacketToKhaan( KhaanGateway* khaan, BasePacket* p
          PacketErrorReport* error = static_cast< PacketErrorReport* >( packet );
          error->text = ErrorCodeLookup::GetString( error->errorCode );
       }
-      khaan->AddOutputChainData( packet );
+      khaan->AddOutputChainDataNoLock( packet );
    }
 }
 
@@ -988,32 +1014,6 @@ void  MainGatewayThread::MarkConnectionForDeletion( U32 connectionId )
 
       ChainedType::SetupClientConnectionForDeletion( it->second );
    }
-/*
-   ConnectionMapIterator it = m_connectionMap.find( connectionId );
-   if( it != m_connectionMap.end() )
-   {
-      //PacketLogoutToClient* logoutPacket = new PacketLogoutToClient;
-      //logoutPacket->wasDisconnectedByError = true;
-      //packet = logoutPacket;
-
-      Khaan* khaan = it->second;
-      if( khaan )
-      {
-         khaan->DenyAllFutureData();//
-         //khaanWrapper.m_connector->AddOutputChainData( logoutPacket );
-
-         int connectionId = khaan->GetConnectionId();
-         int socketId = khaan->GetSocketId();
-         khaan->RemoveOutputChain( this );
-
-         if( khaan->HasDisconnected() == false )
-         {
-            time_t currentTime;
-            time( &currentTime );
-            khaan->SetTimeForDeletion( currentTime );
-         }
-      }      
-   }*/
 }
 
 /////////////////////////////////////////////////////////////////////////////////
@@ -1099,14 +1099,31 @@ void  MainGatewayThread::MoveClientBoundPacketsFromTempToKhaan()
 {
    if( m_printFunctionNames )
    {
-      LogMessage( LOG_PRIO_INFO, "MainGatewayThread::MoveClientBoundPacketsFromTempToKhaan" );
-      LogMessage( LOG_PRIO_INFO, "MainLoop_OutputProcessing" );
+      LogMessage( LOG_PRIO_INFO, "MainGatewayThread::MoveClientBoundPacketsFromTempToKhaan enter" );
+      //LogMessage( LOG_PRIO_INFO, "MainLoop_OutputProcessing" );
    }
 
-   m_inputChainListMutex.lock();
+  /* if( m_inputChainListMutex.IsLocked() )
+   {
+      LogMessage( LOG_PRIO_INFO, "m_inputChainListMutex is locked" );
+   }
+   if( m_outputChainListMutex.IsLocked() )
+   {
+      LogMessage( LOG_PRIO_INFO, "m_outputChainListMutex is locked" );
+   }
+   if( m_mutex.IsLocked() )
+   {
+      LogMessage( LOG_PRIO_INFO, "m_mutex is locked" );
+   }*/
+   m_mutex.lock();
    std::deque< BasePacket* >  localQueue = m_clientBoundTempStorage;
    m_clientBoundTempStorage.clear();
-   m_inputChainListMutex.unlock();
+   m_mutex.unlock();
+
+ /*  if( m_printFunctionNames )
+   {
+      LogMessage( LOG_PRIO_INFO, "MainLoop_OutputProcessing" );
+   }*/
 
    if( localQueue.size() )
    {
@@ -1145,6 +1162,10 @@ void  MainGatewayThread::MoveClientBoundPacketsFromTempToKhaan()
          }
       }
    }
+  /* if( m_printFunctionNames )
+   {
+      LogMessage( LOG_PRIO_INFO, "MainGatewayThread::MoveClientBoundPacketsFromTempToKhaan exit" );
+   }*/
 }
 
 /////////////////////////////////////////////////////////////////////////////////

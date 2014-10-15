@@ -32,6 +32,8 @@ void  EnableThreadingInLibEvent();
 static const int DefaultSleepTimeForPacketHandlers = 33;
 
 class BasePacket;
+class PacketDbQueryResult;
+
 typedef Khaan                                      BaseInputChainHandler;
 
 struct DelayedPacket
@@ -110,6 +112,7 @@ public:
    bool           SendErrorToClient( U32 connectionId, U32 gatewayId, PacketErrorReport::ErrorType error, int subType = 0 );
 
    void           NotifyFinishedRemoving( IChainedInterface* obj );
+   virtual void   FinalRemoveInputChain( U32 connectionId ) {}
 
    //---------------------------------------------
 
@@ -142,7 +145,10 @@ protected:
    typedef typename std::pair< U32, InputChainType* >       ClientLookup;
    
    ClientMap                                                m_connectedClients; // this is a duplicate of the chained list, but with mapping
-   std::deque< U32 >                                             m_clientsNeedingUpdate;
+   std::deque< U32 >                                        m_clientsNeedingUpdate;
+
+   deque< PacketDbQueryResult* >    m_dbQueries;
+   deque< PacketStorage >           m_inputPacketsToBeProcessed;
 
    list< DelayedPacket >                  m_delayedGatewayPackets;
 
@@ -174,6 +180,9 @@ protected:
 
    int            MainLoop_InputProcessing();
    int            MainLoop_OutputProcessing();
+
+   void           UpdateInputPacketToBeProcessed();
+   virtual bool   ProcessPacket( PacketStorage& storage ) { return false; }
    int            CommonUpdate();
 
    void           SendServerIdentification();

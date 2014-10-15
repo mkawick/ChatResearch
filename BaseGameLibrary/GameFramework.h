@@ -14,6 +14,7 @@ class GameFramework;
 class DiplodocusGame;
 class FruitadensServerToServer;
 class CommandLineParser;
+class PacketGameIdentification;
 
 //////////////////////////////////////////////////////////
 
@@ -76,7 +77,9 @@ public:
    bool     SendGameData( U32 connectionId, U32 gatewayId, const MarshalledData* );
    bool     SendChatData( BasePacket* ); // we will own this data after
    bool     SendToAnotherServer( BasePacket* );// based on packet type... see SetupConnectionToAnotherServer
-   bool     InformClientWhoThisServerIs( U32 connectionId );
+   //bool     InformClientWhoThisServerIs( U32 connectionId );
+   void     PackGameIdentificationPack( PacketGameIdentification*& packet );
+
    bool     SendPacketToGateway( BasePacket* packet, U32 connectionId );
 
    void     SendStat( const string& statName, U16 integerIdentifier, float value, PacketAnalytics::StatType type );

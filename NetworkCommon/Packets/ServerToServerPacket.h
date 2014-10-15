@@ -3,6 +3,8 @@
 
 #include "BasePacket.h"
 
+#pragma pack( push, 4 )
+
 ///////////////////////////////////////////////////////////////
 
 class PacketServerConnectionInfo : public BasePacket
@@ -148,3 +150,5 @@ public:
 
 
 ///////////////////////////////////////////////////////////////
+
+#pragma pack( pop )

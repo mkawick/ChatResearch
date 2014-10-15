@@ -74,6 +74,7 @@ protected:
 
    bool           SetupConnection( const char* serverName, int port );
    bool           CreateSocket();
+   bool           AddOutputChainDataNoLock( BasePacket* packet );
 
    int            MainLoop_InputProcessing();
    int            MainLoop_OutputProcessing();

@@ -14,12 +14,12 @@ using namespace std;
 
 #include "SalesManager.h"
 
+#include "../NetworkCommon/Utils/StringUtils.h"
 #include "../NetworkCommon/Database/StringLookup.h"
 #include "../NetworkCommon/Packets/PurchasePacket.h"
 #include "../NetworkCommon/Packets/ServerToServerPacket.h"
 #include "../NetworkCommon/Packets/TournamentPacket.h"
 #include "../NetworkCommon/Packets/LoginPacket.h"
-//#include "../NetworkCommon/Utils/TableWrapper.h"
 
 ///////////////////////////////////////////////////////////////////////////////////////////
 

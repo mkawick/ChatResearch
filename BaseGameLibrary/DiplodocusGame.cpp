@@ -19,6 +19,7 @@ using boost::format;
 #include "KhaanGame.h"
 #include "GameFramework.h"
 #include "../NetworkCommon/NetworkIn/DiplodocusTools.h"
+#include "../NetworkCommon/Utils/StringUtils.h"
 
 #include <iostream>
 #include <time.h>
@@ -59,7 +60,7 @@ void     DiplodocusGame::InputRemovalInProgress( IChainedInterface* chainedInput
    SetupClientWaitingToBeRemoved( khaan );
 
    string currentTime = GetDateInUTC();
-   string printer = "Client disconnection at time:" + currentTime + " from " + inet_ntoa( khaan->GetIPAddress().sin_addr );
+   string printer = "DiplodocusGame::Client disconnection at time:" + currentTime + " from " + inet_ntoa( khaan->GetIPAddress().sin_addr );
    LogMessage( LOG_PRIO_INFO, printer.c_str() );
 
    PrintDebugText( "** InputRemovalInProgress" , 1 );
@@ -71,21 +72,40 @@ void     DiplodocusGame::InputConnected( IChainedInterface* chainedInput )
 {
    LogMessage( LOG_PRIO_INFO, "Gateway has connected" );
    //m_connectionIdGateway = khaan->GetServerId();
+   LogMessage( LOG_PRIO_INFO, "DiplodocusGame::InputConnected" );
+   KhaanLogin* khaan = static_cast< KhaanLogin* >( chainedInput );
+   string currentTime = GetDateInUTC();
+
+   string printer = "Accepted connection at time:" + currentTime + " from " + inet_ntoa( khaan->GetIPAddress().sin_addr );
+   LogMessage( LOG_PRIO_INFO, printer.c_str() );
+   if( m_printFunctionNames )
+   {
+      LogMessage( LOG_PRIO_INFO, printer.c_str() );
+   }
+
+   int outputBufferSize = 128 * 1024;
+   LogMessage( LOG_PRIO_INFO, "DiplodocusGame::SetOutputBufferSize( %d )", outputBufferSize );
+   khaan->SetOutboudBufferSize( outputBufferSize );
 }
 
 //---------------------------------------------------------------
 
 void     DiplodocusGame::ServerWasIdentified( IChainedInterface* khaan )
 {
-   BasePacket* packet = NULL;
+   cout << "DiplodocusGame::ServerWasIdentified <<<" << endl;
+  /* BasePacket* packet = NULL;
    PackageForServerIdentification( m_serverName, m_localIpAddress, m_externalIpAddress, m_serverId, m_serverType, m_listeningPort, m_gameProductId, m_isGame, m_isControllerApp, true, m_gatewayType, &packet );
-  /* khaan->AddOutputChainData( packet, 0 );
-   m_serversNeedingUpdate.push_back( static_cast<InputChainType*>( khaan )->GetServerId() );*/
-
    ChainedType* localKhaan = static_cast< ChainedType* >( khaan );
    localKhaan->AddOutputChainData( packet, 0 );
    //m_serversNeedingUpdate.push_back( localKhaan->GetServerId() );
-   MarkConnectionAsNeedingUpdate( localKhaan->GetChainedId() );
+   MarkConnectionAsNeedingUpdate( localKhaan->GetChainedId() );*/
+   BasePacket* packet = NULL;
+   PackageForServerIdentification( m_serverName, m_localIpAddress, m_externalIpAddress, m_serverId, m_serverType, m_listeningPort, m_gameProductId, m_isGame, m_isControllerApp, true, m_gatewayType, &packet );
+   Khaan* localKhaan = static_cast< Khaan* >( khaan );
+   localKhaan->AddOutputChainDataNoLock( packet );
+   // this is not thread safe, but will be invoked from within the same thread.
+   m_clientsNeedingUpdate.push_back( localKhaan->GetChainedId() );
+   cout << "DiplodocusGame::ServerWasIdentified >>>" << endl;
 }
 
 //---------------------------------------------------------------
@@ -131,8 +151,22 @@ bool  DiplodocusGame::HandleCommandFromGateway( BasePacket* packet, U32 gatewayI
 //---------------------------------------------------------------
 
 // this will always be data coming from the gateway or at least from the outside in.
-bool   DiplodocusGame::AddInputChainData( BasePacket* packet, U32 gatewayId ) 
+//---------------------------------------------------------------
+
+bool     DiplodocusGame::AddInputChainData( BasePacket* packet, U32 gatewayId )
 {
+   m_mutex.lock();
+   m_inputPacketsToBeProcessed.push_back( PacketStorage( packet, gatewayId ) );
+   m_mutex.unlock();
+
+   return true;
+}
+
+bool     DiplodocusGame:: ProcessPacket( PacketStorage& storage )
+{
+   BasePacket* packet = storage.packet;
+   U32 gatewayId = storage.gatewayId;
+
    PacketFactory factory;
    if( packet->packetType == PacketType_GatewayInformation )
    {
@@ -372,21 +406,20 @@ bool   DiplodocusGame::AddOutputChainData( BasePacket* packet, U32 connectionId 
       if( gatewayId == 0 )
          gatewayId = m_connectionIdGateway;
 
-      m_inputChainListMutex.lock();
-      BaseOutputContainer tempInputContainer = m_listOfInputs;
-      m_inputChainListMutex.unlock();
+      Threading::MutexLock locker( m_inputChainListMutex );     
 
-      ChainLinkIteratorType itInputs = tempInputContainer.begin();
-      while( itInputs != tempInputContainer.end() )
+      ChainLinkIteratorType itInputs = m_listOfInputs.begin();
+      while( itInputs != m_listOfInputs.end() )
       {
          ChainType* outputPtr = static_cast< ChainType*> ( (*itInputs).m_interface );
          if( outputPtr->GetChainedType() == ChainedType_InboundSocketConnector )
          {
             KhaanGame* khaan = static_cast< KhaanGame* >( outputPtr );
             if( khaan->GetChainedType() == ChainedType_InboundSocketConnector && 
+               //khaan->GetConnectionId() == connectionId && on the game, we do not match the connection id.
                khaan->GetServerId() == gatewayId )
             {
-               khaan->AddOutputChainData( packet );
+               khaan->AddOutputChainDataNoLock( packet );
                MarkConnectionAsNeedingUpdate( khaan->GetChainedId() );
                return true;
             }
@@ -417,7 +450,7 @@ void	DiplodocusGame::UpdateAllConnections()
    if( m_clientsNeedingUpdate.size() == 0 )// no locking a mutex if you don't need to do it.
       return;
 
-   LockMutex();
+   //LockMutex();
    while( m_clientsNeedingUpdate.size() )// threads can remove themselves.
    {
       U32 id = m_clientsNeedingUpdate.front();      
@@ -453,7 +486,7 @@ void	DiplodocusGame::UpdateAllConnections()
          connection->Update();
       }
    }
-   UnlockMutex();
+   //UnlockMutex();
 }
 
 
@@ -474,10 +507,10 @@ void     DiplodocusGame::UpdateAllTimers()
       time( &currentTime );
       if( timer.lastTimeMs < (currentTimeMs - timer.scheduleTimeMs ) )
       {
-         m_mutex.lock();
+         //m_mutex.lock();
          m_callbacks->TimerCallback( timer.timerId, currentTime );
          timer.lastTimeMs = currentTimeMs;
-         m_mutex.unlock();
+         //m_mutex.unlock();
       }
    }
 }
@@ -487,6 +520,8 @@ void     DiplodocusGame::UpdateAllTimers()
 int   DiplodocusGame::CallbackFunction()
 {
    CleanupOldClientConnections( "KhaanGame" );
+
+   UpdateInputPacketToBeProcessed();
 
    UpdateAllConnections();
    UpdateAllTimers();
@@ -735,11 +770,11 @@ void     DiplodocusGame::LockMutex()
 {
  /*  if( m_mutex.isLocked() ) // never hang
       return;*/
-   m_mutex.lock();
+   //m_mutex.lock();
 }
 void     DiplodocusGame::UnlockMutex()
 {
-   m_mutex.unlock();
+   //m_mutex.unlock();
 }
 
 //---------------------------------------------------------------
@@ -765,9 +800,36 @@ void     DiplodocusGame::ConnectUser( const PacketPrepareForUserLogin* loginPack
       ui.passwordHash =    loginPacket->password;
       ui.id =              loginPacket->userId;
 
-      m_mutex.lock();
-      m_callbacks->UserConnected( &ui, connectionId, gatewayId );
-      m_mutex.unlock();
+      //m_mutex.lock();
+      if( m_callbacks->UserConnected( &ui, connectionId, gatewayId ) == true )
+      {
+         ChainLinkIteratorType itInputs = m_listOfInputs.begin();
+         while( itInputs != m_listOfInputs.end() )
+         {
+            ChainType* outputPtr = static_cast< ChainType*> ( (*itInputs).m_interface );
+            if( outputPtr->GetChainedType() == ChainedType_InboundSocketConnector )
+            {
+               KhaanGame* khaan = static_cast< KhaanGame* >( outputPtr );
+               if( khaan->GetChainedType() == ChainedType_InboundSocketConnector && 
+                  khaan->GetServerId() == gatewayId )
+               {
+                  LogMessage( LOG_PRIO_INFO, "InformClientWhoThisServerIs %d <<<", connectionId );
+
+                  PacketGameIdentification* idPacket;
+                  GameFramework::Instance()->PackGameIdentificationPack( idPacket );
+                  PacketGatewayWrapper* wrapper = new PacketGatewayWrapper();
+                  wrapper->SetupPacket( idPacket, connectionId );
+                  khaan->AddOutputChainDataNoLock( wrapper );
+
+                  LogMessage( LOG_PRIO_INFO, "InformClientWhoThisServerIs %d >>>", connectionId );
+
+               }
+            }
+            itInputs++;
+         }
+         
+      }
+      //m_mutex.unlock();
    }
 }
 
@@ -782,9 +844,9 @@ void  DiplodocusGame::DisconnectUser( const PacketPrepareForUserLogout* logoutPa
    bool  errorDisconnect = logoutPacket->wasDisconnectedByError;
    if( m_callbacks )
    {
-      m_mutex.lock();
+      //m_mutex.lock();
       m_callbacks->UserDisconnected( connectionId, errorDisconnect );
-      m_mutex.unlock();
+      //m_mutex.unlock();
    }
 }
 

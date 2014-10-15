@@ -63,7 +63,7 @@
 				Name="VCLinkerTool"
 				AdditionalDependencies="../Debug/PacketLibrary.lib libmysql.lib"
 				LinkIncremental="2"
-				AdditionalLibraryDirectories="..\w32libs\lib"
+				AdditionalLibraryDirectories="..\w32libs\lib;../../boost/lib32-msvc-9.0"
 				GenerateDebugInformation="true"
 				SubSystem="1"
 				TargetMachine="1"
@@ -138,6 +138,7 @@
 				Name="VCLinkerTool"
 				AdditionalDependencies="../Release/PacketLibrary.lib libmysql.lib"
 				LinkIncremental="1"
+				AdditionalLibraryDirectories="../../boost/lib32-msvc-9.0"
 				IgnoreDefaultLibraryNames="libcpmt.lib libcmt.lib"
 				GenerateDebugInformation="true"
 				SubSystem="1"
@@ -445,6 +446,14 @@
 				</File>
 				<File
 					RelativePath="..\NetworkCommon\Utils\OsLevelUtils.h"
+					>
+				</File>
+				<File
+					RelativePath="..\NetworkCommon\Utils\StringUtils.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\NetworkCommon\Utils\StringUtils.h"
 					>
 				</File>
 				<File

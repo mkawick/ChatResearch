@@ -882,7 +882,7 @@ static void SummonWar_OnReportUserForfeit(unsigned int userID, unsigned int game
 }
 
 
-static void OnRequestPlayerFactionStats_SummonWar(UserStatsMainThread *pUserStats, U32 connectionId, unsigned int userId)
+static void OnRequestPlayerFactionStats_SummonWar(UserStatsMainThread *pUserStats, U32 connectionId, U32 gatewayId, unsigned int userId)
 {
    //U32 userId = pServerConnection->GetUserInfo().id;
    //if( pMsg && pMsg->userID )
@@ -989,7 +989,7 @@ static void OnRequestPlayerFactionStats_SummonWar(UserStatsMainThread *pUserStat
 	//printf("Sending player faction stats...\n");
 	//return true;
 
-   pUserStats->SendGameData( connectionId, sizeof(msgPlayerFactionStats), reinterpret_cast<const U8*>(&msgPlayerFactionStats) );
+   pUserStats->SendGameData( connectionId, gatewayId, sizeof(msgPlayerFactionStats), reinterpret_cast<const U8*>(&msgPlayerFactionStats) );
 }
 
 
@@ -1003,18 +1003,18 @@ static void OnSendAdditionalLoginData_SummonWar( CServerConnection *pServerConne
 
 
 
-static void OnRequestGlobalFactionStats_SummonWar( UserStatsMainThread *pUserStats, U32 connectionId )
+static void OnRequestGlobalFactionStats_SummonWar( UserStatsMainThread *pUserStats, U32 connectionId, U32 gatewayId )
 {
 	CNetMsgGlobalFactionStats msgGlobalFactionStats;
 	memcpy(&msgGlobalFactionStats.factionWins, &s_FactionWins, sizeof(unsigned int)*16*16);
 
-   pUserStats->SendGameData( connectionId, sizeof(msgGlobalFactionStats), reinterpret_cast<const U8*>(&msgGlobalFactionStats) );
+   pUserStats->SendGameData( connectionId, gatewayId, sizeof(msgGlobalFactionStats), reinterpret_cast<const U8*>(&msgGlobalFactionStats) );
 	//pServerConnection->SendTo( (const char*)&msgGlobalFactionStats, sizeof(CNetMsgGlobalFactionStats) );
 }
 
 
 
-static void OnRequestGameProfile_SummonWar( UserStatsMainThread *pUserStats, U32 connectionId,
+static void OnRequestGameProfile_SummonWar( UserStatsMainThread *pUserStats, U32 connectionId, U32 gatewayId,
                                              unsigned int profileUserId, unsigned int requestUserId )
 {
    //CServerUser *pProfileUser = FindServerUserById( pMsg->userID );
@@ -1160,7 +1160,7 @@ static void OnRequestGameProfile_SummonWar( UserStatsMainThread *pUserStats, U32
 
    //pServerConnection->SendTo( (const char*)&msgUpdatePlayerProfile, sizeof(CNetMsgUpdatePlayerProfile) );
 
-   pUserStats->SendGameData( connectionId, sizeof(msgUpdatePlayerProfile), reinterpret_cast<const U8*>(&msgUpdatePlayerProfile) );
+   pUserStats->SendGameData( connectionId, gatewayId, sizeof(msgUpdatePlayerProfile), reinterpret_cast<const U8*>(&msgUpdatePlayerProfile) );
 
    //return true;
 }

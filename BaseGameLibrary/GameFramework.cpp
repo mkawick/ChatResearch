@@ -9,7 +9,7 @@
 #include "../NetworkCommon/Version.h"
 #include "../NetworkCommon/Utils/CommandLineParser.h"
 #include "../NetworkCommon/Utils/Utils.h"
-
+#include "../NetworkCommon/Utils/StringUtils.h"
 #include "../NetworkCommon/Packets/GamePacket.h"
 #include "../NetworkCommon/Packets/NotificationPacket.h"
 #include "../NetworkCommon/Packets/UserStatsPacket.h"
@@ -273,7 +273,7 @@ bool  GameFramework::SendGameData( U32 connectionId, U32 gatewayId, const Marsha
    const int MaxSize = PacketGameplayRawData::MaxBufferSize  - sizeof( PacketGatewayWrapper );
 
    return SendRawData< PacketGameplayRawData, DiplodocusGame > 
-      ( data->m_data, data->m_sizeOfData, PacketGameplayRawData::Game, MaxSize, GetServerId(), GetGameProductId(), "raw", connectionId, m_connectionManager );
+      ( data->m_data, data->m_sizeOfData, PacketGameplayRawData::Game, MaxSize, GetServerId(), GetGameProductId(), "raw", connectionId, gatewayId, m_connectionManager );
 }
 
 //-----------------------------------------------------
@@ -343,7 +343,7 @@ bool     GameFramework::SendToAnotherServer( BasePacket* packet )  // this could
 }
 
 //-----------------------------------------------------
-
+/*
 bool  GameFramework::InformClientWhoThisServerIs( U32 connectionId )
 {
    PacketGameIdentification*  id = new PacketGameIdentification;
@@ -353,6 +353,18 @@ bool  GameFramework::InformClientWhoThisServerIs( U32 connectionId )
    id->gameProductId = GetGameProductId();
 
    return SendPacketToGateway( id, connectionId );
+}
+*/
+void  GameFramework::PackGameIdentificationPack( PacketGameIdentification*& packet )
+{
+   packet = NULL;
+   PacketGameIdentification*  id = new PacketGameIdentification;
+   id->gameId = GetServerId();
+   id->name = GetServerName();
+   id->shortName = GetServerShortName();
+   id->gameProductId = GetGameProductId();
+
+   packet = id;
 }
 
 //-----------------------------------------------------

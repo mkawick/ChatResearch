@@ -2,6 +2,7 @@
 #include "ProductEntryCreateBasedOnPlayHistory.h"
 #include "StatusUpdate.h"
 #include "../NetworkCommon/Utils/Utils.h"
+#include "../NetworkCommon/Utils/StringUtils.h"
 #include "../NetworkCommon/Utils/TableWrapper.h"
 
 #include <boost/type_traits.hpp>

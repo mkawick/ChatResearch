@@ -51,6 +51,7 @@ public:
    void           NotifyFinishedAdding( IChainedInterface* obj );
 
    void           InputRemovalInProgress( IChainedInterface * chainedInput );
+   void           FinalRemoveInputChain( U32 connectionId );
 
    void           PrintPacketTypes( bool printingOn = true );
    void           PrintFunctionNames( bool printingOn = true );

@@ -20,7 +20,7 @@ using boost::format;
 
 #include "../NetworkCommon/Version.h"
 #include "../NetworkCommon/Utils/Utils.h"
-
+#include "../NetworkCommon/Utils/StringUtils.h"
 #include "../NetworkCommon/Utils/CommandLineParser.h"
 
 #include "../NetworkCommon/Database/Deltadromeus.h"

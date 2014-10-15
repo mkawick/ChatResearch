@@ -85,6 +85,7 @@ private:
    bool                    HandlePurchaseRefund( const PacketTournament_PurchaseTournamentEntryRefund* packet, U32 connectionId );
 
    int                     CallbackFunction();
+   bool                    ProcessPacket( PacketStorage& storage );
 
    void                    AddServerNeedingUpdate( U32 serverId );
 

@@ -12,6 +12,7 @@ using namespace std;
 #include "NotificationMainThread.h"
 
 #include "../NetworkCommon/Utils/CommandLineParser.h"
+#include "../NetworkCommon/Utils/StringUtils.h"
 
 #include "../NetworkCommon/Packets/ServerToServerPacket.h"
 #include "../NetworkCommon/Packets/PacketFactory.h"
@@ -66,33 +67,50 @@ void     NotificationMainThread::ServerWasIdentified( IChainedInterface* khaan )
 {
    BasePacket* packet = NULL;
    PackageForServerIdentification( m_serverName, m_localIpAddress, m_externalIpAddress, m_serverId, m_serverType, m_listeningPort, m_gameProductId, m_isGame, m_isControllerApp, true, m_gatewayType, &packet );
-   ChainedType* localKhaan = static_cast< ChainedType* >( khaan );
-   localKhaan->AddOutputChainData( packet, 0 );
-   m_clientsNeedingUpdate.push_back( localKhaan->GetServerId() );
+   Khaan* localKhaan = static_cast< Khaan* >( khaan );
+   localKhaan->AddOutputChainDataNoLock( packet );
+   // this is not thread safe, but will be invoked from within the same thread.
+   m_clientsNeedingUpdate.push_back( localKhaan->GetChainedId() );
 }
 
 ///////////////////////////////////////////////////////////////////
 
-bool     NotificationMainThread::AddInputChainData( BasePacket* packet, U32 connectionId )
+bool     NotificationMainThread::AddInputChainData( BasePacket* packet, U32 gatewayId )
 {
+   m_mutex.lock();
+   m_inputPacketsToBeProcessed.push_back( PacketStorage( packet, gatewayId ) );
+   m_mutex.unlock();
+
+   return true;
+}
+
+//---------------------------------------------------------------
+
+bool     NotificationMainThread:: ProcessPacket( PacketStorage& storage )
+{
+   BasePacket* packet = storage.packet;
+   U32 gatewayId = storage.gatewayId;
+
+   U8 packetType = packet->packetType;
+   
    if( packet->packetType == PacketType_GatewayInformation )
    {
       PacketCleaner cleaner( packet );// we do not accept any data from the gateway
-      HandleCommandFromGateway( packet, connectionId );
+      HandleCommandFromGateway( packet, gatewayId );
       return true;
    }
 
    if( packet->packetType == PacketType_ServerJobWrapper )// login and such
    {
       PacketCleaner cleaner( packet );
-      HandlePacketFromOtherServer( packet, connectionId );
+      HandlePacketFromOtherServer( packet, gatewayId );
       return true;
    }
 
    if( packet->packetType == PacketType_GatewayWrapper ) 
    {
       PacketCleaner cleaner( packet );
-      HandlePacketFromGateway( packet, connectionId );
+      HandlePacketFromGateway( packet, gatewayId );
       return true;
    }
    
@@ -233,7 +251,7 @@ bool     NotificationMainThread::ConnectUser( const PacketPrepareForUserLogin* l
 
    bool found = false;
    // if the user is already here but relogged, simply add a new entry using the same basic setup
-   m_mutex.lock();
+   //m_mutex.lock();
       it = m_userConnectionMap.begin();
       while( it != m_userConnectionMap.end() )
       {
@@ -250,16 +268,16 @@ bool     NotificationMainThread::ConnectUser( const PacketPrepareForUserLogin* l
          }
          it++;
       }
-   m_mutex.unlock();
+   //m_mutex.unlock();
 
    if( found == false )
    {
       UserConnection user( loginPacket );
       user.SetServer( this );
 
-      m_mutex.lock();
+      //m_mutex.lock();
       m_userConnectionMap.insert( UserConnectionPair( connectionId, user ) );
-      m_mutex.unlock();
+      //m_mutex.unlock();
    }
    return true;
 }
@@ -274,9 +292,9 @@ bool     NotificationMainThread::DisconnectUser( const PacketPrepareForUserLogou
 
    U32 connectionId = logoutPacket->connectionId;
 
-   m_mutex.lock();
+   //m_mutex.lock();
    UserConnectionIterator it = m_userConnectionMap.find( connectionId );
-   m_mutex.unlock();
+   //m_mutex.unlock();
    if( it == m_userConnectionMap.end() )
       return false;
 
@@ -305,7 +323,7 @@ void  NotificationMainThread::RunQueryAndNotification( Database::Deltadromeus* d
       userQuery += boost::lexical_cast< string  >( user_id );
 
       string   userName;
-      bool     isActive = false;
+      //bool     isActive = false;
       string   lastTimeLoggedIn;
 
       int ret = mysql_query( mysql, userQuery.c_str() );
@@ -327,7 +345,7 @@ void  NotificationMainThread::RunQueryAndNotification( Database::Deltadromeus* d
             MYSQL_ROW row = mysql_fetch_row( res );
             userName = row[0];
             string tempIsActive = ( row[1] != NULL ) ? row[1]:"0";
-            isActive = (tempIsActive == "1")? true:false;
+            //isActive = (tempIsActive == "1")? true:false;
             lastTimeLoggedIn = row[2];
 
             mysql_free_result(res);
@@ -560,7 +578,7 @@ bool     NotificationMainThread::AddQueryToOutput( PacketDbQuery* query )
 
 void     NotificationMainThread::RemoveExpiredConnections()
 {
-   m_mutex.lock();
+   //m_mutex.lock();
    UserConnectionIterator it = m_userConnectionMap.begin();
    while( it != m_userConnectionMap.end() )
    {
@@ -580,14 +598,16 @@ void     NotificationMainThread::RemoveExpiredConnections()
          contact.Update();
       }
    }
-   m_mutex.unlock();
+   //m_mutex.unlock();
 }
 
 //---------------------------------------------------------------
 //---------------------------------------------------------------
 
-int     NotificationMainThread::MainLoop_InputProcessing()
+
+void     NotificationMainThread::UpdateDbResults()
 {
+   // this function is unnecessary in this design
    PacketFactory factory;
 
    m_mutex.lock();
@@ -620,14 +640,16 @@ int     NotificationMainThread::MainLoop_InputProcessing()
          // LOOK HERE GARY FOR async queries
       }
    }
-   return 1;
 }
 
 //---------------------------------------------------------------
 
-int      NotificationMainThread::MainLoop_OutputProcessing()
+int      NotificationMainThread::CallbackFunction()
 {
+   UpdateDbResults();
+
    UpdateAllConnections( "KhaanServerToServer" );
+   UpdateInputPacketToBeProcessed();
 
    time_t currentTime;
    time( &currentTime );

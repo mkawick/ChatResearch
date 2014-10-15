@@ -104,6 +104,7 @@ public:
    virtual bool   TrackOutwardPacketType( const BasePacket* packet ) { return false; }
    bool           AddInputChainData( BasePacket*, U32 filingData = -1 );
    bool           AddOutputChainData( BasePacket*, U32 filingData = -1 );
+   bool           AddOutputChainDataNoLock( BasePacket* );
 
    int	         SendData( const U8* buffer, int length );
    static void    SignalledUpdate( evutil_socket_t fd, short what, void *arg );
@@ -133,15 +134,19 @@ protected:
    bool           m_criticalFailure;
    bool           m_denyAllFutureData;
 
-   U8*            m_outboundBuffer;
-
    bool           m_isDisconnected;
    bool           m_isInTelnetMode;
    bool           m_isExpectingMoreDataInPreviousPacket;
+
+   bool           m_hasPacketsReceived;
+   bool           m_hasPacketsToSend;
+
    int            m_expectedBytesReceivedSoFar;
    int            m_expectedBytes;
+
    U8             m_versionNumberMinor;
    U8             m_tempBuffer[ MaxBufferSize ];
+   U8*            m_outboundBuffer;
 
 
    deque< BasePacket* > m_packetsOut;

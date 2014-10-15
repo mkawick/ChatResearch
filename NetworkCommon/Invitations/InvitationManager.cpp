@@ -13,6 +13,7 @@ using boost::format;
 
 #include "../Packets/PacketFactory.h"
 #include "../Utils/Utils.h"
+#include "../Utils/StringUtils.h"
 #include "../Utils/Enigmosaurus.h"
 //#include "../NetworkIn/Diplodocus.h"
 #include "InvitationManager.h"

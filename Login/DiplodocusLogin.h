@@ -103,6 +103,7 @@ public:
    void           PrintFunctionNames( bool printingOn = true );
 
    void           ServerWasIdentified( IChainedInterface* khaan );
+   void           InputConnected( IChainedInterface* khaan );
    void           InputRemovalInProgress( IChainedInterface * chainedInput );
    void           AutoAddTheProductFromWhichYouLogin( bool addIt = false ) { m_autoAddProductFromWhichUsersLogin = addIt; }
 
@@ -138,6 +139,7 @@ private:
 
    int      CallbackFunction();
    void     RemoveOldConnections();
+   bool     ProcessPacket( PacketStorage& storage );
 
    void     LoadInitializationData();
    void     StoreAllProducts( const PacketDbQueryResult* dbResult );
@@ -239,8 +241,6 @@ private:
 
    ProductList                m_productList;
    StringLookup*              m_stringLookup;
-
-   deque< PacketDbQueryResult* >    m_dbQueries;
 
    // stat tracking
    time_t                     m_timestampHourlyStatServerStatisics;

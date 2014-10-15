@@ -487,6 +487,7 @@ void     Deltadromeus::Connect()
    }
    int zeroMeansSuccess = mysql_options( m_DbConnection, MYSQL_SET_CHARSET_NAME, "utf8" );
    zeroMeansSuccess = mysql_options( m_DbConnection, MYSQL_INIT_COMMAND, "SET NAMES utf8"); 
+   zeroMeansSuccess = zeroMeansSuccess; // compiler warning
 
    // Now we will actually connect to the specific database.
 
