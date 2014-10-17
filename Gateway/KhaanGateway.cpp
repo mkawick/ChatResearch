@@ -65,15 +65,6 @@ void  KhaanGateway::PreCleanup()
 {
    if( m_mainOutputChain )
    {
-      if( IsAuthorized() && 
-          m_denyAllFutureData == false &&
-          m_logoutPacketSent == false )
-      {
-         static_cast< MainGatewayThread* >( m_mainOutputChain )->TrackCountStats( StatTrackingConnections::StatTracking_UsersLostConnection, 1, 0 );
-      }
-      // order really matters here... this function must come last
-      static_cast< MainGatewayThread* >( m_mainOutputChain )->InputRemovalInProgress( this );
-
       m_isDisconnected = true;
       DenyAllFutureData();
       time_t currentTime;
@@ -87,7 +78,19 @@ void  KhaanGateway::PreCleanup()
 bool	KhaanGateway :: Update()
 {
    if( m_isDisconnected ) // no update for you
+   {
+
+      if( m_mainOutputChain )
+      {
+         static_cast< MainGatewayThread* >( m_mainOutputChain )->TrackCountStats( StatTrackingConnections::StatTracking_UsersLostConnection, 1, 0 );
+         // order really matters here... this function must come last
+         static_cast< MainGatewayThread* >( m_mainOutputChain )->InputRemovalInProgress( this );
+      }
+
+      m_mainOutputChain = NULL;
+
       return false;
+   }
 
    if( m_hasPacketsReceived == true )
    {

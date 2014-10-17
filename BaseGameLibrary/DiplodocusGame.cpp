@@ -71,17 +71,12 @@ void     DiplodocusGame::InputRemovalInProgress( IChainedInterface* chainedInput
 void     DiplodocusGame::InputConnected( IChainedInterface* chainedInput )
 {
    LogMessage( LOG_PRIO_INFO, "Gateway has connected" );
-   //m_connectionIdGateway = khaan->GetServerId();
    LogMessage( LOG_PRIO_INFO, "DiplodocusGame::InputConnected" );
-   KhaanLogin* khaan = static_cast< KhaanLogin* >( chainedInput );
+   Khaan* khaan = static_cast< Khaan* >( chainedInput );
    string currentTime = GetDateInUTC();
 
    string printer = "Accepted connection at time:" + currentTime + " from " + inet_ntoa( khaan->GetIPAddress().sin_addr );
    LogMessage( LOG_PRIO_INFO, printer.c_str() );
-   if( m_printFunctionNames )
-   {
-      LogMessage( LOG_PRIO_INFO, printer.c_str() );
-   }
 
    int outputBufferSize = 128 * 1024;
    LogMessage( LOG_PRIO_INFO, "DiplodocusGame::SetOutputBufferSize( %d )", outputBufferSize );
@@ -90,21 +85,15 @@ void     DiplodocusGame::InputConnected( IChainedInterface* chainedInput )
 
 //---------------------------------------------------------------
 
-void     DiplodocusGame::ServerWasIdentified( IChainedInterface* khaan )
+void     DiplodocusGame::ServerWasIdentified( IChainedInterface* chainedInput )
 {
    cout << "DiplodocusGame::ServerWasIdentified <<<" << endl;
-  /* BasePacket* packet = NULL;
-   PackageForServerIdentification( m_serverName, m_localIpAddress, m_externalIpAddress, m_serverId, m_serverType, m_listeningPort, m_gameProductId, m_isGame, m_isControllerApp, true, m_gatewayType, &packet );
-   ChainedType* localKhaan = static_cast< ChainedType* >( khaan );
-   localKhaan->AddOutputChainData( packet, 0 );
-   //m_serversNeedingUpdate.push_back( localKhaan->GetServerId() );
-   MarkConnectionAsNeedingUpdate( localKhaan->GetChainedId() );*/
    BasePacket* packet = NULL;
    PackageForServerIdentification( m_serverName, m_localIpAddress, m_externalIpAddress, m_serverId, m_serverType, m_listeningPort, m_gameProductId, m_isGame, m_isControllerApp, true, m_gatewayType, &packet );
-   Khaan* localKhaan = static_cast< Khaan* >( khaan );
-   localKhaan->AddOutputChainDataNoLock( packet );
+   Khaan* khaan = static_cast< Khaan* >( chainedInput );
+   khaan->AddOutputChainDataNoLock( packet );
    // this is not thread safe, but will be invoked from within the same thread.
-   m_clientsNeedingUpdate.push_back( localKhaan->GetChainedId() );
+   m_clientsNeedingUpdate.push_back( khaan->GetChainedId() );
    cout << "DiplodocusGame::ServerWasIdentified >>>" << endl;
 }
 

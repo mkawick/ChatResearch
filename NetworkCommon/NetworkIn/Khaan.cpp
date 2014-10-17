@@ -63,8 +63,9 @@ Khaan ::~Khaan()
 {
    //LogMessage( LOG_PRIO_INFO, "Khaan 2" );
    delete [] m_outboundBuffer;
-   if( GetBufferEvent() )
-      bufferevent_free( GetBufferEvent() );
+
+    CloseConnection();
+
 #if PLATFORM == PLATFORM_WINDOWS
    closesocket( GetSocketId() );
 #elif PLATFORM == PLATFORM_MAC || PLATFORM == PLATFORM_UNIX
@@ -85,23 +86,6 @@ void   Khaan ::PreCleanup()
 {
    //LogMessage( LOG_PRIO_INFO, "Khaan 4" );
    m_isDisconnected = true;
-   if( m_listOfOutputs.size() == 0 )
-   {
-      //LogMessage( LOG_PRIO_INFO, "Khaan 4.. no outputs listed " );
-      return;
-   }
-
-   ChainLinkIteratorType output = m_listOfOutputs.begin();
-
-   IChainedInterface* chain = (*output).m_interface;
-   if( chain )
-   {
-      //LogMessage( LOG_PRIO_INFO, "Khaan 4.. server->InputRemovalInProgress " );
-      Diplodocus <Khaan> * server = static_cast< Diplodocus <Khaan> * >( chain );
-      server->InputRemovalInProgress( this );
-      m_listOfOutputs.clear();
-   }
-
    DenyAllFutureData();
    if( HasDisconnected() == false )
    {
@@ -181,7 +165,23 @@ bool	Khaan :: OnDataReceived( const U8* data, int length )
 bool	Khaan :: Update()
 {
    if( m_isDisconnected )
+   {
+      if( m_listOfOutputs.size() == 0 )
+      {
+         return false;
+      }
+
+      ChainLinkIteratorType output = m_listOfOutputs.begin();
+      IChainedInterface* chain = (*output).m_interface;
+      if( chain )
+      {
+         //LogMessage( LOG_PRIO_INFO, "Khaan 4.. server->InputRemovalInProgress " );
+         Diplodocus <Khaan> * server = static_cast< Diplodocus <Khaan> * >( chain );
+         server->InputRemovalInProgress( this );
+         m_listOfOutputs.clear();
+      }
       return false;
+   }
 
    if( m_hasPacketsReceived == true )
    {

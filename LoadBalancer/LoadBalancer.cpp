@@ -19,6 +19,8 @@ using boost::format;
 #include "../NetworkCommon/NetworkUtils.h"
 #include "../NetworkCommon/Utils/StringUtils.h"
 
+#include "../NetworkCommon/Daemon/Daemonizer.h"
+
 #include "KhaanConnector.h"
 #include "DiplodocusLoadBalancer.h"
 #include "../NetworkCommon/NetworkIn/DiplodocusServerToServer.h"
@@ -68,6 +70,8 @@ int main( int argc, const char* argv[] )
    cout << "sizeof( Test3 ):" << sizeof( Test3 ) << endl;
    cout << "sizeof( Test4 ):" << sizeof( Test4 ) << endl;
    cout << "sizeof( Test5 ):" << sizeof( Test5 ) << endl;*/
+
+   daemonize( "load_balancerd" );
 
    CommandLineParser    parser( argc, argv );
 

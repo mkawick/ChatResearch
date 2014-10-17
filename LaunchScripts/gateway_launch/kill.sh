@@ -1,0 +1,3 @@
+killall load_balancer_serverd
+killall gateway_serverd
+

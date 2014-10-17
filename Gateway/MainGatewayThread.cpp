@@ -245,6 +245,13 @@ void     MainGatewayThread::InputRemovalInProgress( IChainedInterface * chainedI
 
    SetupClientWaitingToBeRemoved( khaan );
 
+   // deletion here means nothing.. the actual connection is stored in the base class
+   ConnectionMapIterator it = m_connectionMap.find( connectionId );
+   if( it != m_connectionMap.end() )
+   {
+      m_connectionMap.erase( it );
+   }
+
    string currentTime = GetDateInUTC();
    string printer = "MainGatewayThread::Client disconnection at time:" + currentTime + " from " + inet_ntoa( khaan->GetIPAddress().sin_addr );
    //LogMessage( LOG_PRIO_ERR, printer.c_str() );

@@ -1,0 +1,10 @@
+killall load_balancer_serverd
+killall gateway_serverd
+killall summonward 
+killall login_serverd
+killall chat_serverd 
+killall contacts_serverd
+killall asset_serverd
+killall purchase_serverd
+killall notification_serverd
+killall user_stats_serverd
