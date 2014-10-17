@@ -3175,10 +3175,10 @@ int      DiplodocusLogin:: CallbackFunction()
    time( &currentTime );
    m_stringLookup->Update( currentTime );
 
-   UpdateInputPacketToBeProcessed();
-
    CleanupOldClientConnections( "KhaanLogin" );
    UpdateAllConnections( "KhaanLogin" );
+
+   UpdateInputPacketToBeProcessed();
 
    RemoveOldConnections();
 

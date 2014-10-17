@@ -293,13 +293,21 @@ void     MainGatewayThread::UpdateRemovedConnections()
 void  MainGatewayThread::FinalRemoveInputChain( U32 connectionId )
 {
    // this function is normally not invoked inside of a mutex.lock block.
+   // We receive this callback when the time has expired and the connection
+   // has been broken.
    if( m_printFunctionNames )
    {
       LogMessage( LOG_PRIO_INFO, "MainGatewayThread::FinalRemoveInputChain" );
    }
-   PacketLogout* logout = new PacketLogout();
+ /*  PacketLogout* logout = new PacketLogout();
    logout->wasDisconnectedByError = true;
-   AddInputChainData( logout, connectionId );
+   AddInputChainData( logout, connectionId );*/
+
+   ConnectionMapIterator it = m_connectionMap.find( connectionId );
+   if( it != m_connectionMap.end() )
+   {
+      m_connectionMap.erase( it );
+   }
 }
 
 //-----------------------------------------------------

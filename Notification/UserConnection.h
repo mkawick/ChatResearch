@@ -36,6 +36,8 @@ public:
    ~UserConnection();
 
    bool        HandleDbQueryResult( const PacketDbQueryResult* result );
+
+   bool        IsReadyToAcceptClientRequests() const;
    bool        HandleRequestFromClient( const BasePacket* packet );
 
    const PacketPrepareForUserLogin&
@@ -112,6 +114,8 @@ private:
    PacketPrepareForUserLogin           m_userInfo;
    bool                                m_isLoggedOut;
    bool                                m_hasRequestedDevices;
+   bool                                m_finishedLoadingListOfDevices;
+   bool                                m_finishedLoadingListOfDevicesPerGame;
    time_t                              m_timeLoggedOut;
 
    RegisteredDeviceList                m_deviceList;

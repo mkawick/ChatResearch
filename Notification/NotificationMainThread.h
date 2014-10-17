@@ -65,9 +65,11 @@ private:
    void     PeriodicCheckForNewNotifications();
 
    void     RemoveExpiredConnections();
+   void     ProcessDelayedPackets();
 
    void     UpdateDbResults();
    int      CallbackFunction();
+   void     FindDatabaseAmongOutgoingConnections();
    bool     ProcessPacket( PacketStorage& storage );
 
    bool     HandleUpdateNotificationCount( const PacketNotification_UpdateNotificationCount* unwrappedPacket );
@@ -81,6 +83,8 @@ private:
 
    typedef  deque< PacketDbQueryResult* > QueryResultDeque;
    typedef  QueryResultDeque::iterator    QueryResultDequeIterator;
+
+   deque< PacketStorage >           m_listOfDelayedPackets;
 
    UserConnectionMap       m_userConnectionMap;
    QueryResultDeque        m_dbQueries;

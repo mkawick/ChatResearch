@@ -901,13 +901,17 @@ void     DiplodocusChat::RunDailyStats()
 
 int      DiplodocusChat::CallbackFunction()
 {
+   CommonUpdate();
+
+   CleanupOldClientConnections( "KhaanChat" );
+
    UpdateAllConnections( "KhaanChat" );
 
    time_t currentTime;
    time( &currentTime );
 
-   int numClients = static_cast< int >( m_connectedClients.size() );
-   UpdateConsoleWindow( m_timeOfLastTitleUpdate, m_uptime, m_numTotalConnections, numClients, m_listeningPort, m_serverName );
+   //int numClients = static_cast< int >( m_connectedClients.size() );
+   //UpdateConsoleWindow( m_timeOfLastTitleUpdate, m_uptime, m_numTotalConnections, numClients, m_listeningPort, m_serverName );
 
    UpdateInputPacketToBeProcessed();
 

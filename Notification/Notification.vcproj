@@ -551,6 +551,10 @@
 			Name="CopiedFromSW"
 			>
 			<File
+				RelativePath=".\core_types.h"
+				>
+			</File>
+			<File
 				RelativePath=".\server_comms.h"
 				>
 			</File>

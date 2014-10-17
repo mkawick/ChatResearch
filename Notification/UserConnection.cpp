@@ -32,7 +32,9 @@ NotificationMainThread* UserConnection::m_mainThread = NULL;
 
 UserConnection::UserConnection( const PacketPrepareForUserLogin* info ) : m_userInfo( *info ), 
                                  m_isLoggedOut( false ), 
-                                 m_hasRequestedDevices( false )
+                                 m_hasRequestedDevices( false ),
+                                 m_finishedLoadingListOfDevices( false ),
+                                 m_finishedLoadingListOfDevicesPerGame( false )
 {
 }
 
@@ -40,14 +42,14 @@ UserConnection::~UserConnection()
 {
 }
 
-void  UserConnection::UserLoggedOut()
+void     UserConnection::UserLoggedOut()
 {
    m_isLoggedOut = true; 
    time( &m_timeLoggedOut );
 }
 
 
-int   UserConnection::SecondsExpiredSinceLoggedOut()
+int      UserConnection::SecondsExpiredSinceLoggedOut()
 {
    if( m_timeLoggedOut == 0 )
       return 0;
@@ -58,15 +60,24 @@ int   UserConnection::SecondsExpiredSinceLoggedOut()
    return  static_cast<int> ( difftime( currentTime, m_timeLoggedOut ) );
 }
 
-void  UserConnection::Relog()
+void     UserConnection::Relog()
 {
    m_timeLoggedOut = 0;
    m_isLoggedOut = false;
 }
 
+bool     UserConnection::IsReadyToAcceptClientRequests() const
+{
+   if( m_hasRequestedDevices == true && 
+       m_finishedLoadingListOfDevices == true && 
+       m_finishedLoadingListOfDevicesPerGame == true )
+      return true;
+   return false;
+}
+
 //------------------------------------------------------------
 
-void  UserConnection::RequestAllDevicesForUser()
+void     UserConnection::RequestAllDevicesForUser()
 {
    PacketDbQuery* dbQuery = new PacketDbQuery;
    dbQuery->id =           m_userInfo.connectionId;
@@ -149,6 +160,7 @@ bool  UserConnection::HandleDbQueryResult( const PacketDbQueryResult* result )
 
 void  UserConnection::StoreListOfDevices( const PacketDbQueryResult* dbResult )
 {
+   m_finishedLoadingListOfDevices = true;
    if( dbResult->successfulQuery == false )
    {
       m_mainThread->SendErrorToClient( m_userInfo.connectionId, m_userInfo.gatewayId, PacketErrorReport::ErrorType_Notification_NoDevicesListed );
@@ -179,6 +191,7 @@ void  UserConnection::StoreListOfDevices( const PacketDbQueryResult* dbResult )
 
 void  UserConnection::StoreDevicesPerGameList( const PacketDbQueryResult* dbResult )
 {
+   m_finishedLoadingListOfDevicesPerGame = true;
    if( dbResult->successfulQuery == false )
    {
       m_mainThread->SendErrorToClient( m_userInfo.connectionId, m_userInfo.gatewayId, PacketErrorReport::ErrorType_Notification_NoDevicesEnabledForThisGame );
@@ -532,10 +545,10 @@ void  UserConnection::SendNewDeviceRegistrationResponse( const string& uuid )
 
 void  UserConnection::CreateEnabledNotificationEntry( const PacketDbQueryResult* dbResult )
 {
-   ExtendedRegisteredDevice* rd = reinterpret_cast<ExtendedRegisteredDevice*>( dbResult->customData );
+   ExtendedRegisteredDevice* customData = reinterpret_cast<ExtendedRegisteredDevice*>( dbResult->customData );
    if( dbResult->successfulQuery == false )
    {
-      delete rd;
+      delete customData;
       m_mainThread->SendErrorToClient( m_userInfo.connectionId, m_userInfo.gatewayId, PacketErrorReport::ErrorType_Notification_CannotInsertNewDevice );
       return;
    }
@@ -543,12 +556,12 @@ void  UserConnection::CreateEnabledNotificationEntry( const PacketDbQueryResult*
    U32 userDeviceId = dbResult->insertId;
    U32 gameType = static_cast< U32>( dbResult->serverLookup );
 
-   CreateNewDeviceNotificationEntry( userDeviceId, gameType, rd->deviceId );   
+   CreateNewDeviceNotificationEntry( userDeviceId, gameType, customData->deviceId );   
 
    //----------------------------
-   rd->deviceId = userDeviceId;
-   m_deviceList.push_back( *rd );
-   delete rd;
+   customData->deviceId = userDeviceId;
+   m_deviceList.push_back( *customData );
+   delete customData;
    //----------------------------
 }
 

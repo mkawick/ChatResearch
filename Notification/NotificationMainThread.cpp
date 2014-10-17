@@ -109,12 +109,71 @@ bool     NotificationMainThread:: ProcessPacket( PacketStorage& storage )
 
    if( packet->packetType == PacketType_GatewayWrapper ) 
    {
-      PacketCleaner cleaner( packet );
-      HandlePacketFromGateway( packet, gatewayId );
+      if( HandlePacketFromGateway( packet, gatewayId ) == true )
+      {
+         PacketCleaner cleaner( packet );
+      }
+      else
+      {
+         m_listOfDelayedPackets.push_back( PacketStorage( storage ) );
+      }
       return true;
    }
    
    return false;
+}
+
+//---------------------------------------------------------------
+
+void  NotificationMainThread::ProcessDelayedPackets()
+{
+   if( m_listOfDelayedPackets.size() == 0 )
+      return;
+
+   LogMessage( LOG_PRIO_INFO, "NotificationMainThread::ProcessDelayedPackets: ", m_listOfDelayedPackets.size() );
+
+   deque< PacketStorage > storage = m_listOfDelayedPackets;
+   m_listOfDelayedPackets.clear();
+
+   deque< PacketStorage >:: iterator it = storage.begin();
+   while( it != storage.end() )
+   {
+      PacketStorage& ps = *it;
+      PacketServerJobWrapper* wrapper = static_cast< PacketServerJobWrapper* >( ps.packet );
+      BasePacket* unwrappedPacket = wrapper->pPacket;
+      U32  connectionId = wrapper->serverId;
+
+      LogMessage( LOG_PRIO_INFO, "ProcessDelayedPackets:FindUserConnection( %u )", connectionId );
+      UserConnectionIterator item = m_userConnectionMap.find( connectionId );
+      if( item != m_userConnectionMap.end() )
+      {
+         LogMessage( LOG_PRIO_INFO, "ProcessDelayedPackets:FindUserConnection success" );
+         UserConnection& user = item->second;
+         if( user.IsReadyToAcceptClientRequests() == true )
+         {
+            LogMessage( LOG_PRIO_INFO, "ProcessDelayedPackets:handling the packet" );
+            user.HandleRequestFromClient( unwrappedPacket );
+            it = storage.erase( it );
+         }
+         else
+         {
+            LogMessage( LOG_PRIO_INFO, "ProcessDelayedPackets:restoring the packet" );
+            it ++; // advance without removing this packet
+         }
+      }
+      else //user does not exist
+      {
+         LogMessage( LOG_PRIO_INFO, "ProcessDelayedPackets:FindUserConnection failed" );
+      
+         BasePacket* packet = ps.packet;
+         PacketCleaner cleaner( packet );
+         it = storage.erase( it );
+      }
+   }
+
+   LogMessage( LOG_PRIO_INFO, "ProcessDelayedPackets: pushing packets back into storage: %u", storage.size() );
+   // save any remaining packets
+   m_listOfDelayedPackets = storage;
 }
 
 //---------------------------------------------------------------
@@ -209,12 +268,15 @@ bool  NotificationMainThread::HandlePacketFromOtherServer( BasePacket* packet, U
 
 //---------------------------------------------------------------
 
+
+//---------------------------------------------------------------
+
 bool     NotificationMainThread::HandlePacketFromGateway( BasePacket* packet, U32 gatewayId )
 {
    U8 packetType = packet->packetType;
    if( packetType != PacketType_GatewayWrapper )
    {
-      return false;
+      return true;
    }
 
    PacketServerJobWrapper* wrapper = static_cast< PacketServerJobWrapper* >( packet );
@@ -224,15 +286,24 @@ bool     NotificationMainThread::HandlePacketFromGateway( BasePacket* packet, U3
 
    
    {// local scope
-      Threading::MutexLock locker( m_mutex );
+      //Threading::MutexLock locker( m_mutex );
       UserConnectionIterator item = m_userConnectionMap.find( connectionId );
       if( item != m_userConnectionMap.end() )
       {
          UserConnection& user = item->second;
-         user.HandleRequestFromClient( unwrappedPacket );
+         if( user.IsReadyToAcceptClientRequests() == true )
+         {
+            user.HandleRequestFromClient( unwrappedPacket );
+            return true;
+         }
+         else
+         {
+            return false;// save this packet for later consumption
+         }
       }
    }
-   return false;
+   // user does not exist... simply cleanup
+   return true;
 }
 
 //---------------------------------------------------------------
@@ -607,7 +678,6 @@ void     NotificationMainThread::RemoveExpiredConnections()
 
 void     NotificationMainThread::UpdateDbResults()
 {
-   // this function is unnecessary in this design
    PacketFactory factory;
 
    m_mutex.lock();
@@ -644,38 +714,47 @@ void     NotificationMainThread::UpdateDbResults()
 
 //---------------------------------------------------------------
 
+void     NotificationMainThread::FindDatabaseAmongOutgoingConnections()
+{
+   ChainLinkIteratorType itOutputs = m_listOfOutputs.begin();
+   while( itOutputs != m_listOfOutputs.end() )// only one output currently supported.
+   {
+      ChainType* outputPtr = static_cast< ChainType*> ( (*itOutputs).m_interface );
+      Database::Deltadromeus* db = dynamic_cast< Database::Deltadromeus*> ( outputPtr );
+      if( db != NULL )
+      {
+         m_database = db;
+         break;
+      }
+      itOutputs++;
+   }
+}
+
+//---------------------------------------------------------------
+
 int      NotificationMainThread::CallbackFunction()
 {
    UpdateDbResults();
 
+   CleanupOldClientConnections( "KhaanServerToServer" );
    UpdateAllConnections( "KhaanServerToServer" );
    UpdateInputPacketToBeProcessed();
 
-   time_t currentTime;
-   time( &currentTime );
+   CommonUpdate();
 
-   int numClients = static_cast< int >( m_connectedClients.size() );
-   UpdateConsoleWindow( m_timeOfLastTitleUpdate, m_uptime, m_numTotalConnections, numClients, m_listeningPort, m_serverName );
+   ProcessDelayedPackets();
+   //time_t currentTime;
+   //time( &currentTime );
 
-   CleanupOldClientConnections( "KhaanServerToServer" );
+   //int numClients = static_cast< int >( m_connectedClients.size() );
+   //UpdateConsoleWindow( m_timeOfLastTitleUpdate, m_uptime, m_numTotalConnections, numClients, m_listeningPort, m_serverName );
 
    PeriodicCheckForNewNotifications();
    RemoveExpiredConnections();
 
    if( m_database == NULL )
    {
-      ChainLinkIteratorType itOutputs = m_listOfOutputs.begin();
-      while( itOutputs != m_listOfOutputs.end() )// only one output currently supported.
-      {
-         ChainType* outputPtr = static_cast< ChainType*> ( (*itOutputs).m_interface );
-         Database::Deltadromeus* db = dynamic_cast< Database::Deltadromeus*> ( outputPtr );
-         if( db != NULL )
-         {
-            m_database = db;
-            break;
-         }
-         itOutputs++;
-      }
+      FindDatabaseAmongOutgoingConnections();
    }
 
    return 1;
