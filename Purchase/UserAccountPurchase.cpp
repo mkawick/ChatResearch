@@ -245,7 +245,7 @@ bool     UserAccountPurchase::MakeRefund( const PacketTournament_PurchaseTournam
    {
 
       const PurchaseServerDebitItem& item = refundPacket->itemsToRefund[i];
-      bool success = m_salesManager->PerformSimpleInventoryAddition( m_userTicket.uuid, item.productUuidToSpend, item.numToDebit );
+      m_salesManager->PerformSimpleInventoryAddition( m_userTicket.uuid, item.productUuidToSpend, item.numToDebit );
    }
 
    PacketTournament_PurchaseTournamentEntryRefundResponse* response = new PacketTournament_PurchaseTournamentEntryRefundResponse;

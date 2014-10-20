@@ -42,7 +42,8 @@ public:
       LoginType_DebugThrottleUsersConnection,
       LoginType_UserUpdateProfile,
       LoginType_UserListOfPurchasesWasUpdated,
-      LoginType_LoginFromGateway
+      LoginType_LoginFromGateway,
+      LoginType_LogoutAllUsers
    };
 public:
    PacketLogin( int packet_type = PacketType_Login, int packet_sub_type = LoginType_Login ): BasePacket( packet_type, packet_sub_type ) {}
@@ -596,6 +597,20 @@ public:
    UuidString  userUuid;
    U32         userConnectionId;
 };
+
+///////////////////////////////////////////////////////////////
+
+class PacketLogin_LogoutAllUsers : public BasePacket
+{
+public:
+   PacketLogin_LogoutAllUsers(): BasePacket( PacketType_Login, PacketLogin::LoginType_LogoutAllUsers ) {}
+   
+   bool  SerializeIn( const U8* data, int& bufferOffset, int minorVersion );
+   bool  SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const;
+
+   SerializedVector< U32 > connectionIds;
+};
+
 
 ///////////////////////////////////////////////////////////////
 

@@ -88,33 +88,38 @@ bool     NotificationMainThread::AddInputChainData( BasePacket* packet, U32 gate
 
 bool     NotificationMainThread:: ProcessPacket( PacketStorage& storage )
 {
+   cout << "NotificationMainThread::ProcessPacket enter" << endl;
+
    BasePacket* packet = storage.packet;
    U32 gatewayId = storage.gatewayId;
 
    U8 packetType = packet->packetType;
    
-   if( packet->packetType == PacketType_GatewayInformation )
+   if( packetType == PacketType_GatewayInformation )
    {
       PacketCleaner cleaner( packet );// we do not accept any data from the gateway
       HandleCommandFromGateway( packet, gatewayId );
       return true;
    }
 
-   if( packet->packetType == PacketType_ServerJobWrapper )// login and such
+   if( packetType == PacketType_ServerJobWrapper )// login and such
    {
+      cout << "NotificationMainThread::ProcessPacket ServerJob" << endl;
       PacketCleaner cleaner( packet );
       HandlePacketFromOtherServer( packet, gatewayId );
       return true;
    }
 
-   if( packet->packetType == PacketType_GatewayWrapper ) 
+   if( packetType == PacketType_GatewayWrapper ) 
    {
+      cout << "NotificationMainThread::ProcessPacket HandlePacketFromGateway" << endl;
       if( HandlePacketFromGateway( packet, gatewayId ) == true )
       {
          PacketCleaner cleaner( packet );
       }
       else
       {
+         cout << "NotificationMainThread::HandlePacketFromGateway HandleRequestFromClient" << endl;
          m_listOfDelayedPackets.push_back( PacketStorage( storage ) );
       }
       return true;
@@ -273,6 +278,7 @@ bool  NotificationMainThread::HandlePacketFromOtherServer( BasePacket* packet, U
 
 bool     NotificationMainThread::HandlePacketFromGateway( BasePacket* packet, U32 gatewayId )
 {
+   cout << "NotificationMainThread::HandlePacketFromGateway enter" << endl;
    U8 packetType = packet->packetType;
    if( packetType != PacketType_GatewayWrapper )
    {
@@ -293,11 +299,13 @@ bool     NotificationMainThread::HandlePacketFromGateway( BasePacket* packet, U3
          UserConnection& user = item->second;
          if( user.IsReadyToAcceptClientRequests() == true )
          {
+            cout << "NotificationMainThread::HandlePacketFromGateway HandleRequestFromClient" << endl;
             user.HandleRequestFromClient( unwrappedPacket );
             return true;
          }
          else
          {
+            cout << "NotificationMainThread::HandlePacketFromGateway nope" << endl;
             return false;// save this packet for later consumption
          }
       }
@@ -543,6 +551,7 @@ void  NotificationMainThread::RunQueryAndNotification( Database::Deltadromeus* d
 
 bool     NotificationMainThread::HandleNotification( const PacketNotification_SendNotification* unwrappedPacket )
 {
+   cout << "NotificationMainThread::HandleNotification enter" << endl;
    // it's very unlikely that this user is loaded already. It's probably best to just look up the user's devices and send notifications.
 
    unsigned int user_id = unwrappedPacket->userId;
@@ -561,7 +570,8 @@ bool     NotificationMainThread::HandleNotification( const PacketNotification_Se
                               unwrappedPacket->notificationType,
                               unwrappedPacket->additionalText.c_str(),
                               true );
-   //
+   
+   cout << "NotificationMainThread::HandleNotification exit" << endl;
    return false;
 }
 
@@ -602,7 +612,7 @@ void     NotificationMainThread::PeriodicCheckForNewNotifications()
          itt->second.lastNotificationTime = currentTime;
          itt->second.resendNotificationDelaySeconds = 0;
 
-         
+         cout << "NotificationMainThread::SetupNotificationsToSendImmediately enter" << endl;
          unsigned int user_id = itt->first.userId;
          unsigned int game_type = itt->first.gameType;
          unsigned int game_id = itt->second.lastNotificationGameId;
@@ -617,6 +627,7 @@ void     NotificationMainThread::PeriodicCheckForNewNotifications()
                               itt->second.lastNotificationType, 
                               itt->second.lastNotificationText.c_str(),
                               false );
+         cout << "NotificationMainThread::SetupNotificationsToSendImmediately exit" << endl;
 
       }
 
@@ -628,17 +639,20 @@ void     NotificationMainThread::PeriodicCheckForNewNotifications()
 
 bool     NotificationMainThread::AddQueryToOutput( PacketDbQuery* query )
 {
+   cout << "NotificationMainThread::AddQueryToOutput enter" << endl;
    ChainLinkIteratorType itOutputs = m_listOfOutputs.begin();
    while( itOutputs != m_listOfOutputs.end() )// only one output currently supported.
    {
       ChainType* outputPtr = static_cast< ChainType*> ( (*itOutputs).m_interface );
       if( outputPtr->AddInputChainData( query, m_chainId ) == true )
       {
+         cout << "NotificationMainThread::AddQueryToOutput success" << endl;
          return true;
       }
       itOutputs++;
    }
 
+   cout << "NotificationMainThread::AddQueryToOutput fail" << endl;
    BasePacket* packet = static_cast<BasePacket*>( query );
    PacketFactory factory;
    factory.CleanupPacket( packet );/// normally, we'd leave this up to the invoker to cleanup. 
@@ -649,7 +663,6 @@ bool     NotificationMainThread::AddQueryToOutput( PacketDbQuery* query )
 
 void     NotificationMainThread::RemoveExpiredConnections()
 {
-   //m_mutex.lock();
    UserConnectionIterator it = m_userConnectionMap.begin();
    while( it != m_userConnectionMap.end() )
    {
@@ -657,19 +670,20 @@ void     NotificationMainThread::RemoveExpiredConnections()
       UserConnectionIterator temp = it++;
       if( contact.IsLoggedOut() )
       {
+         cout << "NotificationMainThread::RemoveExpiredConnections enter" << endl;
          if( contact.SecondsExpiredSinceLoggedOut() > SecondsBeforeRemovingLoggedOutUser )
          {
             //m_userLookupById.erase( contact.GetUserInfo().id );
             
             m_userConnectionMap.erase( temp );
          }
+         cout << "NotificationMainThread::RemoveExpiredConnections exit" << endl;
       }
       else 
       {
          contact.Update();
       }
    }
-   //m_mutex.unlock();
 }
 
 //---------------------------------------------------------------

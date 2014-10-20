@@ -160,6 +160,7 @@ public:
    const type&    operator[]( int index ) const { return m_data[ index ]; }
    bool  remove( U32 index ) { if ( index >= m_data.size() ) return false; m_data.erase( m_data.begin() + index ); return true; }
 
+   void  copy( const vector< type >& );
    //------------ tracking variables, mostly for packetization ------------------
    void                    SetIndexParams( U16 firstIndex = 0, U16 totaltCount = 0 ) { listIndex = firstIndex, listCount = totaltCount; }
    U16                     GetFirstIndex() const { return listIndex; }
@@ -189,4 +190,14 @@ bool  SerializedKeyValueVector<type>::erase( KVIterator iter )
 }
 
 ////////////////////////////////////////////////////////
+
+template < typename type >
+void  SerializedVector<type>::copy( const vector< type >& values )
+{
+   m_data.clear();
+   ::copy( values.begin(), values.end(), m_data );
+}
+
+///////////////////////////////////////////////////////////////
+
 #pragma pack( pop )

@@ -194,7 +194,7 @@ void  DiplodocusServerToServer::HandleIdentityInputPackets()
       return;
    }
 
-   cout << "DiplodocusServerToServer::HandleInputPackets::numPacketsToProcess = " << numPacketsToProcess << endl;
+   //cout << "DiplodocusServerToServer::HandleInputPackets::numPacketsToProcess = " << numPacketsToProcess << endl;
 
    PacketFactory factory;
    while( tempQueue.size() )
@@ -203,7 +203,7 @@ void  DiplodocusServerToServer::HandleIdentityInputPackets()
       tempQueue.pop_front();
 
       KhaanServerToServer* localKhaan = NULL;
-      LogMessage( LOG_PRIO_INFO, "DiplodocusServerToServer::HandleInputPackets .. entering lock" );
+      //LogMessage( LOG_PRIO_INFO, "DiplodocusServerToServer::HandleInputPackets .. entering lock" );
       m_inputChainListMutex.lock();
       {
          ChainLinkIteratorType itInputs = m_listOfInputs.begin();
@@ -221,7 +221,7 @@ void  DiplodocusServerToServer::HandleIdentityInputPackets()
          }
       }
       m_inputChainListMutex.unlock();
-      LogMessage( LOG_PRIO_INFO, "DiplodocusServerToServer::HandleInputPackets .. exit lock" );
+      //LogMessage( LOG_PRIO_INFO, "DiplodocusServerToServer::HandleInputPackets .. exit lock" );
 
       if( localKhaan == NULL )
       {
@@ -236,10 +236,10 @@ void  DiplodocusServerToServer::HandleIdentityInputPackets()
       LogMessage( LOG_PRIO_INFO, "    m_serverType:     %u", m_serverType );
       LogMessage( LOG_PRIO_INFO, "    m_isControllerApp:%d", m_isControllerApp );*/
       
-      LogMessage( LOG_PRIO_INFO, "DiplodocusServerToServer::HandleInputPackets .. AddOutputChainData" );
+      //LogMessage( LOG_PRIO_INFO, "DiplodocusServerToServer::HandleInputPackets .. AddOutputChainData" );
       
       localKhaan->AddOutputChainData( holder.pPacket, 0 );
-      LogMessage( LOG_PRIO_INFO, "DiplodocusServerToServer::HandleInputPackets .. MarkConnectionAsNeedingUpdate" );
+      //LogMessage( LOG_PRIO_INFO, "DiplodocusServerToServer::HandleInputPackets .. MarkConnectionAsNeedingUpdate" );
       
       MarkConnectionAsNeedingUpdate( holder.chainIdOfInputConnection );
 
@@ -258,10 +258,10 @@ void  DiplodocusServerToServer::HandleIdentityInputPackets()
       idPacket->gatewayType   =     localKhaan->GetGatewayType();
       idPacket->externalIpAddress = localKhaan->GetExternalIpAddress();
       
-      LogMessage( LOG_PRIO_INFO, "DiplodocusServerToServer::HandleInputPackets .. CreateJob" );
+      //LogMessage( LOG_PRIO_INFO, "DiplodocusServerToServer::HandleInputPackets .. CreateJob" );
       
       CreateJob( localKhaan, idPacket );
-      LogMessage( LOG_PRIO_INFO, "DiplodocusServerToServer::HandleInputPackets .. exit" );
+      //LogMessage( LOG_PRIO_INFO, "DiplodocusServerToServer::HandleInputPackets .. exit" );
    }
 
 }
@@ -293,7 +293,7 @@ void     DiplodocusServerToServer::SendJobsToUpperLayers()
    {
       return;
    }
-   cout << "DiplodocusServerToServer::SendJobsToUpperLayers:: jobs to send" << endl;
+   //cout << "DiplodocusServerToServer::SendJobsToUpperLayers:: jobs to send" << endl;
    PacketFactory factory;
    while( queueOfJobs.size() )
    {
@@ -305,7 +305,7 @@ void     DiplodocusServerToServer::SendJobsToUpperLayers()
       {
          if( static_cast< ChainType*> ( itOutputs->m_interface)->AddInputChainData( wrapper, wrapper->serverId ) == true )
          {
-            cout << "DiplodocusServerToServer::SendJobsToUpperLayers:: success" << endl;
+            //cout << "DiplodocusServerToServer::SendJobsToUpperLayers:: success" << endl;
          }
          else
          {

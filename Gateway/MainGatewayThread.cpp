@@ -288,7 +288,7 @@ void     MainGatewayThread::UpdateRemovedConnections()
    m_clientsWaitingToBeRemoved.clear();
 }*/
 
-//-----------------------------------------------------
+////////////////////////////////////////////////////////
 
 void  MainGatewayThread::FinalRemoveInputChain( U32 connectionId )
 {
@@ -310,7 +310,97 @@ void  MainGatewayThread::FinalRemoveInputChain( U32 connectionId )
    }
 }
 
-//-----------------------------------------------------
+////////////////////////////////////////////////////////
+
+bool     MainGatewayThread::SendPacketToServer( BasePacket* packet, ServerType type )
+{
+   if( type == ServerType_GameInstance )
+   {
+      LogMessage( LOG_PRIO_ERR, "Gateway SendPacketToServer tried seding to a game server with no game id param " );
+   }
+   assert( type != ServerType_GameInstance );
+
+   bool  sent = false;
+   m_outputChainListMutex.lock();
+   ChainLinkIteratorType itOutput = m_listOfOutputs.begin();
+   while( itOutput != m_listOfOutputs.end() )
+   {
+      IChainedInterface* outputPtr = (*itOutput).m_interface;
+      FruitadensGateway* fruity = static_cast< FruitadensGateway* >( outputPtr );
+      itOutput++;
+      if( fruity->GetConnectedServerType() == type )
+      {
+         if( fruity->IsConnected() == true )
+         {
+            U32 unusedParam = -1;
+            sent = fruity->AddOutputChainData( packet, unusedParam );
+         }
+         break;
+      }
+   }
+   m_outputChainListMutex.unlock();
+
+   return sent;
+}
+
+void     MainGatewayThread::CreateFilteredListOfClientConnections( U32 gameId, vector< U32 >& connectionIds )
+{
+   connectionIds.clear();
+   connectionIds.reserve( 30 );
+
+   m_inputChainListMutex.lock();
+   ConnectionMapIterator nextIt = m_connectionMap.begin();
+   while( nextIt != m_connectionMap.end() )
+   {
+      ConnectionMapIterator connIt = nextIt++;
+     // KhaanGatewayWrapper& khaanWrapper = connIt->second;
+      KhaanGateway* khaan = connIt->second;
+      if( khaan == NULL )
+         continue;
+
+      U32 gameConnected = khaan->GetLastGameConnectedTo ();
+
+      if( gameId == 0 )// match all
+      {
+         connectionIds.push_back( gameConnected );
+      }
+      else if( gameConnected == gameId ) // match a specific game
+      {
+         connectionIds.push_back( gameConnected );
+      }
+   }
+   m_inputChainListMutex.unlock();
+}
+
+
+////////////////////////////////////////////////////////
+
+void     MainGatewayThread::SendAllServerStateChangesToClients( const vector< QOS_ServiceChange >& listOfchanges )
+{
+   vector< QOS_ServiceChange >::const_iterator it = listOfchanges.begin();
+   while( it != listOfchanges.end() )
+   {
+      const QOS_ServiceChange& change = *it++;
+
+      BroadcastPacketToAllUsers( change.text, change.errorTypeMessageToSend, change.serverType, change.gameId, change.gameId );
+      if( change.forceUsersToDc )
+      {
+         U32 gameId = change.gameId;
+         vector< U32 > connectionIds;
+
+         PacketLogin_LogoutAllUsers* packet = new PacketLogin_LogoutAllUsers;
+         CreateFilteredListOfClientConnections( gameId, connectionIds );
+         PacketGatewayWrapper* wrapper = new PacketGatewayWrapper;
+         wrapper->SetupPacket( packet, -1 );
+
+         // tell login server that users are being dc'd.. try to send a single message for a game if possible
+         // tell all users of that game that they are being dc'd
+         undone
+      }
+   }
+}
+
+////////////////////////////////////////////////////////
 
 void     MainGatewayThread::CheckOnServerStatusChanges()
 {
@@ -318,59 +408,68 @@ void     MainGatewayThread::CheckOnServerStatusChanges()
    BaseOutputContainer tempOutputContainer = m_listOfOutputs;
    m_outputChainListMutex.unlock();
 
+   vector< QOS_ServiceChange > serviceChanges;
    ChainLinkIteratorType itOutput = tempOutputContainer.begin();
    while( itOutput != tempOutputContainer.end() )
    {
       IChainedInterface* outputPtr = (*itOutput).m_interface;
       FruitadensGateway* fruity = static_cast< FruitadensGateway* >( outputPtr );
       itOutput++;
+
+      QOS_ServiceChange qosChange;
+      ServerType serverType = fruity->GetConnectedServerType();
+
       if( fruity->IsRecentlyDisconnected() == true )
       {
          fruity->ClearRecentlyDisconnectedFlag();
-         ServerType serverType = fruity->GetConnectedServerType();
-
-         // some services are important, some are not
-         if( 
-            serverType == ServerType_Gateway || 
-            serverType == ServerType_Login ||
-            //serverType == ServerType_Tournament ||
-            serverType == ServerType_Chat ||
-            serverType == ServerType_Contact ||
-            serverType == ServerType_Purchase ||
-            serverType == ServerType_Notification 
-            )
+         qosChange.text = "Server is down";
+         qosChange.gameId = 0;
+         qosChange.serverType = serverType;
+         qosChange.isConnected = false;
+         
+         if( IsCoreServerType( serverType ) == true )
          {
-            BroadcastPacketToAllUsers( "Server is down", Packet_QOS_ReportToClient::ErrorState_ServerIsNotAvailable, serverType, 0, 0 );
+            qosChange.errorTypeMessageToSend = Packet_QOS_ReportToClient::ErrorState_ServerIsNotAvailable;
+            qosChange.forceUsersToDc = IsLoginServerType( serverType );
          }
-         else if( serverType == ServerType_GameInstance ) // special case.
+         else if( IsGameServerType( serverType ) == true ) // special case.
          {
-            BroadcastPacketToAllUsers( "Server is down", Packet_QOS_ReportToClient::ErrorState_GameIsDown, serverType, fruity->GetGameProductId(), fruity->GetGameProductId() );
+            qosChange.errorTypeMessageToSend = Packet_QOS_ReportToClient::ErrorState_GameIsDown;
+            qosChange.forceUsersToDc = true;
+            qosChange.gameId = fruity->GetGameProductId();
          }
+         
       }
       else if( fruity->IsRecentlyConnected() == true )
       {
          fruity->ClearRecentlyConnectedFlag();
-         ServerType serverType = fruity->GetConnectedServerType();
+         qosChange.text = "Server is up";
+         qosChange.gameId = 0;
+         qosChange.serverType = serverType;
+         qosChange.forceUsersToDc = false;
+         qosChange.isConnected = true;
 
-         if( 
-            serverType == ServerType_Gateway || 
-            serverType == ServerType_Login ||
-            //serverType == ServerType_Tournament ||
-            serverType == ServerType_Chat ||
-            serverType == ServerType_Contact ||
-            serverType == ServerType_Purchase ||
-            serverType == ServerType_Notification 
-            )
+         if( IsCoreServerType( serverType ) )
          {
-            BroadcastPacketToAllUsers( "Server is up", Packet_QOS_ReportToClient::ErrorState_ServerIsAvailable, serverType, 0, 0 );
+            qosChange.errorTypeMessageToSend = Packet_QOS_ReportToClient::ErrorState_ServerIsAvailable;
+            
+            //BroadcastPacketToAllUsers( "Server is up", Packet_QOS_ReportToClient::ErrorState_ServerIsAvailable, serverType, 0, 0 );
          }
-         else if( serverType == ServerType_GameInstance ) // special case.
+         else if( IsGameServerType( serverType ) == true ) // special case.
          {
-            BroadcastPacketToAllUsers( "Server is up", Packet_QOS_ReportToClient::ErrorState_GameIsUp, serverType, fruity->GetGameProductId(), fruity->GetGameProductId() );
+            qosChange.errorTypeMessageToSend = Packet_QOS_ReportToClient::ErrorState_GameIsUp;
+            qosChange.forceUsersToDc = false;
+            qosChange.gameId = fruity->GetGameProductId();
+            //BroadcastPacketToAllUsers( "Server is up", Packet_QOS_ReportToClient::ErrorState_GameIsUp, serverType, fruity->GetGameProductId(), fruity->GetGameProductId() );
          }
+      }
+      if( qosChange.errorTypeMessageToSend != 0 )
+      {
+         serviceChanges.push_back( qosChange );
       }
    }
 
+   SendAllServerStateChangesToClients( serviceChanges );
    
    //---------------------------------------------------
    if( m_isServerDownForMaintenence == true && 
@@ -379,7 +478,7 @@ void     MainGatewayThread::CheckOnServerStatusChanges()
    }
 }
 
-//-----------------------------------------------------
+////////////////////////////////////////////////////////
 
 void     MainGatewayThread::OutputConnected( IChainedInterface * chainPtr )
 {
@@ -395,7 +494,7 @@ void     MainGatewayThread::OutputRemovalInProgress( IChainedInterface * chainPt
    serverType = serverType;
 }
 
-//-----------------------------------------------------
+////////////////////////////////////////////////////////
 
 void     MainGatewayThread::BroadcastPacketToAllUsers( const string& errorText, int errorState, int param1, int param2, U8 matchingGameId )
 {
@@ -638,20 +737,9 @@ int       MainGatewayThread::CallbackFunction()
    CheckOnConnectionIdBlocks();
 
    MoveClientBoundPacketsFromTempToKhaan();
-   //UpdateAllClientConnections();
-
-  /* bool shouldPrint = m_listOfInputs.size() > 0;
-   if( shouldPrint )
-   {
-      cout << "entering UpdateAllConnections " << endl;
-   }*/
    UpdateAllConnections( "KhaanGateway" );
- /*  if( shouldPrint )
-   {
-      cout << "exiting UpdateAllConnections " << endl;
-   }*/
 
-   //CheckOnServerStatusChanges();
+   CheckOnServerStatusChanges();
 
    if( m_packetsToBeSentInternally.size() == 0 )
       return 0;
@@ -771,7 +859,7 @@ void  MainGatewayThread::SendStatsToLoadBalancer()
 }
 
 /////////////////////////////////////////////////////////////////////////////////
-
+/*
 void  MainGatewayThread::RequestNewConenctionIdsFromLoadBalancer()
 {
    if( m_printFunctionNames )
@@ -825,7 +913,7 @@ void  MainGatewayThread::RequestNewConenctionIdsFromLoadBalancer()
       }
    }
 }
-
+*/
 /////////////////////////////////////////////////////////////////////////////////
 
 bool  MainGatewayThread::AddOutputChainData( BasePacket* packetIn, U32 serverType )
@@ -1074,7 +1162,7 @@ BasePacket*  MainGatewayThread::HandlePlayerLoginStatus( KhaanGateway* khaan, Ba
 
 /////////////////////////////////////////////////////////////////////////////////
 
-void  LogCertainPackets( BasePacket* packet )
+void  LogCertainPacketsBackToClient( BasePacket* packet )
 {
    if( packet->packetType == PacketType_Chat && 
       packet->packetSubType == PacketChatToServer::ChatType_AddUserToChatChannelResponse )
@@ -1142,7 +1230,7 @@ void  MainGatewayThread::MoveClientBoundPacketsFromTempToKhaan()
 
    if( localQueue.size() )
    {
-      PrintDebugText( "MainLoop_OutputProcessing" );
+      //PrintDebugText( "MainLoop_OutputProcessing" );
       PacketFactory factory;
       while( localQueue.size() )
       {
@@ -1153,7 +1241,7 @@ void  MainGatewayThread::MoveClientBoundPacketsFromTempToKhaan()
          delete wrapper;
          bool  handled = false;
 
-         LogCertainPackets( dataPacket );
+         LogCertainPacketsBackToClient( dataPacket );
 
          m_inputChainListMutex.lock();
          //SocketToConnectionMapIterator it = m_connectionToSocketMap.find( connectionId );

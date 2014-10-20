@@ -25,6 +25,11 @@ enum  ServerType
    ServerType_Count // << end of list
 };
 
+bool     IsGatewayServerType( ServerType );
+bool     IsCoreServerType( ServerType );
+bool     IsLoginServerType( ServerType );
+bool     IsGameServerType( ServerType );
+
 const char* GetServerTypeName( ServerType );
 
 template < typename type >

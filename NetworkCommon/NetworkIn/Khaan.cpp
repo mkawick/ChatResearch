@@ -420,11 +420,11 @@ bool Khaan :: AddOutputChainData( BasePacket* packet, U32 filingData )
 
    //LogMessage( LOG_PRIO_INFO, "Khaan 12" );
 
-   cout << "Khaan :: AddOutputChainData:: lock" << endl;
+   //cout << "Khaan :: AddOutputChainData:: lock" << endl;
    m_outputChainListMutex.lock();
       AddOutputChainDataNoLock( packet );
    m_outputChainListMutex.unlock();
-   cout << "Khaan :: AddOutputChainData:: unlock" << endl;
+   //cout << "Khaan :: AddOutputChainData:: unlock" << endl;
    return true; 
 }
 
@@ -563,6 +563,10 @@ void     Khaan :: CloseConnection()
 
 void    Khaan :: Cleanup()
 {
+   // flush all pending packets
+   ClearAllPacketsIn();
+   ClearAllPacketsOut();
+
    if( m_bufferEvent == NULL )
       return;
 
@@ -570,10 +574,6 @@ void    Khaan :: Cleanup()
    PreCleanup();
 
    CleanupAllChainDependencies();
-
-   // flush all pending packets
-   ClearAllPacketsIn();
-   ClearAllPacketsOut();
 
    m_bufferEvent = NULL;
    //bufferevent_free( GetBufferEvent() );

@@ -840,20 +840,20 @@ void     Diplodocus< InputChain, OutputChain >::UpdateInputPacketToBeProcessed()
 {
    if( m_inputPacketsToBeProcessed.size() > 0 )
    { 
-      LogMessage( LOG_PRIO_INFO, "Diplodocus::UpdateInputPacketToBeProcessed <<<" );
+      //LogMessage( LOG_PRIO_INFO, "Diplodocus::UpdateInputPacketToBeProcessed <<<" );
       m_mutex.lock();
       deque< PacketStorage > packetQueue = m_inputPacketsToBeProcessed;
       m_inputPacketsToBeProcessed.clear();
       m_mutex.unlock();
 
-      LogMessage( LOG_PRIO_INFO, "Diplodocus::UpdateInputPacketToBeProcessed ---" );
+      //LogMessage( LOG_PRIO_INFO, "Diplodocus::UpdateInputPacketToBeProcessed ---" );
 
       deque< PacketStorage >::iterator it = packetQueue.begin();
       while( it != packetQueue.end() )
       {
          ProcessPacket( *it++ );
       }
-      LogMessage( LOG_PRIO_INFO, "Diplodocus::UpdateInputPacketToBeProcessed >>>" );
+      //LogMessage( LOG_PRIO_INFO, "Diplodocus::UpdateInputPacketToBeProcessed >>>" );
    }
 }
 

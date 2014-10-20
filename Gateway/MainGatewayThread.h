@@ -30,6 +30,20 @@ struct ConnectionIdStorage
    U16 countIds;
 };
 
+
+////////////////////////////////////////////////////////
+
+struct QOS_ServiceChange
+{
+   U8       serverType;
+   U8       gameId;
+   U8       errorTypeMessageToSend;
+   bool     forceUsersToDc;
+   bool     isConnected;
+   
+   char*    text;
+};
+
 ////////////////////////////////////////////////////////////////////////////////////
 
 class MainGatewayThread : public Diplodocus< KhaanGateway >, public StatTrackingConnections
@@ -83,12 +97,16 @@ private:
 
    void           HandleReroutRequest( U32 connectionId );
    void           UpdateAllClientConnections();
+
    void           CheckOnServerStatusChanges();
+   bool           SendPacketToServer( BasePacket* packet, ServerType type );
+   void           CreateFilteredListOfClientConnections( U32 GameId, vector< U32 >& connectionIds );
+   void           SendAllServerStateChangesToClients( const vector< QOS_ServiceChange >& listOfchanges );
 
    void           CheckOnConnectionIdBlocks();
    bool           RequestMoreConnectionIdsFromLoadBalancer();
 
-   void           RequestNewConenctionIdsFromLoadBalancer();
+   //void           RequestNewConenctionIdsFromLoadBalancer();
    //void           UpdateRemovedConnections();
 
    int            CallbackFunction();

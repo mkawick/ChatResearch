@@ -52,3 +52,43 @@ const char* GetServerTypeName( ServerType type )
 
    return "bug: bad reference value";
 }
+
+bool     IsGatewayServerType( ServerType serverType )
+{
+    if( serverType == ServerType_Gateway ||
+      serverType == ServerType_LoadBalancer  )
+      return true;
+
+    return false;
+}
+
+bool     IsCoreServerType( ServerType serverType )
+{
+   // some services are important, some are not
+   if( serverType == ServerType_Asset ||
+      serverType == ServerType_Login ||
+      //serverType == ServerType_Tournament ||
+      serverType == ServerType_Chat ||
+      serverType == ServerType_Contact ||
+      serverType == ServerType_Purchase ||
+      serverType == ServerType_Notification ||
+      serverType == ServerType_UserStats )
+      return true;
+
+   return false;
+}
+
+bool     IsLoginServerType( ServerType serverType )
+{
+   if( serverType == ServerType_Login )
+      return true;
+   return false;
+}
+
+bool     IsGameServerType( ServerType serverType )
+{
+   if( serverType == ServerType_GameInstance )
+      return true;
+
+    return false;
+}

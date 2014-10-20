@@ -801,3 +801,20 @@ bool  PacketListOfUserPurchasesUpdated::SerializeOut( U8* data, int& bufferOffse
 }
 
 ///////////////////////////////////////////////////////////////
+
+bool  PacketLogin_LogoutAllUsers::SerializeIn( const U8* data, int& bufferOffset, int minorVersion )
+{ 
+   BasePacket::SerializeIn( data, bufferOffset, minorVersion );
+   Serialize::In( data, bufferOffset, connectionIds, minorVersion );
+   return true; 
+}
+
+bool  PacketLogin_LogoutAllUsers::SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const 
+{ 
+   BasePacket::SerializeOut( data, bufferOffset, minorVersion );
+   Serialize::Out( data, bufferOffset, connectionIds, minorVersion );
+
+   return true; 
+}
+
+///////////////////////////////////////////////////////////////

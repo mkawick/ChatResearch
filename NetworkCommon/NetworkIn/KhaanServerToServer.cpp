@@ -48,7 +48,7 @@ bool  KhaanServerToServer::HandleInwardSerializedPacket( const U8* data, int& of
    BasePacket* packetIn = NULL;
    PacketFactory factory;
 
-   cout << "KhaanServerToServer::HandleInwardSerializedPacket" << endl;
+   //cout << "KhaanServerToServer::HandleInwardSerializedPacket" << endl;
 
    if( factory.Parse( data, offset, &packetIn, m_versionNumberMinor ) == true )
    {
@@ -64,12 +64,12 @@ bool  KhaanServerToServer::HandleInwardSerializedPacket( const U8* data, int& of
       LogMessage( LOG_PRIO_INFO, " KhaanServerToServer :: OnDataReceived( p=%d:%d )", packetType, packetIn->packetSubType );
 #endif
 
-      cout << "Khaan :: HandleInwardSerializedPacket:: lock" << endl;
+      //cout << "KhaanServerToServer :: HandleInwardSerializedPacket:: lock" << endl;
       m_inputChainListMutex.lock();
          m_packetsIn.push_back( packetIn );
          m_hasPacketsReceived = true;
       m_inputChainListMutex.unlock();
-      cout << "Khaan :: HandleInwardSerializedPacket:: unlock" << endl;
+      //cout << "KhaanServerToServer :: HandleInwardSerializedPacket:: unlock" << endl;
       RequestUpdate();
    } 
    else
@@ -112,7 +112,7 @@ bool  KhaanServerToServer::HandleInwardSerializedPacket( const U8* data, int& of
 
 bool	KhaanServerToServer :: OnDataReceived( const U8* data, int length )
 {
-   cout << "KhaanServerToServer :: OnDataReceived: " << length << endl;
+   //cout << "KhaanServerToServer :: OnDataReceived: " << length << endl;
    int offset = 0;
    if( m_isExpectingMoreDataInPreviousPacket )
    {
@@ -184,7 +184,7 @@ void	KhaanServerToServer :: UpdateInwardPacketList()
       return;
 
    U32 numPacketsToProcess = m_packetsIn.size();
-   cout << "KhaanServerToServer::UpdateInwardPacketList::numPacketsToProcess = " << numPacketsToProcess << endl;
+   //cout << "KhaanServerToServer::UpdateInwardPacketList::numPacketsToProcess = " << numPacketsToProcess << endl;
 
    int numOutputs = static_cast< int >( m_listOfOutputs.size() );
    if( numOutputs > 1 )
@@ -209,7 +209,7 @@ void	KhaanServerToServer :: UpdateInwardPacketList()
       
       if( packetType == PacketType_ServerToServerWrapper )
       {
-         cout << "KhaanServerToServer::UpdateInwardPacketList::PacketType_ServerToServerWrapper" << endl;
+         //cout << "KhaanServerToServer::UpdateInwardPacketList::PacketType_ServerToServerWrapper" << endl;
          PacketServerToServerWrapper* wrapper = static_cast< PacketServerToServerWrapper* >( packetIn );
          BasePacket* subPacket = wrapper->pPacket;
 
@@ -241,7 +241,7 @@ void	KhaanServerToServer :: UpdateInwardPacketList()
       }
       else if( packetType == PacketType_GatewayWrapper )// here we simply push the server packet up to the next layer
       {
-         cout << "KhaanServerToServer::UpdateInwardPacketList::PacketType_GatewayWrapper" << endl;
+         //cout << "KhaanServerToServer::UpdateInwardPacketList::PacketType_GatewayWrapper" << endl;
          PacketGatewayWrapper* wrapper = static_cast< PacketGatewayWrapper* >( packetIn );
          //m_connectionId = wrapper->connectionId;
          if( PassPacketOn( wrapper, wrapper->connectionId ) == true )
@@ -312,7 +312,7 @@ bool  KhaanServerToServer :: PassPacketOn( BasePacket* packet, U32 connectionId 
    LogMessage( LOG_PRIO_INFO, " KhaanServerToServer :: PassPacketOn" );
 #endif
 
-   cout << "KhaanServerToServer::PassPacketOn begin" << endl;
+   //cout << "KhaanServerToServer::PassPacketOn begin" << endl;
 
    ChainLinkIteratorType itOutputs = m_listOfOutputs.begin();
    if( itOutputs != m_listOfOutputs.end() )// only one output currently supported.
@@ -322,7 +322,7 @@ bool  KhaanServerToServer :: PassPacketOn( BasePacket* packet, U32 connectionId 
       DiplodocusServerToServer * middle = static_cast<DiplodocusServerToServer*>( interfacePtr );
 
       bool result = middle->AddInputChainData( packet, m_serverId );
-      cout << "KhaanServerToServer::PassPacketOn finished" << endl;
+      //cout << "KhaanServerToServer::PassPacketOn finished" << endl;
       return result;
    }
    
@@ -333,7 +333,7 @@ bool  KhaanServerToServer :: PassPacketOn( BasePacket* packet, U32 connectionId 
 
 bool  KhaanServerToServer :: HandleCommandFromGateway( BasePacket* packet, U32 connectionId )
 {
-   cout << "DiplodocusServerToServer::HandleCommandFromGateway" << endl;
+   //cout << "DiplodocusServerToServer::HandleCommandFromGateway" << endl;
 #ifdef VERBOSE
    LogMessage( LOG_PRIO_ERR, " KhaanServerToServer :: HandleCommandFromGateway(" );
 #endif
@@ -354,7 +354,7 @@ bool  KhaanServerToServer :: HandleCommandFromGateway( BasePacket* packet, U32 c
 
 void  KhaanServerToServer :: SaveOffServerIdentification( const PacketServerIdentifier* packet )
 {
-   cout << "KhaanServerToServer :: SaveOffServerIdentification <<<" << endl;
+   //cout << "KhaanServerToServer :: SaveOffServerIdentification <<<" << endl;
    //if( m_serverName == packet->serverName && m_serverId == packet->serverId ) // prevent dups from reporting.
    //   return;
 
@@ -382,27 +382,27 @@ void  KhaanServerToServer :: SaveOffServerIdentification( const PacketServerIden
    LogMessage( LOG_PRIO_INFO, "------------------------------------------------------" ) ;
 
    U32 numOutputs = m_listOfOutputs.size();
-   cout << "Num outputs to loop over = " << numOutputs << endl;
+   //cout << "Num outputs to loop over = " << numOutputs << endl;
 
    ChainLinkIteratorType itOutputs = m_listOfOutputs.begin();
    if( itOutputs != m_listOfOutputs.end() )// only one output currently supported.
    {
-      cout << "1" << endl;
+      //cout << "1" << endl;
       const ChainLink& chain = *itOutputs++;
       IChainedInterface* interfacePtr = chain.m_interface;
       DiplodocusServerToServer * middle = static_cast<DiplodocusServerToServer*>( interfacePtr );
 
       middle->ServerWasIdentified( this );
-      cout << "2" << endl;
+      //cout << "2" << endl;
 
       if( m_gatewayType != PacketServerIdentifier::GatewayType_None )
       {
-         cout << "3" << endl;
+         //cout << "3" << endl;
          middle->AddGatewayConnection( m_serverId );
-         cout << "4" << endl;
+         //cout << "4" << endl;
       }
    }
-   cout << "KhaanServerToServer :: SaveOffServerIdentification >>>" << endl;
+   //cout << "KhaanServerToServer :: SaveOffServerIdentification >>>" << endl;
 }
 
 //---------------------------------------------------------------

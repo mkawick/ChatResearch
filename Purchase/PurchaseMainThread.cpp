@@ -238,21 +238,19 @@ bool     DiplodocusPurchase:: ProcessPacket( PacketStorage& storage )
 
    U8 packetType = packet->packetType;
 
-   if( packet->packetType == PacketType_GatewayInformation )
+   if( packetType == PacketType_GatewayInformation )
    {
       PacketCleaner cleaner( packet );
       HandleCommandFromGateway( packet, gatewayId );
       return true;
    }
 
-   if( packet->packetType == PacketType_ServerJobWrapper )
+   if( packetType == PacketType_ServerJobWrapper )
    {
       PacketCleaner cleaner( packet );
       HandlePacketFromOtherServer( packet, gatewayId );
       return true;
    }
-
-   
    
    PacketCleaner cleaner( packet );
    return false;
