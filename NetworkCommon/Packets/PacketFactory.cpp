@@ -376,6 +376,11 @@ bool  PacketFactory::ParseLogin( const U8* bufferIn, int& bufferOffset, const Ba
             *packetOut = SerializeIn< PacketLogin_LogoutAllUsers >( bufferIn, bufferOffset, networkMinorVersion );
          }
          return true;
+      case PacketLogin::LoginType_ListOfMissingFeatures:
+         {
+            *packetOut = SerializeIn< PacketLogin_ListOfMissingFeatures >( bufferIn, bufferOffset, networkMinorVersion );
+         }
+         return true;
    }
 
    return false;

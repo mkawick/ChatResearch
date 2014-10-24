@@ -16,7 +16,8 @@ public:
       PacketServerIdentifier_ConnectionInfo,
       PacketServerIdentifier_Disconnect,
       PacketServerIdentifier_GatewayRequestLB_ConnectionIds,
-      PacketServerIdentifier_GatewayRequestLB_ConnectionIdsResponse
+      PacketServerIdentifier_GatewayRequestLB_ConnectionIdsResponse,
+      PacketServerIdentifier_ServerOutageSchedule
    };
 
 public:
@@ -131,6 +132,7 @@ public:
    BoundedString80   serverAddress;
    U32               serverId;
 };
+
 ///////////////////////////////////////////////////////////////
 
 class PacketServerToServer_GatewayRequestLB_ConnectionIdsResponse : public BasePacket
@@ -146,6 +148,37 @@ public:
    U32         beginningId;
    U16         countId;
    
+};
+
+///////////////////////////////////////////////////////////////
+
+struct ScheduledOutage
+{
+   ScheduledOutage() : gatewayId( 0 ), type( ServerType_Count ), gameId( 0 ), beginTime( 0 ), downTimeInSeconds( 0 ), cancelled( false ) {}
+   U32         gatewayId;
+   ServerType  type;
+   U8          gameId;
+   time_t      beginTime;
+   int         downTimeInSeconds;
+   bool        cancelled;
+
+   bool  SerializeIn( const U8* data, int& bufferOffset, int minorVersion );
+   bool  SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const;
+};
+
+bool        operator == ( const ScheduledOutage& lhs, const ScheduledOutage& rhs );
+
+///////////////////////////////////////////////////////////////
+
+class PacketServerConnectionInfo_ServerOutageSchedule : public BasePacket
+{
+public:
+   PacketServerConnectionInfo_ServerOutageSchedule( int packet_type = PacketType_ServerInformation, int packet_sub_type = PacketServerConnectionInfo::PacketServerIdentifier_GatewayRequestLB_ConnectionIdsResponse  ): BasePacket( packet_type, packet_sub_type ){}
+
+   bool  SerializeIn( const U8* data, int& bufferOffset, int minorVersion );
+   bool  SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const;
+
+   SerializedVector< ScheduledOutage > scheduledOutages;
 };
 
 

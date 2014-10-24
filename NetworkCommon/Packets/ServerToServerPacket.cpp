@@ -230,3 +230,64 @@ bool  PacketServerToServer_GatewayRequestLB_ConnectionIdsResponse::SerializeOut(
 }
 
 ///////////////////////////////////////////////////////////////
+
+bool  operator == ( const ScheduledOutage& lhs, const ScheduledOutage& rhs )
+{
+   if( lhs.gatewayId ==           rhs.gatewayId &&
+       lhs.type ==                rhs.type &&
+       lhs.gameId ==              rhs.gameId &&
+       lhs.beginTime ==           rhs.beginTime &&
+       lhs.downTimeInSeconds ==   rhs.downTimeInSeconds &&
+       lhs.cancelled ==           rhs.cancelled )
+         return true;
+   return false;
+}
+
+
+bool  ScheduledOutage::SerializeIn( const U8* data, int& bufferOffset, int minorVersion )
+{
+   Serialize::In( data, bufferOffset, gatewayId, minorVersion );
+   U8 t;
+   Serialize::In( data, bufferOffset, t, minorVersion );
+   type = static_cast< ServerType > ( t );
+   Serialize::In( data, bufferOffset, gameId, minorVersion );
+   Serialize::In( data, bufferOffset, beginTime, minorVersion );
+   Serialize::In( data, bufferOffset, downTimeInSeconds, minorVersion );
+   Serialize::In( data, bufferOffset, cancelled, minorVersion );
+
+   return true;
+}
+
+bool  ScheduledOutage::SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const
+{
+   Serialize::Out( data, bufferOffset, gatewayId, minorVersion );
+
+   U8 t = type;
+   Serialize::Out( data, bufferOffset, t, minorVersion );
+   Serialize::Out( data, bufferOffset, gameId, minorVersion );
+   Serialize::Out( data, bufferOffset, beginTime, minorVersion );
+   Serialize::Out( data, bufferOffset, downTimeInSeconds, minorVersion );
+   Serialize::Out( data, bufferOffset, cancelled, minorVersion );
+  
+   return true;
+}
+
+///////////////////////////////////////////////////////////////
+
+bool  PacketServerConnectionInfo_ServerOutageSchedule::SerializeIn( const U8* data, int& bufferOffset, int minorVersion )
+{
+   BasePacket::SerializeIn( data, bufferOffset, minorVersion );
+   Serialize::In( data, bufferOffset, scheduledOutages, minorVersion );
+
+   return true;
+}
+
+bool  PacketServerConnectionInfo_ServerOutageSchedule::SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const
+{
+   BasePacket::SerializeOut( data, bufferOffset, minorVersion );
+   Serialize::Out( data, bufferOffset, scheduledOutages, minorVersion );
+  
+   return true;
+}
+
+///////////////////////////////////////////////////////////////

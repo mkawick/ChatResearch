@@ -12,12 +12,16 @@ enum
    TypicalMaxHexLen = 16
 };
 
+std::string    Get0PrefixedValue( int value );
 std::string    GetDateInUTC( int diffDays = 0, int diffHours = 0, int diffMinutes = 0 );
 std::string    GetDateInUTC( time_t t );
 U64            GetDateFromString( const char* UTCFormatted );
 int            GetDiffTimeFromRightNow( const char* UTCFormatted );// negative times are in the past
 std::string    CreatePrintablePair( const std::string& key, const std::string& value );
 U32            GetCurrentMilliseconds();
+
+bool           HasTimeWindowExpired( const time_t& currentTime, const time_t& windowBegin, int numSecondsForWindow );
+bool           InCurrentTimeWindow( const time_t& currentTime, const time_t& windowBegin, int numSecondsForWindow );
 
 time_t         ZeroOutMinutes( time_t currentTime );
 time_t         ZeroOutHours( time_t currentTime );

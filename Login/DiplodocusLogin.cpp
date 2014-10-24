@@ -282,6 +282,12 @@ bool     DiplodocusLogin:: ProcessPacket( PacketStorage& storage )
                RequestListOfPurchasesUpdate( userInventory );
             }
             break;
+         case PacketLogin::LoginType_LogoutAllUsers:
+            {
+               PacketLogin_LogoutAllUsers* usersLogout = static_cast< PacketLogin_LogoutAllUsers* >( actualPacket );
+               LogoutListOfUsers( usersLogout, gatewayId );
+            }
+            break;
          
          factory.CleanupPacket( packet );
          /*delete wrapper;
@@ -1502,6 +1508,23 @@ bool   DiplodocusLogin:: RequestListOfPurchasesUpdate( const PacketListOfUserPur
    return connection->RequestListOfPurchases( userInventory->userUuid );
 }
 
+//---------------------------------------------------------------
+
+bool  DiplodocusLogin:: LogoutListOfUsers( const PacketLogin_LogoutAllUsers* usersLogout, U32 gatewayId )
+{
+   if( m_printFunctionNames == true )
+   {
+      cout << "fn: " << __FUNCTION__ << endl;
+   }
+
+   int num = usersLogout->connectionIds.size();
+   for( int i=0; i<num; i++ )
+   {
+      U32 connectionId = usersLogout->connectionIds[i];
+      ForceUserLogoutAndBlock( connectionId, gatewayId );
+   }
+   return true;
+}
 
 //---------------------------------------------------------------
 
@@ -1869,6 +1892,7 @@ bool  DiplodocusLogin:: ForceUserLogoutAndBlock( U32 connectionId, U32 gatewayId
 
    loginStatus->wasLoginSuccessful = false;
    loginStatus->adminLevel = 0;
+   loginStatus->gameProductId = gameProductId;
    
    SendPacketToGateway( loginStatus, connectionId, gatewayId );
    const bool isLoggedIn = false; 

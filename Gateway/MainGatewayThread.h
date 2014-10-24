@@ -11,38 +11,18 @@ using namespace std;
 #include "KhaanGateway.h"
 #include "GatewayCommon.h"
 
+
 class BasePacket;
 class PacketStat;
 class Fruitadens;
 class FruitadensGateway;
+class ServiceAvailabilityManager;
 
 ////////////////////////////////////////////////////////////////////////////////////
 
 typedef vector< FruitadensGateway* >  OutputConnectorList;
 typedef vector< OutputConnectorList > ListOfOutputLists;
 
-////////////////////////////////////////////////////////////////////////////////////
-
-struct ConnectionIdStorage
-{
-   ConnectionIdStorage( U32 _id, U16 _count ) : id( _id ), countIds( _count ){}
-   U32 id;
-   U16 countIds;
-};
-
-
-////////////////////////////////////////////////////////
-
-struct QOS_ServiceChange
-{
-   U8       serverType;
-   U8       gameId;
-   U8       errorTypeMessageToSend;
-   bool     forceUsersToDc;
-   bool     isConnected;
-   
-   char*    text;
-};
 
 ////////////////////////////////////////////////////////////////////////////////////
 
@@ -81,16 +61,26 @@ public:
    void           OutputConnected( IChainedInterface * );
    void           OutputRemovalInProgress( IChainedInterface * chainedOutput );
 
+   void           GetListOfOutputs( list< FruitadensGateway* >& tempOutputContainer );
+   void           BroadcastPacketToAllUsers( const string& errorText, int errorState, int param1, int param2, U8 matchingGameId, bool sendImmediate = false );
+   void           CreateFilteredListOfClientConnections( U32 GameId, vector< U32 >& connectionIds );
+   void           CreateListOfClientConnectionsForGame( vector< ClientConnectionForGame >& ccfg );
+   bool           SendPacketToServer( BasePacket* packet, ServerType type );
+   void           SendAllServerStateChangesToClients( const vector< QOS_ServiceChange >& listOfchanges );
+   void           CloseConnection( U32 connectionId );
+   void           InformUserOfMissingFeatures( const vector< ServerStatus >& servers, U32 connectionId, U8 gameId );
+   void           LogUserOutIfKeyFeaturesAreUnavailable( ServerType type, U8 gameId, U32 connectionId );
+   
    //-----------------------------------------------------
 private:
    
    void           InputConnected( IChainedInterface * );
+   bool           PreprocessServerBoundPackets( BasePacket* packet, U32 connectionId );
    bool           PushPacketToProperOutput( BasePacket* packet );
    void           SortOutgoingPackets();
 
    void           HandlePacketToKhaan( KhaanGateway* khaan, BasePacket* packet );
    BasePacket*    HandlePlayerLoginStatus(  KhaanGateway* khaan, BasePacket* packet );
-   void           BroadcastPacketToAllUsers( const string& errorText, int errorState, int param1, int param2, U8 matchingGameId );
    
    void           MoveClientBoundPacketsFromTempToKhaan();
    void           MarkConnectionForDeletion( U32 connectionId );
@@ -98,10 +88,10 @@ private:
    void           HandleReroutRequest( U32 connectionId );
    void           UpdateAllClientConnections();
 
-   void           CheckOnServerStatusChanges();
-   bool           SendPacketToServer( BasePacket* packet, ServerType type );
-   void           CreateFilteredListOfClientConnections( U32 GameId, vector< U32 >& connectionIds );
-   void           SendAllServerStateChangesToClients( const vector< QOS_ServiceChange >& listOfchanges );
+   //void           CheckOnServerStatusChanges();
+   //void           GetConnectedServerList( vector< ServerStatus >& serversNotConnected, bool onlyDisconnected );
+   
+   
 
    void           CheckOnConnectionIdBlocks();
    bool           RequestMoreConnectionIdsFromLoadBalancer();
@@ -144,6 +134,7 @@ private:
    ConnectionMap              m_connectionMap;
 
    PacketQueue                m_packetsToBeSentInternally;
+   ServiceAvailabilityManager*m_serviceAvailabilityManager;
 
    bool                       m_printPacketTypes;
    bool                       m_printFunctionNames;

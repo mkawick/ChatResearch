@@ -183,6 +183,7 @@ private:
    bool     StoreUserPurchases( U32 connectionId, const PacketListOfUserAggregatePurchases* purchase );
    bool     RequestListOfPurchases( U32 connectionId, const PacketListOfUserPurchasesRequest* purchase );
    bool     RequestListOfPurchasesUpdate( const PacketListOfUserPurchasesUpdated* userInventory );
+   bool     LogoutListOfUsers( const PacketLogin_LogoutAllUsers* usersLogout, U32 gatewayId );
    bool     AddPurchase( U32 userConnectionId, const PacketAddPurchaseEntry* addPurchase );
    bool     RequestProfile( U32 connectionId, const PacketRequestUserProfile* profileRequest );
    bool     UpdateProfile( U32 connectionId, const PacketUpdateUserProfile* profileRequest );

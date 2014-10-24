@@ -19,6 +19,18 @@ GROUP BY
 HAVING 
     COUNT(*) > 1
     
+    
+// duplicates across multiple columns
+
+select f.id, f2.* 
+from playdek.friends f
+join (
+    select userid1, userid2, count(*) as qty
+    from playdek.friends
+    group by userid1, userid2
+    having count(*) > 1
+) f2 on f.userid1 = f2.userid1 and f.userid2 = f2.userid2
+
 //-----------------------------------------------------
 
 SELECT pe.id, pe.begin_date, pe.end_date, pe.enchange_uuid, pe.title_id, pe.description_id,

@@ -48,75 +48,93 @@ using namespace std;
 
 string   Get0PrefixedValue( int value )
 {
+   if( value == 0 )
+      return string ("00");
+
    ostringstream Convert;
    Convert << value;
 
-   string ret = Convert.str();
+   string ret;
    if( value < 10 )
    {
-      if( value == 0 )
-         return string ("00");
-
       ret = "0";
-      ret += Convert.str();
    }
+   ret += Convert.str();
 
    return ret;
+   
 }
 
 //////////////////////////////////////////////////////////////////////////
 
 string GetDateInUTC( int diffDays, int diffHours, int diffMinutes )
 {
-   ostringstream Convert;
-   time_t t = time(0);   // get time now
-   struct tm * now = gmtime( & t );
+   time_t rawtime;
+   time( &rawtime );
+   struct tm *now = gmtime( &rawtime ); // get time now
+
    if( diffDays || diffHours || diffMinutes )
    {
       struct tm* temp = now;
       temp->tm_mday += diffDays;
       temp->tm_hour += diffHours;
       temp->tm_min += diffMinutes;
-      t = mktime( temp );
-      now = gmtime( & t );
+      rawtime = mktime( temp );
+      now = gmtime( &rawtime );
    }
 
-   string strMonth = Get0PrefixedValue( now->tm_mon + 1 ) ;
-   string strDay = Get0PrefixedValue( now->tm_mday );
-   string strHour = Get0PrefixedValue( now->tm_hour );
-   string strMin = Get0PrefixedValue( now->tm_min );
-   string strSec = Get0PrefixedValue( now->tm_sec );
+#if PLATFORM != PLATFORM_MAC
+   string strMonth( Get0PrefixedValue( now->tm_mon + 1 ) );
+   string strDay( Get0PrefixedValue( now->tm_mday ) );
+   string strHour( Get0PrefixedValue( now->tm_hour ) );
+   string strMin( Get0PrefixedValue( now->tm_min ) );
+   string strSec( Get0PrefixedValue( now->tm_sec ) );
 
+
+   ostringstream Convert;
    Convert << (now->tm_year + 1900) << '-'  
          << strMonth << '-' 
          << strDay << " "
          << strHour << ":"
          << strMin << ":"
          << strSec;
-
    return Convert.str();
+#else
+   char buffer[256];
+   sprintf( buffer, "%04d-%02d-%02d %02d:%02d:%02d", (now->tm_year + 1900), (now->tm_mon + 1), now->tm_mday, now->tm_hour, now->tm_min, now->tm_sec );
+
+   return string( buffer );
+#endif
 }
 
 //////////////////////////////////////////////////////////////////////////
 
 string GetDateInUTC( time_t t )
 {
-   ostringstream Convert;
    struct tm * now = gmtime( & t );
-   string strMonth = Get0PrefixedValue( now->tm_mon + 1 ) ;
-   string strDay = Get0PrefixedValue( now->tm_mday );
-   string strHour = Get0PrefixedValue( now->tm_hour );
-   string strMin = Get0PrefixedValue( now->tm_min );
-   string strSec = Get0PrefixedValue( now->tm_sec );
-
-   Convert << (now->tm_year + 1900) << '-'  
-         << strMonth << '-' 
-         << strDay << " "
-         << strHour << ":"
-         << strMin << ":"
-         << strSec;
-
+   
+#if PLATFORM != PLATFORM_MAC
+   string strMonth( Get0PrefixedValue( now->tm_mon + 1 ) );
+   string strDay( Get0PrefixedValue( now->tm_mday ) );
+   string strHour( Get0PrefixedValue( now->tm_hour ) );
+   string strMin( Get0PrefixedValue( now->tm_min ) );
+   string strSec( Get0PrefixedValue( now->tm_sec ) );
+   
+   
+   ostringstream Convert;
+   Convert << (now->tm_year + 1900) << '-'
+   << strMonth << '-'
+   << strDay << " "
+   << strHour << ":"
+   << strMin << ":"
+   << strSec;
    return Convert.str();
+#else
+   char buffer[256];
+   sprintf( buffer, "%04d-%02d-%02d %02d:%02d:%02d", (now->tm_year + 1900), (now->tm_mon + 1), now->tm_mday, now->tm_hour, now->tm_min, now->tm_sec );
+   
+   return string( buffer );
+#endif
 }
 
 U64   GetDateFromString( const char* UTCFormatted )
@@ -173,6 +191,31 @@ U32            GetCurrentMilliseconds()
 #endif
 }
 
+////////////////////////////////////////////////////////
+
+bool           HasTimeWindowExpired( const time_t& currentTime, const time_t& windowBegin, int numSecondsForWindow )
+{
+   int secondsElapsed = static_cast< int >( difftime( currentTime, windowBegin ) );
+   if( secondsElapsed < 1 ) // already passed
+      return true;
+   if( numSecondsForWindow < secondsElapsed )
+      return true;
+
+   return false;
+}
+
+////////////////////////////////////////////////////////
+
+bool           InCurrentTimeWindow( const time_t& currentTime, const time_t& windowBegin, int numSecondsForWindow )
+{
+   int secondsElapsed = static_cast< int >( difftime( currentTime, windowBegin ) );
+   if( secondsElapsed < 1 ) // already passed
+      return false;
+   if( numSecondsForWindow < secondsElapsed )
+      return false;
+
+   return true;
+}
 
 //////////////////////////////////////////////////////////
 

@@ -510,6 +510,7 @@ bool    ConnectionToUser:: SuccessfulLoginFinished( U32 connectId, bool isRelogg
    }
    loginStatus->wasLoginSuccessful = success;
    loginStatus->adminLevel = m_adminLevel;
+   loginStatus->gameProductId = m_connectionDetails.gameProductId;
 
    time( &m_loginTime );
   /* if( isReloggedIn == false )

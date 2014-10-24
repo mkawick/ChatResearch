@@ -79,6 +79,7 @@ bool     UserConnection::IsReadyToAcceptClientRequests() const
 
 void     UserConnection::RequestAllDevicesForUser()
 {
+   cout << "UserConnection::RequestAllDevicesForUser" << endl;
    PacketDbQuery* dbQuery = new PacketDbQuery;
    dbQuery->id =           m_userInfo.connectionId;
    dbQuery->meta =         "";
@@ -97,6 +98,7 @@ void     UserConnection::RequestAllDevicesForUser()
 
 void  UserConnection::RequestAllDeviceNotification()
 {
+   cout << "UserConnection::RequestAllDevicesForUser" << endl;
    PacketDbQuery* dbQuery = new PacketDbQuery;
    dbQuery->id =           m_userInfo.connectionId;
    dbQuery->meta =         "";
@@ -134,6 +136,7 @@ void  UserConnection::Update()
 
 bool  UserConnection::HandleDbQueryResult( const PacketDbQueryResult* result )
 {
+   cout << "UserConnection::RequestAllDeviceNotification" << endl;
    PacketFactory factory;
    switch( result->lookup )
    {
@@ -160,6 +163,7 @@ bool  UserConnection::HandleDbQueryResult( const PacketDbQueryResult* result )
 
 void  UserConnection::StoreListOfDevices( const PacketDbQueryResult* dbResult )
 {
+   cout << "UserConnection::StoreListOfDevices" << endl;
    m_finishedLoadingListOfDevices = true;
    if( dbResult->successfulQuery == false )
    {
@@ -191,6 +195,7 @@ void  UserConnection::StoreListOfDevices( const PacketDbQueryResult* dbResult )
 
 void  UserConnection::StoreDevicesPerGameList( const PacketDbQueryResult* dbResult )
 {
+   cout << "UserConnection::StoreDevicesPerGameList" << endl;
    m_finishedLoadingListOfDevicesPerGame = true;
    if( dbResult->successfulQuery == false )
    {
@@ -226,6 +231,7 @@ void  UserConnection::StoreDevicesPerGameList( const PacketDbQueryResult* dbResu
 
 bool  UserConnection::HandleRequestFromClient( const BasePacket* packet )
 {
+   cout << "UserConnection::HandleRequestFromClient" << endl;
    U8 packetType = packet->packetType;
    PacketFactory factory;
    switch( packetType )

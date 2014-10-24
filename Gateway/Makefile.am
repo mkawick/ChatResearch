@@ -7,6 +7,7 @@ FruitadensGateway.cpp \
 Gateway.cpp \
 KhaanGateway.cpp \
 MainGatewayThread.cpp \
+ServiceAvailabilityManager.cpp \
 ../NetworkCommon/NetworkUtils.cpp \
 ../NetworkCommon/ServerConstants.cpp \
 ../NetworkCommon/ServerType.cpp \

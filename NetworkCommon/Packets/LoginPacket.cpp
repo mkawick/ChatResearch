@@ -818,3 +818,20 @@ bool  PacketLogin_LogoutAllUsers::SerializeOut( U8* data, int& bufferOffset, int
 }
 
 ///////////////////////////////////////////////////////////////
+
+bool  PacketLogin_ListOfMissingFeatures::SerializeIn( const U8* data, int& bufferOffset, int minorVersion )
+{ 
+   BasePacket::SerializeIn( data, bufferOffset, minorVersion );
+   Serialize::In( data, bufferOffset, services, minorVersion );
+   return true; 
+}
+
+bool  PacketLogin_ListOfMissingFeatures::SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const 
+{ 
+   BasePacket::SerializeOut( data, bufferOffset, minorVersion );
+   Serialize::Out( data, bufferOffset, services, minorVersion );
+
+   return true; 
+}
+
+///////////////////////////////////////////////////////////////

@@ -586,3 +586,62 @@ bool  PacketGame_Notification::SerializeOut( U8* data, int& bufferOffset, int mi
 }
 
 ///////////////////////////////////////////////////////////////
+
+bool  operator == ( const ClientSide_ScheduledServiceOutage& lhs, const ClientSide_ScheduledServiceOutage& rhs )
+{
+   if( 
+       lhs.type ==                rhs.type &&
+       lhs.gameId ==              rhs.gameId &&
+       lhs.beginTime ==           rhs.beginTime &&
+       lhs.downTimeInSeconds ==   rhs.downTimeInSeconds &&
+       lhs.cancelled ==           rhs.cancelled )
+         return true;
+   return false;
+}
+
+
+bool  ClientSide_ScheduledServiceOutage::SerializeIn( const U8* data, int& bufferOffset, int minorVersion )
+{
+   U8 t;
+   Serialize::In( data, bufferOffset, t, minorVersion );
+   type = static_cast< ServerType > ( t );
+   Serialize::In( data, bufferOffset, gameId, minorVersion );
+   Serialize::In( data, bufferOffset, beginTime, minorVersion );
+   Serialize::In( data, bufferOffset, downTimeInSeconds, minorVersion );
+   Serialize::In( data, bufferOffset, cancelled, minorVersion );
+
+   return true;
+}
+
+bool  ClientSide_ScheduledServiceOutage::SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const
+{
+
+   U8 t = type;
+   Serialize::Out( data, bufferOffset, t, minorVersion );
+   Serialize::Out( data, bufferOffset, gameId, minorVersion );
+   Serialize::Out( data, bufferOffset, beginTime, minorVersion );
+   Serialize::Out( data, bufferOffset, downTimeInSeconds, minorVersion );
+   Serialize::Out( data, bufferOffset, cancelled, minorVersion );
+  
+   return true;
+}
+
+///////////////////////////////////////////////////////////////
+
+bool  ClientSide_ServerOutageSchedule::SerializeIn( const U8* data, int& bufferOffset, int minorVersion )
+{
+   BasePacket::SerializeIn( data, bufferOffset, minorVersion );
+   Serialize::In( data, bufferOffset, scheduledOutages, minorVersion );
+
+   return true;
+}
+
+bool  ClientSide_ServerOutageSchedule::SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const
+{
+   BasePacket::SerializeOut( data, bufferOffset, minorVersion );
+   Serialize::Out( data, bufferOffset, scheduledOutages, minorVersion );
+  
+   return true;
+}
+
+///////////////////////////////////////////////////////////////

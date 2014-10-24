@@ -124,6 +124,26 @@ bool	KhaanGateway :: Update()
 
 //-----------------------------------------------------------------------------------------
 
+bool     KhaanGateway :: SendImmediately( const BasePacket* logoutPacket )
+{
+   if( m_isDisconnected )
+      return false;
+
+   U16 sizeOfLastWrite;
+   int sizeOfHeader = sizeof( sizeOfLastWrite );
+   int length = sizeOfHeader;// reserve space
+   int offset = 0;
+   
+   logoutPacket->SerializeOut( m_outboundBuffer, length, m_versionNumberMinor );
+   sizeOfLastWrite = length - sizeOfHeader;
+   Serialize::Out( m_outboundBuffer, offset, sizeOfLastWrite, m_versionNumberMinor );// write in the size      
+   SendData( m_outboundBuffer, length );
+
+   return true;
+}
+
+//-----------------------------------------------------------------------------------------
+
 void     KhaanGateway :: SetupOutputDelayTimestamp()
 {
    if( m_timeoutMs == 0 )

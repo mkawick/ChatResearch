@@ -13,6 +13,23 @@
 ///////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////
 
+template < typename type >
+void  vector_copy( vector< type >& dest, const vector< type >& source )
+{
+   dest.clear();
+   //::copy( source.begin(), source.end(), dest );
+
+   typedef typename std::vector< type >::const_iterator copyIter;
+   copyIter it = source.begin();
+   while( it != source.end () )
+   {
+      dest.push_back( *it++ );
+   }
+}
+
+///////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////
+
 class StringBucket
 {
 public:
@@ -194,8 +211,7 @@ bool  SerializedKeyValueVector<type>::erase( KVIterator iter )
 template < typename type >
 void  SerializedVector<type>::copy( const vector< type >& values )
 {
-   m_data.clear();
-   ::copy( values.begin(), values.end(), m_data );
+   vector_copy( m_data, values );
 }
 
 ///////////////////////////////////////////////////////////////

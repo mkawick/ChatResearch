@@ -55,6 +55,7 @@ public:
    
    void        SetConnectedServerType( ServerType type ) { m_serverType = type; }
    ServerType  GetConnectedServerType() const { return m_serverType; }
+   U8          GetConnectedGameProductId() const { return m_connectedGameProductId; }
 
    bool        IsSocketValid() const { return m_clientSocket != SOCKET_ERROR; }
    bool        Connect( const char* serverName, int port );

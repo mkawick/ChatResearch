@@ -27,6 +27,7 @@ public:
    void     SetLastGameConnectedTo( U8 gameId ) { m_gameId = gameId; }
    U8       GetLastGameConnectedTo() { return m_gameId; }
 
+   bool     SendImmediately( const BasePacket* logoutPacket );// does not cleanup
    bool	   Update();
 
 private:

@@ -264,10 +264,13 @@ string RemoveEnds( std::string s, const char* charsToStrip )
 
 //////////////////////////////////////////////////////////////////////////
 
-#define PRINT_BUFFER_INFO
+//#define PRINT_BUFFER_INFO
 
 void  DumpBuffer( U8* buffer, int offset, int length )
 {
+   if( buffer == NULL || length == 0 )
+      return;
+
 #ifdef PRINT_BUFFER_INFO
       cout << "offset: " << offset << "   length: " << length << endl;
       int bytesToPrint = length; if( bytesToPrint > 16 ) bytesToPrint = 16;

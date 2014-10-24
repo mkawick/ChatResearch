@@ -55,7 +55,8 @@ public:
       GamePacketType_EchoToServer,
       GamePacketType_EchoToClient,
       GamePacketType_TestHook,
-      GamePacketType_Notification
+      GamePacketType_Notification,
+      GamePacketType_ServiceOutage
    };
 public:
    PacketGameToServer( int packet_type = PacketType_Gameplay, int packet_sub_type = GamePacketType_LoginToServer ) : BasePacket( packet_type, packet_sub_type ) {}
@@ -457,6 +458,37 @@ public:
    U8                notificationType;
    BoundedString140  additionalText;
 
+};
+
+
+///////////////////////////////////////////////////////////////
+
+struct ClientSide_ScheduledServiceOutage
+{
+   ClientSide_ScheduledServiceOutage() : type( ServerType_Count ), gameId( 0 ), beginTime( 0 ), downTimeInSeconds( 0 ), cancelled( false ) {}
+   ServerType  type;
+   U8          gameId;
+   time_t      beginTime;
+   int         downTimeInSeconds;
+   bool        cancelled;
+
+   bool  SerializeIn( const U8* data, int& bufferOffset, int minorVersion );
+   bool  SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const;
+};
+
+bool        operator == ( const ClientSide_ScheduledServiceOutage& lhs, const ClientSide_ScheduledServiceOutage& rhs );
+
+///////////////////////////////////////////////////////////////
+
+class ClientSide_ServerOutageSchedule : public BasePacket
+{
+public:
+   ClientSide_ServerOutageSchedule( int packet_type = PacketType_Gameplay, int packet_sub_type = PacketGameToServer::GamePacketType_ServiceOutage  ): BasePacket( packet_type, packet_sub_type ){}
+
+   bool  SerializeIn( const U8* data, int& bufferOffset, int minorVersion );
+   bool  SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const;
+
+   SerializedVector< ClientSide_ScheduledServiceOutage > scheduledOutages;
 };
 
 

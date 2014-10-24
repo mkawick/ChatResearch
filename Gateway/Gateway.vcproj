@@ -275,6 +275,10 @@
 				RelativePath=".\MainGatewayThread.cpp"
 				>
 			</File>
+			<File
+				RelativePath=".\ServiceAvailabilityManager.cpp"
+				>
+			</File>
 		</Filter>
 		<Filter
 			Name="Header Files"
@@ -299,6 +303,10 @@
 			</File>
 			<File
 				RelativePath=".\MainGatewayThread.h"
+				>
+			</File>
+			<File
+				RelativePath=".\ServiceAvailabilityManager.h"
 				>
 			</File>
 		</Filter>

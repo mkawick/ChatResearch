@@ -6,11 +6,12 @@ using namespace std;
 
 void LogMessage(int priority, const char *fmt, ...)
 {
+   const int maxStringLength = 256;
    va_list args;
    va_start(args, fmt);
 
-   char buffer[256];
-   vsprintf(buffer, fmt, args);
+   char buffer[maxStringLength];
+   vsnprintf( buffer, maxStringLength, fmt, args);
 
    va_end(args);
 #if defined(ANDROID)

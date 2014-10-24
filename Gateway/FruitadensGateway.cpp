@@ -23,7 +23,9 @@ using boost::format;
 
 //-----------------------------------------------------------------------------------------
 
-FruitadensGateway::FruitadensGateway( const char* name ) : FruitadensServer( name ), m_gateway( NULL )
+FruitadensGateway::FruitadensGateway( const char* name ) : FruitadensServer( name ), 
+               m_gateway( NULL ),
+               m_isEnabled( true )
 {
    SetSleepTime( 16 );// Sleeping frees up CPU
 }
@@ -161,6 +163,9 @@ bool     FruitadensGateway::AcceptsPacketType( U32 packetType ) const
 //************************************************
 bool FruitadensGateway::FilterOutwardPacket( BasePacket* packet ) const
 {
+   if( m_isEnabled == false )// do not allow
+      return false;
+
    if( packet->packetType == PacketType_GatewayWrapper )
    {
       PacketGatewayWrapper* wrapper = static_cast< PacketGatewayWrapper* >( packet );

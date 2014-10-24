@@ -14,7 +14,12 @@ public:
    ~FruitadensGateway();
    const char* GetClassName() const { return "FruitadensGateway"; }
 
+   void     Enable() { m_isEnabled = true; }
+   void     Disable() { m_isEnabled = false; }
+   bool     IsEnabled() const { return m_isEnabled; }
+
    bool     AcceptsPacketType( U32 type ) const;
+   bool     IsReadyToTrack() const { return m_gateway != NULL; }
 
 private:
 
@@ -27,7 +32,8 @@ private:
    int      MainLoop_InputProcessing();
    void     FindGateway();
 
-   MainGatewayThread* m_gateway;
+   bool                 m_isEnabled;
+   MainGatewayThread*   m_gateway;
 };
 
 //-----------------------------------------------------------------------------
