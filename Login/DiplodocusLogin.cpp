@@ -1213,12 +1213,17 @@ bool        DiplodocusLogin:: CreateUserAccount( U32 connectionId, U32 gatewayId
       return false;
    }
 
-   if( password.size() < 6 )
+   string trimmedPassword = Trim(password);
+   std::string trimmedUsername = Trim(userName);
+   std::string lowercase_username = Trim(userName);
+   std::string lowercase_useremail = Trim(email);
+
+   if (trimmedPassword.size() < 6)
    {
       SendErrorToClient( connectionId, gatewayId, PacketErrorReport::ErrorType_CreateFailed_BadPassword );
       return false;
    }
-   if( email.size() < 3 ) // currently user name can be null
+   if (lowercase_useremail.size() < 3) // currently user name can be null
    {
       SendErrorToClient( connectionId, gatewayId, PacketErrorReport::ErrorType_CreateFailed_DisallowedUsername );
       return false;
@@ -1233,10 +1238,8 @@ bool        DiplodocusLogin:: CreateUserAccount( U32 connectionId, U32 gatewayId
    }
    LogMessage(LOG_PRIO_INFO, "        email=%s, GC ID=%llu\n", email.c_str(), gameKitHash );
 
-   std::string lowercase_username = userName; 
-   std::transform( lowercase_username.begin(), lowercase_username.end(), lowercase_username.begin(), ::tolower );
-   std::string lowercase_useremail = email; 
-   std::transform( lowercase_useremail.begin(), lowercase_useremail.end(), lowercase_useremail.begin(), ::tolower );
+   std::transform( lowercase_username.begin(), lowercase_username.end(), lowercase_username.begin(), ::tolower ); 
+   std::transform( lowercase_useremail.begin(), lowercase_useremail.end(), lowercase_useremail.begin(), ::tolower );   
 
    std::size_t found = lowercase_username.find( "playdek" );
    if (found!=std::string::npos)
@@ -1245,7 +1248,7 @@ bool        DiplodocusLogin:: CreateUserAccount( U32 connectionId, U32 gatewayId
       return false;
    }
 
-   CreateAccountResultsAggregator* aggregator = new CreateAccountResultsAggregator( connectionId, gatewayId, lowercase_useremail, password, userName, deviceAccountId, deviceId, languageId, gameProductId ); 
+   CreateAccountResultsAggregator* aggregator = new CreateAccountResultsAggregator(connectionId, gatewayId, lowercase_useremail, trimmedPassword, trimmedUsername, deviceAccountId, deviceId, languageId, gameProductId);
    //aggregator->isExpectingGkHash = isExpectingGkHash;
 
    LockMutex();
@@ -1253,7 +1256,7 @@ bool        DiplodocusLogin:: CreateUserAccount( U32 connectionId, U32 gatewayId
    UnlockMutex();
 
    U64 passwordHash = 0;
-   ConvertFromString( password, passwordHash );
+   ConvertFromString( trimmedPassword, passwordHash);
    
  //  string gkHashLookup =         "SELECT id FROM users WHERE user_gamekit_hash='%s'";
    string queryInvalidUserName = "SELECT id FROM invalid_username WHERE user_name_match='%s'";
