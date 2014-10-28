@@ -534,9 +534,9 @@ bool  DiplodocusLogin:: BroadcastLoginStatus( U32 connectionId,
 
 bool     DiplodocusLogin:: LogUserIn( const PacketLoginFromGateway* loginPacket, U32 connectionId )
 {
-   const string& userName = loginPacket->userName; 
-   const string& password = loginPacket->password;
-   const string& loginKey = loginPacket->loginKey;
+   const string& userName = Trim( loginPacket->userName ); 
+   const string& password = Trim( loginPacket->password );
+   const string& loginKey = Trim( loginPacket->loginKey );
    U8 gameProductId = loginPacket->gameProductId;
    U32 gatewayId = loginPacket->gatewayId;
 
@@ -550,9 +550,9 @@ bool     DiplodocusLogin:: LogUserIn( const PacketLoginFromGateway* loginPacket,
    }
 
    LogMessage( LOG_PRIO_INFO, "User login " );
-   LogMessage( LOG_PRIO_INFO, "    User: %s", loginPacket->userName.c_str() );
-   LogMessage( LOG_PRIO_INFO, "    uuid: %s", loginPacket->uuid.c_str() );
-   LogMessage( LOG_PRIO_INFO, "    pass: %s", loginPacket->password.c_str() );
+   LogMessage( LOG_PRIO_INFO, "    User: %s", userName.c_str() );
+   //LogMessage( LOG_PRIO_INFO, "    uuid: %s", loginPacket->uuid.c_str() );
+   LogMessage( LOG_PRIO_INFO, "    pass: %s", password.c_str() );
    
    LogMessage( LOG_PRIO_INFO, "--------------------------------------" );
    if( gameProductId == 0 )
