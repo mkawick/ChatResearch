@@ -25,7 +25,7 @@ struct PurchaseEntry;
 class PacketListOfUserPurchasesRequest;
 class StringLookup;
 class PacketLoginFromGateway;
-//class PacketRequestUserProfile;
+class ScheduledOutageDBReader;
 
 //-----------------------------------------------------------------------------------------
 
@@ -84,7 +84,8 @@ public:
       QueryType_AdminLoadUserProfile, // profile, etc
       QueryType_AdminLoadUserProducts,
 
-      QueryType_ProductStringLookup
+      QueryType_ProductStringLookup,
+      QueryType_ScheduledOutage
    };
    enum 
    {
@@ -98,6 +99,8 @@ public:
    DiplodocusLogin( const string& serverName, U32 serverId );
 
    const char*    GetClassName() const { return "DiplodocusLogin"; }
+
+   void           Init();
 
    void           PrintPacketTypes( bool printingOn = true );
    void           PrintFunctionNames( bool printingOn = true );
@@ -259,6 +262,8 @@ private:
    set< string >              m_uniqueUsers;
    bool                       m_printPacketTypes;
    bool                       m_printFunctionNames;
+
+   ScheduledOutageDBReader*   m_outageReader;
 
 private:
    //--------------------------------------------

@@ -548,6 +548,14 @@ void     ClientNetworkWrapper::UpdateNotifications()
                notify->InvitationAccepted( from, to, accepted == "1" );
             }
             break;
+         case ClientSideNetworkCallback::NotificationType_ScheduledOutages:
+            {
+               ClientSide_ServerOutageSchedule* qosOutageReport = static_cast< ClientSide_ServerOutageSchedule * > ( qn.packet );
+
+               if( qosOutageReport->scheduledOutages.size() )
+                  notify->ScheduledOutages( qosOutageReport->scheduledOutages );
+            }
+            break;
 
          case ClientSideNetworkCallback::NotificationType_GenericInvitationsUpdated:
             {
@@ -3664,6 +3672,13 @@ bool     ClientNetworkWrapper::HandlePacketReceived( BasePacket* packetIn )
                   (*it)->UserWinLoss( response->userUuid, response->winLoss );
                }*/
                assert( 0 );// not finished, wrong user data
+            }
+            break;
+         case PacketGameToServer::GamePacketType_ServiceOutage:
+            {
+               ClientSide_ServerOutageSchedule* outage = static_cast< ClientSide_ServerOutageSchedule *>( packetIn );
+               Notification( ClientSideNetworkCallback::NotificationType_ScheduledOutages, outage );
+               cleaner.Clear();
             }
             break;
          }

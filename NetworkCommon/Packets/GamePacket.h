@@ -468,7 +468,7 @@ struct ClientSide_ScheduledServiceOutage
    ClientSide_ScheduledServiceOutage() : type( ServerType_Count ), gameId( 0 ), beginTime( 0 ), downTimeInSeconds( 0 ), cancelled( false ) {}
    ServerType  type;
    U8          gameId;
-   time_t      beginTime;
+   TimeString  beginTime;
    int         downTimeInSeconds;
    bool        cancelled;
 

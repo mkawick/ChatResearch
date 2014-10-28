@@ -14,6 +14,8 @@ using namespace std;
 
 class BasePacket;
 class PacketStat;
+class PacketServerConnectionInfo_ServerOutageSchedule;
+
 class Fruitadens;
 class FruitadensGateway;
 class ServiceAvailabilityManager;
@@ -86,7 +88,8 @@ private:
    void           MarkConnectionForDeletion( U32 connectionId );
 
    void           HandleReroutRequest( U32 connectionId );
-   void           UpdateAllClientConnections();
+
+   void           UpdatedScheduledOutages();
 
    //void           CheckOnServerStatusChanges();
    //void           GetConnectedServerList( vector< ServerStatus >& serversNotConnected, bool onlyDisconnected );
@@ -130,6 +133,7 @@ private:
    U32                        m_connectionIdBeginningRange;
    U16                        m_connectionIdCountIds;
    std::deque< BasePacket* >  m_clientBoundTempStorage;
+   std::deque< PacketServerConnectionInfo_ServerOutageSchedule* > m_scheduledOutages;
 
    ConnectionMap              m_connectionMap;
 

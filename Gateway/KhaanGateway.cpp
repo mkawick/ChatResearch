@@ -65,6 +65,11 @@ void  KhaanGateway::PreCleanup()
 {
    if( m_mainOutputChain )
    {
+      LogMessage( LOG_PRIO_INFO, "------ KhaanGateway::PreCleanup ---------" );
+      LogMessage( LOG_PRIO_INFO, "            name: %s", GetUserName() );
+      LogMessage( LOG_PRIO_INFO, "            uuid: %s", GetUserUuid() );
+      LogMessage( LOG_PRIO_INFO, "--------------------------------------" );
+
       m_isDisconnected = true;
       DenyAllFutureData();
       time_t currentTime;

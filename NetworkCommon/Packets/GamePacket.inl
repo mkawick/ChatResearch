@@ -4,7 +4,7 @@
 template< typename PacketType, typename Processor >
 bool  SendRawData( const U8* data, int size, int dataType, int maxPacketSize, U32 serverId, U8 productId, const string& identifier, U32 connectionId, U32 gatewayId, Processor* sender ) // diplodocus supposedly
 {
-   cout << "Send raw data <<< " << endl;
+   //cout << "Send raw data <<< " << endl;
    PacketFactory factory;
    const U8* workingData = data;
    int remainingSize = size;
@@ -31,7 +31,7 @@ bool  SendRawData( const U8* data, int size, int dataType, int maxPacketSize, U3
      /* PacketGatewayWrapper* wrapper    = new PacketGatewayWrapper;
       wrapper->SetupPacket( responsePacket, connectionId );*/
 
-      cout << "Send raw data sending data" << endl;
+      //cout << "Send raw data sending data" << endl;
       // this will be wrapped by the invoked function
       if( sender->SendPacketToGateway( responsePacket, connectionId, gatewayId ) == false )
       {
@@ -42,7 +42,7 @@ bool  SendRawData( const U8* data, int size, int dataType, int maxPacketSize, U3
          
          return false;
       }
-      cout << "Send raw data send good" << endl;
+      //cout << "Send raw data send good" << endl;
 
       remainingSize -= sizeToSend;
       workingData += sizeToSend;// offset the pointer
@@ -50,7 +50,7 @@ bool  SendRawData( const U8* data, int size, int dataType, int maxPacketSize, U3
       if( remainingSize <= 0 )
          break;
    }
-   cout << "Send raw data >>> " << endl;
+   //cout << "Send raw data >>> " << endl;
    return true;
 }
 

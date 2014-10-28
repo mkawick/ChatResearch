@@ -45,6 +45,7 @@ ChatRoomManager::ChatRoomManager(): m_isInitialized( false ),
                                     m_dbIdentifier( 0 )
 {
    time(& m_initializationTimeStamp );
+   m_timestampSearchNewUserAccounts = m_initializationTimeStamp;
    //m_inboundPackets.reserve( 120 );// absolutely arbitrary.. it seems big enough and log(n) means that this will never be reallocated much
 }
 
@@ -104,6 +105,8 @@ bool     ChatRoomManager::Update()
       Init();
       return false;
    }
+
+   QueryAddNewChatUsers();
 
    PacketFactory factory;
 
@@ -244,6 +247,11 @@ bool     ChatRoomManager::ProcessDbResult( PacketDbQueryResult* dbResult, ChatRo
          HandleLoadAllUsersResult( dbResult, job );
       }
       break;
+   case ChatRoomDbJob::JobType_LoadNewUsers:
+      {
+         HandleLoadNewUsersResult( dbResult, job );
+      }
+      break;
    case  ChatRoomDbJob::JobType_AllUsersInChannel:
       {
          if( dbResult->successfulQuery == true && dbResult->bucket.bucket.size() )
@@ -273,7 +281,6 @@ bool     ChatRoomManager::ProcessDbResult( PacketDbQueryResult* dbResult, ChatRo
    case  ChatRoomDbJob::JobType_AllUsersInAllChannels:
       {         
          HandleAllUsersInAllChannelsResult( dbResult, job );
-
       }
       break;
    default:
@@ -282,7 +289,7 @@ bool     ChatRoomManager::ProcessDbResult( PacketDbQueryResult* dbResult, ChatRo
    return true;
 }
 
-//---------------------------------------------------------------------
+///////////////////////////////////////////////////////////////////////
 
 int     ChatRoomManager::AddDbJob( const string& debugString, const string& lookupString, U32 serverId, stringhash chatUserLookup, stringhash authUserLookup, ChatRoomDbJob::JobType type )
 {
@@ -300,7 +307,7 @@ int     ChatRoomManager::AddDbJob( const string& debugString, const string& look
    return job.jobId;
 }
 
-//---------------------------------------------------------------------
+///////////////////////////////////////////////////////////////////////
 
 PacketDbQuery* ChatRoomManager::DbQueryFactory( const string& queryString, bool isFandF )
 {
@@ -311,7 +318,7 @@ PacketDbQuery* ChatRoomManager::DbQueryFactory( const string& queryString, bool 
    return dbQuery;
 }
 
-//---------------------------------------------------------------------
+///////////////////////////////////////////////////////////////////////
 
 bool  ChatRoomManager::SaveQueryDetails( PacketDbQuery* dbQuery, const string& channelUuid, const string& authUuid, stringhash chatUserLookup, ChatRoomDbJob::JobType jobType, U32 serverId, const string& debugString)
 {
@@ -320,7 +327,7 @@ bool  ChatRoomManager::SaveQueryDetails( PacketDbQuery* dbQuery, const string& c
    return true;
 }
 
-//---------------------------------------------------------------------
+///////////////////////////////////////////////////////////////////////
 
 bool  ChatRoomManager::AddSanitizedStrings( PacketDbQuery* dbQuery, list< string >& sanitizedStrings )
 {
@@ -349,7 +356,7 @@ bool  ChatRoomManager::AddSanitizedStrings( PacketDbQuery* dbQuery, int numParam
    return true;
 }*/
 
-//---------------------------------------------------------------------
+///////////////////////////////////////////////////////////////////////
 
 bool  ChatRoomManager::AddCustomData( PacketDbQuery* dbQuery, void* data )
 {
@@ -358,7 +365,7 @@ bool  ChatRoomManager::AddCustomData( PacketDbQuery* dbQuery, void* data )
    return true;
 }
 
-//---------------------------------------------------------------------
+///////////////////////////////////////////////////////////////////////
 
 bool  ChatRoomManager::Send( PacketDbQuery* dbQuery )
 {
@@ -374,7 +381,7 @@ bool  ChatRoomManager::Send( PacketDbQuery* dbQuery )
 }
 
 
-//---------------------------------------------------------------------
+///////////////////////////////////////////////////////////////////////
 
 void     ChatRoomManager::PackageAndSendToOtherServer( BasePacket* packet, U32 serverId )
 {
@@ -442,7 +449,7 @@ bool     ChatRoomManager::GetChatRooms( const string& userUuid, ChannelFullKeyVa
    return false;
 }
 
-//---------------------------------------------------------------------
+///////////////////////////////////////////////////////////////////////
 
 U32      ChatRoomManager::GetUserId( const string& userUuid ) const
 {
@@ -451,7 +458,7 @@ U32      ChatRoomManager::GetUserId( const string& userUuid ) const
    return user.userId;
 }
 
-//---------------------------------------------------------------------
+///////////////////////////////////////////////////////////////////////
 
 string   ChatRoomManager::GetUserName( const string& userUuid ) const
 {
@@ -460,7 +467,7 @@ string   ChatRoomManager::GetUserName( const string& userUuid ) const
    return user.userName;
 }
 
-//---------------------------------------------------------------------
+///////////////////////////////////////////////////////////////////////
 //---------------------------------------------------------------
 
 int      ChatRoomManager::NewDbId()
@@ -487,7 +494,7 @@ ChatRoomManager::FindChatRoom( U32 gameInstanceId, U8 gameType )
 }
 
 
-//---------------------------------------------------------------------
+///////////////////////////////////////////////////////////////////////
 
 bool     ChatRoomManager::FindDbJob( int jobId, list< ChatRoomDbJob >& listOfJobs, DbJobIterator& iter )
 {
@@ -504,7 +511,7 @@ bool     ChatRoomManager::FindDbJob( int jobId, list< ChatRoomDbJob >& listOfJob
    return false;
 }
 
-//---------------------------------------------------------------------
+///////////////////////////////////////////////////////////////////////
 
 void     ChatRoomManager::AddChatRoom( int id, const string& channelName, const string& channelUuid, bool isActive, int maxPlayers, int gameType, U32 gameInstanceId, const string& createDate )
 {
@@ -543,7 +550,7 @@ void     ChatRoomManager::AddChatRoom( int id, const string& channelName, const 
    }
 }
 
-//---------------------------------------------------------------------
+///////////////////////////////////////////////////////////////////////
 
 void     ChatRoomManager::StoreUser( const string& userUuid, const string& userName )
 {
@@ -641,8 +648,8 @@ void     ChatRoomManager::DeleteRoomFromUser( const string& userUuid, stringhash
       }
    }
 }
-//---------------------------------------------------------------------
-//---------------------------------------------------------------------
+///////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////
 /*
 bool    ChatRoomManager::QueryDeleteRoom( const string& channelUuid, const U32 serverId )
 {
@@ -679,7 +686,7 @@ bool    ChatRoomManager::QueryDeleteRoom( const string& channelUuid, const U32 s
    return true;
 }
  
-//---------------------------------------------------------------------
+///////////////////////////////////////////////////////////////////////
  
 bool     ChatRoomManager::RemoveChatChannel( const string& channelUuid )
 {
@@ -709,8 +716,8 @@ bool     ChatRoomManager::RemoveChatChannel( const string& channelUuid )
 }*/
 
 
-//---------------------------------------------------------------------
-//---------------------------------------------------------------------
+///////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////
 
 bool   ChatRoomManager::CreateNewRoom( const PacketChatCreateChatChannelFromGameServer* request )
 {
@@ -787,7 +794,7 @@ bool   ChatRoomManager::CreateNewRoom( const PacketChatCreateChatChannelFromGame
    return true;
 }
 
-//---------------------------------------------------------------------
+///////////////////////////////////////////////////////////////////////
 
 bool ChatRoomManager::CreateNewRoom( const string& channelName, const string& userUuid )
 {
@@ -816,7 +823,7 @@ bool ChatRoomManager::CreateNewRoom( const string& channelName, const string& us
    return true;
 }
 
-//---------------------------------------------------------------------
+///////////////////////////////////////////////////////////////////////
 
 string  ChatRoomManager::CreateUniqueChatRoomId()
 {
@@ -839,7 +846,7 @@ string  ChatRoomManager::CreateUniqueChatRoomId()
    return string();// compiler error only
 }
 
-//---------------------------------------------------------------------
+///////////////////////////////////////////////////////////////////////
 
 string   ChatRoomManager::CreateNewRoom( const string& channelName, const string userUuid, U32 serverId, U8 gameType, U32 gameInstanceId )
 {
@@ -879,7 +886,7 @@ string   ChatRoomManager::CreateNewRoom( const string& channelName, const string
    return channelUuid;
 }
 
-//---------------------------------------------------------------------
+///////////////////////////////////////////////////////////////////////
 
 bool     ChatRoomManager::LoadSingleRoom( const string& channelUuid )
 {
@@ -899,8 +906,8 @@ bool     ChatRoomManager::LoadSingleRoom( const string& channelUuid )
    return true;
 }
 
-//---------------------------------------------------------------------
-//---------------------------------------------------------------------
+///////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////
 
 bool   ChatRoomManager::DeleteRoom( const PacketChatDeleteChatChannelFromGameServer* request )
 {
@@ -941,7 +948,7 @@ bool     ChatRoomManager::SendMessageToClient( BasePacket* packet, U32 connectio
    return true;
 }
 
-//---------------------------------------------------------------------
+///////////////////////////////////////////////////////////////////////
 
 bool     ChatRoomManager::DeleteRoom( const string& channelUuid, const string& userUuid )
 {
@@ -989,7 +996,7 @@ bool     ChatRoomManager::DeleteRoom( const string& channelUuid, const string& u
    return true;
 }
 
-//---------------------------------------------------------------------
+///////////////////////////////////////////////////////////////////////
 
 bool     ChatRoomManager::DeleteRoom( const string& channelUuid )
 {
@@ -1039,8 +1046,8 @@ bool     ChatRoomManager::DeleteRoom( const string& channelUuid )
    return true;
 }
 
-//---------------------------------------------------------------------
-//---------------------------------------------------------------------
+///////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////
 
 bool     ChatRoomManager::UserSendP2PChat( const string& senderUuid, const string& destinationUuid, const string& message )
 {
@@ -1093,7 +1100,7 @@ bool     ChatRoomManager::UserSendP2PChat( const string& senderUuid, const strin
    return true;
 }
 
-//---------------------------------------------------------------------
+///////////////////////////////////////////////////////////////////////
 
 bool     ChatRoomManager::UserSendsChatToChannel( const string& senderUuid, const string& channelUuid, const string& message, U16 gameTurn )
 {
@@ -1176,8 +1183,8 @@ bool     ChatRoomManager::UserSendsChatToChannel( const string& senderUuid, cons
    return true;
 }
 
-//---------------------------------------------------------------------
-//---------------------------------------------------------------------
+///////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////
 
 bool     ChatRoomManager::RequestChatRoomInfo( const PacketChatListAllMembersInChatChannel* packet, U32 gatewayId )
 {
@@ -1217,8 +1224,8 @@ bool     ChatRoomManager::RequestChatRoomInfo( const PacketChatListAllMembersInC
    return true;
 }
 
-//---------------------------------------------------------------------
-//---------------------------------------------------------------------
+///////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////
 
 bool     ChatRoomManager::RenameChatRoom( const string& channelUuid, const string& newName, const string& userUuid, string& oldName )
 {
@@ -1310,8 +1317,8 @@ bool     ChatRoomManager::RenameChatRoom( const string& channelUuid, const strin
    return true;
 }
 
-//---------------------------------------------------------------------
-//---------------------------------------------------------------------
+///////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////
 
 bool     ChatRoomManager::SetUserPreferences( const string& userUuid, bool blockContactInvitations, bool blockGroupInvitations )
 {
@@ -1326,7 +1333,7 @@ bool     ChatRoomManager::SetUserPreferences( const string& userUuid, bool block
    return false;
 }
 
-//---------------------------------------------------------------------
+///////////////////////////////////////////////////////////////////////
 
 bool     ChatRoomManager::AddUserToRoom( const PacketChatAddUserToChatChannelGameServer* request )
 {
@@ -1401,7 +1408,7 @@ bool     ChatRoomManager::AddUserToRoom( const PacketChatAddUserToChatChannelGam
    return true;
 }
 
-//---------------------------------------------------------------------
+///////////////////////////////////////////////////////////////////////
 
 bool     ChatRoomManager::AddUserToRoom( const string& channelUuid, const string& addedUserUuid, const string& requesterUuid )
 {
@@ -1495,7 +1502,7 @@ bool     ChatRoomManager::AddUserToRoom( const string& channelUuid, const string
    return true;
 }
 
-//---------------------------------------------------------------------
+///////////////////////////////////////////////////////////////////////
 
 bool     ChatRoomManager::UserAddsSelfToGroup( const string& channelUuid, const string& addedUserUuid )
 {
@@ -1570,7 +1577,7 @@ bool     ChatRoomManager::UserAddsSelfToGroup( const string& channelUuid, const 
    return true;
 }
 
-//---------------------------------------------------------------------
+///////////////////////////////////////////////////////////////////////
 
 bool     ChatRoomManager::AddUserToRoomAndWriteToDB( const string& channelUuid, const string& addedUserUuid, const string& addedUserName )
 {
@@ -1597,7 +1604,7 @@ bool     ChatRoomManager::AddUserToRoomAndWriteToDB( const string& channelUuid, 
    return true;
 }
 
-//---------------------------------------------------------------------
+///////////////////////////////////////////////////////////////////////
 
 bool     ChatRoomManager::RemoveUserFromRoomAndWriteToDB( const string& channelUuid, const string& removedUserUuid )
 {
@@ -1623,7 +1630,7 @@ bool     ChatRoomManager::RemoveUserFromRoomAndWriteToDB( const string& channelU
 }
 
 
-//---------------------------------------------------------------------
+///////////////////////////////////////////////////////////////////////
 
 bool     ChatRoomManager::RemoveRoomAndMarkRoomInDB( const string& channelUuid )
 {
@@ -1664,7 +1671,7 @@ bool     ChatRoomManager::RemoveRoomAndMarkRoomInDB( const string& channelUuid )
    return true;
 }
 
-//---------------------------------------------------------------------
+///////////////////////////////////////////////////////////////////////
 
 bool     ChatRoomManager::RemoveAnyRelatedInvitationsAndInformUsers( const string& channelUuid )
 {
@@ -1674,8 +1681,8 @@ bool     ChatRoomManager::RemoveAnyRelatedInvitationsAndInformUsers( const strin
    return m_invitationServer->RemoveAnyRelatedInvitations( channelUuid );
 }
 
-//---------------------------------------------------------------------
-//---------------------------------------------------------------------
+///////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////
 
 bool     ChatRoomManager::RemoveUserFromRoom( const PacketChatRemoveUserFromChatChannelGameServer* request )
 {
@@ -1744,7 +1751,7 @@ bool     ChatRoomManager::RemoveUserFromRoom( const PacketChatRemoveUserFromChat
    return true;
 }
 
-//---------------------------------------------------------------------
+///////////////////////////////////////////////////////////////////////
 
 bool     ChatRoomManager::RemoveUserFromRoom( const string& channelUuid, const string& removedUserUuid )
 {
@@ -1813,8 +1820,8 @@ bool     ChatRoomManager::RemoveUserFromRoom( const string& channelUuid, const s
    return true;
 }
 
-//---------------------------------------------------------------------
-//---------------------------------------------------------------------
+///////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////
 
 void     ChatRoomManager::StoreUserInChannel( const string& channelUuid, const string& userUuid, const string userName )
 {
@@ -1841,7 +1848,7 @@ void     ChatRoomManager::StoreUserInChannel( const string& channelUuid, const s
    AddRoomToUser( userUuid, channelKeyLookup );
 }
 
-//---------------------------------------------------------------------
+///////////////////////////////////////////////////////////////////////
 
 bool     ChatRoomManager::DeleteUserFromChannel( const string& channelUuid, const string& userUuid )
 {
@@ -1876,7 +1883,7 @@ bool     ChatRoomManager::DeleteUserFromChannel( const string& channelUuid, cons
    return true;
 }
 
-//---------------------------------------------------------------------
+///////////////////////////////////////////////////////////////////////
 
 void     ChatRoomManager::QueryAllChatUsers( int startIndex, int numToFetch )
 {
@@ -1898,7 +1905,37 @@ void     ChatRoomManager::QueryAllChatUsers( int startIndex, int numToFetch )
    Send( dbQuery );
 }
 
-//---------------------------------------------------------------------
+///////////////////////////////////////////////////////////////////////
+
+void     ChatRoomManager::QueryAddNewChatUsers()
+{
+   if( m_isPullingAllUsersAndChannels )
+      return;
+
+   time_t currentTime;
+   time( &currentTime );
+
+   if( difftime( currentTime, m_timestampSearchNewUserAccounts ) >= timeoutSearchNewUserAccounts ) 
+   {
+      m_timestampSearchNewUserAccounts = currentTime;
+      int numMinutesAgoTheAccountWasMade = 2;
+      string date = GetDateInUTC( 0, 0, -numMinutesAgoTheAccountWasMade);
+
+      string 
+      queryString = "SELECT user_name, uuid, users.user_id, user_profile.block_contact_invitations, user_profile.block_group_invitations ";
+      queryString += "FROM users INNER JOIN user_profile ON users.user_id=user_profile.user_id ";
+      queryString += "WHERE user_email IS NOT NULL AND users.active=1 AND user_confirmation_date > '";
+      queryString += date;
+      queryString += "'";
+
+      PacketDbQuery* dbQuery = DbQueryFactory( queryString, false );
+      SaveQueryDetails( dbQuery, "", "", 0, ChatRoomDbJob::JobType_LoadNewUsers );
+
+      Send( dbQuery );
+   }
+}
+
+///////////////////////////////////////////////////////////////////////
 
 void     ChatRoomManager::StoreAllUsersInChannel( const string& channelUuid, const SerializedKeyValueVector< string >& usersAndIds, bool sendNotification )
 {
@@ -1932,7 +1969,7 @@ void     ChatRoomManager::StoreAllUsersInChannel( const string& channelUuid, con
    }
 }
 
-//---------------------------------------------------------------------
+///////////////////////////////////////////////////////////////////////
 
 bool     ChatRoomManager::NotifyUserThatHeWasAddedToChannel( const string& userUuid, const string& channelName, const string& channelUuid )
 {
@@ -1949,9 +1986,9 @@ bool     ChatRoomManager::NotifyUserThatHeWasAddedToChannel( const string& userU
    return false;
 }
 
-//---------------------------------------------------------------------
+///////////////////////////////////////////////////////////////////////
 
-//---------------------------------------------------------------------
+///////////////////////////////////////////////////////////////////////
 
 bool     ChatRoomManager::QueryAllUsersInChatRoom( const string& channelUuid )
 {
@@ -1980,7 +2017,7 @@ bool     ChatRoomManager::QueryAllUsersInChatRoom( const string& channelUuid )
    //return CreateAndSendUserListJob( queryString, channelIter->second.name, channelUuid, 0, authUuid, userHashLookup, ChatRoomDbJob::JobType_AllUsersInChannel, &listOfStrings );
 };
 
-//---------------------------------------------------------------------
+///////////////////////////////////////////////////////////////////////
 
 U32     ChatRoomManager::QueryAllUsersInAllChatRooms()
 {
@@ -1998,7 +2035,7 @@ U32     ChatRoomManager::QueryAllUsersInAllChatRooms()
    //return CreateAndSendUserListJob( queryString, channelIter->second.name, channelUuid, 0, authUuid, userHashLookup, ChatRoomDbJob::JobType_AllUsersInChannel, &listOfStrings );
 }
 
-//---------------------------------------------------------------------
+///////////////////////////////////////////////////////////////////////
 
 bool     ChatRoomManager::HandleAllUsersInAllChannelsResult( PacketDbQueryResult* dbResult, ChatRoomDbJob& job )
 {
@@ -2025,7 +2062,7 @@ bool     ChatRoomManager::HandleAllUsersInAllChannelsResult( PacketDbQueryResult
    return true;
 }
 
-//---------------------------------------------------------------------
+///////////////////////////////////////////////////////////////////////
 
 bool     ChatRoomManager::HandleLoadAllRoomsResult( PacketDbQueryResult* dbResult, ChatRoomDbJob& job )
 {
@@ -2043,7 +2080,7 @@ bool     ChatRoomManager::HandleLoadAllRoomsResult( PacketDbQueryResult* dbResul
    return true;
 }
 
-//---------------------------------------------------------------------
+///////////////////////////////////////////////////////////////////////
 
 bool     ChatRoomManager::HandleLoadAllUsersResult( PacketDbQueryResult* dbResult, ChatRoomDbJob& job )
 {
@@ -2086,7 +2123,50 @@ bool     ChatRoomManager::HandleLoadAllUsersResult( PacketDbQueryResult* dbResul
    return true;
 }
 
-//---------------------------------------------------------------------
+bool     ChatRoomManager::HandleLoadNewUsersResult( PacketDbQueryResult* dbResult, ChatRoomDbJob& job )
+{
+   if( dbResult->successfulQuery == true )
+   {
+      UserWithChatPreferencesTable  enigma( dbResult->bucket );
+      UserWithChatPreferencesTable::iterator    it = enigma.begin();
+
+      // new users will not be in chat channels
+    /*  if( it == enigma.end() ) // we are done querying piecemeal
+      {
+         QueryAllUsersInAllChatRooms();// now that we've loaded all users, load all of the chat info
+         return true;
+      }*/
+      while( it != enigma.end() )
+      {
+         UserWithChatPreferencesTable::row row = *it++;
+         string   userName =         row[ TableUserWithChatPreferences::Column_name ];
+         string   userUuid =         row[ TableUserWithChatPreferences::Column_uuid ];
+         string   blockContactInvitesString =   row[ TableUserWithChatPreferences::Column_block_contact_invites ];
+         string   blockGroupInvitesString =     row[ TableUserWithChatPreferences::Column_block_group_invites ];
+
+         bool blockContactInvites = false;
+         if( blockContactInvitesString == "1" )
+            blockContactInvites = true;
+         bool blockGroupInvites = false;
+         if( blockGroupInvitesString == "1" )
+            blockGroupInvites = true;
+
+         string id = row[ TableUserWithChatPreferences::Column_id ];
+         U32 userId = 0;
+         if( id.size() )
+            userId = boost::lexical_cast< U32 >( id );
+
+         StoreUser( userUuid, userId, userName, blockContactInvites, blockGroupInvites );
+      }
+
+      m_offsetIndex_QueryForInitialLoad += m_numUsersToLoadPerQueryForInitialLoad;
+      QueryAllChatUsers( m_offsetIndex_QueryForInitialLoad, m_numUsersToLoadPerQueryForInitialLoad );
+   }
+
+   return true;
+}
+
+///////////////////////////////////////////////////////////////////////
 
 bool     ChatRoomManager::HandleSingleRoomLoad( PacketDbQueryResult* dbResult, ChatRoomDbJob& job )
 {
@@ -2104,7 +2184,7 @@ bool     ChatRoomManager::HandleSingleRoomLoad( PacketDbQueryResult* dbResult, C
    return true;
 }
 
-//---------------------------------------------------------------------
+///////////////////////////////////////////////////////////////////////
 
 void     ChatRoomManager::SaveChatRoomLoadResult( ChatChannelTable::row row )
 {
@@ -2122,7 +2202,7 @@ void     ChatRoomManager::SaveChatRoomLoadResult( ChatChannelTable::row row )
    AddChatRoom( channelId, name, uuid, isActive, maxPlayers, gameType, gameId, createDate );
 }
 
-//---------------------------------------------------------------------
+///////////////////////////////////////////////////////////////////////
 /*
 void     ChatRoomManager::SaveUserLoadResult( SimpleUserTable::row row )
 {
@@ -2134,7 +2214,7 @@ void     ChatRoomManager::SaveUserLoadResult( SimpleUserTable::row row )
 }*/
 
 
-//---------------------------------------------------------------------
+///////////////////////////////////////////////////////////////////////
 
 void     ChatRoomManager::WriteChatToDb( const string& message, const string& senderUuid, const string& friendUuid, const string& channelUuid, U16 gameTurn, U32 connectionId )
 {
@@ -2191,7 +2271,7 @@ void     ChatRoomManager::WriteChatToDb( const string& message, const string& se
       m_numChannelChatsSent ++;
 }
 
-//---------------------------------------------------------------------
+///////////////////////////////////////////////////////////////////////
 
 ///////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////

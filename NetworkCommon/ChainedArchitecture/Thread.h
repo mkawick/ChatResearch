@@ -14,7 +14,7 @@
 
 #endif
 
-#ifndef CLIENT_ONLY
+#if !defined(CLIENT_ONLY) && !defined(ANDROID)
 #include <boost/thread/recursive_mutex.hpp>
 //#include <boost/thread/mutex.hpp>
 typedef boost::recursive_mutex ThreadMutex;

@@ -372,7 +372,6 @@ void  FruitadensGateway::PreprocessPacketsForOutput( BasePacket* packet )
          PacketLogin* login = static_cast< PacketLogin* >( testPacket );
          LogMessage( LOG_PRIO_INFO, "------------- User login -------------" );
          LogMessage( LOG_PRIO_INFO, "User: %s", login->userName.c_str() );
-         //LogMessage( LOG_PRIO_INFO, "email: ", login->user
          LogMessage( LOG_PRIO_INFO, "uuid: %s", login->uuid.c_str() );
          LogMessage( LOG_PRIO_INFO, "pass: %s", login->password.c_str() );
          LogMessage( LOG_PRIO_INFO, "--------------------------------------" );

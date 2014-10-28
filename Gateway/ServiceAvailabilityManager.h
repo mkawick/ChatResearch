@@ -28,6 +28,7 @@ public:
    void  ServiceIsScheduledToGoDown();
 
    void  InformUserAboutAvailableFeatures( U8 gameId, U32 connectionId );
+   void  InformUserAboutScheduledOutages( U8 gameId, U32 connectionId );
 
    void  SetServiceManager( MainGatewayThread* mgwt ) { m_mainGatewayThread = mgwt; }
 

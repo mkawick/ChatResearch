@@ -30,7 +30,9 @@
    #include <sys/socket.h>
    #include <sys/types.h>
    #include <netdb.h>
+#if !defined(ANDROID)
    #include <ifaddrs.h>
+#endif
    #include <netinet/in.h>
    #include <unistd.h>
 
@@ -133,43 +135,49 @@ void  DisableNagle( int socketId )
 void GetLocalIpAddress( char* buffer, size_t buflen ) 
 {
    assert( buflen >= 16 );
-   struct hostent *hostLocal;
-
    
-#if PLATFORM == PLATFORM_WINDOWS
-   const int  MAXHOSTNAMELEN = 256;
-   char localHostname[ MAXHOSTNAMELEN ];
-   gethostname( localHostname, MAXHOSTNAMELEN );
-   if ( ( hostLocal = gethostbyname( localHostname ) ) == NULL ) 
-   {  // get the host info
-      LogMessage( LOG_PRIO_ERR, "gethostbyname error" );
-   }
-   struct in_addr **localAddrList = (struct in_addr **)hostLocal->h_addr_list;   
-   strncpy( buffer, (char *)inet_ntoa(*localAddrList[0]), buflen );
-#else
-   struct ifaddrs *addrs, *tmp;
-   getifaddrs(&addrs);
-   tmp = addrs;
 
-   U32 maxBuffLen = 256;
-   char name[maxBuffLen];
+/*#if CLIENT_ONLY// complicated because of the android build
+   assert( 0 );// unimplemented
+#else*/
+   //!defined( CLIENT_ONLY )
+   #if PLATFORM == PLATFORM_WINDOWS || defined(ANDROID)
+      struct hostent *hostLocal;
+      const int maxHostNameLength = 256;
+      char localHostname[ maxHostNameLength ];
+      gethostname( localHostname, maxHostNameLength );
+      if ( ( hostLocal = gethostbyname( localHostname ) ) == NULL ) 
+      {  // get the host info
+         LogMessage( LOG_PRIO_ERR, "gethostbyname error" );
+      }
+      struct in_addr **localAddrList = (struct in_addr **)hostLocal->h_addr_list;   
+      strncpy( buffer, (char *)inet_ntoa(*localAddrList[0]), buflen );
+   #else
+      struct ifaddrs *addrs, *tmp;
+      getifaddrs(&addrs);
+      tmp = addrs;
 
-   while (tmp) 
-   {
-       if (tmp->ifa_addr && tmp->ifa_addr->sa_family == AF_INET)
-       {
-           struct sockaddr_in *pAddr = (struct sockaddr_in *)tmp->ifa_addr;
-           strncpy( name, tmp->ifa_name, maxBuffLen );
-           strncpy( buffer, inet_ntoa(pAddr->sin_addr), buflen );
-       }
+      U32 maxBuffLen = 256;
+      char name[maxBuffLen];
 
-       tmp = tmp->ifa_next;
-   }
+      while (tmp) 
+      {
+          if (tmp->ifa_addr && tmp->ifa_addr->sa_family == AF_INET)
+          {
+              struct sockaddr_in *pAddr = (struct sockaddr_in *)tmp->ifa_addr;
+              strncpy( name, tmp->ifa_name, maxBuffLen );
+              strncpy( buffer, inet_ntoa(pAddr->sin_addr), buflen );
+          }
 
-   LogMessage( LOG_PRIO_INFO, "local addr name:%s; addr:%s", name, buffer );
+          tmp = tmp->ifa_next;
+      }
 
-   freeifaddrs(addrs);
-#endif
+      LogMessage( LOG_PRIO_INFO, "local addr name:%s; addr:%s", name, buffer );
+
+      freeifaddrs(addrs);
+   #endif
+
+//#endif
    
 }
 

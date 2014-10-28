@@ -20,6 +20,10 @@ public:
    void     SetAdminLevelOperations( int level ) { m_adminLevel = level; }
    U8       GetLanguageId() const { return m_languageId; }
    void     SetLanguageId( U8 languageId );
+   void     SetUserName( const char* ptr ) { m_userName = ptr; }
+   const char* GetUserName() { return m_userName.c_str(); }
+   void     SetUserUuid( const char* ptr ) { m_userUuid = ptr; }
+   const char* GetUserUuid() { return m_userUuid.c_str(); }
 
    //void     SetGateway( MainGatewayThread* gateway ) { m_gateway = gateway; }
    void     ThrottleConnection( U32 timeoutMs ) { m_timeoutMs = timeoutMs; }
@@ -43,6 +47,8 @@ private:
    void     SetupOutputDelayTimestamp();
    bool     ShouldDelayOutput();
 
+   FixedString80        m_userName;
+   FixedString16        m_userUuid;
    U32                  m_numPacketsReceivedBeforeAuth;
    U32                  m_randomNumberOfPacketsBeforeLogin;
    bool                 m_authorizedConnection;

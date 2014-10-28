@@ -80,6 +80,7 @@ private:
    void     TrackCountStats( StatTracking stat, float value, int sub_category );
    void     RunHourlyStats();
    void     RunDailyStats();
+   void     LoadNewUserAccounts();
    bool     ProcessPacket( PacketStorage& storage );
    int      CallbackFunction();
 

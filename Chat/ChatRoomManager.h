@@ -182,6 +182,7 @@ private:
    void           StoreUserInChannel( const string& channelUuid, const string& userUuid, const string username );
    bool           DeleteUserFromChannel( const string& channelUuid, const string& userUuid );
    void           QueryAllChatUsers( int startIndex, int numToFetch );
+   void           QueryAddNewChatUsers();
    void           StoreAllUsersInChannel( const string& channelUuid, const SerializedKeyValueVector< string >& usersAndIds, bool sendNotification = false );
    bool           NotifyUserThatHeWasAddedToChannel( const string& userUuid, const string& channelName, const string& channelUuid ); 
    U32            QueryAllUsersInAllChatRooms();
@@ -195,6 +196,8 @@ private:
 
    bool           HandleLoadAllRoomsResult( PacketDbQueryResult* dbResult, ChatRoomDbJob& job );
    bool           HandleLoadAllUsersResult( PacketDbQueryResult* dbResult, ChatRoomDbJob& job );
+   bool           HandleLoadNewUsersResult( PacketDbQueryResult* dbResult, ChatRoomDbJob& job );
+   
    bool           HandleSingleRoomLoad( PacketDbQueryResult* dbResult, ChatRoomDbJob& job );
    void           SaveChatRoomLoadResult( ChatChannelTable::row row );
    void           SaveUserLoadResult( SimpleUserTable::row row );
@@ -246,6 +249,8 @@ private:
    U32                           m_dbIdentifier;
 
    static InvitationManager*     m_invitationServer;
+   time_t                        m_timestampSearchNewUserAccounts;
+   static const U32              timeoutSearchNewUserAccounts = 30;
 };
 
 ///////////////////////////////////////////////////////////////////

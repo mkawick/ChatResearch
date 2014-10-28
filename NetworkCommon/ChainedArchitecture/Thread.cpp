@@ -11,11 +11,6 @@
 #include <iostream>
 #include <ctime>
 
-#ifndef CLIENT_ONLY
-#include <boost/thread/thread_time.hpp>
-#include <boost/thread/recursive_mutex.hpp>
-#endif
-
 #include "../ServerConstants.h"
 
 #if PLATFORM == PLATFORM_WINDOWS

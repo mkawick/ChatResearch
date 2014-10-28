@@ -173,7 +173,7 @@ bool        operator == ( const ScheduledOutage& lhs, const ScheduledOutage& rhs
 class PacketServerConnectionInfo_ServerOutageSchedule : public BasePacket
 {
 public:
-   PacketServerConnectionInfo_ServerOutageSchedule( int packet_type = PacketType_ServerInformation, int packet_sub_type = PacketServerConnectionInfo::PacketServerIdentifier_GatewayRequestLB_ConnectionIdsResponse  ): BasePacket( packet_type, packet_sub_type ){}
+   PacketServerConnectionInfo_ServerOutageSchedule( int packet_type = PacketType_ServerInformation, int packet_sub_type = PacketServerConnectionInfo::PacketServerIdentifier_ServerOutageSchedule  ): BasePacket( packet_type, packet_sub_type ){}
 
    bool  SerializeIn( const U8* data, int& bufferOffset, int minorVersion );
    bool  SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const;

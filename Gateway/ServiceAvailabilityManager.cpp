@@ -184,6 +184,44 @@ void     ServiceAvailabilityManager::InformUserAboutAvailableFeatures( U8 gameId
    }
 }
 
+////////////////////////////////////////////////////////
+
+void     ServiceAvailabilityManager::InformUserAboutScheduledOutages( U8 gameId, U32 connectionId )
+{
+   ClientSide_ServerOutageSchedule* packet = new ClientSide_ServerOutageSchedule;
+   U32 num = m_scheduledOutages.size();
+   for( U32 i=0; i<num; i++ )
+   {
+      ScheduledOutage& outage = m_scheduledOutages[i];
+      if( outage.gameId == 0 || // match each user... all services and matching games are reported
+         outage.gameId == gameId )
+      {
+         ClientSide_ScheduledServiceOutage outageToclient;
+         outageToclient.beginTime = GetDateInUTC( outage.beginTime );
+         outageToclient.cancelled = outage.cancelled;
+         outageToclient.downTimeInSeconds = outage.downTimeInSeconds;
+         outageToclient.gameId = outage.gameId;
+         outageToclient.type = outage.type;
+
+         packet->scheduledOutages.push_back( outageToclient );
+      }
+   }
+
+   if( packet->scheduledOutages.size() )
+   {
+      PacketGatewayWrapper* wrapper = new PacketGatewayWrapper;
+      wrapper->SetupPacket( packet, connectionId );
+
+      m_mainGatewayThread->AddOutputChainData( wrapper, connectionId );
+   }
+   else
+   {
+      PacketFactory factory;
+      BasePacket* tempPacket = static_cast< BasePacket* > ( packet );
+      factory.CleanupPacket( tempPacket );
+   }
+}
+
 
 ////////////////////////////////////////////////////////
 
@@ -250,6 +288,7 @@ void     ServiceAvailabilityManager::ScheduledOutages( const PacketServerConnect
 
 bool     ServiceAvailabilityManager::CopyScheduledOutagesToLocalOutages( const ScheduledOutage& newScheduledOutage )
 {
+   bool  didAdd = false;
    int num = m_scheduledOutages.size();
    for( int i=0; i< num; i++ )
    {
@@ -263,9 +302,15 @@ bool     ServiceAvailabilityManager::CopyScheduledOutagesToLocalOutages( const S
          else
          {
             outage = newScheduledOutage;// copy operator
+            didAdd = true;
          }
          break;
       }
+   }
+
+   if( didAdd == false )
+   {
+      m_scheduledOutages.push_back( newScheduledOutage );
    }
 
    return true;
@@ -329,44 +374,11 @@ void     ServiceAvailabilityManager::InformAllConnectedUsersOfScheduledOutages()
 {
    vector< ClientConnectionForGame > ccfg;
    m_mainGatewayThread->CreateListOfClientConnectionsForGame( ccfg );
-
-   PacketFactory factory;
    vector< ClientConnectionForGame >::iterator it = ccfg.begin();
    while( it != ccfg.end() )
    {
       const ClientConnectionForGame& clientConnection = *it++;
-      ClientSide_ServerOutageSchedule* packet = new ClientSide_ServerOutageSchedule;
-
-      U32 num = m_scheduledOutages.size();
-      for( U32 i=0; i<num; i++ )
-      {
-         ScheduledOutage& outage = m_scheduledOutages[i];
-         if( outage.gameId == 0 || // match each user... all services and matching games are reported
-            outage.gameId == clientConnection.gameId )
-         {
-            ClientSide_ScheduledServiceOutage outageToclient;
-            outageToclient.beginTime = outage.beginTime;
-            outageToclient.cancelled = outage.cancelled;
-            outageToclient.downTimeInSeconds = outage.downTimeInSeconds;
-            outageToclient.gameId = outage.gameId;
-            outageToclient.type = outage.type;
-
-            packet->scheduledOutages.push_back( outageToclient );
-         }
-      }
-
-      if( packet->scheduledOutages.size() )
-      {
-         PacketGatewayWrapper* wrapper = new PacketGatewayWrapper;
-         wrapper->SetupPacket( packet, clientConnection.connectionId );
-
-         m_mainGatewayThread->AddOutputChainData( wrapper, clientConnection.connectionId );
-      }
-      else
-      {
-         BasePacket* tempPacket = static_cast< BasePacket* > ( packet );
-         factory.CleanupPacket( tempPacket );
-      }
+      InformUserAboutScheduledOutages( clientConnection.gameId, clientConnection.connectionId );
    }   
 }
 

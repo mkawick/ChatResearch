@@ -52,6 +52,7 @@ public:
    virtual void  InvitationsReceivedUpdate() {}
    virtual void  InvitationsSentUpdate() {}
    virtual void  InvitationAccepted( const string& sender, const string& receiver, bool wasAccepted ){}
+   virtual void  ScheduledOutages( const SerializedVector< ClientSide_ScheduledServiceOutage >& outages ) {}
    virtual void  SearchForUserResultsAvailable() {}
 
    virtual void  GenericInvitationsUpdated( U32 type = 0 ) {} // generic list of all invitations
@@ -132,6 +133,8 @@ public:
       NotificationType_InvitationsSentUpdate,
       NotificationType_InvitationAccepted,
       NotificationType_SearchForUserResultsAvailable,
+
+      NotificationType_ScheduledOutages,
 
       NotificationType_GenericInvitationsUpdated,
       NotificationType_GenericInvitationRejected,

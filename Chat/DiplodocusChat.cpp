@@ -41,6 +41,7 @@ DiplodocusChat::DiplodocusChat( const string& serverName, U32 serverId ): Chaine
    time( &currentTime );
    m_timestampDailyStatServerStatisics = ZeroOutHours( currentTime );
    m_timestampHourlyStatServerStatisics = ZeroOutMinutes( currentTime );
+   
 }
 
 //---------------------------------------------------------------
@@ -431,7 +432,7 @@ bool     DiplodocusChat:: ProcessPacket( PacketStorage& storage )
 
    U8 packetType = packet->packetType;
 
-   cout << "DiplodocusChat:: ProcessPacket <<<" << endl;
+   //cout << "DiplodocusChat:: ProcessPacket <<<" << endl;
 
    switch( packetType )
    {
@@ -455,7 +456,7 @@ bool     DiplodocusChat:: ProcessPacket( PacketStorage& storage )
       }
    }
 
-   cout << "DiplodocusChat:: ProcessPacket >>>" << endl;
+   //cout << "DiplodocusChat:: ProcessPacket >>>" << endl;
    PacketCleaner cleaner( packet );
    return false;
 }
@@ -475,14 +476,14 @@ bool   DiplodocusChat::AddOutputChainData( BasePacket* packet, U32 connectionId 
 
    if( packet->packetType == PacketType_DbQuery )
    {
-      cout << "DiplodocusChat::AddOutputChainData.. PacketType_DbQuery" << endl;
+      //cout << "DiplodocusChat::AddOutputChainData.. PacketType_DbQuery" << endl;
       if( packet->packetSubType == BasePacketDbQuery::QueryType_Result )
       {
          PacketDbQueryResult* result = static_cast<PacketDbQueryResult*>( packet );
 
-         cout << "DiplodocusChat::AddOutputChainData.. locker( m_mutex ) <<<" << endl;
+         //cout << "DiplodocusChat::AddOutputChainData.. locker( m_mutex ) <<<" << endl;
          Threading::MutexLock locker( m_mutex );
-         cout << "DiplodocusChat::AddOutputChainData.. locker( m_mutex ) >>>" << endl;
+         //cout << "DiplodocusChat::AddOutputChainData.. locker( m_mutex ) >>>" << endl;
 
          m_dbQueries.push_back( result );
        /*  if( result->customData != NULL )
@@ -747,7 +748,7 @@ bool     DiplodocusChat::AddQueryToOutput( PacketDbQuery* dbQuery, U32 connectio
 }*/
 bool     DiplodocusChat::AddQueryToOutput( PacketDbQuery* dbQuery, U32 connectionId )
 {
-   cout << "DiplodocusChat::AddQueryToOutput <<<" << endl;
+   //cout << "DiplodocusChat::AddQueryToOutput <<<" << endl;
    PacketFactory factory;
    dbQuery->id = connectionId;
 
@@ -762,7 +763,7 @@ bool     DiplodocusChat::AddQueryToOutput( PacketDbQuery* dbQuery, U32 connectio
          Database::Deltadromeus* delta = static_cast< Database::Deltadromeus* >( outputPtr );
          if( dbQuery->dbConnectionType != 0 )
          {
-            cout << "DiplodocusChat::delta->WillYouTakeThisQuery <<<" << endl;
+            //cout << "DiplodocusChat::delta->WillYouTakeThisQuery <<<" << endl;
             if( delta->WillYouTakeThisQuery( dbQuery->dbConnectionType ) )
             {
                isValidConnection = true;
@@ -774,10 +775,10 @@ bool     DiplodocusChat::AddQueryToOutput( PacketDbQuery* dbQuery, U32 connectio
          }
          if( isValidConnection == true )
          {
-            cout << "DiplodocusChat::outputPtr->AddInputChainData <<<" << endl;
+            //cout << "DiplodocusChat::outputPtr->AddInputChainData <<<" << endl;
             if( outputPtr->AddInputChainData( dbQuery, m_chainId ) == true )
             {
-               cout << "DiplodocusChat::AddQueryToOutput >>>+" << endl;
+               //cout << "DiplodocusChat::AddQueryToOutput >>>+" << endl;
                return true;
             }
          }
@@ -788,7 +789,7 @@ bool     DiplodocusChat::AddQueryToOutput( PacketDbQuery* dbQuery, U32 connectio
    BasePacket* deleteMe = static_cast< BasePacket*>( dbQuery );
 
    factory.CleanupPacket( deleteMe );
-   cout << "DiplodocusChat::AddQueryToOutput >>>-" << endl;
+   //cout << "DiplodocusChat::AddQueryToOutput >>>-" << endl;
    return false;
 }
 

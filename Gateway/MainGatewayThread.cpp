@@ -133,8 +133,11 @@ bool  MainGatewayThread::AddInputChainData( BasePacket* packet, U32 connectionId
    {
       LogMessage( LOG_PRIO_INFO, "Packet to servers: %d:%d", (int)packet->packetType, (int)packet->packetSubType );
    }
-   //PrintDebugText( "AddInputChainData", 1);
+
+   // just a quick test
+   m_inputChainListMutex.lock();
    ConnectionMapIterator connIt = m_connectionMap.find( connectionId );
+   m_inputChainListMutex.unlock();
    if( connIt != m_connectionMap.end() )
    {
      /* if( packet->packetType == PacketType_Base )
@@ -213,8 +216,12 @@ void     MainGatewayThread::InputConnected( IChainedInterface * chainedInput )
       }
       return;
    }
+   
    U32 newId = GetNextConnectionId();
+
+   m_inputChainListMutex.lock();
    m_connectionMap.insert( ConnectionPair( newId, khaan ) );
+   m_inputChainListMutex.unlock();
 
    khaan->SetConnectionId( newId );
 
@@ -249,6 +256,7 @@ void     MainGatewayThread::InputRemovalInProgress( IChainedInterface * chainedI
 
    SetupClientWaitingToBeRemoved( khaan );
 
+   // performed in the main thread
    // deletion here means nothing.. the actual connection is stored in the base class
    ConnectionMapIterator it = m_connectionMap.find( connectionId );
    if( it != m_connectionMap.end() )
@@ -303,9 +311,6 @@ void  MainGatewayThread::FinalRemoveInputChain( U32 connectionId )
    {
       LogMessage( LOG_PRIO_INFO, "MainGatewayThread::FinalRemoveInputChain" );
    }
- /*  PacketLogout* logout = new PacketLogout();
-   logout->wasDisconnectedByError = true;
-   AddInputChainData( logout, connectionId );*/
 
    ConnectionMapIterator it = m_connectionMap.find( connectionId );
    if( it != m_connectionMap.end() )
@@ -354,7 +359,7 @@ void     MainGatewayThread::CreateFilteredListOfClientConnections( U32 gameId, v
    connectionIds.clear();
    connectionIds.reserve( 30 );
 
-   m_inputChainListMutex.lock();
+   Threading::MutexLock locker( m_inputChainListMutex );
    ConnectionMapIterator nextIt = m_connectionMap.begin();
    while( nextIt != m_connectionMap.end() )
    {
@@ -375,14 +380,17 @@ void     MainGatewayThread::CreateFilteredListOfClientConnections( U32 gameId, v
          connectionIds.push_back( connectionId );
       }
    }
-   m_inputChainListMutex.unlock();
 }
 
 void     MainGatewayThread::CreateListOfClientConnectionsForGame( vector< ClientConnectionForGame >& ccfg )
 {
+   if( m_printFunctionNames )
+   {
+      LogMessage( LOG_PRIO_INFO, __FUNCTION__ );
+   }
    ccfg.clear();
 
-   m_inputChainListMutex.lock();
+   Threading::MutexLock locker( m_inputChainListMutex );
    ConnectionMapIterator nextIt = m_connectionMap.begin();
    while( nextIt != m_connectionMap.end() )
    {
@@ -396,8 +404,6 @@ void     MainGatewayThread::CreateListOfClientConnectionsForGame( vector< Client
       ccfg.push_back( ClientConnectionForGame( connectionId, gameId ) );
 
    }
-   m_inputChainListMutex.unlock();
-   
 }
 
 ////////////////////////////////////////////////////////
@@ -447,6 +453,8 @@ void  MainGatewayThread::CloseConnection( U32 connectionId )
    {
       LogMessage( LOG_PRIO_INFO, __FUNCTION__ );
    }
+   
+   Threading::MutexLock locker( m_inputChainListMutex );
    ConnectionMapIterator connIt = m_connectionMap.find( connectionId );
    if( connIt != m_connectionMap.end() )
    {
@@ -658,6 +666,7 @@ void     MainGatewayThread::BroadcastPacketToAllUsers( const string& errorText, 
          HandlePacketToKhaan( khaan, packet );
       else
       {
+         m_inputChainListMutex.unlock();
          khaan->SendImmediately( packet );
          PacketFactory factory;
          BasePacket* tempPacket = static_cast< BasePacket* >( packet );
@@ -771,14 +780,13 @@ bool     MainGatewayThread::OrderOutputs()
 void     MainGatewayThread::LogUserOutIfKeyFeaturesAreUnavailable( ServerType type, U8 gameId, U32 connectionId )
 {
    // this user who is logging in cannot go any further..
+   Threading::MutexLock locker( m_inputChainListMutex );
    ConnectionMapIterator connIt = m_connectionMap.find( connectionId );
    if( connIt != m_connectionMap.end() )
    {
       KhaanGateway* khaan = connIt->second;
       if( khaan == NULL )
          return;
-
-      connIt++;
 
       // BroadcastPacketToAllUsers( change.text, change.errorTypeMessageToSend, change.serverType, change.gameId, change.gameId, true );
       Packet_QOS_ReportToClient* packet = new Packet_QOS_ReportToClient();
@@ -789,6 +797,7 @@ void     MainGatewayThread::LogUserOutIfKeyFeaturesAreUnavailable( ServerType ty
       khaan->SendImmediately( packet );
 
       PacketLogoutToClient logoutPacket;
+      m_inputChainListMutex.unlock();
       khaan->SendImmediately( &logoutPacket );
       MarkConnectionForDeletion( connectionId );
    }
@@ -801,6 +810,9 @@ void     MainGatewayThread::InformUserOfMissingFeatures( const vector< ServerSta
    if( servers.size() == 0 )
       return;
 
+   LogMessage( LOG_PRIO_INFO, "InformUserOfMissingFeatures <<<" );
+
+   Threading::MutexLock locker( m_inputChainListMutex );
    ConnectionMapIterator connIt = m_connectionMap.find( connectionId );
    if( connIt == m_connectionMap.end() )
    {
@@ -827,6 +839,7 @@ void     MainGatewayThread::InformUserOfMissingFeatures( const vector< ServerSta
 
    if( packet->services.size() )
    {
+      m_inputChainListMutex.unlock();
       HandlePacketToKhaan( connIt->second, packet );
    }
    else
@@ -835,6 +848,7 @@ void     MainGatewayThread::InformUserOfMissingFeatures( const vector< ServerSta
       BasePacket* tempPacket = static_cast< BasePacket* >( packet );
       factory.CleanupPacket( tempPacket );
    }
+   LogMessage( LOG_PRIO_INFO, "InformUserOfMissingFeatures >>>" );
 }
 
 /////////////////////////////////////////////////////////////////////////////////
@@ -959,6 +973,8 @@ int       MainGatewayThread::CallbackFunction()
    RunHourlyAverages();
    CheckOnConnectionIdBlocks();
 
+   UpdatedScheduledOutages();
+
    MoveClientBoundPacketsFromTempToKhaan();
    UpdateAllConnections( "KhaanGateway" );
 
@@ -994,6 +1010,7 @@ void  MainGatewayThread::RunHourlyAverages()
       LogMessage( LOG_PRIO_INFO, __FUNCTION__ );
    }
 
+   Threading::MutexLock locker( m_inputChainListMutex );
    if( m_connectionMap.size() == 0 )
       return;
 
@@ -1148,18 +1165,35 @@ bool  MainGatewayThread::AddOutputChainData( BasePacket* packetIn, U32 serverTyp
    }
 
    //PrintDebugText( "AddOutputChainData" ); 
+   PacketFactory factory;
 
    // pass through only
    if( packetIn->packetType == PacketType_GatewayWrapper )
    {
-      //PacketGatewayWrapper* wrapper = static_cast< PacketGatewayWrapper* >( packetIn );
+      PacketGatewayWrapper* wrapper = static_cast< PacketGatewayWrapper* >( packetIn );
+      BasePacket* contentPacket = wrapper->pPacket;
       //U32 id = wrapper->connectionId;
 
-      //LogMessage( LOG_PRIO_INFO, "packet to client stored" );
-      m_mutex.lock();
-      m_clientBoundTempStorage.push_back( packetIn );
-      m_mutex.unlock();
+      if( contentPacket->packetType == PacketType_ServerInformation && 
+         contentPacket->packetSubType == PacketServerConnectionInfo::PacketServerIdentifier_ServerOutageSchedule )
+      {
+         PacketServerConnectionInfo_ServerOutageSchedule* outages = 
+            static_cast< PacketServerConnectionInfo_ServerOutageSchedule* > ( contentPacket );
 
+         m_mutex.lock();
+         m_scheduledOutages.push_back( outages );
+         m_mutex.unlock();
+         wrapper->pPacket = NULL;
+         factory.CleanupPacket( packetIn );
+         return true;
+      }
+      else
+      {
+      //LogMessage( LOG_PRIO_INFO, "packet to client stored" );
+         m_mutex.lock();
+         m_clientBoundTempStorage.push_back( packetIn );
+         m_mutex.unlock();
+      }
       //AddClientConnectionNeedingUpdate( id );
       
    }
@@ -1195,16 +1229,7 @@ bool  MainGatewayThread::AddOutputChainData( BasePacket* packetIn, U32 serverTyp
          }
          m_serverIsAvaitingLB_Approval = false;
       }
-      if( contentPacket->packetType == PacketType_ServerInformation && 
-         contentPacket->packetSubType == PacketServerConnectionInfo::PacketServerIdentifier_ServerOutageSchedule )
-      {
-         PacketServerConnectionInfo_ServerOutageSchedule* outtages = 
-            static_cast< PacketServerConnectionInfo_ServerOutageSchedule* > ( contentPacket );
 
-         major problem... not thread safe
-         m_serviceAvailabilityManager->ScheduledOutages( outtages );
-      }
-      PacketFactory factory;
       factory.CleanupPacket( packetIn );
       return true;
    }
@@ -1214,12 +1239,27 @@ bool  MainGatewayThread::AddOutputChainData( BasePacket* packetIn, U32 serverTyp
       int type = ( packetIn->packetType );
       const char* packetTypeName = GetPacketTypename( (PacketType)type );
       LogMessage( LOG_PRIO_INFO, "To client  packet: %s %d : %d", packetTypeName, type, (int)packetIn->packetSubType );
-      PacketFactory factory;
+      
       factory.CleanupPacket( packetIn );
       //assert( 0 );
       //return false;
    }
    return true;
+}
+
+void  MainGatewayThread::UpdatedScheduledOutages()
+{
+   Threading::MutexLock locker ( m_mutex );
+   if( m_scheduledOutages.size() )
+   {
+      std::deque< PacketServerConnectionInfo_ServerOutageSchedule* >::iterator 
+            it = m_scheduledOutages.begin();
+      while( it != m_scheduledOutages.end() )
+      {
+         PacketServerConnectionInfo_ServerOutageSchedule* packet = *it++;
+         m_serviceAvailabilityManager->ScheduledOutages( packet );
+      }
+   }
 }
 
 /////////////////////////////////////////////////////////////////////////////////
@@ -1371,6 +1411,8 @@ BasePacket*  MainGatewayThread::HandlePlayerLoginStatus( KhaanGateway* khaan, Ba
       khaan->SetAdminLevelOperations( finishedLogin->adminLevel );
       khaan->SetLanguageId( finishedLogin->languageId );
       khaan->SetLastGameConnectedTo( finishedLogin->gameProductId );
+      khaan->SetUserName( finishedLogin->userName );
+      khaan->SetUserUuid( finishedLogin->uuid );
 
       PacketLoginToClient* clientNotify = new PacketLoginToClient;
       clientNotify->wasLoginSuccessful = finishedLogin->wasLoginSuccessful;
@@ -1379,20 +1421,24 @@ BasePacket*  MainGatewayThread::HandlePlayerLoginStatus( KhaanGateway* khaan, Ba
       clientNotify->lastLogoutTime = finishedLogin->lastLogoutTime;
       clientNotify->connectionId = connectionId;
       clientNotify->loginKey = finishedLogin->loginKey;
-   /*   clientNotify->junk1 = 21;
-      clientNotify->junk2 = "this is s version number test.";*/
       packet = clientNotify;
 
       TrackCountStats( StatTrackingConnections::StatTracking_UserLoginSuccess, 1, 0 );
-      //packetHandled = true;
+
+      U8 gameId = finishedLogin->gameProductId;
+      m_serviceAvailabilityManager->InformUserAboutScheduledOutages( gameId, connectionId );
    }
    else
    {
+      
       PacketLogoutToClient* logoutPacket = new PacketLogoutToClient;
       packet = logoutPacket;
       khaan->SendImmediately( logoutPacket );
       MarkConnectionForDeletion( connectionId );
-      //packet = NULL;
+      LogMessage( LOG_PRIO_INFO, "------------- User logout ------------" );
+      LogMessage( LOG_PRIO_INFO, "LoginType_Logout: %s", khaan->GetUserName() );
+      LogMessage( LOG_PRIO_INFO, "            uuid: %s", khaan->GetUserUuid() );
+      LogMessage( LOG_PRIO_INFO, "--------------------------------------" );
 
       connectionId = 0;
    }
@@ -1404,7 +1450,7 @@ BasePacket*  MainGatewayThread::HandlePlayerLoginStatus( KhaanGateway* khaan, Ba
 
 void  LogCertainPacketsBackToClient( BasePacket* packet )
 {
-   if( packet->packetType == PacketType_Chat && 
+  /* if( packet->packetType == PacketType_Chat && 
       packet->packetSubType == PacketChatToServer::ChatType_AddUserToChatChannelResponse )
    {
       PacketChatAddUserToChatChannelResponse* ptr = static_cast< PacketChatAddUserToChatChannelResponse* >( packet );
@@ -1414,7 +1460,7 @@ void  LogCertainPacketsBackToClient( BasePacket* packet )
       LogMessage( LOG_PRIO_INFO, " channel useruuid: %s", ptr->userUuid.c_str() );
       LogMessage( LOG_PRIO_INFO, " channel user name: %s", ptr->userName.c_str() );
       LogMessage( LOG_PRIO_INFO, "PacketChatAddUserToChatChannelResponse end" );
-   }
+   }*/
 }
 
 /////////////////////////////////////////////////////////////////////////////////
@@ -1482,10 +1528,10 @@ void  MainGatewayThread::MoveClientBoundPacketsFromTempToKhaan()
 
          LogCertainPacketsBackToClient( dataPacket );
 
-         m_inputChainListMutex.lock();
          //SocketToConnectionMapIterator it = m_connectionToSocketMap.find( connectionId );
          //if( it != m_connectionToSocketMap.end() )
          {
+            Threading::MutexLock lock( m_inputChainListMutex );
             ConnectionMapIterator connIt = m_connectionMap.find( connectionId );
             if( connIt != m_connectionMap.end() )
             {
@@ -1497,7 +1543,6 @@ void  MainGatewayThread::MoveClientBoundPacketsFromTempToKhaan()
                handled = true;
             }
          }
-         m_inputChainListMutex.unlock();
          if( handled == false )
          {
             factory.CleanupPacket( dataPacket );

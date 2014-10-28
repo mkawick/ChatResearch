@@ -281,6 +281,10 @@
 				RelativePath=".\Login.cpp"
 				>
 			</File>
+			<File
+				RelativePath=".\ScheduledOutageDBReader.cpp"
+				>
+			</File>
 		</Filter>
 		<Filter
 			Name="Header Files"
@@ -309,6 +313,10 @@
 			</File>
 			<File
 				RelativePath=".\ProductInfo.h"
+				>
+			</File>
+			<File
+				RelativePath=".\ScheduledOutageDBReader.h"
 				>
 			</File>
 		</Filter>

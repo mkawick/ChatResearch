@@ -553,7 +553,6 @@ bool     UserContact::InformFriendsOfOnlineStatus( bool isOnline )
       }
    }
 
-
    return true;
 }
 

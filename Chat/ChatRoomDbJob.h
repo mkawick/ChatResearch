@@ -21,6 +21,7 @@ public:
       JobType_LoadSingleChannel,
       JobType_LoadAllChannels,
       JobType_LoadAllUsers,
+      JobType_LoadNewUsers,
       JobType_SelectAllChannelsForAUser,
       JobType_Exists,
       JobType_AddUser,

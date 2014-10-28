@@ -1068,6 +1068,11 @@ bool     PacketFactory::ParseGame( const U8* bufferIn, int& bufferOffset, const 
          *packetOut = SerializeIn< PacketGame_Notification >( bufferIn, bufferOffset, networkMinorVersion );
       }
       return true;
+   case PacketGameToServer::GamePacketType_ServiceOutage:
+      {
+         *packetOut = SerializeIn< ClientSide_ServerOutageSchedule >( bufferIn, bufferOffset, networkMinorVersion );
+      }
+      return true;
    }
 
    return false;
@@ -1490,6 +1495,11 @@ bool     PacketFactory::ParseServerInfo( const U8* bufferIn, int& bufferOffset, 
    case PacketServerConnectionInfo::PacketServerIdentifier_GatewayRequestLB_ConnectionIdsResponse:
       {
          *packetOut = SerializeIn< PacketServerToServer_GatewayRequestLB_ConnectionIdsResponse >( bufferIn, bufferOffset, networkMinorVersion );
+      }
+      return true;
+   case PacketServerConnectionInfo::PacketServerIdentifier_ServerOutageSchedule:
+      {
+         *packetOut = SerializeIn< PacketServerConnectionInfo_ServerOutageSchedule >( bufferIn, bufferOffset, networkMinorVersion );
       }
       return true;
     }

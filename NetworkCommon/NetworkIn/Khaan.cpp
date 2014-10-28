@@ -342,8 +342,8 @@ int	Khaan :: UpdateOutwardPacketList()
    m_outputChainListMutex.lock();
       deque< BasePacket* > localQueue = m_packetsOut;
       m_packetsOut.clear();
-      m_hasPacketsToSend = false;
    m_outputChainListMutex.unlock();
+   m_hasPacketsToSend = false;
    //cout << "Khaan :: UpdateOutwardPacketList:: unlock 1" << endl;
 
    if( localQueue.size() == 0 )
@@ -548,7 +548,7 @@ void     Khaan :: FlushReadBuffer()
 
 void     Khaan :: CloseConnection()
 {
-   //LogMessage( LOG_PRIO_INFO, "Khaan 15" );
+   LogMessage( LOG_PRIO_INFO, "Khaan::CloseConnection" );
    m_isDisconnected = true;
    if( GetBufferEvent() ) // this is set to NULL in Cleanup
    {
@@ -570,7 +570,7 @@ void    Khaan :: Cleanup()
    if( m_bufferEvent == NULL )
       return;
 
-   //LogMessage( LOG_PRIO_INFO, "Khaan 16" );
+   LogMessage( LOG_PRIO_INFO, "Khaan::Cleanup" );
    PreCleanup();
 
    CleanupAllChainDependencies();
@@ -587,7 +587,7 @@ void     Khaan :: ClearAllPacketsIn()
    if( m_packetsIn.size() == 0 )// slight threading risk here... needs flag optimization
       return;
 
-   //LogMessage( LOG_PRIO_INFO, "Khaan 17" );
+   LogMessage( LOG_PRIO_INFO, "Khaan::ClearAllPacketsIn" );
    m_inputChainListMutex.lock();
    deque< BasePacket* > localQueue = m_packetsIn;
    m_packetsIn.clear();
@@ -610,7 +610,7 @@ void     Khaan :: ClearAllPacketsOut()
    if( m_hasPacketsToSend == false )// slight threading risk here... needs flag optimization
       return;
 
-   //LogMessage( LOG_PRIO_INFO, "Khaan 18" );
+   LogMessage( LOG_PRIO_INFO, "Khaan::ClearAllPacketsOut" );
    //cout << "Khaan :: ClearAllPacketsOut:: lock" << endl;
    m_outputChainListMutex.lock();
       deque< BasePacket* > localQueue = m_packetsOut;
@@ -633,7 +633,7 @@ void     Khaan :: ClearAllPacketsOut()
 // Called by libevent when there is an error on the underlying socket descriptor.
 void	   Khaan::OnSocketError( struct bufferevent* bufferEventObj, short events, void* context )
 {
-   //LogMessage( LOG_PRIO_INFO, "Khaan 19" );
+   LogMessage( LOG_PRIO_INFO, "Khaan::OnSocketError" );
    Khaan* khaan = (Khaan*) context;
 
    if (events & ( BEV_EVENT_EOF | BEV_EVENT_ERROR) )
