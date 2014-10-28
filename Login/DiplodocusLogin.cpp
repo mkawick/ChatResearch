@@ -35,6 +35,8 @@ using boost::format;
 #include "DiplodocusLogin.h"
 #include "FruitadensLogin.h"
 
+#include "ScheduledOutageDBReader.h"
+
 //#define _DEMO_13_Aug_2013
 const int normalLogoutExpireTime = 18; // seconds
 
@@ -48,30 +50,40 @@ DiplodocusLogin:: DiplodocusLogin( const string& serverName, U32 serverId )  :
                   m_isInitialized( false ), 
                   m_isInitializing( true ),
                   m_autoAddProductFromWhichUsersLogin( true ),
+                  m_stringLookup( NULL ),
                   m_numRelogins( 0 ),
                   m_numFailedLogins( 0 ),
                   m_numSuccessfulLogins( 0 ),
                   m_totalUserLoginSeconds( 0 ),
                   m_totalNumLogouts( 0 ),
                   m_printPacketTypes( false ),
-                  m_printFunctionNames( false )
+                  m_printFunctionNames( false ),
+                  m_outageReader( NULL )
 {
    SetSleepTime( 19 );
    LogOpen();
    LogMessage( LOG_PRIO_INFO, "Login::Login server created" );
 
-   time( &m_initializingProductListTimeStamp );
+   time_t currentTime;
+   time( &currentTime );
+   m_initializingProductListTimeStamp = currentTime;
+   m_timestampHourlyStatServerStatisics = currentTime;
+}
 
+void  DiplodocusLogin:: Init()
+{
    vector< string > stringCategories;
    stringCategories.push_back( string( "product" ) );
    stringCategories.push_back( string( "sale" ) );
    m_stringLookup = new StringLookup( QueryType_ProductStringLookup, this, stringCategories );
 
-   time( &m_timestampHourlyStatServerStatisics );
    m_timestampDailyStatServerStatisics = m_timestampHourlyStatServerStatisics;
 
    m_timestampHourlyStatServerStatisics = ZeroOutMinutes( m_timestampHourlyStatServerStatisics );
    m_timestampDailyStatServerStatisics = ZeroOutHours( m_timestampDailyStatServerStatisics );
+
+   m_outageReader = new ScheduledOutageDBReader;
+   m_outageReader->SetMainLoop( this );
 }
 
 void           DiplodocusLogin:: PrintPacketTypes( bool printingOn )
@@ -2554,6 +2566,10 @@ bool     DiplodocusLogin:: HandleDbResult( PacketDbQueryResult* dbResult )
    {
       wasHandled = true;
    }
+   else if( m_outageReader->HandleResult( dbResult ) == true )
+   {
+      wasHandled = true;
+   }
    else
    {
       switch( dbResult->lookup )
@@ -3200,7 +3216,8 @@ int      DiplodocusLogin:: CallbackFunction()
 
    time_t currentTime;
    time( &currentTime );
-   m_stringLookup->Update( currentTime );
+   if( m_stringLookup )
+      m_stringLookup->Update( currentTime );
 
    CleanupOldClientConnections( "KhaanLogin" );
    UpdateAllConnections( "KhaanLogin" );
@@ -3210,6 +3227,9 @@ int      DiplodocusLogin:: CallbackFunction()
    RemoveOldConnections();
 
    UpdatePendingGatewayPackets();
+
+   if( m_outageReader )
+      m_outageReader->Update();
 
    RunHourlyStats();
    RunDailyStats();
