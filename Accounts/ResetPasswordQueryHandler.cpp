@@ -1,9 +1,8 @@
 #include <time.h>
 #include <iostream>
 
-#include <boost/lexical_cast.hpp>
+#include "AccountServer.h"
 #include <boost/algorithm/string/replace.hpp>
-
 
 #include "../NetworkCommon/Utils/Utils.h"
 #include "../NetworkCommon/Utils/TableWrapper.h"
@@ -45,7 +44,10 @@ void     ResetPasswordQueryHandler::Update( time_t currentTime )
    if( m_hasLoadedStringTable == false || m_hasLoadedWeblinks == false )
       return;
 
-   ParentType::Update( currentTime, m_isServicingResetPassword );
+   if( isMailServiceEnabled == true && m_isEmailEnabled == true )
+   {
+      ParentType::Update( currentTime, m_isServicingResetPassword );
+   }
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////
@@ -99,7 +101,11 @@ bool     ResetPasswordQueryHandler::HandleResult( const PacketDbQueryResult* dbR
          }
 
          // update playdek.user_temp_new_user set was_email_sent=was_email_sent+1, lookup_key='lkjasdfhlkjhadfs' where id='4' ;
-         if( SendConfirmationEmail( email.c_str(), resetPasswordEmailAddress, m_mailServer, bodyText.c_str(), subjectText.c_str(), "Playdek.com", linkPath.c_str() ) != 0 )
+         if( SendConfirmationEmail( email.c_str(), resetPasswordEmailAddress, 
+                                 m_mailServer.c_str(), 
+                                 bodyText.c_str(), subjectText.c_str(), "Playdek.com", linkPath.c_str(),
+                                 m_emailPortOverride,
+                                 m_authenticatedEmailUsername.c_str(), m_authenticatedEmailPassword.c_str() ) != 0 )
          {
             string   message = "ERROR: For reset password, SendConfirmationEmail seems to be down. Socket connections are being rejected.";
             LogMessage( LOG_PRIO_ERR, message.c_str() );

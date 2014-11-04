@@ -61,7 +61,7 @@ struct ServerStatus
 
 struct ClientConnectionForGame
 {
-   ClientConnectionForGame( U32 connId, U8 _gameId ) : connectionId( connId ), gameId( _gameId ) {}
+   ClientConnectionForGame( U32 connId, U8 _gameId ) : gameId( _gameId ), connectionId( connId ) {}
    U8                   gameId;
    U32                  connectionId;
 };

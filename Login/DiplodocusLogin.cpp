@@ -1225,10 +1225,10 @@ bool        DiplodocusLogin:: CreateUserAccount( U32 connectionId, U32 gatewayId
       return false;
    }
 
-   string trimmedPassword = Trim(password);
-   std::string trimmedUsername = Trim(userName);
-   std::string lowercase_username = Trim(userName);
-   std::string lowercase_useremail = Trim(email);
+   string trimmedPassword = Trim( password );
+   std::string trimmedUsername = Trim( userName );
+   std::string lowercase_username = Trim( userName );
+   std::string lowercase_useremail = Trim( email );
 
    if (trimmedPassword.size() < 6)
    {

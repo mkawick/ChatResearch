@@ -188,12 +188,12 @@ void     DiplodocusContact::HandleExipiredInvitations( const PacketDbQueryResult
 
 bool     DiplodocusContact::AddInputChainData( BasePacket* packet, U32 gatewayId )
 {
-   cout << "DiplodocusContact:: AddInputChainData <<<" << endl;
+   //cout << "DiplodocusContact:: AddInputChainData <<<" << endl;
    m_mutex.lock();
    m_inputPacketsToBeProcessed.push_back( PacketStorage( packet, gatewayId ) );
    m_mutex.unlock();
    
-   cout << "DiplodocusContact:: AddInputChainData >>>" << endl;
+   //cout << "DiplodocusContact:: AddInputChainData >>>" << endl;
 
    return true;
 }
@@ -359,7 +359,7 @@ bool  DiplodocusContact::HandlePacketFromOtherServer( BasePacket* packet, U32 ga
       return false;
    }
 
-   cout << "DiplodocusContact::HandlePacketFromOtherServer <<<" << endl;
+   //cout << "DiplodocusContact::HandlePacketFromOtherServer <<<" << endl;
 
    PacketServerJobWrapper* wrapper = static_cast< PacketServerJobWrapper* >( packet );
    BasePacket* unwrappedPacket = wrapper->pPacket;
@@ -717,7 +717,7 @@ bool  DiplodocusContact::UpdateUser( const string& userUuid, U32 connectionId, U
 
 bool     DiplodocusContact::ConnectUser( const PacketPrepareForUserLogin* loginPacket )
 {
-   cout << "DiplodocusContact::ConnectUser <<<" << endl;
+   //cout << "DiplodocusContact::ConnectUser <<<" << endl;
    U32 connectionId = loginPacket->connectionId;
    string uuid = loginPacket->uuid;
    U32 gatewayId = loginPacket->gatewayId;
@@ -728,7 +728,7 @@ bool     DiplodocusContact::ConnectUser( const PacketPrepareForUserLogin* loginP
    if( it != m_users.end() )
       return false;
 
-   cout << "DiplodocusContact::ConnectUser .. update user" << endl;
+   //cout << "DiplodocusContact::ConnectUser .. update user" << endl;
    // if the user is already here but relogged, simply has a new connectionId
    bool wasUpdated = UpdateUser( uuid, connectionId, gatewayId );
    if( wasUpdated == false )
@@ -744,7 +744,7 @@ bool     DiplodocusContact::ConnectUser( const PacketPrepareForUserLogin* loginP
       ui.passwordHash =    loginPacket->password;
       ui.id =              loginPacket->userId;
 
-      cout << "DiplodocusContact::ConnectUser .. new user" << endl;
+      //cout << "DiplodocusContact::ConnectUser .. new user" << endl;
       UserContact user( ui, connectionId, gatewayId );
       user.SetServer( this );
 
@@ -753,7 +753,7 @@ bool     DiplodocusContact::ConnectUser( const PacketPrepareForUserLogin* loginP
       m_userLookupById.insert( UserIdToContactPair( ui.id, connectionId ) );
       //m_mutex.unlock();
    }
-   cout << "DiplodocusContact::ConnectUser >>>" << endl;
+   //cout << "DiplodocusContact::ConnectUser >>>" << endl;
    return true;
 }
 

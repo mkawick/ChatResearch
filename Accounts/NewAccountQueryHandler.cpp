@@ -1,26 +1,33 @@
 #include <time.h>
 #include <iostream>
 
-#include <boost/lexical_cast.hpp>
+#define BOOST_ERROR_CODE_HEADER_ONLY
+#include "AccountServer.h"
 #include <boost/algorithm/string/replace.hpp>
+
+#include "../NetworkCommon/Platform.h"
 
 #include "../NetworkCommon/Utils/Utils.h"
 #include "../NetworkCommon/Utils/StringUtils.h"
 #include "../NetworkCommon/Utils/TableWrapper.h"
+
 #include "NewAccountQueryHandler.h"
 #include "BlankUUIDQueryHandler.h"
 #include "StatusUpdate.h"
+
 #include "email.h"
+
 #include "../NetworkCommon/Logging/server_log.h"
 
 using namespace std;
 
-const char* newAccountEmailAddress = "account_create@playdekgames.com";
-const char* resetPasswordEmailAddress = "account_reset@playdekgames.com";
+const char* newAccountEmailAddress = "account_create@playdekgames.net";
+const char* resetPasswordEmailAddress = "account_reset@playdekgames.net";
+const char* defaultEmailDomain = "mail.playdekgames.net";
 
 bool                            NewAccountQueryHandler::m_hasLoadedStringTable = false;
 bool                            NewAccountQueryHandler::m_hasLoadedWeblinks = false;
-const char*                     NewAccountQueryHandler::m_mailServer = "mail.playdekgames.com";
+string                          NewAccountQueryHandler::m_mailServer( defaultEmailDomain );
 string                          NewAccountQueryHandler::m_linkToAccountCreated;
 string                          NewAccountQueryHandler::m_linkToResetEmailConfirm;
 string                          NewAccountQueryHandler::m_linkToResetPasswordConfirm;
@@ -32,12 +39,17 @@ NewAccountQueryHandler::StringTableLookup
                                  NewAccountQueryHandler::m_stringsTable;
 map< stringhash, stringhash >   NewAccountQueryHandler::m_replacemetStringsLookup;
 
+U16                             NewAccountQueryHandler::m_emailPortOverride = 0;
+string                          NewAccountQueryHandler::m_authenticatedEmailUsername;
+string                          NewAccountQueryHandler::m_authenticatedEmailPassword;
+
 ///////////////////////////////////////////////////////////////////////////////////////////
 
 NewAccountQueryHandler::NewAccountQueryHandler( U32 id, Queryer* parent, string& query ) : ParentType( id, 20, parent ), 
                      m_isServicingNewAccounts( false ),
                      m_isServicingStringLoading( false ),
-                     m_isServicingWebLinks( false )
+                     m_isServicingWebLinks( false ),
+                     m_isEmailEnabled( true )
 {
    m_loadStringsQueryType = 0;
    m_loadWebLinksQueryType = 0;
@@ -56,7 +68,7 @@ void     NewAccountQueryHandler::Update( time_t currentTime )
       PreloadWeblinks();
       return;
    }
-   if( isMailServiceEnabled == true )
+   if( isMailServiceEnabled == true && m_isEmailEnabled == true )
    {
       ParentType::Update( currentTime, m_isServicingNewAccounts );
    }
@@ -91,7 +103,7 @@ void     NewAccountQueryHandler::PreloadLanguageStrings()
          dbQuery->query = "SELECT * FROM string WHERE category='account' OR category='reset_password' OR category='change_email'";
          m_parent->AddQueryToOutput( dbQuery );
 
-         //LogMessage( LOG_PRIO_INFO, "Accounts::PreloadLanguageStrings\n" );
+         LogMessage( LOG_PRIO_INFO, "Accounts::PreloadLanguageStrings\n" );
       }
       return;
    }
@@ -124,9 +136,28 @@ void     NewAccountQueryHandler::PreloadWeblinks()
          dbQuery->query = "SELECT * FROM config where category='Mber'";
          m_parent->AddQueryToOutput( dbQuery );
 
-         //LogMessage( LOG_PRIO_INFO, "Accounts::PreloadWeblinks\n" );
+         LogMessage( LOG_PRIO_INFO, "Accounts::PreloadWeblinks\n" );
       }
    }
+}
+
+//---------------------------------------------------------------
+
+void     NewAccountQueryHandler::SetEmailDomain( const string& domain )
+{
+   /*if( domain.substr( 0, 5 ) != "mail." )
+      return;*/
+
+   cout << "Email domain change" << endl;
+   cout<< "Email domain changed from: " << m_mailServer << endl;
+   m_mailServer = domain;
+   if( m_mailServer.length() < 5 )
+      m_mailServer = defaultEmailDomain;
+   cout<< "Email domain changed to: " << m_mailServer << endl;
+   cout << "All future email will go to that email server" << endl;
+
+   //string   message = "ERROR: For new accounts, SendConfirmationEmail seems to be down. Socket connections are being rejected.";
+   //LogMessage( LOG_PRIO_ERR, message.c_str() );
 }
 
 //---------------------------------------------------------------
@@ -165,7 +196,12 @@ bool     NewAccountQueryHandler::HandleResult( const PacketDbQueryResult* dbResu
       {
          EmailToSend& emailDetails = it->second;
          // update playdek.user_temp_new_user set was_email_sent=was_email_sent+1, lookup_key='lkjasdfhlkjhadfs' where id='4' ;
-         if( SendConfirmationEmail( emailDetails.email.c_str(), emailDetails.accountEmailAddress.c_str(), m_mailServer, emailDetails.bodyText.c_str(), emailDetails.subjectText.c_str(), "Playdek.com", emailDetails.linkPath.c_str() ) != 0 )
+         if( SendConfirmationEmail( emailDetails.email.c_str(), emailDetails.accountEmailAddress.c_str(), 
+                                 m_mailServer.c_str(), 
+                                 emailDetails.bodyText.c_str(), emailDetails.subjectText.c_str(), 
+                                 "Playdek.com", emailDetails.linkPath.c_str(),
+                                 m_emailPortOverride,
+                                 m_authenticatedEmailUsername.c_str(), m_authenticatedEmailPassword.c_str() ) != 0 )
          {
             string   message = "ERROR: For new accounts, SendConfirmationEmail seems to be down. Socket connections are being rejected.";
             LogMessage( LOG_PRIO_ERR, message.c_str() );
@@ -307,7 +343,7 @@ void     NewAccountQueryHandler::PrepToSendUserEmail( const PacketDbQueryResult*
          message += name;
          message += " at email: '";
          message += email;
-         //LogMessage( LOG_PRIO_INFO, message.c_str() );
+         LogMessage( LOG_PRIO_INFO, message.c_str() );
          cout << message << endl;
 
          PacketDbQuery* dbQuery = new PacketDbQuery;

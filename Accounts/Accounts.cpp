@@ -11,7 +11,7 @@
 //#include <conio.h>
 #include <assert.h>
 
-#include <boost/lexical_cast.hpp>
+#include "AccountServer.h"
 #include <boost/format.hpp>
 using boost::format;
 
@@ -161,7 +161,7 @@ int main( int argc, const char* argv[] )
    server->EnableAddingUserProducts( enableAddingUserProducts );
    server->SetAsServicingUuidOnly( onlyUpdatesUuid );
    
-   //server->Init();
+   server->Init();
    server->Resume();
 
    //getch();

@@ -1,9 +1,9 @@
+// ServiceAvailabilityManager.cpp
 
 #include <iostream>
 #include <list>
 
 #include <boost/tokenizer.hpp>
-//#include <conio.h>
 #include <assert.h>
 #include <boost/lexical_cast.hpp>
 #include <boost/algorithm/string.hpp>
@@ -19,9 +19,9 @@
 
 #include "../NetworkCommon/NetworkIn/Diplodocus.h"
 
-#include "ServiceAvailabilityManager.h"
 #include "MainGatewayThread.h"
 #include "FruitadensGateway.h"
+#include "ServiceAvailabilityManager.h"
 
 ////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////

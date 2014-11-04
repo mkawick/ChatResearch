@@ -1,3 +1,8 @@
+#include <iostream>
+using namespace std;
+
+
+#include "AccountServer.h"
 
 #include "../NetworkCommon/Utils/TableWrapper.h"
 #include "../NetworkCommon/Utils/Utils.h"
@@ -13,10 +18,14 @@
 #include "../NetworkCommon/Logging/server_log.h"
 
 #include "email.h"
-#include <boost/lexical_cast.hpp>
-#include <boost/algorithm/string/replace.hpp>
-#include <iostream>
-using namespace std;
+
+
+#include "BlankUUIDQueryHandler.h"
+#include "BlankUserProfileHandler.h"
+#include "NewAccountQueryHandler.h"
+#include "ProductEntryCreateBasedOnPlayHistory.h"
+#include "ResetPasswordQueryHandler.h"
+#include "ResetUserEmailQueryHandler.h"
 
 const int OneDay = 3600 * 24;
 
@@ -31,22 +40,28 @@ StatusUpdate::StatusUpdate( const string& serverName, U32 serverId ) : Queryer()
                   m_checkOnautoCreateTimeoutSeconds( 60 ),
                   m_checkOnOldEmailsTimeoutSeconds( OneDay ),/// once per day
                   m_expireOldAccountRequestsTimeoutSeconds( OneDay ),
+                  m_timeoutReloadAppSettings( 2 * 60 ),
                   m_enableAddingUserProducts( false ),
                   m_hasRequestedAdminSettings( false ),
                   m_isWaitingForAdminSettings( false ),
                   m_autoCreateUsersInProcess( false ),
-                  m_uuidOnlySevice( false )
+                  m_uuidOnlySevice( false ),
+                  m_isFinishedInitializing( false )
 {
    SetSleepTime( 500 );
    time( &m_newAccountCreationTimer );
-   time( &m_checkOnautoCreateTimer );
-   time( &m_checkOnOldEmailsTimer );
-   time( &m_expireOldAccountRequestsTimer );
-   time( &m_timestampCheckDuplicateUUids );
+   m_checkOnautoCreateTimer = m_newAccountCreationTimer;
+   m_checkOnOldEmailsTimer = m_newAccountCreationTimer;
+   m_expireOldAccountRequestsTimer = m_newAccountCreationTimer;
+   m_timestampCheckDuplicateUUids = m_newAccountCreationTimer;
+   m_timestampReloadAppSettings = m_newAccountCreationTimer;
 
    m_checkOnOldEmailsTimer -= OneDay; // always check on launch.. no waiting 24 hours.
    m_expireOldAccountRequestsTimer -= OneDay;
+}
 
+void StatusUpdate::Init()
+{
    string BlankUUIDWhereClause = " WHERE uuid IS NULL OR uuid='0' LIMIT 30";
    string BlankUUIDSelectClause = "SELECT id, user_email FROM user_temp_new_user";
    bool testingUsers = false;// might be commandline controlled... 
@@ -82,7 +97,7 @@ StatusUpdate::StatusUpdate( const string& serverName, U32 serverId ) : Queryer()
    m_resetPasswordHandler = new ResetPasswordQueryHandler( QueryType_ResetPasswords, this, queryForPasswordReset );
    m_resetPasswordHandler->SetPeriodicty( timeoutResetPassword );
 
-   
+   m_resetUsernameEmailHandler = NULL;
   /* string queryForChangeEmail = "SELECT id, user_account_uuid, reset_key, new_email, new_username, time_last_email_sent, language_id, user_email, user_name FROM playdek.reset_user_email_name INNER JOIN playdek.users ON reset_user_email_name.user_account_uuid=users.uuid WHERE was_email_sent=0;";
 
    m_resetUsernameEmailHandler = new ResetUserEmailQueryHandler( QueryType_ChangeUsernameEmail, this, queryForChangeEmail );
@@ -93,7 +108,10 @@ StatusUpdate::StatusUpdate( const string& serverName, U32 serverId ) : Queryer()
    cout << "Accounts::Accounts server created" << endl;
 
    srand( GetCurrentMilliseconds() );
+
+   m_isFinishedInitializing = true;
 }
+
 
 StatusUpdate::~StatusUpdate()
 {
@@ -327,6 +345,9 @@ void     StatusUpdate::DuplicateUUIDSearchResult( PacketDbQueryResult* dbResult 
 
 int      StatusUpdate::CallbackFunction()
 {
+   if( m_isFinishedInitializing == false )
+      return 1;
+
    if( isMailServiceEnabled == true )
    {
       time_t currentTime;
@@ -335,6 +356,7 @@ int      StatusUpdate::CallbackFunction()
       if( m_hasRequestedAdminSettings == false )
       {
          RequestAdminSettings();
+         m_timestampReloadAppSettings = currentTime;
          m_hasRequestedAdminSettings = true;
          return 0;
       }
@@ -374,6 +396,11 @@ int      StatusUpdate::CallbackFunction()
       {
          m_addProductEntryHandler->Update( currentTime );
       }
+      if( difftime( currentTime, m_timestampReloadAppSettings ) > m_timeoutReloadAppSettings )
+      {
+         RequestAdminSettings();
+         m_timestampReloadAppSettings = currentTime;
+      }
    }
    return 1;
 }
@@ -407,8 +434,8 @@ bool     StatusUpdate::AddQueryToOutput( PacketDbQuery* dbQuery )
    while( itOutputs != m_listOfOutputs.end() )// only one output currently supported.
    {
       ChainType* outputPtr = static_cast< ChainType*> ( (*itOutputs).m_interface );
-      ChainedInterface* interfacePtr = static_cast< ChainedInterface* >( outputPtr );
-      if( interfacePtr->GetChainedType() == ChainedType_DatabaseConnector )
+      //ChainedInterface* interfacePtr = static_cast< ChainedInterface* >( (*itOutputs).m_interface );
+      if( outputPtr->GetChainedType() == ChainedType_DatabaseConnector )
       {
          bool isValidConnection = false;
          Database::Deltadromeus* delta = static_cast< Database::Deltadromeus* >( outputPtr );
@@ -695,13 +722,57 @@ void     StatusUpdate::HandleAdminSettings( const PacketDbQueryResult* dbResult 
 
       if( setting == "play_history_product_id" )
       {
-         m_addProductEntryHandler->SetProductIdStart( boost::lexical_cast< int >( value ) );
+         if( m_addProductEntryHandler )
+            m_addProductEntryHandler->SetProductIdStart( boost::lexical_cast< int >( value ) );
       }
       else if( setting == "play_history_user_id" )
       {
-         m_addProductEntryHandler->SetUserIdStart( boost::lexical_cast< int >( value ) ); 
+         if( m_addProductEntryHandler )
+            m_addProductEntryHandler->SetUserIdStart( boost::lexical_cast< int >( value ) ); 
       }
-
+      else if( setting == "email_domain" )
+      {
+         if( m_newAccountHandler )
+            m_newAccountHandler->SetEmailDomain( value );
+         //m_addProductEntryHandler->SetUserIdStart( boost::lexical_cast< int >( value ) ); 
+      }
+      else if( setting == "email_enabled" )
+      {
+         if( value == "true" || value == "TRUE" || value == "1" )
+         {
+            if( m_newAccountHandler )
+               m_newAccountHandler->EnableEmailSending( 1 );
+            if( m_resetPasswordHandler )
+               m_resetPasswordHandler->EnableEmailSending( 1 );
+            if( m_resetUsernameEmailHandler )
+               m_resetUsernameEmailHandler->EnableEmailSending( 1 );
+         }
+         else
+         {
+            if( m_newAccountHandler )
+               m_newAccountHandler->EnableEmailSending( 0 );
+            if( m_resetPasswordHandler )
+               m_resetPasswordHandler->EnableEmailSending( 0 );
+            if( m_resetUsernameEmailHandler )
+               m_resetUsernameEmailHandler->EnableEmailSending( 0 );
+         }
+         //m_addProductEntryHandler->SetUserIdStart( boost::lexical_cast< int >( value ) ); 
+      }
+      else if( setting == "email_port_override" )
+      {
+         if( m_newAccountHandler )
+            m_newAccountHandler->SetEmailPortOverride( boost::lexical_cast< U16 >( value ) );
+      }
+      else if( setting == "email_auth_username" )
+      {
+         if( m_newAccountHandler )
+            m_newAccountHandler->SetEmailAuthUsername( value );
+      }
+      else if( setting == "email_auth_password" )
+      {
+         if( m_newAccountHandler )
+            m_newAccountHandler->SetEmailAuthPassword( value );
+      }
    }
 
    m_isWaitingForAdminSettings = false;

@@ -638,6 +638,16 @@ bool  PacketFactory::ParseChat( const U8* bufferIn, int& bufferOffset, const Bas
          *packetOut = SerializeIn< PacketChat_UserProfileChange >( bufferIn, bufferOffset, networkMinorVersion );
       }
       return true;
+   case PacketChatToServer::ChatType_MarkChannelHistoryAsRead:
+      {
+         *packetOut = SerializeIn< PacketChat_MarkChannelHistoryAsRead >( bufferIn, bufferOffset, networkMinorVersion );
+      }
+      return true;
+   case PacketChatToServer::ChatType_MarkFriendHistoryAsRead:
+      {
+         *packetOut = SerializeIn< PacketChat_MarkFriendHistoryAsRead >( bufferIn, bufferOffset, networkMinorVersion );
+      }
+      return true;
    }
 
    return false;

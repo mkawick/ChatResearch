@@ -14,7 +14,6 @@
 
 #if PLATFORM == PLATFORM_WINDOWS
 #pragma warning( disable:4996 )
-//#pragma comment( lib, "libmysql.lib" )
 #endif
 
 #include "../Utils/CommandLineParser.h"
@@ -66,7 +65,8 @@ DbJobBase :: DbJobBase( Database::JobId id, const std::string& query, U32 sender
       m_fireAndForget( false ),
       m_isChainData( false ),
       m_errorCondition( false ),
-      m_errorConnectionNeedsToBeReset( false )
+      m_errorConnectionNeedsToBeReset( false ),
+      m_queryDuration( 0 )
 {
    if( m_query.size() < 12 )// about the minimum that a query can be "select * from a"
    {
@@ -155,6 +155,7 @@ bool  DbJob::SubmitQuery( MYSQL* connection, const string& dbName )
 
    m_errorCondition = false;
    m_hasStarted = true;
+   U32 beginTime = GetCurrentMilliseconds();
 
    //mysql_select_db( connection, dbName.c_str() );
    int result = mysql_query( connection, m_query.c_str() );
@@ -217,6 +218,9 @@ bool  DbJob::SubmitQuery( MYSQL* connection, const string& dbName )
    }
 
    m_isComplete = true;
+
+   U32 endTime = GetCurrentMilliseconds();
+   m_queryDuration = endTime - beginTime;
 
    return m_errorCondition;
 }
@@ -524,10 +528,24 @@ void     Deltadromeus::Connect()
    
 }
 
+bool  JobFailedBecauseDbConnectionWasLost( DbJobBase* currentJob )
+{
+   return currentJob->GetErrorCondition() == true && currentJob->GetIsConnectionBad();
+}
+
+void Deltadromeus::ResetDbConnection()
+{
+   m_isConnected = false;
+   m_needsReconnection = true;
+   LogMessage( LOG_PRIO_ERR, "-> Bad connection leads to a reconnect and resetting the state of the query." );
+   Connect();
+}
+
 //------------------------------------------------------------
 
 int     Deltadromeus::CallbackFunction()
 {
+   const U32 LongQueryTime = 500;// milliseconds
    if( m_isConnected == false )
    {
       if( m_needsReconnection == true )
@@ -555,12 +573,16 @@ int     Deltadromeus::CallbackFunction()
       }
       else if( currentJob->IsComplete() == true )
       {
-         if( currentJob->GetErrorCondition() == true && currentJob->GetIsConnectionBad() )
+         if( currentJob->GetQueryDuration() > LongQueryTime )
          {
-            m_isConnected = false;
-            m_needsReconnection = true;
-            LogMessage( LOG_PRIO_ERR, "-> Bad connection leads to a reconnect and resetting the state of the query." );
-            Connect();
+            LogMessage( LOG_PRIO_WARN, "WARNING: Slow query %u ms\n", currentJob->GetQueryDuration() );
+            LogMessage( LOG_PRIO_WARN, "Query: %s \n", currentJob->GetQuery().c_str() );
+            LogMessage( LOG_PRIO_WARN, "WARNING: Slow query " );
+         }
+
+         if( JobFailedBecauseDbConnectionWasLost( currentJob ) )
+         {
+            ResetDbConnection();
             currentJob->ResetErrorState();// keep trying until the connection resets.
             currentJob->ResetToResubmitSameQuery();
          }
@@ -586,30 +608,40 @@ int     Deltadromeus::CallbackFunction()
                   delete currentJob;// we gave the sender every opportunity to accept
                }
             }
-            m_mutex.lock();
-            m_jobsInProgress.pop_front();
-            currentJob = NULL;
-            numRemaining = m_jobsInProgress.size();
-            if( numRemaining )
-               currentJob = m_jobsInProgress.front();// might be invalid
-            m_mutex.unlock(); 
-
-            // now start the next job
-            if( numRemaining > 0 )
-            {
-               LogEverything( "DB has more jobs to start " ); 
-               currentJob->SubmitQuery( m_DbConnection, m_dbSchema );
-            }
-            else
-            {
-               Pause();
-               LogEverything( "DB queue is empty" );
-            }
+            StartNextJob();
          }
       }
    } 
 
    return 1;
+}
+
+//------------------------------------------------------------
+
+void     Deltadromeus::StartNextJob()
+{
+   DbJobBase* currentJob = NULL;
+   int numRemaining = 0;
+   {
+      m_mutex.lock();
+         m_jobsInProgress.pop_front();// delete the last job
+         numRemaining = m_jobsInProgress.size();
+         if( numRemaining )
+            currentJob = m_jobsInProgress.front();
+      m_mutex.unlock(); 
+   }
+
+   // now start the next job
+   if( numRemaining > 0 )
+   {
+      LogEverything( "DB has more jobs to start " ); 
+      currentJob->SubmitQuery( m_DbConnection, m_dbSchema );
+   }
+   else
+   {
+      Pause();// go into a semi=-sleep state since we don't have any work to do
+      LogEverything( "DB queue is empty" );
+   }
 }
 
 //------------------------------------------------------------

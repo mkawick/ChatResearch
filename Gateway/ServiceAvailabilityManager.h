@@ -1,9 +1,7 @@
 // ServiceAvailabilityManager.h
 
 #pragma once
-
 #include <vector>
-using namespace std;
 
 #include "../NetworkCommon/ServerType.h"
 #include "../NetworkCommon/DataTypes.h"
@@ -11,8 +9,9 @@ using namespace std;
 #include "../NetworkCommon/Packets/ServerToServerPacket.h"
 
 #include "GatewayCommon.h"
-#include "MainGatewayThread.h"
-//class MainGatewayThread;
+//#include "MainGatewayThread.h"
+
+class MainGatewayThread;
 
 ////////////////////////////////////////////////////////////////////////////////////
 
@@ -49,7 +48,7 @@ private:
    void     DisableServicesInScheduledMaintenenceMode();
    void     ReenableServicesWithExpiredScheduledMaintenence();
 
-   vector< ServerStatus >     m_serviceStatus;
+   std::vector< ServerStatus >m_serviceStatus;
    MainGatewayThread*         m_mainGatewayThread;
 
    vector< ScheduledOutage >  m_scheduledOutages;

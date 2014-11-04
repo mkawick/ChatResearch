@@ -69,6 +69,8 @@ namespace Database
       void*       GetCustomData() const { return m_customData; }
       bool        GetErrorCondition() const { return m_errorCondition; }
       bool        GetIsConnectionBad() const { return m_errorConnectionNeedsToBeReset; }
+      U32         GetQueryDuration() const { return m_queryDuration; }
+      string      GetQuery() const { return m_query; }
 
       void        ResetToResubmitSameQuery() { m_isComplete = false; m_cancelled = false; m_hasStarted = false; m_hasResultSet = false; }
       void        ResetErrorState() { m_errorCondition = false; m_errorConnectionNeedsToBeReset = false; }
@@ -123,6 +125,7 @@ namespace Database
       
       bool                    m_errorCondition;
       bool                    m_errorConnectionNeedsToBeReset;
+      int                     m_queryDuration;
       Database::ResultSet     m_results;
    };
    //---------------------------------------------------------------------------------------------------
@@ -186,6 +189,8 @@ namespace Database
       virtual int      CallbackFunction();
       bool     PutQueryResultInProperChain( DbJobBase* );
       JobId    CreateJobId();
+      void     StartNextJob();
+      void     ResetDbConnection();
 
       typedef deque< DbJobBase* >    JobQueue;
       typedef JobQueue::iterator JobQueueIterator;

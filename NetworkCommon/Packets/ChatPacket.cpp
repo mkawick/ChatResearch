@@ -1078,3 +1078,40 @@ bool  PacketChat_UserProfileChange::SerializeOut( U8* data, int& bufferOffset, i
 }
 
 ///////////////////////////////////////////////////////////////
+
+bool  PacketChat_MarkChannelHistoryAsRead::SerializeIn( const U8* data, int& bufferOffset, int minorVersion )
+{
+   BasePacket::SerializeIn( data, bufferOffset, minorVersion );
+   Serialize::In( data, bufferOffset, channelUuid, minorVersion );
+
+   return true;
+}
+
+bool  PacketChat_MarkChannelHistoryAsRead::SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const
+{
+   BasePacket::SerializeOut( data, bufferOffset, minorVersion );
+   Serialize::Out( data, bufferOffset, channelUuid, minorVersion );
+
+   return true;
+}
+
+///////////////////////////////////////////////////////////////
+
+
+bool  PacketChat_MarkFriendHistoryAsRead::SerializeIn( const U8* data, int& bufferOffset, int minorVersion )
+{
+   BasePacket::SerializeIn( data, bufferOffset, minorVersion );
+   Serialize::In( data, bufferOffset, friendUuid, minorVersion );
+
+   return true;
+}
+
+bool  PacketChat_MarkFriendHistoryAsRead::SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const
+{
+   BasePacket::SerializeOut( data, bufferOffset, minorVersion );
+   Serialize::Out( data, bufferOffset, friendUuid, minorVersion );
+
+   return true;
+}
+
+///////////////////////////////////////////////////////////////

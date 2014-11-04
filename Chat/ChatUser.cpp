@@ -115,7 +115,7 @@ void     ChatUser::RequestAllBasicChatInfo()
    //RequestChatChannels();
 }
 
-bool     ChatUser::HandleClientRequest( BasePacket* packet )
+bool     ChatUser::HandleClientRequest( const BasePacket* packet )
 {
    switch( packet->packetType )
    {
@@ -144,14 +144,14 @@ bool     ChatUser::HandleClientRequest( BasePacket* packet )
          {
          case PacketChatToServer::ChatType_EchoToServer:
             {
-               PacketChatToServer* chat = static_cast< PacketChatToServer* >( packet );
+               const PacketChatToServer* chat = static_cast< const PacketChatToServer* >( packet );
                chat = chat;
                EchoHandler();
             }
             break;
          case PacketChatToServer::ChatType_ChatToServer:
             {
-               PacketChatToServer* chat = static_cast< PacketChatToServer* >( packet );
+               const PacketChatToServer* chat = static_cast< const PacketChatToServer* >( packet );
                SendChat( chat->message, chat->userUuid, chat->channelUuid, chat->gameTurn );
             }
             break;
@@ -167,7 +167,7 @@ bool     ChatUser::HandleClientRequest( BasePacket* packet )
             break;*/
          case PacketChatToServer::ChatType_RequestHistory:
             {
-               PacketChatHistoryRequest* request = static_cast< PacketChatHistoryRequest* > ( packet );
+               const PacketChatHistoryRequest* request = static_cast< const PacketChatHistoryRequest* > ( packet );
                if( request->chatChannelUuid.size() )
                {
                   QueryChatChannelHistory( request->chatChannelUuid, request->numRecords, request->startingIndex, request->startingTimestamp );
@@ -188,13 +188,13 @@ bool     ChatUser::HandleClientRequest( BasePacket* packet )
             //-----------------------------------------------
          case PacketChatToServer::ChatType_CreateChatChannel:
             {
-               PacketChatCreateChatChannel* request = static_cast< PacketChatCreateChatChannel* > ( packet );
+               const PacketChatCreateChatChannel* request = static_cast< const PacketChatCreateChatChannel* > ( packet );
                m_chatRoomManager->CreateNewRoom( request->name, m_uuid );
             }
             break;
          case PacketChatToServer::ChatType_DeleteChatChannel:
             {
-               PacketChatDeleteChatChannel* request = static_cast< PacketChatDeleteChatChannel* > ( packet );
+               const PacketChatDeleteChatChannel* request = static_cast< const PacketChatDeleteChatChannel* > ( packet );
                m_chatRoomManager->DeleteRoom( request->uuid, m_uuid );
             }
             break;
@@ -206,7 +206,7 @@ bool     ChatUser::HandleClientRequest( BasePacket* packet )
             break;*/
          case PacketChatToServer::ChatType_AddUserToChatChannel:
             {
-               PacketChatAddUserToChatChannel* request = static_cast< PacketChatAddUserToChatChannel* > ( packet );
+               const PacketChatAddUserToChatChannel* request = static_cast< const PacketChatAddUserToChatChannel* > ( packet );
                bool success = m_chatRoomManager->AddUserToRoom( request->chatChannelUuid, request->userUuid, m_uuid );
 
                /*PacketChatAddUserToChatChannelResponse* response = new PacketChatAddUserToChatChannelResponse;
@@ -224,7 +224,7 @@ bool     ChatUser::HandleClientRequest( BasePacket* packet )
             break;
          case PacketChatToServer::ChatType_RemoveUserFromChatChannel:
             {
-               PacketChatRemoveUserFromChatChannel* request = static_cast< PacketChatRemoveUserFromChatChannel* > ( packet );
+               const PacketChatRemoveUserFromChatChannel* request = static_cast< const PacketChatRemoveUserFromChatChannel* > ( packet );
                bool success = m_chatRoomManager->RemoveUserFromRoom( request->chatChannelUuid, request->userUuid );
 
               /* PacketChatRemoveUserFromChatChannelResponse* response = new PacketChatRemoveUserFromChatChannelResponse;
@@ -241,7 +241,7 @@ bool     ChatUser::HandleClientRequest( BasePacket* packet )
             break;
          case PacketChatToServer::ChatType_RenameChatChannel:
             {
-               PacketChatRenameChannel* request = static_cast< PacketChatRenameChannel* > ( packet );
+               const PacketChatRenameChannel* request = static_cast< const PacketChatRenameChannel* > ( packet );
                string oldName;
                bool success = m_chatRoomManager->RenameChatRoom( request->channelUuid, request->newName, m_uuid, oldName );
 
@@ -262,14 +262,14 @@ bool     ChatUser::HandleClientRequest( BasePacket* packet )
             break;
          case PacketChatToServer::ChatType_UpdateProfile:
             {
-               PacketChat_UserProfileChange* request = static_cast< PacketChat_UserProfileChange* > ( packet );
+               const PacketChat_UserProfileChange* request = static_cast< const PacketChat_UserProfileChange* > ( packet );
                m_blockGroupInvitations = request->blockChannelInvites;
                m_chatRoomManager->SetUserPreferences( m_uuid, m_blockContactInvitations, m_blockGroupInvitations );
             }             
             break; 
          case PacketChatToServer::ChatType_ListAllMembersInChatChannel:
             {
-               PacketChatListAllMembersInChatChannel* request = static_cast< PacketChatListAllMembersInChatChannel* > ( packet );
+               const PacketChatListAllMembersInChatChannel* request = static_cast< const PacketChatListAllMembersInChatChannel* > ( packet );
                m_chatRoomManager->RequestChatRoomInfo( request, m_connectionId );
             }
             break;
@@ -304,6 +304,19 @@ bool     ChatUser::HandleClientRequest( BasePacket* packet )
                m_chatRoomManager->RequestUsersList( m_uuid, request->isFullList );
             }
             break;*/
+         case PacketChatToServer::ChatType_MarkChannelHistoryAsRead:
+            {
+               const PacketChat_MarkChannelHistoryAsRead* request = static_cast< const PacketChat_MarkChannelHistoryAsRead* > ( packet );
+               MarkChatChannelLastReadDate( request->channelUuid );
+            }
+            break;
+         case PacketChatToServer::ChatType_MarkFriendHistoryAsRead:
+            {
+               const PacketChat_MarkFriendHistoryAsRead* request = static_cast< const PacketChat_MarkFriendHistoryAsRead* > ( packet );
+
+               MarkFriendLastReadDateBegin( request->friendUuid );
+            }
+            break;
          }
       }
       break;
@@ -385,6 +398,78 @@ void     ChatUser::QueryChatChannelHistory( const string& channelUuid, int numRe
    extras->startingTimestamp = startingTimestamp;
    extras->numRecordsRequested = numRecords;
    dbQuery->customData = extras;
+
+   m_chatServer->AddQueryToOutput( dbQuery, m_connectionId );
+}
+
+//------------------------------------------------------------------------------------------------
+
+void     ChatUser::MarkChatChannelLastReadDate( const string& chatChannelUuid )
+{
+   if( chatChannelUuid.size() == 0 )
+      return;
+
+   PacketDbQuery* dbQuery = new PacketDbQuery;
+   dbQuery->id = m_connectionId;
+   dbQuery->lookup = QueryType_UpdateLastReadDate;
+   dbQuery->isFireAndForget = true;
+   dbQuery->query = "UPDATE playdek.user_join_chat_channel SET date_last_viewed=NOW() WHERE user_uuid='%s' AND channel_uuid='%s';";
+
+   dbQuery->escapedStrings.insert( m_uuid );
+   dbQuery->escapedStrings.insert( chatChannelUuid );
+   m_chatServer->AddQueryToOutput( dbQuery, m_connectionId );
+}
+
+//------------------------------------------------------------------------------------------------
+
+void     ChatUser::MarkFriendLastReadDateBegin( const string& friendUuid )
+{
+   if( friendUuid.length() == 0 )
+      return;
+
+   PacketDbQuery* dbQuery = new PacketDbQuery;
+   dbQuery->id = m_connectionId;
+   dbQuery->lookup = QueryType_LookupUserIdToMarkAsRead;
+   dbQuery->isFireAndForget = false;
+   dbQuery->query = "SELECT user_id FROM playdek.users WHERE uuid='%s'";
+
+   dbQuery->escapedStrings.insert( friendUuid.c_str() );
+ 
+   m_chatServer->AddQueryToOutput( dbQuery, m_connectionId );
+}
+
+//------------------------------------------------------------------------------------------------
+
+void     ChatUser::MarkFriendLastReadDateFinish( const PacketDbQueryResult * dbResult )
+{
+   if( dbResult->bucket.bucket.size() == 0 || dbResult->successfulQuery == false )
+   {
+      return;
+   }
+
+   U32 friendId = 0;
+
+   SingleColumnTable            enigma( dbResult->bucket );
+   SingleColumnTable::iterator  it = enigma.begin();
+   if( it != enigma.end() )
+   {
+      SingleColumnTable::row       row = *it++;
+      friendId =   boost::lexical_cast< U32 >( row[ TableSingleColumn::Column_text ] );
+     
+   }
+
+
+   if( friendId == 0 )
+      return;
+
+   PacketDbQuery* dbQuery = new PacketDbQuery;
+   dbQuery->id = m_connectionId;
+   dbQuery->lookup = QueryType_UpdateLastReadDate;
+   dbQuery->isFireAndForget = true;
+   dbQuery->query = "UPDATE playdek.friends SET date_chat_viewed=NOW() WHERE userid1=";
+   dbQuery->query += boost::lexical_cast< string > ( friendId );
+   dbQuery->query += "AND userid2=";
+   dbQuery->query += boost::lexical_cast< string > ( m_userId );// I am the recipient
 
    m_chatServer->AddQueryToOutput( dbQuery, m_connectionId );
 }
@@ -504,7 +589,7 @@ void     ChatUser::GetAllChatHistroySinceLastLogin()
    OR chat.user_id_recipient='user3' ) 
    AND timestamp>='2014-02-15 10:15:36'*/
 
-   PacketDbQuery* dbQuery = new PacketDbQuery;
+ /*  PacketDbQuery* dbQuery = new PacketDbQuery;
    dbQuery->id = m_connectionId;
    dbQuery->lookup = QueryType_ChatHistoryMissedSinceLastLogin;
 
@@ -521,15 +606,41 @@ void     ChatUser::GetAllChatHistroySinceLastLogin()
    queryString += "'";
    dbQuery->query = queryString;
 
-   m_chatServer->AddQueryToOutput( dbQuery, m_connectionId );
+   m_chatServer->AddQueryToOutput( dbQuery, m_connectionId );*/
+
+   // we need this to do a few different things.. 
+   // 1) pull all of your chat channels and last_read_date (in user_join_chat_channel)
+   // 2) pull all of your friends ana last_read_date (int friends, you are the recipient).
+   // 3) pull all chat-messages where the last-read_date is older
+   // Note: do not update any dates.
+
+   // we'll break this into two queries. One for chat channels and 
+   // one for friends.
 }
+
+// dates:
+// each channel has a date when last posted to
+// each user has a last read time on the user_join_chat_channel table
+// each friend-pair stores a date when the last chat was sent ... the recipient (userid2)
+//   is the owner of the date_chat_viewed field.
+
+/*
+void  AggregateAllChannelsThatHaveANewerTimestamp()
+{
+   PacketDbQuery* dbQuery = new PacketDbQuery;
+   dbQuery->id = m_connectionId;
+   dbQuery->lookup = QueryType_ChatChannel_NMissedSinceLastLogin;
+
+   string queryString = "";
+   m_lastLoginTime;
+}*/
 
 //---------------------------------------------------------
 
-bool     ChatUser::HandleDbResult( PacketDbQueryResult * dbResult )
+bool     ChatUser::HandleDbResult( const PacketDbQueryResult * dbResult )
 {
    cout << "ChatUser::HandleDbResult" << endl;
-   BasePacket* packet = static_cast<BasePacket*>( dbResult );
+   const BasePacket* packet = static_cast< const BasePacket*>( dbResult );
    PacketCleaner cleaner( packet );
    //const int maxNumMessagesPerPacket = 20;
 
@@ -555,6 +666,11 @@ bool     ChatUser::HandleDbResult( PacketDbQueryResult * dbResult )
          StoreChatHistoryMissedSinceLastLogin( dbResult );
 
          //SendChatHistorySinceLastLogin();
+      }
+      break;
+   case QueryType_LookupUserIdToMarkAsRead:
+      {
+         MarkFriendLastReadDateFinish( dbResult );
       }
       break;
    }
@@ -596,7 +712,7 @@ Find( const MissedChatChannelEntry& newEntry, vector< MissedChatChannelEntry >& 
 }
 //---------------------------------------------------------------
 
-void     ChatUser::StoreChatHistoryMissedSinceLastLogin( PacketDbQueryResult * dbResult )
+void     ChatUser::StoreChatHistoryMissedSinceLastLogin( const PacketDbQueryResult * dbResult )
 {
    vector< MissedChatChannelEntry > history;
 
@@ -644,6 +760,7 @@ void     ChatUser::LoadUserProfile( const PacketDbQueryResult * dbResult )
       m_chatServer->SendErrorToClient( m_connectionId, m_gatewayId, PacketErrorReport::ErrorType_UserUnknown );
       return;
    }
+
    UserProfileTable            enigma( dbResult->bucket );
    UserProfileTable::iterator  it = enigma.begin();
    if( it != enigma.end() )
@@ -678,7 +795,7 @@ void     ChatUser::SendChatChannelHistoryToClient( const PacketDbQueryResult * d
 
 //---------------------------------------------------------------
 
-void     ChatUser::SendChatp2pHistoryToClient( PacketDbQueryResult * dbResult )
+void     ChatUser::SendChatp2pHistoryToClient( const PacketDbQueryResult * dbResult )
 {
    if( dbResult->bucket.bucket.size() == 0 )
    {
@@ -982,9 +1099,9 @@ bool     ChatUser::SendMessageToClient( BasePacket* packet ) const
    PacketGatewayWrapper* wrapper = new PacketGatewayWrapper();
    wrapper->SetupPacket( packet, m_connectionId );
 
-   cout << "ChatUser::SendMessageToClient <<<" << endl;
+   //cout << "ChatUser::SendMessageToClient <<<" << endl;
    m_chatServer->SendMessageToClient( wrapper, m_connectionId, m_gatewayId );
-   cout << "ChatUser::SendMessageToClient >>>" << endl;
+   //cout << "ChatUser::SendMessageToClient >>>" << endl;
    return true;
 }
 

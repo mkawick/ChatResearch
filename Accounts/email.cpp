@@ -16,6 +16,7 @@
 #include "../NetworkCommon/Platform.h"
 #include "../NetworkCommon/Packets/Serialize.h"
 #include "../NetworkCommon/Utils/Utils.h"
+#include "../NetworkCommon/General/Base64.h"
 
 #if PLATFORM == PLATFORM_WINDOWS
 
@@ -27,10 +28,13 @@
 
 #elif PLATFORM == PLATFORM_MAC || PLATFORM == PLATFORM_UNIX
 
-#include <sys/socket.h>
-#include <netinet/in.h>
 #include <fcntl.h>
 #include <errno.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#include <sys/types.h>
+#include <unistd.h>
 
 #define SOCKET_ERROR -1
 
@@ -259,10 +263,64 @@ int   SendEveryFewCharcters( const char* source, int len, int minCharacters, int
 
 //////////////////////////////////////////////////////////////////////////////
 
-int  SendConfirmationEmail( const char* toAddr, const char* fromAddr, const char* emailServerName, const char* bodyText, const char* subject, const char* linkText, const char* linkAddr )
+int   SendEmailAuthPiece( int socketId, const char* authenticationUsername, const char* authenticationPassword )
+{
+   if( authenticationUsername == NULL || strlen( authenticationUsername ) < 5 )
+      return 1;
+   if( authenticationPassword == NULL || strlen( authenticationPassword ) < 5 )
+      return 1;
+
+   const int maxLen = 512;
+   auto_ptr< char > outputBuffer( new char[ maxLen ] );
+   U32 length = base64_encode( outputBuffer.get(), authenticationUsername, strlen( authenticationUsername ) );
+
+   outputBuffer.get()[ length ] = 0;
+   string username = outputBuffer.get();
+   cout << "Orig: " << authenticationUsername << endl;
+   cout << "Enc : " << username << endl;
+   length = base64_encode( outputBuffer.get(), authenticationPassword, strlen( authenticationPassword ) );
+
+   outputBuffer.get()[ length ] = 0;
+   string password = outputBuffer.get();
+   cout << "Orig: " << authenticationPassword << endl;
+   cout << "Enc : " << password << endl;
+
+   sprintf( outputBuffer.get(), "auth login:%s", CRLF);
+   Check( send(socketId, outputBuffer.get(), strlen( outputBuffer.get() ), 0), outputBuffer.get());
+   LogTextToFile( outputBuffer.get() );
+
+   sprintf( outputBuffer.get(), "%s%s", username.c_str(), CRLF);
+   Check( send(socketId, outputBuffer.get(), strlen( outputBuffer.get() ), 0), username.c_str());
+   LogTextToFile( outputBuffer.get() );
+
+   sprintf( outputBuffer.get(), "%s%s", password.c_str(), CRLF);
+   Check( send(socketId, outputBuffer.get(), strlen( outputBuffer.get() ), 0), username.c_str());
+   LogTextToFile( outputBuffer.get() );
+
+   const char* successString = "253 ... authentication succeded ::";
+   Check(recv(socketId, outputBuffer.get(), maxLen, 0), successString );
+
+   cout << "Response: " << outputBuffer.get() << endl;
+   /*if( strcmp( successString, outputBuffer.get() ) != 0 )
+      return 1;*/
+
+   // the response is nonsense
+
+   return 0;
+}
+
+//////////////////////////////////////////////////////////////////////////////
+
+//int  sendConfirmationEmail( const char* toAddr, const char* fromAddr, const char* emailServer, const char* bodyText, const char* linkText, const char* linkAddr )
+
+int  SendConfirmationEmail( const char* toAddr, const char* fromAddr, 
+                           const char* emailServerName, 
+                           const char* bodyText, const char* subject, 
+                           const char* linkText, const char* linkAddr,
+                           unsigned short portOverride, 
+                           const char* authenticationUsername, const char* authenticationPassword )
 {
    // Lookup email server's IP address.
-
   char        buffer[4096]       = "";
   int bodyLen = strlen( bodyText );
   int maxLen = bodyLen + 1024;// we're going to be inserting a lot of CRLFs
@@ -278,7 +336,8 @@ int  SendConfirmationEmail( const char* toAddr, const char* fromAddr, const char
   }
 
   // Create a TCP/IP socket, no specific protocol
-  int      socketId = socket(PF_INET, SOCK_STREAM, 0);
+  int      socketId = //socket(PF_INET, SOCK_RAW, 0);
+                        socket(PF_INET, SOCK_STREAM, 0);
   if(socketId == SOCKET_ERROR)
   {
     cout << "Cannot open mail server socket" << endl;
@@ -295,6 +354,10 @@ int  SendConfirmationEmail( const char* toAddr, const char* fromAddr, const char
     iProtocolPort = htons(IPPORT_SMTP);
   else
     iProtocolPort = emailServer->s_port;
+  if( portOverride )
+  {
+     iProtocolPort = htons( portOverride );
+  }
 
   sockaddr_in SockAddr;
   // Setup a Socket Address structure
@@ -315,14 +378,29 @@ int  SendConfirmationEmail( const char* toAddr, const char* fromAddr, const char
   Check(recv(socketId, buffer, sizeof(buffer), 0), "recv() Reply");
 
   string intro = "Starting email: ";
-  intro += GetDateInUTC();
+  intro += GetDateInUTC( 0, 0, 0 );
   LogTextToFile( intro.c_str() );
 
   // Send HELO server.com
   sprintf( messageLine.get(), "HELO %s%s", emailServerName, CRLF);
   Check(send(socketId, messageLine.get(), strlen( messageLine.get() ), 0), "send() HELO");
   LogTextToFile( messageLine.get() );
-  Check(recv(socketId, buffer, sizeof(buffer), 0), "recv() HELO");
+
+   if( authenticationUsername == NULL )
+   {
+      Check(recv(socketId, buffer, sizeof(buffer), 0), "recv() HELO");
+   }
+   else
+   {
+      // this is specific to godaddy who don't return a "recv() HELO"
+      if( SendEmailAuthPiece( socketId, authenticationUsername, authenticationPassword ) != 0 )
+      {
+         cout << "The authentication failed:" << endl;
+         closesocket(socketId);
+         CloseFile();
+         return 1;
+      }
+   }
 
   // Send MAIL FROM: <sender@mydomain.com>
   sprintf( messageLine.get(), "MAIL FROM:<%s>%s", fromAddr, CRLF);
@@ -357,11 +435,6 @@ int  SendConfirmationEmail( const char* toAddr, const char* fromAddr, const char
   sprintf( messageLine.get(), "Content-Type: text/html; charset=\"utf-8\"%s", CRLF);
   Check(send(socketId, messageLine.get(), strlen( messageLine.get() ), 0), "send() content type");
   LogTextToFile( messageLine.get() );
-
-
-  /*sprintf( messageLine.get(), "%s%s", bodyText, CRLF);
-  Check(send(socketId, messageLine.get(), strlen( messageLine.get() ), 0), "send() message-line");
-  LogTextToFile( messageLine.get() );*/
 
   SendEveryFewCharcters( bodyText, bodyLen, 34, 76, socketId );
 

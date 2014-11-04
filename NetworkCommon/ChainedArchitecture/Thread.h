@@ -113,6 +113,7 @@ public:
    {
       cout << "Count test start" << endl;
       Thread01* thread = new Thread01( 100 );
+      thread->Resume();
       Sleep(20000);
       cout << "Count test end" << endl;
 

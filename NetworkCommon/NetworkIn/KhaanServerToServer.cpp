@@ -193,11 +193,11 @@ void	KhaanServerToServer :: UpdateInwardPacketList()
    }
 
    //cout << "KhaanServerToServer :: UpdateInwardPacketList:: lock" << endl;
-   //m_inputChainListMutex.lock();// already locked
+   m_inputChainListMutex.lock();
       deque< BasePacket* > localQueue = m_packetsIn;
       m_packetsIn.clear();
       m_hasPacketsReceived = false;
-   //m_inputChainListMutex.unlock();
+   m_inputChainListMutex.unlock();
    //cout << "KhaanServerToServer :: UpdateInwardPacketList:: unlock" << endl;
 
    PacketFactory factory;

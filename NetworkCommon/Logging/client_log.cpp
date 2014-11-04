@@ -4,6 +4,10 @@
 #include "../Platform.h"
 using namespace std;
 
+#if PLATFORM == PLATFORM_WINDOWS
+#pragma warning( disable:4996 )
+#endif
+
 void LogMessage(int priority, const char *fmt, ...)
 {
    const int maxStringLength = 256;

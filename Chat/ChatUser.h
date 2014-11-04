@@ -37,8 +37,8 @@ public:
    //static void    Set( InvitationManager* mgr );
 
 
-   bool           HandleClientRequest( BasePacket* packet );
-   bool           HandleDbResult( PacketDbQueryResult* packet );
+   bool           HandleClientRequest( const BasePacket* packet );
+   bool           HandleDbResult( const PacketDbQueryResult* packet );
 
    void           ChatReceived( const string& message, const string& senderUuid, const string& senderDisplayName, string groupUuid, string timeStamp, U32 userId );
 
@@ -72,21 +72,27 @@ private:
    void              LoadUserProfile( const PacketDbQueryResult * dbResult );
    void              SendChatChannelHistoryToClient( const PacketDbQueryResult * dbResult );
 
+   void              MarkChatChannelLastReadDate( const string& chatChannelUuid );
+   void              MarkFriendLastReadDateBegin( const string& friendUuid );
+   void              MarkFriendLastReadDateFinish( const PacketDbQueryResult * dbResult );
+   
    void              QueryChatP2PHistory( const string& userUuid, int numRecords, int startingIndex, const string& startingTimestamp );
-   void              SendChatp2pHistoryToClient( PacketDbQueryResult * dbResult );
+   void              SendChatp2pHistoryToClient( const PacketDbQueryResult * dbResult );
    void              SendChatHistoryToClientCommon ( const DynamicDataBucket& bucket, const string& userUuid, const string& chatChannelUuid, const string& startingTimestamp, int startingIndex, int numExpected );
 
    void              RequestProfileInfo();
    void              GetAllChatHistroySinceLastLogin();
    void              SendChatHistorySinceLastLogin( const vector< MissedChatChannelEntry >& );
-   void              StoreChatHistoryMissedSinceLastLogin( PacketDbQueryResult * dbResult );
+   void              StoreChatHistoryMissedSinceLastLogin( const PacketDbQueryResult * dbResult );
    
    enum QueryType
    {
       QueryType_ChatChannelHistory,
       QueryType_ChatP2PHistory,
       QueryType_ChatHistoryMissedSinceLastLogin,
-      QueryType_UserProfile
+      QueryType_UpdateLastReadDate,
+      QueryType_UserProfile,
+      QueryType_LookupUserIdToMarkAsRead
    };
 
 private:

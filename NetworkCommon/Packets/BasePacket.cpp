@@ -12,7 +12,7 @@
 #include <assert.h>
 
 const U8   NetworkVersionMajor = 46;
-const U8   NetworkVersionMinor = 0;
+const U8   NetworkVersionMinor = 1;
 
 //#include <boost/static_assert.hpp>
 //BOOST_STATIC_ASSERT( NetworkVersionMajor < (1<<5) );// 5 bits for major

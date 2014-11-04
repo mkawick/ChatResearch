@@ -294,6 +294,10 @@
 			UniqueIdentifier="{93995380-89BD-4b04-88EB-625FBE52EBFB}"
 			>
 			<File
+				RelativePath=".\AccountServer.h"
+				>
+			</File>
+			<File
 				RelativePath=".\BlankUserProfileHandler.h"
 				>
 			</File>
@@ -476,6 +480,14 @@
 			<Filter
 				Name="General"
 				>
+				<File
+					RelativePath="..\NetworkCommon\General\Base64.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\NetworkCommon\General\Base64.h"
+					>
+				</File>
 				<File
 					RelativePath="..\NetworkCommon\General\FixedLengthString.h"
 					>

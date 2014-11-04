@@ -1,15 +1,26 @@
 
 #include <time.h>
 #include <iostream>
+using namespace std;
 
+//#include <boost/system/error_code.hpp> 
+#include "AccountServer.h"
+
+#include "../NetworkCommon/Platform.h"
+
+#if PLATFORM == PLATFORM_MAC || PLATFORM == PLATFORM_UNIX
+#include <fcntl.h>
+#include <arpa/inet.h>
+#include <sys/types.h>
+#include <errno.h>
+#endif
+
+#include "../NetworkCommon/Logging/server_log.h"
 #include "../NetworkCommon/Utils/Utils.h"
 #include "../NetworkCommon/Utils/StringUtils.h"
 #include "../NetworkCommon/Utils/TableWrapper.h"
 #include "BlankUUIDQueryHandler.h"
 #include "StatusUpdate.h"
-#include <boost/lexical_cast.hpp>
-
-using namespace std;
 
 struct UserAccountLookup
 {
@@ -26,8 +37,8 @@ struct UserAccountLookup
 BlankUUIDQueryHandler::BlankUUIDQueryHandler( U32 id, Queryer* parent, string& query ) : 
                                              ParentType( id, 20, parent ), 
                                              m_isServicingBlankUUID( false ), 
-                                             m_numberPendingUuids( 0 ), 
-                                             m_useUserTable( false )
+                                             m_useUserTable( false ),
+                                             m_numberPendingUuids( 0 )
 {
    m_queryString = query;
 }
@@ -81,8 +92,8 @@ bool     BlankUUIDQueryHandler::HandleResult( const PacketDbQueryResult* dbResul
 
       if( addedUuids )
       {
-         //string message = "Accounts::HandleBlankUUIDs some UUIDs were added\n";
-         //LogMessage( LOG_PRIO_ERR, message.c_str() );
+         string message = "Accounts::HandleBlankUUIDs some UUIDs were added\n";
+         LogMessage( LOG_PRIO_ERR, message.c_str() );
          //cout << message << endl;
       }
 
@@ -205,7 +216,7 @@ void     BlankUUIDQueryHandler::UpdateUuidForTempUser( const string& recordId, c
    if( recordId.size() == 0 || recordId == "0" )
    {
       string message = "Accounts::UpdateUuidForTempUser userId is null\n";
-      //LogMessage( LOG_PRIO_ERR, message.c_str() );
+      LogMessage( LOG_PRIO_ERR, message.c_str() );
       cout << message << endl;
       return;
    }
@@ -235,7 +246,7 @@ void     BlankUUIDQueryHandler::UpdateUuidForUser( const string& recordId, const
    if( recordId.size() == 0 || recordId == "0" )
    {
       string message = "Accounts::UpdateUuidForUser userId is null\n";
-      //LogMessage( LOG_PRIO_ERR, message.c_str() );
+      LogMessage( LOG_PRIO_ERR, message.c_str() );
       cout << message << endl;
       return;
    }

@@ -604,7 +604,12 @@ void     NotificationMainThread::PeriodicCheckForNewNotifications()
             continue;
          }
 
-         if( (unsigned int)(itt->second.lastNotificationTime-currentTime) < itt->second.resendNotificationDelaySeconds )
+         if( currentTime < itt->second.lastNotificationTime )
+         {
+            continue;
+         }
+
+         if( (unsigned int)(currentTime-itt->second.lastNotificationTime) < itt->second.resendNotificationDelaySeconds )
          {
             continue;
          }

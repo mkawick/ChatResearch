@@ -1,5 +1,10 @@
 #include "StringUtils.h"
 
+#include <stdio.h>
+#if PLATFORM == PLATFORM_WINDOWS
+#pragma warning( disable:4996 )
+#endif
+
 #include <sstream>
 #include <iostream>
 #include <algorithm>
@@ -13,6 +18,8 @@
 #include <boost/range/algorithm/remove_if.hpp>
 #include <boost/random.hpp>
 #include <boost/generator_iterator.hpp>
+
+
 
 using namespace std;
 static boost::random::mt19937 rng;

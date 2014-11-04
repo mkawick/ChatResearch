@@ -41,6 +41,12 @@ public:
    void     SetQueryTypeForLoadingWeblinks( U32 type ) { m_loadWebLinksQueryType = type; }
    void     SetQueryTypeForOlderEmailsResent( U32 type ) { m_olderEmailsQueryType = type; }
 
+   void     SetEmailDomain( const string& domain ); 
+   void     EnableEmailSending( bool enabled = true ) { m_isEmailEnabled = enabled; }
+
+   void     SetEmailPortOverride( U16 port ) { m_emailPortOverride = port; }
+   void     SetEmailAuthUsername( const string& name ) { m_authenticatedEmailUsername = name; }
+   void     SetEmailAuthPassword( const string& pwd ) { m_authenticatedEmailPassword = pwd; }
 
    bool     HandleResult( const PacketDbQueryResult* dbResult );
    void     UpdateUuidForUser( const string& userId, bool updateCreateAccountTableToo, const string& columnId );
@@ -62,6 +68,7 @@ protected:
    bool                 m_isServicingNewAccounts;
    bool                 m_isServicingStringLoading;
    bool                 m_isServicingWebLinks;
+   bool                 m_isEmailEnabled;
 
    U32                  m_loadStringsQueryType;
    U32                  m_loadWebLinksQueryType;
@@ -98,7 +105,11 @@ protected:
    static string                          m_emailResetEmailTemplate;
    static StringTableLookup               m_stringsTable;
    static map< stringhash, stringhash >   m_replacemetStringsLookup;
-   static const char*                     m_mailServer;
+   static string                          m_mailServer;
+
+   static U16                             m_emailPortOverride;
+   static string                          m_authenticatedEmailUsername;
+   static string                          m_authenticatedEmailPassword;
 
    NewAccountQueryHandler();
    //~NewAccountQueryHandler();

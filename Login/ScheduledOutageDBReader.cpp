@@ -3,9 +3,11 @@
 #include <time.h>
 #include <iostream>
 #include <boost/lexical_cast.hpp>
+#include <boost/format.hpp>
 
 #include "../NetworkCommon/Utils/Utils.h"
 #include "../NetworkCommon/Packets/DbPacket.h"
+#include "../NetworkCommon/Utils/CommandLineParser.h"
 
 #include "DiplodocusLogin.h"
 #include "ScheduledOutageDBReader.h"

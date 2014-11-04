@@ -11,6 +11,10 @@ using namespace std;
 
 #include <assert.h>
 
+#if PLATFORM == PLATFORM_WINDOWS
+#pragma warning( disable:4996 )
+#endif
+
 #pragma message ("BUILD PLATFORM = " STRINGIFY(PLATFORM))
 
 const int   logTempBufferSize = 512;

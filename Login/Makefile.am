@@ -8,6 +8,7 @@ DiplodocusLogin.cpp \
 FruitadensLogin.cpp \
 KhaanLogin.cpp \
 Login.cpp \
+ScheduledOutageDBReader.cpp \
 ../NetworkCommon/NetworkUtils.cpp \
 ../NetworkCommon/ServerConstants.cpp \
 ../NetworkCommon/ServerType.cpp \

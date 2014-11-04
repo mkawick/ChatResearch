@@ -1,4 +1,5 @@
 // ClientSideNetworkCallback.h
+#pragma once
 
 #include "NetworkWrapper_SupportClasses.h"
 

@@ -32,8 +32,9 @@ private:
    int      MainLoop_InputProcessing();
    void     FindGateway();
 
-   bool                 m_isEnabled;
    MainGatewayThread*   m_gateway;
+   bool                 m_isEnabled;
+   
 };
 
 //-----------------------------------------------------------------------------

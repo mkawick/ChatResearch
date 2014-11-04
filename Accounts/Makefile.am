@@ -17,6 +17,7 @@ ResetPasswordQueryHandler.cpp \
 ../NetworkCommon/Daemon/Daemonizer.cpp \
 ../NetworkCommon/Database/Deltadromeus.cpp \
 ../NetworkCommon/Database/QueryHandler.cpp \
+../NetworkCommon/General/Base64.cpp \
 ../NetworkCommon/NetworkOut/Fruitadens.cpp \
 ../NetworkCommon/Packets/AnalyticsPacket.cpp \
 ../NetworkCommon/Packets/AssetPacket.cpp \
@@ -35,18 +36,17 @@ ResetPasswordQueryHandler.cpp \
 ../NetworkCommon/Packets/Serialize.cpp \
 ../NetworkCommon/Packets/ServerToServerPacket.cpp \
 ../NetworkCommon/Packets/TournamentPacket.cpp \
+../NetworkCommon/Packets/UserStatsPacket.cpp \
 ../NetworkCommon/Utils/CommandLineParser.cpp \
 ../NetworkCommon/Utils/OsLevelUtils.cpp \
 ../NetworkCommon/Utils/TableWrapper.cpp \
+../NetworkCommon/Utils/StringUtils.cpp \
 ../NetworkCommon/Utils/Utils.cpp \
 ../NetworkCommon/Logging/server_log.cpp
 
 account_serverd_LDFLAGS = -L
 
-account_serverd_LDADD = ../../libevent/linux-libs/libevent.a \
-../../libevent/linux-libs/libevent_pthreads.a \
-../../libevent/linux-libs/libevent_core.a \
-../../libevent/linux-libs/libevent_extra.a \
+account_serverd_LDADD = \
 -lrt
 
 install-exec-hook:

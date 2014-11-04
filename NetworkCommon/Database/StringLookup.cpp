@@ -10,6 +10,10 @@
 #include "../Utils/StringUtils.h"
 #include "../Utils/TableWrapper.h"
 
+#if PLATFORM == PLATFORM_WINDOWS
+#pragma warning( disable:4996 )
+#endif
+
 //---------------------------------------------------------------
 
 StringLookup::StringLookup( U32 id, ParentQueryerPtr parent, vector< string >& stringCategories ): ParentType( id, 20, parent ), m_isLoadingAllStrings( false ), m_numQueriesReceived( 0 )

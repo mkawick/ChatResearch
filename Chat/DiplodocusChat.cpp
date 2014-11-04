@@ -648,7 +648,7 @@ bool  DiplodocusChat::HandlePacketFromClient( BasePacket* packet )
       return false;
    }
 
-   cout << "DiplodocusChat::HandlePacketFromClient <<<" << endl;
+   //cout << "DiplodocusChat::HandlePacketFromClient <<<" << endl;
 
    PacketGatewayWrapper* wrapper = static_cast< PacketGatewayWrapper* >( packet );
    BasePacket* unwrappedPacket = wrapper->pPacket;
@@ -675,11 +675,11 @@ bool  DiplodocusChat::HandlePacketFromClient( BasePacket* packet )
          result = result;
       }
 
-      cout << "DiplodocusChat::HandlePacketFromClient >>>+" << endl;
+      //cout << "DiplodocusChat::HandlePacketFromClient >>>+" << endl;
       return true;
    }
 
-   cout << "DiplodocusChat::HandlePacketFromClient >>>-" << endl;
+   //cout << "DiplodocusChat::HandlePacketFromClient >>>-" << endl;
 
    return false;
 }

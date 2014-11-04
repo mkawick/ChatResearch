@@ -802,7 +802,7 @@ void     DiplodocusGame::ConnectUser( const PacketPrepareForUserLogin* loginPack
                if( khaan->GetChainedType() == ChainedType_InboundSocketConnector && 
                   khaan->GetServerId() == gatewayId )
                {
-                  LogMessage( LOG_PRIO_INFO, "InformClientWhoThisServerIs %d <<<", connectionId );
+                  //LogMessage( LOG_PRIO_INFO, "InformClientWhoThisServerIs %d <<<", connectionId );
 
                   PacketGameIdentification* idPacket;
                   GameFramework::Instance()->PackGameIdentificationPack( idPacket );
@@ -810,7 +810,7 @@ void     DiplodocusGame::ConnectUser( const PacketPrepareForUserLogin* loginPack
                   wrapper->SetupPacket( idPacket, connectionId );
                   khaan->AddOutputChainDataNoLock( wrapper );
 
-                  LogMessage( LOG_PRIO_INFO, "InformClientWhoThisServerIs %d >>>", connectionId );
+                  //LogMessage( LOG_PRIO_INFO, "InformClientWhoThisServerIs %d >>>", connectionId );
 
                }
             }

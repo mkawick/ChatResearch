@@ -5,12 +5,8 @@
 #include "../NetworkCommon/DataTypes.h"
 #include "../NetworkCommon/ServerType.h"
 #include "../NetworkCommon/ChainedArchitecture/ChainedThread.h"
-#include "BlankUUIDQueryHandler.h"
-#include "BlankUserProfileHandler.h"
-#include "NewAccountQueryHandler.h"
-#include "ProductEntryCreateBasedOnPlayHistory.h"
-#include "ResetPasswordQueryHandler.h"
-#include "ResetUserEmailQueryHandler.h"
+#include "../NetworkCommon/Database/QueryHandler.h"
+
 #include <map>
 
 const int DefaultSleepTime = 30;
@@ -18,7 +14,12 @@ const int DefaultSleepTime = 30;
 
 class PacketDbQuery;
 class PacketDbQueryResult;
-
+class BlankUUIDQueryHandler;
+class BlankUserProfileHandler;
+class NewAccountQueryHandler;
+class ProductEntryCreateBasedOnPlayHistory;
+class ResetPasswordQueryHandler;
+class ResetUserEmailQueryHandler;
 
 //-----------------------------------------------------------------------------------------
 
@@ -65,6 +66,8 @@ public:
    StatusUpdate( const string& serverName, U32 serverId );
    ~StatusUpdate();
 
+   void     Init();
+
    bool     AddInputChainData( BasePacket* packet, U32 connectionId );
    bool     AddOutputChainData( BasePacket* packet, U32 connectionId );
    void     DuplicateUUIDSearch();
@@ -101,11 +104,15 @@ private:
 
    time_t   m_timestampCheckDuplicateUUids;
 
+   time_t   m_timestampReloadAppSettings;
+   int      m_timeoutReloadAppSettings;
+
    bool     m_enableAddingUserProducts;
    bool     m_hasRequestedAdminSettings;
    bool     m_isWaitingForAdminSettings;
    bool     m_autoCreateUsersInProcess;
    bool     m_uuidOnlySevice;
+   bool     m_isFinishedInitializing;
 
    //time_t   m_resetPasswordEmailTimer;
    //int      m_resetPasswordEmailTimeoutSeconds;

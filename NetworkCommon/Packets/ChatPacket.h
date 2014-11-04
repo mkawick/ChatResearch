@@ -76,7 +76,10 @@ public:
 
       ChatType_UpdateProfile,
 
-      ChatType_Friend
+      ChatType_Friend,
+
+      ChatType_MarkChannelHistoryAsRead,
+      ChatType_MarkFriendHistoryAsRead
    };
 public:
    PacketChatToServer( int packet_type = PacketType_Chat, int packet_sub_type = ChatType_ChatToServer ) : BasePacket( packet_type, packet_sub_type ) {}
@@ -808,6 +811,32 @@ public:
    bool  SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const;
 
    bool     blockChannelInvites;
+};
+
+///////////////////////////////////////////////////////////////
+
+class PacketChat_MarkChannelHistoryAsRead : public BasePacket
+{
+public:
+   PacketChat_MarkChannelHistoryAsRead( int packet_type = PacketType_Chat, int packet_sub_type = PacketChatToServer::ChatType_MarkChannelHistoryAsRead ) : BasePacket( packet_type, packet_sub_type ){  }
+
+   bool  SerializeIn( const U8* data, int& bufferOffset, int minorVersion );
+   bool  SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const;
+
+   UuidString        channelUuid;
+};
+
+///////////////////////////////////////////////////////////////
+
+class PacketChat_MarkFriendHistoryAsRead : public BasePacket
+{
+public:
+   PacketChat_MarkFriendHistoryAsRead( int packet_type = PacketType_Chat, int packet_sub_type = PacketChatToServer::ChatType_MarkFriendHistoryAsRead ) : BasePacket( packet_type, packet_sub_type ){  }
+
+   bool  SerializeIn( const U8* data, int& bufferOffset, int minorVersion );
+   bool  SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const;
+
+   UuidString        friendUuid;
 };
 
 ///////////////////////////////////////////////////////////////

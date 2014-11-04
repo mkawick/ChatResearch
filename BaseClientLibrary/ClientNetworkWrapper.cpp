@@ -269,6 +269,9 @@ void     ClientNetworkWrapper::Disconnect()
    {
       for( int i=0; i< ConnectionNames_Num; i++ )
       {
+         if( m_fruitadens[ i ] == NULL )
+            continue;
+
          if( m_connectToAssetServer == false && 
             i == ConnectionNames_Asset )
             continue;
@@ -1077,11 +1080,11 @@ bool  ClientNetworkWrapper::RequestLogin( const string& userName, const string& 
 
    PacketLogin* login = new PacketLogin;
    login->loginKey = "deadbeef";// currently unused
-   login->uuid = userName;
-   login->userName = userName;
-   login->loginKey = password;
+   login->uuid = Trim( userName );
+   login->userName = Trim( userName );
+   login->loginKey = Trim( password );
    login->languageCode = languageCode;
-   login->password = boost::lexical_cast< string >( CreatePasswordHash( password.c_str() ) );
+   login->password = boost::lexical_cast< string >( CreatePasswordHash( Trim( password ).c_str() ) );
    m_attemptedUsername = userName;
 
    m_isLoggingIn = true;
@@ -1115,9 +1118,9 @@ bool     ClientNetworkWrapper::RequestAccountCreate( const string& userName, con
    assert( m_isLoggedIn == false );
 
    PacketCreateAccount* createAccount = new PacketCreateAccount;
-   createAccount->userName = userName;
-   createAccount->userEmail = userEmail;
-   createAccount->password = boost::lexical_cast< string >( CreatePasswordHash( password.c_str() ) );
+   createAccount->userName = Trim( userName );
+   createAccount->userEmail = Trim( userEmail );
+   createAccount->password = boost::lexical_cast< string >( CreatePasswordHash( Trim( password ).c_str() ) );
    createAccount->deviceId = deviceId;
    createAccount->deviceAccountId = "";
    if( gkHash.size() != 0 )

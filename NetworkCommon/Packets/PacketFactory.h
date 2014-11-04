@@ -50,6 +50,7 @@ class PacketCleaner
 {
 public:
    PacketCleaner( BasePacket* packet ): m_packet( packet ){}
+   PacketCleaner( const BasePacket* packet ): m_packet( const_cast<BasePacket*>( packet ) ){}
    ~PacketCleaner()
    {
       if( m_packet )
