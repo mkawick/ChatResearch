@@ -1900,6 +1900,7 @@ bool  DiplodocusLogin:: ForceUserLogoutAndBlock( U32 connectionId, U32 gatewayId
    // now disconnect him/her
    PacketLoginToGateway* loginStatus = new PacketLoginToGateway();
    loginStatus->userName = userName;
+   loginStatus->userEmail = email;
    loginStatus->uuid = uuid;
    loginStatus->lastLogoutTime = GetDateInUTC();
    loginStatus->loginKey = loginKey;

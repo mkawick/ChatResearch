@@ -643,9 +643,19 @@ bool  PacketFactory::ParseChat( const U8* bufferIn, int& bufferOffset, const Bas
          *packetOut = SerializeIn< PacketChat_MarkChannelHistoryAsRead >( bufferIn, bufferOffset, networkMinorVersion );
       }
       return true;
-   case PacketChatToServer::ChatType_MarkFriendHistoryAsRead:
+   case PacketChatToServer::ChatType_MarkP2PHistoryAsRead:
       {
-         *packetOut = SerializeIn< PacketChat_MarkFriendHistoryAsRead >( bufferIn, bufferOffset, networkMinorVersion );
+         *packetOut = SerializeIn< PacketChat_MarkP2PHistoryAsRead >( bufferIn, bufferOffset, networkMinorVersion );
+      }
+      return true;
+   case PacketChatToServer::ChatType_UserChatHistory:
+      {
+         *packetOut = SerializeIn< PacketChat_UserChatHistory >( bufferIn, bufferOffset, networkMinorVersion );
+      }
+      return true;
+   case PacketChatToServer::ChatType_ChannelChatHistory:
+      {
+         *packetOut = SerializeIn< PacketChat_ChannelChatHistory >( bufferIn, bufferOffset, networkMinorVersion );
       }
       return true;
    }

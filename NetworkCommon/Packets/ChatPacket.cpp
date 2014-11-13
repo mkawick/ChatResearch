@@ -1098,18 +1098,54 @@ bool  PacketChat_MarkChannelHistoryAsRead::SerializeOut( U8* data, int& bufferOf
 ///////////////////////////////////////////////////////////////
 
 
-bool  PacketChat_MarkFriendHistoryAsRead::SerializeIn( const U8* data, int& bufferOffset, int minorVersion )
+bool  PacketChat_MarkP2PHistoryAsRead::SerializeIn( const U8* data, int& bufferOffset, int minorVersion )
 {
    BasePacket::SerializeIn( data, bufferOffset, minorVersion );
-   Serialize::In( data, bufferOffset, friendUuid, minorVersion );
+   Serialize::In( data, bufferOffset, userUuid, minorVersion );
 
    return true;
 }
 
-bool  PacketChat_MarkFriendHistoryAsRead::SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const
+bool  PacketChat_MarkP2PHistoryAsRead::SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const
 {
    BasePacket::SerializeOut( data, bufferOffset, minorVersion );
-   Serialize::Out( data, bufferOffset, friendUuid, minorVersion );
+   Serialize::Out( data, bufferOffset, userUuid, minorVersion );
+
+   return true;
+}
+
+///////////////////////////////////////////////////////////////
+
+bool  PacketChat_UserChatHistory::SerializeIn( const U8* data, int& bufferOffset, int minorVersion )
+{
+   BasePacket::SerializeIn( data, bufferOffset, minorVersion );
+   Serialize::In( data, bufferOffset, userUuidList, minorVersion );
+
+   return true;
+}
+
+bool  PacketChat_UserChatHistory::SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const
+{
+   BasePacket::SerializeOut( data, bufferOffset, minorVersion );
+   Serialize::Out( data, bufferOffset, userUuidList, minorVersion );
+
+   return true;
+}
+
+///////////////////////////////////////////////////////////////
+
+bool  PacketChat_ChannelChatHistory::SerializeIn( const U8* data, int& bufferOffset, int minorVersion )
+{
+   BasePacket::SerializeIn( data, bufferOffset, minorVersion );
+   Serialize::In( data, bufferOffset, channelUuidList, minorVersion );
+
+   return true;
+}
+
+bool  PacketChat_ChannelChatHistory::SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const
+{
+   BasePacket::SerializeOut( data, bufferOffset, minorVersion );
+   Serialize::Out( data, bufferOffset, channelUuidList, minorVersion );
 
    return true;
 }

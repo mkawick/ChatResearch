@@ -233,7 +233,8 @@ bool  KhaanGateway::IsHandshaking( const BasePacket* packetIn )
    {
       //<< do nothing
 
-      if( packetIn->versionNumberMajor != NetworkVersionMajor )
+      U8 versionNumberMajor = packetIn->versionNumberMajor;
+      if( versionNumberMajor != NetworkVersionMajor )
       {
          if( m_mainOutputChain )
          {
@@ -242,7 +243,19 @@ bool  KhaanGateway::IsHandshaking( const BasePacket* packetIn )
          DenyAllFutureData();
       }
 
-      m_versionNumberMinor = packetIn->versionNumberMinor;
+      m_versionNumberMinor = packetIn->versionNumberMinor;  
+      LogMessage( LOG_PRIO_INFO, "--- gateway network version : %u:%u", (U32) NetworkVersionMajor, (U32) NetworkVersionMinor );
+      LogMessage( LOG_PRIO_INFO, "------ user network version : %u:%u", (U32) versionNumberMajor, (U32) m_versionNumberMinor );
+      if( versionNumberMajor >= 47 && m_versionNumberMinor >= 1 )
+      {
+         U8 platformId = (static_cast< const PacketHello* >(packetIn))->platformId;
+         LogMessage( LOG_PRIO_INFO, "------ user playform : %s", FindPlatformName( platformId ) );
+      }
+      else
+      {
+         LogMessage(  LOG_PRIO_INFO, "------ platform indeterminate ----------" );
+      }
+     
 
       // we are only sending version numbers at this point.
       PacketHello* hello = new PacketHello();

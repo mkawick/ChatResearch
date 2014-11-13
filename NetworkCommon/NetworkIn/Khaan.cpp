@@ -61,7 +61,7 @@ Khaan ::Khaan( int socketId, bufferevent* be, int connectionId ) : ChainedInterf
 
 Khaan ::~Khaan()
 {
-   //LogMessage( LOG_PRIO_INFO, "Khaan 2" );
+   LogMessage( LOG_PRIO_INFO, "Khaan::d'tor" );
    delete [] m_outboundBuffer;
 
     CloseConnection();
@@ -548,7 +548,7 @@ void     Khaan :: FlushReadBuffer()
 
 void     Khaan :: CloseConnection()
 {
-   LogMessage( LOG_PRIO_INFO, "Khaan::CloseConnection" );
+   //LogMessage( LOG_PRIO_INFO, "Khaan::CloseConnection" );
    m_isDisconnected = true;
    if( GetBufferEvent() ) // this is set to NULL in Cleanup
    {
@@ -570,7 +570,7 @@ void    Khaan :: Cleanup()
    if( m_bufferEvent == NULL )
       return;
 
-   LogMessage( LOG_PRIO_INFO, "Khaan::Cleanup" );
+   //LogMessage( LOG_PRIO_INFO, "Khaan::Cleanup" );
    PreCleanup();
 
    CleanupAllChainDependencies();

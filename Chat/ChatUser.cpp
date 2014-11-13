@@ -310,11 +310,11 @@ bool     ChatUser::HandleClientRequest( const BasePacket* packet )
                MarkChatChannelLastReadDate( request->channelUuid );
             }
             break;
-         case PacketChatToServer::ChatType_MarkFriendHistoryAsRead:
+         case PacketChatToServer::ChatType_MarkP2PHistoryAsRead:
             {
-               const PacketChat_MarkFriendHistoryAsRead* request = static_cast< const PacketChat_MarkFriendHistoryAsRead* > ( packet );
+               const PacketChat_MarkP2PHistoryAsRead* request = static_cast< const PacketChat_MarkP2PHistoryAsRead* > ( packet );
 
-               MarkFriendLastReadDateBegin( request->friendUuid );
+               MarkP2PLastReadDate( request->userUuid );
             }
             break;
          }
@@ -422,10 +422,13 @@ void     ChatUser::MarkChatChannelLastReadDate( const string& chatChannelUuid )
 
 //------------------------------------------------------------------------------------------------
 
-void     ChatUser::MarkFriendLastReadDateBegin( const string& friendUuid )
+void     ChatUser::MarkP2PLastReadDate( const string& friendUuid )
 {
    if( friendUuid.length() == 0 )
       return;
+
+   // NOTE: todo, see if the chat room manager already has the list of users and that 
+   // it's updated when new users are added.
 
    PacketDbQuery* dbQuery = new PacketDbQuery;
    dbQuery->id = m_connectionId;
@@ -468,7 +471,7 @@ void     ChatUser::MarkFriendLastReadDateFinish( const PacketDbQueryResult * dbR
    dbQuery->isFireAndForget = true;
    dbQuery->query = "UPDATE playdek.friends SET date_chat_viewed=NOW() WHERE userid1=";
    dbQuery->query += boost::lexical_cast< string > ( friendId );
-   dbQuery->query += "AND userid2=";
+   dbQuery->query += " AND userid2=";
    dbQuery->query += boost::lexical_cast< string > ( m_userId );// I am the recipient
 
    m_chatServer->AddQueryToOutput( dbQuery, m_connectionId );
@@ -581,33 +584,6 @@ bool  ChatUser:: RequestUserProfileInfo()
 
 void     ChatUser::GetAllChatHistroySinceLastLogin()
 {
- /*  SELECT * FROM chat_message AS chat WHERE 
-    ( chat_channel_id IN  (SELECT chat_channel.uuid from chat_channel
-    JOIN user_join_chat_channel ON 
-    user_join_chat_channel.channel_uuid = chat_channel.uuid  
-    WHERE user_join_chat_channel.user_uuid='user3' ) 
-   OR chat.user_id_recipient='user3' ) 
-   AND timestamp>='2014-02-15 10:15:36'*/
-
- /*  PacketDbQuery* dbQuery = new PacketDbQuery;
-   dbQuery->id = m_connectionId;
-   dbQuery->lookup = QueryType_ChatHistoryMissedSinceLastLogin;
-
-   string queryString = "SELECT * FROM chat_message AS chat WHERE ( chat_channel_id IN " \
-      " (SELECT chat_channel.uuid from chat_channel"\
-      " JOIN user_join_chat_channel"\
-      " ON user_join_chat_channel.channel_uuid = chat_channel.uuid "\
-      " WHERE user_join_chat_channel.user_uuid='";
-   queryString += m_uuid;
-   queryString += "' ) OR chat.user_id_recipient='";
-   queryString += m_uuid;
-   queryString += "') AND timestamp>='";
-   queryString += m_lastLoginTime;//"2013-04-23 14:50:38";
-   queryString += "'";
-   dbQuery->query = queryString;
-
-   m_chatServer->AddQueryToOutput( dbQuery, m_connectionId );*/
-
    // we need this to do a few different things.. 
    // 1) pull all of your chat channels and last_read_date (in user_join_chat_channel)
    // 2) pull all of your friends ana last_read_date (int friends, you are the recipient).
@@ -616,6 +592,32 @@ void     ChatUser::GetAllChatHistroySinceLastLogin()
 
    // we'll break this into two queries. One for chat channels and 
    // one for friends.
+
+   //m_chatRoomManager->GetUserId( entry.senderUuid );
+   string friendQueryString = "SELECT uuid FROM users inner join friends on users.user_id=friends.userid1 WHERE friends.userid2=";
+   friendQueryString += boost::lexical_cast< string >( m_userId );
+   friendQueryString += " AND date_last_chat>date_chat_viewed";
+
+   string channelHistoryQueryString = "SELECT channel_uuid FROM playdek.user_join_chat_channel " \
+      "AS ujoin INNER JOIN chat_channel AS channel ON ujoin.channel_uuid=channel.uuid " \
+      "WHERE user_uuid='%s' AND ujoin.date_last_viewed < channel.date_last_chat;";
+
+   PacketDbQuery* dbQuery = new PacketDbQuery;
+   dbQuery->id = m_connectionId;
+   dbQuery->lookup = QueryType_ManageChatHistoryUsers;
+   dbQuery->isFireAndForget = false;
+   dbQuery->query = friendQueryString;
+
+   m_chatServer->AddQueryToOutput( dbQuery, m_connectionId );
+
+   dbQuery = new PacketDbQuery;
+   dbQuery->id = m_connectionId;
+   dbQuery->lookup = QueryType_ManageChatHistoryChannels;
+   dbQuery->isFireAndForget = false;
+   dbQuery->query = channelHistoryQueryString;
+
+   dbQuery->escapedStrings.insert( m_uuid );
+   m_chatServer->AddQueryToOutput( dbQuery, m_connectionId );
 }
 
 // dates:
@@ -661,11 +663,19 @@ bool     ChatUser::HandleDbResult( const PacketDbQueryResult * dbResult )
          SendChatp2pHistoryToClient( dbResult );
       }
       break;
-   case QueryType_ChatHistoryMissedSinceLastLogin:
+   case QueryType_ManageChatHistoryUsers:
+      {
+         ManageChatHistoryUsers( dbResult );
+      }
+      break;
+   case QueryType_ManageChatHistoryChannels:
+      {
+         ManageChatHistoryChannels( dbResult );
+      }
+      break;
+   case QueryType_StoreChatHistoryMissedSinceLastLogin:
       {
          StoreChatHistoryMissedSinceLastLogin( dbResult );
-
-         //SendChatHistorySinceLastLogin();
       }
       break;
    case QueryType_LookupUserIdToMarkAsRead:
@@ -710,6 +720,50 @@ Find( const MissedChatChannelEntry& newEntry, vector< MissedChatChannelEntry >& 
    }
    return history.end();
 }
+
+//---------------------------------------------------------------
+
+void     ChatUser::ManageChatHistoryUsers( const PacketDbQueryResult * dbResult )
+{
+   if( dbResult->bucket.bucket.size() == 0 || dbResult->successfulQuery == false )
+   {
+      return;
+   }
+
+   PacketChat_UserChatHistory* history = new PacketChat_UserChatHistory;
+   SingleColumnTable            enigma( dbResult->bucket );
+   SingleColumnTable::iterator  it = enigma.begin();
+   if( it != enigma.end() )
+   {
+      SingleColumnTable::row       row = *it++;
+      string userUuid = row[ TableSingleColumn::Column_text ];
+      history->userUuidList.push_back( userUuid );
+   }
+   
+   SendMessageToClient( history );
+}
+
+void     ChatUser::ManageChatHistoryChannels( const PacketDbQueryResult * dbResult )
+{
+   if( dbResult->bucket.bucket.size() == 0 || dbResult->successfulQuery == false )
+   {
+      return;
+   }
+
+   PacketChat_ChannelChatHistory* history = new PacketChat_ChannelChatHistory;
+   SingleColumnTable            enigma( dbResult->bucket );
+   SingleColumnTable::iterator  it = enigma.begin();
+   if( it != enigma.end() )
+   {
+      SingleColumnTable::row       row = *it++;
+      string chatChannelUuid = row[ TableSingleColumn::Column_text ];
+      history->channelUuidList.push_back( chatChannelUuid );
+   }
+   
+   SendMessageToClient( history );
+}
+
+
 //---------------------------------------------------------------
 
 void     ChatUser::StoreChatHistoryMissedSinceLastLogin( const PacketDbQueryResult * dbResult )

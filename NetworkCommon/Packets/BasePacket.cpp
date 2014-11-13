@@ -11,7 +11,7 @@
 #include "PacketFactory.h"
 #include <assert.h>
 
-const U8   NetworkVersionMajor = 46;
+const U8   NetworkVersionMajor = 47;
 const U8   NetworkVersionMinor = 1;
 
 //#include <boost/static_assert.hpp>
@@ -141,13 +141,20 @@ bool  BasePacket::SerializeOut( U8* data, int& bufferOffset, int minorVersion ) 
 bool  PacketHello::SerializeIn( const U8* data, int& bufferOffset, int minorVersion )
 {
    BasePacket::SerializeIn( data, bufferOffset, minorVersion );
+   if( versionNumberMajor >= 47 && versionNumberMinor >= 1 )
+   {
+      Serialize::In( data, bufferOffset, platformId, minorVersion );
+   }
    return true;
 }
 
 bool  PacketHello::SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const 
 {
    BasePacket::SerializeOut( data, bufferOffset, minorVersion );
-
+   if( versionNumberMajor >= 47 && versionNumberMinor >= 1 )
+   {
+      Serialize::Out( data, bufferOffset, platformId, minorVersion );
+   }
    return true;
 }
 

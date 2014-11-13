@@ -73,7 +73,7 @@ private:
    void              SendChatChannelHistoryToClient( const PacketDbQueryResult * dbResult );
 
    void              MarkChatChannelLastReadDate( const string& chatChannelUuid );
-   void              MarkFriendLastReadDateBegin( const string& friendUuid );
+   void              MarkP2PLastReadDate( const string& friendUuid );
    void              MarkFriendLastReadDateFinish( const PacketDbQueryResult * dbResult );
    
    void              QueryChatP2PHistory( const string& userUuid, int numRecords, int startingIndex, const string& startingTimestamp );
@@ -85,11 +85,17 @@ private:
    void              SendChatHistorySinceLastLogin( const vector< MissedChatChannelEntry >& );
    void              StoreChatHistoryMissedSinceLastLogin( const PacketDbQueryResult * dbResult );
    
+   void              ManageChatHistoryUsers( const PacketDbQueryResult * dbResult );
+   void              ManageChatHistoryChannels( const PacketDbQueryResult * dbResult );
+   
+
    enum QueryType
    {
       QueryType_ChatChannelHistory,
       QueryType_ChatP2PHistory,
-      QueryType_ChatHistoryMissedSinceLastLogin,
+      QueryType_ManageChatHistoryUsers,
+      QueryType_ManageChatHistoryChannels,
+      QueryType_StoreChatHistoryMissedSinceLastLogin,
       QueryType_UpdateLastReadDate,
       QueryType_UserProfile,
       QueryType_LookupUserIdToMarkAsRead

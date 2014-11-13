@@ -126,12 +126,13 @@ struct PacketStorage
 class PacketHello : public BasePacket
 {
 public:
-   PacketHello(): BasePacket( PacketType_Base, BasePacket::BasePacket_Hello ) {}
+   PacketHello(): BasePacket( PacketType_Base, BasePacket::BasePacket_Hello ), platformId( PLATFORM ) {}
    // serialize by base is good enough
 
    bool  SerializeIn( const U8* data, int& bufferOffset, int minorVersion );
    bool  SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const;
 
+   U8    platformId;
    //string test;
 };
 

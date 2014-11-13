@@ -468,6 +468,22 @@ string   ChatRoomManager::GetUserName( const string& userUuid ) const
 }
 
 ///////////////////////////////////////////////////////////////////////
+
+string   ChatRoomManager::GetUserUuid( const U32 userId ) const
+{
+   UserMapConstIterator userIter = m_userMap.begin();
+   while( userIter != m_userMap.end() )
+   {
+      const UsersChatRoomList& chatRoom = userIter->second;
+      if( chatRoom.userId == userId )
+         return chatRoom.userUuid;
+      userIter++;
+   }
+   return string ();
+}
+
+
+///////////////////////////////////////////////////////////////////////
 //---------------------------------------------------------------
 
 int      ChatRoomManager::NewDbId()
@@ -596,7 +612,6 @@ bool        ChatRoomManager::GetUserInfo( const string& userUuid, UsersChatRoomL
       chatRoom = userIter->second;
       return true;
    }
-   //chatRoom.cl
    return false;
 }
 
@@ -863,7 +878,7 @@ string   ChatRoomManager::CreateNewRoom( const string& channelName, const string
    string createDate = GetDateInUTC();
    AddChatRoom( 0, channelName, channelUuid, isActive, maxNumPlayersInChatRoom, gameType, gameInstanceId, createDate );
 
-   string queryString = "INSERT INTO chat_channel ( name, uuid, is_active, max_num_users, game_type, game_instance_id, date_created ) VALUES( '%s','";
+   string queryString = "INSERT INTO chat_channel ( name, uuid, is_active, max_num_users, game_type, game_instance_id, date_created, date_last_chat ) VALUES( '%s','";
    queryString += channelUuid;
    queryString += "', 1, "; // active
    queryString += boost::lexical_cast< string >( maxNumPlayersInChatRoom );
@@ -871,9 +886,7 @@ string   ChatRoomManager::CreateNewRoom( const string& channelName, const string
    queryString += boost::lexical_cast< string >( (U32)( gameType ) );
    queryString += ", ";
    queryString += boost::lexical_cast< string >( gameInstanceId );
-   queryString += ", '";
-   queryString += createDate;
-   queryString += "' )"; 
+   queryString += ", NOW(), NOW() )"; 
 
    list< string > sanitizedStrings;
    sanitizedStrings.push_back( channelName );
@@ -1586,9 +1599,7 @@ bool     ChatRoomManager::AddUserToRoomAndWriteToDB( const string& channelUuid, 
    
    string createDate = GetDateInUTC();
    // add single entry to db for that chat channel
-   string queryString = "INSERT INTO user_join_chat_channel ( user_uuid, channel_uuid, added_date ) VALUES ('%s','%s', '";
-   queryString += createDate;
-   queryString += "')";
+   string queryString = "INSERT INTO user_join_chat_channel ( user_uuid, channel_uuid, added_date, date_last_viewed ) VALUES ('%s','%s', NOW(), NOW() )";
 
    PacketDbQuery* dbQuery = DbQueryFactory( queryString, true );
 
@@ -2266,9 +2277,40 @@ void     ChatRoomManager::WriteChatToDb( const string& message, const string& se
    Send( dbQuery );
 
    if( friendUuid.size() )
+   {
       m_numP2PChatsSent ++;
+      MarkFriendDateLastChat( senderUuid, friendUuid );
+   }
    else
+   {
       m_numChannelChatsSent ++;
+      MarkChatChannelDateLastChat( channelUuid );
+   }
+}
+
+void  ChatRoomManager::MarkFriendDateLastChat( const string& senderUuid, const string& friendUuid )
+{
+   string queryString="UPDATE friends SET date_last_chat=NOW() WHERE userid1=( SELECT user_id from users where uuid='%s') AND userid2=( SELECT user_id FROM users WHERE uuid='%s')";
+
+   list< string > sanitizedStrings;
+   sanitizedStrings.push_back( senderUuid );
+   sanitizedStrings.push_back( friendUuid );
+
+   PacketDbQuery* dbQuery = DbQueryFactory( queryString, true );
+   AddSanitizedStrings( dbQuery, sanitizedStrings );
+   Send( dbQuery );
+}
+
+void  ChatRoomManager::MarkChatChannelDateLastChat( const string& channelUuid )
+{
+   string queryString="UPDATE chat_channel SET date_last_chat=NOW() WHERE uuid='%s'";
+
+   list< string > sanitizedStrings;
+   sanitizedStrings.push_back( channelUuid );
+
+   PacketDbQuery* dbQuery = DbQueryFactory( queryString, true );
+   AddSanitizedStrings( dbQuery, sanitizedStrings );
+   Send( dbQuery );
 }
 
 ///////////////////////////////////////////////////////////////////////

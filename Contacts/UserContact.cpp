@@ -1041,8 +1041,8 @@ bool  UserContact::PerformSearch( const PacketContact_SearchForUser* packet )
    dbQuery->lookup =       QueryType_SearchForUser;
    dbQuery->serverLookup = 0;//m_userInfo.id;
 
-   dbQuery->query = "SELECT user_name, uuid, user_id FROM users WHERE user_name LIKE '%%s%' ORDER BY user_id LIMIT ";
-   int limit = 25;// always limit the numebr of searched items
+   dbQuery->query = "SELECT user_name, uuid, user_id FROM users WHERE user_name LIKE '%%s%' AND active=1 ORDER BY user_id LIMIT ";
+   int limit = 25;// always limit the number of searched items
    if( packet->limit )
    {
       limit = packet->limit;
@@ -1254,11 +1254,11 @@ void  UserContact::FinishAcceptingInvitation( const PacketDbQueryResult* dbResul
    dbQuery->isFireAndForget = true;
 
    // both directions at once
-   query = "INSERT INTO friends (userid1,userid2) VALUES (";
+   query = "INSERT INTO friends (userid1,userid2, date_chat_viewed) VALUES (";
    query += boost::lexical_cast< string >( inviterId );
    query += ",";
    query += boost::lexical_cast< string >( inviteeId );
-   query += "); ";
+   query += ", NOW() ); ";
 
    dbQuery->query = query;
    m_contactServer->AddQueryToOutput( dbQuery );
@@ -1271,11 +1271,11 @@ void  UserContact::FinishAcceptingInvitation( const PacketDbQueryResult* dbResul
    dbQuery->serverLookup = 0;//m_userInfo.id;
    dbQuery->isFireAndForget = false;
 
-   query = "INSERT INTO friends (userid1,userid2) VALUES (";
+   query = "INSERT INTO friends (userid1,userid2, date_chat_viewed) VALUES (";
    query += boost::lexical_cast< string >( inviteeId );
    query += ",";
    query += boost::lexical_cast< string >( inviterId );
-   query += ");";
+   query += ", NOW() );";
 
    dbQuery->query = query;
    m_contactServer->AddQueryToOutput( dbQuery );

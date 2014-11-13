@@ -126,6 +126,7 @@ bool  PacketLoginToGateway::SerializeIn( const U8* data, int& bufferOffset, int 
    Serialize::In( data, bufferOffset, wasLoginSuccessful, minorVersion ); 
    Serialize::In( data, bufferOffset, adminLevel, minorVersion );
    Serialize::In( data, bufferOffset, languageId, minorVersion );
+   Serialize::In( data, bufferOffset, userEmail, minorVersion );
 
    return true;
 }
@@ -137,6 +138,7 @@ bool  PacketLoginToGateway::SerializeOut( U8* data, int& bufferOffset, int minor
    Serialize::Out( data, bufferOffset, wasLoginSuccessful, minorVersion );
    Serialize::Out( data, bufferOffset, adminLevel, minorVersion );
    Serialize::Out( data, bufferOffset, languageId, minorVersion );
+   Serialize::Out( data, bufferOffset, userEmail, minorVersion );
 
    return true;
 }

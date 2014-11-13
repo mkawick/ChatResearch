@@ -147,10 +147,11 @@ public:
    bool  SerializeIn( const U8* data, int& bufferOffset, int minorVersion );
    bool  SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const;
 
-   TimeString  lastLogoutTime;
-   bool        wasLoginSuccessful;
-   U8          adminLevel;
-   U8          languageId;
+   TimeString        lastLogoutTime;
+   bool              wasLoginSuccessful;
+   U8                adminLevel;
+   U8                languageId;
+   BoundedString80   userEmail;
 };
 
 ///////////////////////////////////////////////////////////////

@@ -1,6 +1,5 @@
 #pragma once
 
-#include "../ServerType.h"
 #include "../DataTypes.h"
 #include "../ServerConstants.h"
 #include "../Packets/Serialize.h"

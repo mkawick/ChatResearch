@@ -54,6 +54,7 @@ ClientNetworkWrapper::ClientNetworkWrapper( U8 gameProductId, bool connectToAsse
       m_printFunction( false ),
       m_connectionId( 0 ),       
       m_lastRawDataIndex( 0 ),
+      m_platformId( Platform_ios ),
       m_loadBalancerPort( DefaultLoadBalancerPort ),
       m_wasCallbackForReadyToBeginSent( false ),
       m_requiresGatewayDiscovery( true ),
@@ -313,6 +314,7 @@ bool     ClientNetworkWrapper::InitialConnectionCallback( const Fruitadens* conn
       if( isMainGateway )
       {
          PacketHello          hello;
+         hello.platformId = m_platformId;
          SerializePacketOut( &hello );
 
          if( m_savedLoginInfo != NULL )
@@ -440,6 +442,7 @@ void  ClientNetworkWrapper::Exit()
    m_connectionId = 0;
    m_lastLoggedOutTime.clear();
    m_lastRawDataIndex = 0;
+   m_platformId = Platform_ios;
 
    m_availableTournaments.clear();
    if( m_savedLoginInfo )
@@ -658,7 +661,7 @@ void     ClientNetworkWrapper::UpdateNotifications()
                map< string, BoundedString32 > profileKeyValues;
                while( keyValueIt != qn.genericKeyValuePairs.end() )
                {
-                  profileKeyValues.insert( pair< string, string >( keyValueIt->key, keyValueIt->value ) );
+                  profileKeyValues.insert( pair< string, BoundedString32 >( keyValueIt->key, keyValueIt->value ) );
                   keyValueIt++;
                }
                notify->OtherUsersProfile( profileKeyValues );
@@ -806,6 +809,7 @@ void     ClientNetworkWrapper::UpdateNotifications()
             }
             break;
 
+            
          case ClientSideNetworkCallback::NotificationType_ChatChannelMembers:
             {
                PacketChatListAllMembersInChatChannelResponse* packetChatHistoryResult = 
@@ -815,6 +819,21 @@ void     ClientNetworkWrapper::UpdateNotifications()
                GetChannel( packetChatHistoryResult->chatChannelUuid, channel );
 
                notify->ChatChannelMembers( channel.channelName,  packetChatHistoryResult->chatChannelUuid, packetChatHistoryResult->userList );
+            }
+            break;
+
+         case ClientSideNetworkCallback::NotificationType_ChatHistory_P2P:
+            {
+               PacketChat_UserChatHistory* chat = static_cast<PacketChat_UserChatHistory*>( qn.packet );
+               
+               notify->ChatHistory_P2P( chat->userUuidList );
+            }
+            break;
+         case ClientSideNetworkCallback::NotificationType_ChatHistory_Channel:
+            {
+               PacketChat_ChannelChatHistory* chat = static_cast<PacketChat_ChannelChatHistory*>( qn.packet );
+               
+               notify->ChatHistory_Channel( chat->channelUuidList );
             }
             break;
                
@@ -1865,6 +1884,12 @@ bool  ClientNetworkWrapper::RequestChatChannelHistory( const string& channelUuid
       history.startingTimestamp = startingTimestamp;
    }
    SerializePacketOut( &history );
+
+   // mark as read
+   if( startingIndex == 0 )// only send once at the beginning
+   {
+      MarkChannelHistoryAsRead( channelUuid );
+   }
    return true;
 }
 
@@ -1886,7 +1911,31 @@ bool  ClientNetworkWrapper::RequestChatP2PHistory( const string& userUuid, int n
       history.startingTimestamp = startingTimestamp;
    }
    SerializePacketOut( &history );
+
+   // mark as read
+   if( startingIndex == 0 )// only send once at the beginning
+   {
+      MarkP2PHistoryAsRead( userUuid );
+   }
    return true;
+}
+
+//-----------------------------------------------------------------------------
+ 
+void     ClientNetworkWrapper::MarkChannelHistoryAsRead( const string& channelUuid ) const
+{
+   PacketChat_MarkChannelHistoryAsRead markAsRead;
+   markAsRead.channelUuid = channelUuid;
+   SerializePacketOut( &markAsRead );
+}
+
+//-----------------------------------------------------------------------------
+ 
+void     ClientNetworkWrapper::MarkP2PHistoryAsRead( const string& userUuid ) const
+{
+   PacketChat_MarkP2PHistoryAsRead markAsRead;
+   markAsRead.userUuid = userUuid;
+   SerializePacketOut( &markAsRead );
 }
 
 //-----------------------------------------------------------------------------
@@ -3633,6 +3682,26 @@ bool     ClientNetworkWrapper::HandlePacketReceived( BasePacket* packetIn )
 
                Notification( ClientSideNetworkCallback::NotificationType_ChatChannelMembers, packet );
 
+               cleaner.Clear();
+            }
+            break;
+         case PacketChatToServer::ChatType_UserChatHistory:
+            {
+               cout << "You received user chat history: " << endl;
+               PacketChat_UserChatHistory* chat = static_cast<PacketChat_UserChatHistory*>( packetIn );
+               cout << "num p2p users with messages: " << chat->userUuidList.size() << endl;
+
+               Notification( ClientSideNetworkCallback::NotificationType_ChatHistory_P2P, chat );
+               cleaner.Clear();
+            }
+            break;
+         case PacketChatToServer::ChatType_ChannelChatHistory:
+            {
+               cout << "You received channel history: " << endl;
+               PacketChat_ChannelChatHistory* chat = static_cast<PacketChat_ChannelChatHistory*>( packetIn );
+               cout << "num channels with messages: " << chat->channelUuidList.size() << endl;
+
+               Notification( ClientSideNetworkCallback::NotificationType_ChatHistory_Channel, chat );
                cleaner.Clear();
             }
             break;

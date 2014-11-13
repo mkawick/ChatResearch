@@ -45,6 +45,7 @@ public:
    void     EnableMultithreadedCallbackSystem();
    void     CheckForReroutes( bool checkForRerouts );
    void     OverrideSocketPort( int port ) { m_loadBalancerPort = port; }
+   void     SetPlatform( U8 platformId ) { m_platformId = platformId; }
    void     Init( const char* serverDNS = "mber.pub.playdekgames.com" /*"64.183.9.93"*/ );
    bool     RegisterCallbackInterface( ClientSideNetworkCallback* _callbacks );
    bool     NeedsProcessingTime() const;
@@ -113,6 +114,8 @@ public:
    bool     RequestChatChannelHistory( const string& channelUuid, int numRecords = 20, int startingIndex = 0, const char* startingTimestamp = NULL ) const;
    bool     RequestChatP2PHistory( const string& userUuid, int numRecords = 20, int startingIndex = 0, const char* startingTimestamp = NULL  ) const;
 
+   void     MarkChannelHistoryAsRead( const string& channelUuid ) const;
+   void     MarkP2PHistoryAsRead( const string& userUuid ) const;
    bool     RequestListOfUsersInChatChannel( const string& uuid ); // two packets sent for current members and invitees
 
    //--------------------------------------------------------------
@@ -322,6 +325,7 @@ protected:
    U32                                       m_connectionId;
    string                                    m_lastLoggedOutTime;
    int                                       m_lastRawDataIndex;
+   U8                                        m_platformId;
    int                                       m_loadBalancerPort;
 
    bool                                      m_wasCallbackForReadyToBeginSent;

@@ -36,7 +36,7 @@ MainGatewayThread::MainGatewayThread( const string& serverName, U32 serverId ) :
                                           m_serviceAvailabilityManager( NULL ),
                                           m_printPacketTypes( false ),
                                           m_printFunctionNames( false ),
-                                          m_connectionsRequireAuthentication( false ),
+                                          m_connectionsRequireAuthentication( true ),
                                           m_isServerDownForMaintenence( false ),
                                           m_hasInformedConnectedClientsThatServerIsDownForMaintenence( false ),
                                           m_serverIsAvaitingLB_Approval( true ),
@@ -1412,6 +1412,7 @@ BasePacket*  MainGatewayThread::HandlePlayerLoginStatus( KhaanGateway* khaan, Ba
       khaan->SetLanguageId( finishedLogin->languageId );
       khaan->SetLastGameConnectedTo( finishedLogin->gameProductId );
       khaan->SetUserName( finishedLogin->userName );
+      khaan->SetUserEmail( finishedLogin->userEmail );
       khaan->SetUserUuid( finishedLogin->uuid );
 
       PacketLoginToClient* clientNotify = new PacketLoginToClient;
@@ -1435,10 +1436,11 @@ BasePacket*  MainGatewayThread::HandlePlayerLoginStatus( KhaanGateway* khaan, Ba
       packet = logoutPacket;
       khaan->SendImmediately( logoutPacket );
       MarkConnectionForDeletion( connectionId );
-      LogMessage( LOG_PRIO_INFO, "------------- User logout ------------" );
-      LogMessage( LOG_PRIO_INFO, "LoginType_Logout: %s", khaan->GetUserName() );
+      LogMessage( LOG_PRIO_INFO, "------- Login server message User logout ---------" );
+      LogMessage( LOG_PRIO_INFO, "LoginType_Logout: %s", khaan->GetUserEmail() );
+      LogMessage( LOG_PRIO_INFO, "            name: %s", khaan->GetUserName() );
       LogMessage( LOG_PRIO_INFO, "            uuid: %s", khaan->GetUserUuid() );
-      LogMessage( LOG_PRIO_INFO, "--------------------------------------" );
+      LogMessage( LOG_PRIO_INFO, "--------------------------------------------------" );
 
       connectionId = 0;
    }

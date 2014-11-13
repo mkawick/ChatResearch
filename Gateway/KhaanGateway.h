@@ -20,8 +20,11 @@ public:
    void     SetAdminLevelOperations( int level ) { m_adminLevel = level; }
    U8       GetLanguageId() const { return m_languageId; }
    void     SetLanguageId( U8 languageId );
+
    void     SetUserName( const char* ptr ) { m_userName = ptr; }
    const char* GetUserName() { return m_userName.c_str(); }
+   void     SetUserEmail( const char* ptr ) { m_userEmail = ptr; }
+   const char* GetUserEmail() { return m_userEmail.c_str(); }
    void     SetUserUuid( const char* ptr ) { m_userUuid = ptr; }
    const char* GetUserUuid() { return m_userUuid.c_str(); }
 
@@ -48,6 +51,7 @@ private:
    bool     ShouldDelayOutput();
 
    FixedString80        m_userName;
+   FixedString80        m_userEmail;
    FixedString16        m_userUuid;
    U32                  m_numPacketsReceivedBeforeAuth;
    U32                  m_randomNumberOfPacketsBeforeLogin;

@@ -28,5 +28,5 @@ bool      UserLookupManager::HandleDbResult( PacketDbQueryResult* packet )
 
 string    UserLookupManager::GetUserName( const string& uuid ) const 
 { 
-   return false; 
+   return ""; 
 }

@@ -1,7 +1,9 @@
 #include "string_funcs.h"
 #include <stdarg.h>
 
-
+#if defined(WIN32)
+#pragma warning ( disable: 4996 )
+#endif
 
 inline float min(float a, float b)
 {

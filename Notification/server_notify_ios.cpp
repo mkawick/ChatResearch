@@ -14,6 +14,7 @@
 
 #if PLATFORM == PLATFORM_WINDOWS
 #include <direct.h>
+#pragma warning ( disable: 4996 )
 #else
    #include <sys/time.h>
    #include <termios.h>

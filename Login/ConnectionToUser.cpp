@@ -504,6 +504,7 @@ bool    ConnectionToUser:: SuccessfulLoginFinished( U32 connectId, bool isRelogg
    if( m_userName.size() )
    {
       loginStatus->userName = m_userName;
+      loginStatus->userEmail = m_email;
       loginStatus->uuid = m_userUuid;
       loginStatus->lastLogoutTime = m_lastLoginTime;
       loginStatus->loginKey = m_loginKey;

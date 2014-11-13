@@ -72,6 +72,8 @@ public:
    //virtual void  NewChatChannelAdded( const string& channelName, const string& channelUuid, bool success ) { }
 
    virtual void  ChatChannelMembers( const string& channelName, const string& channelUuid, const SerializedKeyValueVector< string >& info ) {}
+   virtual void  ChatHistory_P2P( const SerializedVector< UuidString >& userUuids ) {}
+   virtual void  ChatHistory_Channel( const SerializedVector< UuidString >& channelUuids ) {}
 
    virtual void  AssetCategoriesLoaded(){}
    virtual void  AssetManifestAvailable( const string& category ) {}
@@ -144,6 +146,9 @@ public:
       NotificationType_ChatChannelHistory,
       NotificationType_ChatP2PHistory,
       NotificationType_ChatHistoryMissedSinceLastLoginComposite,
+      
+      NotificationType_ChatHistory_P2P,
+      NotificationType_ChatHistory_Channel,
       
       NotificationType_NewChatChannelAdded,
       NotificationType_ChatChannelDeleted,

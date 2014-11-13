@@ -105,7 +105,7 @@ bool     DiplodocusServerToServer:: ProcessPacket( PacketStorage& storage )
    U8 packetType = packet->packetType;
    
 
-   cout << "DiplodocusServerToServer::ProcessPacket" << endl;
+   //cout << "DiplodocusServerToServer::ProcessPacket" << endl;
    //LogMessage( LOG_PRIO_INFO, "DiplodocusServerToServer::AddInputChainData( " );
    if( packetType == PacketType_ServerToServerWrapper )
    {
@@ -120,7 +120,7 @@ bool     DiplodocusServerToServer:: ProcessPacket( PacketStorage& storage )
       // create scope for lock
       {
          //Threading::MutexLock locker( m_mutex );
-         LogMessage( LOG_PRIO_INFO, "ProcessPacket .. find input to send" );
+         //LogMessage( LOG_PRIO_INFO, "ProcessPacket .. find input to send" );
 
          bool  found = false;
          
@@ -147,7 +147,7 @@ bool     DiplodocusServerToServer:: ProcessPacket( PacketStorage& storage )
       }
       
 
-      LogMessage( LOG_PRIO_INFO, "ProcessPacket .. creating job" );
+      //LogMessage( LOG_PRIO_INFO, "ProcessPacket .. creating job" );
       // create job for this packet including the serverId, a unique job id, and so on. Keep in mind that the connection may disappear
       // during the servicing of this job
       CreateJob( khaan, unwrappedPacket );

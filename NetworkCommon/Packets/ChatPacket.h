@@ -79,7 +79,9 @@ public:
       ChatType_Friend,
 
       ChatType_MarkChannelHistoryAsRead,
-      ChatType_MarkFriendHistoryAsRead
+      ChatType_MarkP2PHistoryAsRead ,
+      ChatType_UserChatHistory,
+      ChatType_ChannelChatHistory
    };
 public:
    PacketChatToServer( int packet_type = PacketType_Chat, int packet_sub_type = ChatType_ChatToServer ) : BasePacket( packet_type, packet_sub_type ) {}
@@ -828,16 +830,44 @@ public:
 
 ///////////////////////////////////////////////////////////////
 
-class PacketChat_MarkFriendHistoryAsRead : public BasePacket
+class PacketChat_MarkP2PHistoryAsRead : public BasePacket
 {
 public:
-   PacketChat_MarkFriendHistoryAsRead( int packet_type = PacketType_Chat, int packet_sub_type = PacketChatToServer::ChatType_MarkFriendHistoryAsRead ) : BasePacket( packet_type, packet_sub_type ){  }
+   PacketChat_MarkP2PHistoryAsRead( int packet_type = PacketType_Chat, int packet_sub_type = PacketChatToServer::ChatType_MarkP2PHistoryAsRead ) : BasePacket( packet_type, packet_sub_type ){  }
 
    bool  SerializeIn( const U8* data, int& bufferOffset, int minorVersion );
    bool  SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const;
 
-   UuidString        friendUuid;
+   UuidString        userUuid;
 };
+
+
+///////////////////////////////////////////////////////////////
+
+class PacketChat_UserChatHistory : public BasePacket
+{
+public:
+   PacketChat_UserChatHistory( int packet_type = PacketType_Chat, int packet_sub_type = PacketChatToServer::ChatType_UserChatHistory ) : BasePacket( packet_type, packet_sub_type ){  }
+
+   bool  SerializeIn( const U8* data, int& bufferOffset, int minorVersion );
+   bool  SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const;
+
+   SerializedVector< UuidString >      userUuidList;
+};
+
+///////////////////////////////////////////////////////////////
+
+class PacketChat_ChannelChatHistory : public BasePacket
+{
+public:
+   PacketChat_ChannelChatHistory( int packet_type = PacketType_Chat, int packet_sub_type = PacketChatToServer::ChatType_ChannelChatHistory ) : BasePacket( packet_type, packet_sub_type ){  }
+
+   bool  SerializeIn( const U8* data, int& bufferOffset, int minorVersion );
+   bool  SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const;
+
+   SerializedVector< UuidString >      channelUuidList;
+};
+
 
 ///////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////

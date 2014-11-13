@@ -68,7 +68,7 @@ bool  KhaanProtected::HandleInwardSerializedPacket( const U8* data, int& offset 
    }
    catch( ... )
    {
-      Log( "parsing in KhaanGateway threw an exception" );
+      LogMessage( LOG_PRIO_ERR, "parsing in KhaanGateway threw an exception" );
       DenyAllFutureData ();
       return false;
    }
@@ -150,10 +150,10 @@ bool	KhaanProtected::OnDataReceived( const U8* data, int length )
    if( m_isInTelnetMode== false && length < BasePacket::GetSize() )// why not sizeof? Because of the virtual pointer
       //&& m_authorizedConnection )
    {
-      cout << "OnDataReceived:too small:" << length << endl;
-      cout << "OnDataReceived:packet size reported :" << BasePacket::GetSize() << endl;
-      cout << "OnDataReceived:packet size:" << sizeof(BasePacket) << endl;
-      cout << "OnDataReceived:pointer size:" << sizeof( long* ) << endl;
+      LogMessage( LOG_PRIO_ERR, "OnDataReceived:too small: %d", length );
+      LogMessage( LOG_PRIO_ERR, "OnDataReceived:packet size reported : %u", BasePacket::GetSize() );
+      LogMessage( LOG_PRIO_ERR, "OnDataReceived:packet size: %u", sizeof(BasePacket) );
+      LogMessage( LOG_PRIO_ERR, "OnDataReceived:pointer size: %u", sizeof( long* ) );
       
       m_isInTelnetMode = true;
       SendTelnetInstructions();
@@ -162,7 +162,7 @@ bool	KhaanProtected::OnDataReceived( const U8* data, int length )
    //cout << "OnDataReceived:2" << endl;
    if( m_isInTelnetMode == true )
    {
-      cout << "OnDataReceived:HandleTelnetModeData:" << length << endl;
+      LogMessage( LOG_PRIO_ERR, "OnDataReceived:HandleTelnetModeData: %d", length );
       return HandleTelnetModeData( data, length );
    }
 
@@ -179,7 +179,7 @@ bool	KhaanProtected::OnDataReceived( const U8* data, int length )
       FlushReadBuffer();
 
       DenyAllFutureData ();
-      Log( "Gateway: hacker alert. Packet length is far too long", 3 );
+      LogMessage( LOG_PRIO_ERR, "Gateway: hacker alert. Packet length is far too long" );
       return false;
    }
 

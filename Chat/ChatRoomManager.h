@@ -113,6 +113,7 @@ public:
    bool           GetChatRooms( const string& userUuid, ChannelFullKeyValue& availableChannels );
    U32            GetUserId( const string& userUuid ) const;
    string         GetUserName( const string& uuid ) const;
+   string         GetUserUuid( const U32 userId ) const;
 
 
    bool           CreateNewRoom( const PacketChatCreateChatChannelFromGameServer* pPacket );
@@ -219,6 +220,8 @@ private:
    bool     RequestAllUsersInChatRoom( const string& channelUuid, bool fullList, const string& authUuid );
    bool     QueryAllUsersInChatRoom( const string& channelUuid );
    void     WriteChatToDb( const string& message, const string& senderUuid, const string& friendUuid, const string& channelUuid, U16 gameTurn, U32 connectionId );
+   void     MarkFriendDateLastChat( const string& senderUuid, const string& friendUuid );
+   void     MarkChatChannelDateLastChat( const string& channelUuid );
 
    //-----------------------------------------------------
 
