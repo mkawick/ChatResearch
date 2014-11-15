@@ -63,6 +63,7 @@ private:
    bool              GetListOfAssets( const PacketAsset_GetListOfAssets* packet );
    bool              EchoHandler();
    bool              GetAsset( const PacketAsset_RequestAsset* packet );
+   U16               GetChecksum (const string& assetHash, int version );
 
    UserTicket        m_userTicket;
    Status            m_status;

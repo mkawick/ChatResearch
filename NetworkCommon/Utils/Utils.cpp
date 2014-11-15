@@ -427,4 +427,24 @@ bool     CreateSubDirectory( std::string dir_path )
 }
 
 
+U16   CalculateChecksum( U8* fileData, int fileSize )
+{
+   U16 checksum = 0;
+   int halfway = fileSize >> 1;
+   int extraByte = fileSize %1;
+   U16* twoBytePtr = reinterpret_cast< U16* >( fileData );
+
+   for( int index=0; index<halfway; index++ )
+   {
+      U16 value = htons( twoBytePtr[ index ] );
+      checksum += value;
+   }
+   if( extraByte )
+   {
+      checksum += htons( fileData[ fileSize -1 ] );
+   }
+
+   return checksum;
+}
+
 //////////////////////////////////////////////////////////////////////////

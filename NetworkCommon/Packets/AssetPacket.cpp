@@ -33,7 +33,10 @@ bool  AssetInfo::SerializeIn( const U8* data, int& bufferOffset, int minorVersio
    Serialize::In( data, bufferOffset, beginDate, minorVersion );
    Serialize::In( data, bufferOffset, endDate, minorVersion );
    Serialize::In( data, bufferOffset, category, minorVersion );
-
+   if( ( NetworkVersionMajor == 47 && minorVersion >= 2 ) || NetworkVersionMajor > 47 )
+   {
+      Serialize::In( data, bufferOffset, checksum, minorVersion );
+   }
    return true;
 }
 
@@ -47,6 +50,10 @@ bool  AssetInfo::SerializeOut( U8* data, int& bufferOffset, int minorVersion ) c
    Serialize::Out( data, bufferOffset, beginDate, minorVersion );
    Serialize::Out( data, bufferOffset, endDate, minorVersion );
    Serialize::Out( data, bufferOffset, category, minorVersion );
+   if( ( NetworkVersionMajor == 47 && minorVersion >= 2 ) || NetworkVersionMajor > 47 )
+   {
+      Serialize::Out( data, bufferOffset, checksum, minorVersion );
+   }
 
    return true;
 }

@@ -17,6 +17,7 @@ struct AssetInfo
    FixedStringTiny   version;
    TimeString        beginDate, endDate;
    BoundedString32   category;
+   U16               checksum;
 
    AssetInfo()
    {
@@ -32,6 +33,7 @@ struct AssetInfo
       beginDate.clear();
       endDate.clear();
       category.clear();
+      checksum = 0;
    }
 
    bool  SerializeIn( const U8* data, int& bufferOffset, int minorVersion );

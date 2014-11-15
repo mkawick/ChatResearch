@@ -53,6 +53,8 @@ private:
    void                    ExpireOldConnections();
 
    void                    AddServerNeedingUpdate( U32 serverId );
+   
+   U32                     GetServerIdOfConnectedGateway();
 
    typedef map< U64, UserAccountAssetDelivery >      UAADMap;
    typedef pair< U64, UserAccountAssetDelivery >     UAADPair;

@@ -27,6 +27,7 @@ time_t         ZeroOutMinutes( time_t currentTime );
 time_t         ZeroOutHours( time_t currentTime );
 
 void           PrintCurrentTime();
+U16            CalculateChecksum( U8* fileData, int fileSize );
 
 const std::string    OpenAndLoadFile( const std::string& path );
 

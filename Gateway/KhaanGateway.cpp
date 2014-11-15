@@ -253,7 +253,16 @@ bool  KhaanGateway::IsHandshaking( const BasePacket* packetIn )
       }
       else
       {
-         LogMessage(  LOG_PRIO_INFO, "------ platform indeterminate ----------" );
+         LogMessage( LOG_PRIO_INFO, "------ platform indeterminate ----------" );
+      }
+
+      if( m_denyAllFutureData == true )
+      {
+         LogMessage( LOG_PRIO_INFO, "------ user prevented from continuing -----" );
+      }
+      else
+      {
+         LogMessage( LOG_PRIO_INFO, "------ user allowed to continue -----" );
       }
      
 

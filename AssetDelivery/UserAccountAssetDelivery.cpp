@@ -28,6 +28,7 @@ void  Copy( const AssetDefinition* asset, AssetInfo& assetInfo )
    assetInfo.endDate    = asset->endTime;
    assetInfo.isOptional = asset->isOptional;
    assetInfo.category   = asset->category;
+   //assetInfo.checksum   = asset->checksum;
 }
 
 UserAccountAssetDelivery::UserAccountAssetDelivery() : m_status( Status_initial_login ), m_readyForCleanup( false ), m_assetManager( NULL ), m_maxNumAssetReturnedByCategory( 12 )
@@ -188,19 +189,22 @@ bool     UserAccountAssetDelivery::GetListOfAssets( const PacketAsset_GetListOfA
    // 1) reduce the set of products by device type.
 
    //-----------------------------
+   const int enormousVersionNumber = 100000;
    PacketAsset_GetListOfAssetsResponse*    response = new PacketAsset_GetListOfAssetsResponse;
    response->assetCategory = packet->assetCategory;
    vector< string >::iterator it = assetIds.begin();
    while( it != assetIds.end() )
    {
       const AssetDefinition * asset;
-      bool  found = assetOrganizer->FindByHash( *it++ , asset );
+      string assetHash( *it++ );
+      bool  found = assetOrganizer->FindByHash( assetHash , asset );
       if( found )
       {
          AssetInfo assetInfo;
          Copy( asset, assetInfo ); // operator = is not an option in this version of VS
 
          assetInfo.productId  = gameProductId;
+         assetInfo.checksum = GetChecksum( assetHash, enormousVersionNumber );
 
          response->updatedAssets.insert( assetInfo.assetHash, assetInfo );
       }
@@ -216,6 +220,19 @@ bool     UserAccountAssetDelivery::GetListOfAssets( const PacketAsset_GetListOfA
    return true;
 }
 
+U16   UserAccountAssetDelivery::GetChecksum (const string& assetHash, int version )
+{
+   const AssetDefinition* asset = m_assetManager->GetAsset( assetHash );
+   if( asset != NULL )
+   {
+      LoadedFile file;
+      if( asset->FindFile( version, file ) == true )
+      {
+         return file.checksum;
+      }
+   }
+   return 0;
+}
 //------------------------------------------------------------------------------------------------
 
 bool     UserAccountAssetDelivery::GetAsset( const PacketAsset_RequestAsset* packet )

@@ -87,6 +87,7 @@ const AssetInfo&  AssetInfoExtended:: operator = ( const AssetInfo& asset )
    endDate = asset.endDate;
    isOptional = asset.isOptional;
    category = asset.category;
+   checksum = asset.checksum;
 
    return *this;
 }
@@ -101,6 +102,7 @@ const AssetInfoExtended&  AssetInfoExtended:: operator = ( const AssetInfoExtend
    endDate = asset.endDate;
    isOptional = asset.isOptional;
    category = asset.category;
+   checksum = asset.checksum;
 
    SetData( asset.data, asset.size );
    return *this;

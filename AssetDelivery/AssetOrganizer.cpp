@@ -149,9 +149,9 @@ const char* assetPriotityType[] = {
 
 //////////////////////////////////////////////////////////////////////////
 
-LoadedFile :: LoadedFile() : FileVersion(), fileData( NULL ), fileSize( 0 ), compressionType( 0 ) {}
-LoadedFile :: LoadedFile( const FileVersion& fi ) : FileVersion( fi ), fileData( NULL ), fileSize( 0 ), compressionType( 0 ) {}
-LoadedFile :: LoadedFile( const LoadedFile&  lf ) : compressionType( 0 ) 
+LoadedFile :: LoadedFile() : FileVersion(), fileData( NULL ), fileSize( 0 ), compressionType( 0 ), checksum( 0 ) {}
+LoadedFile :: LoadedFile( const FileVersion& fi ) : FileVersion( fi ), fileData( NULL ), fileSize( 0 ), compressionType( 0 ), checksum( 0 ) {}
+LoadedFile :: LoadedFile( const LoadedFile&  lf ) : compressionType( 0 ), checksum( 0 )
 {
    filePath = lf.filePath; lastModifiedTime = lf.lastModifiedTime; version = lf.version; 
    if(lf.fileSize == 0 )
@@ -162,6 +162,7 @@ LoadedFile :: LoadedFile( const LoadedFile&  lf ) : compressionType( 0 )
    {
       fileSize = lf.fileSize;
       fileData  = new U8[ fileSize ];
+      checksum = lf.checksum;
       memcpy( fileData, lf.fileData, fileSize );
    }
 }
@@ -179,11 +180,13 @@ const LoadedFile& LoadedFile::operator = ( const LoadedFile& lf )
    {
       cout << "**alert** zero length file copy" << endl;
       fileData = NULL, fileSize = 0; 
+      checksum = 0;
    }
    else
    {
       fileSize = lf.fileSize;
       fileData  = new U8[ fileSize ];
+      checksum = lf.checksum;
       memcpy( fileData, lf.fileData, fileSize );
    }
    return *this;
@@ -195,6 +198,7 @@ void  LoadedFile :: operator = ( const FileVersion& ver )
    filePath = ver.filePath; lastModifiedTime = ver.lastModifiedTime; version = ver.version; 
    fileData = NULL, fileSize = 0; 
    compressionType = 0;
+   checksum = 0;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -304,28 +308,27 @@ bool     AssetDefinition:: FindFile( int version, LoadedFile& file ) const
 
 void  AssetDefinition:: SetupHash()
 {
+   string lowerCaseString;
    if( name.size() > 0 )
    {
-      string lowerCaseString = ConvertStringToLower( name );
-      if( compressionType.size() )
-         lowerCaseString += compressionType;// adding hashing by compression type
-
-      ConvertToString( GenerateUniqueHash( lowerCaseString ), hash );
+      lowerCaseString = ConvertStringToLower( name );
    }
    else
    {
-      string lowerCaseString = ConvertStringToLower( name );
-      if( compressionType.size() )
-         lowerCaseString += compressionType;// adding hashing by compression type
-
-      ConvertToString( GenerateUniqueHash( lowerCaseString ), hash );
+      lowerCaseString = ConvertStringToLower( path );
    }
+
+   if( compressionType.size() )
+      lowerCaseString += compressionType;// adding hashing by compression type
+
+   ConvertToString( GenerateUniqueHash( lowerCaseString ), hash );
 
    if( hash.size() > TypicalMaxHexLenForNetworking )// limit
    {
       hash = hash.substr( hash.size()-TypicalMaxHexLenForNetworking, TypicalMaxHexLenForNetworking); 
    }
 }
+
 
 bool  AssetDefinition:: LoadFile()
 {
@@ -355,6 +358,7 @@ bool  AssetDefinition:: LoadFile()
          LoadedFile lf( ver );
          lf.fileData = fileData;
          lf.fileSize = fileSize;
+         lf.checksum = CalculateChecksum( fileData, fileSize );
          lf.compressionType = 0;
          cout << " load file: " << ver.filePath << "  size = " << lf.fileSize << endl;
          listOfVersionedFiles.push_back( lf );

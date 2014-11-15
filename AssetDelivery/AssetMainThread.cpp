@@ -416,11 +416,32 @@ bool  AssetMainThread::HandlePacketFromOtherServer( BasePacket* packet, U32 gate
 
 //---------------------------------------------------------------
 
+U32      AssetMainThread::GetServerIdOfConnectedGateway()
+{
+   Threading::MutexLock locker( m_inputChainListMutex );
+
+   ChainLinkIteratorType itInputs = m_listOfInputs.begin();
+   while( itInputs != m_listOfInputs.end() )
+   {
+      ChainType* inputPtr = static_cast< ChainType*> ( (*itInputs).m_interface );
+      if( inputPtr->GetChainedType() == ChainedType_InboundSocketConnector )
+      {
+         KhaanAsset* khaan = static_cast< KhaanAsset* >( inputPtr );
+         return khaan->GetServerId();
+      }
+      itInputs++;
+   }
+
+   return 0;
+}
+
+//---------------------------------------------------------------
+
 bool     AssetMainThread::ConnectUser( const PacketPrepareForUserLogin* loginPacket )
 {
    U32 connectionId = loginPacket->connectionId;
    string uuid = loginPacket->uuid;
-   U32 gatewayId = loginPacket->gatewayId;
+   U32 gatewayId = GetServerIdOfConnectedGateway();//loginPacket->gatewayId;
    LogMessage_LoginPacket( loginPacket );
             
    U64 hashForUser = GenerateUniqueHash( loginPacket->uuid );

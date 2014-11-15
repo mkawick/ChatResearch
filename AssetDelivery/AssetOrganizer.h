@@ -21,7 +21,7 @@ struct LoadedFile : public FileVersion
    U8*            fileData;
    int            fileSize;
    U8             compressionType;
-   
+   U16            checksum;
    
 };
 
