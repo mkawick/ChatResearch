@@ -14,6 +14,20 @@
 
 /////////////////////////////////////////////////////////////////////////////////
 
+KeepAliveSignaller::KeepAliveSignaller() : 
+         m_isValid( true ),
+         m_isEnabled( false ),
+         m_requiresKeepAliveSignal( false ),
+         m_isServer( true ),
+         m_enableLogging( false ),
+         m_timeLastSignalSent( 0 ),
+         m_timeLastSignalReceived( 0 ),
+         m_timeoutPeriod( 10 ),
+         m_packetCounter( 0 ),
+         m_isAwaitingKeepAliveReturn( false ),
+         m_packetHandler( NULL )
+   { }
+
 void  KeepAliveSignaller::Enable( bool enable ) 
 { 
    m_isEnabled = enable; 
