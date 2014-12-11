@@ -126,7 +126,7 @@ bool     ResetUserEmailQueryHandler::HandleResult( const PacketDbQueryResult* db
          }
 
          // update playdek.user_temp_new_user set was_email_sent=was_email_sent+1, lookup_key='lkjasdfhlkjhadfs' where id='4' ;
-         if( SendConfirmationEmail( email.c_str(), resetPasswordEmailAddress, 
+         if( SendConfirmationEmail( email.c_str(), m_resetPasswordEmailAddress.c_str(), 
                                  m_mailServer.c_str(), 
                                  bodyText.c_str(), subjectText.c_str(), "Playdek.com", linkPath.c_str(),
                                  m_emailPortOverride,

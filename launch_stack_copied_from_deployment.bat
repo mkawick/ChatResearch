@@ -4,7 +4,7 @@ REM start C:\projects\Mber\ServerStack\Debug/GatewayServer.exe server.name="Gate
 pushd C:\projects\SummonWar\main
 REM start C:/mickey/MberSW/main/WorkArea/game_serverD.exe listen.port=21000 db.address=10.16.4.44 db.port=3306 db.username=incinerator db.password=Cm8235 db.schema=playdek_game_summonwar s2s.port=21002  chat.port=7402
 REM start C:/mickey/MberSW/main/WorkArea/game_server.exe listen.port=21000 s2s.port=21002 chat.port=7402 userstats.port=12000 dblist=[user:10.16.4.44:3306:incinerator:Cm8235:playdek,game:10.16.4.44:3306:incinerator:Cm8235:playdek_game_summonwar]
-start C:\projects\SummonWar\main\WorkArea/game_server.exe listen.port=21000 s2s.port=21002 chat.port=7402 userstats.port=12002 purchase.port=7702 dblist=[user:10.16.4.44:3306:incinerator:Cm8235:playdek,game:10.16.4.44:3306:incinerator:Cm8235:playdek_game_summonwar]
+start C:\projects\SummonWar\main\WorkArea/game_serverD.exe listen.port=21000 s2s.port=21002 chat.port=7402 userstats.port=12002 purchase.port=7702 dblist=[user:10.16.4.44:3306:incinerator:Cm8235:playdek,game:10.16.4.44:3306:incinerator:Cm8235:playdek_game_summonwar_test]
 popd
 
 start C:\projects\Mber\ServerStack\Debug/LoadBalancer.exe  listen.port=9500 s2s.port=9502

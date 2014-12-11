@@ -61,6 +61,7 @@ void  PrintInstructions()
    cout << "    db.username       - database username" << endl;
    cout << "    db.password       - database password" << endl;
    cout << "    db.schema         - database schema-table collection" << endl;
+   cout << "    keepalive         - send keep alive packets to clients of this server" << endl;
 
    cout << " - for multiple DB connections " << endl;
    cout << " A single db connection would look like this... note the 'all' designation" << endl;
@@ -88,6 +89,11 @@ int main( int argc, const char* argv[] )
    string listenForS2SPort = "7702";
    string listenForS2SAddress = "localHost";
 
+#if PLATFORM == PLATFORM_WINDOWS // default
+   string enableKeepAliveString = "false";
+#else
+   string enableKeepAliveString = "true";
+#endif
    //---------------------------------------
    
    parser.FindValue( "server.name", serverName );
@@ -109,10 +115,12 @@ int main( int argc, const char* argv[] )
    parser.FindValue( "db.username", dbUsername );
    parser.FindValue( "db.password", dbPassword );
    parser.FindValue( "db.schema", dbSchema );
+   parser.FindValue( "keepalive", enableKeepAliveString );
 
    FileLogOpen( serverName.c_str() );
 
    int listenPort = 7700, dbPortAddress = 3306, listenS2SPort = 7702;
+   bool enableKeepAlive = ConvertToTrueFalse( enableKeepAliveString );
    try 
    {
       listenS2SPort = boost::lexical_cast<int>( listenForS2SPort );
@@ -146,6 +154,7 @@ int main( int argc, const char* argv[] )
    {
       DiplodocusPurchase*    purchaseServer = new DiplodocusPurchase( serverName, serverId );
       purchaseServer->SetupListening( listenPort );
+      purchaseServer->RequireKeepAlive( enableKeepAlive );
 
       DiplodocusServerToServer* s2s = new DiplodocusServerToServer( serverName, serverId, 0, ServerType_Purchase );
       s2s->SetupListening( listenS2SPort );

@@ -2563,11 +2563,11 @@ bool     DiplodocusLogin:: HandleDbResult( PacketDbQueryResult* dbResult )
       }
    }
    bool  wasHandled = false;
-   if( m_stringLookup->HandleResult( dbResult ) == true )
+   if( m_stringLookup && m_stringLookup->HandleResult( dbResult ) == true )
    {
       wasHandled = true;
    }
-   else if( m_outageReader->HandleResult( dbResult ) == true )
+   else if( m_outageReader && m_outageReader->HandleResult( dbResult ) == true )
    {
       wasHandled = true;
    }
@@ -2587,9 +2587,9 @@ bool     DiplodocusLogin:: HandleDbResult( PacketDbQueryResult* dbResult )
                   str += ", password: ";
                   str += connection->m_passwordHash;
                   str += ", connectionId: ";
-                  str += connectionId;
+                  str += boost::lexical_cast< string> ( connectionId );
                   str += ", gatewayId: ";
-                  str += connection->m_connectionDetails.gatewayId;
+                  str += boost::lexical_cast< string> ( connection->m_connectionDetails.gatewayId );
                   
                   cout << "Error:" << str << endl;
                   cout << connection->m_passwordHash << endl;

@@ -17,6 +17,7 @@ std::string          ToHexString( U32 );
 std::string          BufferToHexString( const U8* buffer, int numBytes );
 
 const char*          ConvertToTrueFalseString( bool value ); 
+bool                 ConvertToTrueFalse( const std::string& value );
 
 std::string          Trim(const std::string& str, const std::string& whitespace = " \t");
 

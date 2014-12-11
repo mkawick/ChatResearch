@@ -84,6 +84,7 @@ void  PrintInstructions()
 
    cout << "    print.functions   - print each function for debugging" << endl;
    cout << "    print.packets     - print each packet for debugging" << endl;
+   cout << "    keepalive         - send keep alive packets to clients of this server" << endl;
 
    cout << "    games=[192.168.1.0:21000:MFM,localhost:21100:game1]     - game list" << endl;
 
@@ -138,6 +139,12 @@ int main( int argc, const char* argv[] )
    string assetOnlyString = "false";
    string assetBlockString = "false";
 
+#if PLATFORM == PLATFORM_WINDOWS // default
+   string enableKeepAliveString = "false";
+#else
+   string enableKeepAliveString = "true";
+#endif
+
    //--------------------------------------------------------------
 
    if( parser.IsRequestingInstructions() == true )
@@ -188,6 +195,7 @@ int main( int argc, const char* argv[] )
 
    parser.FindValue( "asset.only", assetOnlyString );
    parser.FindValue( "asset.block", assetBlockString );
+   parser.FindValue( "keepalive", enableKeepAliveString );
 
    daemonize( serverName.c_str() );
 
@@ -209,10 +217,11 @@ int main( int argc, const char* argv[] )
          userStatsPort = 12000;
 
   // U16 reroutePort = 0;
-   bool printPackets = false, 
-         printFunctions = false,
-         assetOnly = false, 
-         assetBlock = false; 
+   bool printPackets = ConvertToTrueFalse( printPacketTypes ), 
+         printFunctions = ConvertToTrueFalse( printFunctionsString ), 
+         assetOnly = ConvertToTrueFalse( assetOnlyString ), 
+         assetBlock = ConvertToTrueFalse( assetBlockString ), 
+         enableKeepAlive = ConvertToTrueFalse( enableKeepAliveString );
 
    FileLogOpen( serverName.c_str() );
 
@@ -237,26 +246,15 @@ int main( int argc, const char* argv[] )
    }
 
    
-   if( printPacketTypes == "1" || printPacketTypes == "true" || printPacketTypes == "TRUE" )
-   {
-      printPackets = true;
-   }
-   if( printFunctionsString == "1" || printFunctionsString == "true" || printFunctionsString == "TRUE" )
-   {
-      printFunctions = true;
-   }
-   if( assetOnlyString == "1" || assetOnlyString == "true" || assetOnlyString == "TRUE" )
+   if( assetOnly )
    {
       LogMessage( LOG_PRIO_INFO, " ----------------------------------------------- " );
       LogMessage( LOG_PRIO_INFO, " Asset only server" );
-      
-      assetOnly = true;
    }
-   if( assetBlockString == "1" || assetBlockString == "true" || assetBlockString == "TRUE" )
+   if( assetBlock )
    {
       LogMessage( LOG_PRIO_INFO, " ----------------------------------------------- " );
       LogMessage( LOG_PRIO_INFO, " prevents talking to asset server" );
-      assetBlock = true;
    }
 
    if( assetOnly && assetBlock )
@@ -299,7 +297,7 @@ int main( int argc, const char* argv[] )
       gatewayServer->PrintPacketTypes( printPackets );
       gatewayServer->PrintFunctionNames( printFunctions );
       gatewayServer->SetupListening( listenPort );
-      
+      gatewayServer->RequireKeepAlive( enableKeepAlive );      
 
       if( assetOnly == true )
       {

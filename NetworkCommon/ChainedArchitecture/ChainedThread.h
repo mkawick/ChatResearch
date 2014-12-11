@@ -2,6 +2,8 @@
 #include "Thread.h"
 #include "ChainedInterface.h"
 
+/////////////////////////////////////////////////////////////////////////////
+
 namespace Threading
 {
 template <typename Type> 

@@ -489,13 +489,14 @@ void     Deltadromeus::Connect()
       LogMessage(LOG_PRIO_ERR, "MySQL Initialization Failed\n");
       return;
    }
+   
+   m_DbConnection = mysql_real_connect( m_DbConnection, m_serverName.c_str(), m_username.c_str(), m_password.c_str(), m_dbSchema.c_str(), m_port, NULL, 0 );
+
    int zeroMeansSuccess = mysql_options( m_DbConnection, MYSQL_SET_CHARSET_NAME, "utf8" );
    zeroMeansSuccess = mysql_options( m_DbConnection, MYSQL_INIT_COMMAND, "SET NAMES utf8"); 
    zeroMeansSuccess = zeroMeansSuccess; // compiler warning
 
    // Now we will actually connect to the specific database.
-
-   m_DbConnection = mysql_real_connect( m_DbConnection, m_serverName.c_str(), m_username.c_str(), m_password.c_str(), m_dbSchema.c_str(), m_port, NULL, 0 );
 
    string output = " login to the DB, IP: ";
    output += m_serverName;
@@ -520,6 +521,7 @@ void     Deltadromeus::Connect()
    else
    {
       LogMessage( LOG_PRIO_ERR, "Failed %s", output.c_str());
+      LogMessage( LOG_PRIO_ERR, "Error %s", mysql_error( m_DbConnection ) );
    }
    
 

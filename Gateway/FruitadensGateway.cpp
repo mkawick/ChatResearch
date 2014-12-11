@@ -28,6 +28,7 @@ FruitadensGateway::FruitadensGateway( const char* name ) : FruitadensServer( nam
                m_isEnabled( true )
 {
    SetSleepTime( 16 );// Sleeping frees up CPU
+   m_keepAlive.Enable( true );// default to on... it still does nothing until a server requires it
 }
 
 //-----------------------------------------------------------------------------------------
@@ -423,7 +424,14 @@ void  FruitadensGateway::PostProcessInputPackets( int bytesRead )
       if( factory.Parse( m_receiveBuffer, offset, &packetIn, NetworkVersionMinor ) == true )
       {
          m_numPacketsReceived ++;
-         HandlePacketReceived( packetIn );
+
+         // todo, remove this line of code.
+         cout << "Handling a packet (" << (U32)packetIn->packetType << ":" << (U32)packetIn->packetSubType << ")" << endl;
+         
+         if( m_keepAlive.HandlePacket( packetIn ) == false )
+         {
+            HandlePacketReceived( packetIn );
+         }
       }
       else 
       {

@@ -43,6 +43,7 @@ ScheduledOutageDBReader.cpp \
 ../NetworkCommon/Packets/UserStatsPacket.cpp \
 ../NetworkCommon/Stat/StatTrackingConnections.cpp \
 ../NetworkCommon/Utils/CommandLineParser.cpp \
+../NetworkCommon/Utils/KeepAliveSignaller.cpp \
 ../NetworkCommon/Utils/OsLevelUtils.cpp \
 ../NetworkCommon/Utils/TableWrapper.cpp \
 ../NetworkCommon/Utils/StringUtils.cpp \

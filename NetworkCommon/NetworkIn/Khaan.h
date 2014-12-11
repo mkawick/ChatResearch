@@ -38,6 +38,7 @@
 
 #include "../ChainedArchitecture/Thread.h"
 #include "../ChainedArchitecture/ChainedInterface.h"
+#include "../Utils/KeepAliveSignaller.h"
 
 using namespace std;
 
@@ -75,6 +76,9 @@ public:
    void           SetPort( U16 port ) { m_listeningPort = port; }
    U16            GetPort() const { return m_listeningPort; }
 
+   void           RequireKeepAlive( bool isRequired ) { m_keepAlive.Enable( isRequired ); }
+   void           SetKeepAliveTimeoutInSeconds( int seconds ) { m_keepAlive.SetTimeout( seconds ); }
+
    time_t         GetConnectionTime() const { return m_timeOfConnection; }
 
    void           SetTimeForDeletion( time_t& currentTime ) { m_timeOfDisconnection = currentTime; }
@@ -96,6 +100,7 @@ public:
    virtual U32    GetServerId() { return 0; } // only for inheritance purposes. KS2S implements this
    void           RegisterToReceiveNetworkTraffic();
    virtual bool	OnDataReceived( const U8* data, int length );
+   //bool           HandleKeepAlivePackets( const BasePacket* packetIn );
 
    virtual void   UpdateInwardPacketList();// this class doesn't do much with the data. It's up to the derived classes to decide what to do with it
    virtual int    UpdateOutwardPacketList();
@@ -120,6 +125,9 @@ protected:
    bool           HandleTelnetModeData( const U8* data, int length );
    void           SendTelnetInstructions();
 
+   //bool           HasKeepAliveExpired() const;
+   //void           SendKeepAlive();
+
 protected:
 	U32				m_socketId;
 	bufferevent*	m_bufferEvent;
@@ -128,6 +136,12 @@ protected:
 
    time_t         m_timeOfConnection;
    time_t         m_timeOfDisconnection;
+   /*time_t         m_keepAliveLastSentTime;
+   int            m_secondsBeforeTimeout;
+   int            m_keepAlivePacketCounter;
+   bool           m_isAwaitingKeepAliveReturn;
+   bool           m_requiresKeepAlive;*/
+   KeepAliveSignaller   m_keepAlive;
    U32            m_maxBytesToSend;
 
    bool           m_useLibeventToSend;

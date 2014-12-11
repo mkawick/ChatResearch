@@ -11,8 +11,8 @@
 #include "PacketFactory.h"
 #include <assert.h>
 
-const U8   NetworkVersionMajor = 47;
-const U8   NetworkVersionMinor = 2;
+const U8   NetworkVersionMajor = 50;
+const U8   NetworkVersionMinor = 0;
 
 //#include <boost/static_assert.hpp>
 //BOOST_STATIC_ASSERT( NetworkVersionMajor < (1<<5) );// 5 bits for major
@@ -141,9 +141,13 @@ bool  BasePacket::SerializeOut( U8* data, int& bufferOffset, int minorVersion ) 
 bool  PacketHello::SerializeIn( const U8* data, int& bufferOffset, int minorVersion )
 {
    BasePacket::SerializeIn( data, bufferOffset, minorVersion );
-   if( versionNumberMajor >= 47 && versionNumberMinor >= 1 )
+   if( ( versionNumberMajor == 47 && versionNumberMinor >= 1 ) || versionNumberMajor > 47 )
    {
       Serialize::In( data, bufferOffset, platformId, minorVersion );
+   }
+   if( versionNumberMajor >= 50 )
+   {
+      Serialize::In( data, bufferOffset, gameNetworkVersion, minorVersion );
    }
    return true;
 }
@@ -151,9 +155,13 @@ bool  PacketHello::SerializeIn( const U8* data, int& bufferOffset, int minorVers
 bool  PacketHello::SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const 
 {
    BasePacket::SerializeOut( data, bufferOffset, minorVersion );
-   if( versionNumberMajor >= 47 && versionNumberMinor >= 1 )
+   if( ( versionNumberMajor == 47 && versionNumberMinor >= 1 ) || versionNumberMajor > 47 )
    {
       Serialize::Out( data, bufferOffset, platformId, minorVersion );
+   }
+   if( versionNumberMajor >= 50 )
+   {
+      Serialize::Out( data, bufferOffset, gameNetworkVersion, minorVersion );
    }
    return true;
 }

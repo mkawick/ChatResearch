@@ -51,7 +51,22 @@ bool  DiplodocusGame::HandleCommandFromGateway( BasePacket* packet, U32 connecti
 // this will always be data coming from the gateway or at least from the outside in.
 bool   DiplodocusGame::AddInputChainData( BasePacket* packet, U32 gatewayId ) 
 {
-   if( packet->packetType == PacketType_GatewayWrapper )
+   m_mutex.lock();
+   m_inputPacketsToBeProcessed.push_back( PacketStorage( packet, gatewayId ) );
+   m_mutex.unlock();
+   return true;
+}
+
+//---------------------------------------------------------------
+
+bool     DiplodocusGame:: ProcessPacket( PacketStorage& storage )
+{
+   BasePacket* packet = storage.packet;
+   U32 gatewayId = storage.gatewayId;
+
+   U8 packetType = packet->packetType;
+
+   if( packetType == PacketType_GatewayWrapper )
    {
       PacketGatewayWrapper* wrapper = static_cast< PacketGatewayWrapper* >( packet );
       BasePacket* pPacket = wrapper->pPacket;
@@ -77,24 +92,8 @@ bool   DiplodocusGame::AddInputChainData( BasePacket* packet, U32 gatewayId )
       {
          assert( 0 );
       }
+      return true;
    }
-   else
-   {
-      m_mutex.lock();
-      m_inputPacketsToBeProcessed.push_back( PacketStorage( packet, gatewayId ) );
-      m_mutex.unlock();
-   }
-   return true;
-}
-
-//---------------------------------------------------------------
-
-bool     DiplodocusGame:: ProcessPacket( PacketStorage& storage )
-{
-   BasePacket* packet = storage.packet;
-   U32 gatewayId = storage.gatewayId;
-
-   U8 packetType = packet->packetType;
 
    if( packet->packetType == PacketType_GatewayInformation )
    {

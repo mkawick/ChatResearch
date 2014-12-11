@@ -148,6 +148,7 @@ bool     PurchaseReceiptManager::HandleResult( const PacketDbQueryResult* dbResu
 
 bool  PurchaseReceiptManager::WriteReceipt( const PacketPurchase_ValidatePurchaseReceipt* receipt, U32 userId, const string& userUuid )
 {
+   LogMessage( LOG_PRIO_INFO, "PurchaseReceiptManager::WriteReceipt" );
    /*
    INSERT INTO playdek.purchase_receipts (user_id, user_uuid, transaction_id, receipt, receipt_hash, platform_id, product_purchased, product_purchased_count ) 
    VALUES( 1, "38cabbad2461e678", "AABBCCDDEEFFGGHH", "a long receipt which is filled with garbage", 12234456, 1, "fe78c73d96db90cf", 1 );

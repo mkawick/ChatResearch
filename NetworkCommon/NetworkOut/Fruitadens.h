@@ -6,6 +6,7 @@
 #include "../ChainedArchitecture/ChainedThread.h"
 #include "../Logging/server_log.h"
 #include "../ServerType.h"
+#include "../Utils/KeepAliveSignaller.h"
 #include <string>
 
 #if PLATFORM == PLATFORM_MAC || PLATFORM == PLATFORM_UNIX
@@ -52,7 +53,8 @@ public:
    void        RegisterPacketHandlerInterface( PacketHandlerInterface* handler ) { m_packetHandlerInterface = handler; }
 
    bool        AddOutputChainData( BasePacket* packet, U32 filingData );// standard code, no need to modify
-   
+   bool        AddOutputChainDataNoLock( BasePacket* packet );
+
    void        SetConnectedServerType( ServerType type ) { m_serverType = type; }
    ServerType  GetConnectedServerType() const { return m_serverType; }
    U8          GetConnectedGameProductId() const { return m_connectedGameProductId; }
@@ -75,11 +77,11 @@ protected:
 
    bool           SetupConnection( const char* serverName, int port );
    bool           CreateSocket();
-   bool           AddOutputChainDataNoLock( BasePacket* packet );
 
    int            MainLoop_InputProcessing();
    int            MainLoop_OutputProcessing();
 
+   bool           HandleSendSocketErrorConditions( int numBytesReceived );
    virtual void   PostProcessInputPackets( int bytesRead );
 
    virtual bool   HandlePacketReceived( BasePacket* packetIn );
@@ -99,36 +101,40 @@ protected:
    void           AttemptConnection();
    virtual void   SocketHasDisconnectedDuringRecv( int error_number );
    virtual bool   HandleS2SIdentitfyPacket( BasePacket* packetIn );
+   virtual void	LogAllStateVars();
 
-   SocketType           m_clientSocket;
-   bool                 m_isConnected;
-   bool                 m_hasFailedCritically;
-   bool                 m_processOnlyOneIncommingPacketPerLoop;
-   bool                 m_checkForReroute;
-   bool                 m_isSettingUpConnection;
-   U32                  m_connectedServerId;
-   U8                   m_connectedGameProductId;
+   void           SocketHasDisconnected();
 
-   sockaddr_in          m_ipAddress;
-   U16                  m_port;
+   SocketType              m_clientSocket;
+   bool                    m_isConnected;
+   bool                    m_hasFailedCritically;
+   bool                    m_processOnlyOneIncommingPacketPerLoop;
+   bool                    m_checkForReroute;
+   bool                    m_isSettingUpConnection;
+   U32                     m_connectedServerId;
+   U8                      m_connectedGameProductId;
 
-   ServerType           m_serverType;
-   std::string          m_name;
-   PacketQueue          m_packetsReadyToSend;
-   U32                  m_serverId;
-   U32                  m_numPacketsReceived; // tracking only.. no other purpose
+   sockaddr_in             m_ipAddress;
+   U16                     m_port;
 
-   U32                  m_receiveBufferSize;
-   U32                  m_receiveBufferOffset;
-   U8*                  m_receiveBuffer;
-   U8                   m_networkVersionOverride;
-   PacketHandlerInterface*    m_packetHandlerInterface;
+   ServerType              m_serverType;
+   std::string             m_name;
+   PacketQueue             m_packetsReadyToSend;
+   U32                     m_serverId;
+   U32                     m_numPacketsReceived; // tracking only.. no other purpose
+
+   U32                     m_receiveBufferSize;
+   U32                     m_receiveBufferOffset;
+   U8*                     m_receiveBuffer;
+   U8                      m_networkVersionOverride;
+   PacketHandlerInterface* m_packetHandlerInterface;
 
    //enum { OverflowBufferSize = 12*1024 };
 
-   U8       m_overflowBuffer[ MaxBufferSize ];
-   int      m_bytesInOverflow;
-   bool     m_extensiveLogging;
+   U8                      m_overflowBuffer[ MaxBufferSize ];
+   int                     m_bytesInOverflow;
+   bool                    m_extensiveLogging;
+   KeepAliveSignaller      m_keepAlive;
 };
 
 //-------------------------------------------------------------------------
@@ -155,7 +161,9 @@ protected:
    bool        PackageLocalServerIdentificationToSend();
    bool        HandleS2SIdentitfyPacket( BasePacket* packetIn );
    void        SocketHasDisconnectedDuringRecv( int error_number );
+   void	  	   LogAllStateVars();
 
+   //-----------------------------------------
    bool        m_areLocalIdentifyingParamsSet;
    string      m_localServerName;
    string      m_localIpAddress;

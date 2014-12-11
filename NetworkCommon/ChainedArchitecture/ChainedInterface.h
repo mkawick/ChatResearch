@@ -75,9 +75,9 @@ public:
    void           RemoveOutputChain( IChainedInterface*, bool recurse = true );
 
 
-   // TODO: convert this to a const reference instead
    virtual bool   AddInputChainData( Type t, U32 filingData = -1 ) { return false; }// a false value means that the data was rejected
    virtual bool   AddOutputChainData( Type t, U32 filingData = -1 ) { return false; }// a false value means that the data was rejected
+   virtual bool   AddOutputChainDataNoLock( Type t ) { return false; }
 
    virtual bool   PushInputEvent( ThreadEvent* ) { return false; }
    virtual bool   PushOutputEvent( ThreadEvent* ) { return false; }

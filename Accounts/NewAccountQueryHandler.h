@@ -41,7 +41,10 @@ public:
    void     SetQueryTypeForLoadingWeblinks( U32 type ) { m_loadWebLinksQueryType = type; }
    void     SetQueryTypeForOlderEmailsResent( U32 type ) { m_olderEmailsQueryType = type; }
 
-   void     SetEmailDomain( const string& domain ); 
+   void     SetEmailServerName( const string& domain ); 
+   void     SetNewEmailAccountAddress( const string& emailAddress );
+   void     SetResetEmailAccountAddress( const string& emailAddress );
+
    void     EnableEmailSending( bool enabled = true ) { m_isEmailEnabled = enabled; }
 
    void     SetEmailPortOverride( U16 port ) { m_emailPortOverride = port; }
@@ -106,6 +109,8 @@ protected:
    static StringTableLookup               m_stringsTable;
    static map< stringhash, stringhash >   m_replacemetStringsLookup;
    static string                          m_mailServer;
+   static string                          m_newAccountEmailAddress;
+   static string                          m_resetPasswordEmailAddress;
 
    static U16                             m_emailPortOverride;
    static string                          m_authenticatedEmailUsername;

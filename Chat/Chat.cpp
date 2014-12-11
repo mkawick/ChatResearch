@@ -62,6 +62,7 @@ void  PrintInstructions()
    cout << "    db.username       - database username" << endl;
    cout << "    db.password       - database password" << endl;
    cout << "    db.schema         - database schema-table collection" << endl;
+   cout << "    keepalive         - send keep alive packets to clients of this server" << endl;
 
    cout << " - for multiple DB connections " << endl;
    cout << " A single db connection would look like this... note the 'all' designation" << endl;
@@ -96,6 +97,12 @@ int main( int argc, const char* argv[] )
    string analyticsPortString = "7802";
    string analyticsIpAddressString = "localhost";
 
+#if PLATFORM == PLATFORM_WINDOWS // default
+   string enableKeepAliveString = "false";
+#else
+   string enableKeepAliveString = "true";
+#endif
+
    //--------------------------------------------------------------
 
    if( parser.IsRequestingInstructions() == true )
@@ -120,6 +127,7 @@ int main( int argc, const char* argv[] )
 
    parser.FindValue( "analytics.port", analyticsPortString );
    parser.FindValue( "analytics.address", analyticsIpAddressString );
+   parser.FindValue( "keepalive", enableKeepAliveString );
 
    FileLogOpen( serverName.c_str() );
 
@@ -127,6 +135,7 @@ int main( int argc, const char* argv[] )
          dbPortAddress = 3306,
          analyticsPort = 7802, 
          listenS2SPort = 7402;
+   bool enableKeepAlive = ConvertToTrueFalse( enableKeepAliveString );
    try 
    {
       listenPort = boost::lexical_cast<int>( listenPortString );
@@ -138,7 +147,7 @@ int main( int argc, const char* argv[] )
    {
        LogMessage( LOG_PRIO_INFO, "Error: input string was not valid" );
    }
-
+   
    //----------------------------------------------------------------
    
    U64 serverUniqueHashValue = GenerateUniqueHash( serverName );
@@ -160,17 +169,18 @@ int main( int argc, const char* argv[] )
 
    if( isBusy == false )
    {
-      DiplodocusChat*    middleware = new DiplodocusChat( serverName, serverId );
-      middleware->SetupListening( listenPort );
+      DiplodocusChat*    chatServer = new DiplodocusChat( serverName, serverId );
+      chatServer->SetupListening( listenPort );
+      chatServer->RequireKeepAlive( enableKeepAlive );
 
       DiplodocusServerToServer* s2s = new DiplodocusServerToServer( serverName, serverId, 0, ServerType_Chat );
       s2s->SetupListening( listenS2SPort );
 
-      PrepConnection< FruitadensServer, DiplodocusChat > ( analyticsIpAddressString, analyticsPort, "analytics", middleware, ServerType_Analytics, true );
+      PrepConnection< FruitadensServer, DiplodocusChat > ( analyticsIpAddressString, analyticsPort, "analytics", chatServer, ServerType_Analytics, true );
       
       //----------------------------------------------------------------
 
-      if( Database::ConnectToMultipleDatabases< DiplodocusChat > ( parser, middleware ) == false )
+      if( Database::ConnectToMultipleDatabases< DiplodocusChat > ( parser, chatServer ) == false )
       {
          Database::Deltadromeus* delta = new Database::Deltadromeus;
          delta->SetConnectionInfo( dbIpAddress, dbPortAddress, dbUsername, dbPassword, dbSchema );
@@ -181,14 +191,14 @@ int main( int argc, const char* argv[] )
             getch();
             return 1;
          }
-         middleware->AddOutputChain( delta );
+         chatServer->AddOutputChain( delta );
       }
       //----------------------------------------------------------------
 
-      s2s->AddOutputChain( middleware );
+      s2s->AddOutputChain( chatServer );
 
-      middleware->Init();
-      middleware->Run();
+      chatServer->Init();
+      chatServer->Run();
    }
    else
    {

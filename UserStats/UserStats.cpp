@@ -60,6 +60,7 @@ void  PrintInstructions()
    cout << "    db.username       - database username" << endl;
    cout << "    db.password       - database password" << endl;
    cout << "    db.schema         - database schema-table collection" << endl;
+   cout << "    keepalive         - send keep alive packets to clients of this server" << endl;
 
    cout << " - for multiple DB connections " << endl;
    cout << " A single db connection would look like this... note the 'all' designation" << endl;
@@ -94,6 +95,12 @@ int main( int argc, const char* argv[] )
 
    string statPortString = "7802";
    string statIpAddressString = "localhost";
+   
+#if PLATFORM == PLATFORM_WINDOWS // default
+   string enableKeepAliveString = "false";
+#else
+   string enableKeepAliveString = "true";
+#endif
 
    //--------------------------------------------------------------
 
@@ -119,13 +126,15 @@ int main( int argc, const char* argv[] )
 
    parser.FindValue( "stat.port", statPortString );
    parser.FindValue( "stat.address", statIpAddressString );
-   
+   parser.FindValue( "keepalive", enableKeepAliveString );
+
    FileLogOpen( serverName.c_str() );
 
    int   listenPort = 8800, 
          dbPortAddress = 3306,
          statPort = 7802, 
          listenS2SPort = 8802;
+   bool enableKeepAlive = ConvertToTrueFalse( enableKeepAliveString );
    try 
    {
       listenPort = boost::lexical_cast<int>( listenPortString );
@@ -157,15 +166,16 @@ int main( int argc, const char* argv[] )
 
    if( isBusy == false )
    {
-      UserStatsMainThread*    middleware = new UserStatsMainThread( serverName, serverId );
-      middleware->SetupListening( listenPort );
+      UserStatsMainThread*    userStatServer = new UserStatsMainThread( serverName, serverId );
+      userStatServer->SetupListening( listenPort );
+      userStatServer->RequireKeepAlive( enableKeepAlive );
 
       DiplodocusServerToServer* s2s = new DiplodocusServerToServer( serverName, serverId, 0, ServerType_UserStats );
       s2s->SetupListening( listenS2SPort );
       
       //----------------------------------------------------------------
 
-      if( Database::ConnectToMultipleDatabases< UserStatsMainThread > ( parser, middleware ) == false )
+      if( Database::ConnectToMultipleDatabases< UserStatsMainThread > ( parser, userStatServer ) == false )
       {
          Database::Deltadromeus* delta = new Database::Deltadromeus;
          delta->SetConnectionInfo( dbIpAddress, dbPortAddress, dbUsername, dbPassword, dbSchema );
@@ -176,27 +186,27 @@ int main( int argc, const char* argv[] )
             getch();
             return 1;
          }
-         middleware->AddOutputChain( delta );
+         userStatServer->AddOutputChain( delta );
       }
 
-      PrepConnection< FruitadensServer, UserStatsMainThread > ( statIpAddressString, statPort, "analytics", middleware, ServerType_Analytics, true );
+      PrepConnection< FruitadensServer, UserStatsMainThread > ( statIpAddressString, statPort, "analytics", userStatServer, ServerType_Analytics, true );
       
       //----------------------------------------------------------------
 
-      middleware->Init();
+      userStatServer->Init();
 
 #if defined _HERE_IS_A_TYPICAL_USE_CASE_GARY
       {
-         DbHandle* ptr = middleware->GetDbConnectionByType( Database::Deltadromeus::DbConnectionType_UserData );
-         ptr = middleware->GetDbConnectionByType( Database::Deltadromeus::DbConnectionType_GameData );
-         ptr = middleware->GetDbConnectionByType( Database::Deltadromeus::DbConnectionType_StatData );
-         ptr = middleware->GetDbConnectionByType( Database::Deltadromeus::DbConnectionType_none );
+         DbHandle* ptr = userStatServer->GetDbConnectionByType( Database::Deltadromeus::DbConnectionType_UserData );
+         ptr = userStatServer->GetDbConnectionByType( Database::Deltadromeus::DbConnectionType_GameData );
+         ptr = userStatServer->GetDbConnectionByType( Database::Deltadromeus::DbConnectionType_StatData );
+         ptr = userStatServer->GetDbConnectionByType( Database::Deltadromeus::DbConnectionType_none );
       }
 #endif
 
-      s2s->AddOutputChain( middleware );
+      s2s->AddOutputChain( userStatServer );
 
-      middleware->Run();
+      userStatServer->Run();
     }
    else
    {

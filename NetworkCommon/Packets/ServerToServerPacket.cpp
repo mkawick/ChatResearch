@@ -45,6 +45,8 @@ bool  PacketServerIdentifier::SerializeIn( const U8* data, int& bufferOffset, in
    Serialize::In( data, bufferOffset, isController, minorVersion );
    Serialize::In( data, bufferOffset, gatewayType, minorVersion );
 
+   Serialize::In( data, bufferOffset, gameNetworkVersion, minorVersion );
+
    return true;
 }
 
@@ -61,6 +63,8 @@ bool  PacketServerIdentifier::SerializeOut( U8* data, int& bufferOffset, int min
    Serialize::Out( data, bufferOffset, isGameServer, minorVersion );
    Serialize::Out( data, bufferOffset, isController, minorVersion );
    Serialize::Out( data, bufferOffset, gatewayType, minorVersion );
+
+   Serialize::Out( data, bufferOffset, gameNetworkVersion, minorVersion );
   
    return true;
 }
@@ -286,6 +290,24 @@ bool  PacketServerConnectionInfo_ServerOutageSchedule::SerializeOut( U8* data, i
 {
    BasePacket::SerializeOut( data, bufferOffset, minorVersion );
    Serialize::Out( data, bufferOffset, scheduledOutages, minorVersion );
+  
+   return true;
+}
+
+///////////////////////////////////////////////////////////////
+
+bool  PacketServerConnectionInfo_KeepAlive::SerializeIn( const U8* data, int& bufferOffset, int minorVersion )
+{
+   BasePacket::SerializeIn( data, bufferOffset, minorVersion );
+   Serialize::In( data, bufferOffset, packetNo, minorVersion );
+
+   return true;
+}
+
+bool  PacketServerConnectionInfo_KeepAlive::SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const
+{
+   BasePacket::SerializeOut( data, bufferOffset, minorVersion );
+   Serialize::Out( data, bufferOffset, packetNo, minorVersion );
   
    return true;
 }

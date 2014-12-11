@@ -55,7 +55,8 @@ bool  KhaanServerToServer::HandleInwardSerializedPacket( const U8* data, int& of
       int packetType = packetIn->packetType;
       if( packetType != PacketType_GatewayWrapper &&
           packetType != PacketType_GatewayInformation &&
-          packetType != PacketType_ServerToServerWrapper )
+          packetType != PacketType_ServerToServerWrapper &&
+          packetType != PacketType_ServerInformation )
       {
          assert( 0 );
       }
@@ -205,80 +206,91 @@ void	KhaanServerToServer :: UpdateInwardPacketList()
    while( localQueue.size() > 0 )
    {
       BasePacket* packetIn = localQueue.front();
+      localQueue.pop_front();
       int packetType = packetIn->packetType;
       
-      if( packetType == PacketType_ServerToServerWrapper )
+      if( m_keepAlive.HandlePacket( packetIn ) == true )
       {
-         //cout << "KhaanServerToServer::UpdateInwardPacketList::PacketType_ServerToServerWrapper" << endl;
-         PacketServerToServerWrapper* wrapper = static_cast< PacketServerToServerWrapper* >( packetIn );
-         BasePacket* subPacket = wrapper->pPacket;
+         factory.CleanupPacket( packetIn );
+         continue;
+      }
+      switch( packetType )
+      {
+         case PacketType_ServerToServerWrapper:
+         {
+            //cout << "KhaanServerToServer::UpdateInwardPacketList::PacketType_ServerToServerWrapper" << endl;
+            PacketServerToServerWrapper* wrapper = static_cast< PacketServerToServerWrapper* >( packetIn );
+            BasePacket* subPacket = wrapper->pPacket;
 
-         if( subPacket->packetType == PacketType_ServerInformation &&
-            subPacket->packetSubType == PacketServerConnectionInfo::PacketServerIdentifier_TypicalInfo )
-         {
-            PacketServerIdentifier* serverId = static_cast< PacketServerIdentifier * > ( subPacket );
-            SaveOffServerIdentification( serverId );
-         }
-         else
-         {
-            m_connectionId = wrapper->serverId;
-           /* if( m_connectionId == 0 )// badly formed
+            if( subPacket->packetType == PacketType_ServerInformation &&
+               subPacket->packetSubType == PacketServerConnectionInfo::PacketServerIdentifier_TypicalInfo )
             {
-               m_connectionId = subPacket->serverId;
-            }*/
-            if( PassPacketOn( wrapper, m_connectionId ) == true )
+               PacketServerIdentifier* serverId = static_cast< PacketServerIdentifier * > ( subPacket );
+               SaveOffServerIdentification( serverId );
+            }
+            else
+            {
+               m_connectionId = wrapper->serverId;
+              /* if( m_connectionId == 0 )// badly formed
+               {
+                  m_connectionId = subPacket->serverId;
+               }*/
+               if( PassPacketOn( wrapper, m_connectionId ) == true )
+               {
+                  packetIn = NULL;// do not delete
+               }
+               else
+               {
+                  // assert( 0 );
+                  LogMessage( LOG_PRIO_ERR, "ERROR: S2Sconnection packet was not dealt with 'list of outputs'" );
+                  LogMessage( LOG_PRIO_ERR, " Type: %d", (int) subPacket->packetType );
+                  LogMessage( LOG_PRIO_ERR, " SubType: %d", (int) subPacket->packetSubType );
+               }
+            }
+         }
+         break;
+         case PacketType_GatewayWrapper:// here we simply push the server packet up to the next layer
+         {
+            //cout << "KhaanServerToServer::UpdateInwardPacketList::PacketType_GatewayWrapper" << endl;
+            PacketGatewayWrapper* wrapper = static_cast< PacketGatewayWrapper* >( packetIn );
+            //m_connectionId = wrapper->connectionId;
+            if( PassPacketOn( wrapper, wrapper->connectionId ) == true )
             {
                packetIn = NULL;// do not delete
             }
             else
             {
-               // assert( 0 );
-               LogMessage( LOG_PRIO_ERR, "ERROR: S2Sconnection packet was not dealt with 'list of outputs'" );
-               LogMessage( LOG_PRIO_ERR, " Type: %d", (int) subPacket->packetType );
-               LogMessage( LOG_PRIO_ERR, " SubType: %d", (int) subPacket->packetSubType );
+               U8 type = wrapper->pPacket->packetType;
+               U8 subType = wrapper->pPacket->packetSubType;
+               LogMessage( LOG_PRIO_ERR, "ERROR: S2Sconnection gateway wrapped packet was not dealt with" );
+               LogMessage( LOG_PRIO_ERR, " Type: %d", (int) type );
+               LogMessage( LOG_PRIO_ERR, " SubType: %d", (int) subType );
             }
          }
-      }
-      else if( packetType == PacketType_GatewayWrapper )// here we simply push the server packet up to the next layer
-      {
-         //cout << "KhaanServerToServer::UpdateInwardPacketList::PacketType_GatewayWrapper" << endl;
-         PacketGatewayWrapper* wrapper = static_cast< PacketGatewayWrapper* >( packetIn );
-         //m_connectionId = wrapper->connectionId;
-         if( PassPacketOn( wrapper, wrapper->connectionId ) == true )
+         break;
+         case PacketType_GatewayInformation:
          {
-            packetIn = NULL;// do not delete
-         }
-         else
-         {
-            U8 type = wrapper->pPacket->packetType;
-            U8 subType = wrapper->pPacket->packetSubType;
-            LogMessage( LOG_PRIO_ERR, "ERROR: S2Sconnection gateway wrapped packet was not dealt with" );
-            LogMessage( LOG_PRIO_ERR, " Type: %d", (int) type );
-            LogMessage( LOG_PRIO_ERR, " SubType: %d", (int) subType );
-         }
-      }
-      else if ( packetType == PacketType_GatewayInformation )
-      {
-         if( HandleCommandFromGateway( packetIn, m_connectionId ) == false )// needs substance
-         {
-            U8 type = packetIn->packetType;
-            U8 subType = packetIn->packetSubType;
+            if( HandleCommandFromGateway( packetIn, m_connectionId ) == false )// needs substance
+            {
+               U8 type = packetIn->packetType;
+               U8 subType = packetIn->packetSubType;
 
-            LogMessage( LOG_PRIO_ERR, "ERROR: S2Sconnection packet was not dealt with as a Gateway command" );
-            LogMessage( LOG_PRIO_ERR, " Type: %d", (int) type );
-            LogMessage( LOG_PRIO_ERR, " SubType: %d", (int) subType );
+               LogMessage( LOG_PRIO_ERR, "ERROR: S2Sconnection packet was not dealt with as a Gateway command" );
+               LogMessage( LOG_PRIO_ERR, " Type: %d", (int) type );
+               LogMessage( LOG_PRIO_ERR, " SubType: %d", (int) subType );
+            }
+         }
+         break;
+         default:
+         {
+            //assert( 0 );
+            LogMessage( LOG_PRIO_ERR, "ERROR: S2Sconnection packet was not dealt with .. no handler for type" );
+            LogMessage( LOG_PRIO_ERR, " Type: %d", (int) packetIn->packetType );
+            LogMessage( LOG_PRIO_ERR, " SubType: %d", (int) packetIn->packetSubType );
          }
       }
-      else
-      {
-         //assert( 0 );
-         LogMessage( LOG_PRIO_ERR, "ERROR: S2Sconnection packet was not dealt with .. no handler for type" );
-         LogMessage( LOG_PRIO_ERR, " Type: %d", (int) packetIn->packetType );
-         LogMessage( LOG_PRIO_ERR, " SubType: %d", (int) packetIn->packetSubType );
-      }
-
       factory.CleanupPacket( packetIn );
-      localQueue.pop_front();
+      
    }
 }
 

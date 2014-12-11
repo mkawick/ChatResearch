@@ -130,6 +130,7 @@ void     DiplodocusPurchase::RequestAdminSettings()
 
 void     DiplodocusPurchase::HandleAdminSettings( const PacketDbQueryResult* dbResult )
 {
+   LogMessage( LOG_PRIO_INFO, "HandleAdminSettings <<<" );
    KeyValueParser              enigma( dbResult->bucket );
    KeyValueParser::iterator    it = enigma.begin();
 
@@ -158,7 +159,7 @@ void     DiplodocusPurchase::HandleAdminSettings( const PacketDbQueryResult* dbR
 
    m_isInitializing = false;
    m_isWaitingForAdminSettings = false;
-   
+   LogMessage( LOG_PRIO_INFO, "HandleAdminSettings >>>" );
 }
 
 //---------------------------------------------------------------
@@ -190,8 +191,26 @@ string AssembleFullPath( const string& path, const string& fileName )
 
 bool     DiplodocusPurchase::AddInputChainData( BasePacket* packet, U32 connectionId )
 {
-   if( packet->packetType == PacketType_GatewayWrapper )
+
+   m_mutex.lock();
+   m_inputPacketsToBeProcessed.push_back( PacketStorage( packet, connectionId ) );
+   m_mutex.unlock();
+   return true;
+}
+
+//---------------------------------------------------------------
+
+bool     DiplodocusPurchase:: ProcessPacket( PacketStorage& storage )
+{
+   LogMessage( LOG_PRIO_INFO, "ProcessPacket <<<" );
+   BasePacket* packet = storage.packet;
+   U32 gatewayId = storage.gatewayId;
+
+   U8 packetType = packet->packetType;
+
+   if( packetType == PacketType_GatewayWrapper )
    {
+      LogMessage( LOG_PRIO_INFO, "PacketType_GatewayWrapper" );
       PacketCleaner cleaner( packet );
       PacketGatewayWrapper* wrapper = static_cast< PacketGatewayWrapper* >( packet );
       BasePacket* unwrappedPacket = wrapper->pPacket;
@@ -215,31 +234,15 @@ bool     DiplodocusPurchase::AddInputChainData( BasePacket* packet, U32 connecti
       }
       else
       {
-         assert( 0 );
+         LogMessage( LOG_PRIO_ERR, "bad packet type received" );
       }
       // we handle all packets from the gateway here.
       return true;
    }
-   else
-   {
-      m_mutex.lock();
-      m_inputPacketsToBeProcessed.push_back( PacketStorage( packet, connectionId ) );
-      m_mutex.unlock();
-   }
-   return true;
-}
-
-//---------------------------------------------------------------
-
-bool     DiplodocusPurchase:: ProcessPacket( PacketStorage& storage )
-{
-   BasePacket* packet = storage.packet;
-   U32 gatewayId = storage.gatewayId;
-
-   U8 packetType = packet->packetType;
 
    if( packetType == PacketType_GatewayInformation )
    {
+      LogMessage( LOG_PRIO_INFO, "PacketType_GatewayInformation" );
       PacketCleaner cleaner( packet );
       HandleCommandFromGateway( packet, gatewayId );
       return true;
@@ -247,6 +250,7 @@ bool     DiplodocusPurchase:: ProcessPacket( PacketStorage& storage )
 
    if( packetType == PacketType_ServerJobWrapper )
    {
+      LogMessage( LOG_PRIO_INFO, "PacketType_ServerJobWrapper" );
       PacketCleaner cleaner( packet );
       HandlePacketFromOtherServer( packet, gatewayId );
       return true;
@@ -260,6 +264,7 @@ bool     DiplodocusPurchase:: ProcessPacket( PacketStorage& storage )
 
 bool  DiplodocusPurchase::GetUser( const string& uuid, UserAccountPurchase*& user )
 {
+   LogMessage( LOG_PRIO_INFO, "GetUser %s", uuid.c_str() );
    U64 hashForUser = GenerateUniqueHash( uuid );
 
    Threading::MutexLock locker( m_mutex );
@@ -276,6 +281,7 @@ bool  DiplodocusPurchase::GetUser( const string& uuid, UserAccountPurchase*& use
 DiplodocusPurchase::UAADMapIterator   
 DiplodocusPurchase::GetUserByConnectionId( U32 connectionId )
 {
+   LogMessage( LOG_PRIO_INFO, "GetUserByConnectionId %u", connectionId );
    Threading::MutexLock locker( m_mutex );
    UAADMapIterator it = m_userTickets.begin();
    while( it != m_userTickets.end() )
@@ -309,6 +315,7 @@ bool  DiplodocusPurchase::HandlePacketFromOtherServer( BasePacket* packet, U32 g
 
    if( unwrappedPacket->packetType == PacketType_Login )
    {
+      LogMessage( LOG_PRIO_INFO, "HandlePacketFromOtherServer:: PacketType_Login" );
       switch( unwrappedPacket->packetSubType )
       {
       case PacketLogin::LoginType_PrepareForUserLogin:
@@ -326,6 +333,7 @@ bool  DiplodocusPurchase::HandlePacketFromOtherServer( BasePacket* packet, U32 g
    }
    else if( unwrappedPacket->packetType == PacketType_Tournament )
    {
+      LogMessage( LOG_PRIO_INFO, "HandlePacketFromOtherServer:: PacketType_Tournament" );
       switch( unwrappedPacket->packetSubType )
       {
       case PacketTournament::TournamentType_PurchaseTournamentEntry:
@@ -425,6 +433,7 @@ bool     DiplodocusPurchase::StoreUserProductsOwned( PacketListOfUserProductsS2S
 {
    string uuid = productNamesPacket->uuid;
    U64 hashForUser = GenerateUniqueHash( uuid );
+   LogMessage( LOG_PRIO_INFO, "StoreUserProductsOwned %s", uuid.c_str() );
 
    Threading::MutexLock locker( m_mutex );
    UAADMapIterator it = m_userTickets.find( hashForUser );
@@ -441,6 +450,7 @@ bool     DiplodocusPurchase::StoreUserProductsOwned( PacketListOfUserProductsS2S
 bool     DiplodocusPurchase::HandlePurchaseRequest( const PacketTournament_PurchaseTournamentEntry* packet, U32 connectionId )
 {
    U64 hashForUser = GenerateUniqueHash( packet->userUuid.c_str() );
+   LogMessage( LOG_PRIO_INFO, "HandlePurchaseRequest %s", packet->userUuid.c_str() );
 
    Threading::MutexLock locker( m_mutex );
    UAADMapIterator it = m_userTickets.find( hashForUser );
@@ -458,6 +468,7 @@ bool     DiplodocusPurchase::HandlePurchaseRequest( const PacketTournament_Purch
 
 bool     DiplodocusPurchase::HandlePurchaseRefund( const PacketTournament_PurchaseTournamentEntryRefund* packet, U32 connectionId )
 {
+   LogMessage( LOG_PRIO_INFO, "HandlePurchaseRefund %s", packet->userUuid.c_str() );
    U64 hashForUser = GenerateUniqueHash( packet->userUuid.c_str() );
 
    Threading::MutexLock locker( m_mutex );
@@ -642,6 +653,7 @@ bool     DiplodocusPurchase::AddOutputChainData( BasePacket* packet, U32 connect
 
 bool  DiplodocusPurchase::SendPacketToLoginServer( BasePacket* packet, U32 connectionId )
 {
+   LogMessage( LOG_PRIO_INFO, "SendPacketToLoginServer connid: %d", connectionId );
    PacketServerJobWrapper* wrapper = new PacketServerJobWrapper();
 
    wrapper->serverId =  m_serverId;

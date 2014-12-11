@@ -386,7 +386,7 @@ int  SendConfirmationEmail( const char* toAddr, const char* fromAddr,
   Check(send(socketId, messageLine.get(), strlen( messageLine.get() ), 0), "send() HELO");
   LogTextToFile( messageLine.get() );
 
-   if( authenticationUsername == NULL )
+   if( authenticationUsername == NULL || strlen( authenticationUsername ) < 6 )
    {
       Check(recv(socketId, buffer, sizeof(buffer), 0), "recv() HELO");
    }

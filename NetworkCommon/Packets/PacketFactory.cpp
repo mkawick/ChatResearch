@@ -1522,6 +1522,11 @@ bool     PacketFactory::ParseServerInfo( const U8* bufferIn, int& bufferOffset, 
          *packetOut = SerializeIn< PacketServerConnectionInfo_ServerOutageSchedule >( bufferIn, bufferOffset, networkMinorVersion );
       }
       return true;
+   case PacketServerConnectionInfo::PacketServerIdentifier_KeepAlive:
+      {
+         *packetOut = SerializeIn< PacketServerConnectionInfo_KeepAlive >( bufferIn, bufferOffset, networkMinorVersion );
+      }
+      return true;
     }
    return false;
 }

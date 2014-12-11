@@ -21,13 +21,16 @@
 
 using namespace std;
 
-const char* newAccountEmailAddress = "account_create@playdekgames.net";
-const char* resetPasswordEmailAddress = "account_reset@playdekgames.net";
-const char* defaultEmailDomain = "mail.playdekgames.net";
+const char* newAccountEmailAddress = "account_create@playdekgames.com";
+const char* resetPasswordEmailAddress = "account_reset@playdekgames.com";
+const char* defaultEmailServerName = "mail.playdekgames.com";
 
 bool                            NewAccountQueryHandler::m_hasLoadedStringTable = false;
 bool                            NewAccountQueryHandler::m_hasLoadedWeblinks = false;
-string                          NewAccountQueryHandler::m_mailServer( defaultEmailDomain );
+string                          NewAccountQueryHandler::m_mailServer( defaultEmailServerName );
+string                          NewAccountQueryHandler::m_newAccountEmailAddress( newAccountEmailAddress );
+string                          NewAccountQueryHandler::m_resetPasswordEmailAddress( resetPasswordEmailAddress );
+
 string                          NewAccountQueryHandler::m_linkToAccountCreated;
 string                          NewAccountQueryHandler::m_linkToResetEmailConfirm;
 string                          NewAccountQueryHandler::m_linkToResetPasswordConfirm;
@@ -143,21 +146,53 @@ void     NewAccountQueryHandler::PreloadWeblinks()
 
 //---------------------------------------------------------------
 
-void     NewAccountQueryHandler::SetEmailDomain( const string& domain )
+void     NewAccountQueryHandler::SetEmailServerName( const string& domain )
 {
-   /*if( domain.substr( 0, 5 ) != "mail." )
-      return;*/
+   if( m_mailServer == domain )
+      return;
 
-   cout << "Email domain change" << endl;
-   cout<< "Email domain changed from: " << m_mailServer << endl;
+   cout << "Email server change" << endl;
+   cout<< "Email server changed from: " << m_mailServer << endl;
    m_mailServer = domain;
    if( m_mailServer.length() < 5 )
-      m_mailServer = defaultEmailDomain;
-   cout<< "Email domain changed to: " << m_mailServer << endl;
+      m_mailServer = defaultEmailServerName;
+   cout<< "Email server changed to: " << m_mailServer << endl;
    cout << "All future email will go to that email server" << endl;
 
    //string   message = "ERROR: For new accounts, SendConfirmationEmail seems to be down. Socket connections are being rejected.";
    //LogMessage( LOG_PRIO_ERR, message.c_str() );
+}
+
+//---------------------------------------------------------------
+
+void     NewAccountQueryHandler::SetNewEmailAccountAddress( const string& emailAddress )
+{
+   if( m_newAccountEmailAddress == emailAddress )
+      return;
+
+   cout << "New Email account change" << endl;
+   cout<< "New Email account changed from: " << m_newAccountEmailAddress << endl;
+   m_newAccountEmailAddress = emailAddress;
+   if( m_newAccountEmailAddress.length() < 5 )
+      m_newAccountEmailAddress = newAccountEmailAddress;
+   cout<< "New Email account changed to: " << m_newAccountEmailAddress << endl;
+   cout << "All future email will go to that email server" << endl;
+}
+
+//---------------------------------------------------------------
+
+void     NewAccountQueryHandler::SetResetEmailAccountAddress( const string& emailAddress )
+{
+   if( m_resetPasswordEmailAddress == emailAddress )
+      return;
+
+   cout << "Reset Email account change" << endl;
+   cout<< "Reset Email account changed from: " << m_resetPasswordEmailAddress << endl;
+   m_resetPasswordEmailAddress = emailAddress;
+   if( m_resetPasswordEmailAddress.length() < 5 )
+      m_resetPasswordEmailAddress = resetPasswordEmailAddress;
+   cout<< "Reset Email account changed to: " << m_resetPasswordEmailAddress << endl;
+   cout << "All future email will go to that email server" << endl;
 }
 
 //---------------------------------------------------------------
@@ -297,7 +332,7 @@ void     NewAccountQueryHandler::PrepToSendUserEmail( const PacketDbQueryResult*
             m_blankUuidHandler->UpdateUuidForTempUser( columnId, email );
          }
          EmailToSend emailDetails;
-         emailDetails.accountEmailAddress = newAccountEmailAddress;
+         emailDetails.accountEmailAddress = m_newAccountEmailAddress;
          emailDetails.bodyText = bodyText;
          emailDetails.email = email;
          emailDetails.linkPath = linkPath;

@@ -12,7 +12,8 @@
 #include <errno.h>
 
 #if PLATFORM == PLATFORM_WINDOWS
-   #include <windows.h>
+   //#include <windows.h>
+   #include <Winsock2.h>
    #include <direct.h>
    #include <mmsystem.h>
    #include <sys/stat.h>
@@ -25,6 +26,7 @@
    #include <fcntl.h>
    #include <sys/types.h>
    #include <sys/stat.h>  // not too sure about this
+   #include <arpa/inet.h>
 #endif
 
 //#define BOOST_NO_CXX11_EXPLICIT_CONVERSION_OPERATORS  // workaround for compile error on linux
@@ -196,8 +198,8 @@ U32            GetCurrentMilliseconds()
 bool           HasTimeWindowExpired( const time_t& currentTime, const time_t& windowBegin, int numSecondsForWindow )
 {
    int secondsElapsed = static_cast< int >( difftime( currentTime, windowBegin ) );
-   if( secondsElapsed < 1 ) // already passed
-      return true;
+  /* if( secondsElapsed < 1 ) // already passed
+      return true;*/
    if( numSecondsForWindow < secondsElapsed )
       return true;
 
@@ -209,9 +211,7 @@ bool           HasTimeWindowExpired( const time_t& currentTime, const time_t& wi
 bool           InCurrentTimeWindow( const time_t& currentTime, const time_t& windowBegin, int numSecondsForWindow )
 {
    int secondsElapsed = static_cast< int >( difftime( currentTime, windowBegin ) );
-   if( secondsElapsed < 1 ) // already passed
-      return false;
-   if( numSecondsForWindow < secondsElapsed )
+   if( numSecondsForWindow >= secondsElapsed )
       return false;
 
    return true;

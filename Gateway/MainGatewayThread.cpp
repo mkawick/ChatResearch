@@ -226,6 +226,7 @@ void     MainGatewayThread::InputConnected( IChainedInterface * chainedInput )
    khaan->SetConnectionId( newId );
 
    khaan->SetMainOutput( this );
+   khaan->SetKeepAliveTimeoutInSeconds( 10 );// all other default to 5, but the gateway...
 
    if( m_connectionsRequireAuthentication == false )
    {

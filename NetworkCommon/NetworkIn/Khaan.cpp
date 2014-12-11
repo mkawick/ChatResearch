@@ -26,27 +26,34 @@ using boost::format;
 #include "Khaan.h"
 #include "Diplodocus.h"
 
+#if defined (CLIENT_ONLY)
+const int DefaultSocketTimeout = 10;
+#else
+const int DefaultSocketTimeout = 15;
+#endif
+
 /////////////////////////////////////////////////////////////////
 
-Khaan ::Khaan( int socketId, bufferevent* be, int connectionId ) : ChainedInterface< BasePacket* >(), 
-                                                                  m_socketId( socketId ), 
-                                                                  m_bufferEvent( be ), 
-                                                                  m_listeningPort( 0 ),
-                                                                  m_timeOfConnection( 0 ),
-                                                                  m_timeOfDisconnection( 0 ),
-                                                                  m_maxBytesToSend( 2 * 1024 ),
-                                                                  m_useLibeventToSend( true ),
-                                                                  m_criticalFailure( false ),
-                                                                  m_denyAllFutureData( false ),
-                                                                  m_isDisconnected( false ),
-                                                                  m_isInTelnetMode( false ),
-                                                                  m_isExpectingMoreDataInPreviousPacket( false ),
-                                                                  m_hasPacketsReceived( false ),
-                                                                  m_hasPacketsToSend( false ),
-                                                                  m_expectedBytesReceivedSoFar( 0 ),
-                                                                  m_expectedBytes( 0 ),
-                                                                  m_versionNumberMinor( NetworkVersionMinor ),
-                                                                  m_outboundBuffer( NULL )
+Khaan ::Khaan( int socketId, bufferevent* be, int connectionId ) : 
+               ChainedInterface< BasePacket* >(), 
+               m_socketId( socketId ), 
+               m_bufferEvent( be ), 
+               m_listeningPort( 0 ),
+               m_timeOfConnection( 0 ),
+               m_timeOfDisconnection( 0 ),
+               m_maxBytesToSend( 2 * 1024 ),
+               m_useLibeventToSend( true ),
+               m_criticalFailure( false ),
+               m_denyAllFutureData( false ),
+               m_isDisconnected( false ),
+               m_isInTelnetMode( false ),
+               m_isExpectingMoreDataInPreviousPacket( false ),
+               m_hasPacketsReceived( false ),
+               m_hasPacketsToSend( false ),
+               m_expectedBytesReceivedSoFar( 0 ),
+               m_expectedBytes( 0 ),
+               m_versionNumberMinor( NetworkVersionMinor ),
+               m_outboundBuffer( NULL )
 {
    //LogMessage( LOG_PRIO_INFO, "Khaan 1" );
    m_chainedType = ChainedType_InboundSocketConnector;
@@ -55,6 +62,12 @@ Khaan ::Khaan( int socketId, bufferevent* be, int connectionId ) : ChainedInterf
 
    SetConnectionId( connectionId );
    SetOutboudBufferSize( MaxBufferSize + 1024 );
+
+   m_keepAlive.ResetAfterDisconnect();
+   m_keepAlive.Enable( false );
+   m_keepAlive.Set( this );
+   m_keepAlive.FunctionsAsServer( true );
+   m_keepAlive.SetTimeout( 10 );
 }
 
 /////////////////////////////////////////////////////////////////
@@ -192,8 +205,16 @@ bool	Khaan :: Update()
       UpdateOutwardPacketList();
    }
 
-   // I think that this makes sense
    CleanupAllEvents();
+
+   if( m_keepAlive.HasKeepAliveExpired() )
+   {
+      m_keepAlive.SetInvalid();
+      CloseConnection();
+      return false;
+   }
+   m_keepAlive.Update();
+   
 
    if( m_hasPacketsToSend || m_hasPacketsReceived )// we didn't finish
    {
@@ -211,6 +232,9 @@ bool	Khaan :: Update()
    return true;
 }
 
+/////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////
+
 void  Khaan :: SetOutboudBufferSize( U32 size )
 {
    //LogMessage( LOG_PRIO_INFO, "Khaan 8.1" );
@@ -224,6 +248,7 @@ void  Khaan :: SetOutboudBufferSize( U32 size )
    m_outboundBuffer = new U8[ m_maxBytesToSend ];
 }
 
+/////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////
 
 void	Khaan :: UpdateInwardPacketList()
@@ -253,7 +278,10 @@ void	Khaan :: UpdateInwardPacketList()
                BasePacket* packet = m_packetsIn.front();
             
                TrackInwardPacketType( packet );
-               static_cast< ChainType*> ( chain )->AddInputChainData( packet, m_socketId );
+               if( m_keepAlive.HandlePacket( packet ) == false )
+               {
+                  static_cast< ChainType*> ( chain )->AddInputChainData( packet, m_socketId );
+               }
 
                m_packetsIn.pop_front();
             }

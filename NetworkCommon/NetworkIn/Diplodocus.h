@@ -56,6 +56,7 @@ protected:
 };
 
 void  UpdateConsoleWindow( time_t& timeOfLastTitleUpdate, time_t uptime, int totalConnections, int numCurrentConnections, int listeningPort, const string& serverName );
+void  LogConnectionInfo( time_t& timeOfLastTitleUpdate, time_t uptime, int numTotalConnections, int numCurrentConnections, int listeningPort, const string& serverName );
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////
@@ -86,6 +87,8 @@ public:
    U8             GetGatewayType() const { return m_gatewayType; }
    void           SetExternalIpAddress( const string& ipAddr ) { m_externalIpAddress = ipAddr; }
    string         GetExternalIpAddress() { return m_externalIpAddress; }
+
+   void           RequireKeepAlive( bool isRequired ) { m_requiresKeepAlive = isRequired; }// onl works before the first connection
 
    const string&  GetServerName() const { return m_serverName; }
    U32            GetServerId() const { return m_serverId; }
@@ -170,8 +173,10 @@ protected:
    string                                 m_externalIpAddress;
 
    time_t                                 m_timeOfLastTitleUpdate;
+   time_t                                 m_timeOfLastLoginInfoUpdate;
    time_t                                 m_uptime;
    int                                    m_numTotalConnections;
+   bool                                   m_requiresKeepAlive;
 
 
    bool           SetupListeningSocket();

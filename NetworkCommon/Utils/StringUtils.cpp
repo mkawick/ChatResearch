@@ -142,6 +142,17 @@ const char*    ConvertToTrueFalseString( bool value )
 
 //////////////////////////////////////////////////////////////////////////
 
+bool           ConvertToTrueFalse( const string& value )
+{
+   if( value == "true" || value == "TRUE" || value == "1" )// left to right optimized
+   {
+      return true;
+   }
+   return false;
+}
+
+//////////////////////////////////////////////////////////////////////////
+
 std::string    Trim( const std::string& str,
                  const std::string& whitespace )
 {

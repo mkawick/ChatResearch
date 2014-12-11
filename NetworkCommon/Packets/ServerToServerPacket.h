@@ -17,7 +17,8 @@ public:
       PacketServerIdentifier_Disconnect,
       PacketServerIdentifier_GatewayRequestLB_ConnectionIds,
       PacketServerIdentifier_GatewayRequestLB_ConnectionIdsResponse,
-      PacketServerIdentifier_ServerOutageSchedule
+      PacketServerIdentifier_ServerOutageSchedule,
+      PacketServerIdentifier_KeepAlive
    };
 
 public:
@@ -52,7 +53,8 @@ public:
                            serverId( 0 ), 
                            isGameServer( true ), 
                            isController( false ), 
-                           gatewayType( GatewayType_None ) {}
+                           gatewayType( GatewayType_None ),
+                           gameNetworkVersion( 0 ){}
 
    bool  SerializeIn( const U8* data, int& bufferOffset, int minorVersion );
    bool  SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const;
@@ -67,6 +69,7 @@ public:
    bool              isGameServer;
    bool              isController;
    U8                gatewayType;
+   U16               gameNetworkVersion;
 };
 
 ///////////////////////////////////////////////////////////////
@@ -179,6 +182,19 @@ public:
    bool  SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const;
 
    SerializedVector< ScheduledOutage > scheduledOutages;
+};
+
+///////////////////////////////////////////////////////////////
+
+class PacketServerConnectionInfo_KeepAlive : public BasePacket
+{
+public:
+   PacketServerConnectionInfo_KeepAlive( int packet_type = PacketType_ServerInformation, int packet_sub_type = PacketServerConnectionInfo::PacketServerIdentifier_KeepAlive  ): BasePacket( packet_type, packet_sub_type ){}
+
+   bool  SerializeIn( const U8* data, int& bufferOffset, int minorVersion );
+   bool  SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const;
+
+   U16   packetNo;
 };
 
 

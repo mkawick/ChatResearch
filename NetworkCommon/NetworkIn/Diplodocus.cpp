@@ -28,6 +28,8 @@ using boost::format;
 #include "../Utils/CommandLineParser.h"
 #include "Diplodocus.h"
 
+#include "../NetworkUtils.h"
+
 using namespace std;
 
 
@@ -73,3 +75,32 @@ void  EnableThreadingInLibEvent()
       evthread_use_pthreads();
 #endif
 }
+
+//---------------------------------------------------
+
+void  LogConnectionInfo( time_t& timeOfLastTitleUpdate, time_t uptime, int numTotalConnections, int numCurrentConnections, int listeningPort, const string& serverName )
+{
+   time_t currentTime;
+   time( &currentTime );
+   if( difftime( currentTime, timeOfLastTitleUpdate ) >= 60 ) // once per minute
+   {
+      timeOfLastTitleUpdate = currentTime;
+      int totalUptime = static_cast< int >( difftime( currentTime, uptime ) );
+      int hours = totalUptime/3600;
+      int minutes = (totalUptime - hours*3600 ) / 60;
+      int seconds = totalUptime - hours*3600 - minutes * 60;
+
+      static format titleFormat("Listens on port:%2% -- connections[%3%:%4%] -- uptime(%5$003d:%6$02d:%7$02d)");
+
+      string logMessage = str( titleFormat
+                        % serverName 
+                        % listeningPort 
+                        % numCurrentConnections 
+                        % numTotalConnections 
+                        % hours
+                        % minutes
+                        % seconds );
+      LogMessage( LOG_PRIO_INFO, logMessage.c_str() );
+   }
+}
+//---------------------------------------------------

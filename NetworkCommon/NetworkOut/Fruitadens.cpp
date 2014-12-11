@@ -36,6 +36,11 @@ using namespace std;
 
 const int typicalSleepTime = 200;
 
+/*#if defined (CLIENT_ONLY)
+const int defaultSocketTimeout = 10;
+#else
+const int defaultSocketTimeout = 15;
+#endif*/
 
 //-----------------------------------------------------------------------------
 
@@ -58,7 +63,6 @@ Fruitadens :: Fruitadens( const char* name, bool processOnlyOneIncommingPacketPe
                m_packetHandlerInterface( NULL ),
                m_bytesInOverflow( 0 ),
                m_extensiveLogging( false )
-               
 {
    m_chainedType = ChainedType_OutboundSocketConnector;
    m_name = name;
@@ -67,6 +71,11 @@ Fruitadens :: Fruitadens( const char* name, bool processOnlyOneIncommingPacketPe
    m_receiveBufferSize = MaxBufferSize * 4;// 128k
 
    m_receiveBuffer = new U8[ m_receiveBufferSize ];
+
+   m_keepAlive.Enable( false );
+   m_keepAlive.Set( this );
+   m_keepAlive.FunctionsAsServer( false );
+   m_keepAlive.SetTimeout( 15 );
 }
 
 Fruitadens::~Fruitadens()
@@ -206,6 +215,7 @@ bool  Fruitadens :: SetupConnection( const char* serverName, int port )
 
 bool  Fruitadens :: CreateSocket()
 {
+   LogMessage( LOG_PRIO_INFO, "Fruitadens :: CreateSocket()" );
    string portString = boost::lexical_cast<string>( m_port );
    string notification = "Client on port " + portString;
 
@@ -222,6 +232,7 @@ bool  Fruitadens :: CreateSocket()
 
       return false;
    }
+   LogAllStateVars();
    return true;
 }
 
@@ -283,6 +294,70 @@ void  Fruitadens :: AttemptConnection()
 
 //-----------------------------------------------------------------------------
 
+bool  Fruitadens :: HandleSendSocketErrorConditions( int numBytesReceived )
+{
+      // error checking
+#if PLATFORM == PLATFORM_WINDOWS
+   int error_number = WSAGetLastError();
+   if( error_number != WSAEWOULDBLOCK )
+   {
+      if( error_number == WSAECONNRESET )
+      {
+         if( m_extensiveLogging == true )
+            LogMessage( LOG_PRIO_ERR, "Fruitadens :: MainLoop_InputProcessing .. SocketHasDisconnectedDuringRecv" );
+
+         SocketHasDisconnectedDuringRecv( error_number );
+         return false;
+      }
+   }
+#elif PLATFORM == PLATFORM_MAC || defined(ANDROID)
+   if( numBytesReceived == -1 )
+   {
+      int error_number = errno;
+      
+      if( error_number != EINTR && errno != EWOULDBLOCK )//this error code for a non-blocking socket should be observed
+          // common recv error which is commonly ignored
+      {
+         LogMessage( LOG_PRIO_ERR, "Fruitadens :: MainLoop_InputProcessing .. error_number: %d", error_number );
+         SocketHasDisconnectedDuringRecv( error_number );
+         return false;
+      }
+   }
+
+#else
+   if( numBytesReceived == -1 )
+   {
+      // this is normal and expected. We are polling the socket and for a non-blocking socket
+      // -1 is the normal state. I retested this on 04Dec2014 on 10.16.4.33 using my simple_client
+      // and this is how it works.
+   }
+   else if( numBytesReceived == 0 )
+   {
+      int error_number = errno;
+      
+    /*  fixme
+      if( error_number == EWOULDBLOCK )//this error code for a non-blocking socket should be observed with 0 bytes received
+      {
+         LogMessage( LOG_PRIO_ERR, "Fruitadens :: MainLoop_InputProcessing .. normal disconnect: %d", error_number );
+         SocketHasDisconnectedDuringRecv( error_number );
+		   LogAllStateVars();
+		   return false;
+      }*/
+      if( error_number != EINTR && errno != EWOULDBLOCK )
+      {
+         LogMessage( LOG_PRIO_ERR, "Fruitadens :: MainLoop_InputProcessing .. error_number: %d", error_number );
+         SocketHasDisconnectedDuringRecv( error_number );
+         return false;
+      }
+      
+   }
+#endif
+   return true;
+   
+}
+
+//-----------------------------------------------------------------------------
+
 int   Fruitadens :: MainLoop_InputProcessing()
 {
    if( m_extensiveLogging == true )
@@ -329,54 +404,63 @@ int   Fruitadens :: MainLoop_InputProcessing()
          LogMessage( LOG_PRIO_ERR, "Fruitadens :: MainLoop_InputProcessing .. data received %d", numReceived );
    }
    
+   if( numBytesReceived > 0 ) // todo, remove this
+      cout<< "Received " << numBytesReceived << " bytes" << endl;
 
-   // error checking
-#if PLATFORM == PLATFORM_WINDOWS
-   int error_number = WSAGetLastError();
-   if( error_number != WSAEWOULDBLOCK )
+   bool wasReceiveSuccessful = HandleSendSocketErrorConditions( numBytesReceived );
+
+   if( wasReceiveSuccessful )
    {
-      if( error_number == WSAECONNRESET )
-      {
-         if( m_extensiveLogging == true )
-            LogMessage( LOG_PRIO_ERR, "Fruitadens :: MainLoop_InputProcessing .. SocketHasDisconnectedDuringRecv" );
+      if( m_extensiveLogging == true )
+         LogMessage( LOG_PRIO_ERR, "Fruitadens :: MainLoop_InputProcessing .. PostProcessInputPackets" );
 
-         SocketHasDisconnectedDuringRecv( error_number );
-      }
+      // process the data in the queue
+      PostProcessInputPackets( m_receiveBufferSize - remainingBufferSize );
+
+      if( m_extensiveLogging == true )
+         LogMessage( LOG_PRIO_ERR, "Fruitadens :: MainLoop_InputProcessing exit" );
    }
-#else
-   if( numBytesReceived == -1 )
+
+   if( m_keepAlive.HasKeepAliveExpired() )
    {
-      int error_number = errno;
-      if( error_number != EINTR && errno != EWOULDBLOCK ) // common recv error which is commonly ignored
-      {
-         SocketHasDisconnectedDuringRecv( error_number );
-      }
+      m_keepAlive.SetInvalid();
+      SocketHasDisconnected();
    }
-#endif
+   else
+   {
+      m_keepAlive.Update();
+   }
 
-   if( m_extensiveLogging == true )
-      LogMessage( LOG_PRIO_ERR, "Fruitadens :: MainLoop_InputProcessing .. PostProcessInputPackets" );
-
-   // process the data in the queue
-   PostProcessInputPackets( m_receiveBufferSize - remainingBufferSize );
-
-   if( m_extensiveLogging == true )
-      LogMessage( LOG_PRIO_ERR, "Fruitadens :: MainLoop_InputProcessing exit" );
    return 1;
 }
 
 //-----------------------------------------------------------------------------------------
+//-----------------------------------------------------------------------------------------
+//-----------------------------------------------------------------------------------------
 
 void  Fruitadens::SocketHasDisconnectedDuringRecv( int error_number )
 {
-   m_isConnected = false;
+   
    //m_hasFailedCritically = true;
    LogMessage( LOG_PRIO_INFO, "***********************************************************" );
    LogMessage( LOG_PRIO_INFO, "Socket has been reset" );
    LogMessage( LOG_PRIO_INFO, "Socket error was: ", error_number );   
    LogMessage( LOG_PRIO_INFO, "attempting a reconnect" );
    LogMessage( LOG_PRIO_INFO, "***********************************************************" );
+   SocketHasDisconnected();
+}
+
+void  Fruitadens::SocketHasDisconnected()
+{
+   LogMessage( LOG_PRIO_INFO, "***********************************************************" );
+   LogMessage( LOG_PRIO_INFO, "Socket has been reset" );
+   LogMessage( LOG_PRIO_INFO, "***********************************************************" );
+   
+   m_isConnected = false;
    closesocket( m_clientSocket );
+
+   m_receiveBufferOffset = 0;
+   m_keepAlive.ResetAfterDisconnect();
 
    InitialDisconnectionCallback();
    HasBeenDisconnectedCallback(); // tell higher layers
@@ -384,6 +468,7 @@ void  Fruitadens::SocketHasDisconnectedDuringRecv( int error_number )
    CreateSocket();
 }
 
+//-----------------------------------------------------------------------------------------
 //-----------------------------------------------------------------------------------------
 
 void  Fruitadens::PostProcessInputPackets( int bytesRead )
@@ -429,7 +514,13 @@ void  Fruitadens::PostProcessInputPackets( int bytesRead )
          m_numPacketsReceived ++;
          if( m_extensiveLogging == true )
             LogMessage( LOG_PRIO_ERR, "Fruitadens :: MainLoop_InputProcessing .. HandlePacketReceived before" );
-         HandlePacketReceived( packetIn );
+         
+         // todo, remove this line of code.
+         cout << "Handling a packet (" << packetIn->packetType << ":" << packetIn->packetSubType << ")" << endl;
+         if( m_keepAlive.HandlePacket( packetIn ) == false )
+         {
+            HandlePacketReceived( packetIn );
+         }
       }
       else
       {
@@ -446,9 +537,7 @@ void  Fruitadens::PostProcessInputPackets( int bytesRead )
       if( m_processOnlyOneIncommingPacketPerLoop == true )
          break;
    }
-
 }
-
 //-----------------------------------------------------------------------------------------
 
 int  Fruitadens::MainLoop_OutputProcessing()
@@ -541,9 +630,43 @@ bool  Fruitadens::HandlePacketReceived( BasePacket* packetIn )
 
 //-----------------------------------------------------------------------------
 
-bool  Fruitadens :: HandleS2SIdentitfyPacket( BasePacket* packetIn )
+bool  	Fruitadens :: HandleS2SIdentitfyPacket( BasePacket* packetIn )
 {
    return false;
+}
+
+//-----------------------------------------------------------------------------
+
+void	Fruitadens :: LogAllStateVars()
+{
+   if( m_extensiveLogging == false )
+      return;
+
+	LogMessage( LOG_PRIO_INFO, "------------- Fruitadens states ----------------" );
+	LogMessage( LOG_PRIO_INFO, "m_clientSocket                          %i", m_clientSocket );
+	LogMessage( LOG_PRIO_INFO, "m_isConnected                           %i", m_isConnected );
+	LogMessage( LOG_PRIO_INFO, "m_hasFailedCritically                   %i", m_hasFailedCritically );
+	LogMessage( LOG_PRIO_INFO, "m_processOnlyOneIncommingPacketPerLoop  %i", m_processOnlyOneIncommingPacketPerLoop );
+	LogMessage( LOG_PRIO_INFO, "m_checkForReroute                       %i", m_checkForReroute );
+	LogMessage( LOG_PRIO_INFO, "m_isSettingUpConnection                 %i", m_isSettingUpConnection );
+	LogMessage( LOG_PRIO_INFO, "m_connectedServerId                     %i", m_connectedServerId );
+	
+	LogMessage( LOG_PRIO_INFO, "m_connectedGameProductId                %i", m_connectedGameProductId );
+	
+	// m_ipAddress
+	LogMessage( LOG_PRIO_INFO, "m_port                                  %u", (U32) m_port );
+	LogMessage( LOG_PRIO_INFO, "m_serverType                            %u", (U32) m_serverType );
+	LogMessage( LOG_PRIO_INFO, "m_name                                  %s", m_name.c_str() );
+	LogMessage( LOG_PRIO_INFO, "m_packetsReadyToSend.size()             %u", (U32) m_packetsReadyToSend.size() );
+	LogMessage( LOG_PRIO_INFO, "m_serverId                              %u",  m_serverId );
+	LogMessage( LOG_PRIO_INFO, "m_numPacketsReceived                    %i", m_numPacketsReceived );
+	
+	LogMessage( LOG_PRIO_INFO, "m_receiveBufferSize                     %u", m_receiveBufferSize );
+	LogMessage( LOG_PRIO_INFO, "m_receiveBufferOffset                   %u", m_receiveBufferOffset );
+	LogMessage( LOG_PRIO_INFO, "m_networkVersionOverride                %u", (U32) m_networkVersionOverride );
+	LogMessage( LOG_PRIO_INFO, "m_bytesInOverflow                       %i", m_bytesInOverflow );
+	LogMessage( LOG_PRIO_INFO, "m_extensiveLogging                      %i", m_extensiveLogging );
+	LogMessage( LOG_PRIO_INFO, "--------- end Fruitadens states ----------------" );
 }
 
 //-----------------------------------------------------------------------------
@@ -595,18 +718,6 @@ bool  Fruitadens :: SendPacket( const U8* buffer, int length ) const
 {
    if( m_isConnected && ( length > 0 ) && m_clientSocket != SOCKET_ERROR )
    {
-/*//#ifdef TwoByteProtocol
-      U16 len = static_cast< U16 >( length );
-      try
-      {
-         nBytes = static_cast< int >( send( m_clientSocket, reinterpret_cast<const char*>( &len ), sizeof( U16 ), MSG_NOSIGNAL ) ); // we aren't handling sigpipe errors here so don't send them (crash/exit since we dont handle them)
-      }
-      catch(...)
-      {
-         nBytes = SOCKET_ERROR;
-      }
-//#endif*/
-
       int nBytes = SOCKET_ERROR;
       try
       {
@@ -654,6 +765,8 @@ FruitadensServer :: FruitadensServer( const char* name, bool processOnlyOneIncom
 {
    //m_connectedServerIp;
    LogMessage( LOG_PRIO_INFO, "FruitadensServer:: %s", name );
+
+   m_keepAlive.SetTimeout( 15 );
 }
 
 //-----------------------------------------------------------------------------
@@ -773,6 +886,39 @@ void   FruitadensServer::SocketHasDisconnectedDuringRecv( int error_number )
    LogMessage( LOG_PRIO_INFO, "**************************************************" );
          
    Fruitadens::SocketHasDisconnectedDuringRecv( error_number );
+}
+
+void	FruitadensServer :: LogAllStateVars()
+{
+   if( m_extensiveLogging == false )
+      return;
+
+	LogMessage( LOG_PRIO_INFO, "------------- FruitadensServer states ----------------" );
+	Fruitadens :: LogAllStateVars();
+	LogMessage( LOG_PRIO_INFO, "m_areLocalIdentifyingParamsSet  %i", m_areLocalIdentifyingParamsSet );
+	LogMessage( LOG_PRIO_INFO, "m_localServerName               %s", m_localServerName.c_str() );
+	LogMessage( LOG_PRIO_INFO, "m_localIpAddress                %s", m_localIpAddress.c_str() );
+	LogMessage( LOG_PRIO_INFO, "m_externalIpAddress             %s", m_externalIpAddress.c_str() );
+	LogMessage( LOG_PRIO_INFO, "m_localServerId                 %u", m_localServerId );
+	LogMessage( LOG_PRIO_INFO, "m_localServerPort               %u", (U32) m_localServerPort );
+	LogMessage( LOG_PRIO_INFO, "m_localGameProductId            %u", (U32) m_localGameProductId );
+	LogMessage( LOG_PRIO_INFO, "m_gatewayType                   %i", (U32) m_gatewayType );
+	LogMessage( LOG_PRIO_INFO, "m_localServerType               %i", (U32) m_localServerType );
+	LogMessage( LOG_PRIO_INFO, "m_localIsGameServer             %i", m_localIsGameServer );
+	LogMessage( LOG_PRIO_INFO, "m_areLocalIdentifyingParamsSet  %i", m_areLocalIdentifyingParamsSet );
+	LogMessage( LOG_PRIO_INFO, "m_localIsController             %i", m_localIsController );
+	LogMessage( LOG_PRIO_INFO, "m_localRequiresWrapper          %i", m_localRequiresWrapper );
+	LogMessage( LOG_PRIO_INFO, "m_recentlyConnected             %i", m_recentlyConnected );
+	LogMessage( LOG_PRIO_INFO, "m_recentlyDisconnected          %i", m_recentlyDisconnected );
+	LogMessage( LOG_PRIO_INFO, "m_connectedServerName           %s", m_connectedServerName.c_str() );
+	LogMessage( LOG_PRIO_INFO, "m_connectedServerIp             %s", m_connectedServerIp.c_str() );
+	LogMessage( LOG_PRIO_INFO, "m_connectedServerPort           %u", (U32) m_connectedServerPort );
+	LogMessage( LOG_PRIO_INFO, "m_connectedIsGame               %i", m_connectedIsGame );
+	LogMessage( LOG_PRIO_INFO, "m_connectedIsController         %i", m_connectedIsController );
+	LogMessage( LOG_PRIO_INFO, "m_connectedServerTime           %s", GetDateInUTC( m_connectedServerTime ).c_str() );
+	LogMessage( LOG_PRIO_INFO, "m_disconnectedServerTime        %s", GetDateInUTC( m_disconnectedServerTime ).c_str() );
+
+	LogMessage( LOG_PRIO_INFO, "--------- end FruitadensServer states ----------------" );
 }
 
 //-------------------------------------------------------------------------

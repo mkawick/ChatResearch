@@ -83,6 +83,12 @@ int main( int argc, const char* argv[] )
 
    string printFunctionsString = "false";
 
+#if PLATFORM == PLATFORM_WINDOWS // default
+   string enableKeepAliveString = "false";
+#else
+   string enableKeepAliveString = "true";
+#endif
+
    //---------------------------------------
    
    parser.FindValue( "server.name", serverName );
@@ -92,6 +98,7 @@ int main( int argc, const char* argv[] )
    parser.FindValue( "s2s.address", listenForS2SAddress );
 
    parser.FindValue( "print.functions", printFunctionsString );
+   parser.FindValue( "keepalive", enableKeepAliveString );
 
    FileLogOpen( serverName.c_str() );
 
@@ -113,7 +120,8 @@ int main( int argc, const char* argv[] )
    //--------------------------------------------------------------
 
    int listenPort = 9500, listenS2SPort = 9502;
-   bool  printFunctions = false;
+   bool  printFunctions = ConvertToTrueFalse( printFunctionsString ),
+         enableKeepAlive = ConvertToTrueFalse( enableKeepAliveString );
    try 
    {
        listenPort = boost::lexical_cast<int>( listenPortString );
@@ -122,11 +130,6 @@ int main( int argc, const char* argv[] )
    catch( boost::bad_lexical_cast const& ) 
    {
        LogMessage( LOG_PRIO_ERR, "Error: input string was not valid" );
-   }
-
-   if( printFunctionsString == "1" || printFunctionsString == "true" || printFunctionsString == "TRUE" )
-   {
-      printFunctions = true;
    }
    //--------------------------------------------------------------
 
@@ -152,7 +155,7 @@ int main( int argc, const char* argv[] )
       loadBalancer->SetGatewayType( PacketServerIdentifier::GatewayType_None );
       loadBalancer->SetAsGame( false );
       loadBalancer->PrintFunctionNames( printFunctions );
-
+      loadBalancer->RequireKeepAlive( enableKeepAlive );
 
       vector< string >::iterator it = params.begin();
       while( it != params.end() )

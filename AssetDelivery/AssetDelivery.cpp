@@ -44,7 +44,8 @@ void  PrintInstructions()
 
    cout << "    asset.dictionary  - name of the dictionary/project file" << endl;
    cout << "    asset.path        - base directory for asset server assets" << endl;
-   
+   cout << "    keepalive         - send keep alive packets to clients of this server" << endl;
+
    cout << "    asset server does not have db access" << endl;
 
 
@@ -69,6 +70,12 @@ int main( int argc, const char* argv[] )
    string assetDictionary = "assets_of_assets.ini";
    string assetPath = "C:/projects/Mber/ServerStack/X_testFiles_X";
 
+#if PLATFORM == PLATFORM_WINDOWS // default
+   string enableKeepAliveString = "false";
+#else
+   string enableKeepAliveString = "true";
+#endif
+
    //---------------------------------------
 
    parser.FindValue( "server.name", serverName );
@@ -81,9 +88,11 @@ int main( int argc, const char* argv[] )
 
    parser.FindValue( "asset.dictionary", assetDictionary );
    parser.FindValue( "asset.path", assetPath );
+   parser.FindValue( "keepalive", enableKeepAliveString );
 
    FileLogOpen( serverName.c_str() );
    int listenPort = 7300, listenS2SPort = 7302;
+   bool enableKeepAlive = ConvertToTrueFalse( enableKeepAliveString );
    try 
    {
       listenS2SPort = boost::lexical_cast<int>( listenForS2SPort );
@@ -93,7 +102,6 @@ int main( int argc, const char* argv[] )
    {
        LogMessage( LOG_PRIO_ERR, "Error: input string was not valid" );
    }
-
 
    //----------------------------------------------------------------
  
@@ -117,6 +125,7 @@ int main( int argc, const char* argv[] )
       AssetMainThread*    assetServer = new AssetMainThread( serverName, serverId );
       assetServer->SetupListening( listenPort );
       assetServer->SetIniFilePath( assetPath, assetDictionary );
+      assetServer->RequireKeepAlive( enableKeepAlive );
 
       DiplodocusServerToServer* s2s = new DiplodocusServerToServer( serverName, serverId, 0, ServerType_Asset );
       s2s->SetupListening( listenS2SPort );

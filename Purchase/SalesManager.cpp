@@ -733,6 +733,8 @@ ExchangeEntry :: ExchangeEntry() : index( 0 )
 
 ExchangeEntry& ExchangeEntry :: operator = ( ExchangeRateParser::row  row )
 {
+   LogMessage( LOG_PRIO_INFO, "ExchangeEntry::operator =" );
+
    index =              boost::lexical_cast< int > ( row[ TableExchangeRateAggregate::Column_index ] );
    beginDate =          row[ TableExchangeRateAggregate::Column_begin_date ];
    endDate =            row[ TableExchangeRateAggregate::Column_end_date ];
@@ -763,6 +765,7 @@ ExchangeEntry& ExchangeEntry :: operator = ( ExchangeRateParser::row  row )
 
 Product&    Product::operator = ( ProductTable::row  row )
 {
+   LogMessage( LOG_PRIO_INFO, "Product::operator =" );
    id =                 boost::lexical_cast< int > ( row[ TableProduct::Column_id ] );
    productId =          boost::lexical_cast< int > ( row[ TableProduct::Column_product_id ] );
    uuid =               row[ TableProduct::Column_uuid ];

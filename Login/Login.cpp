@@ -115,6 +115,7 @@ void  PrintInstructions()
 
    cout << "    print.functions   - print each function for debugging" << endl;
    cout << "    print.packets     - print each packet for debugging" << endl;
+   cout << "    keepalive         - send keep alive packets to clients of this server" << endl;
 
    cout << "    autoAddLoginProduct - automatically add the product from which you login" << endl;
    cout << "                          to the list of user purchases [true, false]" << endl;
@@ -161,7 +162,11 @@ int main( int argc, const char* argv[] )
 
    string printFunctionsString = "false";
    string printPacketTypes = "false";
-
+#if PLATFORM == PLATFORM_WINDOWS // default
+   string enableKeepAliveString = "false";
+#else
+   string enableKeepAliveString = "true";
+#endif
    
    //--------------------------------------------------------------
 
@@ -201,6 +206,7 @@ int main( int argc, const char* argv[] )
 
    parser.FindValue( "print.functions", printFunctionsString );
    parser.FindValue( "print.packets", printPacketTypes );
+   parser.FindValue( "keepalive", enableKeepAliveString );
 
    string dbPortString = "16384";
    string dbIpAddress = "localhost";
@@ -224,9 +230,10 @@ int main( int argc, const char* argv[] )
          analyticsPort = 7802, 
          notificationPort = 7902,
          userStatsPort = 12000;
-   bool autoAddLoginProduct = true,
-         printPackets = false, 
-         printFunctions = false;
+   bool autoAddLoginProduct = ConvertToTrueFalse( autoAddLoginProductString ),
+         printPackets = ConvertToTrueFalse( printPacketTypes ), 
+         printFunctions = ConvertToTrueFalse( printFunctionsString ),
+         enableKeepAlive = ConvertToTrueFalse( enableKeepAliveString );
 
    FileLogOpen( serverName.c_str() );
 
@@ -243,23 +250,10 @@ int main( int argc, const char* argv[] )
        userStatsPort = boost::lexical_cast<int>( userStatsPortString );
 
        std::transform( autoAddLoginProductString.begin(), autoAddLoginProductString.end(), autoAddLoginProductString.begin(), ::tolower );
-       if( autoAddLoginProductString == "1" || autoAddLoginProductString == "true" )
-          autoAddLoginProduct = true;
-       else
-          autoAddLoginProduct = false;
    } 
    catch( boost::bad_lexical_cast const& ) 
    {
        LogMessage( LOG_PRIO_INFO, "Error: input string was not valid" );
-   }
-
-   if( printPacketTypes == "1" || printPacketTypes == "true" || printPacketTypes == "TRUE" )
-   {
-      printPackets = true;
-   }
-   if( printFunctionsString == "1" || printFunctionsString == "true" || printFunctionsString == "TRUE" )
-   {
-      printFunctions = true;
    }
 
    //----------------------------------------------------------------
@@ -292,6 +286,7 @@ int main( int argc, const char* argv[] )
       loginServer->AutoAddTheProductFromWhichYouLogin( autoAddLoginProduct );
       loginServer->PrintPacketTypes( printPackets );
       loginServer->PrintFunctionNames( printFunctions );
+      loginServer->RequireKeepAlive( enableKeepAlive );
 
       //----------------------------------------------------------------
 

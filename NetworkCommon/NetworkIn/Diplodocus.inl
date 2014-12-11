@@ -425,11 +425,13 @@ Diplodocus< InputChain, OutputChain >::Diplodocus( string serverName, U32 server
                                     
                                     m_connectionIdGateway( 0 ),
                                     m_serverName( serverName ),
-                                    m_numTotalConnections( 0 )
+                                    m_numTotalConnections( 0 ),
+                                    m_requiresKeepAlive( false )
 {
    m_chainedType = ChainedType_MainThreadContainer;
    time( &m_timeOfLastTitleUpdate );
    m_uptime = m_timeOfLastTitleUpdate;
+   m_timeOfLastLoginInfoUpdate = m_timeOfLastTitleUpdate;
 }
 
 //------------------------------------------------------------------------------
@@ -491,6 +493,8 @@ void	Diplodocus< InputChain, OutputChain >::AddClientConnection( InputChainType*
    AddInputChain( client );   
 
    client->RegisterToReceiveNetworkTraffic();
+   InputChainType* connection = static_cast< InputChainType* >( client );
+   connection->RequireKeepAlive( m_requiresKeepAlive );
 
    //cout << "AddClientConnection:3" << endl;
    InputConnected( client );
@@ -866,6 +870,8 @@ int      Diplodocus< InputChain, OutputChain >::CommonUpdate()
       return 1;
 
    UpdateConsoleWindow( m_timeOfLastTitleUpdate, m_uptime, m_numTotalConnections, static_cast<int>( m_connectedClients.size() ), m_listeningPort, m_serverName );
+
+   LogConnectionInfo( m_timeOfLastLoginInfoUpdate, m_uptime, m_numTotalConnections, static_cast<int>( m_connectedClients.size() ), m_listeningPort, m_serverName );
 
    SendServerIdentification();
 

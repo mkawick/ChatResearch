@@ -63,6 +63,7 @@ void  PrintInstructions()
    cout << "    db.username       - database username" << endl;
    cout << "    db.password       - database password" << endl;
    cout << "    db.schema         - database schema-table collection" << endl;
+   cout << "    keepalive         - send keep alive packets to clients of this server" << endl;
 
    cout << " - for multiple DB connections " << endl;
    cout << " A single db connection would look like this... note the 'all' designation" << endl;
@@ -95,6 +96,12 @@ int main( int argc, const char* argv[] )
    string listenForS2SAddress = "localHost";
    string iosCertPath;
 
+#if PLATFORM == PLATFORM_WINDOWS // default
+   string enableKeepAliveString = "false";
+#else
+   string enableKeepAliveString = "true";
+#endif
+
    //---------------------------------------
 
    if( parser.IsRequestingInstructions() == true )
@@ -126,6 +133,7 @@ int main( int argc, const char* argv[] )
    parser.FindValue( "db.schema", dbSchema );
 
    parser.FindValue( "ios.certpath", iosCertPath );
+   parser.FindValue( "keepalive", enableKeepAliveString );
    //parser.FindValue( "ios.keyfile", iosKeyFile );
  /*  parser.FindValue( "android.certfile", dbPassword );
    //parser.FindValue( "android.certfile", dbPassword );
@@ -134,6 +142,7 @@ int main( int argc, const char* argv[] )
    FileLogOpen( serverName.c_str() );
 
    int listenPort = 7900, dbPortAddress = 3306, listenS2SPort= 7902;
+   bool enableKeepAlive = ConvertToTrueFalse( enableKeepAliveString );
    try 
    {
       listenS2SPort = boost::lexical_cast<int>( listenForS2SPort );
@@ -144,6 +153,7 @@ int main( int argc, const char* argv[] )
    {
        LogMessage( LOG_PRIO_INFO, "Error: input string was not valid" );
    }
+
    //----------------------------------------------------------------
    
    U64 serverUniqueHashValue = GenerateUniqueHash( serverName );
@@ -166,6 +176,7 @@ int main( int argc, const char* argv[] )
    {
       NotificationMainThread*    notificationServer = new NotificationMainThread( serverName, serverId );
       notificationServer->SetupListening( listenPort );
+      notificationServer->RequireKeepAlive( enableKeepAlive );
 
       DiplodocusServerToServer* s2s = new DiplodocusServerToServer( serverName, serverId, 0, ServerType_Notification );
       s2s->SetupListening( listenS2SPort );

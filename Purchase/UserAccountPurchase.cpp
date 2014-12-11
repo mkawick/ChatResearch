@@ -131,6 +131,7 @@ bool     UserAccountPurchase::HandleRequestFromClient( const PacketPurchase* pac
 
 bool     UserAccountPurchase::GetListOfItemsForSale( const PacketPurchase_RequestListOfSales* packet )
 {
+   LogMessage( LOG_PRIO_INFO, "GetListOfItemsForSale" );
    assert( m_purchaseManager != NULL && m_userTicket.connectionId != 0 );
 
    PacketPurchase_RequestListOfSalesResponse* response = new PacketPurchase_RequestListOfSalesResponse();
@@ -216,6 +217,7 @@ bool     UserAccountPurchase::MakePurchase( const PacketPurchase_Buy* packet )
 {
    assert( m_salesManager != NULL || m_userTicket.connectionId == 0 );
 
+   LogMessage( LOG_PRIO_INFO, "MakePurchase" );
    bool success = m_salesManager->PerformSale( packet->purchaseUuid.c_str(), m_userTicket );
    success = success;// warnings
 

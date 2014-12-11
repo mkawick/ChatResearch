@@ -42,6 +42,7 @@ UserConnection.cpp \
 ../NetworkCommon/Packets/TournamentPacket.cpp \
 ../NetworkCommon/Packets/UserStatsPacket.cpp \
 ../NetworkCommon/Utils/CommandLineParser.cpp \
+../NetworkCommon/Utils/KeepAliveSignaller.cpp \
 ../NetworkCommon/Utils/TableWrapper.cpp \
 ../NetworkCommon/Utils/OsLevelUtils.cpp \
 ../NetworkCommon/Utils/StringUtils.cpp \

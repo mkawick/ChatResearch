@@ -2242,7 +2242,7 @@ void     ChatRoomManager::WriteChatToDb( const string& message, const string& se
       }
    }
    
-   string queryString = "INSERT INTO chat_message ( text, user_id_sender, user_id_recipient, chat_channel_id, timestamp, game_turn ) VALUES( _utf8'%s', '%s', ";
+   string queryString = "INSERT INTO chat_message ( text, user_id_sender, user_id_recipient, chat_channel_id, timestamp, game_turn ) VALUES( '%s', '%s', ";
    if( friendUuid.size() > 0 )
    {
       queryString += "'%s'";

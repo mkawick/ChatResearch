@@ -730,11 +730,21 @@ void     StatusUpdate::HandleAdminSettings( const PacketDbQueryResult* dbResult 
          if( m_addProductEntryHandler )
             m_addProductEntryHandler->SetUserIdStart( boost::lexical_cast< int >( value ) ); 
       }
-      else if( setting == "email_domain" )
+      else if( setting == "email_server_name" )
       {
          if( m_newAccountHandler )
-            m_newAccountHandler->SetEmailDomain( value );
+            m_newAccountHandler->SetEmailServerName( value );
          //m_addProductEntryHandler->SetUserIdStart( boost::lexical_cast< int >( value ) ); 
+      }
+      else if( setting == "email_new_account_email_address" )
+      {
+         if( m_newAccountHandler )
+            m_newAccountHandler->SetNewEmailAccountAddress( value );
+      }
+      else if( setting == "email_reset_account_email_address" )
+      {
+         if( m_newAccountHandler )
+            m_newAccountHandler->SetResetEmailAccountAddress( value );
       }
       else if( setting == "email_enabled" )
       {
@@ -761,7 +771,12 @@ void     StatusUpdate::HandleAdminSettings( const PacketDbQueryResult* dbResult 
       else if( setting == "email_port_override" )
       {
          if( m_newAccountHandler )
-            m_newAccountHandler->SetEmailPortOverride( boost::lexical_cast< U16 >( value ) );
+         {
+            if( value.size() == 0 )
+               m_newAccountHandler->SetEmailPortOverride( 0 );
+            else
+               m_newAccountHandler->SetEmailPortOverride( boost::lexical_cast< U16 >( value ) );
+         }
       }
       else if( setting == "email_auth_username" )
       {
