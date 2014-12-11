@@ -10,6 +10,8 @@
 
 #include "KeepAliveSignaller.h"
 
+#include <time.h>
+
 /////////////////////////////////////////////////////////////////////////////////
 
 void  KeepAliveSignaller::Enable( bool enable ) 

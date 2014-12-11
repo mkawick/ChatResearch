@@ -378,6 +378,14 @@
 					>
 				</File>
 				<File
+					RelativePath="..\NetworkCommon\Utils\KeepAliveSignaller.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\NetworkCommon\Utils\KeepAliveSignaller.h"
+					>
+				</File>
+				<File
 					RelativePath="..\NetworkCommon\Utils\StringUtils.cpp"
 					>
 				</File>
