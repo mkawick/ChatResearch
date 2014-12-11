@@ -25,13 +25,15 @@ public:
          m_timeoutPeriod( 10 ),
          m_packetCounter( 0 ),
          m_isAwaitingKeepAliveReturn( false ),
-         m_packetHandler( NULL )
+         m_packetHandler( NULL ),
+         m_enableLogging( false )
    { }
 
    void  SetInvalid() { m_isValid = true; }
    void  ClearInvalid() { m_isValid = false; }
    void  ResetAfterDisconnect();
    void  Enable( bool enable );
+   void  EnableLogging( bool loggingOn ) { m_enableLogging = loggingOn; }
    void  Set( ChainedInterface <BasePacket*>* signalled ) { m_packetHandler = signalled; }
    void  SetTimeout( int seconds ) { m_timeoutPeriod = seconds; }
    void  FunctionsAsServer( bool isServer );// either input or output. Khaan = input, Fruitidens = out
@@ -48,6 +50,7 @@ private:
    bool     m_isEnabled;
    bool     m_requiresKeepAliveSignal;
    bool     m_isServer;
+   bool     m_enableLogging;
    time_t   m_timeLastSignalSent;
    time_t   m_timeLastSignalReceived;
    int      m_timeoutPeriod;

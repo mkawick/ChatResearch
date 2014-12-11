@@ -16,7 +16,9 @@ void  KeepAliveSignaller::Enable( bool enable )
 { 
    m_isEnabled = enable; 
    if( enable == true )
-      cout << "enable" << endl;
+   {
+      LogMessage( LOG_PRIO_INFO, "KeepAliveSignaller::enabled - send" );
+   }
 }
 
 void  KeepAliveSignaller::FunctionsAsServer( bool isServer )
@@ -36,7 +38,10 @@ bool  KeepAliveSignaller::HasKeepAliveExpired() const
 {
    if( m_packetHandler == NULL )
    {
-      cout << "Error in config for KeepAliveSignaller::HasKeepAliveExpired" << endl;
+      if( m_enableLogging )
+      {
+         LogMessage( LOG_PRIO_INFO, "Error in config for KeepAliveSignaller::HasKeepAliveExpired" );
+      }
       return false;
    }
 
@@ -51,7 +56,10 @@ bool  KeepAliveSignaller::HasKeepAliveExpired() const
          time( &currentTime );
          if( HasTimeWindowExpired( currentTime, m_timeLastSignalSent, m_timeoutPeriod ) )
          {
-            LogMessage( LOG_PRIO_INFO, ">>> Has Keep Alive Expired: %s", GetDateInUTC( currentTime ).c_str() );         
+            if( m_enableLogging )
+            {
+               LogMessage( LOG_PRIO_INFO, ">>> Has Keep Alive Expired: %s", GetDateInUTC( currentTime ).c_str() );         
+            }
             return true;
          }
       }
@@ -64,7 +72,10 @@ bool  KeepAliveSignaller::HasKeepAliveExpired() const
          time( &currentTime );
          if( HasTimeWindowExpired( currentTime, m_timeLastSignalReceived, m_timeoutPeriod ) )
          {
-            LogMessage( LOG_PRIO_INFO, ">>> Has Keep Alive Expired: %s", GetDateInUTC( currentTime ).c_str() );
+            if( m_enableLogging )
+            {
+               LogMessage( LOG_PRIO_INFO, ">>> Has Keep Alive Expired: %s", GetDateInUTC( currentTime ).c_str() );
+            }
             return true;
          }
       }
@@ -97,7 +108,10 @@ void  KeepAliveSignaller::Update()
 
       if( HasTimeWindowExpired( currentTime, m_timeLastSignalSent, m_timeoutPeriod ) )
       {
-         LogMessage( LOG_PRIO_INFO, ">>> Send keep alive:        %s,    packet no: %d", GetDateInUTC( currentTime ).c_str(), m_packetCounter );
+         if( m_enableLogging )
+         {
+            LogMessage( LOG_PRIO_INFO, ">>> Send keep alive:        %s,    packet no: %d", GetDateInUTC( currentTime ).c_str(), m_packetCounter );
+         }
          PacketServerConnectionInfo_KeepAlive* packet = new PacketServerConnectionInfo_KeepAlive;
          packet->gameInstanceId = 0;
          packet->gameProductId = 0;
@@ -136,6 +150,7 @@ bool  KeepAliveSignaller::HandlePacket( const BasePacket* packetIn )
          m_requiresKeepAliveSignal = true;// this is not required unless the server says so. 
          //  For a sender (Khaan).. this flag doesn't mean anything.
          // For a Receiver, this triggers the requirement that we try to reconnect
+         LogMessage( LOG_PRIO_INFO, "KeepAliveSignaller::enabled - receive" );
          
          PacketServerConnectionInfo_KeepAlive* returnPacket = new PacketServerConnectionInfo_KeepAlive;
          returnPacket->gameInstanceId = 0;
@@ -145,7 +160,10 @@ bool  KeepAliveSignaller::HandlePacket( const BasePacket* packetIn )
 
          m_packetHandler->AddOutputChainDataNoLock( returnPacket );
          time( &m_timeLastSignalReceived );
-         LogMessage( LOG_PRIO_INFO, ">>> Send keep alive:        %s,    packet no: %d", GetDateInUTC( m_timeLastSignalReceived ).c_str(), m_packetCounter );
+         if( m_enableLogging )
+         {
+            LogMessage( LOG_PRIO_INFO, ">>> Send keep alive:        %s,    packet no: %d", GetDateInUTC( m_timeLastSignalReceived ).c_str(), m_packetCounter );
+         }
          return true;
       }
    }
