@@ -515,8 +515,6 @@ void  Fruitadens::PostProcessInputPackets( int bytesRead )
          if( m_extensiveLogging == true )
             LogMessage( LOG_PRIO_ERR, "Fruitadens :: MainLoop_InputProcessing .. HandlePacketReceived before" );
          
-         // todo, remove this line of code.
-         cout << "Handling a packet (" << packetIn->packetType << ":" << packetIn->packetSubType << ")" << endl;
          if( m_keepAlive.HandlePacket( packetIn ) == false )
          {
             HandlePacketReceived( packetIn );
