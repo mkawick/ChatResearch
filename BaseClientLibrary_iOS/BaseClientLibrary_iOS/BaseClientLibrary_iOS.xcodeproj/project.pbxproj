@@ -38,6 +38,7 @@
 		34EA68AF17612DF500F07E19 /* NetworkUtils.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 34EA68AE17612DF500F07E19 /* NetworkUtils.cpp */; };
 		4C6C019F18F3425E004B0BF6 /* NotificationPacket.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 4C6C019D18F3425E004B0BF6 /* NotificationPacket.cpp */; };
 		4C820AD519BA6C93004E8AD6 /* client_log.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 4C820AD419BA6C93004E8AD6 /* client_log.cpp */; };
+		4CA46D831A3A31F7009DDAC9 /* KeepAliveSignaller.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 4CA46D811A3A31F7009DDAC9 /* KeepAliveSignaller.cpp */; };
 		4CA5E3AA19EF350A00B264D6 /* StringUtils.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 4CA5E3A819EF350A00B264D6 /* StringUtils.cpp */; };
 		4CA6EDD61964C823007A4435 /* AnalyticsPacket.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 4CA6EDD41964C823007A4435 /* AnalyticsPacket.cpp */; };
 		7031249817A8404C00A83FA5 /* ContactPacket.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 7031249617A8404C00A83FA5 /* ContactPacket.cpp */; };
@@ -106,6 +107,8 @@
 		4C6C019D18F3425E004B0BF6 /* NotificationPacket.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = NotificationPacket.cpp; sourceTree = "<group>"; };
 		4C6C019E18F3425E004B0BF6 /* NotificationPacket.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = NotificationPacket.h; sourceTree = "<group>"; };
 		4C820AD419BA6C93004E8AD6 /* client_log.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = client_log.cpp; path = Logging/client_log.cpp; sourceTree = "<group>"; };
+		4CA46D811A3A31F7009DDAC9 /* KeepAliveSignaller.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = KeepAliveSignaller.cpp; sourceTree = "<group>"; };
+		4CA46D821A3A31F7009DDAC9 /* KeepAliveSignaller.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = KeepAliveSignaller.h; sourceTree = "<group>"; };
 		4CA5E3A819EF350A00B264D6 /* StringUtils.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = StringUtils.cpp; sourceTree = "<group>"; };
 		4CA5E3A919EF350A00B264D6 /* StringUtils.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = StringUtils.h; sourceTree = "<group>"; };
 		4CA6EDD41964C823007A4435 /* AnalyticsPacket.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = AnalyticsPacket.cpp; sourceTree = "<group>"; };
@@ -286,6 +289,8 @@
 		34EA688917611DD400F07E19 /* Utils */ = {
 			isa = PBXGroup;
 			children = (
+				4CA46D811A3A31F7009DDAC9 /* KeepAliveSignaller.cpp */,
+				4CA46D821A3A31F7009DDAC9 /* KeepAliveSignaller.h */,
 				4CA5E3A819EF350A00B264D6 /* StringUtils.cpp */,
 				4CA5E3A919EF350A00B264D6 /* StringUtils.h */,
 				34EA688C17611DD400F07E19 /* CommandLineParser.cpp */,
@@ -395,6 +400,7 @@
 			files = (
 				34EA685417611D8B00F07E19 /* BaseClientLibrary_iOS.m in Sources */,
 				34EA689517611DD400F07E19 /* Thread.cpp in Sources */,
+				4CA46D831A3A31F7009DDAC9 /* KeepAliveSignaller.cpp in Sources */,
 				34EA689D17611DD400F07E19 /* Fruitadens.cpp in Sources */,
 				34A5BC1D1989519D005147E0 /* ServerConstants.cpp in Sources */,
 				34EA689F17611DD400F07E19 /* BasePacket.cpp in Sources */,

@@ -658,6 +658,16 @@ void     ClientNetworkWrapper::UpdateNotifications()
             break;
          case ClientSideNetworkCallback::NotificationType_OtherUsersProfile:
             {
+               cout << "Begin other user's profile" << endl;  
+               SerializedKeyValueVector< string >::const_KVIterator kv2 = keyValueIt;
+               while( kv2 != qn.genericKeyValuePairs.end() )
+               {
+                  const string& key = kv2->key;
+                  const string& value = kv2->value;
+                  cout << "kv( " << key << ":" << value << " )" << endl;
+                  kv2++;
+               }
+               cout << "End other user's profile" << endl;  
                map< string, BoundedString32 > profileKeyValues;
                while( keyValueIt != qn.genericKeyValuePairs.end() )
                {

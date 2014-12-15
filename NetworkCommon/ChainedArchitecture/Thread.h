@@ -15,6 +15,8 @@
 #endif
 
 #if !defined(CLIENT_ONLY) && !defined(ANDROID)
+// on windows, we generate the following error:
+// LINK : fatal error LNK1104: cannot open file 'libboost_thread-vc90-mt-sgd-1_56.lib'
 #include <boost/thread/recursive_mutex.hpp>
 //#include <boost/thread/mutex.hpp>
 typedef boost::recursive_mutex ThreadMutex;
