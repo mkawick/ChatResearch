@@ -568,7 +568,7 @@ bool     DiplodocusPurchase::AddOutputChainData( BasePacket* packet, U32 connect
 
       Threading::MutexLock locker( m_inputChainListMutex );
       ChainLinkIteratorType itInputs = m_listOfInputs.begin();
-      if( itInputs != m_listOfInputs.end() )// only one output currently supported.
+      while( itInputs != m_listOfInputs.end() )
       {
          ChainType* inputPtr = static_cast< ChainType*> ( (*itInputs).m_interface );
          if( inputPtr->GetChainedType() == ChainedType_InboundSocketConnector )
@@ -660,8 +660,8 @@ bool  DiplodocusPurchase::SendPacketToLoginServer( BasePacket* packet, U32 conne
    wrapper->pPacket = packet;
    wrapper->jobId = 0;
 
-   ChainLinkIteratorType itInputs = m_listOfInputs.begin();
-   if( itInputs != m_listOfInputs.end() )// only one output currently supported.
+  /* ChainLinkIteratorType itInputs = m_listOfInputs.begin();
+   while( itInputs != m_listOfInputs.end() )// only one output currently supported.
    {
       ChainLink & chainedInput = *itInputs;
       DiplodocusServerToServer* diplodocusS2s = static_cast< DiplodocusServerToServer* >( chainedInput.m_interface );
@@ -670,6 +670,21 @@ bool  DiplodocusPurchase::SendPacketToLoginServer( BasePacket* packet, U32 conne
       {
          return true;
       }
+   }*/
+   ChainLinkIteratorType itInputs = m_listOfInputs.begin();
+   while( itInputs != m_listOfInputs.end() )
+   {
+      ChainType* inputPtr = static_cast< ChainType*> ( (*itInputs).m_interface );
+      if( inputPtr->GetChainedType() == ChainedType_AlternateThreadContainer )
+      {
+         DiplodocusServerToServer* diplodocusS2s = static_cast< DiplodocusServerToServer* >( inputPtr );
+         U32 serverId = diplodocusS2s->FindServerIdByType( ServerType_Login );
+         if( diplodocusS2s->AddOutputChainData( wrapper, serverId ) == true )
+         {
+            return true;
+         }
+      }
+      itInputs++;
    }
 
 

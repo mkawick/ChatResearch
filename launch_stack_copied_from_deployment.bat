@@ -43,7 +43,7 @@ REM 14 second delay
 
 REM start GatewayServer.exe listen.port=9600 chat.address=localhost chat.port=7400 login.port=7600 server.name="MainGateway" asset.block=true print.functions=false print.packets=true balancer.port=9502 external.ip.address=70.186.140.93
 REM start GatewayServer.exe listen.port=9600 chat.address=localhost chat.port=7400 login.port=7600 server.name="Main Gateway" asset.block=true balancer.port=9502 chat.port=7400 print.packets=false userstats.port=12000 games=[localhost:21000:summon_war,192.168.1.1:21100:MFM] external.ip.address=70.186.140.93
-start C:\projects\Mber\ServerStack\Debug/GatewayServer.exe listen.port=9600 chat.address=localhost chat.port=7400 login.port=7600 server.name="Main Gateway" asset.block=true balancer.port=9502 userstats.port=12000 print.packets=false games=[localhost:21000:summon_war,192.168.1.1:21100:MFM] external.ip.address=mber.pub.playdekgames.com
+start C:\projects\Mber\ServerStack\Debug/GatewayServer.exe listen.port=9600 chat.address=localhost chat.port=7400 purchase.port=7700 login.port=7600 server.name="Main Gateway" asset.block=true balancer.port=9502 userstats.port=12000 print.packets=false games=[localhost:21000:summon_war,192.168.1.1:21100:MFM] external.ip.address=mber.pub.playdekgames.com
 REM print.packets=true 
 
 REM start GatewayServer.exe listen.port=9601 asset.port=7300 server.name="Asset-Only-Gateway" asset.only=true balancer.port=9502 external.ip.address="70.186.140.93"

@@ -593,7 +593,7 @@ void  DiplodocusChat::UpdateDbResults()
 
 //---------------------------------------------------------------
 
-bool  DiplodocusChat::HandlePacketFromOtherServer( BasePacket* packet, U32 gatewayId )// not thread safe
+bool  DiplodocusChat::HandlePacketFromOtherServer( BasePacket* packet, U32 gatewayId )
 {
    if( packet->packetType != PacketType_ServerJobWrapper )
    {
@@ -603,7 +603,6 @@ bool  DiplodocusChat::HandlePacketFromOtherServer( BasePacket* packet, U32 gatew
    PacketServerJobWrapper* wrapper = static_cast< PacketServerJobWrapper* >( packet );
    BasePacket* unwrappedPacket = wrapper->pPacket;
    U32  serverIdLookup = wrapper->serverId;
-  // wrapper->
    serverIdLookup = serverIdLookup;
 
    U8 packetType = unwrappedPacket->packetType;
@@ -614,8 +613,7 @@ bool  DiplodocusChat::HandlePacketFromOtherServer( BasePacket* packet, U32 gatew
       if( HandleLoginPacket( unwrappedPacket, gatewayId ) == false )
       {
          factory.CleanupPacket( packet );
-      }
-      
+      }      
       return true;
    }
 
@@ -627,6 +625,7 @@ bool  DiplodocusChat::HandlePacketFromOtherServer( BasePacket* packet, U32 gatew
       }
       return true;
    }
+
    if( packetType == PacketType_Invitation )
    {
       if( HandleInvitationPacket( unwrappedPacket, gatewayId, 0 ) == false )

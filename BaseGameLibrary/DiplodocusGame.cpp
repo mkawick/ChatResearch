@@ -384,7 +384,7 @@ void   DiplodocusGame::HandleUserRequestedTournamentInfo( BasePacket* packet, U3
 
 bool   DiplodocusGame::AddOutputChainData( BasePacket* packet, U32 connectionId ) 
 {
-   Threading::MutexLock locker( m_mutex );
+   //Threading::MutexLock locker( m_mutex );
    if( packet->packetType == PacketType_GatewayWrapper )
    {
       if( m_connectionIdGateway == 0 )
@@ -420,10 +420,16 @@ bool   DiplodocusGame::AddOutputChainData( BasePacket* packet, U32 connectionId 
 
    if( packet->packetType == PacketType_ServerToServerWrapper )
    {
+      assert( 0 );// this is a bad design and should not be used.
+      // but I need to be sure that this is never invoked before I remove it.
+
       PacketServerToServerWrapper* wrapper = static_cast< PacketServerToServerWrapper* >( packet );
       BasePacket* unwrappedPacket = wrapper->pPacket;
       U32  serverIdLookup = wrapper->serverId;
 
+      // this is where the problem is: AddOutputChainData should be sending data
+      // onto other servers... not routing internally. If we do this,
+      // we should have a different mechanism.
       return HandlePacketFromOtherServer( unwrappedPacket, serverIdLookup );
    }
 
@@ -607,8 +613,7 @@ bool  DiplodocusGame::HandlePacketFromOtherServer( BasePacket* packet, U32 conne
 
    if( m_callbacks ) // allows game specific functionality
    {
-      
-      Threading::MutexLock locker( m_mutex );
+      //Threading::MutexLock locker( m_mutex );
       m_callbacks->HandlePacketFromOtherServer( packet );
    }
 
