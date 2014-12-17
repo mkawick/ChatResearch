@@ -11,7 +11,7 @@
 #include "PacketFactory.h"
 #include <assert.h>
 
-const U8   NetworkVersionMajor = 50;
+const U8   NetworkVersionMajor = 51;
 const U8   NetworkVersionMinor = 0;
 
 //#include <boost/static_assert.hpp>

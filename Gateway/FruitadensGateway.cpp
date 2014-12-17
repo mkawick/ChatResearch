@@ -426,7 +426,7 @@ void  FruitadensGateway::PostProcessInputPackets( int bytesRead )
          m_numPacketsReceived ++;
 
          // todo, remove this line of code.
-         cout << "Handling a packet (" << (U32)packetIn->packetType << ":" << (U32)packetIn->packetSubType << ")" << endl;
+         //cout << "Handling a packet (" << (U32)packetIn->packetType << ":" << (U32)packetIn->packetSubType << ")" << endl;
          
          if( m_keepAlive.HandlePacket( packetIn ) == false )
          {
