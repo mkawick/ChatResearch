@@ -166,7 +166,10 @@ bool  KeepAliveSignaller::HandlePacket( const BasePacket* packetIn )
          m_requiresKeepAliveSignal = true;// this is not required unless the server says so. 
          //  For a sender (Khaan).. this flag doesn't mean anything.
          // For a Receiver, this triggers the requirement that we try to reconnect
-         LogMessage( LOG_PRIO_INFO, "KeepAliveSignaller::enabled - receive" );
+         if( m_enableLogging )
+         {
+            LogMessage( LOG_PRIO_INFO, "KeepAliveSignaller::enabled - receive" );
+         }
          
          PacketServerConnectionInfo_KeepAlive* returnPacket = new PacketServerConnectionInfo_KeepAlive;
          returnPacket->gameInstanceId = 0;

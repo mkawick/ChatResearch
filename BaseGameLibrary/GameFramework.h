@@ -157,6 +157,8 @@ private:
    string         m_dbPassword;
    string         m_dbSchema;
 
+   bool           m_enableKeepAlive;
+
    CommandLineParser* m_parser;
 
    map< U32, TimerInfo > m_timers;

@@ -216,6 +216,8 @@ public:
    bool  SerializeIn( const U8* data, int& bufferOffset, int minorVersion );
    bool  SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const;
 
+   U32               userConnectionId;
+   U32               userGatewayId;
    UuidString        userUuid;
    BoundedString32   uniqueTransactionId; // fill this in with some unique value that you need
 

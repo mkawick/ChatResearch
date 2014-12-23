@@ -165,6 +165,8 @@ bool  PacketTournament_UserRequestsEntryInTournamentResponse::SerializeOut( U8* 
 bool  PacketTournament_PurchaseTournamentEntry::SerializeIn( const U8* data, int& bufferOffset, int minorVersion )
 {
    PacketTournament::SerializeIn( data, bufferOffset, minorVersion );
+   Serialize::In( data, bufferOffset, userConnectionId, minorVersion );
+   Serialize::In( data, bufferOffset, userGatewayId, minorVersion );
    Serialize::In( data, bufferOffset, userUuid, minorVersion );
    Serialize::In( data, bufferOffset, uniqueTransactionId, minorVersion );
    //itemsToSpend.SerializeIn( data, bufferOffset, minorVersion );
@@ -176,6 +178,8 @@ bool  PacketTournament_PurchaseTournamentEntry::SerializeIn( const U8* data, int
 bool  PacketTournament_PurchaseTournamentEntry::SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const
 {
    PacketTournament::SerializeOut( data, bufferOffset, minorVersion );
+   Serialize::Out( data, bufferOffset, userConnectionId, minorVersion );
+   Serialize::Out( data, bufferOffset, userGatewayId, minorVersion );
    Serialize::Out( data, bufferOffset, userUuid, minorVersion );
    Serialize::Out( data, bufferOffset, uniqueTransactionId, minorVersion );
    //itemsToSpend.SerializeOut( data, bufferOffset, minorVersion );

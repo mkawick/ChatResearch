@@ -38,7 +38,8 @@ GameFramework::GameFramework( const char* name, const char* shortName, U8 gamePr
    m_shortName( shortName ),
    m_serverId( 0 ),
    m_gameProductId( gameProductId ),
-   m_version( version )
+   m_version( version ),
+   m_enableKeepAlive( false )
 {
    U64 serverUniqueHashValue = GenerateUniqueHash( GetServerName() );
    m_serverId = static_cast< U32 >( serverUniqueHashValue );
@@ -194,6 +195,12 @@ void  GameFramework::UseCommandlineOverrides( int argc, const char* argv[] )
    string   listenForS2SPort;
    string   dbPort;
 
+#if PLATFORM == PLATFORM_WINDOWS // default
+   string enableKeepAliveString = "false";
+#else
+   string enableKeepAliveString = "true";
+#endif
+
 
    try // these really can't throw, but to be consistent
    {
@@ -245,6 +252,7 @@ void  GameFramework::UseCommandlineOverrides( int argc, const char* argv[] )
    m_parser->FindValue( "db.username", m_dbUsername );
    m_parser->FindValue( "db.password", m_dbPassword );
    m_parser->FindValue( "db.schema", m_dbSchema );
+   m_parser->FindValue( "keepalive", enableKeepAliveString );
 
    try 
    {
@@ -257,6 +265,8 @@ void  GameFramework::UseCommandlineOverrides( int argc, const char* argv[] )
       m_listenForS2SPort = boost::lexical_cast<int>( listenForS2SPort );
       
       m_dbPort = boost::lexical_cast<int>( dbPort );
+
+      m_enableKeepAlive = ConvertToTrueFalse( enableKeepAliveString );
       
    } 
    catch( ... )
@@ -573,6 +583,7 @@ bool  GameFramework::Run()
    m_connectionManager->SetGatewayType( PacketServerIdentifier::GatewayType_None );
    m_connectionManager->SetAsControllerApp( false );
    m_connectionManager->SetAsGame();
+   m_connectionManager->RequireKeepAlive( m_enableKeepAlive );
 
    //----------------------------------------------------------------
    if( Database::ConnectToMultipleDatabases< DiplodocusGame > ( *m_parser, m_connectionManager ) == false )
