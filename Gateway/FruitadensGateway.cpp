@@ -28,7 +28,6 @@ FruitadensGateway::FruitadensGateway( const char* name ) : FruitadensServer( nam
                m_isEnabled( true )
 {
    SetSleepTime( 16 );// Sleeping frees up CPU
-   m_keepAlive.Enable( true );// default to on... it still does nothing until a server requires it
 }
 
 //-----------------------------------------------------------------------------------------

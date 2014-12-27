@@ -27,9 +27,9 @@ using boost::format;
 #include "Diplodocus.h"
 
 #if defined (CLIENT_ONLY)
-const int DefaultSocketTimeout = 10;
+const int DefaultSocketTimeout = 20;
 #else
-const int DefaultSocketTimeout = 15;
+const int DefaultSocketTimeout = 10;
 #endif
 
 /////////////////////////////////////////////////////////////////
@@ -67,7 +67,7 @@ Khaan ::Khaan( int socketId, bufferevent* be, int connectionId ) :
    m_keepAlive.Enable( false );
    m_keepAlive.Set( this );
    m_keepAlive.FunctionsAsServer( true );
-   m_keepAlive.SetTimeout( 10 );
+   m_keepAlive.SetTimeout( DefaultSocketTimeout );
 }
 
 /////////////////////////////////////////////////////////////////

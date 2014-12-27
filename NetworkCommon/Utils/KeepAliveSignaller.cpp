@@ -150,6 +150,11 @@ bool  KeepAliveSignaller::HandlePacket( const BasePacket* packetIn )
    if( CanDoAnyWork() == false )
       return false;
 
+   if( packetIn->packetType == PacketType_ServerToServerWrapper )
+   {
+       const PacketServerToServerWrapper* wrapper = static_cast< const PacketServerToServerWrapper* >( packetIn );
+       packetIn = wrapper->pPacket;
+   }
    if( packetIn->packetType == PacketType_ServerInformation &&
       packetIn->packetSubType == PacketServerConnectionInfo::PacketServerIdentifier_KeepAlive )
    {

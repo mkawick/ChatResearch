@@ -94,27 +94,6 @@ bool FruitadensLogin::FilterOutwardPacket( BasePacket* packet ) const
 
    return false;
 }
-/*
-int       FruitadensLogin::CallbackFunction()
-{
-   ProcessEvents();
-
-   m_inputChainListMutex.lock();
-   LogMessage( LOG_PRIO_INFO, "FruitadensLogin: MainLoop_InputProcessing enter" );
-   MainLoop_InputProcessing();
-   LogMessage( LOG_PRIO_INFO, "FruitadensLogin: MainLoop_InputProcessing exit" );
-   m_inputChainListMutex.unlock();
-
-   //-------------------------------
-
-   m_outputChainListMutex.lock();
-   LogMessage( LOG_PRIO_INFO, "FruitadensLogin: MainLoop_OutputProcessing enter" );
-   MainLoop_OutputProcessing();
-   LogMessage( LOG_PRIO_INFO, "FruitadensLogin: MainLoop_OutputProcessing exit" );
-   m_outputChainListMutex.unlock();
-
-   return 0;
-}*/
 
 //-----------------------------------------------------------------------------------------
 

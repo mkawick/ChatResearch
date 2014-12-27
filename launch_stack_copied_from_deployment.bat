@@ -4,39 +4,39 @@ REM start C:\projects\Mber\ServerStack\Debug/GatewayServer.exe server.name="Gate
 pushd C:\projects\SummonWar\main
 REM start C:/mickey/MberSW/main/WorkArea/game_serverD.exe listen.port=21000 db.address=10.16.4.44 db.port=3306 db.username=incinerator db.password=Cm8235 db.schema=playdek_game_summonwar s2s.port=21002  chat.port=7402
 REM start C:/mickey/MberSW/main/WorkArea/game_server.exe listen.port=21000 s2s.port=21002 chat.port=7402 userstats.port=12000 dblist=[user:10.16.4.44:3306:incinerator:Cm8235:playdek,game:10.16.4.44:3306:incinerator:Cm8235:playdek_game_summonwar]
-start C:\projects\SummonWar\main\WorkArea/game_serverD.exe listen.port=21000 s2s.port=21002 chat.port=7402 userstats.port=12002 purchase.port=7702 dblist=[user:10.16.4.44:3306:incinerator:Cm8235:playdek,game:10.16.4.44:3306:incinerator:Cm8235:playdek_game_summonwar_test]
+start C:\projects\SummonWar\main\WorkArea/game_serverD.exe listen.port=21000 s2s.port=21002 chat.port=7402 userstats.port=12002 purchase.port=7702 dblist=[user:10.16.4.44:3306:incinerator:Cm8235:playdek,game:10.16.4.44:3306:incinerator:Cm8235:playdek_game_summonwar_test] keepalive=true
 popd
 
 start C:\projects\Mber\ServerStack\Debug/LoadBalancer.exe  listen.port=9500 s2s.port=9502
 
-start C:\projects\Mber\ServerStack\Debug/LoginServer.exe db.address=10.16.4.44 db.port=3306 db.username=incinerator db.password=Cm8235 db.schema=playdek listen.address=localhost listen.port=7600 contact.address=localhost chat.port=7402 contact.port=7502 asset.port=7302 userstats.port=12002 autoAddLoginProduct=false games=[localhost:21000:summon_war,192.168.1.1:21100:MFM] print.functions=false
+start C:\projects\Mber\ServerStack\Debug/LoginServer.exe db.address=10.16.4.44 db.port=3306 db.username=incinerator db.password=Cm8235 db.schema=playdek listen.address=localhost listen.port=7600 contact.address=localhost chat.port=7402 contact.port=7502 asset.port=7302 userstats.port=12002 autoAddLoginProduct=false games=[localhost:21000:summon_war,192.168.1.1:21100:MFM] print.functions=false keepalive=true
 REM db.address=10.16.4.44 db.port=3306 db.username=incinerator db.password=Cm8235 db.schema=playdek listen.address=localhost listen.port=7600 contact.address=localhost chat.port=7402 contact.port=7502 asset.port=7302 userstats.port=12000 autoAddLoginProduct=true games=[localhost:21000:summon_war,192.168.1.1:21100:MFM] print.functions=false
 
 ping -n 1 -w 1000 127.0.0.1 > nul
 
 REM start ChatServer.exe listen.port=7400 db.address=10.16.4.44 db.port=3306 db.username=incinerator db.password=Cm8235 db.schema=playdek game.port=21002
-start C:\projects\Mber\ServerStack\Debug/ChatServer.exe db.address=10.16.4.44 db.port=3306 db.username=incinerator db.password=Cm8235 db.schema=playdek listen.address=localhost listen.port=7400 s2s.port=7402
+start C:\projects\Mber\ServerStack\Debug/ChatServer.exe db.address=10.16.4.44 db.port=3306 db.username=incinerator db.password=Cm8235 db.schema=playdek listen.address=localhost listen.port=7400 s2s.port=7402 keepalive=true
 
 ping -n 1 -w 1000 127.0.0.1 > nul
 
-start C:\projects\Mber\ServerStack\Debug/ContactsServer.exe listen.port=7500 db.address=10.16.4.44 db.port=3306 db.username=incinerator db.password=Cm8235 db.schema=playdek s2s.port=7502
+start C:\projects\Mber\ServerStack\Debug/ContactsServer.exe listen.port=7500 db.address=10.16.4.44 db.port=3306 db.username=incinerator db.password=Cm8235 db.schema=playdek s2s.port=7502 keepalive=true
 
 ping -n 1 -w 1000 127.0.0.1 > nul
 
-start C:\projects\Mber\ServerStack\Debug/AssetDeliveryServer.exe listen.port=7300 s2s.port=7302 asset.path='c:\gwshare' asset.dictionary="assets_of_assets.ini"
+start C:\projects\Mber\ServerStack\Debug/AssetDeliveryServer.exe listen.port=7300 s2s.port=7302 asset.path='c:\gwshare' asset.dictionary="assets_of_assets.ini" keepalive=true
 REM   AssetDeliveryServer.exe listen.port=7300 s2s.port=7302 asset.path='c:/gwshare' asset.dictionary="assets_of_assets.ini"
 ping -n 1 -w 1000 127.0.0.1 > nul
 
-start C:\projects\Mber\ServerStack\Debug/PurchaseServer.exe listen.port=7700 s2s.port=7702 s2s.address=localhost db.address=10.16.4.44 db.port=3306 db.username=incinerator db.password=Cm8235 db.schema=playdek
+start C:\projects\Mber\ServerStack\Debug/PurchaseServer.exe listen.port=7700 s2s.port=7702 s2s.address=localhost db.address=10.16.4.44 db.port=3306 db.username=incinerator db.password=Cm8235 db.schema=playdek keepalive=true
 
 ping -n 1 -w 1000 127.0.0.1 > nul
 	
-start C:\projects\Mber\ServerStack\Debug/NotificationServer.exe listen.port=7900 s2s.port=7902 db.address=10.16.4.44 db.port=3306 db.username=incinerator db.password=Cm8235 db.schema=playdek ios.certpath='C:/mickey/Notification/certificates'
+start C:\projects\Mber\ServerStack\Debug/NotificationServer.exe listen.port=7900 s2s.port=7902 db.address=10.16.4.44 db.port=3306 db.username=incinerator db.password=Cm8235 db.schema=playdek ios.certpath='C:/mickey/Notification/certificates' keepalive=true
 
 ping -n 1 -w 1000 127.0.0.1 > nul
 	
-start C:\projects\Mber\ServerStack\Debug/AnalyticsServer.exe listen.port=7800 s2s.port=7802 db.address=10.16.4.44 db.port=3306 db.username=incinerator db.password=Cm8235 db.schema=playdek
-start C:\projects\Mber\ServerStack\Debug/UserStatsServer.exe listen.port=12000 s2s.port=12002 db.address=10.16.4.44 db.port=3306 db.username=incinerator db.password=Cm8235 db.schema=playdek
+start C:\projects\Mber\ServerStack\Debug/AnalyticsServer.exe listen.port=7800 s2s.port=7802 db.address=10.16.4.44 db.port=3306 db.username=incinerator db.password=Cm8235 db.schema=playdek keepalive=true
+start C:\projects\Mber\ServerStack\Debug/UserStatsServer.exe listen.port=12000 s2s.port=12002 db.address=10.16.4.44 db.port=3306 db.username=incinerator db.password=Cm8235 db.schema=playdek keepalive=true
 
 ping -n 1 -w 14000 127.0.0.1 > nul
 REM 14 second delay

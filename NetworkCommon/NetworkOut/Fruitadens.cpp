@@ -36,11 +36,11 @@ using namespace std;
 
 const int typicalSleepTime = 200;
 
-/*#if defined (CLIENT_ONLY)
-const int defaultSocketTimeout = 10;
+#if defined (CLIENT_ONLY)
+const int DefaultSocketTimeout = 20;
 #else
-const int defaultSocketTimeout = 15;
-#endif*/
+const int DefaultSocketTimeout = 10;
+#endif
 
 //-----------------------------------------------------------------------------
 
@@ -75,7 +75,10 @@ Fruitadens :: Fruitadens( const char* name, bool processOnlyOneIncommingPacketPe
    m_keepAlive.Enable( false );
    m_keepAlive.Set( this );
    m_keepAlive.FunctionsAsServer( false );
-   m_keepAlive.SetTimeout( 15 );
+   m_keepAlive.SetTimeout( DefaultSocketTimeout );
+#if !defined( CLIENT_ONLY )
+   m_keepAlive.Enable( true );// default to on... it still does nothing until a server requires it
+#endif
 }
 
 Fruitadens::~Fruitadens()
@@ -764,7 +767,7 @@ FruitadensServer :: FruitadensServer( const char* name, bool processOnlyOneIncom
    //m_connectedServerIp;
    LogMessage( LOG_PRIO_INFO, "FruitadensServer:: %s", name );
 
-   m_keepAlive.SetTimeout( 15 );
+   m_keepAlive.SetTimeout( DefaultSocketTimeout*2 );// more than twice what the other servers have
 }
 
 //-----------------------------------------------------------------------------
