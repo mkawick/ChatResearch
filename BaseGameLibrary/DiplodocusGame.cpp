@@ -438,66 +438,6 @@ bool   DiplodocusGame::AddOutputChainData( BasePacket* packet, U32 connectionId 
 }
 
 //---------------------------------------------------------------
-/*
-// copy and paste from Diplodocus BUT the connection ids don't work in all cases.
-void	DiplodocusGame::UpdateAllConnections()
-{
-   if( this->m_requiresKeepAlive == true )
-   {
-      ClientMapIterator searchIt = m_connectedClients.begin();
-      while( searchIt != m_connectedClients.end() )
-      {
-         InputChainType* connection = it->second;
-         connection->Update();
-      }
-   }
-   else
-   {
-      if( m_clientsNeedingUpdate.size() == 0 )// no locking a mutex if you don't need to do it.
-         return;
-
-      //LockMutex();
-      while( m_clientsNeedingUpdate.size() )// threads can remove themselves.
-      {
-         U32 id = m_clientsNeedingUpdate.front();      
-         m_clientsNeedingUpdate.pop_front();
-
-         ClientMapIterator it = m_connectedClients.end();
-         if( m_connectedClients.size() )// preventing removal crashes.
-         {
-            it = m_connectedClients.find( id );
-         }
-
-         //*********************************************
-
-         if( it == m_connectedClients.end() )
-         {
-            ClientMapIterator searchIt = m_connectedClients.begin();
-            while( searchIt != m_connectedClients.end() )
-            {
-               if( searchIt->second->GetServerId() == id )
-               {
-                  it = searchIt;
-                  break;
-               }
-               searchIt++;
-            }
-         }
-
-         //*********************************************
-         
-         if( it != m_connectedClients.end() )
-         {
-            InputChainType* connection = it->second;
-            connection->Update();
-         }
-      }
-   }
-   //UnlockMutex();
-}
-*/
-
-//---------------------------------------------------------------
 
 void     DiplodocusGame::UpdateAllTimers()
 {
@@ -568,6 +508,10 @@ bool  DiplodocusGame::HandlePacketFromOtherServer( BasePacket* packet, U32 conne
 
       case PacketLogin::LoginType_PrepareForUserLogout:
          DisconnectUser( static_cast< PacketPrepareForUserLogout* >( packet ) );
+         return true;
+
+      case PacketLogin::LoginType_ExpireUserLogin:
+         ExpireUser( static_cast< const PacketLoginExpireUser* >( packet ) );
          return true;
       }
    }
@@ -856,4 +800,17 @@ void  DiplodocusGame::DisconnectUser( const PacketPrepareForUserLogout* logoutPa
    }
 }
 
+//---------------------------------------------------------------
+
+void  DiplodocusGame::ExpireUser( const PacketLoginExpireUser* expireUserPacket )
+{
+   const UuidString& uuid = expireUserPacket->uuid;
+
+   if( m_callbacks )
+   {
+      m_callbacks->ExpireUser( uuid );
+   }
+}
+
+//---------------------------------------------------------------
 //---------------------------------------------------------------

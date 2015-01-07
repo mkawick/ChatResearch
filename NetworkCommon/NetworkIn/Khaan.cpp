@@ -100,6 +100,7 @@ void   Khaan ::PreCleanup()
    //LogMessage( LOG_PRIO_INFO, "Khaan 4" );
    m_isDisconnected = true;
    DenyAllFutureData();
+   //bufferevent_disable( GetBufferEvent(), EV_READ | EV_WRITE );
    if( HasDisconnected() == false )
    {
       time_t currentTime;
@@ -578,9 +579,11 @@ void     Khaan :: CloseConnection()
 {
    //LogMessage( LOG_PRIO_INFO, "Khaan::CloseConnection" );
    m_isDisconnected = true;
-   if( GetBufferEvent() ) // this is set to NULL in Cleanup
+   bufferevent* bev = GetBufferEvent();
+   if( bev ) // this is set to NULL in Cleanup
    {
-      bufferevent_free( GetBufferEvent() );
+      bufferevent_disable( bev, EV_READ | EV_WRITE );
+      bufferevent_free( bev );
       Cleanup();
    }
 }

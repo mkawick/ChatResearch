@@ -44,7 +44,8 @@ public:
       LoginType_UserListOfPurchasesWasUpdated,
       LoginType_LoginFromGateway,
       LoginType_LogoutAllUsers,
-      LoginType_ListOfMissingFeatures
+      LoginType_ListOfMissingFeatures,
+      LoginType_ExpireUserLogin
    };
 public:
    PacketLogin( int packet_type = PacketType_Login, int packet_sub_type = LoginType_Login ): BasePacket( packet_type, packet_sub_type ) {}
@@ -630,5 +631,18 @@ public:
 
 ///////////////////////////////////////////////////////////////
 
+class PacketLoginExpireUser : public BasePacket
+{
+public:
+   PacketLoginExpireUser(): BasePacket( PacketType_Login, PacketLogin::LoginType_ExpireUserLogin ) {}
+   
+   bool  SerializeIn( const U8* data, int& bufferOffset, int minorVersion );
+   bool  SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const;
+
+   UuidString        uuid;
+   BoundedString80   userName;
+};
+
+///////////////////////////////////////////////////////////////
 
 #pragma pack( pop )

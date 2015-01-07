@@ -283,23 +283,6 @@ void     MainGatewayThread::InputRemovalInProgress( IChainedInterface * chainedI
 }
 
 /////////////////////////////////////////////////////////////////////////////////
-/*
-void     MainGatewayThread::UpdateRemovedConnections()
-{
-   if( m_clientsWaitingToBeRemoved.size() == 0 )
-      return;
-
-   ClientList::iterator it = m_clientsWaitingToBeRemoved.begin();
-   while( it != m_clientsWaitingToBeRemoved.end() )
-   {
-      KhaanGateway* khaan = static_cast< KhaanGateway* >( *it );
-      it++;
-
-      MarkConnectionForDeletion( khaan->GetConnectionId() );
-   }
-   // the connection will be removed later after a small period of time.
-   m_clientsWaitingToBeRemoved.clear();
-}*/
 
 ////////////////////////////////////////////////////////
 
@@ -1101,61 +1084,7 @@ void  MainGatewayThread::SendStatsToLoadBalancer()
 }
 
 /////////////////////////////////////////////////////////////////////////////////
-/*
-void  MainGatewayThread::RequestNewConenctionIdsFromLoadBalancer()
-{
-   if( m_printFunctionNames )
-   {
-      LogMessage( LOG_PRIO_INFO, "MainGatewayThread::RequestNewConenctionIdsFromLoadBalancer" );
-   }
 
-   time_t currentTime;
-   time( &currentTime );
-
-   if( difftime( currentTime, m_timestampSendConnectionStatisics ) >= timeoutSendConnectionStatisics ) 
-   {
-      m_timestampSendConnectionStatisics = currentTime;
-      int num = static_cast< int >( m_connectedClients.size() );
-
-      TrackCountStats( StatTracking_UserTotalCount, static_cast<float>( num ), 0 );
-
-      m_outputChainListMutex.lock();
-      BaseOutputContainer tempContainer = m_listOfOutputs;
-      m_outputChainListMutex.unlock();
-
-      // we'll keep this because we may be connected to multiple load balancers
-      //bool statsSent = false;
-      ChainLinkIteratorType itOutput = tempContainer.begin();
-      while( itOutput != tempContainer.end() )
-      {
-         IChainedInterface* outputPtr = (*itOutput).m_interface;
-         Fruitadens* fruity = static_cast< Fruitadens* >( outputPtr );
-         if( fruity->GetConnectedServerType() == ServerType_LoadBalancer )
-         {
-            PacketServerConnectionInfo* packet = new PacketServerConnectionInfo;
-            packet->currentLoad = num;
-            packet->serverAddress = GetIpAddress();
-            packet->serverId = GetServerId();
-
-            U32 unusedParam = -1;
-            if( fruity->AddOutputChainData( packet, unusedParam ) == true )
-            {
-               //statsSent = true;
-               PrintDebugText( "SendStatsToLoadBalancer" ); 
-               return;
-            }
-            else
-            {
-               PacketFactory factory;
-               BasePacket* pPacket = packet;
-               factory.CleanupPacket( pPacket );
-            }
-         }
-         itOutput++;
-      }
-   }
-}
-*/
 /////////////////////////////////////////////////////////////////////////////////
 
 bool  MainGatewayThread::AddOutputChainData( BasePacket* packetIn, U32 serverType )

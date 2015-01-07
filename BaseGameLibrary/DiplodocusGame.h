@@ -21,6 +21,8 @@ using namespace std;
 class UserSession;
 class PacketPrepareForUserLogin;
 class PacketPrepareForUserLogout;
+class PacketLoginExpireUser;
+
 class PacketTournament_PurchaseTournamentEntryResponse;
 class PacketGame_Notification;
 
@@ -90,6 +92,8 @@ private:
    bool     HandlePacketToOtherServer( BasePacket* packet, U32 connectionId );
    void     ConnectUser( const PacketPrepareForUserLogin* loginPacket );
    void     DisconnectUser( const PacketPrepareForUserLogout* logoutPacket );
+   void     ExpireUser( const PacketLoginExpireUser* expireUserPacket );
+
    void     IsUserAllowedToUseThisProduct( const PacketListOfGames* packet );
 
    void     EchoHandler( U32 connectionId );

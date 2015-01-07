@@ -99,9 +99,6 @@ private:
    void           CheckOnConnectionIdBlocks();
    bool           RequestMoreConnectionIdsFromLoadBalancer();
 
-   //void           RequestNewConenctionIdsFromLoadBalancer();
-   //void           UpdateRemovedConnections();
-
    int            CallbackFunction();
 
    void           CleanupOldConnections();

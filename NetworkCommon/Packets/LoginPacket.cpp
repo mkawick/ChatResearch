@@ -837,3 +837,21 @@ bool  PacketLogin_ListOfMissingFeatures::SerializeOut( U8* data, int& bufferOffs
 }
 
 ///////////////////////////////////////////////////////////////
+
+bool  PacketLoginExpireUser::SerializeIn( const U8* data, int& bufferOffset, int minorVersion )
+{ 
+   BasePacket::SerializeIn( data, bufferOffset, minorVersion );
+   Serialize::In( data, bufferOffset, uuid, minorVersion );
+   Serialize::In( data, bufferOffset, userName, minorVersion );
+   return true; 
+}
+
+bool  PacketLoginExpireUser::SerializeOut( U8* data, int& bufferOffset, int minorVersion ) const 
+{ 
+   BasePacket::SerializeOut( data, bufferOffset, minorVersion );
+   Serialize::Out( data, bufferOffset, uuid, minorVersion );
+   Serialize::Out( data, bufferOffset, userName, minorVersion );
+   return true; 
+}
+
+///////////////////////////////////////////////////////////////
