@@ -19,7 +19,7 @@ using namespace std;
 #include <boost/lexical_cast.hpp>
 //using namespace boost;
 
-StarterMainThread::StarterMainThread( const string& serverName, U32 serverId ): Diplodocus< KhaanServerToServer >( serverName, serverId, 0,  ServerType_Starter )
+StarterMainThread::StarterMainThread( const string& serverName, U32 serverId ): ChainedType( serverName, serverId, 0,  ServerType_Starter )
 {
    //time( &m_timestampStatsPrint );
    //m_timestampSelectPreferredGateway = m_timestampStatsPrint;

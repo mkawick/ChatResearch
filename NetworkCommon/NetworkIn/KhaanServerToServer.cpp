@@ -29,7 +29,6 @@ using boost::format;
 KhaanServerToServer::KhaanServerToServer() : 
                      Khaan( 0, NULL ), 
                      m_serverId( 0 ), 
-                     m_serverType( 0 ), 
                      m_isGameServer( false ), 
                      m_isController( false ), 
                      m_gatewayType( PacketServerIdentifier::GatewayType_None ) 
@@ -37,7 +36,6 @@ KhaanServerToServer::KhaanServerToServer() :
 KhaanServerToServer::KhaanServerToServer( int id, bufferevent* be ) : 
                      Khaan( id, be ), 
                      m_serverId( 0 ), 
-                     m_serverType( 0 ), 
                      m_isGameServer( false ), 
                      m_isController( false ), 
                      m_gatewayType( PacketServerIdentifier::GatewayType_None )  
@@ -405,6 +403,7 @@ void  KhaanServerToServer :: SaveOffServerIdentification( const PacketServerIden
       DiplodocusServerToServer * middle = static_cast<DiplodocusServerToServer*>( interfacePtr );
 
       middle->ServerWasIdentified( this );
+      //middle->InputReady( this );
       //cout << "2" << endl;
 
       if( m_gatewayType != PacketServerIdentifier::GatewayType_None )

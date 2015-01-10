@@ -4,6 +4,7 @@
 #include "../Packets/ChatPacket.h"
 #include "../Packets/DbPacket.h"
 #include "../Packets/InvitationPacket.h"
+#include "../UserAccount/UserAccountCommon.h"
 #include <deque>
 using namespace std;
 
@@ -26,7 +27,7 @@ public:
    virtual bool     AddQueryToOutput( PacketDbQuery* packet, U32 connectionId ) = 0;
    
    virtual bool     SendErrorToClient( U32 connectionId, U32 gatewayId, PacketErrorReport::ErrorType error ) = 0;
-   virtual void     GetUserConnectionId( const string& uuid, U32& connectionId, U32& gatewayId ) = 0;
+   virtual void     GetUserConnectionId( const string& uuid, vector< SimpleConnectionDetails >& listOfConnections ) = 0;
    virtual string   GetUserName( const string& uuid ) = 0;
    virtual string   GetUserUuidByConnectionId( U32 connectionId ) = 0;
 
@@ -39,7 +40,7 @@ public:
    virtual bool      IsGroupValid( const string& inviteGroup ) const = 0;
    virtual bool      GetGroupName( const string& groupUuid, string& name ) const = 0;
    virtual string    GetUserName( const string& uuid ) const = 0;
-   virtual bool      UserAddsSelfToGroup( const string& channelUuid, const string& addedUserUuid ) = 0;
+   virtual bool      UserAddsSelfToGroup( const string& channelUuid, const string& addedUserUuid, U32 connectionId ) = 0;
 };
 
 ///////////////////////////////////////////////////////////////////

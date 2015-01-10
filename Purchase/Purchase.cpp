@@ -27,6 +27,8 @@ using boost::format;
 #include "../NetworkCommon/Database/Deltadromeus.h"
 #include "../NetworkCommon/Daemon/Daemonizer.h"
 
+#include "../NetworkCommon/Packets/LoginPacket.h"
+
 #include "PurchaseMainThread.h"
 
 
@@ -184,6 +186,7 @@ int main( int argc, const char* argv[] )
       s2s->Resume();
 
       purchaseServer->Init();
+      s2s->QueueInboundRequest( PacketType_Login, PacketLogin::LoginType_RequestLoginStatusOfAllUsers, ServerType_Login );
       purchaseServer->Run();
    }
    else

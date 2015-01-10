@@ -20,14 +20,12 @@ namespace Database
 {
    class Deltadromeus;
 }
+class PacketLoginExpireUser;
 
 ///////////////////////////////////////////////////////////////////
 
 class NotificationMainThread : public Queryer, public Diplodocus< KhaanServerToServer >
 {
-public: 
-   typedef Diplodocus< KhaanServerToServer > ChainedType;
-
 public:
    NotificationMainThread( const string& serverName, U32 serverId );
    ~NotificationMainThread();
@@ -52,6 +50,9 @@ private:
    bool     HandlePacketFromGateway( BasePacket* packet, U32 connectionId );
    bool     ConnectUser( const PacketPrepareForUserLogin* loginPacket );
    bool     DisconnectUser( const PacketPrepareForUserLogout* unwrappedPacket );
+   bool     ExpireUser( const PacketLoginExpireUser* actualPacket );
+   bool     DeleteAllUsers();
+
    bool     HandleNotification( const PacketNotification_SendNotification* unwrappedPacket );
    void     RunQueryAndNotification( Database::Deltadromeus* database, 
                               unsigned int user_id,
@@ -77,16 +78,32 @@ private:
    
    bool     SetupUserNotificationResend( unsigned int userId, unsigned int gameType, unsigned int deviceId, unsigned delayTimeSeconds );
 
-   typedef  map< U32, UserConnection >    UserConnectionMap;
-   typedef  pair< U32, UserConnection >   UserConnectionPair;
-   typedef  UserConnectionMap::iterator   UserConnectionIterator;
+   typedef  map< stringhash, UserConnection >   UserConnectionMap;
+   typedef  pair< stringhash, UserConnection >  UserConnectionPair;
+   typedef  UserConnectionMap::iterator         UserConnectionIterator;
+   typedef  UserConnectionMap::const_iterator   ConstUserConnectionIterator;
 
    typedef  deque< PacketDbQueryResult* > QueryResultDeque;
    typedef  QueryResultDeque::iterator    QueryResultDequeIterator;
 
+public:
+
+   string                  GetUserUuidByConnectionId( U32 connectionId );
+   void                    GetUserConnectionId( const string& uuid, vector< SimpleConnectionDetails >& listOfConnections );
+   string                  GetUserName( const string& uuid );
+   bool                    GetUser( const string& uuid, UserConnection*& user );
+   bool                    GetUser( U32 userId, UserConnection*& user );
+
+   const string            GetUuid( U32 connectionId ) const;
+   bool                    GetUserByUsername( const string& name, UserConnection*& user );
+   UserConnectionIterator  GetUserByConnectionId( U32 connectionId );
+
+private:
+
    deque< PacketStorage >           m_listOfDelayedPackets;
 
-   UserConnectionMap       m_userConnectionMap;
+   //UserConnectionMap       m_userConnectionMap;
+   UserConnectionMap       m_userTickets;
    QueryResultDeque        m_dbQueries;
 
    Database::Deltadromeus* m_database; // only one for now

@@ -811,7 +811,7 @@ bool   ChatRoomManager::CreateNewRoom( const PacketChatCreateChatChannelFromGame
 
 ///////////////////////////////////////////////////////////////////////
 
-bool ChatRoomManager::CreateNewRoom( const string& channelName, const string& userUuid )
+bool ChatRoomManager::CreateNewRoom( const string& channelName, const string& userUuid, U32 connectionId )
 {
    string channelUuid = CreateNewRoom( channelName, userUuid, 0, 0, 0 );
    UsersChatRoomList userInChatRoom( userUuid );
@@ -819,8 +819,9 @@ bool ChatRoomManager::CreateNewRoom( const string& channelName, const string& us
       return false;
    string userName = userInChatRoom.userName;
 
-   ChatUser* user = m_chatServer->GetUserByUuid( userUuid );// this is a little odd logic. However, the creator should be online 
-   if( user )
+   ChatUser* user = NULL;
+   // this is a little odd logic. However, the creator should be online 
+   if( m_chatServer->GetUser( userUuid, user ) == true )
    {
       if( channelUuid.size() )
       {
@@ -830,7 +831,7 @@ bool ChatRoomManager::CreateNewRoom( const string& channelName, const string& us
       }
       else
       {
-         user->SendErrorMessage( PacketErrorReport::ErrorType_ChatChannelCannotBeCreated );
+         user->SendErrorMessage( connectionId, user->GetGatewayId( connectionId ), PacketErrorReport::ErrorType_ChatChannelCannotBeCreated );
          return false;
       }
       
@@ -963,10 +964,10 @@ bool     ChatRoomManager::SendMessageToClient( BasePacket* packet, U32 connectio
 
 ///////////////////////////////////////////////////////////////////////
 
-bool     ChatRoomManager::DeleteRoom( const string& channelUuid, const string& userUuid )
+bool     ChatRoomManager::DeleteRoom( const string& channelUuid, const string& userUuid, U32 connectionId )
 {
-   ChatUser* userSender = m_chatServer->GetUserByUuid( userUuid );
-   if( userSender == NULL )
+   ChatUser* userSender = NULL;
+   if( m_chatServer->GetUser( userUuid, userSender ) == false )
    {
       string text = " User ";
       text += userUuid;
@@ -976,8 +977,8 @@ bool     ChatRoomManager::DeleteRoom( const string& channelUuid, const string& u
       m_chatServer->Log( text, 1 );
       return false;
    }
-   U32 connectionId = userSender->GetConnectionId();
-   U32 gatewayId = userSender->GetGatewayId();
+
+   U32 gatewayId = userSender->GetGatewayId( connectionId );
 
    stringhash  keyLookup = GenerateUniqueHash( channelUuid );
    ChannelMapIterator channelIter = m_channelMap.find( keyLookup );
@@ -1031,8 +1032,8 @@ bool     ChatRoomManager::DeleteRoom( const string& channelUuid )
       while( userIt != listOfUsers.end() )
       {
          UserBasics& ub = *userIt++;
-         ChatUser* user = m_chatServer->GetUserByUuid( ub.userUuid );
-         if( user )
+         ChatUser* user = NULL;
+         if( m_chatServer->GetUser( ub.userUuid, user ) == true )
          {
             user->NotifyChannelRemoved( channelUuid, numUsers );
          }
@@ -1062,7 +1063,7 @@ bool     ChatRoomManager::DeleteRoom( const string& channelUuid )
 ///////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////
 
-bool     ChatRoomManager::UserSendP2PChat( const string& senderUuid, const string& destinationUuid, const string& message )
+bool     ChatRoomManager::UserSendP2PChat( const string& senderUuid, const string& destinationUuid, const string& message, U32 connectionId )
 {
    cout << "Sending p2p chat from " << senderUuid << " to " << destinationUuid << ": msg:" << message << endl;
    stringhash senderHash = GenerateUniqueHash( senderUuid );
@@ -1080,9 +1081,9 @@ bool     ChatRoomManager::UserSendP2PChat( const string& senderUuid, const strin
       return false;
    }
 
-   ChatUser* userSender = m_chatServer->GetUserByUuid( senderIter->second.userUuid );
-   U32 connectionId = userSender->GetConnectionId();
-   U32 gatewayId = userSender->GetGatewayId();
+   ChatUser* userSender = NULL;
+   m_chatServer->GetUser( senderIter->second.userUuid, userSender );
+   U32 gatewayId = userSender->GetGatewayId( connectionId );
 
    UserMapIterator receiverIter = m_userMap.find( receiverHash );
    if( receiverIter == m_userMap.end() )
@@ -1098,10 +1099,10 @@ bool     ChatRoomManager::UserSendP2PChat( const string& senderUuid, const strin
    }
    else
    {
-      ChatUser* userReceiver = m_chatServer->GetUserByUuid( receiverIter->second.userUuid );
-      if( userReceiver )
+      ChatUser* userReceiver = NULL;
+      if( m_chatServer->GetUser( receiverIter->second.userUuid, userReceiver ) == true )
       {
-         userReceiver->ChatReceived( message, senderUuid, userSender->GetUserName(), "", GetDateInUTC(), 0 );
+         userReceiver->ChatReceived( message, senderUuid, userSender->GetUsername(), "", GetDateInUTC(), 0 );
       }
    }
 
@@ -1115,7 +1116,7 @@ bool     ChatRoomManager::UserSendP2PChat( const string& senderUuid, const strin
 
 ///////////////////////////////////////////////////////////////////////
 
-bool     ChatRoomManager::UserSendsChatToChannel( const string& senderUuid, const string& channelUuid, const string& message, U16 gameTurn )
+bool     ChatRoomManager::UserSendsChatToChannel( const string& senderUuid, const string& channelUuid, const string& message, U16 gameTurn, U32 connectionId )
 {
    cout << "Sending p2p chat from " << senderUuid << " to channel " << channelUuid << ": msg:" << message << endl;
    stringhash userHash = GenerateUniqueHash( senderUuid );
@@ -1132,8 +1133,8 @@ bool     ChatRoomManager::UserSendsChatToChannel( const string& senderUuid, cons
       m_chatServer->Log( text, 1 );
       return false;
    }
-   ChatUser* userSender = m_chatServer->GetUserByUuid( senderIter->second.userUuid );
-   if( userSender == NULL )
+   ChatUser* userSender = NULL;
+   if( m_chatServer->GetUser( senderIter->second.userUuid, userSender ) == false )
    {
       string text = " User ";
       text += senderUuid;
@@ -1144,8 +1145,7 @@ bool     ChatRoomManager::UserSendsChatToChannel( const string& senderUuid, cons
       return false;
    }
 
-   U32 connectionId = userSender->GetConnectionId();
-   U32 gatewayId = userSender->GetGatewayId();
+   U32 gatewayId = userSender->GetGatewayId( connectionId );
 
    if( channelUuid.size() == 0 )
    {
@@ -1184,10 +1184,10 @@ bool     ChatRoomManager::UserSendsChatToChannel( const string& senderUuid, cons
    while( userIt != channel.userBasics.end() )
    {
       UserBasics& ub = *userIt++;
-      ChatUser* user = m_chatServer->GetUserByUuid( ub.userUuid );
-      if( user )
+      ChatUser* user = NULL;
+      if( m_chatServer->GetUser( ub.userUuid, user ) == true )
       {
-         user->ChatReceived( message, senderUuid, userSender->GetUserName(), channelUuid, GetDateInUTC(), userSender->GetUserId() );
+         user->ChatReceived( message, senderUuid, userSender->GetUsername(), channelUuid, GetDateInUTC(), userSender->GetId() );
       }
    }
 
@@ -1240,7 +1240,7 @@ bool     ChatRoomManager::RequestChatRoomInfo( const PacketChatListAllMembersInC
 ///////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////
 
-bool     ChatRoomManager::RenameChatRoom( const string& channelUuid, const string& newName, const string& userUuid, string& oldName )
+bool     ChatRoomManager::RenameChatRoom( const string& channelUuid, const string& newName, const string& userUuid, string& oldName, U32 connectionId )
 {
    // I can totally see users renaming this channel repeatedly over each other...
    string errorText = " RenameChatRoom: User ";
@@ -1257,15 +1257,13 @@ bool     ChatRoomManager::RenameChatRoom( const string& channelUuid, const strin
       return false;
    }
 
-   ChatUser* userRequester = m_chatServer->GetUserByUuid( requesterIter->second.userUuid );
-   if( userRequester == NULL )
+   ChatUser* userRequester = NULL;
+   if( m_chatServer->GetUser( requesterIter->second.userUuid, userRequester ) == false )
    {
       errorText += " but the user does not exist in ChatRoomManager";
       m_chatServer->Log( errorText, 1 );
       return false;
    }
-
-   U32 connectionId = userRequester->GetConnectionId();
 
    stringhash channelHash = GenerateUniqueHash( channelUuid );   
    ChannelMapIterator channelIter = m_channelMap.find( channelHash );
@@ -1273,7 +1271,7 @@ bool     ChatRoomManager::RenameChatRoom( const string& channelUuid, const strin
    {
       errorText += " but that channel does not exist in ChatRoomManager";
       m_chatServer->Log( errorText, 1 );
-      m_chatServer->SendErrorToClient( connectionId, userRequester->GetGatewayId(), PacketErrorReport::ErrorType_NoChatChannel );
+      m_chatServer->SendErrorToClient( connectionId, userRequester->GetGatewayId( connectionId ), PacketErrorReport::ErrorType_NoChatChannel );
       return false;
    }
 
@@ -1410,8 +1408,8 @@ bool     ChatRoomManager::AddUserToRoom( const PacketChatAddUserToChatChannelGam
    userIt = channelMapData.userBasics.begin();
    while( userIt != channelMapData.userBasics.end() )
    {
-      ChatUser* user = m_chatServer->GetUserByUuid( userIt->userUuid );
-      if( user )
+      ChatUser* user = NULL;
+      if( m_chatServer->GetUser( userIt->userUuid, user ) == true )
       {
          user->NotifyAddedToChannel( channelName, channelUuid, addedUserUuid, userName );
       }
@@ -1423,7 +1421,7 @@ bool     ChatRoomManager::AddUserToRoom( const PacketChatAddUserToChatChannelGam
 
 ///////////////////////////////////////////////////////////////////////
 
-bool     ChatRoomManager::AddUserToRoom( const string& channelUuid, const string& addedUserUuid, const string& requesterUuid )
+bool     ChatRoomManager::AddUserToRoom( const string& channelUuid, const string& addedUserUuid, const string& requesterUuid, U32 connectionId )
 {
    string errorText = " AddUserToRoom: User ";
    errorText += requesterUuid;
@@ -1442,17 +1440,16 @@ bool     ChatRoomManager::AddUserToRoom( const string& channelUuid, const string
       return false;
    }
 
-   U32 connectionId = 0;
-   
-   ChatUser* userRequester = m_chatServer->GetUserByUuid( requesterIter->second.userUuid );
-   if( userRequester == NULL )
+   ChatUser* userRequester = NULL;
+   U32 gatewayId = 0;
+   if( m_chatServer->GetUser( requesterIter->second.userUuid, userRequester ) == false )
    {
       errorText += " but the requester does not exist in ChatRoomManager";
       m_chatServer->Log( errorText, 1 );
    }
    else
    {
-      connectionId = userRequester->GetConnectionId();
+      gatewayId = userRequester->GetGatewayId( connectionId );
    }
    stringhash addedUserHash = GenerateUniqueHash( addedUserUuid );
    UserMapIterator addedUserIter = m_userMap.find( addedUserHash );
@@ -1460,7 +1457,7 @@ bool     ChatRoomManager::AddUserToRoom( const string& channelUuid, const string
    {
       errorText += " but the added user does not exist in ChatRoomManager";
       m_chatServer->Log( errorText, 1 );
-      m_chatServer->SendErrorToClient( connectionId, userRequester->GetGatewayId(), PacketErrorReport::ErrorType_UserUnknown );
+      m_chatServer->SendErrorToClient( connectionId, gatewayId, PacketErrorReport::ErrorType_UserUnknown );
       return false;
    }
 
@@ -1470,7 +1467,7 @@ bool     ChatRoomManager::AddUserToRoom( const string& channelUuid, const string
    {
       errorText += " but the added user is blocking group invites";
       m_chatServer->Log( errorText, 1 );
-      m_chatServer->SendErrorToClient( connectionId, userRequester->GetGatewayId(), PacketErrorReport::ErrorType_ChatChannel_UserNotAcceptingInvites );
+      m_chatServer->SendErrorToClient( connectionId, gatewayId, PacketErrorReport::ErrorType_ChatChannel_UserNotAcceptingInvites );
       return false;
    }
 
@@ -1480,7 +1477,7 @@ bool     ChatRoomManager::AddUserToRoom( const string& channelUuid, const string
    {
       errorText += " but that channel does not exist in ChatRoomManager";
       m_chatServer->Log( errorText, 1 );
-      m_chatServer->SendErrorToClient( connectionId, userRequester->GetGatewayId(), PacketErrorReport::ErrorType_NoChatChannel );
+      m_chatServer->SendErrorToClient( connectionId, gatewayId, PacketErrorReport::ErrorType_NoChatChannel );
       return false;
    }
 
@@ -1492,7 +1489,7 @@ bool     ChatRoomManager::AddUserToRoom( const string& channelUuid, const string
       {
          errorText += " but that added user is already in that channel";
          m_chatServer->Log( errorText, 1 );
-         m_chatServer->SendErrorToClient( connectionId, userRequester->GetGatewayId(), PacketErrorReport::ErrorType_CannotAddUserToChannel_AlreadyExists );
+         m_chatServer->SendErrorToClient( connectionId, gatewayId, PacketErrorReport::ErrorType_CannotAddUserToChannel_AlreadyExists );
          return false;
       }
       it++;
@@ -1505,8 +1502,8 @@ bool     ChatRoomManager::AddUserToRoom( const string& channelUuid, const string
    while( userIt != channelInfo.userBasics.end() )
    {
       UserBasics& ub = *userIt++;
-      ChatUser* user = m_chatServer->GetUserByUuid( ub.userUuid );
-      if( user )
+      ChatUser* user = NULL;
+      if( m_chatServer->GetUser( ub.userUuid, user ) == true )
       {
          user->NotifyAddedToChannel( channelInfo.name, channelUuid, addedUserIter->second.userName, addedUserUuid );
       }
@@ -1517,7 +1514,7 @@ bool     ChatRoomManager::AddUserToRoom( const string& channelUuid, const string
 
 ///////////////////////////////////////////////////////////////////////
 
-bool     ChatRoomManager::UserAddsSelfToGroup( const string& channelUuid, const string& addedUserUuid )
+bool     ChatRoomManager::UserAddsSelfToGroup( const string& channelUuid, const string& addedUserUuid, U32 connectionId )
 {
    string errorText = " UserAddsSelfToGroup: User ";
    errorText += addedUserUuid;
@@ -1526,14 +1523,12 @@ bool     ChatRoomManager::UserAddsSelfToGroup( const string& channelUuid, const 
 
    ///-------------------------------------------------------------
 
-   U32 connectionId = 0; 
-   ChatUser* userRequester = m_chatServer->GetUserByUuid( addedUserUuid );
-   if( userRequester == NULL )
+   ChatUser* userRequester = NULL;
+   if( m_chatServer->GetUser( addedUserUuid, userRequester ) == false )
    {
       return false;
    }
-
-   connectionId = userRequester->GetConnectionId();
+   U32 gatewayId = userRequester->GetGatewayId( connectionId );
 
    stringhash addedUserHash = GenerateUniqueHash( addedUserUuid );
    UserMapIterator addedUserIter = m_userMap.find( addedUserHash );
@@ -1541,7 +1536,7 @@ bool     ChatRoomManager::UserAddsSelfToGroup( const string& channelUuid, const 
    {
       errorText += " but the added user does not exist in ChatRoomManager";
       m_chatServer->Log( errorText, 1 );
-      m_chatServer->SendErrorToClient( connectionId, 0, PacketErrorReport::ErrorType_UserUnknown );
+      m_chatServer->SendErrorToClient( connectionId, gatewayId, PacketErrorReport::ErrorType_UserUnknown );
       return false;
    }
 
@@ -1555,7 +1550,7 @@ bool     ChatRoomManager::UserAddsSelfToGroup( const string& channelUuid, const 
    {
       errorText += " but that channel does not exist in ChatRoomManager";
       m_chatServer->Log( errorText, 1 );
-      m_chatServer->SendErrorToClient( connectionId, 0, PacketErrorReport::ErrorType_NoChatChannel );
+      m_chatServer->SendErrorToClient( connectionId, gatewayId, PacketErrorReport::ErrorType_NoChatChannel );
       return false;
    }
 
@@ -1567,7 +1562,7 @@ bool     ChatRoomManager::UserAddsSelfToGroup( const string& channelUuid, const 
       {
          errorText += " but that added user is already in that channel";
          m_chatServer->Log( errorText, 1 );
-         m_chatServer->SendErrorToClient( connectionId, 0, PacketErrorReport::ErrorType_CannotAddUserToChannel_AlreadyExists );
+         m_chatServer->SendErrorToClient( connectionId, gatewayId, PacketErrorReport::ErrorType_CannotAddUserToChannel_AlreadyExists );
          return false;
       }
       it++;
@@ -1580,8 +1575,8 @@ bool     ChatRoomManager::UserAddsSelfToGroup( const string& channelUuid, const 
    while( userIt != channelInfo.userBasics.end() )
    {
       UserBasics& ub = *userIt++;
-      ChatUser* user = m_chatServer->GetUserByUuid( ub.userUuid );
-      if( user )
+      ChatUser* user = NULL;
+      if( m_chatServer->GetUser( ub.userUuid, user ) == true )
       {
          user->NotifyAddedToChannel( channelInfo.name, channelUuid, addedUserIter->second.userName, addedUserUuid );
       }
@@ -1750,8 +1745,8 @@ bool     ChatRoomManager::RemoveUserFromRoom( const PacketChatRemoveUserFromChat
    userIt = channelMapData.userBasics.begin();
    while( userIt != channelMapData.userBasics.end() )
    {
-      ChatUser* user = m_chatServer->GetUserByUuid( userIt->userUuid );
-      if( user )
+      ChatUser* user = NULL;
+      if( m_chatServer->GetUser( userIt->userUuid, user ) == true )
       {
          user->NotifyRemovedFromChannel( channelName, channelUuid, true, userUuid );
       }
@@ -1795,8 +1790,8 @@ bool     ChatRoomManager::RemoveUserFromRoom( const string& channelUuid, const s
    }
 
    bool success = RemoveUserFromRoomAndWriteToDB( channelUuid, removedUserUuid );
-   ChatUser* user = m_chatServer->GetUserByUuid( removedUserUuid );
-   if( user )
+   ChatUser* user = NULL;
+   if( m_chatServer->GetUser( removedUserUuid, user ) == true )
    {
       user->NotifyRemovedFromChannel( channelIter->second.name, channelUuid, success );
       //user->SendErrorMessage( PacketErrorReport::ErrorType_ChatChannelCannotBeCreated );
@@ -1818,8 +1813,8 @@ bool     ChatRoomManager::RemoveUserFromRoom( const string& channelUuid, const s
          while( it != channelMapData.userBasics.end() )
          {
             string notifyUserUuid = it->userUuid;
-            ChatUser* user = m_chatServer->GetUserByUuid( notifyUserUuid );
-            if( user )
+            ChatUser* user = NULL;
+            if( m_chatServer->GetUser( notifyUserUuid, user ) == true )
             {
                user->NotifyRemovedFromChannel( channelIter->second.name, channelUuid, success, removedUserUuid );
             }
@@ -1984,8 +1979,8 @@ void     ChatRoomManager::StoreAllUsersInChannel( const string& channelUuid, con
 
 bool     ChatRoomManager::NotifyUserThatHeWasAddedToChannel( const string& userUuid, const string& channelName, const string& channelUuid )
 {
-   ChatUser* user = m_chatServer->GetUserByUuid( userUuid );
-   if( user )
+   ChatUser* user = NULL;
+   if( m_chatServer->GetUser( userUuid, user ) == true )
    {
       UsersChatRoomList userInChannel ( userUuid );
       if( GetUserInfo( userUuid, userInChannel ) == false )

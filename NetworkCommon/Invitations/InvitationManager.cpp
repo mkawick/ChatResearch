@@ -248,18 +248,25 @@ bool     InvitationManager::RemoveAnyRelatedInvitations( const string& groupUuid
          shouldAdvanceIter = false;
          DeleteInvitationFromDb( invitationId );
 
-         U32 connectionId = 0;
-         U32 gatewayId = 0;
-         m_mainServer->GetUserConnectionId( inviteeUuid, connectionId, gatewayId );
-         if( connectionId != 0 )
+         vector< SimpleConnectionDetails > listOfConnections;
+         m_mainServer->GetUserConnectionId( inviteeUuid, listOfConnections );
+
+         if( listOfConnections.size() != 0 )
          {
-            SendUserHisInvitations <PacketInvitation_GetListOfInvitationsResponse> ( m_invitationMap, IsUserInThisInvitation, inviteeUuid, connectionId, gatewayId );
+            UserConnectionList::iterator it = listOfConnections.begin();
+            while( it != listOfConnections.end() )
+            {
+               SendUserHisInvitations <PacketInvitation_GetListOfInvitationsResponse> ( m_invitationMap, IsUserInThisInvitation, inviteeUuid, it->connectionId, it->gatewayId );
+            }
          }
-         connectionId = 0;
-         m_mainServer->GetUserConnectionId( inviterUuid, connectionId, gatewayId );
-         if( connectionId != 0 )
+         m_mainServer->GetUserConnectionId( inviterUuid, listOfConnections );
+         if( listOfConnections.size() != 0 )
          {
-            SendUserHisInvitations <PacketInvitation_GetListOfInvitationsResponse> ( m_invitationMap, IsUserInThisInvitation, inviterUuid, connectionId, gatewayId );
+            UserConnectionList::iterator it = listOfConnections.begin();
+            while( it != listOfConnections.end() )
+            {
+               SendUserHisInvitations <PacketInvitation_GetListOfInvitationsResponse> ( m_invitationMap, IsUserInThisInvitation, inviterUuid, it->connectionId, it->gatewayId );
+            }
          }
 
          found = true;// there could be multiples for this group... let's not break early.
@@ -355,17 +362,18 @@ bool     InvitationManager::InviteUserToChatRoom( const PacketInvitation_InviteU
 
    SendMessageToClient( response, connectionId, gatewayId );
 
-   U32 receivedConnectionId = 0;
-   U32 receivedGatewayId = 0;
-   m_mainServer->GetUserConnectionId( invitationPacket->userUuid.c_str(), receivedConnectionId, receivedGatewayId );
-   // notify recipient of the new invitation received.
-   if( receivedConnectionId != 0 )
+
+   vector< SimpleConnectionDetails > listOfConnections;
+   m_mainServer->GetUserConnectionId( invitationPacket->userUuid.c_str(), listOfConnections );
+
+   if( listOfConnections.size() != 0 )
    {
-      SendUserHisInvitations <PacketInvitation_GetListOfInvitationsResponse> ( m_invitationMap, IsUserInThisInvitation, invitationPacket->userUuid.c_str(), receivedConnectionId, receivedGatewayId );
-     /* PacketInvitation_InviteUserResponse* response = new PacketInvitation_InviteUserResponse;
-      response->succeeded = true;
-      response->newInvitationUuid = invitationUuid;
-      m_mainServer->SendPacketToGateway( response, receiver->GetConnectionId() );*/
+      UserConnectionList::iterator it = listOfConnections.begin();
+      while( it != listOfConnections.end() )
+      {
+   // notify recipient of the new invitation received.
+         SendUserHisInvitations <PacketInvitation_GetListOfInvitationsResponse> ( m_invitationMap, IsUserInThisInvitation, invitationPacket->userUuid.c_str(), it->connectionId, it->gatewayId );
+      }
    }
 
    return true;
@@ -407,12 +415,15 @@ bool     InvitationManager::CancelInvitation( const PacketInvitation_CancelInvit
 
    SendUserHisInvitations <PacketInvitation_GetListOfInvitationsResponse> ( m_invitationMap, IsUserInThisInvitation, senderUuid, connectionId, gatewayId );
 
-   U32 receivedConnectionId = 0;
-   U32 receivedGatewayId = 0;
-   m_mainServer->GetUserConnectionId( inviteeUuid, receivedConnectionId, receivedGatewayId );
-   if( receivedConnectionId != 0 )
+   vector< SimpleConnectionDetails > listOfConnections;
+   m_mainServer->GetUserConnectionId( inviteeUuid, listOfConnections );
+   if( listOfConnections.size() != 0 )
    {
-      SendUserHisInvitations <PacketInvitation_GetListOfInvitationsResponse> ( m_invitationMap, IsUserInThisInvitation, inviteeUuid, receivedConnectionId, receivedGatewayId );
+      UserConnectionList::iterator it = listOfConnections.begin();
+      while( it != listOfConnections.end() )
+      {
+         SendUserHisInvitations <PacketInvitation_GetListOfInvitationsResponse> ( m_invitationMap, IsUserInThisInvitation, inviteeUuid, it->connectionId, it->gatewayId );
+      }
    }
 
    return true;
@@ -446,19 +457,25 @@ bool     InvitationManager::RejectInvitation( const PacketInvitation_RejectInvit
 
    U32 invitationId = invite.invitationId;
    string inviterUuid = invite.inviterUuid;
-   U32 inviterConnectionId = 0;
-   U32 inviterGatewayId = 0;
-   m_mainServer->GetUserConnectionId( inviterUuid, inviterConnectionId, inviterGatewayId );
+   //U32 inviterConnectionId = 0;
+   //U32 inviterGatewayId = 0;
+   //m_mainServer->GetUserConnectionId( inviterUuid, inviterConnectionId, inviterGatewayId );
+   vector< SimpleConnectionDetails > listOfConnections;
+   m_mainServer->GetUserConnectionId( inviterUuid, listOfConnections );
+
    m_invitationMap.erase( it );// must erase before sending the updated lists.
 
    PacketInvitation_RejectInvitationResponse* response = new PacketInvitation_RejectInvitationResponse;
    SendMessageToClient( response, connectionId, gatewayId );
    SendUserHisInvitations <PacketInvitation_GetListOfInvitationsResponse> ( m_invitationMap, IsUserInThisInvitation, rejecterUuid, connectionId, gatewayId );
 
-   
-   if( inviterConnectionId != 0 )
+   if( listOfConnections.size() != 0 )
    {
-      SendUserHisInvitations <PacketInvitation_GetListOfInvitationsResponse> ( m_invitationMap, IsUserInThisInvitation, inviterUuid, inviterConnectionId, inviterGatewayId );
+      UserConnectionList::iterator it = listOfConnections.begin();
+      while( it != listOfConnections.end() )
+      {
+         SendUserHisInvitations <PacketInvitation_GetListOfInvitationsResponse> ( m_invitationMap, IsUserInThisInvitation, inviterUuid, it->connectionId, it->gatewayId );
+      }
    }
 
    DeleteInvitationFromDb( invitationId );
@@ -501,7 +518,7 @@ bool     InvitationManager::AcceptInvitation( const PacketInvitation_AcceptInvit
          return false;
       }
 
-      if( m_groupLookup->UserAddsSelfToGroup( invite.groupUuid, invite.inviteeUuid ) == false )// bad chat room
+      if( m_groupLookup->UserAddsSelfToGroup( invite.groupUuid, invite.inviteeUuid, connectionId ) == false )// bad chat room
       {
          m_mainServer->SendErrorToClient( connectionId, gatewayId, PacketErrorReport::ErrorType_Invitation_DoesNotExist );
          return false;
@@ -510,15 +527,22 @@ bool     InvitationManager::AcceptInvitation( const PacketInvitation_AcceptInvit
 
    U32 invitationId = invite.invitationId;
    string inviterUuid = invite.inviterUuid;
-   U32 inviterConnectionId = 0;
+   /*U32 inviterConnectionId = 0;
    U32 inviterGatewayId = 0;
-   m_mainServer->GetUserConnectionId( inviterUuid, inviterConnectionId, inviterGatewayId );
+   m_mainServer->GetUserConnectionId( inviterUuid, inviterConnectionId, inviterGatewayId );*/
+   vector< SimpleConnectionDetails > listOfConnections;
+   m_mainServer->GetUserConnectionId( inviterUuid, listOfConnections );
+
    string groupUuid = invite.groupUuid;
 
    m_invitationMap.erase( it );// must erase before sending the updated lists.
-   if( inviterConnectionId != 0 )
+   if( listOfConnections.size() != 0 )
    {
-      SendUserHisInvitations <PacketInvitation_GetListOfInvitationsResponse> ( m_invitationMap, IsUserInThisInvitation, inviterUuid, inviterConnectionId, inviterGatewayId );
+      UserConnectionList::iterator it = listOfConnections.begin();
+      while( it != listOfConnections.end() )
+      {
+         SendUserHisInvitations <PacketInvitation_GetListOfInvitationsResponse> ( m_invitationMap, IsUserInThisInvitation, inviterUuid, it->connectionId, it->gatewayId );
+      }
    }
 
    DeleteAllInvitationsToThisGroup( groupUuid, inviteeUuid );
@@ -546,12 +570,18 @@ void  InvitationManager::DeleteAllInvitationsToThisGroup( const string& groupUui
          {
             U32 invitationId = invite.invitationId; 
             const string& inviterUuid = invite.inviterUuid;
-            U32 inviterConnectionId = 0;
-            U32 inviterGatewayId = 0;
-            m_mainServer->GetUserConnectionId( inviterUuid, inviterConnectionId, inviterGatewayId );
-            if( inviterConnectionId )
+            
+            vector< SimpleConnectionDetails > listOfConnections;
+            m_mainServer->GetUserConnectionId( inviterUuid, listOfConnections );
+
+            //m_mainServer->GetUserConnectionId( inviterUuid, inviterConnectionId, inviterGatewayId );
+            if( listOfConnections.size() != 0 )
             {
-               SendUserHisInvitations <PacketInvitation_GetListOfInvitationsResponse> ( m_invitationMap, IsUserInThisInvitation, inviterUuid, inviterConnectionId, inviterGatewayId );
+               UserConnectionList::iterator it = listOfConnections.begin();
+               while( it != listOfConnections.end() )
+               {
+                  SendUserHisInvitations <PacketInvitation_GetListOfInvitationsResponse> ( m_invitationMap, IsUserInThisInvitation, inviterUuid, it->connectionId, it->gatewayId );
+               }
             }
             DeleteInvitationFromDb( invitationId ); 
             InvitationMapIterator temp = it++;

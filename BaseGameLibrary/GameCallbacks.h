@@ -33,6 +33,7 @@ public:
    virtual bool   UserConnected( const UserInfo* info, U32 connectionId, U32 gatewayId ) = 0;
    virtual bool   UserDisconnected( U32 connectionId, bool errorDisconnect ) = 0;
    virtual bool   ExpireUser( const UuidString& userUuid ) = 0;
+   virtual bool   DeleteAllUsers() = 0;
 
    virtual U32    GetGatewayId( U32 connectionId ) const { return 0; }
 

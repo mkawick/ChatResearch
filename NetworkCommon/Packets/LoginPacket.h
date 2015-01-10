@@ -45,7 +45,11 @@ public:
       LoginType_LoginFromGateway,
       LoginType_LogoutAllUsers,
       LoginType_ListOfMissingFeatures,
-      LoginType_ExpireUserLogin
+      LoginType_ExpireUserLogin,
+
+      LoginType_RequestServiceToFlushAllUserLogins,
+      LoginType_RequestLoginStatusOfAllUsers,
+      LoginType_RequestToLogoutAllUsersForGame
    };
 public:
    PacketLogin( int packet_type = PacketType_Login, int packet_sub_type = LoginType_Login ): BasePacket( packet_type, packet_sub_type ) {}
@@ -645,4 +649,28 @@ public:
 
 ///////////////////////////////////////////////////////////////
 
+class PacketLogin_FlushAllConnectedUsers : public BasePacket
+{
+public:
+   PacketLogin_FlushAllConnectedUsers() : BasePacket( PacketType_Login, PacketLogin::LoginType_RequestServiceToFlushAllUserLogins ) {}
+};
+
+///////////////////////////////////////////////////////////////
+
+class PacketLogin_RequestAllConnectedUsers : public BasePacket
+{
+public:
+   PacketLogin_RequestAllConnectedUsers() : BasePacket( PacketType_Login, PacketLogin::LoginType_RequestLoginStatusOfAllUsers ) {}
+};
+
+///////////////////////////////////////////////////////////////
+
+class PacketLogin_RequestLogoutAllUsersForGame : public BasePacket
+{
+public:
+   PacketLogin_RequestLogoutAllUsersForGame() : BasePacket( PacketType_Login, PacketLogin::LoginType_RequestToLogoutAllUsersForGame ) {}
+};
+
+///////////////////////////////////////////////////////////////
+      
 #pragma pack( pop )

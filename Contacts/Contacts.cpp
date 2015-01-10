@@ -29,6 +29,7 @@ using boost::format;
 #include <conio.h>
 #endif   
 
+#include "../NetworkCommon/Packets/LoginPacket.h"
 #include "DiplodocusContact.h"
 
 ////////////////////////////////////////////////////////////////////////
@@ -189,6 +190,7 @@ int main( int argc, const char* argv[] )
 
       s2s->AddOutputChain( contactServer );
       contactServer->Init();
+      s2s->QueueInboundRequest( PacketType_Login, PacketLogin::LoginType_RequestLoginStatusOfAllUsers, ServerType_Login );
       contactServer->Run();
    }
    else

@@ -27,7 +27,7 @@ using boost::format;
 /////////////////////////////////////////////////////////////////////////////////
 
 MainGatewayThread::MainGatewayThread( const string& serverName, U32 serverId ) : 
-                                          Diplodocus< KhaanGateway > ( serverName, serverId, 0, ServerType_Gateway ), 
+                                          ChainedType ( serverName, serverId, 0, ServerType_Gateway ), 
                                           StatTrackingConnections(),
                                           m_highestNumSimultaneousUsersWatermark( 0 ),
                                           m_connectionIdTracker( 0 ),
@@ -931,6 +931,38 @@ void     MainGatewayThread::SortOutgoingPackets()
    }
 }
 
+void     MainGatewayThread::InformLoginServerAboutLostconnectedClients()
+{
+   vector< U32 > connectionIds;
+   m_inputChainListMutex.lock();     
+
+   ChainLinkIteratorType itInputs = m_listOfInputs.begin();
+   while( itInputs != m_listOfInputs.end() )
+   {
+      ChainType* outputPtr = static_cast< ChainType*> ( (*itInputs).m_interface );
+      if( outputPtr->GetChainedType() == ChainedType_InboundSocketConnector )
+      {
+         KhaanGateway* khaan = static_cast< KhaanGateway* >( outputPtr );
+         if( khaan->GetChainedType() == ChainedType_InboundSocketConnector && 
+            khaan->IsBlockingData() == true)
+         {
+            connectionIds.push_back( khaan->GetConnectionId() );
+         }
+      }
+      itInputs++;
+   }
+   m_inputChainListMutex.unlock();    
+   
+   int num = connectionIds.size();
+   for( int i=0; i<num; i++ )
+   {
+      PacketLogout* logout = new PacketLogout();
+      logout->wasDisconnectedByError = true;// the disconnect should have come from the client, so these must be errors
+      AddInputChainData( logout, connectionIds[ i ] );
+   }
+}
+
+//---------------------------------------------------------------
 /////////////////////////////////////////////////////////////////////////////////
 
 int       MainGatewayThread::CallbackFunction()
@@ -950,6 +982,8 @@ int       MainGatewayThread::CallbackFunction()
 
    StatTrackingConnections::SendStatsToStatServer( tempContainer, m_serverName, m_serverId, m_serverType );
    
+   InformLoginServerAboutLostconnectedClients();
+
    CleanupOldConnections();
   
    //UpdateRemovedConnections();

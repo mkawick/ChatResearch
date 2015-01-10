@@ -16,7 +16,7 @@
 #include "../NetworkCommon/Packets/ServerToServerPacket.h"
 #include "../NetworkCommon/Packets/PacketFactory.h"
 
-
+#include "../NetworkCommon/Packets/LoginPacket.h"
 #include "DiplodocusGame.h"
 #include "../NetworkCommon/NetworkIn/DiplodocusServerToServer.h"
 #include "../NetworkCommon/Database/Deltadromeus.h"
@@ -651,8 +651,10 @@ bool  GameFramework::Run()
    SetupS2SConnections( m_serverAddress, 0 );
 
    m_connectionManager->Init();
-   m_connectionManager->Run();
 
+   s2s->QueueInboundRequest( PacketType_Login, PacketLogin::LoginType_RequestToLogoutAllUsersForGame, ServerType_Login );
+   
+   m_connectionManager->Run();
 
    return false;
 }

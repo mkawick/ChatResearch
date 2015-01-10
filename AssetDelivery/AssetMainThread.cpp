@@ -20,8 +20,9 @@ using namespace std;
 ///////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////
 
-AssetMainThread::AssetMainThread( const string& serverName, U32 serverId ): Diplodocus< KhaanAsset >( serverName, serverId, 0,  ServerType_Contact ), 
-                                                                              m_assetOfAssetFileModificationTime( 0 )
+AssetMainThread::AssetMainThread( const string& serverName, U32 serverId ): 
+                              ChainedType( serverName, serverId, 0,  ServerType_Contact ), 
+                              m_assetOfAssetFileModificationTime( 0 )
 {
    time( &m_checkForFileChangeTimestamp );
    SetSleepTime( 45 );
@@ -398,15 +399,23 @@ bool  AssetMainThread::HandlePacketFromOtherServer( BasePacket* packet, U32 gate
       switch( unwrappedPacket->packetSubType )
       {
       case PacketLogin::LoginType_PrepareForUserLogin:
-         ConnectUser( static_cast< PacketPrepareForUserLogin* >( unwrappedPacket ) );
+         ConnectUser( static_cast< const PacketPrepareForUserLogin* >( unwrappedPacket ) );
          return true;
 
       case PacketLogin::LoginType_PrepareForUserLogout:
-         DisconnectUser( static_cast< PacketPrepareForUserLogout* >( unwrappedPacket ) );
+         DisconnectUser( static_cast< const PacketPrepareForUserLogout* >( unwrappedPacket ) );
          return true;
 
       case PacketLogin::LoginType_ListOfProductsS2S:
-         StoreUserProductsOwned( static_cast< PacketListOfUserProductsS2S* >( unwrappedPacket ) );
+         StoreUserProductsOwned( static_cast< const PacketListOfUserProductsS2S* >( unwrappedPacket ) );
+         return true;
+
+      case PacketLogin::LoginType_ExpireUserLogin:
+         ExpireUser( static_cast< const PacketLoginExpireUser* >( unwrappedPacket ) );
+         return true;
+
+      case PacketLogin::LoginType_RequestServiceToFlushAllUserLogins:
+         DeleteAllUsers();
          return true;
       }
    }
@@ -504,9 +513,36 @@ bool     AssetMainThread::DisconnectUser( const PacketPrepareForUserLogout* logo
    return true;
 }
 
+
 //---------------------------------------------------------------
 
-bool     AssetMainThread::StoreUserProductsOwned( PacketListOfUserProductsS2S* productNamesPacket )
+bool  AssetMainThread::ExpireUser( const PacketLoginExpireUser* expirePacket )
+{
+   string uuid = expirePacket->uuid;
+   U64 hashForUser = GenerateUniqueHash( uuid );
+   Threading::MutexLock locker( m_mutex );
+   UAADMapIterator it = m_userTickets.find( hashForUser );
+   if( it == m_userTickets.end() )
+      return false;
+
+   m_userTickets.erase( it );
+
+   return true;
+}
+
+//---------------------------------------------------------------
+
+bool  AssetMainThread::DeleteAllUsers()
+{
+   Threading::MutexLock locker( m_mutex );
+   m_userTickets.clear();
+   return true;
+}
+
+//---------------------------------------------------------------
+//---------------------------------------------------------------
+
+bool     AssetMainThread::StoreUserProductsOwned( const PacketListOfUserProductsS2S* productNamesPacket )
 {
    string uuid = productNamesPacket->uuid;
    U64 hashForUser = GenerateUniqueHash( uuid );

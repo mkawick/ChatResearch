@@ -3,6 +3,7 @@
 #include "../NetworkCommon/DataTypes.h"
 #include "../NetworkCommon/Packets/ContactPacket.h"
 #include "../NetworkCommon/Utils/TableWrapper.h"
+#include "../NetworkCommon/UserAccount/UserAccountCommon.h"
 
 class PacketDbQueryResult;
 class DiplodocusContact;
@@ -34,6 +35,112 @@ struct InvitationQueryLookup
 
 ///////////////////////////////////////////////////////////////////
 
+class UserContact : public UserLoginBase
+{
+public:
+   enum 
+   {
+      QueryType_UserProfile,
+      QueryType_Friends,
+      QueryType_FriendRequestReceived,
+      QueryType_FriendRequestsSent,
+      QueryType_DeleteFriend,
+      QueryType_FriendAddNotation,
+
+      QueryType_GetInviteeDetails,
+      QueryType_AddInvitationToUser,
+      QueryType_GetInvitationPriorToAcceptance,
+      QueryType_GetInvitationPriorToDeclination,
+      QueryType_DeleteInvitation,
+      QueryType_SearchForUser,
+      QueryType_InsertNewFriend,
+   };
+
+public:
+   //---------------------------------------
+
+   UserContact();
+   ~UserContact();
+
+   //---------------------------------------
+
+   void                 PostLogin();
+   void                 PostLogout();
+
+   bool                 IsLoggedOut() const { if( GetFirstConnectedId() == 0 ) return true; return false; }
+
+   void                 SetServer( DiplodocusContact* contactServer ) { m_contactServer = contactServer; }
+
+   void                 Init(); // send queries
+   bool                 HandleDbQueryResult( const PacketDbQueryResult* result );
+   bool                 HandleRequestFromClient( const PacketContact* packet, U32 connectionId );
+
+   void                 Update();
+   bool                 UpdateProfile( const PacketUserUpdateProfile* profile );
+
+   bool                 IsBlockingFriendInvites() const { return m_blockContactInvitations; }
+   void                 AfterFriendQuery_SendListToClient() { m_afterFriendQuery_SendListToClient = true; }
+
+private:
+   void                 FinishLoginBySendingUserFriendsAndInvitations( U32 connectionId );
+   void                 InitContactsAndInvitations();
+   void                 PrepFriendQuery();
+   void                 PrepInvitationsQueries();
+
+   bool                 GetListOfContacts( U32 connectionId );
+   bool                 ListOfInvitationsReceived_SendToClient( U32 connectionId );
+   bool                 ListOfInvitationsSent_SendToClient( U32 connectionId );
+
+   bool                 InviteUser( const PacketContact_InviteContact* packet, U32 connectionId );
+   bool                 AcceptInvitation( const PacketContact_AcceptInvite* packet, U32 connectionId );
+   bool                 DeclineInvitation( const PacketContact_DeclineInvitation* packet, U32 connectionId );
+   bool                 RemoveSentInvitation( const PacketContact_RemoveInvitation* packet, U32 connectionId );
+   bool                 PerformSearch( const PacketContact_SearchForUser* packet, U32 connectionId );
+   bool                 RemoveContact( const PacketContact_ContactRemove* packet, U32 connectionId );
+   bool                 EchoHandler( U32 connectionId );
+   bool                 AddNotationToContact( const PacketContact_SetNotationOnUser* notationPacket, U32 connectionId );
+
+   void                 FinishAcceptingInvitation( const PacketDbQueryResult* result, U32 connectionId ); 
+   void                 FinishDecliningingInvitation(  const PacketDbQueryResult* dbResult, U32 connectionId );
+   void                 FinishSearchResult( const PacketDbQueryResult* dbResult, U32 connectionId );
+   void                 FinishInvitation( U32 inviteeId, const string& message, const string& inviteeName, const string& inviteeUuid, U32 connectionId, UserContact* contact = NULL );
+   void                 YouHaveBeenInvitedToBeAFriend( const string& userName, const string& uuid, const string& message, const string& curentTime );
+   void                 InvitationAccepted( const string& sentFromuserName, const string& sentToUserName, const string& invitationUuid, const string& message, bool accepted );
+   bool                 InformFriendsOfOnlineStatus( bool isOnline );
+
+   bool                 YourFriendsOnlineStatusChange( const string& userName, const string& UUID, int avatarId, bool isOnline );
+
+   bool                 DoesPendingInvitationExist( const string& inviteeUuid, const string& inviteeName );
+   bool                 HaveIAlreadyBeenInvited( const string& userUuid );
+
+   void                 InsertInvitationReceived( U32 inviteeId, U32 inviterId, bool wasNotified, const string& userName, const string& userUuid, const string& message, const string& invitationUuid, const string& date );
+   void                 InsertInvitationSent( U32 inviteeId, U32 inviterId, bool wasNotified, const string& userName, const string& userUuid, const string& message, const string& invitationUuid, const string& date );
+   void                 InsertFriend( UserInfo& ui );
+   void                 RemoveInvitationReceived( const string& uuid );
+   void                 RemoveInvitationSent( const string& invitationUuid );
+
+   DiplodocusContact*   m_contactServer;
+
+   bool                 m_requiresUpdate;
+   bool                 m_hasBeenInitialized;
+   bool                 m_friendListFilled;
+   bool                 m_friendRequestSentListFilled;
+   bool                 m_friendRequestReceivedListFilled;
+
+   bool                 m_displayOnlineStatusToOtherUsers;
+   bool                 m_blockContactInvitations;
+   bool                 m_blockGroupInvitations;
+   bool                 m_afterFriendQuery_SendListToClient;
+
+   vector< UserInfo >   m_contacts;
+   vector< P2PInvitation > m_invitationsOut;
+   vector< P2PInvitation > m_invitationsIn;
+
+   int                  m_invitationQueryIndex;
+   list< InvitationQueryLookup >  m_invitationQueryLookup;
+};
+///////////////////////////////////////////////////////////////////
+/*
 class UserContact
 {
 public:
@@ -152,4 +259,5 @@ private:
    int                  m_invitationQueryIndex;
    list< InvitationQueryLookup >  m_invitationQueryLookup;
 };
+*/
 ///////////////////////////////////////////////////////////////////

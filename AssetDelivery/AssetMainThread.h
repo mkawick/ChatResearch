@@ -16,6 +16,7 @@ struct   AssetDefinition;
 class    PacketPrepareForUserLogin;
 class    PacketPrepareForUserLogout;
 class    PacketListOfUserProductsS2S;
+class    PacketLoginExpireUser;
 
 ///////////////////////////////////////////////////////////////////
 
@@ -46,7 +47,9 @@ private:
    bool                    HandlePacketFromOtherServer( BasePacket* packet, U32 connectionId );
    bool                    ConnectUser( const PacketPrepareForUserLogin* loginPacket );
    bool                    DisconnectUser( const PacketPrepareForUserLogout* loginPacket );
-   bool                    StoreUserProductsOwned( PacketListOfUserProductsS2S* productNamesPacket );
+   bool                    StoreUserProductsOwned( const PacketListOfUserProductsS2S* productNamesPacket );
+   bool                    ExpireUser( const PacketLoginExpireUser* actualPacket );
+   bool                    DeleteAllUsers();
 
    int                     CallbackFunction();
    bool                    ProcessPacket( PacketStorage& storage );

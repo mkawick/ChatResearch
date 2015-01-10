@@ -16,6 +16,8 @@ using namespace std;
 #include "../NetworkCommon/NetworkUtils.h"
 #include "../NetworkCommon/Utils/StringUtils.h"
 
+#include "../NetworkCommon/Packets/LoginPacket.h"
+
 #if PLATFORM == PLATFORM_WINDOWS
 #include <conio.h>
 #pragma warning (disable:4996)
@@ -136,6 +138,8 @@ int main( int argc, const char* argv[] )
 
       s2s->AddOutputChain( assetServer );
 
+      s2s->QueueInboundRequest( PacketType_Login, PacketLogin::LoginType_RequestLoginStatusOfAllUsers, ServerType_Login );
+      
       assetServer->Run();
    }
    else

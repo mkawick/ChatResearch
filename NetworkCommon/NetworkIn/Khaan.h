@@ -64,9 +64,16 @@ public:
    void           ClearAllPacketsIn();
    void           ClearAllPacketsOut();
 
+   //-----------------------------------------------
+
+   // moved from KhaanServerToServer because it is fairly generic and can be used more broadly
+   void     SetServerType( U8 type ) {m_serverType = type ; }
+   U8       GetServerType() const { return m_serverType ; }
+
 	//-----------------------------------------------
 
    bool           IsConnected() const { return m_isDisconnected == false; }
+   bool           IsBlockingData() const { return m_blockAllData; }
 	U32				GetSocketId() const { return m_socketId; }
 	bufferevent*	GetBufferEvent() const { return m_bufferEvent; }
 
@@ -146,7 +153,7 @@ protected:
 
    bool           m_useLibeventToSend;
    bool           m_criticalFailure;
-   bool           m_denyAllFutureData;
+   bool           m_blockAllData;
 
    bool           m_isDisconnected;
    bool           m_isInTelnetMode;
@@ -158,13 +165,14 @@ protected:
    int            m_expectedBytesReceivedSoFar;
    int            m_expectedBytes;
 
+   U8             m_serverType;
    U8             m_versionNumberMinor;
    U8             m_tempBuffer[ MaxBufferSize ];
    U8*            m_outboundBuffer;
 
 
    deque< BasePacket* > m_packetsOut;
-   deque< BasePacket* > m_packetsIn;//ToBeProcessed;
+   deque< BasePacket* > m_packetsIn;
 
 private:
    Khaan();

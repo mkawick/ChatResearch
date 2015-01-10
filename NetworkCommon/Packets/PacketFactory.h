@@ -20,29 +20,31 @@ public:
 
    bool     SafeParse( const U8* bufferIn, int& bufferOffset, BasePacket& packetOut, int networkMinorVersion ) const;// only ever returns an instance of basepacket
 
+   bool     Create( int packetType, int packetSubType, BasePacket** packetOut ) const;
 private:
-
-   bool     ParseBasePacket( const U8* bufferIn, int& bufferOffset, const BasePacket* firstPassParse, BasePacket** packetOut, int networkMinorVersion ) const;
-   bool     ParseAsset( const U8* bufferIn, int& bufferOffset, const BasePacket* firstPassParse, BasePacket** packetOut, int networkMinorVersion ) const;
-   bool     ParseChat( const U8* bufferIn, int& bufferOffset, const BasePacket* firstPassParse, BasePacket** packetOut, int networkMinorVersion ) const;
-   bool     ParseCheat( const U8* bufferIn, int& bufferOffset, const BasePacket* firstPassParse, BasePacket** packetOut, int networkMinorVersion ) const;
-   bool     ParseContact( const U8* bufferIn, int& bufferOffset, const BasePacket* firstPassParse, BasePacket** packetOut, int networkMinorVersion ) const;
-   bool     ParseDbQuery( const U8* bufferIn, int& bufferOffset, const BasePacket* firstPassParse, BasePacket** packetOut, int networkMinorVersion ) const;
-   bool     ParseGame( const U8* bufferIn, int& bufferOffset, const BasePacket* firstPassParse, BasePacket** packetOut, int networkMinorVersion ) const;
-   bool     ParseInvitation( const U8* bufferIn, int& bufferOffset, const BasePacket* firstPassParse, BasePacket** packetOut, int networkMinorVersion ) const;
+   bool     CreateBasePacket( int packetSubType, BasePacket** packetOut ) const;
    
-   bool     ParseLogin( const U8* bufferIn, int& bufferOffset, const BasePacket* firstPassParse, BasePacket** packetOut, int networkMinorVersion ) const;
-   bool     ParseNotification( const U8* bufferIn, int& bufferOffset, const BasePacket* firstPassParse, BasePacket** packetOut, int networkMinorVersion ) const;
-   bool     ParsePurchase( const U8* bufferIn, int& bufferOffset, const BasePacket* firstPassParse, BasePacket** packetOut, int networkMinorVersion ) const;
-   bool     ParseAnalytics( const U8* bufferIn, int& bufferOffset, const BasePacket* firstPassParse, BasePacket** packetOut, int networkMinorVersion ) const;
-   bool     ParseTournament( const U8* bufferIn, int& bufferOffset, const BasePacket* firstPassParse, BasePacket** packetOut, int networkMinorVersion ) const;
-   bool     ParseUserInfo( const U8* bufferIn, int& bufferOffset, const BasePacket* firstPassParse, BasePacket** packetOut, int networkMinorVersion ) const;
-
-   bool     ParseUserStats( const U8* bufferIn, int& bufferOffset, const BasePacket* firstPassParse, BasePacket** packetOut, int networkMinorVersion ) const;
+   //bool     CreateBasePacket( int packetSubType, BasePacket** packetOut ) const;
+   bool     CreateAsset( int packetSubType, BasePacket** packetOut ) const;
+   bool     CreateChat( int packetSubType, BasePacket** packetOut ) const;
+   bool     CreateCheat( int packetSubType, BasePacket** packetOut ) const;
+   bool     CreateContact( int packetSubType, BasePacket** packetOut ) const;
+   bool     CreateDbQuery( int packetSubType, BasePacket** packetOut ) const;
+   bool     CreateGame( int packetSubType, BasePacket** packetOut ) const;
+   bool     CreateInvitation( int packetSubType, BasePacket** packetOut ) const;
    
-   bool     ParseServerToServerWrapper( const U8* bufferIn, int& bufferOffset, const BasePacket* firstPassParse, BasePacket** packetOut, int networkMinorVersion ) const;
-   bool     ParseServerInfo( const U8* bufferIn, int& bufferOffset, const BasePacket* firstPassParse, BasePacket** packetOut, int networkMinorVersion ) const;
-   bool     ParseGatewayWrapper( const U8* bufferIn, int& bufferOffset, const BasePacket* firstPassParse, BasePacket** packetOut, int networkMinorVersion ) const;
+   bool     CreateLogin( int packetSubType, BasePacket** packetOut ) const;
+   bool     CreateNotification( int packetSubType, BasePacket** packetOut ) const;
+   bool     CreatePurchase( int packetSubType, BasePacket** packetOut ) const;
+   bool     CreateAnalytics( int packetSubType, BasePacket** packetOut ) const;
+   bool     CreateTournament( int packetSubType, BasePacket** packetOut ) const;
+   bool     CreateUserInfo( int packetSubType, BasePacket** packetOut ) const;
+
+   bool     CreateUserStats( int packetSubType, BasePacket** packetOut ) const;
+   
+   bool     CreateServerToServerWrapper( int packetSubType, BasePacket** packetOut ) const;
+   bool     CreateServerInfo( int packetSubType, BasePacket** packetOut ) const;
+   bool     CreateGatewayWrapper( int packetSubType, BasePacket** packetOut ) const;
 };
 
 

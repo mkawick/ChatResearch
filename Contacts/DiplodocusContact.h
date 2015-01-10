@@ -14,6 +14,7 @@ class PacketPrepareForUserLogin;
 class PacketPrepareForUserLogout;
 class PacketUserUpdateProfile;
 class UserLookupManager;
+class PacketLoginExpireUser;
 
 ///////////////////////////////////////////////////////////////////
 
@@ -33,9 +34,7 @@ public:
    void     InputRemovalInProgress( IChainedInterface * );
    bool     AddInputChainData( BasePacket* packet, U32 connectionId );
 
-   UserContact* GetUser( U32 userId );
-   UserContact* GetUserByUuid( const string& uuid );
-   UserContact* GetUserByUsername( const string& username );
+   
 
    bool     AddOutputChainData( BasePacket* packet, U32 connectionId );
    bool     AddQueryToOutput( PacketDbQuery* query );
@@ -54,10 +53,6 @@ public:
    bool     SendMessageToClient( BasePacket* packet, U32 connectionId, U32 gatewayId );
    bool     AddQueryToOutput( PacketDbQuery* packet, U32 connectionId );
    bool     SendErrorToClient( U32 connectionId, U32 gatewayId, PacketErrorReport::ErrorType error );
-   string   GetUserUuidByConnectionId( U32 connectionId );
-   void     GetUserConnectionId( const string& uuid, U32& connectionId, U32& gatewayId );
-   string   GetUserName( const string& uuid );
-
 private:
 
    int      CallbackFunction();
@@ -73,6 +68,8 @@ private:
 
    bool     ConnectUser( const PacketPrepareForUserLogin* login );
    bool     DisconnectUser( const PacketPrepareForUserLogout* login );
+   bool     ExpireUser( const PacketLoginExpireUser* actualPacket );
+   bool     DeleteAllUsers();
    bool     UpdateUser( const string& userUuid, U32 connectionId, U32 gatewayId );
 
    bool     UpdateUserProfile( const PacketUserUpdateProfile* profile );
@@ -92,7 +89,7 @@ private:
 
    //--------------------------------------
 
-   typedef map< U32, UserContact >     UserContactMap;
+  /* typedef map< U32, UserContact >     UserContactMap;
    typedef pair< U32, UserContact >    UserContactPair;
    typedef UserContactMap::iterator    UserContactMapIterator;
 
@@ -101,7 +98,26 @@ private:
    typedef UserIdToContactMap::iterator  UserIdToContactMapIterator;
 
    UserContactMap                   m_users;
-   UserIdToContactMap               m_userLookupById;
+   UserIdToContactMap               m_userLookupById;*/
+
+   typedef map< stringhash, UserContact >       UserContactMap;
+   typedef pair< stringhash, UserContact >      UserContactPair;
+   typedef UserContactMap::iterator             UserContactMapIterator;
+   typedef UserContactMap::const_iterator       ConstUserContactMapIterator;
+
+public:
+   string                  GetUserUuidByConnectionId( U32 connectionId );
+   void                    GetUserConnectionId( const string& uuid, vector< SimpleConnectionDetails >& listOfConnections );
+   string                  GetUserName( const string& uuid );
+   bool                    GetUser( const string& uuid, UserContact*& user );
+   const string            GetUuid( U32 connectionId ) const;
+   bool                    GetUser( U32 userId, UserContact*& user );
+   bool                    GetUserByUsername( const string& name, UserContact*& user );
+   UserContactMapIterator  GetUserByConnectionId( U32 connectionId );
+   
+private:
+
+   UserContactMap                   m_userTickets;
 
    int                              m_numSearches;
    int                              m_numInvitesSent;

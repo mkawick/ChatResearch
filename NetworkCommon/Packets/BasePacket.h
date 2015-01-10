@@ -553,6 +553,8 @@ public:
 
 bool  PackageForServerIdentification( const string& serverName, const string& ipAddress, const string& externalIpAddress, U32 serverId, U8 serverType, U16 serverPort, U8 gameProductId, bool isGameServer, bool isController, bool requiresWrapper, U8 gatewayType, BasePacket** packet );
 
+bool  PackageForS2S( U32 serverId, U8 gameProductId, BasePacket* packetToBeWrapped, BasePacket** packet );
+
 ///////////////////////////////////////////////////////////////
 
 #pragma pack( pop )

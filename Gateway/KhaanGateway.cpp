@@ -22,7 +22,8 @@ KhaanGateway::KhaanGateway( int id, bufferevent* be ):
       m_languageId( 0 ),
       m_timeoutMs( 0 ),
       m_lastSentToClientTimestamp( 0 ),
-      m_gameId( 0 )
+      m_gameId( 0 ),
+      m_isErrorState( false )
 {
    m_randomNumberOfPacketsBeforeLogin = 30 + rand() % 20;
    SendThroughLibEvent( true );
@@ -52,7 +53,7 @@ void     KhaanGateway::SetLanguageId( U8 languageId )
 
 void     KhaanGateway::DenyAllFutureData() 
 { 
-   m_denyAllFutureData = true;
+   m_blockAllData = true;
    if( m_mainOutputChain )
    {
       static_cast< MainGatewayThread* >( m_mainOutputChain )->TrackCountStats( StatTrackingConnections::StatTracking_UserBlocked, 1, 0 );
@@ -71,6 +72,7 @@ void  KhaanGateway::PreCleanup()
       LogMessage( LOG_PRIO_INFO, "--------------------------------------" );
 
       m_isDisconnected = true;
+      m_isErrorState = true;
       DenyAllFutureData();
       time_t currentTime;
       time( &currentTime );
@@ -118,7 +120,7 @@ bool	KhaanGateway :: Update()
       return false;
    }
 
-   if( m_denyAllFutureData && m_packetsOut.size() == 0 ) // shut it down
+   if( m_blockAllData && m_packetsOut.size() == 0 ) // shut it down
    {
       CloseConnection();
       return false;
@@ -256,7 +258,7 @@ bool  KhaanGateway::IsHandshaking( const BasePacket* packetIn )
          LogMessage( LOG_PRIO_INFO, "------ platform indeterminate ----------" );
       }
 
-      if( m_denyAllFutureData == true )
+      if( m_blockAllData == true )
       {
          LogMessage( LOG_PRIO_INFO, "------ user prevented from continuing -----" );
       }

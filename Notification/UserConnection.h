@@ -3,7 +3,7 @@
 #include "../NetworkCommon/Utils/Enigmosaurus.h"
 #include "../NetworkCommon/Packets/LoginPacket.h"
 #include "../NetworkCommon/Packets/NotificationPacket.h"
-
+#include "../NetworkCommon/UserAccount/UserAccountCommon.h"
 
 ///////////////////////////////////////////////////////////////////
 
@@ -29,28 +29,29 @@ class PacketDbQueryResult;
 
 ///////////////////////////////////////////////////////////////////
 
-class UserConnection  // this class exists most to handle devices
+class UserConnection : public UserLoginBase  // this class exists most to handle devices
 {
 public:
-   UserConnection( const PacketPrepareForUserLogin* info );
+   UserConnection();// const PacketPrepareForUserLogin* info );
    ~UserConnection();
 
    bool        HandleDbQueryResult( const PacketDbQueryResult* result );
 
    bool        IsReadyToAcceptClientRequests() const;
-   bool        HandleRequestFromClient( const BasePacket* packet );
+   bool        HandleRequestFromClient( const BasePacket* packet, U32 connectionId );
 
-   const PacketPrepareForUserLogin&
-               GetUserInfo() const { return m_userInfo; }
+   /*const PacketPrepareForUserLogin&
+               GetUserInfo() const { return m_userInfo; }*/
 
-   void        SetConnectionId( U32 id ) { m_userInfo.connectionId = id; }
-   void        SetGatewayId( U32 id ) { m_userInfo.gatewayId = id; }
+ /*  void        SetConnectionId( U32 id ) { m_userInfo.connectionId = id; }
+   void        SetGatewayId( U32 id ) { m_userInfo.gatewayId = id; }*/
 
-   bool        IsLoggedOut() const { return m_isLoggedOut; }
-   void        Relog();
-   int         SecondsExpiredSinceLoggedOut();
-   void        UserLogged() { m_isLoggedOut = false; }
-   void        UserLoggedOut();
+   bool                 IsLoggedOut() const { if( GetFirstConnectedId() == 0 ) return true; return false; }
+
+   //void        Relog();
+   //int         SecondsExpiredSinceLoggedOut();
+   //void        UserLogged() { m_isLoggedOut = false; }
+   //void        UserLoggedOut();
 
    //bool        NeedsUpdate() { m_requiresUpdate = true; }
    void        Update();
@@ -80,38 +81,39 @@ private:
 
 private:
 
+   void        SendErrorToclient( U32 error );
    void        RequestAllDevicesForUser();
    void        RequestAllDeviceNotification();
 
    void        StoreListOfDevices( const PacketDbQueryResult* result );
    void        StoreDevicesPerGameList( const PacketDbQueryResult* result );
    void        CreateEnabledNotificationEntry( const PacketDbQueryResult* dbResult );
-   bool        FindDeviceAndUpdate( RegisteredDeviceList& deviceList, const PacketNotification_RegisterDevice* registerDevice );
+   bool        FindDeviceAndUpdate( RegisteredDeviceList& deviceList, const PacketNotification_RegisterDevice* registerDevice, U32 connectionId );
 
-   void        TestNotification( const char* text, U32 type );
-   void        RegisterNewDevice( const PacketNotification_RegisterDevice* registerDevice );
-   void        SendNewDeviceRegistrationResponse( const string& uuid );
+   void        TestNotification( const char* text, U32 type, U32 connectionId );
+   void        RegisterNewDevice( const PacketNotification_RegisterDevice* registerDevice, U32 connectionId );
+   void        SendNewDeviceRegistrationResponse( const string& uuid, U32 connectionId );
 
 
-   void        UpdateDevice( const PacketNotification_UpdateDevice* device );
-   void        RequestDevicesList( const PacketNotification_RequestListOfDevices* device );
-   void        RemoveDevice( const PacketNotification_RemoveDevice* removal );
-   void        UpdateDbRecordForDevice( U32 id );
+   void        UpdateDevice( const PacketNotification_UpdateDevice* device, U32 connectionId );
+   void        RequestDevicesList( const PacketNotification_RequestListOfDevices* device, U32 connectionId );
+   void        RemoveDevice( const PacketNotification_RemoveDevice* removal, U32 connectionId );
+   void        UpdateDbRecordForDevice( U32 userDeviceId, U32 connectionId );
    void        CreateNewDeviceNotificationEntry( U32 userDeviceId, U32 gameType, const string& deviceId );
-   bool        SendMessageToClient( BasePacket* packet ) const;
+   bool        SendMessageToClient( BasePacket* packet, U32 connectionId ) const;
 
    
 
    RegisteredDeviceIterator      FindDeviceByUuid( const string& uuid );
    RegisteredDeviceIterator      FindDeviceById( U32 id );
-   DeviceNotificationsIterator   FindDeviceNotificationByUserDeviceId( U32 id );
-   DeviceNotificationsIterator   FindDeviceNotificationByDeviceId( const string& uuid );
+   DeviceNotificationsIterator   FindDeviceNotification( U32 userDeviceId, U8 gameProductId );
+   DeviceNotificationsIterator   FindDeviceNotificationByDeviceId( const string& uuid, U8 gameProductId );
 
-   void        GrandfatherInOldDevices( RegisteredDeviceIterator iter, const string& newName );
+   void        GrandfatherInOldDevices( RegisteredDeviceIterator iter, const string& newName, U32 connectionId );
 
    ///---------------------------------------------
 
-   PacketPrepareForUserLogin           m_userInfo;
+   //PacketPrepareForUserLogin           m_userInfo;
    bool                                m_isLoggedOut;
    bool                                m_hasRequestedDevices;
    bool                                m_finishedLoadingListOfDevices;

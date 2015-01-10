@@ -29,7 +29,7 @@ using boost::format;
 #include "../NetworkCommon/Logging/server_log.h"
 
 #include "KhaanLogin.h"
-#include "DiplodocusLogin.h"
+#include "LoginMainThread.h"
 #include "FruitadensLogin.h"
 
 #if PLATFORM == PLATFORM_WINDOWS
@@ -276,7 +276,7 @@ int main( int argc, const char* argv[] )
 
    if( isBusy == false )
    {
-      DiplodocusLogin* loginServer = new DiplodocusLogin( serverName, serverId );
+      LoginMainThread* loginServer = new LoginMainThread( serverName, serverId );
       loginServer->SetAsControllerApp( false );
       loginServer->SetGatewayType( PacketServerIdentifier::GatewayType_None );
       loginServer->SetAsGame( false );
@@ -290,7 +290,7 @@ int main( int argc, const char* argv[] )
 
       //----------------------------------------------------------------
 
-      if( Database::ConnectToMultipleDatabases< DiplodocusLogin > ( parser, loginServer ) == false )
+      if( Database::ConnectToMultipleDatabases< LoginMainThread > ( parser, loginServer ) == false )
       {
          Database::Deltadromeus* delta = new Database::Deltadromeus;
          delta->SetConnectionInfo( dbIpAddress, dbPortAddress, dbUsername, dbPassword, dbSchema );
@@ -307,22 +307,23 @@ int main( int argc, const char* argv[] )
       //----------------------------------
 
       //FruitadensLogin* chatServer =
-         PrepConnection< FruitadensLogin, DiplodocusLogin > ( chatIpAddressString, chatPort,                   "chat",           loginServer, ServerType_Chat, true );
+         PrepConnection< FruitadensLogin, LoginMainThread > ( chatIpAddressString, chatPort,                   "chat",           loginServer, ServerType_Chat, true );
       //chatServer->SetExtensiveLogging();
       //chatServer->SetSleepTime( 30 );
-      PrepConnection< FruitadensLogin, DiplodocusLogin > ( contactIpAddressString, contactPort,             "contact",        loginServer, ServerType_Contact, true );
-      PrepConnection< FruitadensLogin, DiplodocusLogin > ( assetIpAddressString, assetPort,                 "asset",          loginServer, ServerType_Asset, true );
-      PrepConnection< FruitadensLogin, DiplodocusLogin > ( purchaseIpAddressString, purchasePort,           "purchase",       loginServer, ServerType_Purchase, true );
-      PrepConnection< FruitadensLogin, DiplodocusLogin > ( analyticsIpAddressString, analyticsPort,         "analytics",      loginServer, ServerType_Analytics, true );
-      PrepConnection< FruitadensLogin, DiplodocusLogin > ( notificationIpAddressString, notificationPort,   "notification",   loginServer, ServerType_Notification, true );
-      PrepConnection< FruitadensLogin, DiplodocusLogin > ( userStatsIpAddressString, userStatsPort,         "userstat",       loginServer, ServerType_UserStats, true );
+      PrepConnection< FruitadensLogin, LoginMainThread > ( contactIpAddressString, contactPort,             "contact",        loginServer, ServerType_Contact, true );
+      PrepConnection< FruitadensLogin, LoginMainThread > ( assetIpAddressString, assetPort,                 "asset",          loginServer, ServerType_Asset, true );
+      PrepConnection< FruitadensLogin, LoginMainThread > ( purchaseIpAddressString, purchasePort,           "purchase",       loginServer, ServerType_Purchase, true );
+      PrepConnection< FruitadensLogin, LoginMainThread > ( analyticsIpAddressString, analyticsPort,         "analytics",      loginServer, ServerType_Analytics, true );
+      PrepConnection< FruitadensLogin, LoginMainThread > ( notificationIpAddressString, notificationPort,   "notification",   loginServer, ServerType_Notification, true );
+      PrepConnection< FruitadensLogin, LoginMainThread > ( userStatsIpAddressString, userStatsPort,         "userstat",       loginServer, ServerType_UserStats, true );
       
-      ConnectToMultipleGames< FruitadensLogin, DiplodocusLogin > ( parser, loginServer, true );
+      ConnectToMultipleGames< FruitadensLogin, LoginMainThread > ( parser, loginServer, true );
 
       //cout << "Chat is running: " << chatServer->IsRunning() << endl;
       //cout << "Chat is paused: " << chatServer->IsPaused() << endl;
       loginServer->Init();
       loginServer->Resume();
+      loginServer->QueueOutboundRequest( PacketType_Login, PacketLogin::LoginType_RequestServiceToFlushAllUserLogins, ServerType_All );
       loginServer->Run();
    }
    else

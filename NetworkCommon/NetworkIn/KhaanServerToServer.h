@@ -15,7 +15,6 @@ public:
    const char* GetClassName() const { return "KhaanServerToServer"; }
 
    bool	   OnDataReceived( const U8* data, int length );
-   //bool	   Update();
 
    
    void     SetServerName( const string& name ) { m_serverName = name; }
@@ -24,7 +23,6 @@ public:
    void     SetServerName( U16 port) { m_serverPort = port; }
    void     SetIsGameServer( bool isServer) { m_isGameServer = isServer; }
    void     SetIsController( bool isController) { m_isController = isController; }
-   void     SetServerType( U8 type ) {m_serverType = type ; }
    //void     SetIsGateway( bool isGateWay ) { m_isGateway = isGateWay; }
    void     SetGatewayType( PacketServerIdentifier::GatewayType type ) { m_gatewayType = type; }
 
@@ -35,7 +33,6 @@ public:
    U16      GetServerPort() const { return m_serverPort; }
    bool     IsGameServer() const { return m_isGameServer; }
    bool     IsController() const { return m_isController; }
-   U8       GetServerType() const { return m_serverType ; }
    U8       GetGatewayType() const { return m_gatewayType; }
    //bool     IsGateway() const { if( m_gatewayType == PacketServerIdentifier::GatewayType_None ) return false; return true; }
 
@@ -54,7 +51,6 @@ protected:
    string      m_externalIpAddress;
    U32         m_serverId;
    U16         m_serverPort;
-   U8          m_serverType;
    bool        m_isGameServer;
    bool        m_isController;
    U8          m_gatewayType;

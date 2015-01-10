@@ -24,7 +24,7 @@ using boost::format;
 
 #include "DiplodocusServerToServer.h"
 
-DiplodocusServerToServer::DiplodocusServerToServer( const string& serverName, U32 serverId, U8 gameProductId, ServerType type ) : Diplodocus< KhaanServerToServer >( serverName, serverId, gameProductId, type ), 
+DiplodocusServerToServer::DiplodocusServerToServer( const string& serverName, U32 serverId, U8 gameProductId, ServerType type ) : ChainedType( serverName, serverId, gameProductId, type ), 
                                     m_jobIdTracker( 32 ) // 32 is a non-zero value useful for test only
 {
    m_chainedType = ChainedType_AlternateThreadContainer;
@@ -94,7 +94,7 @@ bool     DiplodocusServerToServer::AddInputChainData( BasePacket* packet, U32 ga
 
 //---------------------------------------------------------------
 
-bool     DiplodocusServerToServer:: ProcessPacket( PacketStorage& storage )
+bool     DiplodocusServerToServer:: ProcessInboundPacket( PacketStorage& storage )
 {
    // we are already locked at this point.
 
@@ -150,7 +150,7 @@ bool     DiplodocusServerToServer:: ProcessPacket( PacketStorage& storage )
       //LogMessage( LOG_PRIO_INFO, "ProcessPacket .. creating job" );
       // create job for this packet including the serverId, a unique job id, and so on. Keep in mind that the connection may disappear
       // during the servicing of this job
-      CreateJob( khaan, unwrappedPacket );
+      CreateJob( khaan->GetServerId(), unwrappedPacket );
 
       return true;
    }
@@ -260,22 +260,24 @@ void  DiplodocusServerToServer::HandleIdentityInputPackets()
       
       //LogMessage( LOG_PRIO_INFO, "DiplodocusServerToServer::HandleInputPackets .. CreateJob" );
       
-      CreateJob( localKhaan, idPacket );
+      CreateJob( localKhaan->GetServerId(), idPacket );
       //LogMessage( LOG_PRIO_INFO, "DiplodocusServerToServer::HandleInputPackets .. exit" );
+
+      SendInbound_OnConnectPackets( localKhaan, localKhaan->GetServerType() );
    }
 
 }
 
 //////////////////////////////////////////////////////////////////////////
 
-void  DiplodocusServerToServer::CreateJob( const KhaanServerToServer* khaan, BasePacket* packet )
+void  DiplodocusServerToServer::CreateJob( U32 serverId, BasePacket* packet )
 {
    int jobId = m_jobIdTracker++;
 
    PacketServerJobWrapper* wrapper = new PacketServerJobWrapper;
    wrapper->jobId = jobId;// only used currently for debugging. Could be used for a variety of things.
    wrapper->pPacket = packet;
-   wrapper->serverId = khaan->GetServerId();
+   wrapper->serverId = serverId;
 
    LockMutex();
    m_unprocessedJobs.push_back( wrapper );
@@ -382,6 +384,8 @@ int   DiplodocusServerToServer::CallbackFunction()
    CleanupOldClientConnections( "KhaanServerToServer" );
 
    UpdateInputPacketToBeProcessed();
+   UpdateOutputPacketToBeProcessed();
+
    HandleIdentityInputPackets();
    UpdateAllConnections( "KhaanServerToServer" );
    SendJobsToUpperLayers();

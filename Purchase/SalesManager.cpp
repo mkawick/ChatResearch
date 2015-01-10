@@ -288,7 +288,10 @@ bool     SalesManager::HandleResult( const PacketDbQueryResult* dbResult )
          UserAccountPurchase* user = NULL;
          if( m_parent->GetUser( userUuid, user ) == true )
          {
-            NotifyLoginToReloadUserInventory( userUuid, user->GetUserTicket().connectionId );
+            if( user->IsConnected() == true )
+            {
+               NotifyLoginToReloadUserInventory( userUuid, user->GetFirstConnectedId() );
+            }
          }
       }
       return true;
@@ -504,20 +507,27 @@ bool     SalesManager::SendTournamentPurchaseResultBackToServer( U32 serverIdent
 
 //---------------------------------------------------------------
 
-bool     SalesManager::PerformSale( const string& purchaseUuid, const UserTicket& userPurchasing, U32 serverIdentifier, string serverTransactionUuid )
+bool     SalesManager::PerformSale( const string& purchaseUuid, const string& userUuid, 
+                                   const UserConnectionList& connectionList, U32 userConnectionId, U32 userGatewayId,
+                                   U32 serverIdentifier, string serverTransactionUuid )
 {
    LogMessage( LOG_PRIO_INFO, "SalesManager::PerformSale2" );
+   assert( connectionList.size() != 0 );
+
    ExchangeEntry ee;
    if( FindItem( purchaseUuid, ee ) == false )
    {
-      m_parent->SendErrorToClient( userPurchasing.connectionId, userPurchasing.gatewayId, PacketErrorReport::ErrorType_Purchase_BadPurchaseId );
+      m_parent->SendErrorToClient( connectionList, PacketErrorReport::ErrorType_Purchase_BadPurchaseId );
       SendTournamentPurchaseResultBackToServer( serverIdentifier, serverTransactionUuid, PacketErrorReport::ErrorType_Purchase_BadPurchaseId );
       return false;
    }
 
-   if( m_usersBeingServiced.Find( userPurchasing.uuid ) == true )
+   //const string& userUuid = m_parent->GetUuid( userConnectionId );
+   assert( userUuid.size() );
+
+   if( m_usersBeingServiced.Find( userUuid ) == true )
    {
-      m_parent->SendErrorToClient( userPurchasing.connectionId, userPurchasing.gatewayId, PacketErrorReport::ErrorType_Purchase_StoreBusy );
+      m_parent->SendErrorToClient( connectionList, PacketErrorReport::ErrorType_Purchase_StoreBusy );
       SendTournamentPurchaseResultBackToServer( serverIdentifier, serverTransactionUuid, PacketErrorReport::ErrorType_Purchase_StoreBusy );
       return false;
    }
@@ -527,7 +537,7 @@ bool     SalesManager::PerformSale( const string& purchaseUuid, const UserTicket
       int secondsUntil = GetDiffTimeFromRightNow( ee.beginDate.c_str() );
       if( secondsUntil < 0 )
       {
-         m_parent->SendErrorToClient( userPurchasing.connectionId, userPurchasing.gatewayId, PacketErrorReport::ErrorType_Purchase_TimePeriodHasNotBegunYet );
+         m_parent->SendErrorToClient( connectionList, PacketErrorReport::ErrorType_Purchase_TimePeriodHasNotBegunYet );
          SendTournamentPurchaseResultBackToServer( serverIdentifier, serverTransactionUuid, PacketErrorReport::ErrorType_Purchase_TimePeriodHasNotBegunYet );
          return false;
       }
@@ -537,19 +547,19 @@ bool     SalesManager::PerformSale( const string& purchaseUuid, const UserTicket
       int secondsUntil = GetDiffTimeFromRightNow( ee.endDate.c_str() );
       if( secondsUntil > 0 )
       {
-         m_parent->SendErrorToClient( userPurchasing.connectionId, userPurchasing.gatewayId, PacketErrorReport::ErrorType_Purchase_TimePeriodHasExpired );
+         m_parent->SendErrorToClient( connectionList, PacketErrorReport::ErrorType_Purchase_TimePeriodHasExpired );
          SendTournamentPurchaseResultBackToServer( serverIdentifier, serverTransactionUuid, PacketErrorReport::ErrorType_Purchase_TimePeriodHasExpired );
          return false;
       }
    }
 
-   m_usersBeingServiced.Add( userPurchasing.uuid );
+   m_usersBeingServiced.Add( userUuid );
 
    PurchaseTracking* purchaseLookup = new PurchaseTracking;
-   purchaseLookup->userUuid = userPurchasing.uuid;
+   purchaseLookup->userUuid = userUuid;
    purchaseLookup->exchangeUuid = purchaseUuid;
-   purchaseLookup->connectionId = userPurchasing.connectionId;
-   purchaseLookup->gatewayId = userPurchasing.gatewayId;
+   purchaseLookup->connectionId = userConnectionId;
+   purchaseLookup->gatewayId = userGatewayId;
    purchaseLookup->fromOtherServerId = serverIdentifier;
    purchaseLookup->fromOtherServerTransactionId = serverTransactionUuid;
    
@@ -559,7 +569,7 @@ bool     SalesManager::PerformSale( const string& purchaseUuid, const UserTicket
    dbQuery->lookup = DiplodocusPurchase::QueryType_VerifyThatUserHasEnoughMoney1;
 
    dbQuery->query = "SELECT SUM( num_purchased ) FROM user_join_product WHERE user_uuid='";
-   dbQuery->query += userPurchasing.uuid;
+   dbQuery->query += userUuid;
    dbQuery->query += "' AND product_id='";
    dbQuery->query += ee.sourceUuid;
    dbQuery->query += "';";
@@ -569,23 +579,28 @@ bool     SalesManager::PerformSale( const string& purchaseUuid, const UserTicket
    return true;
 }
 
-
 //---------------------------------------------------------------
 
-bool     SalesManager::PerformSale( const SerializedVector< PurchaseServerDebitItem >& itemsToSpend, const UserTicket& userPurchasing, U32 serverIdentifier, string serverTransactionUuid )
+bool     SalesManager::PerformSale( const SerializedVector< PurchaseServerDebitItem >& itemsToSpend, const string& userUuid, 
+                                   const UserConnectionList& connectionList, U32 userConnectionId, U32 userGatewayId,
+                                   U32 serverIdentifier, string serverTransactionUuid )
 {
    LogMessage( LOG_PRIO_INFO, "SalesManager::PerformSale1" );
+   assert( connectionList.size() != 0 );
 
    if( itemsToSpend.size() == 0 )
    {
-      m_parent->SendErrorToClient( userPurchasing.connectionId, userPurchasing.gatewayId, PacketErrorReport::ErrorType_Purchase_NoTradeItemsSpecified );
+      m_parent->SendErrorToClient( connectionList, PacketErrorReport::ErrorType_Purchase_NoTradeItemsSpecified );
       SendTournamentPurchaseResultBackToServer( serverIdentifier, serverTransactionUuid, PacketErrorReport::ErrorType_Purchase_NoTradeItemsSpecified );
       return false;
    }
 
-   if( m_usersBeingServiced.Find( userPurchasing.uuid ) == true )
+   //const string& userUuid = m_parent->GetUuid( userConnectionId );
+   assert( userUuid.size() );
+
+   if( m_usersBeingServiced.Find( userUuid ) == true )
    {
-      m_parent->SendErrorToClient( userPurchasing.connectionId, userPurchasing.gatewayId, PacketErrorReport::ErrorType_Purchase_StoreBusy );
+      m_parent->SendErrorToClient( connectionList, PacketErrorReport::ErrorType_Purchase_StoreBusy );
       SendTournamentPurchaseResultBackToServer( serverIdentifier, serverTransactionUuid, PacketErrorReport::ErrorType_Purchase_StoreBusy );
       return false;
    }
@@ -597,7 +612,7 @@ bool     SalesManager::PerformSale( const SerializedVector< PurchaseServerDebitI
    {
       if( validationList.find( itemsToSpend[i].productUuidToSpend ) != validationList.end() )
       {
-         m_parent->SendErrorToClient( userPurchasing.connectionId, userPurchasing.gatewayId, PacketErrorReport::ErrorType_Purchase_DuplicateItemsForPayment );
+         m_parent->SendErrorToClient( connectionList, PacketErrorReport::ErrorType_Purchase_DuplicateItemsForPayment );
          SendTournamentPurchaseResultBackToServer( serverIdentifier, serverTransactionUuid, PacketErrorReport::ErrorType_Purchase_DuplicateItemsForPayment );
          return false;
       }
@@ -606,12 +621,12 @@ bool     SalesManager::PerformSale( const SerializedVector< PurchaseServerDebitI
    
    //---------------------------------
 
-   m_usersBeingServiced.Add( userPurchasing.uuid );
+   m_usersBeingServiced.Add( userUuid );
 
    PurchaseTracking* purchaseLookup = new PurchaseTracking;
-   purchaseLookup->userUuid = userPurchasing.uuid;
-   purchaseLookup->connectionId = userPurchasing.connectionId;
-   purchaseLookup->gatewayId = userPurchasing.gatewayId;
+   purchaseLookup->userUuid = userUuid;
+   purchaseLookup->connectionId = userConnectionId;
+   purchaseLookup->gatewayId = userGatewayId;
    purchaseLookup->fromOtherServerId = serverIdentifier;
    purchaseLookup->fromOtherServerTransactionId = serverTransactionUuid;
    purchaseLookup->itemsToSpend = itemsToSpend;
@@ -621,7 +636,7 @@ bool     SalesManager::PerformSale( const SerializedVector< PurchaseServerDebitI
    dbQuery->lookup = DiplodocusPurchase::QueryType_VerifyThatUserHasEnoughMoney2;
 
    dbQuery->query = "SELECT product_id, SUM( num_purchased ) FROM user_join_product WHERE user_uuid='";
-   dbQuery->query += userPurchasing.uuid;
+   dbQuery->query += userUuid;
    dbQuery->query += "' AND product_id IN (";
    for( int i=0; i<num; i++ )
    {
@@ -636,6 +651,8 @@ bool     SalesManager::PerformSale( const SerializedVector< PurchaseServerDebitI
 
    return true;
 }
+
+//---------------------------------------------------------------
 
 bool     SalesManager::PerformSimpleInventoryAddition( const string& userUuid, string productUuid, int count, bool translateFromIAP )
 {
@@ -733,7 +750,7 @@ ExchangeEntry :: ExchangeEntry() : index( 0 )
 
 ExchangeEntry& ExchangeEntry :: operator = ( ExchangeRateParser::row  row )
 {
-   LogMessage( LOG_PRIO_INFO, "ExchangeEntry::operator =" );
+   //LogMessage( LOG_PRIO_INFO, "ExchangeEntry::operator =" );
 
    index =              boost::lexical_cast< int > ( row[ TableExchangeRateAggregate::Column_index ] );
    beginDate =          row[ TableExchangeRateAggregate::Column_begin_date ];
@@ -762,10 +779,11 @@ ExchangeEntry& ExchangeEntry :: operator = ( ExchangeRateParser::row  row )
    return *this;
 }
 
+//---------------------------------------------------------------
 
 Product&    Product::operator = ( ProductTable::row  row )
 {
-   LogMessage( LOG_PRIO_INFO, "Product::operator =" );
+   //LogMessage( LOG_PRIO_INFO, "Product::operator =" );
    id =                 boost::lexical_cast< int > ( row[ TableProduct::Column_id ] );
    productId =          boost::lexical_cast< int > ( row[ TableProduct::Column_product_id ] );
    uuid =               row[ TableProduct::Column_uuid ];
@@ -781,3 +799,6 @@ Product&    Product::operator = ( ProductTable::row  row )
 
    return *this;
 }
+
+///////////////////////////////////////////////////////////////////////////////////////////
+

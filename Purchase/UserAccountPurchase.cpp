@@ -20,8 +20,8 @@ using namespace std;
 ///////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////
 
-UserAccountPurchase::UserAccountPurchase( const UserTicket& ticket ) : 
-                     m_userTicket( ticket ), 
+UserAccountPurchase::UserAccountPurchase( ) : 
+                     //m_userTicket( ticket ), 
                      m_status( Status_initial_login ), 
                      m_readyForCleanup( false ), 
                      m_purchaseManager( NULL ),
@@ -45,7 +45,7 @@ void  UserAccountPurchase::Update()
 }
 
    //---------------------------------------
-
+/*
 void     UserAccountPurchase::UserLoggedOut()
 {
    if( m_salesManager )
@@ -53,19 +53,19 @@ void     UserAccountPurchase::UserLoggedOut()
    m_status = Status_awaiting_cleanup;
    m_readyForCleanup = true;
    time( &m_logoutTime );
-}
+}*/
 
    //---------------------------------------
-
+/*
 void     UserAccountPurchase::ClearUserLogout()
 {
    m_status = Status_initial_login;
    m_readyForCleanup = false;
    m_logoutTime = 0;
-}
+}*/
 
    //---------------------------------------
-
+/*
 bool     UserAccountPurchase::LogoutExpired()
 {
    if( m_readyForCleanup == false )
@@ -79,7 +79,7 @@ bool     UserAccountPurchase::LogoutExpired()
    }
    return false;
 }
-
+*/
    //---------------------------------------
 
 void     UserAccountPurchase::StoreProducts( const StringBucket& bucket )
@@ -96,32 +96,32 @@ void     UserAccountPurchase::StoreProducts( const StringBucket& bucket )
    //---------------------------------------
    //---------------------------------------
    //---------------------------------------
-
+/*
 bool     UserAccountPurchase::LoginKeyMatches( const string& loginKey ) const
 {
    if( loginKey == m_userTicket.userTicket )
       return true;
 
    return false;
-}
+}*/
 
 //------------------------------------------------------------------------------------------------
 
-bool     UserAccountPurchase::HandleRequestFromClient( const PacketPurchase* packet )
+bool     UserAccountPurchase::HandleRequestFromClient( const PacketPurchase* packet, U32 connectionId )
 {
    switch( packet->packetSubType )
    {
    case PacketPurchase::PurchaseType_Buy:
-      return MakePurchase( static_cast< const PacketPurchase_Buy* >( packet ) );
+      return MakePurchase( static_cast< const PacketPurchase_Buy* >( packet ), connectionId );
 
    case PacketPurchase::PurchaseType_RequestListOfSales:
-      return GetListOfItemsForSale( static_cast< const PacketPurchase_RequestListOfSales* >( packet ) );
+      return GetListOfItemsForSale( static_cast< const PacketPurchase_RequestListOfSales* >( packet ), connectionId );
 
    case PacketPurchase::PurchaseType_EchoToServer:
-      return EchoHandler();
+      return EchoHandler( connectionId );
 
    case PacketPurchase::PurchaseType_ValidatePurchaseReceipt:
-      return HandleReceipt( static_cast< const PacketPurchase_ValidatePurchaseReceipt* >( packet ));
+      return HandleReceipt( static_cast< const PacketPurchase_ValidatePurchaseReceipt* >( packet ), connectionId );
    }
 
    return false;
@@ -129,38 +129,38 @@ bool     UserAccountPurchase::HandleRequestFromClient( const PacketPurchase* pac
 
 //------------------------------------------------------------------------------------------------
 
-bool     UserAccountPurchase::GetListOfItemsForSale( const PacketPurchase_RequestListOfSales* packet )
+bool     UserAccountPurchase::GetListOfItemsForSale( const PacketPurchase_RequestListOfSales* packet, U32 connectionId )
 {
    LogMessage( LOG_PRIO_INFO, "GetListOfItemsForSale" );
-   assert( m_purchaseManager != NULL && m_userTicket.connectionId != 0 );
+   assert( m_purchaseManager != NULL );
 
    PacketPurchase_RequestListOfSalesResponse* response = new PacketPurchase_RequestListOfSalesResponse();
-   m_salesManager->GetListOfItemsForSale( response, m_userTicket.languageId );
+   m_salesManager->GetListOfItemsForSale( response, m_languageId );
 
    PacketGatewayWrapper* wrapper = new PacketGatewayWrapper;
-   wrapper->SetupPacket( response, m_userTicket.connectionId );
+   wrapper->SetupPacket( response, connectionId );
 
-   m_purchaseManager->AddOutputChainData( wrapper, m_userTicket.connectionId );
+   m_purchaseManager->AddOutputChainData( wrapper, connectionId );
    return true;
 }
 
 
 //---------------------------------------------------------------
 
-bool  UserAccountPurchase::EchoHandler()
+bool  UserAccountPurchase::EchoHandler( U32 connectionId )
 {
    PacketPurchase_EchoToClient* echo = new PacketPurchase_EchoToClient;
    PacketGatewayWrapper* wrapper = new PacketGatewayWrapper;
-   wrapper->SetupPacket( echo, m_userTicket.connectionId );
+   wrapper->SetupPacket( echo, connectionId );
 
-   m_purchaseManager->AddOutputChainData( wrapper, m_userTicket.connectionId );
+   m_purchaseManager->AddOutputChainData( wrapper, connectionId );
 
    return true;
 }
 
 //---------------------------------------------------------------
 
-bool  UserAccountPurchase::HandleReceipt( const PacketPurchase_ValidatePurchaseReceipt* receiptPacket )
+bool  UserAccountPurchase::HandleReceipt( const PacketPurchase_ValidatePurchaseReceipt* receiptPacket, U32 connectionId )
 {
    LogMessage( LOG_PRIO_INFO, "User purchase receipt" );
    LogMessage( LOG_PRIO_INFO, "  purchaseItemId: %s", receiptPacket->purchaseItemId.c_str() );
@@ -169,6 +169,7 @@ bool  UserAccountPurchase::HandleReceipt( const PacketPurchase_ValidatePurchaseR
    LogMessage( LOG_PRIO_INFO, "  platformId    : %d", receiptPacket->platformId );
    LogMessage( LOG_PRIO_INFO, "  Time received : %s", GetDateInUTC().c_str() );
 
+   U32 gatewayId = GetGatewayId( connectionId );
    const string& temp = receiptPacket->receipt;
    
    int maxStrLen = 200;
@@ -199,13 +200,13 @@ bool  UserAccountPurchase::HandleReceipt( const PacketPurchase_ValidatePurchaseR
    bool  success = false;
    if( m_purchaseReceiptManager )
    {
-      success = m_purchaseReceiptManager->WriteReceipt( receiptPacket, m_userTicket.userId, m_userTicket.uuid );
+      success = m_purchaseReceiptManager->WriteReceipt( receiptPacket, m_userId, m_userUuid );
    }
 
    PacketPurchase_ValidatePurchaseReceiptResponse* response = new PacketPurchase_ValidatePurchaseReceiptResponse;
    response->transactionId = receiptPacket->transactionId;
    response->errorCode = ( success != true ) ;// 0 means things went well. 1 means bad
-   m_purchaseManager->SendPacketToGateway( response, m_userTicket.connectionId, m_userTicket.gatewayId );
+   m_purchaseManager->SendPacketToGateway( response, connectionId, gatewayId );
 
    return true;
 }
@@ -213,24 +214,34 @@ bool  UserAccountPurchase::HandleReceipt( const PacketPurchase_ValidatePurchaseR
 //------------------------------------------------------------------------------------------------
 //------------------------------------------------------------------------------------------------
 
-bool     UserAccountPurchase::MakePurchase( const PacketPurchase_Buy* packet )
+bool     UserAccountPurchase::MakePurchase( const PacketPurchase_Buy* packet, U32 connectionId )
 {
-   assert( m_salesManager != NULL || m_userTicket.connectionId == 0 );
+   UserConnectionList connectionList;
+   m_connectionDetails.AssembleAllConnections( connectionList );
 
-   LogMessage( LOG_PRIO_INFO, "MakePurchase" );
-   bool success = m_salesManager->PerformSale( packet->purchaseUuid.c_str(), m_userTicket );
+   U32 gatewayId = GetGatewayId( connectionId );
+   assert( m_salesManager != NULL );
+   assert( connectionList.size() != 0 );
+
+   LogMessage( LOG_PRIO_INFO, "UserAccountPurchase::MakePurchase .. user request" );
+   bool success = m_salesManager->PerformSale( packet->purchaseUuid.c_str(), m_userUuid, connectionList, connectionId, gatewayId, 0, "" );
    success = success;// warnings
 
    return true;
 }
 //------------------------------------------------------------------------------------------------
 
-bool     UserAccountPurchase::MakePurchase( const PacketTournament_PurchaseTournamentEntry* packet, U32 connectionId )
+bool     UserAccountPurchase::MakePurchase( const PacketTournament_PurchaseTournamentEntry* packet, U32 serverId )
 {
-   LogMessage( LOG_PRIO_INFO, "UserAccountPurchase::MakePurchase" );
-   assert( m_salesManager != NULL || m_userTicket.connectionId == 0 );
+   UserConnectionList connectionList;
+   m_connectionDetails.AssembleAllConnections( connectionList );
+   //U32 gatewayId = GetGatewayId( connectionId );
+   LogMessage( LOG_PRIO_INFO, "UserAccountPurchase::MakePurchase .. game request" );
+   assert( m_salesManager != NULL );
+   assert( connectionList.size() != 0 );
+   //packet->serv
 
-   bool success = m_salesManager->PerformSale( packet->itemsToSpend, m_userTicket, connectionId, packet->uniqueTransactionId );
+   bool success = m_salesManager->PerformSale( packet->itemsToSpend, m_userUuid, connectionList, packet->userConnectionId, packet->userGatewayId, serverId, packet->uniqueTransactionId );
    success = success;// warnings
 
    return true;
@@ -238,22 +249,34 @@ bool     UserAccountPurchase::MakePurchase( const PacketTournament_PurchaseTourn
 
 //------------------------------------------------------------------------------------------------
 
-bool     UserAccountPurchase::MakeRefund( const PacketTournament_PurchaseTournamentEntryRefund* refundPacket, U32 connectionId )
+bool     UserAccountPurchase::MakeRefund( const PacketTournament_PurchaseTournamentEntryRefund* refundPacket, U32 serverId )
 {
+   UserConnectionList connectionList;
+   m_connectionDetails.AssembleAllConnections( connectionList );
+
+   //U32 gatewayId = GetGatewayId( connectionId );
    LogMessage( LOG_PRIO_INFO, "UserAccountPurchase::MakeRefund" );
-   assert( m_salesManager != NULL || m_userTicket.connectionId == 0 );
+   assert( m_salesManager != NULL );
+   assert( connectionList.size() != 0 );
+
    int num = refundPacket->itemsToRefund.size();
    for( int i=0; i<num; i++ )
    {
 
       const PurchaseServerDebitItem& item = refundPacket->itemsToRefund[i];
-      m_salesManager->PerformSimpleInventoryAddition( m_userTicket.uuid, item.productUuidToSpend, item.numToDebit );
+      m_salesManager->PerformSimpleInventoryAddition( m_userUuid, item.productUuidToSpend, item.numToDebit );
    }
 
-   PacketTournament_PurchaseTournamentEntryRefundResponse* response = new PacketTournament_PurchaseTournamentEntryRefundResponse;
-   response->uniqueTransactionId = refundPacket->uniqueTransactionId;
-   response->result = 0;// success
-   m_purchaseManager->SendPacketToGateway( response, connectionId, m_userTicket.gatewayId );
+   UserConnectionList::iterator it = connectionList.begin();
+   while( it != connectionList.end() )
+   {
+      PacketTournament_PurchaseTournamentEntryRefundResponse* response = new PacketTournament_PurchaseTournamentEntryRefundResponse;
+      response->uniqueTransactionId = refundPacket->uniqueTransactionId;
+      response->result = 0;// success
+      m_purchaseManager->SendPacketToGateway( response, it->connectionId, it->gatewayId );
+
+      it++;
+   }
 
    return true;
 }

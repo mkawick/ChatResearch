@@ -47,11 +47,11 @@ public:
 
 private:
 
-   virtual void  CreateJob( const KhaanServerToServer* khaan, BasePacket* packet );
+   virtual void  CreateJob( U32 serverId, BasePacket* packet );
 
    //void	   UpdateAllConnections();
 
-   bool     ProcessPacket( PacketStorage& storage );
+   bool     ProcessInboundPacket( PacketStorage& storage );
    void     SendJobsToUpperLayers();
    int      CallbackFunction();
    void     HandleIdentityInputPackets();

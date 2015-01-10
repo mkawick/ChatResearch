@@ -2,6 +2,7 @@
 // AnalyticsMainLoop.h
 
 #include "../NetworkCommon/NetworkIn/Diplodocus.h"
+#include "../NetworkCommon/NetworkOut/Fruitadens.h"
 #include "../NetworkCommon/Database/QueryHandler.h"
 #include "../NetworkCommon/Packets/AnalyticsPacket.h"
 
@@ -22,11 +23,8 @@ using namespace std;
 
 ///////////////////////////////////////////////////////////////////
 
-class DiplodocusStat : public Queryer, public Diplodocus< KhaanStat > 
+class DiplodocusStat : public Queryer, public Diplodocus< KhaanStat, Fruitadens > 
 {
-public:
-   typedef Diplodocus< KhaanStat > ChainedType;
-
 public:
    enum QueryType
    {

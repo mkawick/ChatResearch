@@ -22,7 +22,8 @@ enum  ServerType
    ServerType_Starter,
    ServerType_Notification,
    ServerType_UserStats,
-   ServerType_Count // << end of list
+   ServerType_Count, // << end of list
+   ServerType_All
 };
 
 bool     IsGatewayServerType( ServerType );

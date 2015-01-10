@@ -140,8 +140,8 @@ public:
    bool     HandleResult( const PacketDbQueryResult* dbResult );
 
    bool     GetListOfItemsForSale( PacketPurchase_RequestListOfSalesResponse* packet, int userLanguageIndex = 1 );// english
-   bool     PerformSale( const string& purchaseUuid, const UserTicket& userPurchasing, U32 serverIdentifier = 0, string serverTransactionUuid = "" );
-   bool     PerformSale( const SerializedVector< PurchaseServerDebitItem >& itemsToSpend, const UserTicket& userPurchasing, U32 serverIdentifier, string serverTransactionUuid = "" );
+   bool     PerformSale( const string& purchaseUuid, const string& userUuid, const UserConnectionList& connectionList, U32 userConnectionId, U32 userGatewayId, U32 serverIdentifier, string serverTransactionUuid );
+   bool     PerformSale( const SerializedVector< PurchaseServerDebitItem >& itemsToSpend, const string& userUuid, const UserConnectionList& connectionList, U32 userConnectionId, U32 userGatewayId, U32 serverIdentifier, string serverTransactionUuid );
 
    bool     PerformSimpleInventoryAddition( const string& userUuid, string productUuid, int count, bool translateFromIAP = false );
    int      GetProductType( const string& uuid );

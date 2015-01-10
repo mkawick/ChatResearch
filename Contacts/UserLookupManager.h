@@ -30,7 +30,7 @@ public:
    bool      IsGroupValid( const string& inviteGroup ) const { return false; }
    bool      GetGroupName( const string& groupUuid, string& name ) const { return false; }
    string    GetUserName( const string& uuid ) const;
-   bool      UserAddsSelfToGroup( const string& channelUuid, const string& addedUserUuid ) { return false; }
+   bool      UserAddsSelfToGroup( const string& channelUuid, const string& addedUserUuid, U32 connectionId ) { return false; }
    //bool      UserAddsSelfToGroup( const string& channelUuid, const string& addedUserUuid )
 
 protected:

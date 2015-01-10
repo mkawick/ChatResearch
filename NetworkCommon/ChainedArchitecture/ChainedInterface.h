@@ -32,6 +32,8 @@ class IChainedInterface
 public:
    virtual void   InputConnected( IChainedInterface * ) {}
    virtual void   OutputConnected( IChainedInterface * ) {}
+   virtual void   InputReady( IChainedInterface * ) {}
+   virtual void   OutputReady( IChainedInterface * ) {}
    virtual void   InputRemovalInProgress( IChainedInterface * ) {}
    virtual void   OutputRemovalInProgress( IChainedInterface * ) {}
    virtual void   NotifyFinishedAdding( IChainedInterface* obj ) {} 
@@ -78,6 +80,7 @@ public:
    virtual bool   AddInputChainData( Type t, U32 filingData = -1 ) { return false; }// a false value means that the data was rejected
    virtual bool   AddOutputChainData( Type t, U32 filingData = -1 ) { return false; }// a false value means that the data was rejected
    virtual bool   AddOutputChainDataNoLock( Type t ) { return false; }
+   virtual bool   AddOutputChainDataNoFilter( Type t ) { return false; }
 
    virtual bool   PushInputEvent( ThreadEvent* ) { return false; }
    virtual bool   PushOutputEvent( ThreadEvent* ) { return false; }

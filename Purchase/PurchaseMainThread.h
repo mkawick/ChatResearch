@@ -13,7 +13,6 @@
 
 
 #include <map>
-#include <deque>
 using namespace std;
 class PurchasePacket;
 class PurchasePacket_Buy;
@@ -21,6 +20,7 @@ class PurchasePacket_GetListOfSaleItems;
 class PacketPrepareForUserLogin;
 class PacketPrepareForUserLogout;
 class PacketListOfUserProductsS2S;
+class PacketLoginExpireUser;
 class SalesManager;
 class StringLookup;
 class PurchaseReceiptManager;
@@ -30,9 +30,6 @@ class PacketTournament_PurchaseTournamentEntry;
 
 class DiplodocusPurchase : public Queryer, public Diplodocus< KhaanPurchase > 
 {
-public: 
-   typedef Diplodocus< KhaanPurchase > ChainedType;
-
 public:
    enum QueryType
    {
@@ -70,6 +67,7 @@ public:
    const PurchaseReceiptManager* GetReceiptManager() const { return m_purchaseReceiptManager; }
 
    bool                    GetUser( const string& uuid, UserAccountPurchase*& user );
+   const string            GetUuid( U32 connectionId ) const;
 
    //-----------------------------------------------------------
 
@@ -81,21 +79,26 @@ private:
    bool                    ConnectUser( const PacketPrepareForUserLogin* loginPacket );
    bool                    DisconnectUser( const PacketPrepareForUserLogout* loginPacket );
    bool                    StoreUserProductsOwned( PacketListOfUserProductsS2S* productNamesPacket );
+   bool                    ExpireUser( const PacketLoginExpireUser* actualPacket );
+   bool                    DeleteAllUsers();
+
    bool                    HandlePurchaseRequest( const PacketTournament_PurchaseTournamentEntry* packet, U32 connectionId );
    bool                    HandlePurchaseRefund( const PacketTournament_PurchaseTournamentEntryRefund* packet, U32 connectionId );
 
+   void                    UpdateDbResults();
+   bool                    HandleDbResult( const PacketDbQueryResult* dbResult );
+
    int                     CallbackFunction();
-   bool                    ProcessPacket( PacketStorage& storage );
+   bool                    ProcessInboundPacket( PacketStorage& storage );
 
    void                    AddServerNeedingUpdate( U32 serverId );
 
-   typedef map< U64, UserAccountPurchase >      UAADMap;
-   typedef pair< U64, UserAccountPurchase >     UAADPair;
-   typedef UAADMap::iterator                    UAADMapIterator;
+   typedef map< stringhash, UserAccountPurchase >  UAADMap;
+   typedef pair< stringhash, UserAccountPurchase > UAADPair;
+   typedef UAADMap::iterator                       UAADMapIterator;
 
    UAADMapIterator         GetUserByConnectionId( U32 connectionId );
 
-   deque< U32 >                     m_serversNeedingUpdate;
    UAADMap                          m_userTickets;
    SalesManager*                    m_salesManager;
    PurchaseReceiptManager*          m_purchaseReceiptManager;

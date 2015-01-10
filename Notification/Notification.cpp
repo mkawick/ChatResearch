@@ -205,6 +205,8 @@ int main( int argc, const char* argv[] )
       //----------------------------------------------------------------
 
       s2s->Resume();
+      
+      s2s->QueueInboundRequest( PacketType_Login, PacketLogin::LoginType_RequestLoginStatusOfAllUsers, ServerType_Login );
       notificationServer->Run();
    }
    else

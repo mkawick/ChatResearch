@@ -10,7 +10,7 @@
 class PacketServerConnectionInfo : public BasePacket
 {
 public:
-   enum 
+   enum  PacketServerIdentifier
    {
       PacketServerIdentifier_TypicalInfo,
       PacketServerIdentifier_ConnectionInfo,

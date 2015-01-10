@@ -28,6 +28,7 @@ using boost::format;
 #include "../NetworkCommon/NetworkUtils.h"
 #include "../NetworkCommon/Utils/StringUtils.h"
 
+#include "../NetworkCommon/Packets/LoginPacket.h"
 #include "DiplodocusChat.h"
 
 #if PLATFORM == PLATFORM_WINDOWS
@@ -198,6 +199,7 @@ int main( int argc, const char* argv[] )
       s2s->AddOutputChain( chatServer );
 
       chatServer->Init();
+      s2s->QueueInboundRequest( PacketType_Login, PacketLogin::LoginType_RequestLoginStatusOfAllUsers, ServerType_Login );
       chatServer->Run();
    }
    else

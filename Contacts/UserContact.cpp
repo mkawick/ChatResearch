@@ -49,12 +49,9 @@ typedef Enigmosaurus <TableUser_PlusAvatarIconId> UserPlusAvatarTable;
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
-UserContact::UserContact( const UserInfo& info, U32 connectionId, U32 gatewayId ): 
-               m_connectionId( connectionId ),
-               m_gatewayId( gatewayId ),
-               m_userInfo( info ), 
+UserContact::UserContact(): 
                m_requiresUpdate( false ),
-               m_isLoggedOut( false ),
+               //m_isLoggedOut( false ),
                m_hasBeenInitialized( false ),
                m_friendListFilled( false ),
                m_friendRequestSentListFilled( false ),
@@ -66,13 +63,24 @@ UserContact::UserContact( const UserInfo& info, U32 connectionId, U32 gatewayId 
                m_contactServer( NULL ),
                m_invitationQueryIndex( 0 )
 {
-   m_timeLoggedOut = 0;
+   //m_timeLoggedOut = 0;
 }
 
 //------------------------------------------------------------------------------------------------
 
 UserContact::~UserContact()
 {
+}
+
+void  UserContact::PostLogin() 
+{ 
+   InformFriendsOfOnlineStatus( true ); 
+}
+
+void  UserContact::PostLogout() 
+{ 
+   if( GetFirstConnectedId() == 0 )
+   InformFriendsOfOnlineStatus( false ); 
 }
 
 //------------------------------------------------------------------------------------------------
@@ -82,16 +90,16 @@ void  UserContact::Init() // send queries
 {
    assert( m_contactServer );
 
-   //m_userInfo.uuid;
-  // m_userInfo.id;
+   //m_userUuid;
+  // m_userId;
 
-   string idString = boost::lexical_cast< string >( m_userInfo.id );
+   string idString = boost::lexical_cast< string >( m_userId );
 
    PacketDbQuery* dbQuery = new PacketDbQuery;
-   dbQuery->id =           m_connectionId;
+   dbQuery->id =           m_userId;
    dbQuery->meta =         "";
    dbQuery->lookup =       QueryType_UserProfile;
-   dbQuery->serverLookup = 0;//m_userInfo.id;
+   dbQuery->serverLookup = 0;//m_userId;
    dbQuery->query = "SELECT * FROM user_profile WHERE user_id='";
    dbQuery->query += idString;
    dbQuery->query += "'";
@@ -115,16 +123,16 @@ void  UserContact::InitContactsAndInvitations()
 
 void  UserContact::PrepFriendQuery()
 {
-   string idString = boost::lexical_cast< string >( m_userInfo.id );
+   string idString = boost::lexical_cast< string >( m_userId );
 
    m_friendListFilled = false;
 
    PacketDbQuery* dbQuery = new PacketDbQuery;
    dbQuery = new PacketDbQuery;
-   dbQuery->id =           m_connectionId;
+   dbQuery->id =           m_userId;
    dbQuery->meta =         "";
    dbQuery->lookup =       QueryType_Friends;
-   dbQuery->serverLookup = 0;//m_userInfo.id;
+   dbQuery->serverLookup = 0;//m_userId;
    string query = "SELECT users.user_id, users.user_name, users.uuid, users.user_email, users.language_id, users.active, profile.mber_avatar, friends.favorite, friends.note, profile.motto ";
    query += "FROM users INNER JOIN user_profile AS profile ON users.user_id=profile.user_id ";
    query += "INNER JOIN friends ON users.user_id=friends.userid2 ";
@@ -143,16 +151,16 @@ void  UserContact::PrepFriendQuery()
 
 void  UserContact::PrepInvitationsQueries()
 {
-   string idString = boost::lexical_cast< string >( m_userInfo.id );
+   string idString = boost::lexical_cast< string >( m_userId );
 
    m_friendRequestSentListFilled = false;
    m_friendRequestReceivedListFilled = false;
 
    PacketDbQuery* dbQuery = new PacketDbQuery;
-   dbQuery->id =           m_connectionId;
+   dbQuery->id =           m_userId;
    dbQuery->meta =         "";
    dbQuery->lookup =       QueryType_FriendRequestsSent;
-   dbQuery->serverLookup = 0;//m_userInfo.id;
+   dbQuery->serverLookup = 0;//m_userId;
    dbQuery->query = "SELECT * FROM users INNER JOIN friend_pending ON users.user_id=friend_pending.invitee_id WHERE friend_pending.inviter_id='";
    dbQuery->query += idString;
    dbQuery->query += "'";
@@ -162,10 +170,10 @@ void  UserContact::PrepInvitationsQueries()
    //-------------------------------
 
    dbQuery = new PacketDbQuery;
-   dbQuery->id =           m_connectionId;
+   dbQuery->id =           m_userId;
    dbQuery->meta =         "";
    dbQuery->lookup =       QueryType_FriendRequestReceived;
-   dbQuery->serverLookup = 0;//m_userInfo.id;
+   dbQuery->serverLookup = 0;//m_userId;
    dbQuery->query = "SELECT * FROM users INNER JOIN friend_pending ON users.user_id=friend_pending.inviter_id WHERE friend_pending.invitee_id='";
    dbQuery->query += idString;
    dbQuery->query += "'";
@@ -177,7 +185,7 @@ void  UserContact::PrepInvitationsQueries()
 
 void  UserContact::Update()
 {
-   if( m_isLoggedOut == true )
+   if( IsLoggedOut() == true )
       return;
 
    if( m_hasBeenInitialized == false )
@@ -206,7 +214,7 @@ bool  UserContact::UpdateProfile( const PacketUserUpdateProfile* profile )
       m_blockGroupInvitations = profile->blockGroupInvitations;
    }
 
-   m_userInfo.avatarId = profile->iconId;
+   m_avatarIcon = profile->iconId;
    
 
    //bool isOnline = false;
@@ -230,7 +238,7 @@ bool  UserContact::UpdateProfile( const PacketUserUpdateProfile* profile )
       UserContact* contact = m_contactServer->GetUser( ui.id );
       if( contact )
       {
-         contact->YourFriendsOnlineStatusChange( m_connectionId, m_userInfo.userName, m_userInfo.uuid, m_userInfo.avatarId, this->isOnl );
+         contact->YourFriendsOnlineStatusChange( m_connectionId, m_userName, m_userUuid, m_avatarIcon, this->isOnl );
          YourFriendsOnlineStatusChange( ui.connectionId, ui.userName, ui.uuid, ui.avatarId, isOnline );
       }
    }*/
@@ -240,7 +248,7 @@ bool  UserContact::UpdateProfile( const PacketUserUpdateProfile* profile )
 
 
 //------------------------------------------------------------------------------------------------
-
+/*
 void  UserContact::UserLoggedOut() 
 { 
    m_isLoggedOut = true; 
@@ -257,7 +265,7 @@ int   UserContact::SecondsExpiredSinceLoggedOut()
    time( &currentTime );
 
    return  static_cast<int> ( difftime( currentTime, m_timeLoggedOut ) );
-}
+}*/
 
 struct InviteeBlob
 {
@@ -270,6 +278,9 @@ struct InviteeBlob
 
 bool  UserContact::HandleDbQueryResult( const PacketDbQueryResult* dbResult )
 {
+   U32 connectionId = dbResult->serverLookup;
+   U32 gatewayId = GetGatewayId( connectionId );
+
    switch( dbResult->lookup )
    {
    case QueryType_UserProfile:
@@ -329,7 +340,7 @@ bool  UserContact::HandleDbQueryResult( const PacketDbQueryResult* dbResult )
          }
 
          m_friendListFilled = true;
-         FinishLoginBySendingUserFriendsAndInvitations();
+         FinishLoginBySendingUserFriendsAndInvitations( connectionId );
       }
       return true;
    case QueryType_FriendRequestsSent:
@@ -361,7 +372,7 @@ bool  UserContact::HandleDbQueryResult( const PacketDbQueryResult* dbResult )
          }
 
          m_friendRequestSentListFilled = true;
-         FinishLoginBySendingUserFriendsAndInvitations();
+         FinishLoginBySendingUserFriendsAndInvitations( connectionId );
       }
       return true;
    case QueryType_FriendRequestReceived:
@@ -394,14 +405,14 @@ bool  UserContact::HandleDbQueryResult( const PacketDbQueryResult* dbResult )
          }
 
          m_friendRequestReceivedListFilled = true;
-         FinishLoginBySendingUserFriendsAndInvitations();
+         FinishLoginBySendingUserFriendsAndInvitations( connectionId );
       }
       return true;
    case QueryType_GetInviteeDetails:
       {
          if( dbResult->successfulQuery == false || dbResult->bucket.bucket.size() == 0 )
          {
-            m_contactServer->SendErrorToClient( m_connectionId, m_gatewayId, PacketErrorReport::ErrorType_Contact_Invitation_ProblemFindingUser );
+            m_contactServer->SendErrorToClient( connectionId, gatewayId, PacketErrorReport::ErrorType_Contact_Invitation_ProblemFindingUser );
             return true;
          }
 
@@ -427,7 +438,11 @@ bool  UserContact::HandleDbQueryResult( const PacketDbQueryResult* dbResult )
                string name = row[ TableUser::Column_name ];
                if( id > 0 )
                {
-                  FinishInvitation( id, it->message, name, uuid, m_contactServer->GetUser( id ) );
+                  UserContact* destUser = NULL;
+                  if( m_contactServer->GetUser( id, destUser ) )
+                  {
+                     FinishInvitation( id, it->message, name, uuid, connectionId, destUser );
+                  }
                }
                m_invitationQueryLookup.erase( it );
                break;
@@ -437,8 +452,8 @@ bool  UserContact::HandleDbQueryResult( const PacketDbQueryResult* dbResult )
                it++;
             }
          }
-         ListOfInvitationsReceived_SendToClient();
-         ListOfInvitationsSent_SendToClient();
+         ListOfInvitationsReceived_SendToClient( connectionId );
+         ListOfInvitationsSent_SendToClient( connectionId );
       }
       return true;
    case QueryType_AddInvitationToUser:
@@ -450,34 +465,34 @@ bool  UserContact::HandleDbQueryResult( const PacketDbQueryResult* dbResult )
       {
          if( dbResult->successfulQuery == false || dbResult->bucket.bucket.size() == 0 )
          {
-            m_contactServer->SendErrorToClient( m_connectionId, m_gatewayId, PacketErrorReport::ErrorType_Contact_Invitation_BadInvitation );
+            m_contactServer->SendErrorToClient( connectionId, gatewayId, PacketErrorReport::ErrorType_Contact_Invitation_BadInvitation );
             return true;
          }
 
-         FinishAcceptingInvitation( dbResult );
+         FinishAcceptingInvitation( dbResult, connectionId );
       }
       return true;
    case QueryType_GetInvitationPriorToDeclination:
       {
          if( dbResult->successfulQuery == false || dbResult->bucket.bucket.size() == 0 )
          {
-            m_contactServer->SendErrorToClient( m_connectionId, m_gatewayId, PacketErrorReport::ErrorType_Contact_Invitation_BadInvitation );
+            m_contactServer->SendErrorToClient( connectionId, gatewayId, PacketErrorReport::ErrorType_Contact_Invitation_BadInvitation );
             return true;
          }
-         FinishDecliningingInvitation( dbResult );
+         FinishDecliningingInvitation( dbResult, connectionId );
       }
       return true;
    case QueryType_SearchForUser:
       {
-         FinishSearchResult( dbResult );
+         FinishSearchResult( dbResult, connectionId );
       }
       return true;
    case QueryType_InsertNewFriend:
       {
          InitContactsAndInvitations();// when we finish this, reset the user's contacts.
 
-         UserContact* contact = m_contactServer->GetUserByUuid( dbResult->meta );
-         if( contact )
+         UserContact* contact = NULL;
+         if( m_contactServer->GetUser( dbResult->meta, contact ) == true )
          {
             contact->InitContactsAndInvitations();
          }
@@ -489,42 +504,42 @@ bool  UserContact::HandleDbQueryResult( const PacketDbQueryResult* dbResult )
 
 //------------------------------------------------------------------------------------------------
 
-bool     UserContact::HandleRequestFromClient( const PacketContact* packet )
+bool     UserContact::HandleRequestFromClient( const PacketContact* packet, U32 connectionId )
 {
    switch( packet->packetSubType )
    {
    case PacketContact::ContactType_GetListOfContacts:
-      return GetListOfContacts();
+      return GetListOfContacts( connectionId );
 
    case PacketContact::ContactType_GetListOfInvitations:
-      return ListOfInvitationsReceived_SendToClient();
+      return ListOfInvitationsReceived_SendToClient( connectionId );
 
    case PacketContact::ContactType_GetListOfInvitationsSent:
-      return ListOfInvitationsSent_SendToClient();
+      return ListOfInvitationsSent_SendToClient( connectionId );
 
    case PacketContact::ContactType_InviteContact:
-      return InviteUser( static_cast< const PacketContact_InviteContact* >( packet ) );
+      return InviteUser( static_cast< const PacketContact_InviteContact* >( packet ), connectionId );
       
    case PacketContact::ContactType_AcceptInvite:
-      return AcceptInvitation( static_cast< const PacketContact_AcceptInvite* >( packet ) );
+      return AcceptInvitation( static_cast< const PacketContact_AcceptInvite* >( packet ), connectionId );
 
    case PacketContact::ContactType_DeclineInvitation:
-      return DeclineInvitation( static_cast< const PacketContact_DeclineInvitation* >( packet ) );
+      return DeclineInvitation( static_cast< const PacketContact_DeclineInvitation* >( packet ), connectionId );
 
    case PacketContact::ContactType_RemoveInvitation:
-      return RemoveSentInvitation( static_cast< const PacketContact_RemoveInvitation* >( packet ) );      
+      return RemoveSentInvitation( static_cast< const PacketContact_RemoveInvitation* >( packet ), connectionId );      
 
    case PacketContact::ContactType_Search:
-      return PerformSearch( static_cast< const PacketContact_SearchForUser* >( packet ) );
+      return PerformSearch( static_cast< const PacketContact_SearchForUser* >( packet ), connectionId );
 
    case PacketContact::ContactType_RemoveContact:
-      return RemoveContact( static_cast< const PacketContact_ContactRemove* >( packet ) );
+      return RemoveContact( static_cast< const PacketContact_ContactRemove* >( packet ), connectionId );
 
    case PacketContact::ContactType_EchoToServer:
-      return EchoHandler();
+      return EchoHandler( connectionId );
 
    case PacketContact::ContactType_SetNotation:
-      return AddNotationToContact( static_cast< const PacketContact_SetNotationOnUser* >( packet ) );
+      return AddNotationToContact( static_cast< const PacketContact_SetNotationOnUser* >( packet ), connectionId );
       
    }
 
@@ -545,11 +560,11 @@ bool     UserContact::InformFriendsOfOnlineStatus( bool isOnline )
    while ( it != m_contacts.end() )
    {
       const UserInfo& ui = *it++; 
-      UserContact* contact = m_contactServer->GetUser( ui.id );
-      if( contact )
+      UserContact* contact = NULL;
+      if( m_contactServer->GetUser( ui.id, contact ) == true )
       {
-         contact->YourFriendsOnlineStatusChange( m_connectionId, m_userInfo.userName, m_userInfo.uuid, m_userInfo.avatarId, isOnline );
-         YourFriendsOnlineStatusChange( ui.connectionId, ui.userName, ui.uuid, ui.avatarId, isOnline );
+         contact->YourFriendsOnlineStatusChange( m_userName, m_userUuid, m_avatarIcon, isOnline );
+         YourFriendsOnlineStatusChange( ui.userName, ui.uuid, ui.avatarId, isOnline );
       }
    }
 
@@ -558,7 +573,7 @@ bool     UserContact::InformFriendsOfOnlineStatus( bool isOnline )
 
 //------------------------------------------------------------------------------------------------
 
-void     UserContact::FinishLoginBySendingUserFriendsAndInvitations()
+void     UserContact::FinishLoginBySendingUserFriendsAndInvitations( U32 connectionId )
 {
    if( m_friendListFilled == true && m_friendRequestSentListFilled == true && m_friendRequestReceivedListFilled == true )
    {
@@ -570,33 +585,39 @@ void     UserContact::FinishLoginBySendingUserFriendsAndInvitations()
 
    if( m_afterFriendQuery_SendListToClient )
    {
-      GetListOfContacts();
+      GetListOfContacts( connectionId );
       m_afterFriendQuery_SendListToClient = false;
    }
 }
 
 //------------------------------------------------------------------------------------------------
 
-bool     UserContact::YourFriendsOnlineStatusChange( U32 connectionId, const string& userName, const string& UUID, int avatarId, bool isOnline )
+bool     UserContact::YourFriendsOnlineStatusChange( const string& userName, const string& UUID, int avatarId, bool isOnline )
 {
    if( m_contacts.size() == 0 )
       return false;
 
-   PacketContact_FriendOnlineStatusChange* packet = new PacketContact_FriendOnlineStatusChange;
-   packet->friendInfo.userName = userName;
-   packet->uuid = UUID;
-   packet->friendInfo.isOnline = isOnline;
-   packet->friendInfo.avatarId = avatarId;
-   //packet->friendInfo.markedAsFavorite = ;
-   // PacketContact_FriendOnlineStatusChange
-    m_contactServer->SendPacketToGateway( packet, m_connectionId, m_gatewayId );
+   UserConnectionList connectionList;
+   m_connectionDetails.AssembleAllConnections( connectionList );
+
+   UserConnectionList::iterator it = connectionList.begin();
+   while( it != connectionList.end() )
+   {
+      PacketContact_FriendOnlineStatusChange* packet = new PacketContact_FriendOnlineStatusChange;
+      packet->friendInfo.userName = userName;
+      packet->uuid = UUID;
+      packet->friendInfo.isOnline = isOnline;
+      packet->friendInfo.avatarId = avatarId;
+
+      m_contactServer->SendPacketToGateway( packet, it->connectionId, it->gatewayId );
+   }
 
     return true;
 }
 
 //------------------------------------------------------------------------------------------------
 
-bool     UserContact::GetListOfContacts()
+bool     UserContact::GetListOfContacts( U32 connectionId )
 {
    PacketContact_GetListOfContactsResponse* packet = new PacketContact_GetListOfContactsResponse;
 
@@ -605,19 +626,21 @@ bool     UserContact::GetListOfContacts()
    {
       const UserInfo& ui = *it++; 
 
-      const UserContact* testUser = m_contactServer->GetUser( ui.id );
-      bool isLoggedIn = testUser != NULL;
+      UserContact* contact = NULL;
+      m_contactServer->GetUser( ui.id, contact );
+      bool isLoggedIn = contact != NULL;
       packet->friends.insert( ui.uuid, FriendInfo( ui.userName, ui.motto, ui.avatarId, isLoggedIn, ui.favorite, ui.note ) );
    }
    
-   m_contactServer->SendPacketToGateway( packet, m_connectionId, m_gatewayId );
+   U32 gatewayId = GetGatewayId( connectionId );
+   m_contactServer->SendPacketToGateway( packet, connectionId, gatewayId );
    
    return true;
 }
 
 //------------------------------------------------------------------------------------------------
 
-bool  UserContact::ListOfInvitationsReceived_SendToClient()
+bool  UserContact::ListOfInvitationsReceived_SendToClient( U32 connectionId )
 {
    PacketContact_GetListOfInvitationsResponse* packet = new PacketContact_GetListOfInvitationsResponse;
    
@@ -628,7 +651,7 @@ bool  UserContact::ListOfInvitationsReceived_SendToClient()
       InvitationInfo ii;
       ii.message = invite.message;
       ii.inviterName = invite.userName;// note who is who here
-      ii.inviteeName = m_userInfo.userName;
+      ii.inviteeName = m_userName;
       ii.uuid = invite.uuid;
       ii.date = invite.date;
       ii.userUuid = invite.userUuid;
@@ -636,14 +659,15 @@ bool  UserContact::ListOfInvitationsReceived_SendToClient()
       packet->invitations.insert( invite.uuid, ii );
    }
    
-   m_contactServer->SendPacketToGateway( packet, m_connectionId, m_gatewayId );
+   U32 gatewayId = GetGatewayId( connectionId );
+   m_contactServer->SendPacketToGateway( packet, connectionId, gatewayId );
 
    return true;
 }
 
 //------------------------------------------------------------------------------------------------
 
-bool  UserContact::ListOfInvitationsSent_SendToClient()
+bool  UserContact::ListOfInvitationsSent_SendToClient( U32 connectionId )
 {
    PacketContact_GetListOfInvitationsSentResponse* packet = new PacketContact_GetListOfInvitationsSentResponse;
    
@@ -653,7 +677,7 @@ bool  UserContact::ListOfInvitationsSent_SendToClient()
       const P2PInvitation& invite = *it++; 
       InvitationInfo ii;
       ii.message = invite.message;
-      ii.inviterName = m_userInfo.userName;// note who is who here
+      ii.inviterName = m_userName;// note who is who here
       ii.inviteeName = invite.userName;
       ii.uuid = invite.uuid;
       ii.date = invite.date;
@@ -662,7 +686,8 @@ bool  UserContact::ListOfInvitationsSent_SendToClient()
       packet->invitations.insert( invite.uuid, ii );
    }
    
-   m_contactServer->SendPacketToGateway( packet, m_connectionId, m_gatewayId );
+   U32 gatewayId = GetGatewayId( connectionId );
+   m_contactServer->SendPacketToGateway( packet, connectionId, gatewayId );
 
    return true;
 }
@@ -803,13 +828,14 @@ void  UserContact::RemoveInvitationSent( const string& invitationUuid )
 
 //------------------------------------------------------------------------------------------------
 
-bool     UserContact::InviteUser( const PacketContact_InviteContact* packet )
+bool     UserContact::InviteUser( const PacketContact_InviteContact* packet, U32 connectionId )
 {
    const string inviteeUuid = packet->uuid.c_str();
    const string& inviteeName = packet->userName;
    const string& message = packet->message;
    
 
+   U32 gatewayId = GetGatewayId( connectionId );
    // major problem here... they may already be friends
    vector< UserInfo >::const_iterator it = m_contacts.begin();
    while( it != m_contacts.end() )
@@ -817,20 +843,20 @@ bool     UserContact::InviteUser( const PacketContact_InviteContact* packet )
       const UserInfo& fr = *it++;
       if( fr.userName == inviteeName || fr.uuid == inviteeUuid )
       {
-         m_contactServer->SendErrorToClient( m_connectionId, m_gatewayId, PacketErrorReport::ErrorType_Contact_Invitation_InviteeAlreadyFriend );
+         m_contactServer->SendErrorToClient( connectionId, gatewayId, PacketErrorReport::ErrorType_Contact_Invitation_InviteeAlreadyFriend );
          return false;
       }
    }
 
-   if( inviteeUuid == m_userInfo.uuid )
+   if( inviteeUuid == m_userUuid )
    {
-       m_contactServer->SendErrorToClient( m_connectionId, m_gatewayId, PacketErrorReport::ErrorType_Contact_Invitation_CannotInviteSelf );
+       m_contactServer->SendErrorToClient( connectionId, gatewayId, PacketErrorReport::ErrorType_Contact_Invitation_CannotInviteSelf );
        return false;
    }
 
    if( inviteeUuid.size() == 0 && inviteeName.size() == 0 )
    {
-       m_contactServer->SendErrorToClient( m_connectionId, m_gatewayId, PacketErrorReport::ErrorType_Contact_Invitation_InvalidUser );
+       m_contactServer->SendErrorToClient( connectionId, gatewayId, PacketErrorReport::ErrorType_Contact_Invitation_InvalidUser );
        return false;
    }
 
@@ -839,37 +865,37 @@ bool     UserContact::InviteUser( const PacketContact_InviteContact* packet )
    bool alreadyExists = DoesPendingInvitationExist( inviteeUuid, inviteeName );
    if( alreadyExists )
    {
-      m_contactServer->SendErrorToClient( m_connectionId, m_gatewayId, PacketErrorReport::ErrorType_Contact_Invitation_InviteeAlreadyInvited );
+      m_contactServer->SendErrorToClient( connectionId, gatewayId, PacketErrorReport::ErrorType_Contact_Invitation_InviteeAlreadyInvited );
       return false;
    }
 
    bool  didHeInviteMe = HaveIAlreadyBeenInvited( inviteeUuid );
    if( didHeInviteMe == true )
    {
-      m_contactServer->SendErrorToClient( m_connectionId, m_gatewayId, PacketErrorReport::ErrorType_Contact_Invitation_InviteeSentYouInvitation );
+      m_contactServer->SendErrorToClient( connectionId, gatewayId, PacketErrorReport::ErrorType_Contact_Invitation_InviteeSentYouInvitation );
       return false;
    }
 
    UserContact* contact;
    if( inviteeUuid.size() )
    {
-      contact = m_contactServer->GetUserByUuid( inviteeUuid );// this user needs to know that he's been invited.
+      m_contactServer->GetUser( inviteeUuid, contact );// this user needs to know that he's been invited.
    }
    else 
    {
-      contact = m_contactServer->GetUserByUsername( inviteeName );
+      m_contactServer->GetUserByUsername( inviteeName, contact );
    }
    if( contact )
    {
       if( contact->IsBlockingFriendInvites() == true )
       {
-         m_contactServer->SendErrorToClient( m_connectionId, m_gatewayId, PacketErrorReport::ErrorType_UserIsBlockingFriendInvites );
+         m_contactServer->SendErrorToClient( connectionId, gatewayId, PacketErrorReport::ErrorType_UserIsBlockingFriendInvites );
          return false;
       }
       else
       {
          // we still need to write this to the db
-         FinishInvitation( contact->GetUserInfo().id, message, inviteeName, inviteeUuid, contact );
+         FinishInvitation( contact->GetId(), message, inviteeName, inviteeUuid, connectionId, contact );
       }
    }
    else
@@ -877,7 +903,7 @@ bool     UserContact::InviteUser( const PacketContact_InviteContact* packet )
       // we need to store something by which we can find this query to pair up the user results.
       int lookupId = m_invitationQueryIndex++;
       PacketDbQuery* dbQuery = new PacketDbQuery;
-      dbQuery->id =           m_connectionId;
+      dbQuery->id =           m_userId;
       dbQuery->meta =         message;
       dbQuery->lookup =       QueryType_GetInviteeDetails;
       dbQuery->serverLookup = 0;//lookup;
@@ -912,16 +938,16 @@ bool     UserContact::InviteUser( const PacketContact_InviteContact* packet )
 
 //------------------------------------------------------------------------------------------------
 
-bool  UserContact::AcceptInvitation( const PacketContact_AcceptInvite* packet )// we are the invitee
+bool  UserContact::AcceptInvitation( const PacketContact_AcceptInvite* packet, U32 connectionId )// we are the invitee
 {
    PacketDbQuery* dbQuery = new PacketDbQuery;
-   dbQuery->id =           m_connectionId;
+   dbQuery->id =           m_userId;
    dbQuery->meta =         "";
    dbQuery->lookup =       QueryType_GetInvitationPriorToAcceptance;
-   dbQuery->serverLookup = 0;//m_userInfo.id;
+   dbQuery->serverLookup = 0;//m_userId;
 
    /*string query = "SELECT * FROM friend_pending WHERE invitee_id='";
-   query += boost::lexical_cast< string >( m_userInfo.id );
+   query += boost::lexical_cast< string >( m_userId );
    query += "' AND uuid='%s'";*/
 
    dbQuery->query = "SELECT * FROM users INNER JOIN friend_pending ON users.user_id=friend_pending.inviter_id WHERE friend_pending.uuid='%s'";
@@ -935,13 +961,13 @@ bool  UserContact::AcceptInvitation( const PacketContact_AcceptInvite* packet )/
 
 //------------------------------------------------------------------------------------------------
 
-bool  UserContact::DeclineInvitation( const PacketContact_DeclineInvitation* packet )
+bool  UserContact::DeclineInvitation( const PacketContact_DeclineInvitation* packet, U32 connectionId )
 {
    PacketDbQuery* dbQuery = new PacketDbQuery;
-   dbQuery->id =           m_connectionId;
+   dbQuery->id =           m_userId;
    dbQuery->meta =         packet->message.c_str();
    dbQuery->lookup =       QueryType_GetInvitationPriorToDeclination;
-   dbQuery->serverLookup = 0;//m_userInfo.id;
+   dbQuery->serverLookup = connectionId;
 
    dbQuery->query = "SELECT * FROM users INNER JOIN friend_pending ON users.user_id=friend_pending.inviter_id WHERE friend_pending.uuid='%s'";
 
@@ -953,8 +979,9 @@ bool  UserContact::DeclineInvitation( const PacketContact_DeclineInvitation* pac
 
 //------------------------------------------------------------------------------------------------
 
-bool  UserContact::RemoveSentInvitation( const PacketContact_RemoveInvitation* packet )
+bool  UserContact::RemoveSentInvitation( const PacketContact_RemoveInvitation* packet, U32 connectionId )
 {
+   U32 gatewayId = GetGatewayId( connectionId );
    bool found = false;
    const string invitationUuid = packet->invitationUuid.c_str();
 
@@ -974,17 +1001,17 @@ bool  UserContact::RemoveSentInvitation( const PacketContact_RemoveInvitation* p
    if( found == false || 
       invitationUuid.size() == 0 )
    {
-      m_contactServer->SendErrorToClient( m_connectionId, m_gatewayId, PacketErrorReport::ErrorType_Contact_Invitation_BadInvitation );
+      m_contactServer->SendErrorToClient( connectionId, gatewayId, PacketErrorReport::ErrorType_Contact_Invitation_BadInvitation );
       return false;
    }
 
    // 'it' now contains the pointer to the right item
    //U32 invitationNumber = it->invitationNumber;
    PacketDbQuery* dbQuery = new PacketDbQuery;
-   dbQuery->id =           m_connectionId;
+   dbQuery->id =           m_userId;
    dbQuery->meta =         invitationUuid;
    dbQuery->lookup =       QueryType_DeleteInvitation;
-   dbQuery->serverLookup = 0;//m_userInfo.id;
+   dbQuery->serverLookup = 0;//m_userId;
    dbQuery->isFireAndForget = true;
 
    string query = "DELETE FROM friend_pending WHERE uuid='";
@@ -994,24 +1021,26 @@ bool  UserContact::RemoveSentInvitation( const PacketContact_RemoveInvitation* p
    m_contactServer->AddQueryToOutput( dbQuery );
 
    // resend invites to invitee
-   UserContact* invitee = m_contactServer->GetUser( it->inviteeId );
-   if( invitee )
+   //UserContact* invitee = m_contactServer->GetUser( it->inviteeId );
+   UserContact* invitee = NULL;
+   if( m_contactServer->GetUser( it->inviteeId, invitee ) == true )
    {
       invitee->RemoveInvitationReceived( invitationUuid );
-      invitee->ListOfInvitationsReceived_SendToClient();
+      invitee->ListOfInvitationsReceived_SendToClient( connectionId );
    }
 
    //m_invitationsOut.erase( it );// remove this entry
    RemoveInvitationSent( invitationUuid );
-   ListOfInvitationsSent_SendToClient();
+   ListOfInvitationsSent_SendToClient( connectionId );
    return true;
 }
 
 
 //------------------------------------------------------------------------------------------------
 
-bool  UserContact::PerformSearch( const PacketContact_SearchForUser* packet )
+bool  UserContact::PerformSearch( const PacketContact_SearchForUser* packet, U32 connectionId )
 {
+   U32 gatewayId = GetGatewayId( connectionId );
    cout << "Search packet received: " << packet->searchString << endl;
    cout << "num requested: " << packet->limit << endl;
    cout << "offset: " << packet->offset << endl;
@@ -1019,9 +1048,9 @@ bool  UserContact::PerformSearch( const PacketContact_SearchForUser* packet )
    {
       // do not add any contacts
       PacketContact_SearchForUserResult* response = new PacketContact_SearchForUserResult;
-      m_contactServer->SendPacketToGateway( response, m_connectionId, m_gatewayId );
+      m_contactServer->SendPacketToGateway( response, connectionId, gatewayId );
 
-      m_contactServer->SendErrorToClient( m_connectionId, m_gatewayId, PacketErrorReport::ErrorType_Contact_BadSearchString );
+      m_contactServer->SendErrorToClient( connectionId, gatewayId, PacketErrorReport::ErrorType_Contact_BadSearchString );
       return false;
    }
 
@@ -1029,17 +1058,17 @@ bool  UserContact::PerformSearch( const PacketContact_SearchForUser* packet )
    {
       // do not add any contacts
       PacketContact_SearchForUserResult* response = new PacketContact_SearchForUserResult;
-      m_contactServer->SendPacketToGateway( response, m_connectionId, m_gatewayId );
+      m_contactServer->SendPacketToGateway( response, connectionId, gatewayId );
 
-      m_contactServer->SendErrorToClient( m_connectionId, m_gatewayId, PacketErrorReport::ErrorType_Contact_SearchRequestHasTooMany );
+      m_contactServer->SendErrorToClient( connectionId, gatewayId, PacketErrorReport::ErrorType_Contact_SearchRequestHasTooMany );
       return false;
    }
 
    PacketDbQuery* dbQuery = new PacketDbQuery;
-   dbQuery->id =           m_connectionId;
+   dbQuery->id =           m_userId;
    dbQuery->meta =         packet->searchString.c_str();
    dbQuery->lookup =       QueryType_SearchForUser;
-   dbQuery->serverLookup = 0;//m_userInfo.id;
+   dbQuery->serverLookup = connectionId;
 
    dbQuery->query = "SELECT user_name, uuid, user_id FROM users WHERE user_name LIKE '%%s%' AND active=1 ORDER BY user_id LIMIT ";
    int limit = 25;// always limit the number of searched items
@@ -1065,8 +1094,9 @@ bool  UserContact::PerformSearch( const PacketContact_SearchForUser* packet )
 
 //------------------------------------------------------------------------------------------------
 
-bool  UserContact::RemoveContact( const PacketContact_ContactRemove* packet )
+bool  UserContact::RemoveContact( const PacketContact_ContactRemove* packet, U32 connectionId )
 {
+   U32 gatewayId = GetGatewayId( connectionId );
    const string contactUuid = packet->contactUuid.c_str();
    //const string& message = packet->message;
 
@@ -1086,7 +1116,7 @@ bool  UserContact::RemoveContact( const PacketContact_ContactRemove* packet )
 
    if( found == false )
    {
-      m_contactServer->SendErrorToClient( m_connectionId, m_gatewayId, PacketErrorReport::ErrorType_Contact_NotAUserContact );
+      m_contactServer->SendErrorToClient( connectionId, gatewayId, PacketErrorReport::ErrorType_Contact_NotAUserContact );
       return false;
    }
 
@@ -1094,36 +1124,36 @@ bool  UserContact::RemoveContact( const PacketContact_ContactRemove* packet )
    string query = "DELETE FROM friends WHERE userid1='";
    query += boost::lexical_cast< string >( it->id );
    query += "' AND userid2='";
-   query += boost::lexical_cast< string >( m_userInfo.id );
+   query += boost::lexical_cast< string >( m_userId );
    query += "'";
 
    PacketDbQuery* dbQuery = new PacketDbQuery;   
    dbQuery->query =        query;
-   dbQuery->id =           m_connectionId;
+   dbQuery->id =           m_userId;
    dbQuery->meta =         "";
    dbQuery->lookup =       QueryType_DeleteFriend;
-   dbQuery->serverLookup = 0;//m_userInfo.id;
+   dbQuery->serverLookup = 0;//m_userId;
    dbQuery->isFireAndForget = true;
    m_contactServer->AddQueryToOutput( dbQuery );
      
    query = "DELETE FROM friends WHERE userid2='";
    query += boost::lexical_cast< string >( it->id );
    query += "' AND userid1='";
-   query += boost::lexical_cast< string >( m_userInfo.id );
+   query += boost::lexical_cast< string >( m_userId );
    query += "'";
 
    dbQuery = new PacketDbQuery; 
    dbQuery->query =        query;
-   dbQuery->id =           m_connectionId;
+   dbQuery->id =           m_userId;
    dbQuery->meta =         "";
    dbQuery->lookup =       QueryType_DeleteFriend;
-   dbQuery->serverLookup = 0;//m_userInfo.id;
+   dbQuery->serverLookup = 0;//m_userId;
    dbQuery->isFireAndForget = true;
    m_contactServer->AddQueryToOutput( dbQuery );
 
    // send notification to both people if online.
-   UserContact* contact = m_contactServer->GetUserByUuid( contactUuid );
-   if( contact )
+   UserContact* contact = NULL;
+   if( m_contactServer->GetUser( contactUuid, contact ) == true )
    {
       contact->AfterFriendQuery_SendListToClient();
       contact->PrepFriendQuery();
@@ -1137,17 +1167,18 @@ bool  UserContact::RemoveContact( const PacketContact_ContactRemove* packet )
 
 //------------------------------------------------------------------------------------------------
 
-bool  UserContact::EchoHandler()
+bool  UserContact::EchoHandler( U32 connectionId )
 {
    cout << " Echo " << endl;
+   U32 gatewayId = GetGatewayId( connectionId );
    PacketContact_EchoToClient* echo = new PacketContact_EchoToClient;
-   m_contactServer->SendPacketToGateway( echo, m_connectionId, m_gatewayId );
+   m_contactServer->SendPacketToGateway( echo, connectionId, gatewayId );
    return true;
 }
 
 //------------------------------------------------------------------------------------------------
 
-bool  UserContact::AddNotationToContact( const PacketContact_SetNotationOnUser* notationPacket )
+bool  UserContact::AddNotationToContact( const PacketContact_SetNotationOnUser* notationPacket, U32 connectionId )
 {
    // validate that this is one of your contacts
    const string contactUuid = notationPacket->uuid.c_str();
@@ -1168,9 +1199,10 @@ bool  UserContact::AddNotationToContact( const PacketContact_SetNotationOnUser* 
       it++;
    }
 
+   U32 gatewayId = GetGatewayId( connectionId );
    if( found == false )
    {
-      m_contactServer->SendErrorToClient( m_connectionId, m_gatewayId, PacketErrorReport::ErrorType_Contact_NotAUserContact );
+      m_contactServer->SendErrorToClient( connectionId, gatewayId, PacketErrorReport::ErrorType_Contact_NotAUserContact );
       return false;
    }
 
@@ -1179,10 +1211,10 @@ bool  UserContact::AddNotationToContact( const PacketContact_SetNotationOnUser* 
    it->note = notationPacket->friendInfo.notesAboutThisUser.c_str();
 
    PacketDbQuery* dbQuery = new PacketDbQuery;
-   dbQuery->id =           m_connectionId;
+   dbQuery->id =           m_userId;
    dbQuery->meta =         "";
    dbQuery->lookup =       QueryType_FriendAddNotation;
-   dbQuery->serverLookup = 0;//m_userInfo.id;
+   dbQuery->serverLookup = 0;//m_userId;
    dbQuery->isFireAndForget = true;
 
    //"UPDATE friends SET favorite=1, note=NULL WHERE userid1=16464 AND userid2=16459"
@@ -1199,7 +1231,7 @@ bool  UserContact::AddNotationToContact( const PacketContact_SetNotationOnUser* 
       dbQuery->escapedStrings.insert( notationPacket->friendInfo.notesAboutThisUser );
    }
    query += "WHERE userid1=";
-   query += boost::lexical_cast <string>( m_userInfo.id );
+   query += boost::lexical_cast <string>( m_userId );
    query += " AND  userid2=";
    query += boost::lexical_cast< string >( friendId );
    dbQuery->query = query;
@@ -1211,7 +1243,7 @@ bool  UserContact::AddNotationToContact( const PacketContact_SetNotationOnUser* 
 
 //------------------------------------------------------------------------------------------------
 
-void  UserContact::FinishAcceptingInvitation( const PacketDbQueryResult* dbResult )
+void  UserContact::FinishAcceptingInvitation( const PacketDbQueryResult* dbResult, U32 connectionId )
 {
    U32 invitationId = 0;
    U32 inviterId = 0;
@@ -1234,10 +1266,10 @@ void  UserContact::FinishAcceptingInvitation( const PacketDbQueryResult* dbResul
 
    // delete invitation
    PacketDbQuery* dbQuery = new PacketDbQuery;
-   dbQuery->id =           m_connectionId;
+   dbQuery->id =           m_userId;
    dbQuery->meta =         "";
    dbQuery->lookup =       QueryType_DeleteInvitation;
-   dbQuery->serverLookup = 0;//m_userInfo.id;
+   dbQuery->serverLookup = 0;//m_userId;
    dbQuery->isFireAndForget = true;
 
    string query = "DELETE FROM friend_pending WHERE id=";
@@ -1247,10 +1279,10 @@ void  UserContact::FinishAcceptingInvitation( const PacketDbQueryResult* dbResul
 
    // insert friend entry
    dbQuery = new PacketDbQuery;
-   dbQuery->id =           m_connectionId;
+   dbQuery->id =           m_userId;
    dbQuery->meta =         "";
    dbQuery->lookup =       QueryType_InsertNewFriend;
-   dbQuery->serverLookup = 0;//m_userInfo.id;
+   dbQuery->serverLookup = 0;//m_userId;
    dbQuery->isFireAndForget = true;
 
    // both directions at once
@@ -1265,10 +1297,10 @@ void  UserContact::FinishAcceptingInvitation( const PacketDbQueryResult* dbResul
 
    // the following is tricky. Once this returns, I need to tell both the accepter and the inviter to reload their contacts.
    dbQuery = new PacketDbQuery;
-   dbQuery->id =           m_connectionId;
+   dbQuery->id =           m_userId;
    dbQuery->meta =         inviterId; // << store off some lookup info
    dbQuery->lookup =       QueryType_InsertNewFriend;
-   dbQuery->serverLookup = 0;//m_userInfo.id;
+   dbQuery->serverLookup = 0;//m_userId;
    dbQuery->isFireAndForget = false;
 
    query = "INSERT INTO friends (userid1,userid2, date_chat_viewed) VALUES (";
@@ -1281,21 +1313,21 @@ void  UserContact::FinishAcceptingInvitation( const PacketDbQueryResult* dbResul
    m_contactServer->AddQueryToOutput( dbQuery );
 
    // send notification to both people if online.
-   UserContact* contact = m_contactServer->GetUser( inviterId );// this user needs to know that they are friends now.
-   if( contact )
+   UserContact* contact = NULL;
+   if( m_contactServer->GetUser( inviterId, contact ) == true )
    {
       contact->RemoveInvitationSent( invitationUuid );
-      contact->InvitationAccepted( inviterUsername, m_userInfo.userName, invitationUuid, "", true );// this seems backwards, but its not
-      contact->ListOfInvitationsSent_SendToClient();
-      //InsertFriend( inviteeId, m_userInfo.userName, m_userInfo.uuid, m_userInfo.email, m_userInfo.avatarId, true );
+      contact->InvitationAccepted( inviterUsername, m_userName, invitationUuid, "", true );// this seems backwards, but its not
+      contact->ListOfInvitationsSent_SendToClient( connectionId );
+      //InsertFriend( inviteeId, m_userName, m_userUuid, m_userInfo.email, m_avatarIcon, true );
       contact->AfterFriendQuery_SendListToClient();
       contact->PrepFriendQuery();
    }
 
    RemoveInvitationReceived( invitationUuid );
-   InvitationAccepted( inviterUsername, m_userInfo.userName, invitationUuid, "", true );
-   ListOfInvitationsReceived_SendToClient();
-   //InsertFriend( inviterId, inviterUsername, m_userInfo.uuid, m_userInfo.email, m_userInfo.avatarId, true );
+   InvitationAccepted( inviterUsername, m_userName, invitationUuid, "", true );
+   ListOfInvitationsReceived_SendToClient( connectionId );
+   //InsertFriend( inviterId, inviterUsername, m_userUuid, m_userInfo.email, m_avatarIcon, true );
 
    AfterFriendQuery_SendListToClient();
    //m_friendListFilled = false;
@@ -1305,7 +1337,7 @@ void  UserContact::FinishAcceptingInvitation( const PacketDbQueryResult* dbResul
 
 //------------------------------------------------------------------------------------------------
 
-void  UserContact::FinishDecliningingInvitation( const PacketDbQueryResult* dbResult )
+void  UserContact::FinishDecliningingInvitation( const PacketDbQueryResult* dbResult, U32 connectionId )
 {
    U32 invitationId = 0;
    U32 inviterId = 0;
@@ -1330,10 +1362,10 @@ void  UserContact::FinishDecliningingInvitation( const PacketDbQueryResult* dbRe
 
    // delete invitation
    PacketDbQuery* dbQuery = new PacketDbQuery;
-   dbQuery->id =           m_connectionId;
+   dbQuery->id =           m_userId;
    dbQuery->meta =         "";
    dbQuery->lookup =       QueryType_DeleteInvitation;
-   dbQuery->serverLookup = 0;//m_userInfo.id;
+   dbQuery->serverLookup = 0;//m_userId;
    dbQuery->isFireAndForget = true;
 
    string query = "DELETE FROM friend_pending WHERE id=";
@@ -1343,28 +1375,30 @@ void  UserContact::FinishDecliningingInvitation( const PacketDbQueryResult* dbRe
 
    // do not notify sender for now
    RemoveInvitationReceived( invitationUuid );
-   InvitationAccepted( inviterUsername, m_userInfo.userName, invitationUuid, userMessage, false );
+   InvitationAccepted( inviterUsername, m_userName, invitationUuid, userMessage, false );
    //PrepInvitationsQueries();
-   ListOfInvitationsSent_SendToClient();
+   ListOfInvitationsSent_SendToClient( connectionId );
 
-   UserContact* contact = m_contactServer->GetUser( inviterId );// this user needs to know that he's been invited.
-   if( contact )
+   UserContact* contact = NULL;
+   if( m_contactServer->GetUser( inviterId, contact ) == true )
    {
       contact->RemoveInvitationSent( invitationUuid );
-      contact->InvitationAccepted( inviterUsername, m_userInfo.userName, invitationUuid, "", false );// this seems backwards, but its not
-      contact->ListOfInvitationsSent_SendToClient();
+      contact->InvitationAccepted( inviterUsername, m_userName, invitationUuid, "", false );// this seems backwards, but its not
+      contact->ListOfInvitationsSent_SendToClient( connectionId );
    }
 }
 
 //------------------------------------------------------------------------------------------------
 
-void  UserContact::FinishSearchResult( const PacketDbQueryResult* dbResult )
+void  UserContact::FinishSearchResult( const PacketDbQueryResult* dbResult, U32 connectionId )
 {
+   U32 gatewayId = GetGatewayId( connectionId );
+
    PacketContact_SearchForUserResult* response = new PacketContact_SearchForUserResult;
    if( dbResult->successfulQuery == false || dbResult->bucket.bucket.size() == 0 )
    {
-      m_contactServer->SendPacketToGateway( response, m_connectionId, m_gatewayId );
-      m_contactServer->SendErrorToClient( m_connectionId, m_gatewayId, PacketErrorReport::ErrorType_Contact_NoSearchResult );
+      m_contactServer->SendPacketToGateway( response, connectionId, gatewayId );
+      m_contactServer->SendErrorToClient( connectionId, gatewayId, PacketErrorReport::ErrorType_Contact_NoSearchResult );
       return;
    }
 
@@ -1381,18 +1415,18 @@ void  UserContact::FinishSearchResult( const PacketDbQueryResult* dbResult )
       foundList.insert( uuid, FriendInfo( userName, 0, false ) );// we never inform users if someone is online during a search.. privacy and spamming reasons
    }
 
-   m_contactServer->SendPacketToGateway( response, m_connectionId, m_gatewayId );
+   m_contactServer->SendPacketToGateway( response, connectionId, gatewayId );
 }
 
 //------------------------------------------------------------------------------------------------
 
-void  UserContact::FinishInvitation( U32 inviteeId, const string& message, const string& inviteeName, const string& inviteeUuid, UserContact* contact )
+void  UserContact::FinishInvitation( U32 inviteeId, const string& message, const string& inviteeName, const string& inviteeUuid, U32 connectionId, UserContact* contact )
 {
    PacketDbQuery* dbQuery = new PacketDbQuery;
-   dbQuery->id =           m_connectionId;
+   dbQuery->id =           m_userId;
    dbQuery->meta =         "";
    dbQuery->lookup =       QueryType_AddInvitationToUser;
-   dbQuery->serverLookup = 0;//m_userInfo.id;
+   dbQuery->serverLookup = 0;//m_userId;
    
    time_t currentTime;
    time( &currentTime );
@@ -1400,7 +1434,7 @@ void  UserContact::FinishInvitation( U32 inviteeId, const string& message, const
    string invitationUuid = GenerateUUID( static_cast< U32 >( currentTime ) );
 
    string query = "INSERT INTO friend_pending (inviter_id, invitee_id, was_notified, sent_date, message, uuid) VALUES ( '";
-   query += boost::lexical_cast< string >( m_userInfo.id );
+   query += boost::lexical_cast< string >( m_userId );
    query += "', '";
    query += boost::lexical_cast< string >( inviteeId );
    query += "', 1, '";
@@ -1412,47 +1446,61 @@ void  UserContact::FinishInvitation( U32 inviteeId, const string& message, const
    dbQuery->query = query;
    dbQuery->escapedStrings.insert( message );
 
-   InsertInvitationSent( m_userInfo.id, inviteeId, false, inviteeName, inviteeUuid, message, invitationUuid, currentTimeInUTC );
+   InsertInvitationSent( m_userId, inviteeId, false, inviteeName, inviteeUuid, message, invitationUuid, currentTimeInUTC );
 
    m_contactServer->AddQueryToOutput( dbQuery );
 
    if( contact )
    {
-      contact->InsertInvitationReceived( m_userInfo.id, inviteeId, false, m_userInfo.userName, m_userInfo.uuid, message, invitationUuid, currentTimeInUTC );
-      contact->YouHaveBeenInvitedToBeAFriend( m_userInfo.userName, invitationUuid, message, currentTimeInUTC );
+      contact->InsertInvitationReceived( m_userId, inviteeId, false, m_userName, m_userUuid, message, invitationUuid, currentTimeInUTC );
+      contact->YouHaveBeenInvitedToBeAFriend( m_userName, invitationUuid, message, currentTimeInUTC );
    }
    //PrepInvitationsQueries();// reload all invitations... there should not be many
-   ListOfInvitationsSent_SendToClient();
+   ListOfInvitationsSent_SendToClient( connectionId );
 }
 
 //------------------------------------------------------------------------------------------------
 
 void     UserContact::YouHaveBeenInvitedToBeAFriend( const string& userName, const string& uuid, const string& message, const string& currentTime )
 {
-   PacketContact_InviteReceivedNotification* packet = new PacketContact_InviteReceivedNotification;
-   packet->info.date = currentTime;
-   packet->info.inviterName = userName;
-   packet->info.uuid = uuid;
-   packet->info.message = message;
+   UserConnectionList connectionList;
+   m_connectionDetails.AssembleAllConnections( connectionList );
 
-   m_contactServer->SendPacketToGateway( packet, m_connectionId, m_gatewayId );
+   UserConnectionList::iterator it = connectionList.begin();
+   while( it != connectionList.end() )
+   {
+      PacketContact_InviteReceivedNotification* packet = new PacketContact_InviteReceivedNotification;
+      packet->info.date = currentTime;
+      packet->info.inviterName = userName;
+      packet->info.uuid = uuid;
+      packet->info.message = message;
 
+      m_contactServer->SendPacketToGateway( packet, it->connectionId, it->gatewayId );
+
+      
+   }
    InitContactsAndInvitations();
-
 }
 
 //------------------------------------------------------------------------------------------------
 
 void     UserContact::InvitationAccepted( const string& sentFromuserName, const string& sentToUserName, const string& invitationUuid, const string& message, bool accepted )
 {
-   PacketContact_InvitationAccepted* packet = new PacketContact_InvitationAccepted;
-   packet->wasAccepted = accepted;
-   packet->fromUsername = sentFromuserName;
-   packet->invitationUuid = invitationUuid;
-   packet->toUsername = sentToUserName;
-   packet->message = message;
+   UserConnectionList connectionList;
+   m_connectionDetails.AssembleAllConnections( connectionList );
 
-   m_contactServer->SendPacketToGateway( packet, m_connectionId, m_gatewayId );
+   UserConnectionList::iterator it = connectionList.begin();
+   while( it != connectionList.end() )
+   {
+      PacketContact_InvitationAccepted* packet = new PacketContact_InvitationAccepted;
+      packet->wasAccepted = accepted;
+      packet->fromUsername = sentFromuserName;
+      packet->invitationUuid = invitationUuid;
+      packet->toUsername = sentToUserName;
+      packet->message = message;
+
+      m_contactServer->SendPacketToGateway( packet, it->connectionId, it->gatewayId );
+   }
 
    if( accepted == true )
    {

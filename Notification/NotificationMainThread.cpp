@@ -149,15 +149,15 @@ void  NotificationMainThread::ProcessDelayedPackets()
       U32  connectionId = wrapper->serverId;
 
       LogMessage( LOG_PRIO_INFO, "ProcessDelayedPackets:FindUserConnection( %u )", connectionId );
-      UserConnectionIterator item = m_userConnectionMap.find( connectionId );
-      if( item != m_userConnectionMap.end() )
+      UserConnectionIterator item = GetUserByConnectionId( connectionId );
+      if( item != m_userTickets.end() )
       {
          LogMessage( LOG_PRIO_INFO, "ProcessDelayedPackets:FindUserConnection success" );
          UserConnection& user = item->second;
          if( user.IsReadyToAcceptClientRequests() == true )
          {
             LogMessage( LOG_PRIO_INFO, "ProcessDelayedPackets:handling the packet" );
-            user.HandleRequestFromClient( unwrappedPacket );
+            user.HandleRequestFromClient( unwrappedPacket, connectionId );
             it = storage.erase( it );
          }
          else
@@ -254,6 +254,14 @@ bool  NotificationMainThread::HandlePacketFromOtherServer( BasePacket* packet, U
       case PacketLogin::LoginType_PrepareForUserLogout:
          DisconnectUser( static_cast< PacketPrepareForUserLogout* >( unwrappedPacket ) );
          return true;
+
+      case PacketLogin::LoginType_ExpireUserLogin:
+         ExpireUser( static_cast< PacketLoginExpireUser* >( unwrappedPacket ) );
+         return true;
+
+      case PacketLogin::LoginType_RequestServiceToFlushAllUserLogins:
+         DeleteAllUsers();
+         return true;
       }
    }
    else if( packetType == PacketType_Notification )
@@ -293,14 +301,14 @@ bool     NotificationMainThread::HandlePacketFromGateway( BasePacket* packet, U3
    
    {// local scope
       //Threading::MutexLock locker( m_mutex );
-      UserConnectionIterator item = m_userConnectionMap.find( connectionId );
-      if( item != m_userConnectionMap.end() )
+      UserConnectionIterator item = GetUserByConnectionId( connectionId );
+      if( item != m_userTickets.end() )
       {
          UserConnection& user = item->second;
          if( user.IsReadyToAcceptClientRequests() == true )
          {
             cout << "NotificationMainThread::HandlePacketFromGateway HandleRequestFromClient" << endl;
-            user.HandleRequestFromClient( unwrappedPacket );
+            user.HandleRequestFromClient( unwrappedPacket, connectionId );
             return true;
          }
          else
@@ -318,7 +326,7 @@ bool     NotificationMainThread::HandlePacketFromGateway( BasePacket* packet, U3
 
 bool     NotificationMainThread::ConnectUser( const PacketPrepareForUserLogin* loginPacket )
 {
-   U32 connectionId = loginPacket->connectionId;
+  /* U32 connectionId = loginPacket->connectionId;
    string uuid = loginPacket->uuid;
    U32 gatewayId = loginPacket->gatewayId;
    //LogMessage( LOG_PRIO_INFO, "Prep for logon: %d, %s, %s, %s", connectionId, loginPacket->userName.c_str(), uuid.c_str(), loginPacket->password.c_str() );
@@ -358,6 +366,52 @@ bool     NotificationMainThread::ConnectUser( const PacketPrepareForUserLogin* l
       m_userConnectionMap.insert( UserConnectionPair( connectionId, user ) );
       //m_mutex.unlock();
    }
+   return true;*/
+   U32 connectionId = loginPacket->connectionId;
+   string uuid = loginPacket->uuid;
+   U32 gatewayId = loginPacket->gatewayId;
+   U8 gameProductId = loginPacket->gameProductId;
+
+   //LogMessage( LOG_PRIO_INFO, "Prep for logon: %d, %s, %s, %s", connectionId, loginPacket->userName.c_str(), uuid.c_str(), loginPacket->password.c_str() );
+   LogMessage_LoginPacket( loginPacket );
+   
+   UserConnectionIterator it = GetUserByConnectionId( connectionId );// don't do anything if this user is already logged in.
+   if( it != m_userTickets.end() )
+      return false;
+
+   U64 hashForUser = GenerateUniqueHash( loginPacket->uuid );
+
+   Threading::MutexLock locker( m_mutex );
+   it = m_userTickets.find( hashForUser );
+
+   bool  wasUserFound = true;
+
+   if( it == m_userTickets.end() )
+   {
+      std::pair< UserConnectionIterator, bool> ret = 
+         m_userTickets.insert( UserConnectionPair( hashForUser, UserConnection() ) );
+      it = ret.first;
+      UserConnection& user = it->second;
+      
+      user.SetId( loginPacket->userId );                   
+      user.SetUserName( loginPacket->userName );
+               
+      user.SetUuid( loginPacket->uuid );
+      user.SetPassword( loginPacket->password );
+      user.SetEmail( loginPacket->email );
+      user.SetAssetKey( loginPacket->loginKey );
+      user.SetLanguageId( loginPacket->languageId );  
+      user.SetIsActive( true );// assumed
+
+      user.SetServer( this );
+      wasUserFound = false;
+   }
+   it->second.Login( connectionId, gatewayId, gameProductId );
+  /* if( wasUserFound == false )
+   {
+      it->second.Init();
+   }*/
+   //cout << "NotificationMainThread::ConnectUser >>>" << endl;
    return true;
 }
 
@@ -367,7 +421,7 @@ bool     NotificationMainThread::ConnectUser( const PacketPrepareForUserLogin* l
 bool     NotificationMainThread::DisconnectUser( const PacketPrepareForUserLogout* logoutPacket )
 {
    //LogMessage( LOG_PRIO_INFO, "Prep for logout: %d, %s", logoutPacket->connectionId, logoutPacket->uuid.c_str() );
-   LogMessage_LogoutPacket( logoutPacket );
+ /*  LogMessage_LogoutPacket( logoutPacket );
 
    U32 connectionId = logoutPacket->connectionId;
 
@@ -380,9 +434,54 @@ bool     NotificationMainThread::DisconnectUser( const PacketPrepareForUserLogou
    //it->second.NeedsUpdate();
    it->second.UserLoggedOut();
 
+   return true;*/
+   LogMessage_LogoutPacket( logoutPacket );
+
+   U32 connectionId = logoutPacket->connectionId;
+   connectionId = connectionId;
+
+   string uuid = logoutPacket->uuid;
+   U64 hashForUser = GenerateUniqueHash( uuid );
+
+   Threading::MutexLock locker( m_mutex );
+   UserConnectionIterator it = m_userTickets.find( hashForUser );
+   if( it == m_userTickets.end() )
+      return false;
+
+   it->second.Logout( connectionId );
+
    return true;
 }
 
+//---------------------------------------------------------------
+
+bool     NotificationMainThread::ExpireUser( const PacketLoginExpireUser* expirePacket )
+{
+   const string& uuid = expirePacket->uuid;
+   U64 hashForUser = GenerateUniqueHash( uuid );
+
+   Threading::MutexLock locker( m_mutex );
+   UserConnectionIterator it = m_userTickets.find( hashForUser );
+   if( it == m_userTickets.end() )
+      return false;
+
+   m_userTickets.erase( it );
+
+   return true;
+}
+
+//---------------------------------------------------------------
+
+bool     NotificationMainThread::DeleteAllUsers()
+{
+   Threading::MutexLock locker( m_mutex );
+
+   m_userTickets.clear();
+
+   return true;
+}
+
+//---------------------------------------------------------------
 //---------------------------------------------------------------
 
 void  NotificationMainThread::RunQueryAndNotification( Database::Deltadromeus* database, 
@@ -668,12 +767,12 @@ bool     NotificationMainThread::AddQueryToOutput( PacketDbQuery* query )
 
 void     NotificationMainThread::RemoveExpiredConnections()
 {
-   UserConnectionIterator it = m_userConnectionMap.begin();
-   while( it != m_userConnectionMap.end() )
+   UserConnectionIterator it = m_userTickets.begin();
+   while( it != m_userTickets.end() )
    {
       UserConnection& contact = it->second;
       UserConnectionIterator temp = it++;
-      if( contact.IsLoggedOut() )
+      /*if( contact.IsLoggedOut() )
       {
          cout << "NotificationMainThread::RemoveExpiredConnections enter" << endl;
          if( contact.SecondsExpiredSinceLoggedOut() > SecondsBeforeRemovingLoggedOutUser )
@@ -684,7 +783,7 @@ void     NotificationMainThread::RemoveExpiredConnections()
          }
          cout << "NotificationMainThread::RemoveExpiredConnections exit" << endl;
       }
-      else 
+      else */
       {
          contact.Update();
       }
@@ -709,13 +808,15 @@ void     NotificationMainThread::UpdateDbResults()
    {
       PacketDbQueryResult* dbResult = *it++;
 
-      U32 connectionId = dbResult->id;
-      if( connectionId != 0 )
+      U32 userId = dbResult->id;
+      if( userId != 0 )
       {
-         UserConnectionIterator it = m_userConnectionMap.find( connectionId );
-         if( it != m_userConnectionMap.end() )
+         //UserConnectionIterator it = GetUserByConnectionId( connectionId );
+         UserConnection* user = NULL;
+         GetUser( userId, user );
+         if( user != NULL )
          {
-            it->second.HandleDbQueryResult( dbResult );
+            user->HandleDbQueryResult( dbResult );
          }
          else // user must have disconnected
          {
@@ -758,6 +859,7 @@ int      NotificationMainThread::CallbackFunction()
    CleanupOldClientConnections( "KhaanServerToServer" );
    UpdateAllConnections( "KhaanServerToServer" );
    UpdateInputPacketToBeProcessed();
+   UpdateOutputPacketToBeProcessed();
 
    CommonUpdate();
 
@@ -914,6 +1016,126 @@ bool NotificationMainThread::SetupUserNotificationResend( unsigned int userId, u
 
    return true;
  }
+
+
+string      NotificationMainThread::GetUserUuidByConnectionId( U32 connectionId )
+{
+   NotificationMainThread::UserConnectionIterator   it = GetUserByConnectionId( connectionId );
+   if( it == m_userTickets.end() )
+   {
+      return string();
+   }
+   return it->second.GetUuid();
+}
+
+void        NotificationMainThread::GetUserConnectionId( const string& uuid, vector< SimpleConnectionDetails >& listOfConnections )
+{
+   listOfConnections.clear();
+
+   UserConnection* contact = NULL;
+   if( GetUser( uuid, contact ) == true )
+      contact->AssembleAllConnections( listOfConnections );
+}
+
+
+string      NotificationMainThread::GetUserName( const string& uuid )
+{
+   UserConnection*   user = NULL;
+   if( GetUser( uuid, user ) == false )
+      return string();
+
+   return user->GetUsername();
+}
+
+bool  NotificationMainThread::GetUser( const string& uuid, UserConnection*& user )
+{
+   LogMessage( LOG_PRIO_INFO, "GetUser %s", uuid.c_str() );
+   U64 hashForUser = GenerateUniqueHash( uuid );
+
+   Threading::MutexLock locker( m_mutex );
+   UserConnectionIterator it = m_userTickets.find( hashForUser );
+   if( it != m_userTickets.end() )// user may be reloggin and such.. no biggie.. just ignore
+   {
+      user = &it->second;
+      return true;
+   }
+   return false;
+}
+
+
+NotificationMainThread::UserConnectionIterator   
+NotificationMainThread::GetUserByConnectionId( U32 connectionId )
+{
+   LogMessage( LOG_PRIO_INFO, "GetUserByConnectionId %u", connectionId );
+   Threading::MutexLock locker( m_mutex );
+   UserConnectionIterator it = m_userTickets.begin();
+   while( it != m_userTickets.end() )
+   {
+      if( it->second.IsConnected( connectionId ) == true )
+      {
+         return it;
+      }
+      it++;
+   }
+
+   return it;
+}
+
+const string NotificationMainThread::GetUuid( U32 connectionId ) const
+{
+   LogMessage( LOG_PRIO_INFO, "GetUuid %u", connectionId );
+   Threading::MutexLock locker( m_mutex );
+   ConstUserConnectionIterator it = m_userTickets.begin();
+   while( it != m_userTickets.end() )
+   {
+      if( it->second.IsConnected( connectionId ) == true )
+      {
+         return it->second.GetUuid();
+      }
+      it++;
+   }
+
+   return string();
+}
+
+
+bool  NotificationMainThread::GetUser( U32 userId, UserConnection*& user )
+{
+   user = NULL;
+   LogMessage( LOG_PRIO_INFO, "GetUser %d", userId );
+
+   Threading::MutexLock locker( m_mutex );
+   UserConnectionIterator it = m_userTickets.begin();
+   while( it != m_userTickets.end() )
+   {
+      if( it->second.GetId() == userId ) 
+      {
+         user = &it->second;
+         return true;
+      }
+      it++;
+   }
+   return false;
+}
+
+bool  NotificationMainThread::GetUserByUsername( const string& name, UserConnection*& user )
+{
+   user = NULL;
+   LogMessage( LOG_PRIO_INFO, "GetUserByUsername %s", name.c_str() );
+
+   Threading::MutexLock locker( m_mutex );
+   UserConnectionIterator it = m_userTickets.begin();
+   while( it != m_userTickets.end() )
+   {
+      if( it->second.GetUsername() == name ) 
+      {
+         user = &it->second;
+         return true;
+      }
+      it++;
+   }
+   return false;
+}
 
 //---------------------------------------------------------------
 //---------------------------------------------------------------

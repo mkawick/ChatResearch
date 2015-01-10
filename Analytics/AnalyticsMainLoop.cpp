@@ -26,7 +26,7 @@ using namespace std;
 ///////////////////////////////////////////////////////////////////
 
 
-DiplodocusStat::DiplodocusStat( const string& serverName, U32 serverId ): Diplodocus< KhaanStat >( serverName, serverId, 0,  ServerType_Analytics )
+DiplodocusStat::DiplodocusStat( const string& serverName, U32 serverId ): ChainedType( serverName, serverId, 0,  ServerType_Analytics )
 {
    time( &m_lastDbWriteTimeStamp );
    m_lastDbWriteTimeStamp = ZeroOutMinutes( m_lastDbWriteTimeStamp );

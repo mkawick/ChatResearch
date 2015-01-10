@@ -108,7 +108,7 @@ public:
    bool           AddInboundPacket( BasePacket* packet ); // not thread safe
    bool           HandleDbResult( PacketDbQueryResult* packet );
 
-   bool           CreateNewRoom( const string& channelName, const string& userUuid );
+   bool           CreateNewRoom( const string& channelName, const string& userUuid, U32 connectionId );
    bool           GetGroupName( const string& groupUuid, string& name ) const;
    bool           GetChatRooms( const string& userUuid, ChannelFullKeyValue& availableChannels );
    U32            GetUserId( const string& userUuid ) const;
@@ -118,26 +118,26 @@ public:
 
    bool           CreateNewRoom( const PacketChatCreateChatChannelFromGameServer* pPacket );
    bool           DeleteRoom( const PacketChatDeleteChatChannelFromGameServer* request );
-   bool           DeleteRoom( const string& chanelUuid, const string& userUuid );
+   bool           DeleteRoom( const string& chanelUuid, const string& userUuid, U32 connectionId );
 
-   bool           RenameChatRoom( const string& channelUuid, const string& newName, const string& userUuid, string& oldName );// returns old name
+   bool           RenameChatRoom( const string& channelUuid, const string& newName, const string& userUuid, string& oldName, U32 connectionId );// returns old name
 
    bool           SetUserPreferences( const string& userUuid, bool blockContactInvitations, bool blockGroupInvitations );
    bool           AddUserToRoom( const PacketChatAddUserToChatChannelGameServer* packet );
-   bool           AddUserToRoom( const string& channelUuid, const string& userUuid, const string& requesterUuid );
+   bool           AddUserToRoom( const string& channelUuid, const string& userUuid, const string& requesterUuid, U32 requesterConnectionId );
 
    bool           RemoveUserFromRoom( const PacketChatRemoveUserFromChatChannelGameServer* packet );
    bool           RemoveUserFromRoom( const string& channelUuid, const string& userUuid );
 
    bool           UserHasLoggedIn( const string& userUUid );
    bool           UserHasLoggedOut( const string& userUUid );
-   bool           UserSendP2PChat( const string& senderUuid, const string& receiverUuid, const string& message );
-   bool           UserSendsChatToChannel( const string& senderUuid, const string& channelUuid, const string& message, U16 gameTurn );
+   bool           UserSendP2PChat( const string& senderUuid, const string& receiverUuid, const string& message, U32 connectionId );
+   bool           UserSendsChatToChannel( const string& senderUuid, const string& channelUuid, const string& message, U16 gameTurn, U32 connectionId );
 
    bool           RequestChatRoomInfo( const PacketChatListAllMembersInChatChannel* packet, U32 connectionId );// users + pending?
    //bool           UserAddsSelfToRoom( const string& channelUuid, const string& addedUserUuid );
       
-   bool           UserAddsSelfToGroup( const string& channelUuid, const string& addedUserUuid );
+   bool           UserAddsSelfToGroup( const string& channelUuid, const string& addedUserUuid, U32 connectionId );
    bool           GetUserInfo( const string& userUuid, UsersChatRoomList& ) const;
    //bool           IsRoomValid( const string& channelUuid ) const;
    bool           IsGroupValid( const string& inviteGroup ) const;

@@ -200,7 +200,7 @@ bool     DiplodocusPurchase::AddInputChainData( BasePacket* packet, U32 connecti
 
 //---------------------------------------------------------------
 
-bool     DiplodocusPurchase:: ProcessPacket( PacketStorage& storage )
+bool     DiplodocusPurchase:: ProcessInboundPacket( PacketStorage& storage )
 {
    LogMessage( LOG_PRIO_INFO, "ProcessPacket <<<" );
    BasePacket* packet = storage.packet;
@@ -230,7 +230,7 @@ bool     DiplodocusPurchase:: ProcessPacket( PacketStorage& storage )
          }
          UserAccountPurchase& uap = it->second;
          PacketPurchase* pp = reinterpret_cast< PacketPurchase* >( unwrappedPacket );
-         return uap.HandleRequestFromClient( pp );
+         return uap.HandleRequestFromClient( pp, connectionIdToUse );
       }
       else
       {
@@ -286,7 +286,7 @@ DiplodocusPurchase::GetUserByConnectionId( U32 connectionId )
    UAADMapIterator it = m_userTickets.begin();
    while( it != m_userTickets.end() )
    {
-      if( it->second.GetUserTicket().connectionId == connectionId )
+      if( it->second.IsConnected( connectionId ) == true )
       {
          return it;
       }
@@ -294,6 +294,23 @@ DiplodocusPurchase::GetUserByConnectionId( U32 connectionId )
    }
 
    return it;
+}
+
+const string DiplodocusPurchase::GetUuid( U32 connectionId ) const
+{
+   LogMessage( LOG_PRIO_INFO, "GetUuid %u", connectionId );
+   Threading::MutexLock locker( m_mutex );
+   UAADMap::const_iterator it = m_userTickets.begin();
+   while( it != m_userTickets.end() )
+   {
+      if( it->second.IsConnected( connectionId ) == true )
+      {
+         return it->second.GetUuid();
+      }
+      it++;
+   }
+
+   return string();
 }
 
 
@@ -319,15 +336,23 @@ bool  DiplodocusPurchase::HandlePacketFromOtherServer( BasePacket* packet, U32 g
       switch( unwrappedPacket->packetSubType )
       {
       case PacketLogin::LoginType_PrepareForUserLogin:
-         ConnectUser( static_cast< PacketPrepareForUserLogin* >( unwrappedPacket ) );
+         ConnectUser( static_cast< const PacketPrepareForUserLogin* >( unwrappedPacket ) );
          return true;
 
       case PacketLogin::LoginType_PrepareForUserLogout:
-         DisconnectUser( static_cast< PacketPrepareForUserLogout* >( unwrappedPacket ) );
+         DisconnectUser( static_cast< const PacketPrepareForUserLogout* >( unwrappedPacket ) );
          return true;
 
       case PacketLogin::LoginType_ListOfProductsS2S:
          StoreUserProductsOwned( static_cast< PacketListOfUserProductsS2S* >( unwrappedPacket ) );
+         return true;
+      
+      case PacketLogin::LoginType_ExpireUserLogin:
+         ExpireUser( static_cast< const PacketLoginExpireUser* >( unwrappedPacket ) );
+         return true;
+
+      case PacketLogin::LoginType_RequestServiceToFlushAllUserLogins:
+         DeleteAllUsers();
          return true;
       }
    }
@@ -360,6 +385,7 @@ bool     DiplodocusPurchase::ConnectUser( const PacketPrepareForUserLogin* login
    U32 connectionId = loginPacket->connectionId;
    string uuid = loginPacket->uuid;
    U32 gatewayId = loginPacket->gatewayId;
+   U8 gameProductId = loginPacket->gameProductId;
    //LogMessage( LOG_PRIO_INFO, "Prep for logon: %d, %s, %s, %s", connectionId, loginPacket->userName.c_str(), uuid.c_str(), loginPacket->password.c_str() );
    LogMessage_LoginPacket( loginPacket );
             
@@ -367,38 +393,36 @@ bool     DiplodocusPurchase::ConnectUser( const PacketPrepareForUserLogin* login
 
    Threading::MutexLock locker( m_mutex );
    UAADMapIterator it = m_userTickets.find( hashForUser );
-   if( it != m_userTickets.end() )// user may be reloggin and such.. no biggie.. just ignore
+   
+   if( it == m_userTickets.end() )
    {
-      it->second.SetConnectionId( connectionId );
-      it->second.SetGatewayId( gatewayId );
-      it->second.ClearUserLogout();
-      return false;
-   }
-
-   bool found = false;
-   if( found == false )
-   {
-
-      UserTicket ut;
-      ut.userName =        loginPacket->userName.c_str();
-      ut.uuid =            loginPacket->uuid.c_str();
-      ut.userTicket =      loginPacket->loginKey.c_str();
-      ut.connectionId =    loginPacket->connectionId;
-      ut.gatewayId =       gatewayId;
-      ut.gameProductId =   loginPacket->gameProductId;
-      ut.userId =          loginPacket->userId;
-      ut.languageId =      loginPacket->languageId;
-
-      UserAccountPurchase user( ut );
+      std::pair< UAADMap::iterator, bool> ret = 
+            m_userTickets.insert( UAADPair( hashForUser, UserAccountPurchase() ) );
+      it = ret.first;
+      UserAccountPurchase& user = it->second;
       user.SetServer( this );
       user.SetSalesManager( m_salesManager );
       user.SetReceiptManager( m_purchaseReceiptManager );
 
-      m_mutex.lock();
-      m_userTickets.insert( UAADPair( hashForUser, user ) );
-      m_mutex.unlock();
+      user.SetId( loginPacket->userId );                   
+      user.SetUserName( loginPacket->userName );
+               
+      user.SetUuid( loginPacket->uuid );
+      user.SetPassword( loginPacket->password );
+      user.SetEmail( loginPacket->email );
+      user.SetAssetKey( loginPacket->loginKey );
+      //user.SetUserMotto( loginPacket->userm );
+      //user.SetUserAvatar( loginPacket->icon );
+      user.SetLanguageId( loginPacket->languageId );  
+      user.SetIsActive( true );// assumed
+
    }
-   return true;
+   if( it != m_userTickets.end() )// user may be reloggin and such.. no biggie.. just ignore
+   {
+      it->second.Login( connectionId, gatewayId, gameProductId );
+      return true;
+   }
+   return false;
 }
 
 //---------------------------------------------------------------
@@ -419,14 +443,45 @@ bool     DiplodocusPurchase::DisconnectUser( const PacketPrepareForUserLogout* l
    if( it == m_userTickets.end() )
       return false;
 
+   it->second.Logout( connectionId );
+
    //it->second.NeedsUpdate();
-   it->second.UserLoggedOut();
-   it->second.SetConnectionId( 0 );
+   //it->second.UserLoggedOut();
+   //it->second.SetConnectionId( 0 );
    // we need to send notifications
 
    return true;
 }
 
+//---------------------------------------------------------------
+
+bool  DiplodocusPurchase::ExpireUser( const PacketLoginExpireUser* expirePacket )
+{
+   const string& uuid = expirePacket->uuid;
+   U64 hashForUser = GenerateUniqueHash( uuid );
+
+   Threading::MutexLock locker( m_mutex );
+   UAADMapIterator it = m_userTickets.find( hashForUser );
+   if( it == m_userTickets.end() )
+      return false;
+
+   m_userTickets.erase( it );
+
+   return true;
+}
+
+//---------------------------------------------------------------
+
+bool  DiplodocusPurchase::DeleteAllUsers()
+{
+   Threading::MutexLock locker( m_mutex );
+
+   m_userTickets.clear();
+
+   return true;
+}
+
+//---------------------------------------------------------------
 //---------------------------------------------------------------
 
 bool     DiplodocusPurchase::StoreUserProductsOwned( PacketListOfUserProductsS2S* productNamesPacket )
@@ -447,7 +502,7 @@ bool     DiplodocusPurchase::StoreUserProductsOwned( PacketListOfUserProductsS2S
 
 //---------------------------------------------------------------
 
-bool     DiplodocusPurchase::HandlePurchaseRequest( const PacketTournament_PurchaseTournamentEntry* packet, U32 connectionId )
+bool     DiplodocusPurchase::HandlePurchaseRequest( const PacketTournament_PurchaseTournamentEntry* packet, U32 serverIdLookup )
 {
    U64 hashForUser = GenerateUniqueHash( packet->userUuid.c_str() );
    LogMessage( LOG_PRIO_INFO, "HandlePurchaseRequest %s", packet->userUuid.c_str() );
@@ -457,7 +512,7 @@ bool     DiplodocusPurchase::HandlePurchaseRequest( const PacketTournament_Purch
    if( it != m_userTickets.end() )// user may be reloggin and such.. no biggie.. just ignore
    {
       //it->second.SetConnectionId( loginPacket->connectionId );
-      it->second.MakePurchase( packet, connectionId );
+      it->second.MakePurchase( packet, serverIdLookup );
       return true;
    }
    //packet->
@@ -552,8 +607,6 @@ bool     DiplodocusPurchase::AddQueryToOutput( PacketDbQuery* dbQuery )
 
 //---------------------------------------------------------------
 
-// make sure to follow the model of the account server regarding queries. Look at CreateAccount
-// 
 bool     DiplodocusPurchase::AddOutputChainData( BasePacket* packet, U32 connectionId )
 {
    if( packet->packetType == PacketType_GatewayWrapper )
@@ -564,7 +617,7 @@ bool     DiplodocusPurchase::AddOutputChainData( BasePacket* packet, U32 connect
       U32 gatewayId = m_connectionIdGateway;
       UAADMapIterator it = GetUserByConnectionId( connectionId );
       if( it != m_userTickets.end() )
-         gatewayId = it->second.GetUserTicket().gatewayId;  
+         gatewayId = it->second.GetGatewayId( connectionId );  
 
       Threading::MutexLock locker( m_inputChainListMutex );
       ChainLinkIteratorType itInputs = m_listOfInputs.begin();
@@ -577,9 +630,6 @@ bool     DiplodocusPurchase::AddOutputChainData( BasePacket* packet, U32 connect
             if( khaan->GetServerId() == gatewayId )
             {
                khaan->AddOutputChainData( packet );
-               //khaan->Update();// the gateway may not have a proper connection id.
-
-               //AddServerNeedingUpdate( khaan->GetServerId() );
                MarkConnectionAsNeedingUpdate( khaan->GetChainedId() );
                return true;
             }
@@ -596,57 +646,69 @@ bool     DiplodocusPurchase::AddOutputChainData( BasePacket* packet, U32 connect
    {
       if( packet->packetSubType == BasePacketDbQuery::QueryType_Result )
       {
-         bool wasHandled = false;
          PacketDbQueryResult* dbResult = static_cast<PacketDbQueryResult*>( packet );
-         if( m_salesManager->HandleResult( dbResult ) == true )
-         {
-            wasHandled = true;
-         }
-         else if( m_purchaseReceiptManager->HandleResult( dbResult ) == true )
-         {
-            wasHandled = true;
-         }
-         else if( m_stringLookup->HandleResult( dbResult ) == true )
-         {
-            wasHandled = true;
-         }
-         else
-         {
-            switch( dbResult->lookup )
-            {
-            case QueryType_PurchaseAdminSettings:
-               {
-                  HandleAdminSettings( dbResult );
-                  wasHandled = true;
-               }
-               break;
-            }
-         }
-
-         if( wasHandled == true )
-         {
-            PacketFactory factory;
-            factory.CleanupPacket( packet );
-         }
-         return wasHandled;
+         
+         m_mutex.lock();
+         m_dbQueries.push_back( dbResult );
+         m_mutex.unlock();
+         return true;
       }
    }
-   if( m_userTickets.size() )
-   {
-      Threading::MutexLock locker( m_mutex );
-      UAADMapIterator it = m_userTickets.begin();
-      while( it != m_userTickets.end() )
-      {
-         UAADMapIterator currentIt = it++;
-         if( currentIt->second.LogoutExpired() )
-         {
-            //delete it->second;// bad idea
-            m_userTickets.erase( currentIt );
-         }
-      }
-   }
-
    return false;
+}
+
+/////////////////////////////////////////////////////////////////
+
+void     DiplodocusPurchase::UpdateDbResults()
+{
+   PacketFactory factory;
+
+   m_mutex.lock();
+      deque< PacketDbQueryResult* > tempQueue = m_dbQueries;
+      m_dbQueries.clear();
+   m_mutex.unlock();
+
+   deque< PacketDbQueryResult* >::iterator it = tempQueue.begin();
+   while( it != tempQueue.end() )
+   {
+      PacketDbQueryResult* dbQueryResult = *it++;
+      HandleDbResult( dbQueryResult );
+      BasePacket* deleteMe = static_cast< BasePacket*>( dbQueryResult );
+      factory.CleanupPacket( deleteMe );
+   }
+}
+
+/////////////////////////////////////////////////////////////////
+
+bool     DiplodocusPurchase:: HandleDbResult( const PacketDbQueryResult* dbResult )
+{
+   bool wasHandled = false;
+   if( m_salesManager->HandleResult( dbResult ) == true )
+   {
+      wasHandled = true;
+   }
+   else if( m_purchaseReceiptManager->HandleResult( dbResult ) == true )
+   {
+      wasHandled = true;
+   }
+   else if( m_stringLookup->HandleResult( dbResult ) == true )
+   {
+      wasHandled = true;
+   }
+   else
+   {
+      switch( dbResult->lookup )
+      {
+      case QueryType_PurchaseAdminSettings:
+         {
+            HandleAdminSettings( dbResult );
+            wasHandled = true;
+         }
+         break;
+      }
+   }
+
+   return wasHandled;
 }
 
 /////////////////////////////////////////////////////////////////
@@ -708,6 +770,7 @@ int      DiplodocusPurchase::CallbackFunction()
    UpdateAllConnections( "KhaanPurchase" );
 
    UpdateInputPacketToBeProcessed();
+   UpdateOutputPacketToBeProcessed();
 
    time_t currentTime;
    time( &currentTime );
@@ -718,6 +781,8 @@ int      DiplodocusPurchase::CallbackFunction()
 
    UpdateConsoleWindow( m_timeOfLastTitleUpdate, m_uptime, m_numTotalConnections, static_cast<int>( m_connectedClients.size() ), m_listeningPort, m_serverName );
    // check for new friend requests and send a small list of notifications
+
+   UpdateDbResults();
 
    return 1;
 }

@@ -20,6 +20,7 @@ public:
    void     SetAdminLevelOperations( int level ) { m_adminLevel = level; }
    U8       GetLanguageId() const { return m_languageId; }
    void     SetLanguageId( U8 languageId );
+   bool     GetErrorConditionSet() const { return m_isErrorState; }
 
    void     SetUserName( const char* ptr ) { m_userName = ptr; }
    const char* GetUserName() { return m_userName.c_str(); }
@@ -62,6 +63,7 @@ private:
    U32                  m_timeoutMs;
    U32                  m_lastSentToClientTimestamp;
    U8                   m_gameId;
+   bool                 m_isErrorState;
    
    void  PreCleanup();
    //bool	OnDataReceived( const U8* data, int length );

@@ -26,6 +26,7 @@ using boost::format;
 #include "../NetworkCommon/Daemon/Daemonizer.h"
 #include "../NetworkCommon/NetworkOut/Fruitadens.h"
 
+#include "../NetworkCommon/Packets/LoginPacket.h"
 #include "UserStatsMainThread.h"
 
 #if PLATFORM == PLATFORM_WINDOWS
@@ -205,7 +206,7 @@ int main( int argc, const char* argv[] )
 #endif
 
       s2s->AddOutputChain( userStatServer );
-
+      s2s->QueueInboundRequest( PacketType_Login, PacketLogin::LoginType_RequestLoginStatusOfAllUsers, ServerType_Login );
       userStatServer->Run();
     }
    else

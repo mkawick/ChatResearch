@@ -19,14 +19,14 @@ class ChatUser;
 class PacketDbQuery;
 class PacketDbQueryResult;
 class ChatRoomManager;
+class PacketPrepareForUserLogin;
+class PacketPrepareForUserLogout;
+class PacketLoginExpireUser;
 
 //////////////////////////////////////////////////////////////////////////////////
 
 class DiplodocusChat : public Diplodocus< KhaanChat >, public StatTrackingConnections, public PacketSendingInterface
 {
-public: 
-   typedef Diplodocus< KhaanChat > ChainedType;
-
 public:
    DiplodocusChat( const string& serverName, U32 serverId );
    const char* GetClassName() const { return "DiplodocusChat"; }
@@ -50,20 +50,25 @@ public:
    //-------------------------------------
 public:
 // utility functions used by the ChatChannelManager
-   ChatUser*   UpdateExistingUsersConnectionId( const string& uuid, U32 connectionId, U32 gatewayId );
+ /*  ChatUser*   UpdateExistingUsersConnectionId( const string& uuid, U32 connectionId, U32 gatewayId );
    ChatUser*   GetUser( U32 connectionId );
    ChatUser*   GetUserById( U32 userId );
    ChatUser*   GetUserByUuid( const string& userName );
    ChatUser*   GetUserByUsername( const string& userName );
-   ChatUser*   GetUserByConnectionId( U32 ConnectionId );
+   ChatUser*   GetUserByConnectionId( U32 ConnectionId );*/
 
-   string      GetUserUuidByConnectionId( U32 connectionId );
-   void        GetUserConnectionId( const string& uuid, U32& connectionId, U32& gatewayId );
-   string      GetUserName( const string& uuid );
+ /*  string      GetUserUuidByConnectionId( U32 connectionId );
+   void        GetUserConnectionId( const string& uuid, vector< SimpleConnectionDetails >& listOfConnections  );
+   string      GetUserName( const string& uuid );*/
 
    //-------------------------------------
 private:
-   ChatUser*    CreateNewUser( U32 connectionId, U32 gatewayId );
+   //ChatUser*    CreateNewUser( U32 connectionId, U32 gatewayId );
+
+   bool     ConnectUser( const PacketPrepareForUserLogin* loginPacket );
+   bool     DisconnectUser( const PacketPrepareForUserLogout* logoutPacket );
+   bool     ExpireUser( const PacketLoginExpireUser* actualPacket );
+   bool     DeleteAllUsers();
 
    bool     HandleChatPacket( BasePacket* packet, U32 gatewayId );
    bool     HandleInvitationPacket( BasePacket* packet, U32 connectionId, U32 gatewayId );
@@ -71,7 +76,6 @@ private:
    bool     HandlePacketFromOtherServer( BasePacket* packet, U32 gatewayId );
    bool     HandlePacketFromClient( BasePacket* packet );
    void     PeriodicWriteToDB();
-   void     RemoveLoggedOutUsers();
 
    void     UpdateChatChannelManager();
    void     UpdateInvitationManager();
@@ -81,15 +85,28 @@ private:
    void     RunHourlyStats();
    void     RunDailyStats();
    void     LoadNewUserAccounts();
-   bool     ProcessPacket( PacketStorage& storage );
+   bool     ProcessInboundPacket( PacketStorage& storage );
    int      CallbackFunction();
 
-   typedef map< U32, ChatUser* >  UserMap;
-   typedef UserMap::iterator      UserMapIterator;
-   typedef UserMap::const_iterator UserMapConstIterator;
-   typedef pair< U32, ChatUser* > UserMapPair;
+   typedef map< stringhash, ChatUser >     UserMap;
+   typedef UserMap::iterator        UserMapIterator;
+   typedef UserMap::const_iterator  ConstUserMapIterator;
+   typedef pair< stringhash, ChatUser >    UserMapPair;
 
-   map< U32, ChatUser* >         m_users;
+public:
+
+   string                  GetUserUuidByConnectionId( U32 connectionId );
+   void                    GetUserConnectionId( const string& uuid, vector< SimpleConnectionDetails >& listOfConnections );
+   string                  GetUserName( const string& uuid );
+   bool                    GetUser( const string& uuid, ChatUser*& user );
+   bool                    GetUser( U32 userId, ChatUser*& user );
+
+   const string            GetUuid( U32 connectionId ) const;
+   bool                    GetUserByUsername( const string& name, ChatUser*& user );
+   UserMapIterator         GetUserByConnectionId( U32 connectionId );
+
+private:
+   UserMap                       m_userTickets;
 
    static const int              logoutTimeout = 2 * 60; // two minutes 
 

@@ -15,7 +15,7 @@ using namespace std;
 ///////////////////////////////////////////////////////////////////
 
 DiplodocusLoadBalancer::DiplodocusLoadBalancer( const string& serverName, U32 serverId ): 
-   Diplodocus< KhaanConnector >( serverName, serverId, 0,  ServerType_LoadBalancer ), 
+   ChainedType( serverName, serverId, 0,  ServerType_LoadBalancer ), 
    m_printFunctionNames( false ),
    m_distributedConnectionIdPoint( 1001 ),
    m_numConnectionIdsToDistrubute( 40 ),

@@ -26,7 +26,8 @@ using namespace std;
 #include "../NetworkCommon/Utils/StringUtils.h"
 
 
-UserStatsMainThread::UserStatsMainThread( const string& serverName, U32 serverId ): ChainedType( serverName, serverId, 0,  ServerType_UserStats )
+UserStatsMainThread::UserStatsMainThread( const string& serverName, U32 serverId ): 
+         ChainedType( serverName, serverId, 0,  ServerType_UserStats )
 {
    //time( &m_timestampStatsPrint );
    //m_timestampSelectPreferredGateway = m_timestampStatsPrint;
@@ -86,6 +87,7 @@ int      UserStatsMainThread::CallbackFunction()
    UpdateConsoleWindow( m_timeOfLastTitleUpdate, m_uptime, m_numTotalConnections, numClients, m_listeningPort, m_serverName );
 
    UpdateInputPacketToBeProcessed();
+   UpdateOutputPacketToBeProcessed();
 
    CleanupOldClientConnections( "KhaanServerToServer" );
    
@@ -278,21 +280,12 @@ bool  UserStatsMainThread::HandlePacketFromOtherServer( BasePacket* packet, U32 
    
    if( packetType == PacketType_Login )
    {
-      if( HandleLoginPacket( unwrappedPacket, serverIdLookup ) == false )
-      {
-         factory.CleanupPacket( packet );
-      }
-      
-      return true;
+      return HandleLoginPacket( unwrappedPacket, serverIdLookup ) ;
    }
 
    if( packetType == PacketType_UserStats )
    {
-      if( HandleUserStatPacket( unwrappedPacket, serverIdLookup ) == false )
-      {
-         factory.CleanupPacket( packet );
-      }
-      return true;
+      return HandleUserStatPacket( unwrappedPacket, serverIdLookup );
    }
 
    return false;
@@ -310,58 +303,106 @@ bool     UserStatsMainThread::HandleLoginPacket( BasePacket* packet, U32 serverI
       switch( packetSubType )
       {
       case PacketLogin::LoginType_PrepareForUserLogin:
-         {
-            PacketPrepareForUserLogin* loginPacket = static_cast< PacketPrepareForUserLogin* > ( packet );
-            U32 connectionId = loginPacket->connectionId;
-            U32 gatewayId = loginPacket->gatewayId;
-
-            m_inputChainListMutex.lock();
-            m_userConnectionList.push_front( ConnectionPair( connectionId, gatewayId ) );
-            m_inputChainListMutex.unlock();
-
-            cout << " --------------------------------- " << endl;
-            cout << "Prep for User login: " << endl;
-            cout << "    id: " << loginPacket->userId << endl;
-            cout << "  name: " << loginPacket->userName << endl;
-            cout << "  uuid: " << loginPacket->uuid << endl;
-            cout << "  login time: " << loginPacket->lastLoginTime << endl;
-            cout << " --------------------------------- " << endl;
-            LogMessage_LoginPacket( loginPacket );
-         }
+         ConnectUser( static_cast< const PacketPrepareForUserLogin* >( packet ) );
          return true;
+
       case PacketLogin::LoginType_PrepareForUserLogout:
-         {
-            PacketPrepareForUserLogout* logoutPacket = static_cast< PacketPrepareForUserLogout* > ( packet );
-            U32 connectionId = logoutPacket->connectionId;
+         DisconnectUser( static_cast< const PacketPrepareForUserLogout* >( packet ) );
+         return true;
 
-           /* cout << " --------------------------------- " << endl;
-            cout << "Prep for logout: " << logoutPacket->connectionId << ", " << logoutPacket->uuid << endl;
-            
-            cout << "User login: " << endl;
-            cout << "  uuid: " << logoutPacket->uuid << endl;
-            cout << " --------------------------------- " << endl;*/
-            LogMessage_LogoutPacket( logoutPacket );
+      case PacketLogin::LoginType_ExpireUserLogin:
+         ExpireUser( static_cast< const PacketLoginExpireUser* >( packet ) );
+         return true;
 
-            m_inputChainListMutex.lock();   
-            deque< ConnectionPair >::iterator it = m_userConnectionList.begin();
-            while( it != m_userConnectionList.end() )
-            {
-               if( it->connectionId == connectionId )
-               {
-                  m_userConnectionList.erase( it );
-                  break;
-               }
-               it++;
-            }
-            m_inputChainListMutex.unlock();
-            
-         }
+      case PacketLogin::LoginType_RequestServiceToFlushAllUserLogins:
+         DeleteAllUsers();
          return true;
       }
    }
    return false;
 }
 
+//---------------------------------------------------------------
+
+bool  UserStatsMainThread::ConnectUser( const PacketPrepareForUserLogin* loginPacket )
+{
+   U32 connectionId = loginPacket->connectionId;
+   U32 gatewayId = loginPacket->gatewayId;
+
+   m_inputChainListMutex.lock();
+   m_userConnectionList.push_front( ConnectionPair( connectionId, gatewayId ) );
+   m_inputChainListMutex.unlock();
+
+   cout << " --------------------------------- " << endl;
+   cout << "Prep for User login: " << endl;
+   cout << "    id: " << loginPacket->userId << endl;
+   cout << "  name: " << loginPacket->userName << endl;
+   cout << "  uuid: " << loginPacket->uuid << endl;
+   cout << "  login time: " << loginPacket->lastLoginTime << endl;
+   cout << " --------------------------------- " << endl;
+   LogMessage_LoginPacket( loginPacket );
+   return true;
+}
+
+//---------------------------------------------------------------
+
+bool  UserStatsMainThread::DisconnectUser( const PacketPrepareForUserLogout* logoutPacket )
+{
+   U32 connectionId = logoutPacket->connectionId;
+
+  /* cout << " --------------------------------- " << endl;
+   cout << "Prep for logout: " << logoutPacket->connectionId << ", " << logoutPacket->uuid << endl;
+   
+   cout << "User login: " << endl;
+   cout << "  uuid: " << logoutPacket->uuid << endl;
+   cout << " --------------------------------- " << endl;*/
+   LogMessage_LogoutPacket( logoutPacket );
+
+   m_inputChainListMutex.lock();   
+   deque< ConnectionPair >::iterator it = m_userConnectionList.begin();
+   while( it != m_userConnectionList.end() )
+   {
+      if( it->connectionId == connectionId )
+      {
+         m_userConnectionList.erase( it );
+         break;
+      }
+      it++;
+   }
+   m_inputChainListMutex.unlock();
+   return true;
+}
+
+//---------------------------------------------------------------
+
+bool  UserStatsMainThread::ExpireUser( const PacketLoginExpireUser* actualPacket )
+{
+ /*  const string& uuid = expirePacket->uuid;
+   U64 hashForUser = GenerateUniqueHash( uuid );
+
+   Threading::MutexLock locker( m_mutex );
+   UserContactMapIterator it = m_userTickets.find( hashForUser );
+   if( it == m_userTickets.end() )
+      return false;
+
+   m_userTickets.erase( it );*/
+
+   return true;
+}
+
+
+//---------------------------------------------------------------
+
+bool     UserStatsMainThread::DeleteAllUsers()
+{
+   Threading::MutexLock locker( m_mutex );
+
+   m_userConnectionList.clear();
+
+   return true;
+}
+
+//---------------------------------------------------------------
 //---------------------------------------------------------------
 
 bool     UserStatsMainThread::HandleUserStatPacket( BasePacket* packet, U32 serverIdLookup )
@@ -541,7 +582,7 @@ bool     UserStatsMainThread::SendMessageToClient( BasePacket* packet, U32 conne
          if( khaan->GetChainedType() == ChainedType_InboundSocketConnector &&
             khaan->GetServerId() == gatewayId )
          {
-            khaan->AddOutputChainData( packet );
+            khaan->AddOutputChainData( packet, 0 );
             m_clientsNeedingUpdate.push_back( khaan->GetChainedId() );
             return true;
          }

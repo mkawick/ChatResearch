@@ -16,6 +16,10 @@ using namespace std;
 
 class PacketDbQuery;
 class PacketDbQueryResult;
+class PacketPrepareForUserLogin;
+class PacketPrepareForUserLogout;
+class PacketLoginExpireUser;
+
 ///////////////////////////////////////////////////////////////////
 
 struct ConnectionPair
@@ -26,8 +30,6 @@ struct ConnectionPair
 
 class UserStatsMainThread : public Diplodocus< KhaanServerToServer >
 {
-public: 
-   typedef Diplodocus< KhaanServerToServer > ChainedType;
 public:
    UserStatsMainThread( const string& serverName, U32 serverId );
    ~UserStatsMainThread();
@@ -49,6 +51,11 @@ private:
    int      CallbackFunction();
    void     UpdateDbResults();
    bool     ProcessPacket( PacketStorage& storage );
+
+   bool     ConnectUser( const PacketPrepareForUserLogin* login );
+   bool     DisconnectUser( const PacketPrepareForUserLogout* login );
+   bool     ExpireUser( const PacketLoginExpireUser* actualPacket );
+   bool     DeleteAllUsers();
 
    bool     HandlePacketFromClient( BasePacket* packet, U32 connectionId );
    bool     HandlePacketFromOtherServer( BasePacket* packet, U32 connectionId );// not thread safe

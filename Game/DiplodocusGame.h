@@ -17,6 +17,7 @@
 class UserSession;
 class PacketPrepareForUserLogin;
 class PacketPrepareForUserLogout;
+class PacketLoginExpireUser;
 //#include "UserConnection.h"
 
 //class ChatChannelManager;
@@ -57,8 +58,11 @@ private:
 
    bool     HandlePacketFromOtherServer( BasePacket* packet, U32 connectionId );
    //bool     HandlePacketToOtherServer( BasePacket* packet, U32 connectionId );
-   void     ConnectUser( const PacketPrepareForUserLogin* loginPacket );
-   void     DisconnectUser( const PacketPrepareForUserLogout* logoutPacket );
+   bool     ConnectUser( const PacketPrepareForUserLogin* loginPacket );
+   bool     DisconnectUser( const PacketPrepareForUserLogout* logoutPacket );
+   bool     ExpireUser( const PacketLoginExpireUser* actualPacket );
+   bool     DeleteAllUsers();
+
    void     IsUserAllowedToUseThisProduct( const PacketListOfGames* packet );
    bool     ProcessPacket( PacketStorage& storage );
 

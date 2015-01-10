@@ -44,7 +44,7 @@ Khaan ::Khaan( int socketId, bufferevent* be, int connectionId ) :
                m_maxBytesToSend( 2 * 1024 ),
                m_useLibeventToSend( true ),
                m_criticalFailure( false ),
-               m_denyAllFutureData( false ),
+               m_blockAllData( false ),
                m_isDisconnected( false ),
                m_isInTelnetMode( false ),
                m_isExpectingMoreDataInPreviousPacket( false ),
@@ -52,6 +52,7 @@ Khaan ::Khaan( int socketId, bufferevent* be, int connectionId ) :
                m_hasPacketsToSend( false ),
                m_expectedBytesReceivedSoFar( 0 ),
                m_expectedBytes( 0 ),
+               m_serverType( 0 ),
                m_versionNumberMinor( NetworkVersionMinor ),
                m_outboundBuffer( NULL )
 {
@@ -92,7 +93,7 @@ Khaan ::~Khaan()
 void     Khaan::DenyAllFutureData() 
 { 
    //LogMessage( LOG_PRIO_INFO, "Khaan 3" );
-   m_denyAllFutureData = true; 
+   m_blockAllData = true; 
 }
 
 void   Khaan ::PreCleanup()
@@ -222,7 +223,7 @@ bool	Khaan :: Update()
       LogMessage( LOG_PRIO_INFO, "Remaining packet out count: %d", m_packetsOut.size() );
       return false;
    }
-   if( m_denyAllFutureData && m_hasPacketsToSend == false ) // shut it down
+   if( m_blockAllData && m_hasPacketsToSend == false ) // shut it down
    {
       CloseConnection();
       return false;

@@ -1,5 +1,6 @@
 
 #include "Khaan.h"
+#include "../NetworkOut/Fruitadens.h"
 
 #include <assert.h>
 #include "../NetworkUtils.h"
@@ -217,7 +218,7 @@ void  Diplodocus< InputChain, OutputChain >::CleanupOldClientConnections( const 
    time_t currentTime;
    time( &currentTime );
 
-   list< Khaan* > listOfInputsToBeDeleted;
+   list< InputChainType* > listOfInputsToBeDeleted;
 
    m_inputChainListMutex.lock();
    ChainLinkIteratorType itInputs = m_listOfInputs.begin();
@@ -228,12 +229,12 @@ void  Diplodocus< InputChain, OutputChain >::CleanupOldClientConnections( const 
       InputChainType* connection = static_cast< InputChainType* >( chainedInput.m_interface );
       if( connection->DoesNameMatch( connectionName ) )
       {
-         Khaan* khaan = connection;
-         if( khaan && khaan->HasDisconnected() == true )
+         //Khaan* khaan = connection;
+         if( connection && connection->HasDisconnected() == true )
          {
-            if( khaan->HasDeleteTimeElapsed( currentTime ) == true )
+            if( connection->HasDeleteTimeElapsed( currentTime ) == true )
             {
-               listOfInputsToBeDeleted.push_back( khaan );
+               listOfInputsToBeDeleted.push_back( connection );
                m_listOfInputs.erase( oldConnIt );
             }
          }
@@ -243,10 +244,10 @@ void  Diplodocus< InputChain, OutputChain >::CleanupOldClientConnections( const 
    m_inputChainListMutex.unlock();
 
    // this external loop exists because of the lock within a lock that linux hates
-   list< Khaan* >::iterator itDeletedInputs = listOfInputsToBeDeleted.begin();
+   list< InputChainType* >::iterator itDeletedInputs = listOfInputsToBeDeleted.begin();
    while( itDeletedInputs != listOfInputsToBeDeleted.end() )
    {
-      Khaan* khaan = *itDeletedInputs++;
+      InputChainType* khaan = *itDeletedInputs++;
       FinalRemoveInputChain( khaan->GetConnectionId() );
       
       khaan->RemoveOutputChain( this );
@@ -272,41 +273,12 @@ void     Diplodocus< InputChain, OutputChain >::SetupClientConnectionForDeletion
 {
    if( chain )
    {
-      // verify that this is still in the list
-     /* m_inputChainListMutex.lock();
-      ChainLinkIteratorType itInputs = m_listOfInputs.begin();
-      while( itInputs != m_listOfInputs.end() )
-      {
-         ChainLink & chainedInput = *itInputs++;
-         InputChainType* connection = static_cast< InputChainType* >( chainedInput.m_interface );
-         if( connection == chain )
-         {
-            Khaan* khaan = static_cast< Khaan* >( chain );
-            if( khaan )
-            {
-               khaan->DenyAllFutureData();
-               //if( khaan->HasDisconnected() == false )
-               {
-                  time_t currentTime;
-                  time( &currentTime );
-                  khaan->SetTimeForDeletion( currentTime );
-               }
-            } 
-            break;
-         }
-      }
-      m_inputChainListMutex.unlock();*/
-      Khaan* khaan = static_cast< Khaan* >( chain );
-      //if( khaan )
-      {
-         khaan->DenyAllFutureData();
-         //if( khaan->HasDisconnected() == false )
-         {
-            time_t currentTime;
-            time( &currentTime );
-            khaan->SetTimeForDeletion( currentTime );
-         }
-      } 
+      //Khaan* khaan = static_cast< Khaan* >( chain );
+      chain->DenyAllFutureData();
+      time_t currentTime;
+      time( &currentTime );
+      chain->SetTimeForDeletion( currentTime );
+
    }
 }
 
@@ -402,6 +374,20 @@ template< typename InputChain, typename OutputChain >
 bool  Diplodocus< InputChain, OutputChain >::SendErrorToClient( U32 connectionId, U32 gatewayId, PacketErrorReport::ErrorType error, int subType )
 {
    SendPacketToGateway( new PacketErrorReport( error, subType ), connectionId, gatewayId );
+   return false;
+}
+
+//---------------------------------------------------------------
+
+template< typename InputChain, typename OutputChain >
+bool  Diplodocus< InputChain, OutputChain >::SendErrorToClient( const UserConnectionList& connectionList, PacketErrorReport::ErrorType error, int subType )
+{
+   UserConnectionList::const_iterator it = connectionList.begin();
+   while( it != connectionList.end() )
+   {
+      SendPacketToGateway( new PacketErrorReport( error, subType ), it->connectionId, it->gatewayId );
+      it++;
+   }
    return false;
 }
 
@@ -508,16 +494,6 @@ template< typename InputChain, typename OutputChain >
 bool	Diplodocus< InputChain, OutputChain >::FindKhaan( const string& connectionName, InputChainType** connection )
 {
 	*connection = NULL;
-	/*list <Khaan*>::iterator it = KhaanList.begin();
-	while( it != KhaanList.end() )
-	{
-		if( (*it )->GetName() == connectionName )
-		{
-			*connection = *it;
-			return true;
-		}
-		it++;
-	}*/
 	return false;
 }
 
@@ -612,22 +588,6 @@ void  Diplodocus< InputChain, OutputChain >::MarkConnectionAsNeedingUpdate( U32 
 template< typename InputChain, typename OutputChain >
 void	Diplodocus< InputChain, OutputChain >::AddNewConnections()
 {
-	/*KhaanIteratorType addIt = m_KhaansToAddList.begin();
-	while( addIt != m_KhaansToAddList.end() )
-	{
-      Khaan* conn = *addIt;
-      KhaanIteratorType temp = addIt++;// advance the pointer and save it 
-      
-      if( conn->GetName().size() != 0 )// once the user has logged in, we'll move this on
-      {
-         MutexLock();
-		   KhaanList.push_back( conn );
-         MutexUnlock();
-         m_KhaansToAddList.erase( temp );
-      }
-	}
-
-	m_KhaansToAddList.clear();*/
 }
 
 //---------------------------------------------------------------
@@ -635,48 +595,6 @@ void	Diplodocus< InputChain, OutputChain >::AddNewConnections()
 template< typename InputChain, typename OutputChain >
 void	Diplodocus< InputChain, OutputChain >::RemoveOldConnections()
 {
-  /* MutexLock();
-	list <Khaan*>::iterator removeIt = m_KhaanToRemoveList.begin();
-	while( removeIt != m_KhaanToRemoveList.end() )
-	{
-		bool wasRemoved = false; //It could be the case that a connection was added and instantly removed meaning
-		// that we add it to both lists... we need to deal with this.
-		list <Khaan*>::iterator it = m_KhaanList.begin();
-		while( it != m_KhaanList.end() )
-		{
-			if( *it == *removeIt )
-			{
-				m_KhaanList.erase( it );
-				wasRemoved = true;
-				break;
-			}
-			it++;
-		}
-		if( wasRemoved )
-		{
-			delete *removeIt;
-		}
-		else
-		{
-			assert(0);// we need to remove these from the m_KhaansToAddList too
-			list <Khaan*>::iterator addIt = m_KhaansToAddList.begin();
-			while( addIt != m_KhaansToAddList.end() )
-			{
-				if( *addIt == *removeIt )
-				{
-					delete *addIt;// remove this rom both lists
-					delete *removeIt;
-					m_KhaansToAddList.erase( addIt );
-
-					break;
-				}
-			}
-		}
-		removeIt ++;
-	}
-   MutexUnlock();
-
-	m_KhaanToRemoveList.clear();*/
 }
 
 //------------------------------------------------------------------------------------------
@@ -837,6 +755,28 @@ void  Diplodocus< InputChain, OutputChain >::NotifyFinishedRemoving( IChainedInt
    UnlockMutex();
 }
 
+template< typename InputChain, typename OutputChain >
+void  Diplodocus< InputChain, OutputChain >::OutputReady( IChainedInterface * outputConnector ) 
+{
+   OutputChainType* output = static_cast< OutputChainType* >( outputConnector );
+   if( output->GetChainedType() == ChainedType_OutboundSocketConnector )
+   {
+      Fruitadens* fruity = static_cast< Fruitadens* >( outputConnector );
+      int serviceType = fruity->GetConnectedServerType();
+
+      SendOutbound_OnConnectPackets( outputConnector, serviceType );
+   }
+}
+
+template< typename InputChain, typename OutputChain >
+void  Diplodocus< InputChain, OutputChain >::InputReady( IChainedInterface * inputConnector ) 
+{
+   InputChainType* khaan = static_cast< InputChainType* >( inputConnector );
+   int serviceType = khaan->GetServerType();
+
+   SendInbound_OnConnectPackets( inputConnector, serviceType );
+}
+
 //------------------------------------------------------------------------------------------
 
 template< typename InputChain, typename OutputChain >
@@ -855,9 +795,29 @@ void     Diplodocus< InputChain, OutputChain >::UpdateInputPacketToBeProcessed()
       deque< PacketStorage >::iterator it = packetQueue.begin();
       while( it != packetQueue.end() )
       {
-         ProcessPacket( *it++ );
+         ProcessInboundPacket( *it++ );
       }
       //LogMessage( LOG_PRIO_INFO, "Diplodocus::UpdateInputPacketToBeProcessed >>>" );
+   }
+}
+//------------------------------------------------------------------------------------------
+
+template< typename InputChain, typename OutputChain >
+void     Diplodocus< InputChain, OutputChain >::UpdateOutputPacketToBeProcessed()
+{
+   if( m_outputPacketsToBeProcessed.size() > 0 )
+   { 
+      m_mutex.lock();
+      deque< PacketStorage > packetQueue = m_outputPacketsToBeProcessed;
+      m_outputPacketsToBeProcessed.clear();
+      m_mutex.unlock();
+
+
+      deque< PacketStorage >::iterator it = packetQueue.begin();
+      while( it != packetQueue.end() )
+      {
+         ProcessOutboundPacket( *it++ );
+      }
    }
 }
 
@@ -988,3 +948,122 @@ void  ConnectToMultipleGames( CommandLineParser& parser, type* localServer, bool
 }
 
 ////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////////////
+
+template< typename InputChain, typename OutputChain >
+bool      Diplodocus< InputChain, OutputChain >::QueueOutboundRequest( int type, int subtype, int whichService )
+{
+   Threading::MutexLock locker( m_mutex );
+
+   int num = (int) m_outboundPacketsForNewConnections.size();
+   for( int i=0; i< num; i++ )
+   {
+      const OnConnect_PacketToBeSent& connectPacketRequest = m_outboundPacketsForNewConnections[i];
+      if( connectPacketRequest.packetType == type && // prevent duplicates
+         connectPacketRequest.packetSubType == subtype &&
+         connectPacketRequest.toWhichService == whichService )
+         return false;
+   }
+
+   m_outboundPacketsForNewConnections.push_back( OnConnect_PacketToBeSent( type, subtype, whichService ) );
+   return true;
+}
+
+/////////////////////////////////////////////////////////////////////////////////
+
+template< typename InputChain, typename OutputChain >
+bool     Diplodocus< InputChain, OutputChain >::QueueInboundRequest( int type, int subtype, int whichService )
+{
+   Threading::MutexLock locker( m_mutex );
+
+   int num = (int) m_inboundPacketsForNewConnections.size();
+   for( int i=0; i< num; i++ )
+   {
+      const OnConnect_PacketToBeSent& connectPacketRequest = m_inboundPacketsForNewConnections[i];
+      if( connectPacketRequest.packetType == type && // prevent duplicates
+         connectPacketRequest.packetSubType == subtype &&
+         connectPacketRequest.toWhichService == whichService )
+         return false;
+   }
+
+   m_outboundPacketsForNewConnections.push_back( OnConnect_PacketToBeSent( type, subtype, whichService ) );
+   return true;
+}
+
+/////////////////////////////////////////////////////////////////////////////////
+
+template< typename InputChain, typename OutputChain >
+void     Diplodocus< InputChain, OutputChain >::SendOutbound_OnConnectPackets( IChainedInterface * outputConnector, int serviceType )
+{
+   PacketFactory factory;
+
+   OutputChainType* connection = static_cast< OutputChainType* >(outputConnector);
+   cout << "LoginMainThread::SendOutbound_OnConnectPackets" << endl;
+   cout << "serviceType = " << (int) serviceType << endl;
+
+   int num = (int) m_outboundPacketsForNewConnections.size();
+   for( int i=0; i< num; i++ )
+   {
+      const OnConnect_PacketToBeSent& connectPacketRequest = m_outboundPacketsForNewConnections[i];
+      if( connectPacketRequest.toWhichService == serviceType || 
+         connectPacketRequest.toWhichService == ServerType_All )
+      {
+         BasePacket* packet = NULL;
+         if( factory.Create( connectPacketRequest.packetType, connectPacketRequest.packetSubType, &packet ) == true )
+         {
+            connection->AddOutputChainDataNoFilter( packet );
+         }
+      }
+   }
+}
+
+/////////////////////////////////////////////////////////////////////////////////
+
+template< typename InputChain, typename OutputChain >
+void     Diplodocus< InputChain, OutputChain >::SendInbound_OnConnectPackets( IChainedInterface * inputConnector, int serviceType )
+{
+   PacketFactory factory;
+
+   InputChainType* khaanS2S = static_cast< InputChainType* >( inputConnector );
+   cout << "LoginMainThread::SendOutbound_OnConnectPackets" << endl;
+   cout << "serviceType = " << (int) serviceType << endl;
+
+   int num = (int) m_outboundPacketsForNewConnections.size();
+   for( int i=0; i< num; i++ )
+   {
+      const OnConnect_PacketToBeSent& connectPacketRequest = m_outboundPacketsForNewConnections[i];
+      if( connectPacketRequest.toWhichService == serviceType || 
+         connectPacketRequest.toWhichService == ServerType_All )
+      {
+         BasePacket* packet = NULL;
+         if( factory.Create( connectPacketRequest.packetType, connectPacketRequest.packetSubType, &packet ) == true )
+         {
+            BasePacket* wrapperToSend = NULL;
+            PackageForS2S( m_serverId, m_gameProductId, packet, &wrapperToSend );
+            khaanS2S->AddOutputChainData( wrapperToSend );
+         }
+      }
+   }
+}
+
+/////////////////////////////////////////////////////////////////////////////////
+
+template< typename InputChain, typename OutputChain >
+OutputChain *
+   Diplodocus< InputChain, OutputChain >::FindNetworkOutLink( U32 serverId )
+{
+   Threading::MutexLock locker( m_outputChainListMutex );
+   ChainLinkIteratorType itOutput = m_listOfOutputs.begin();
+   while( itOutput != m_listOfOutputs.end() )
+   {
+      OutputChainType * fruity = static_cast< OutputChainType* >( (*itOutput).m_interface );
+      itOutput++;
+      if( fruity->GetConnectedServerId() == serverId )
+      {
+         return fruity;
+      }
+   }
+   return NULL;
+}
+
+/////////////////////////////////////////////////////////////////////////////////

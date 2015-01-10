@@ -24,7 +24,7 @@ using namespace std;
 ///////////////////////////////////////////////////////////////////
 
 DiplodocusContact::DiplodocusContact( const string& serverName, U32 serverId ): 
-                                             Diplodocus< KhaanContact >( serverName, serverId, 0,  ServerType_Contact ),
+                                             ChainedType( serverName, serverId, 0,  ServerType_Contact ),
                                              StatTrackingConnections(),
                                              PacketSendingInterface(),
                                              m_numSearches( 0 ),
@@ -231,8 +231,8 @@ bool     DiplodocusContact:: ProcessPacket( PacketStorage& storage )
 
       if( unwrappedPacket->packetType == PacketType_Contact )
       {
-         UserContactMapIterator found = m_users.find( connectionId );
-         if( found == m_users.end() )
+         UserContactMapIterator found = GetUserByConnectionId( connectionId );
+         if( found == m_userTickets.end() )
          {
             SendErrorToClient( connectionId, gatewayId, PacketErrorReport::ErrorType_Contact_BadLoginKey );
             return false;
@@ -242,7 +242,7 @@ bool     DiplodocusContact:: ProcessPacket( PacketStorage& storage )
          //cout << "DiplodocusContact:: HandleRequestFromClient <<<" << endl;
          PacketContact* packetContact = static_cast< PacketContact* >( unwrappedPacket );
          UserContact& user = found->second;
-         bool result = user.HandleRequestFromClient( packetContact );
+         bool result = user.HandleRequestFromClient( packetContact, connectionId );
          result = result;
         
          PacketCleaner cleaner( packet );
@@ -264,7 +264,7 @@ bool     DiplodocusContact:: ProcessPacket( PacketStorage& storage )
 }
 
 //---------------------------------------------------------------
-
+/*
  UserContact* DiplodocusContact::GetUser( U32 userId )
 {
    //Threading::MutexLock Locker( m_mutex );
@@ -273,7 +273,7 @@ bool     DiplodocusContact:: ProcessPacket( PacketStorage& storage )
       return NULL;
 
    UserContactMapIterator found = m_users.find( it->second );
-   if( found == m_users.end() )
+   if( found == m_userTickets.end() )
       return NULL;
 
    return &found->second;
@@ -284,9 +284,9 @@ bool     DiplodocusContact:: ProcessPacket( PacketStorage& storage )
 UserContact* DiplodocusContact::GetUserByUsername( const string& userName )
 {
    UserContactMapIterator it = m_users.begin(); //find( it->second );
-   while( it != m_users.end() )
+   while( it != m_userTickets.end() )
    {
-      if( it->second.GetUserInfo().userName == userName )
+      if( it->second.GetUsername() == userName )
          return &it->second;
       it++;
    }
@@ -300,9 +300,9 @@ UserContact* DiplodocusContact::GetUserByUsername( const string& userName )
 UserContact* DiplodocusContact::GetUserByUuid( const string& uuid )
 {
    UserContactMapIterator it = m_users.begin(); //find( it->second );
-   while( it != m_users.end() )
+   while( it != m_userTickets.end() )
    {
-      if( it->second.GetUserInfo().uuid == uuid )
+      if( it->second.GetUuid() == uuid )
          return &it->second;
       it++;
    }
@@ -310,32 +310,125 @@ UserContact* DiplodocusContact::GetUserByUuid( const string& uuid )
    return NULL;
 }
 
+*/
 
 string      DiplodocusContact::GetUserUuidByConnectionId( U32 connectionId )
 {
-   UserContactMapIterator found = m_users.find( connectionId );
-   if( found == m_users.end() )
+   DiplodocusContact::UserContactMapIterator   it = GetUserByConnectionId( connectionId );
+   if( it == m_userTickets.end() )
    {
-      return NULL;
+      return string();
    }
-   return found->second.GetUserInfo().uuid;
+   return it->second.GetUuid();
 }
 
-void        DiplodocusContact::GetUserConnectionId( const string& uuid, U32& connectionId, U32& gatewayId )
+void        DiplodocusContact::GetUserConnectionId( const string& uuid, vector< SimpleConnectionDetails >& listOfConnections )
 {
-   connectionId = 0;
+   listOfConnections.clear();
 
-   UserContact* contact = GetUserByUuid( uuid );
-   if( contact )
-      connectionId = contact->GetUserInfo().connectionId;
+   UserContact* contact = NULL;
+   if( GetUser( uuid, contact ) == true )
+      contact->AssembleAllConnections( listOfConnections );
 }
+
 
 string      DiplodocusContact::GetUserName( const string& uuid )
 {
-   const UserContact*   user = GetUserByUuid( uuid );
-   if( user == NULL )
+   UserContact*   user = NULL;
+   if( GetUser( uuid, user ) == false )
       return string();
-   return user->GetUserInfo().userName;
+
+   return user->GetUsername();
+}
+
+bool  DiplodocusContact::GetUser( const string& uuid, UserContact*& user )
+{
+   LogMessage( LOG_PRIO_INFO, "GetUser %s", uuid.c_str() );
+   U64 hashForUser = GenerateUniqueHash( uuid );
+
+   Threading::MutexLock locker( m_mutex );
+   UserContactMapIterator it = m_userTickets.find( hashForUser );
+   if( it != m_userTickets.end() )// user may be reloggin and such.. no biggie.. just ignore
+   {
+      user = &it->second;
+      return true;
+   }
+   return false;
+}
+
+
+DiplodocusContact::UserContactMapIterator   
+DiplodocusContact::GetUserByConnectionId( U32 connectionId )
+{
+   LogMessage( LOG_PRIO_INFO, "GetUserByConnectionId %u", connectionId );
+   Threading::MutexLock locker( m_mutex );
+   UserContactMapIterator it = m_userTickets.begin();
+   while( it != m_userTickets.end() )
+   {
+      if( it->second.IsConnected( connectionId ) == true )
+      {
+         return it;
+      }
+      it++;
+   }
+
+   return it;
+}
+
+const string DiplodocusContact::GetUuid( U32 connectionId ) const
+{
+   LogMessage( LOG_PRIO_INFO, "GetUuid %u", connectionId );
+   Threading::MutexLock locker( m_mutex );
+   ConstUserContactMapIterator it = m_userTickets.begin();
+   while( it != m_userTickets.end() )
+   {
+      if( it->second.IsConnected( connectionId ) == true )
+      {
+         return it->second.GetUuid();
+      }
+      it++;
+   }
+
+   return string();
+}
+
+
+bool  DiplodocusContact::GetUser( U32 userId, UserContact*& user )
+{
+   user = NULL;
+   LogMessage( LOG_PRIO_INFO, "GetUser %d", userId );
+
+   Threading::MutexLock locker( m_mutex );
+   UserContactMapIterator it = m_userTickets.begin();
+   while( it != m_userTickets.end() )
+   {
+      if( it->second.GetId() == userId ) 
+      {
+         user = &it->second;
+         return true;
+      }
+      it++;
+   }
+   return false;
+}
+
+bool  DiplodocusContact::GetUserByUsername( const string& name, UserContact*& user )
+{
+   user = NULL;
+   LogMessage( LOG_PRIO_INFO, "GetUserByUsername %s", name.c_str() );
+
+   Threading::MutexLock locker( m_mutex );
+   UserContactMapIterator it = m_userTickets.begin();
+   while( it != m_userTickets.end() )
+   {
+      if( it->second.GetUsername() == name ) 
+      {
+         user = &it->second;
+         return true;
+      }
+      it++;
+   }
+   return false;
 }
 
 
@@ -383,6 +476,14 @@ bool  DiplodocusContact::HandlePacketFromOtherServer( BasePacket* packet, U32 ga
 
       case PacketLogin::LoginType_UserUpdateProfile:
          UpdateUserProfile( static_cast< PacketUserUpdateProfile* >( unwrappedPacket ) );
+         return true;
+
+      case PacketLogin::LoginType_ExpireUserLogin:
+         ExpireUser( static_cast< PacketLoginExpireUser* >( unwrappedPacket ) );
+         return true;
+
+      case PacketLogin::LoginType_RequestServiceToFlushAllUserLogins:
+         DeleteAllUsers();
          return true;
       }
    }
@@ -494,11 +595,13 @@ void  DiplodocusContact::UpdateDbResults()
          }
          else
          {
-            UserContactMapIterator it = m_users.find( connectionId );
-            if( it != m_users.end() )
+            U32 userId = connectionId;
+            UserContact* user = NULL;
+            GetUser( userId, user );
+            if(  GetUser( connectionId, user ) )
             {
                //cout << "Db query type: "<< dbResult->lookup << " handed off to UserContact #" << connectionId << endl;
-               it->second.HandleDbQueryResult( dbResult );
+               user->HandleDbQueryResult( dbResult );
             }
             else
             {
@@ -632,6 +735,7 @@ int      DiplodocusContact::CallbackFunction()
 
    UpdateDbResults();
    UpdateInputPacketToBeProcessed();
+   UpdateOutputPacketToBeProcessed();
 
    UpdateAllConnections();
 
@@ -652,12 +756,12 @@ int      DiplodocusContact::CallbackFunction()
 void     DiplodocusContact::UpdateAllConnections()
 {
    //m_mutex.lock();
-   UserContactMapIterator it = m_users.begin();
-   while( it != m_users.end() )
+   UserContactMapIterator it = m_userTickets.begin();
+   while( it != m_userTickets.end() )
    {
       UserContact& contact = it->second;
       UserContactMapIterator temp = it++;
-      if( contact.IsLoggedOut() )
+      /*if( contact.IsLoggedOut() )
       {
          if( contact.SecondsExpiredSinceLoggedOut() > SecondsBeforeRemovingLoggedOutUser )
          {
@@ -666,7 +770,7 @@ void     DiplodocusContact::UpdateAllConnections()
             m_users.erase( temp );
          }
       }
-      else 
+      else */
       {
          contact.Update();
       }
@@ -677,18 +781,18 @@ void     DiplodocusContact::UpdateAllConnections()
 }
 
 //---------------------------------------------------------------
-
-bool  DiplodocusContact::UpdateUser( const string& userUuid, U32 connectionId, U32 gatewayId)
+/*
+bool  DiplodocusContact::UpdateUser( const string& userUuid, U32 connectionId, U32 gatewayId )
 {
    //Threading::MutexLock Locker( m_mutex );
-   UserContactMapIterator it = m_users.begin();
-   while( it != m_users.end() )
+   UserContactMapIterator it = m_userTickets.begin();
+   while( it != m_userTickets.end() )
    {
       UserContact& user = it->second;
-      if( user.GetUserInfo().uuid == userUuid ) 
+      if( user.GetUuid() == userUuid ) 
       {
-         user.ClearLoggedOut();
-         U32 id = user.GetUserInfo().id;
+         //user.ClearLoggedOut();
+         U32 id = user.GetId();
          UserIdToContactMapIterator itIdToContact = m_userLookupById.find( id );
          if( itIdToContact != m_userLookupById.end() )
          {
@@ -701,7 +805,7 @@ bool  DiplodocusContact::UpdateUser( const string& userUuid, U32 connectionId, U
          m_users.erase( it );
 
          UserContactMapIterator found = m_users.find( connectionId );
-         assert( found != m_users.end() );
+         assert( found != m_userTickets.end() );
 
          found->second.FinishLoginBySendingUserFriendsAndInvitations();  
 
@@ -711,47 +815,55 @@ bool  DiplodocusContact::UpdateUser( const string& userUuid, U32 connectionId, U
    }
 
    return false;
-}
+}*/
 
 //---------------------------------------------------------------
 
 bool     DiplodocusContact::ConnectUser( const PacketPrepareForUserLogin* loginPacket )
 {
-   //cout << "DiplodocusContact::ConnectUser <<<" << endl;
    U32 connectionId = loginPacket->connectionId;
    string uuid = loginPacket->uuid;
    U32 gatewayId = loginPacket->gatewayId;
+   U8 gameProductId = loginPacket->gameProductId;
+
    //LogMessage( LOG_PRIO_INFO, "Prep for logon: %d, %s, %s, %s", connectionId, loginPacket->userName.c_str(), uuid.c_str(), loginPacket->password.c_str() );
    LogMessage_LoginPacket( loginPacket );
    
-   UserContactMapIterator it = m_users.find( connectionId );// don't do anything if this user is already logged in.
-   if( it != m_users.end() )
+   UserContactMapIterator it = GetUserByConnectionId( connectionId );// don't do anything if this user is already logged in.
+   if( it != m_userTickets.end() )
       return false;
 
-   //cout << "DiplodocusContact::ConnectUser .. update user" << endl;
-   // if the user is already here but relogged, simply has a new connectionId
-   bool wasUpdated = UpdateUser( uuid, connectionId, gatewayId );
-   if( wasUpdated == false )
+   U64 hashForUser = GenerateUniqueHash( loginPacket->uuid );
+
+   Threading::MutexLock locker( m_mutex );
+   it = m_userTickets.find( hashForUser );
+
+   bool  wasUserFound = true;
+
+   if( it == m_userTickets.end() )
    {
-      UserInfo ui;
-      ui.userName =        loginPacket->userName;
-      ui.uuid =            loginPacket->uuid.c_str();
-      ui.apple_id = "";
-      ui.connectionId =    connectionId;
-      ui.gameProductId =   loginPacket->gameProductId;
-      ui.active =          loginPacket->active;
-      ui.email =           loginPacket->email;
-      ui.passwordHash =    loginPacket->password;
-      ui.id =              loginPacket->userId;
+      std::pair< UserContactMapIterator, bool> ret = 
+         m_userTickets.insert( UserContactPair( hashForUser, UserContact() ) );
+      it = ret.first;
+      UserContact& user = it->second;
+      
+      user.SetId( loginPacket->userId );                   
+      user.SetUserName( loginPacket->userName );
+               
+      user.SetUuid( loginPacket->uuid );
+      user.SetPassword( loginPacket->password );
+      user.SetEmail( loginPacket->email );
+      user.SetAssetKey( loginPacket->loginKey );
+      user.SetLanguageId( loginPacket->languageId );  
+      user.SetIsActive( true );// assumed
 
-      //cout << "DiplodocusContact::ConnectUser .. new user" << endl;
-      UserContact user( ui, connectionId, gatewayId );
       user.SetServer( this );
-
-      //m_mutex.lock();
-      m_users.insert( UserContactPair( connectionId, user ) );
-      m_userLookupById.insert( UserIdToContactPair( ui.id, connectionId ) );
-      //m_mutex.unlock();
+      wasUserFound = false;
+   }
+   it->second.Login( connectionId, gatewayId, gameProductId );
+   if( wasUserFound == false )
+   {
+      it->second.Init();
    }
    //cout << "DiplodocusContact::ConnectUser >>>" << endl;
    return true;
@@ -766,29 +878,60 @@ bool     DiplodocusContact::DisconnectUser( const PacketPrepareForUserLogout* lo
    LogMessage_LogoutPacket( logoutPacket );
 
    U32 connectionId = logoutPacket->connectionId;
+   connectionId = connectionId;
 
-   UserContactMapIterator it = m_users.find( connectionId );
-   if( it == m_users.end() )
+   string uuid = logoutPacket->uuid;
+   U64 hashForUser = GenerateUniqueHash( uuid );
+
+   Threading::MutexLock locker( m_mutex );
+   UserContactMapIterator it = m_userTickets.find( hashForUser );
+   if( it == m_userTickets.end() )
       return false;
 
-   //cout << "DiplodocusContact::DisconnectUser .. NeedsUpdate " << endl;
-   it->second.NeedsUpdate();
-   //cout << "DiplodocusContact::DisconnectUser .. UserLoggedOut " << endl;
-   it->second.UserLoggedOut();
+   it->second.Logout( connectionId );
 
-  // cout << "DiplodocusContact::DisconnectUser >>>" << endl;
    return true;
 }
 
+//---------------------------------------------------------------
+
+bool  DiplodocusContact::ExpireUser( const PacketLoginExpireUser* expirePacket )
+{
+   const string& uuid = expirePacket->uuid;
+   U64 hashForUser = GenerateUniqueHash( uuid );
+
+   Threading::MutexLock locker( m_mutex );
+   UserContactMapIterator it = m_userTickets.find( hashForUser );
+   if( it == m_userTickets.end() )
+      return false;
+
+   m_userTickets.erase( it );
+
+   return true;
+}
+
+
+//---------------------------------------------------------------
+
+bool     DiplodocusContact::DeleteAllUsers()
+{
+   Threading::MutexLock locker( m_mutex );
+   m_userTickets.clear();
+   return true;
+}
+
+
+//---------------------------------------------------------------
 //---------------------------------------------------------------
 
 bool     DiplodocusContact::UpdateUserProfile( const PacketUserUpdateProfile* profile )
 {
    cout << "DiplodocusContact::UpdateUserProfile <<<" << endl;
    U32 connectionId = profile->connectionId;
+   //profile->userUuid
 
-   UserContactMapIterator it = m_users.find( connectionId );
-   if( it == m_users.end() )
+   UserContactMapIterator it = GetUserByConnectionId( connectionId );
+   if( it == m_userTickets.end() )
       return false;
 
    //cout << "DiplodocusContact::UpdateProfile ---" << endl;
@@ -803,11 +946,11 @@ bool     DiplodocusContact::UpdateUserProfile( const PacketUserUpdateProfile* pr
 
 bool     DiplodocusContact::HandlePacketRequests( PacketContact* packet, U32 connectionId, U32 gatewayId )
 {
-   UserContactMapIterator it = m_users.find( connectionId );
-   if( it == m_users.end() )
+   UserContactMapIterator it = GetUserByConnectionId( connectionId );
+   if( it == m_userTickets.end() )
       return false;
 
-   bool wasHandled = it->second.HandleRequestFromClient( packet );
+   bool wasHandled = it->second.HandleRequestFromClient( packet, connectionId );
 
    if( wasHandled )
       return true;

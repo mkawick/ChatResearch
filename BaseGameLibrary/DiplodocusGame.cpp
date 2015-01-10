@@ -28,7 +28,8 @@ using namespace std;
 ///////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////
 
-DiplodocusGame::DiplodocusGame( const string& serverName, U32 serverId, U8 gameProductId ): Diplodocus< KhaanGame >( serverName, serverId, gameProductId, ServerType_GameInstance ),
+DiplodocusGame::DiplodocusGame( const string& serverName, U32 serverId, U8 gameProductId ): 
+                  ChainedType( serverName, serverId, gameProductId, ServerType_GameInstance ),
                   StatTrackingConnections(),
                   m_callbacks( NULL )
 {
@@ -462,8 +463,6 @@ void     DiplodocusGame::UpdateAllTimers()
    }
 }
 
-//---------------------------------------------------------------
-
 int   DiplodocusGame::CallbackFunction()
 {
    CleanupOldClientConnections( "KhaanGame" );
@@ -492,13 +491,9 @@ bool  DiplodocusGame::HandlePacketFromOtherServer( BasePacket* packet, U32 conne
    }*/
 
    PacketCleaner cleaner( packet );
- /*  PacketServerJobWrapper* wrapper = static_cast< PacketServerJobWrapper* >( packet );
-   BasePacket* unwrappedPacket = wrapper->pPacket;
-   U32  serverIdLookup = wrapper->serverId;*/
+   U8 packetType = packet->packetType;
 
-   //bool success = false;
-
-   if( packet->packetType == PacketType_Login )
+   if( packetType == PacketType_Login )
    {
       switch( packet->packetSubType )
       {
@@ -513,9 +508,13 @@ bool  DiplodocusGame::HandlePacketFromOtherServer( BasePacket* packet, U32 conne
       case PacketLogin::LoginType_ExpireUserLogin:
          ExpireUser( static_cast< const PacketLoginExpireUser* >( packet ) );
          return true;
+
+      case PacketLogin::LoginType_RequestServiceToFlushAllUserLogins:
+         DeleteAllUsers();
+         return true;
       }
    }
-   else if( packet->packetType == PacketType_Gameplay )
+   else if( packetType == PacketType_Gameplay )
    {
       switch( packet->packetSubType )
       {
@@ -524,7 +523,7 @@ bool  DiplodocusGame::HandlePacketFromOtherServer( BasePacket* packet, U32 conne
          return true;
       }
    }
-   else if( packet->packetType == PacketType_UserStats )
+   else if( packetType == PacketType_UserStats )
    {
       switch( packet->packetSubType )
       {
@@ -812,5 +811,17 @@ void  DiplodocusGame::ExpireUser( const PacketLoginExpireUser* expireUserPacket 
    }
 }
 
+//---------------------------------------------------------------
+
+bool  DiplodocusGame::DeleteAllUsers()
+{
+   if( m_callbacks )
+   {
+      m_callbacks->DeleteAllUsers();
+   }
+   return true;
+}
+
+//---------------------------------------------------------------
 //---------------------------------------------------------------
 //---------------------------------------------------------------

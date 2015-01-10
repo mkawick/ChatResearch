@@ -1,3 +1,5 @@
+// UserAccountPurchase.h
+
 #pragma once
 
 #include <time.h>
@@ -7,20 +9,7 @@
 using namespace std;
 
 #include "../NetworkCommon/DataTypes.h"
-
-class UserTicket // *consider making this a packet*
-{
-public:
-   U32      userId;
-   string   uuid;
-   string   userName;// just for debugging purposes
-   U32      connectionId;/// only after this person has logged in
-   U32      gatewayId;//
-   string   userTicket;
-   string   dateOfLastRequest;// once the client tells us what this is
-   U8       gameProductId;
-   U32      languageId;
-};
+#include "../NetworkCommon/UserAccount/UserAccountCommon.h"
 
 
 class DiplodocusPurchase;
@@ -36,7 +25,7 @@ class PacketPurchase_ValidatePurchaseReceipt;
 
 ///////////////////////////////////////////////////////////////////
 
-class UserAccountPurchase
+class UserAccountPurchase : public UserLoginBase
 {
    enum Status
    {
@@ -52,27 +41,19 @@ public:
    
    //---------------------------------------
 
-   UserAccountPurchase( const UserTicket& ticket );
+   UserAccountPurchase();
    ~UserAccountPurchase();
 
    //---------------------------------------
-
-   bool              LoginKeyMatches( const string& loginKey ) const;
-   const UserTicket& GetUserTicket() const { return m_userTicket; }
-   void              SetConnectionId( U32 connId ) { m_userTicket.connectionId = connId; }
-   void              SetGatewayId( U32 id ) { m_userTicket.gatewayId = id; }
 
    void              SetServer( DiplodocusPurchase* assetManager ) { m_purchaseManager = assetManager; }
    void              SetSalesManager( SalesManager* manager ) { m_salesManager = manager; }
    void              SetReceiptManager( PurchaseReceiptManager* manager ) { m_purchaseReceiptManager = manager; }
    
-   bool              HandleRequestFromClient( const PacketPurchase* packet ); 
+   bool              HandleRequestFromClient( const PacketPurchase* packet, U32 connectionId ); 
    bool              MakePurchase( const PacketTournament_PurchaseTournamentEntry* packet, U32 connectionId );
    bool              MakeRefund( const PacketTournament_PurchaseTournamentEntryRefund* packet, U32 connectionId );
 
-   void              UserLoggedOut();
-   void              ClearUserLogout();
-   bool              LogoutExpired();
    void              Update();
 
    void              StoreProducts( const StringBucket& bucket );
@@ -81,21 +62,19 @@ public:
 
 private:
 
-   bool              MakePurchase( const PacketPurchase_Buy* packet );   
-   bool              GetListOfItemsForSale( const PacketPurchase_RequestListOfSales* packet );
-   bool              EchoHandler();
-   bool              HandleReceipt( const PacketPurchase_ValidatePurchaseReceipt* packet );
+   bool              MakePurchase( const PacketPurchase_Buy* packet, U32 connectionId );   
+   bool              GetListOfItemsForSale( const PacketPurchase_RequestListOfSales* packet, U32 connectionId );
+   bool              EchoHandler( U32 connectionId );
+   bool              HandleReceipt( const PacketPurchase_ValidatePurchaseReceipt* packet, U32 connectionId );
 
    bool              PerformTournamentPurchase();
 
-   UserTicket                 m_userTicket;
    Status                     m_status;
    bool                       m_readyForCleanup;
    DiplodocusPurchase*        m_purchaseManager;
    SalesManager*              m_salesManager;
    PurchaseReceiptManager*    m_purchaseReceiptManager;
 
-   time_t                     m_logoutTime;
    set< string >              m_productFilterNames;
 };
 

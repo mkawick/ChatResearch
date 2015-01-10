@@ -190,6 +190,17 @@ bool  PackageForServerIdentification( const string& serverName, const string& ip
    return true;
 }
 
+bool  PackageForS2S( U32 serverId, U8 gameProductId, BasePacket* packetToBeWrapped, BasePacket** packet )
+{
+   PacketServerToServerWrapper* wrapper = new PacketServerToServerWrapper;
+   wrapper->serverId = serverId;
+   wrapper->gameProductId = gameProductId;
+   wrapper->pPacket = packetToBeWrapped;
+   *packet = wrapper;
+
+   return true;
+}
+
 ///////////////////////////////////////////////////////////////
 
 ///////////////////////////////////////////////////////////////

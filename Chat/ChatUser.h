@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include "../NetworkCommon/UserAccount/UserAccountCommon.h"
 
 class    DiplodocusChat;
 class    ChatRoomManager;
@@ -10,43 +11,44 @@ class    ChatRoomManager;
 ///////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////
 
-class ChatUser
+class ChatUser : public UserLoginBase 
 {
 public:
-   ChatUser( U32 connectionId, U32 gatewayId );
+   ChatUser();
    ~ChatUser();
 
-   void           SetConnectionId( U32 connId ) { m_connectionId = connId; }
-   U32            GetConnectionId() const { return m_connectionId; }
+   //void           SetConnectionId( U32 connId ) { m_connectionId = connId; }
+   //U32            GetConnectionId() const { return m_connectionId; }
 
-   void           SetGatewayId( U32 id ) { m_gatewayId = id; }
-   U32            GetGatewayId() const { return m_gatewayId; }
+   //void           SetGatewayId( U32 id ) { m_gatewayId = id; }
+   //U32            GetGatewayId() const { return m_gatewayId; }
 
-   U32            GetUserId() const { return m_userId ; }
-   string         GetUserName() const { return m_userName; }
-   string         GetUuid() const { return m_uuid; }
-   time_t         GetLoggedOutTime() const { return m_loggedOutTime; }
+   //U32            GetUserId() const { return m_userId ; }
+   //string         GetUserName() const { return m_userName; }
+   //string         GetUuid() const { return m_uuid; }
+   //time_t         GetLoggedOutTime() const { return m_loggedOutTime; }
 
-   void           Init( U32 userId, const string& name, const string& uuid, const string& lastLoginTime );
+   void             Init();
+   //void           Init( U32 userId, const string& name, const string& uuid, const string& lastLoginTime );
 
-   void           LoggedIn();
-   void           LoggedOut();
+   //void           LoggedIn();
+   //void           LoggedOut();
 
    static void    Set( DiplodocusChat* chat );
    static void    Set( ChatRoomManager* mgr );
    //static void    Set( InvitationManager* mgr );
 
 
-   bool           HandleClientRequest( const BasePacket* packet );
+   bool           HandleClientRequest( const BasePacket* packet, U32 connectionId );
    bool           HandleDbResult( const PacketDbQueryResult* packet );
 
    void           ChatReceived( const string& message, const string& senderUuid, const string& senderDisplayName, string groupUuid, string timeStamp, U32 userId );
 
-   bool           Update();
+   void           Update();
 
    //--------------------------------------
 
-   bool              SendErrorMessage( PacketErrorReport::ErrorType );
+   bool              SendErrorMessage( U32 connectionId, U32 gatewayId, PacketErrorReport::ErrorType );
 
    bool              NotifyChannelAdded( const string& channelName, const string& channelUuid, bool wasSuccessful );
    bool              NotifyChannelMovedToInactive( const string& channelUuid, int numremoved, bool wasSuccessful );
@@ -61,32 +63,34 @@ public:
 
    //--------------------------------------
 private:
-   bool              SendChat( const string& message, const string& userUuid, const string& channelUuid, U32 gameTurn );
-   bool              EchoHandler();
+   bool              SendChat( const string& message, const string& userUuid, const string& channelUuid, U32 gameTurn, U32 connectionId );
+   bool              EchoHandler( U32 connectionId );
 
-   bool              SendMessageToClient( BasePacket* packet ) const;
+   bool              SendMessageToClient( BasePacket* packet, U32 connectionId, U32 gatewayId = 0 ) const;
    bool              RequestUserProfileInfo();
-   void              RequestChatChannels();
+   void              RequestChatChannels( U32 connectionId = 0 );
    void              RequestAllBasicChatInfo();
-   void              QueryChatChannelHistory( const string& channelUuid, int numRecords, int startingIndex, const string& startingTimestamp );
-   void              LoadUserProfile( const PacketDbQueryResult * dbResult );
-   void              SendChatChannelHistoryToClient( const PacketDbQueryResult * dbResult );
+   void              QueryChatChannelHistory( const string& channelUuid, int numRecords, int startingIndex, const string& startingTimestamp, U32 connectionId );
+   void              LoadUserProfile( const PacketDbQueryResult * dbResult, U32 connectionId );
+   void              SendChatChannelHistoryToClient( const PacketDbQueryResult * dbResult, U32 connectionId );
 
-   void              MarkChatChannelLastReadDate( const string& chatChannelUuid );
-   void              MarkP2PLastReadDate( const string& friendUuid );
-   void              MarkFriendLastReadDateFinish( const PacketDbQueryResult * dbResult );
+   void              MarkChatChannelLastReadDate( const string& chatChannelUuid, U32 connectionId );
+   void              MarkP2PLastReadDate( const string& friendUuid, U32 connectionId );
+   void              MarkFriendLastReadDateFinish( const PacketDbQueryResult * dbResult, U32 connectionId );
    
-   void              QueryChatP2PHistory( const string& userUuid, int numRecords, int startingIndex, const string& startingTimestamp );
-   void              SendChatp2pHistoryToClient( const PacketDbQueryResult * dbResult );
-   void              SendChatHistoryToClientCommon ( const DynamicDataBucket& bucket, const string& userUuid, const string& chatChannelUuid, const string& startingTimestamp, int startingIndex, int numExpected );
+   void              QueryChatP2PHistory( const string& userUuid, int numRecords, int startingIndex, const string& startingTimestamp, U32 connectionId );
+   void              SendChatp2pHistoryToClient( const PacketDbQueryResult * dbResult, U32 connectionId );
+
+   void              SendChatHistoryToClientCommonSetup( const DynamicDataBucket& bucket, const string& userUuid, const string& chatChannelUuid, const string& startingTimestamp, int startingIndex, int numExpected );
+   void              SendChatHistoryToClientCommon ( const DynamicDataBucket& bucket, const string& userUuid, const string& chatChannelUuid, const string& startingTimestamp, int startingIndex, int numExpected, U32 connectionId, U32 gatewayId );
 
    void              RequestProfileInfo();
    void              GetAllChatHistroySinceLastLogin();
    void              SendChatHistorySinceLastLogin( const vector< MissedChatChannelEntry >& );
-   void              StoreChatHistoryMissedSinceLastLogin( const PacketDbQueryResult * dbResult );
+   void              StoreChatHistoryMissedSinceLastLogin( const PacketDbQueryResult * dbResult, U32 connectionId );
    
-   void              ManageChatHistoryUsers( const PacketDbQueryResult * dbResult );
-   void              ManageChatHistoryChannels( const PacketDbQueryResult * dbResult );
+   void              ManageChatHistoryUsers( const PacketDbQueryResult * dbResult, U32 connectionId );
+   void              ManageChatHistoryChannels( const PacketDbQueryResult * dbResult, U32 connectionId );
    
 
    enum QueryType
@@ -103,9 +107,9 @@ private:
 
 private:
 
-   int                        m_userId; // the db identity
-   U32                        m_connectionId;
-   U32                        m_gatewayId;
+   //int                        m_userId; // the db identity
+   //U32                        m_connectionId;
+   //U32                        m_gatewayId;
 
    bool                       m_isLoggedIn;
    time_t                     m_loggedOutTime;
@@ -115,8 +119,8 @@ private:
    bool                       m_blockGroupInvitations;
 
 
-   string                     m_userName;
-   string                     m_uuid;
+   //string                     m_userName;
+   //string                     m_uuid;
    string                     m_lastLoginTime;
 
    static DiplodocusChat*     m_chatServer;
@@ -124,9 +128,9 @@ private:
    //static InvitationManager*  m_invitationManager;
 
 private:
-   ChatUser();
-   ChatUser( const ChatUser& );
-   ChatUser& operator = ( const ChatUser& );
+   //ChatUser();
+   //ChatUser( const ChatUser& );
+   //ChatUser& operator = ( const ChatUser& );
 };
 
 ///////////////////////////////////////////////////////////////////

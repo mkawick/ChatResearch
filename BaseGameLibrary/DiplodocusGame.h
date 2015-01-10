@@ -22,7 +22,6 @@ class UserSession;
 class PacketPrepareForUserLogin;
 class PacketPrepareForUserLogout;
 class PacketLoginExpireUser;
-
 class PacketTournament_PurchaseTournamentEntryResponse;
 class PacketGame_Notification;
 
@@ -34,15 +33,10 @@ struct TournamentOverview
    string uuid;
 };
 
-
-
 ////////////////////////////////////////////////////////////////////////////////////////
 
 class DiplodocusGame : public Diplodocus< KhaanGame >, public StatTrackingConnections
 {
-public: 
-   typedef Diplodocus< KhaanGame > ChainedType;
-
 public:
    DiplodocusGame( const string& serverName, U32 serverId, U8 gameProductId = 0 );
    const char* GetClassName() const { return "DiplodocusGame"; }
@@ -92,7 +86,8 @@ private:
    bool     HandlePacketToOtherServer( BasePacket* packet, U32 connectionId );
    void     ConnectUser( const PacketPrepareForUserLogin* loginPacket );
    void     DisconnectUser( const PacketPrepareForUserLogout* logoutPacket );
-   void     ExpireUser( const PacketLoginExpireUser* expireUserPacket );
+   void     ExpireUser( const PacketLoginExpireUser* expireUserPacket );  
+   bool     DeleteAllUsers();
 
    void     IsUserAllowedToUseThisProduct( const PacketListOfGames* packet );
 

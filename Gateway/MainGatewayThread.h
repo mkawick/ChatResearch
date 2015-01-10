@@ -30,11 +30,6 @@ typedef vector< OutputConnectorList > ListOfOutputLists;
 
 class MainGatewayThread : public Diplodocus< KhaanGateway >, public StatTrackingConnections
 {
-public: 
-   typedef Diplodocus< KhaanGateway > ChainedType;
-
-   //-----------------------------------------
-
 public:
    MainGatewayThread( const string& serverName, U32 serverId );
    ~MainGatewayThread();
@@ -98,6 +93,7 @@ private:
 
    void           CheckOnConnectionIdBlocks();
    bool           RequestMoreConnectionIdsFromLoadBalancer();
+   void           InformLoginServerAboutLostconnectedClients();
 
    int            CallbackFunction();
 

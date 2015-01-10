@@ -9,6 +9,7 @@ using namespace std;
 #include "../NetworkCommon/Packets/ServerToServerPacket.h"
 #include "../NetworkCommon/Packets/PacketFactory.h"
 
+#include "../NetworkCommon/Utils/StringUtils.h"
 #include "../NetworkCommon/Packets/DbPacket.h"
 #include "../NetworkCommon/Packets/ChatPacket.h"
 #include "../NetworkCommon/Packets/InvitationPacket.h"
@@ -68,73 +69,73 @@ void  DiplodocusChat :: Init()
 }
 
 //---------------------------------------------------------------
-
+/*
 ChatUser* DiplodocusChat::CreateNewUser( U32 connectionId, U32 gatewayId )
 {
    // Threading::MutexLock locker( m_mutex ); // must be locked from the outside
-   UserMapIterator it = m_users.find( connectionId );
-   if( it != m_users.end() )
+   UserMapIterator it = m_userTickets.find( connectionId );
+   if( it != m_userTickets.end() )
       return it->second;
 
    ChatUser* user = new ChatUser( connectionId, gatewayId );
-   m_users.insert( UserMapPair( connectionId, user ) );
+   m_userTickets.insert( UserMapPair( connectionId, user ) );
 
    return user;
 }
-
+*/
 //---------------------------------------------------------------
-
+/*
 ChatUser* DiplodocusChat::UpdateExistingUsersConnectionId( const string& uuid, U32 connectionId, U32 gatewayId )
 {
    // Threading::MutexLock locker( m_mutex ); // must be locked from the outside
-   UserMapIterator it = m_users.begin(); 
-   while( it != m_users.end() )
+   UserMapIterator it = m_userTickets.begin(); 
+   while( it != m_userTickets.end() )
    {
       if( it->second->GetUuid() == uuid )
       {
          ChatUser* user = it->second;
          user->SetConnectionId( connectionId );
          user->SetGatewayId( gatewayId );
-         m_users.insert( UserMapPair( connectionId, user ) );
-         m_users.erase( it );
+         m_userTickets.insert( UserMapPair( connectionId, user ) );
+         m_userTickets.erase( it );
          return user;
       }
       it++;
    }
 
    return NULL;
-}
-
-//---------------------------------------------------------------
-
-ChatUser* DiplodocusChat::GetUser( U32 connectionId )
-{
-   //Threading::MutexLock locker( m_mutex );
-   UserMapIterator it = m_users.find( connectionId );
-   if( it == m_users.end() )
-      return NULL;
-
-   return it->second;
-}
+}*/
 
 //---------------------------------------------------------------
 /*
 ChatUser* DiplodocusChat::GetUser( U32 connectionId )
 {
-   UserMapIterator it = m_users.find( connectionId );
-   if( it == m_users.end() )
+   //Threading::MutexLock locker( m_mutex );
+   UserMapIterator it = m_userTickets.find( connectionId );
+   if( it == m_userTickets.end() )
       return NULL;
 
    return it->second;
 }*/
 
 //---------------------------------------------------------------
+/*
+ChatUser* DiplodocusChat::GetUser( U32 connectionId )
+{
+   UserMapIterator it = m_userTickets.find( connectionId );
+   if( it == m_userTickets.end() )
+      return NULL;
 
+   return it->second;
+}*/
+
+//---------------------------------------------------------------
+/*
 ChatUser*   DiplodocusChat::GetUserById( U32 userId )
 {
    //Threading::MutexLock locker( m_mutex );
-   UserMapIterator it = m_users.begin();
-   while( it != m_users.end() )
+   UserMapIterator it = m_userTickets.begin();
+   while( it != m_userTickets.end() )
    {
       if( it->second->GetUserId() == userId )
       return it->second;
@@ -149,8 +150,8 @@ ChatUser*   DiplodocusChat::GetUserById( U32 userId )
 ChatUser*   DiplodocusChat::GetUserByUuid( const string& uuid )
 {
    //Threading::MutexLock locker( m_mutex );
-   UserMapIterator it = m_users.begin(); 
-   while( it != m_users.end() )
+   UserMapIterator it = m_userTickets.begin(); 
+   while( it != m_userTickets.end() )
    {
       if( it->second->GetUuid() == uuid )
          return it->second;
@@ -165,8 +166,8 @@ ChatUser*   DiplodocusChat::GetUserByUuid( const string& uuid )
 ChatUser*   DiplodocusChat::GetUserByUsername( const string& userName )
 {
    //Threading::MutexLock locker( m_mutex );
-   UserMapIterator it = m_users.begin(); 
-   while( it != m_users.end() )
+   UserMapIterator it = m_userTickets.begin(); 
+   while( it != m_userTickets.end() )
    {
       if( it->second->GetUserName() == userName )
          return it->second;
@@ -174,15 +175,15 @@ ChatUser*   DiplodocusChat::GetUserByUsername( const string& userName )
    }
 
    return NULL;
-}
+}*/
 
 //---------------------------------------------------------------
-
+/*
 ChatUser*    DiplodocusChat::GetUserByConnectionId( U32 ConnectionId )
 {
    //Threading::MutexLock locker( m_mutex );
-   UserMapIterator it = m_users.begin(); 
-   while( it != m_users.end() )
+   UserMapIterator it = m_userTickets.begin(); 
+   while( it != m_userTickets.end() )
    {
       if( it->second->GetConnectionId() == ConnectionId )
          return it->second;
@@ -201,16 +202,17 @@ string      DiplodocusChat::GetUserUuidByConnectionId( U32 connectionId )
    return user->GetUuid();
 }
 
-void        DiplodocusChat::GetUserConnectionId( const string& uuid, U32& connectionId, U32& gatewayId )
+void        DiplodocusChat::GetUserConnectionId( const string& uuid, vector< SimpleConnectionDetails >& listOfConnections )
 {
    //Threading::MutexLock locker( m_mutex );
-   connectionId = 0;
+   //connectionId = 0;
 
    ChatUser* user = GetUserByUuid( uuid );
    if( user )
    {
-      connectionId = user->GetConnectionId();
-      gatewayId = user->GetGatewayId();
+      U32 connectionId = user->GetConnectionId();
+      U32 gatewayId = user->GetGatewayId();
+      listOfConnections.push_back( SimpleConnectionDetails( connectionId, gatewayId ) );
    }
 }
 
@@ -221,6 +223,125 @@ string      DiplodocusChat::GetUserName( const string& uuid )
    if( user == NULL )
       return string();
    return user->GetUuid();
+}*/
+
+string      DiplodocusChat::GetUserUuidByConnectionId( U32 connectionId )
+{
+   DiplodocusChat::UserMapIterator   it = GetUserByConnectionId( connectionId );
+   if( it == m_userTickets.end() )
+   {
+      return string();
+   }
+   return it->second.GetUuid();
+}
+
+void        DiplodocusChat::GetUserConnectionId( const string& uuid, vector< SimpleConnectionDetails >& listOfConnections )
+{
+   listOfConnections.clear();
+
+   ChatUser* contact = NULL;
+   if( GetUser( uuid, contact ) == true )
+      contact->AssembleAllConnections( listOfConnections );
+}
+
+
+string      DiplodocusChat::GetUserName( const string& uuid )
+{
+   ChatUser*   user = NULL;
+   if( GetUser( uuid, user ) == false )
+      return string();
+
+   return user->GetUsername();
+}
+
+bool  DiplodocusChat::GetUser( const string& uuid, ChatUser*& user )
+{
+   LogMessage( LOG_PRIO_INFO, "GetUser %s", uuid.c_str() );
+   stringhash hashForUser = GenerateUniqueHash( uuid );
+
+   Threading::MutexLock locker( m_mutex );
+   UserMapIterator it = m_userTickets.find( hashForUser );
+   if( it != m_userTickets.end() )// user may be reloggin and such.. no biggie.. just ignore
+   {
+      user = &it->second;
+      return true;
+   }
+   return false;
+}
+
+
+DiplodocusChat::UserMapIterator   
+DiplodocusChat::GetUserByConnectionId( U32 connectionId )
+{
+   LogMessage( LOG_PRIO_INFO, "GetUserByConnectionId %u", connectionId );
+   Threading::MutexLock locker( m_mutex );
+   UserMapIterator it = m_userTickets.begin();
+   while( it != m_userTickets.end() )
+   {
+      if( it->second.IsConnected( connectionId ) == true )
+      {
+         return it;
+      }
+      it++;
+   }
+
+   return it;
+}
+
+const string DiplodocusChat::GetUuid( U32 connectionId ) const
+{
+   LogMessage( LOG_PRIO_INFO, "GetUuid %u", connectionId );
+   Threading::MutexLock locker( m_mutex );
+   ConstUserMapIterator it = m_userTickets.begin();
+   while( it != m_userTickets.end() )
+   {
+      if( it->second.IsConnected( connectionId ) == true )
+      {
+         return it->second.GetUuid();
+      }
+      it++;
+   }
+
+   return string();
+}
+
+
+bool  DiplodocusChat::GetUser( U32 userId, ChatUser*& user )
+{
+   user = NULL;
+   LogMessage( LOG_PRIO_INFO, "GetUser %d", userId );
+
+   Threading::MutexLock locker( m_mutex );
+   UserMapIterator it = m_userTickets.begin();
+   while( it != m_userTickets.end() )
+   {
+      if( it->second.GetId() == userId ) 
+      {
+         user = &it->second;
+         return true;
+      }
+      it++;
+   }
+   return false;
+}
+
+bool  DiplodocusChat::GetUserByUsername( const string& name, ChatUser*& user )
+{
+   user = NULL;
+   LogMessage( LOG_PRIO_INFO, "GetUserByUsername %s", name.c_str() );
+
+   Threading::MutexLock locker( m_mutex );
+   UserMapIterator it = m_userTickets.begin();
+   while( it != m_userTickets.end() )
+   {
+      if( it->second.GetUsername() == name ) 
+      {
+         user = &it->second;
+         return true;
+      }
+      it++;
+   }
+   return false;
 }
 
 //---------------------------------------------------------------
@@ -310,14 +431,11 @@ bool     DiplodocusChat::HandleChatPacket( BasePacket* packet, U32 gatewayId )
 
 bool     DiplodocusChat::HandleInvitationPacket( BasePacket* packet, U32 connectionId, U32 gatewayId )
 {
-   UserMapIterator it = m_users.find( connectionId );
-   if( it != m_users.end() )
+   UserMapIterator it = m_userTickets.find( connectionId );
+   if( it != m_userTickets.end() )
    {
-      ChatUser* user = it->second;
-      if( user )
-      {
-         gatewayId = user->GetGatewayId();
-      }
+      ChatUser& user = it->second;
+      gatewayId = user.GetGatewayId( connectionId );
    }
    PacketInvitation* invitation = static_cast< PacketInvitation* > ( packet );
    if( m_invitationManager->HandlePacketRequest( invitation, connectionId, gatewayId ) == false )
@@ -358,56 +476,163 @@ bool     DiplodocusChat::HandleLoginPacket( BasePacket* packet, U32 gatewayId )
          }
          return true;*/
       case PacketLogin::LoginType_PrepareForUserLogin:
-         {
-            PacketPrepareForUserLogin* loginPacket = static_cast< PacketPrepareForUserLogin* > ( packet );
-            U32 userConnectionId = loginPacket->connectionId;
-            string uuid = loginPacket->uuid;
-            U32 whichGateway = loginPacket->gatewayId;
-            
-            //LogMessage( LOG_PRIO_INFO, "Prep for logon: %d, %s, %s, %s", userConnectionId, pPacket->userName.c_str(), uuid.c_str(), pPacket->password.c_str() );
-            
-            LogMessage_LoginPacket( loginPacket );
-            
-            LockMutex();
-            // TODO: verify that the user isn't already in the list and if s/he is, assign the new connectionId.
-            ChatUser* user = UpdateExistingUsersConnectionId( uuid, userConnectionId, whichGateway );
-            //ChatUser* user = GetUserByUsername( pPacket->userName );
-            if( user == NULL )
-            {
-               user = CreateNewUser( userConnectionId, whichGateway );
-            }
-
-            user->Init( loginPacket->userId, loginPacket->userName, loginPacket->uuid, loginPacket->lastLoginTime );            
-            user->LoggedIn();
-            UnlockMutex();
-         }
+         ConnectUser( static_cast< const PacketPrepareForUserLogin* > ( packet ) );
          return true;
+
       case PacketLogin::LoginType_PrepareForUserLogout:
-         {
-            PacketPrepareForUserLogout* logoutPacket = static_cast< PacketPrepareForUserLogout* > ( packet );
-            LogMessage_LogoutPacket( logoutPacket );
-            //LogMessage( LOG_PRIO_INFO, "Prep for logout: %d, %s", logoutPacket->connectionId, logoutPacket->uuid.c_str() );
-            U32 userConnectionId = logoutPacket->connectionId;
-            LockMutex();
-            UserMapIterator iter = m_users.find( userConnectionId );
-         
-            if( iter != m_users.end() )// a bad user login can cause this so don't worry
-            {
-               iter->second->LoggedOut();
-            }
-            else
-            {
-               string str = "Log user out failed: user not found. userUuid: ";
-               str += logoutPacket->uuid.c_str();
-               Log( str, 4 );
-            }
-            UnlockMutex();
-            
-         }
+         DisconnectUser( static_cast< const PacketPrepareForUserLogout* > ( packet ) );
+         return true;
+
+      case PacketLogin::LoginType_ExpireUserLogin:
+         ExpireUser( static_cast< const PacketLoginExpireUser* >( packet ) );
+         return true;
+
+      case PacketLogin::LoginType_RequestServiceToFlushAllUserLogins:
+         DeleteAllUsers();
          return true;
       }
    }
    return false;
+}
+
+//---------------------------------------------------------------
+
+bool     DiplodocusChat::ConnectUser( const PacketPrepareForUserLogin* loginPacket )
+{
+  /* U32 userConnectionId = loginPacket->connectionId;
+   string uuid = loginPacket->uuid;
+   U32 whichGateway = loginPacket->gatewayId;
+   
+   //LogMessage( LOG_PRIO_INFO, "Prep for logon: %d, %s, %s, %s", userConnectionId, pPacket->userName.c_str(), uuid.c_str(), pPacket->password.c_str() );
+   
+   LogMessage_LoginPacket( loginPacket );
+   
+   LockMutex();
+   // TODO: verify that the user isn't already in the list and if s/he is, assign the new connectionId.
+   ChatUser* user = UpdateExistingUsersConnectionId( uuid, userConnectionId, whichGateway );
+   //ChatUser* user = GetUserByUsername( pPacket->userName );
+   if( user == NULL )
+   {
+      user = CreateNewUser( userConnectionId, whichGateway );
+   }
+
+   user->Init( loginPacket->userId, loginPacket->userName, loginPacket->uuid, loginPacket->lastLoginTime );            
+   user->LoggedIn();
+   UnlockMutex();
+   return true;*/
+   U32 connectionId = loginPacket->connectionId;
+   string uuid = loginPacket->uuid;
+   U32 gatewayId = loginPacket->gatewayId;
+   U8 gameProductId = loginPacket->gameProductId;
+
+   //LogMessage( LOG_PRIO_INFO, "Prep for logon: %d, %s, %s, %s", connectionId, loginPacket->userName.c_str(), uuid.c_str(), loginPacket->password.c_str() );
+   LogMessage_LoginPacket( loginPacket );
+   
+   UserMapIterator it = GetUserByConnectionId( connectionId );// don't do anything if this user is already logged in.
+   if( it != m_userTickets.end() )
+      return false;
+
+   U64 hashForUser = GenerateUniqueHash( loginPacket->uuid );
+
+   Threading::MutexLock locker( m_mutex );
+   it = m_userTickets.find( hashForUser );
+
+   bool  wasUserFound = true;
+
+   if( it == m_userTickets.end() )
+   {
+      std::pair< UserMapIterator, bool> ret = 
+         m_userTickets.insert( UserMapPair( hashForUser, ChatUser() ) );
+      it = ret.first;
+      ChatUser& user = it->second;
+      
+      user.SetId( loginPacket->userId );                   
+      user.SetUserName( loginPacket->userName );
+               
+      user.SetUuid( loginPacket->uuid );
+      user.SetPassword( loginPacket->password );
+      user.SetEmail( loginPacket->email );
+      user.SetAssetKey( loginPacket->loginKey );
+      user.SetLanguageId( loginPacket->languageId );  
+      user.SetIsActive( true );// assumed
+
+      user.Set( this );
+      user.Set( m_chatRoomManager );
+      wasUserFound = false;
+   }
+   it->second.Login( connectionId, gatewayId, gameProductId );
+   if( wasUserFound == false )
+   {
+      it->second.Init();
+   }
+   //cout << "DiplodocusContact::ConnectUser >>>" << endl;
+   return true;
+}
+
+//---------------------------------------------------------------
+
+bool     DiplodocusChat::DisconnectUser( const PacketPrepareForUserLogout* logoutPacket )
+{
+ /*  LogMessage_LogoutPacket( logoutPacket );
+   //LogMessage( LOG_PRIO_INFO, "Prep for logout: %d, %s", logoutPacket->connectionId, logoutPacket->uuid.c_str() );
+   U32 userConnectionId = logoutPacket->connectionId;
+   LockMutex();
+   UserMapIterator iter = m_userTickets.find( userConnectionId );
+
+   if( iter != m_userTickets.end() )// a bad user login can cause this so don't worry
+   {
+      iter->second->LoggedOut();
+   }
+   else
+   {
+      string str = "Log user out failed: user not found. userUuid: ";
+      str += logoutPacket->uuid.c_str();
+      Log( str, 4 );
+   }
+   UnlockMutex();
+
+   return true;*/
+    LogMessage_LogoutPacket( logoutPacket );
+
+   U32 connectionId = logoutPacket->connectionId;
+   connectionId = connectionId;
+
+   string uuid = logoutPacket->uuid;
+   U64 hashForUser = GenerateUniqueHash( uuid );
+
+   Threading::MutexLock locker( m_mutex );
+   UserMapIterator it = m_userTickets.find( hashForUser );
+   if( it == m_userTickets.end() )
+      return false;
+
+   it->second.Logout( connectionId );
+
+   return true;
+}
+
+//---------------------------------------------------------------
+
+bool  DiplodocusChat::ExpireUser( const PacketLoginExpireUser* expirePacket )
+{
+   const string& uuid = expirePacket->uuid;
+   U64 hashForUser = GenerateUniqueHash( uuid );
+
+   Threading::MutexLock locker( m_mutex );
+   UserMapIterator it = m_userTickets.find( hashForUser );
+   if( it == m_userTickets.end() )
+      return false;
+   m_userTickets.erase( it );
+
+   return true;
+}
+
+//---------------------------------------------------------------
+
+bool     DiplodocusChat::DeleteAllUsers()
+{
+   Threading::MutexLock locker( m_mutex );
+   m_userTickets.clear();
+   return true;
 }
 
 //---------------------------------------------------------------
@@ -425,7 +650,7 @@ bool     DiplodocusChat::AddInputChainData( BasePacket* packet, U32 connectionId
 
 //---------------------------------------------------------------
 
-bool     DiplodocusChat:: ProcessPacket( PacketStorage& storage )
+bool     DiplodocusChat:: ProcessInboundPacket( PacketStorage& storage )
 {
    BasePacket* packet = storage.packet;
    U32 gatewayId = storage.gatewayId;
@@ -464,8 +689,8 @@ bool     DiplodocusChat:: ProcessPacket( PacketStorage& storage )
 //---------------------------------------------------------------
 
 // data going out can go only a few directions
-// coming from the DB, we can have a result or possibly a different packet meant for a single chat UserConnection
-// otherwise, coming from a UserConnection, to go out, it will already be packaged as a Gateway Wrapper and then 
+// coming from the DB, we can have a result or possibly a different packet meant for a single chat ChatUser
+// otherwise, coming from a ChatUser, to go out, it will already be packaged as a Gateway Wrapper and then 
 // we simply send it on.
 bool   DiplodocusChat::AddOutputChainData( BasePacket* packet, U32 connectionId ) 
 {
@@ -559,6 +784,7 @@ void  DiplodocusChat::UpdateDbResults()
       BasePacket* packet = static_cast<BasePacket*>( dbResult );
 
       U32 connectionId = dbResult->id;
+      U32 userId = dbResult->serverLookup;
 
       if( dbResult->serverLookup == m_chatRoomManager->GetDbIdentifier() ) //&& connectionId == ChatChannelManagerUniqueId )
       {
@@ -578,14 +804,23 @@ void  DiplodocusChat::UpdateDbResults()
       }
       else
       {
-         ChatUser* user = GetUser( connectionId );
-         if( user )
+         ChatUser* user = NULL;
+         DiplodocusChat::UserMapIterator userIt = GetUserByConnectionId( connectionId );
+         if( userIt == m_userTickets.end() )
          {
-            user->HandleDbResult( dbResult );
+            if( GetUser( userId, user ) == true )
+            {
+               user->HandleDbResult( dbResult );
+            }
+            else
+            {
+               factory.CleanupPacket( packet );
+            }
          }
-         else
+         else//( userIt != m_userTickets.end() )
          {
-            factory.CleanupPacket( packet );
+            ChatUser& user = userIt->second;
+            user.HandleDbResult( dbResult );
          }
       }
    }
@@ -610,29 +845,17 @@ bool  DiplodocusChat::HandlePacketFromOtherServer( BasePacket* packet, U32 gatew
    
    if( packetType == PacketType_Login )
    {
-      if( HandleLoginPacket( unwrappedPacket, gatewayId ) == false )
-      {
-         factory.CleanupPacket( packet );
-      }      
-      return true;
+      return HandleLoginPacket( unwrappedPacket, gatewayId );
    }
 
    if( packetType == PacketType_Chat )
    {
-      if( HandleChatPacket( unwrappedPacket, gatewayId ) == false )
-      {
-         factory.CleanupPacket( packet );
-      }
-      return true;
+      return HandleChatPacket( unwrappedPacket, gatewayId );
    }
 
    if( packetType == PacketType_Invitation )
    {
-      if( HandleInvitationPacket( unwrappedPacket, gatewayId, 0 ) == false )
-      {
-         factory.CleanupPacket( packet );
-      }
-      return true;
+      return HandleInvitationPacket( unwrappedPacket, gatewayId, 0 );
    }
 
    return false;
@@ -647,38 +870,28 @@ bool  DiplodocusChat::HandlePacketFromClient( BasePacket* packet )
       return false;
    }
 
-   //cout << "DiplodocusChat::HandlePacketFromClient <<<" << endl;
-
    PacketGatewayWrapper* wrapper = static_cast< PacketGatewayWrapper* >( packet );
    BasePacket* unwrappedPacket = wrapper->pPacket;
 
    U32 connectionId = wrapper->connectionId;
-   //wrapper->
 
-   ChatUser* user = NULL;
-   //m_mutex.lock();// no longer needed
-   UserMapIterator it = m_users.find( connectionId );
-   user = it->second;
-   //m_mutex.unlock();
-   if( user )
+   UserMapIterator it = GetUserByConnectionId( connectionId );// don't do anything if this user is already logged in.
+   if( it != m_userTickets.end() )
    {
+      ChatUser& user = it->second;
       // could be a switch but we only have two cases.
       if( unwrappedPacket->packetType == PacketType_Invitation )
       {
-         m_invitationManager->HandlePacketRequest( unwrappedPacket, connectionId, user->GetGatewayId() );
+         m_invitationManager->HandlePacketRequest( unwrappedPacket, connectionId, user.GetGatewayId( connectionId ) );
       }
       else
       {
       //PacketCleaner cleaner( packet );
-         bool result = user->HandleClientRequest( unwrappedPacket );
+         bool result = user.HandleClientRequest( unwrappedPacket, connectionId );
          result = result;
       }
-
-      //cout << "DiplodocusChat::HandlePacketFromClient >>>+" << endl;
       return true;
    }
-
-   //cout << "DiplodocusChat::HandlePacketFromClient >>>-" << endl;
 
    return false;
 }
@@ -699,28 +912,7 @@ void     DiplodocusChat::PeriodicWriteToDB()
    }*/
 }
 
-void     DiplodocusChat::RemoveLoggedOutUsers()
-{
-   time_t currentTime;
-   time( &currentTime );
 
-   Threading::MutexLock locker( m_mutex );
-   UserMapIterator it = m_users.begin(); 
-   while( it != m_users.end() )
-   {
-      UserMapIterator currentUserIt = it++;
-      bool wasRemoved = false;
-      time_t loggedOutTime = currentUserIt->second->GetLoggedOutTime();
-      if( loggedOutTime != 0 )
-      {
-         if( difftime( currentTime, loggedOutTime ) >= logoutTimeout )
-         {
-            wasRemoved = true;
-            m_users.erase( currentUserIt );
-         }
-      }
-   }
-}
 //---------------------------------------------------------------
 //---------------------------------------------------------------
 /*
@@ -830,14 +1022,14 @@ void     DiplodocusChat::UpdateInvitationManager()
 void     DiplodocusChat::UpdateAllChatUsers()
 {
    Threading::MutexLock locker( m_mutex );
-   UserMapIterator it = m_users.begin();
-   while( it != m_users.end() )
+   UserMapIterator it = m_userTickets.begin();
+   while( it != m_userTickets.end() )
    {
       //string userID = it->first;
 
-      ChatUser* user = it->second;
+      ChatUser& user = it->second;
       it++;
-      user->Update();
+      user.Update();
    }
 }
 
@@ -914,9 +1106,10 @@ int      DiplodocusChat::CallbackFunction()
    //UpdateConsoleWindow( m_timeOfLastTitleUpdate, m_uptime, m_numTotalConnections, numClients, m_listeningPort, m_serverName );
 
    UpdateInputPacketToBeProcessed();
+   UpdateOutputPacketToBeProcessed();
 
    PeriodicWriteToDB();
-   RemoveLoggedOutUsers();
+   //RemoveLoggedOutUsers();
    UpdateChatChannelManager();
    UpdateInvitationManager();
    UpdateDbResults();

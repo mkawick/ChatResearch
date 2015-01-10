@@ -17,6 +17,7 @@
 #include "../ServerType.h"
 #include "../ChainedArchitecture/ChainedThread.h"
 #include "../ChainedArchitecture/ChainedInterface.h"
+#include "../UserAccount/UserAccountCommon.h"
 
 #include <time.h>
 
@@ -71,6 +72,8 @@ public:
    typedef OutputChain                                      OutputChainType;
    typedef typename std::list< OutputChainType* >::iterator OutputChainIteratorType;
 
+public:
+   typedef Diplodocus< InputChain, OutputChain >   ChainedType;
 
 public:
 	Diplodocus( string serverName, U32 serverId, U8 gameProductId, ServerType type );
@@ -113,9 +116,13 @@ public:
    bool           HandlePacketToOtherServer( BasePacket* packet, U32 connectionId );// not thread safe
 
    bool           SendErrorToClient( U32 connectionId, U32 gatewayId, PacketErrorReport::ErrorType error, int subType = 0 );
+   bool           SendErrorToClient( const UserConnectionList& connections, PacketErrorReport::ErrorType error, int subType = 0 );
 
    void           NotifyFinishedRemoving( IChainedInterface* obj );
    virtual void   FinalRemoveInputChain( U32 connectionId ) {}
+   
+   void           InputReady( IChainedInterface * outputConnector );
+   void           OutputReady( IChainedInterface * outputConnector );
 
    //---------------------------------------------
 
@@ -138,6 +145,7 @@ protected:
    void           MarkAllConnectionsAsNeedingUpdate( BaseOutputContainer& listOfClients );
    void           MarkConnectionAsNeedingUpdate( U32 connectionId );
    bool           DelayPacketToGateway( BasePacket* packet, U32 connectionId, U32 gatewayId, float delayInSecs );
+   OutputChain*   FindNetworkOutLink( U32 serverId );
 
    virtual void   SetupClientConnectionForDeletion( InputChainType* chain );
    void           SetupClientWaitingToBeRemoved( InputChainType* chainedInput );
@@ -152,6 +160,7 @@ protected:
 
    deque< PacketDbQueryResult* >    m_dbQueries;
    deque< PacketStorage >           m_inputPacketsToBeProcessed;
+   deque< PacketStorage >           m_outputPacketsToBeProcessed;
 
    list< DelayedPacket >                  m_delayedGatewayPackets;
 
@@ -187,7 +196,9 @@ protected:
    int            MainLoop_OutputProcessing();
 
    void           UpdateInputPacketToBeProcessed();
-   virtual bool   ProcessPacket( PacketStorage& storage ) { return false; }
+   void           UpdateOutputPacketToBeProcessed();
+   virtual bool   ProcessInboundPacket( PacketStorage& storage ) { return false; }
+   virtual bool   ProcessOutboundPacket( PacketStorage& storage ) { return false; }
    int            CommonUpdate();
 
    void           SendServerIdentification();
@@ -199,6 +210,21 @@ protected:
    void           AddNewConnections();	
 
    void           UpdatePendingGatewayPackets();
+   //-------------------------- OnConnectFeature ----------------------------
+public:
+   struct OnConnect_PacketToBeSent
+   {
+      int packetType, packetSubType;
+      int toWhichService;
+      OnConnect_PacketToBeSent() : packetType( 0 ), packetSubType( 0 ), toWhichService( 0 ) {}
+      OnConnect_PacketToBeSent( int type, int subtype, int service ) : packetType( type ), packetSubType( subtype ), toWhichService( service ) {}
+   };
+   bool           QueueOutboundRequest( int type, int subType, int whichService );
+   bool           QueueInboundRequest( int type, int subType, int whichService );
+   void           SendOutbound_OnConnectPackets( IChainedInterface * outputConnector, int serviceType );
+   void           SendInbound_OnConnectPackets( IChainedInterface * inputConnector, int serviceType );
+   vector< OnConnect_PacketToBeSent > m_outboundPacketsForNewConnections;
+   vector< OnConnect_PacketToBeSent > m_inboundPacketsForNewConnections;
 };
 
 

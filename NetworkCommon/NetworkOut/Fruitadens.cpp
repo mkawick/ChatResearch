@@ -97,20 +97,7 @@ bool        Fruitadens :: AddOutputChainData( BasePacket* packet, U32 filingData
       return false;
    }
 
-   //bool didLock = false;
-   //if( m_outputChainListMutex.IsLocked() == false )
-   {
-      //didLock = true;
-      //cout << "Fruitadens :: AddOutputChainData.. lock " << endl;
-      m_outputChainListMutex.lock();
-   }
-   AddOutputChainDataNoLock( packet );
-   
-   //if( didLock == true )
-   {
-      //cout << "Fruitadens :: AddOutputChainData.. unlock " << endl;
-      m_outputChainListMutex.unlock();
-   }
+   AddOutputChainDataNoFilter( packet );
 
    return true;
 }
@@ -118,6 +105,15 @@ bool        Fruitadens :: AddOutputChainData( BasePacket* packet, U32 filingData
 bool        Fruitadens :: AddOutputChainDataNoLock( BasePacket* packet )
 {
    m_packetsReadyToSend.push_back( packet );
+   return true;
+}
+
+bool        Fruitadens :: AddOutputChainDataNoFilter( BasePacket* packet )
+{
+   m_outputChainListMutex.lock();
+   AddOutputChainDataNoLock( packet );
+   m_outputChainListMutex.unlock();
+
    return true;
 }
 
@@ -961,6 +957,14 @@ bool  FruitadensServer :: HandleS2SIdentitfyPacket( BasePacket* packetIn )
             LogMessage( LOG_PRIO_INFO, "    server ID =                 %u", m_connectedServerId );
             LogMessage( LOG_PRIO_INFO, "    isGame = %s, isController = %s", ConvertToTrueFalseString( m_connectedIsController ), ConvertToTrueFalseString( m_connectedIsController  ) );
             LogMessage( LOG_PRIO_INFO, "**************************************************" );
+         }
+
+         ChainLinkIteratorType   itInputs = m_listOfInputs.begin();
+         while( itInputs != m_listOfInputs.end() )
+         {
+            IChainedInterface* inputPtr = itInputs->m_interface;
+            inputPtr->OutputReady( this );
+            itInputs++;
          }
 
          handled2SPacket = true;

@@ -167,7 +167,7 @@ bool	KhaanProtected::OnDataReceived( const U8* data, int length )
    }
 
    //cout << "OnDataReceived:3" << endl;
-   if( m_denyAllFutureData == true )
+   if( m_blockAllData == true )
    {
       FlushReadBuffer();
       return false;
@@ -198,7 +198,7 @@ bool	KhaanProtected::OnDataReceived( const U8* data, int length )
       { 
          DumpBadData( data, length, size );
          
-         m_denyAllFutureData = true;
+         m_blockAllData = true;
          return false;
       }
       //assert( size <= length );

@@ -54,6 +54,7 @@ public:
 
    bool        AddOutputChainData( BasePacket* packet, U32 filingData );// standard code, no need to modify
    bool        AddOutputChainDataNoLock( BasePacket* packet );
+   bool        AddOutputChainDataNoFilter( BasePacket* packet );
 
    void        SetConnectedServerType( ServerType type ) { m_serverType = type; }
    ServerType  GetConnectedServerType() const { return m_serverType; }
@@ -65,6 +66,8 @@ public:
 
    bool        IsConnected() const { return m_isConnected; }
    void        SetServerUniqueId( U32 id ) { m_serverId = id; }
+   U32         GetServerUniqueId() const { return m_serverId; }
+   U32         GetConnectedServerId() const { return m_connectedServerId; }
 
    void        SetNetworkVersionOverride( U8 ver ) { m_networkVersionOverride = ver; }
    void        SetExtensiveLogging( bool on = true ) { m_extensiveLogging = on; }

@@ -30,7 +30,7 @@ NotificationMainThread* UserConnection::m_mainThread = NULL;
 
 //////////////////////////////////////////////////////////////
 
-UserConnection::UserConnection( const PacketPrepareForUserLogin* info ) : m_userInfo( *info ), 
+UserConnection::UserConnection( ) :
                                  m_isLoggedOut( false ), 
                                  m_hasRequestedDevices( false ),
                                  m_finishedLoadingListOfDevices( false ),
@@ -41,7 +41,7 @@ UserConnection::UserConnection( const PacketPrepareForUserLogin* info ) : m_user
 UserConnection::~UserConnection()
 {
 }
-
+/*
 void     UserConnection::UserLoggedOut()
 {
    m_isLoggedOut = true; 
@@ -64,7 +64,7 @@ void     UserConnection::Relog()
 {
    m_timeLoggedOut = 0;
    m_isLoggedOut = false;
-}
+}*/
 
 bool     UserConnection::IsReadyToAcceptClientRequests() const
 {
@@ -81,12 +81,12 @@ void     UserConnection::RequestAllDevicesForUser()
 {
    cout << "UserConnection::RequestAllDevicesForUser" << endl;
    PacketDbQuery* dbQuery = new PacketDbQuery;
-   dbQuery->id =           m_userInfo.connectionId;
+   dbQuery->id =           m_userId;//m_userInfo.connectionId;
    dbQuery->meta =         "";
    dbQuery->lookup =       QueryType_DeviceList;
-   dbQuery->serverLookup = m_userInfo.userId;
+   dbQuery->serverLookup = 0;
    dbQuery->query = "SELECT * FROM user_device WHERE user_uuid='";
-   dbQuery->query += m_userInfo.uuid.c_str();
+   dbQuery->query += m_userUuid;
    dbQuery->query += "'";
 
    //cout, dbQuery->query );
@@ -100,12 +100,12 @@ void  UserConnection::RequestAllDeviceNotification()
 {
    cout << "UserConnection::RequestAllDevicesForUser" << endl;
    PacketDbQuery* dbQuery = new PacketDbQuery;
-   dbQuery->id =           m_userInfo.connectionId;
+   dbQuery->id =           m_userId;//m_userInfo.connectionId;
    dbQuery->meta =         "";
    dbQuery->lookup =       QueryType_DevicePerGameList;
-   dbQuery->serverLookup = m_userInfo.userId;
+   dbQuery->serverLookup = 0;
    dbQuery->query = "SELECT * FROM user_device_notification WHERE user_device_id IN ( select id from user_device where user_uuid='";
-   dbQuery->query += m_userInfo.uuid.c_str();
+   dbQuery->query += m_userUuid;
    dbQuery->query += "')";
 
    //cout, dbQuery->query );
@@ -167,7 +167,9 @@ void  UserConnection::StoreListOfDevices( const PacketDbQueryResult* dbResult )
    m_finishedLoadingListOfDevices = true;
    if( dbResult->successfulQuery == false )
    {
-      m_mainThread->SendErrorToClient( m_userInfo.connectionId, m_userInfo.gatewayId, PacketErrorReport::ErrorType_Notification_NoDevicesListed );
+      UserConnectionList connectionList;
+      m_connectionDetails.AssembleAllConnections( connectionList );
+      m_mainThread->SendErrorToClient( connectionList, PacketErrorReport::ErrorType_Notification_NoDevicesListed );
       return;
    }
    m_deviceList.clear();
@@ -199,7 +201,9 @@ void  UserConnection::StoreDevicesPerGameList( const PacketDbQueryResult* dbResu
    m_finishedLoadingListOfDevicesPerGame = true;
    if( dbResult->successfulQuery == false )
    {
-      m_mainThread->SendErrorToClient( m_userInfo.connectionId, m_userInfo.gatewayId, PacketErrorReport::ErrorType_Notification_NoDevicesEnabledForThisGame );
+      UserConnectionList connectionList;
+      m_connectionDetails.AssembleAllConnections( connectionList );
+      m_mainThread->SendErrorToClient( connectionList, PacketErrorReport::ErrorType_Notification_NoDevicesEnabledForThisGame );
       return;
    }
 
@@ -229,7 +233,7 @@ void  UserConnection::StoreDevicesPerGameList( const PacketDbQueryResult* dbResu
 
 //------------------------------------------------------------
 
-bool  UserConnection::HandleRequestFromClient( const BasePacket* packet )
+bool  UserConnection::HandleRequestFromClient( const BasePacket* packet, U32 connectionId )
 {
    cout << "UserConnection::HandleRequestFromClient" << endl;
    U8 packetType = packet->packetType;
@@ -243,13 +247,13 @@ bool  UserConnection::HandleRequestFromClient( const BasePacket* packet )
          case PacketNotification::NotificationType_TestNotification:
             {
                const PacketNotification_TestNotification* test = static_cast< const PacketNotification_TestNotification* >( packet );
-               TestNotification( test->message, test->type );
+               TestNotification( test->message, test->type, connectionId );
             }
             break;
          case PacketNotification::NotificationType_RegisterDevice:
             {
                const PacketNotification_RegisterDevice* registerDevice = static_cast< const PacketNotification_RegisterDevice* >( packet );
-               RegisterNewDevice( registerDevice );
+               RegisterNewDevice( registerDevice, connectionId );
             }
             break;
         /* case PacketNotification::NotificationType_RegisterDevice:
@@ -259,19 +263,19 @@ bool  UserConnection::HandleRequestFromClient( const BasePacket* packet )
          case PacketNotification::NotificationType_UpdateDevice:
             {
                const PacketNotification_UpdateDevice* device = static_cast< const PacketNotification_UpdateDevice* >( packet );
-               UpdateDevice( device );
+               UpdateDevice( device, connectionId );
             }
             break;
          case PacketNotification::NotificationType_RequestListOfDevices:  // based on product.. 0 means all devices
             {
                const PacketNotification_RequestListOfDevices* request = static_cast< const PacketNotification_RequestListOfDevices* >( packet );
-               RequestDevicesList( request );
+               RequestDevicesList( request, connectionId );
             }
             break;
          case PacketNotification::NotificationType_RemoveDevice: 
             {
                const PacketNotification_RemoveDevice* removal = static_cast< const PacketNotification_RemoveDevice* >( packet );
-               RemoveDevice( removal );
+               RemoveDevice( removal, connectionId );
             }
             break;
        /*  case PacketNotification::GamePacketType_Notification: 
@@ -291,24 +295,28 @@ bool  UserConnection::HandleRequestFromClient( const BasePacket* packet )
 //------------------------------------------------------------
 #define DEVICE_TOKEN_LEN   1024
 
-static const char *devicetoa(const unsigned char *device, int device_len)
+static const char *DeviceToAscii(const unsigned char *device, int device_len)
 {
-   static char devstr[DEVICE_TOKEN_LEN * 2 + 1];
+   const int WideCharSize = 2;
+   const int TerminatingCharSize = 2;
+
+   static char devstr[DEVICE_TOKEN_LEN * WideCharSize + TerminatingCharSize ];
 
    for (int i = 0; i < device_len; ++i)
    {
-      devstr[i * 2] = "0123456789abcdef"[device[i] >> 4];
-      devstr[i * 2 + 1] = "0123456789abcdef"[device[i] & 0xf];
+      devstr[i * WideCharSize] = "0123456789abcdef"[device[i] >> 4];
+      devstr[i * WideCharSize + 1] = "0123456789abcdef"[device[i] & 0xf];
    }
 
-   devstr[device_len * 2] = '\0';
+   devstr[device_len * WideCharSize] = '\0';
+   devstr[device_len * WideCharSize + 1] = '\0';
 
    return devstr;
 }
 
 //------------------------------------------------------------
 
-bool     UserConnection::FindDeviceAndUpdate( RegisteredDeviceList& deviceList, const PacketNotification_RegisterDevice* potentialDevice )
+bool     UserConnection::FindDeviceAndUpdate( RegisteredDeviceList& deviceList, const PacketNotification_RegisterDevice* potentialDevice, U32 connectionId )
 {
    string printableDeviceId = BufferToHexString( potentialDevice->deviceId, 16 );
    LogMessage( LOG_PRIO_INFO, "Device stats: assignedUuid:%s, deviceId[%s], %s", potentialDevice->assignedUuid.c_str(), printableDeviceId.c_str(), FindPlatformName( potentialDevice->platformId ) );
@@ -316,6 +324,7 @@ bool     UserConnection::FindDeviceAndUpdate( RegisteredDeviceList& deviceList, 
    
    const string& vendorProvidedDeviceId = potentialDevice->deviceId;
    const string& assignedUuid = potentialDevice->assignedUuid;
+   U8 gameProductId = potentialDevice->gameProductId;
    // potentialDevice
    int count = 0;
    if( assignedUuid.size() > 0 )// do we have a previously assignedUuid, this device may have been reset, so...
@@ -330,23 +339,25 @@ bool     UserConnection::FindDeviceAndUpdate( RegisteredDeviceList& deviceList, 
             LogMessage( LOG_PRIO_INFO, "FindDeviceAndUpdate: device matched by assignedUuid, update info beginning" );
             // look up the  device notification and if it exists, report this error.
             U32 userDeviceId = deviceIt->userDeviceId;
-            DeviceNotificationsIterator   deviceEnabledIt = FindDeviceNotificationByUserDeviceId( userDeviceId );
+            DeviceNotificationsIterator   deviceEnabledIt = FindDeviceNotification( userDeviceId, gameProductId );
             if( deviceEnabledIt != m_deviceEnabledList.end() )
             {
-               m_mainThread->SendErrorToClient( m_userInfo.connectionId, m_userInfo.gatewayId, PacketErrorReport::ErrorType_Notification_DeviceAlreadyRegistered );
-               SendNewDeviceRegistrationResponse( deviceIt->uuid );
+               UserConnectionList connectionList;
+               m_connectionDetails.AssembleAllConnections( connectionList );
+               m_mainThread->SendErrorToClient( connectionList, PacketErrorReport::ErrorType_Notification_DeviceAlreadyRegistered );
+               SendNewDeviceRegistrationResponse( deviceIt->uuid, connectionId );
             }
             else
             {
                LogMessage( LOG_PRIO_INFO, "FindDeviceAndUpdate: CreateNewDeviceNotificationEntry because we did find the notification id" );
                //otherwise, we are logging in from a new game and we need to create a new entry... you are logging in from the same game but a different device
-               CreateNewDeviceNotificationEntry( userDeviceId, m_userInfo.gameProductId, deviceIt->deviceId );
+               CreateNewDeviceNotificationEntry( userDeviceId, gameProductId, deviceIt->deviceId );
             }
 
             if( potentialDevice->deviceName.size() && deviceIt->name.size() == 0 )
             {
                LogMessage( LOG_PRIO_INFO, "FindDeviceAndUpdate: GrandfatherInOldDevices. Existing device name is empty" );
-               GrandfatherInOldDevices( deviceIt, potentialDevice->deviceName );
+               GrandfatherInOldDevices( deviceIt, potentialDevice->deviceName, connectionId );
             }
             LogMessage( LOG_PRIO_INFO, "FindDeviceAndUpdate: return true" );
             return true;
@@ -369,17 +380,19 @@ bool     UserConnection::FindDeviceAndUpdate( RegisteredDeviceList& deviceList, 
          {
             LogMessage( LOG_PRIO_INFO, "FindDeviceAndUpdate: device matched by vendor provided device uuid" );
             U32 userDeviceId = deviceIt->userDeviceId;
-            DeviceNotificationsIterator   deviceEnabledIt = FindDeviceNotificationByUserDeviceId( userDeviceId );
+            DeviceNotificationsIterator   deviceEnabledIt = FindDeviceNotification( userDeviceId, gameProductId );
             if( deviceEnabledIt != m_deviceEnabledList.end() )
             {
-               m_mainThread->SendErrorToClient( m_userInfo.connectionId, m_userInfo.gatewayId, PacketErrorReport::ErrorType_Notification_DeviceAlreadyRegistered );
-               SendNewDeviceRegistrationResponse( deviceIt->uuid );
+               UserConnectionList connectionList;
+               m_connectionDetails.AssembleAllConnections( connectionList );
+               m_mainThread->SendErrorToClient( connectionList, PacketErrorReport::ErrorType_Notification_DeviceAlreadyRegistered );
+               SendNewDeviceRegistrationResponse( deviceIt->uuid, connectionId );
             }
             else
             {
                LogMessage( LOG_PRIO_INFO, "FindDeviceAndUpdate: CreateNewDeviceNotificationEntry because we did find the notification id" );
                //otherwise, we are logging in from a new game and we need to create a new entry... you are logging in from the same game but a different device
-               CreateNewDeviceNotificationEntry( userDeviceId, m_userInfo.gameProductId, deviceIt->deviceId );
+               CreateNewDeviceNotificationEntry( userDeviceId, gameProductId, deviceIt->deviceId );
             }
             LogMessage( LOG_PRIO_INFO, "FindDeviceAndUpdate: return true" );
       
@@ -452,9 +465,10 @@ void PrintDetailsOfDeviceRegistrationToConsole( const string& deviceId, U32 user
 
 //------------------------------------------------------------
 
-void     UserConnection::TestNotification( const char* text, U32 type )
+void     UserConnection::TestNotification( const char* text, U32 type, U32 connectionId )
 {
-   m_mainThread->StoreLastUserNotification( m_userInfo.userId, m_userInfo.gameProductId, 5,
+   U8 gameProductId = m_connectionDetails.GetGameProductId( connectionId );
+   m_mainThread->StoreLastUserNotification( m_userId, gameProductId, 5,
       type, text );
 
    m_mainThread->SetupNotificationsToSendImmediately();
@@ -464,22 +478,28 @@ void     UserConnection::TestNotification( const char* text, U32 type )
 //------------------------------------------------------------
 //------------------------------------------------------------
 
-void     UserConnection::RegisterNewDevice( const PacketNotification_RegisterDevice* potentialDevice )
+void     UserConnection::RegisterNewDevice( const PacketNotification_RegisterDevice* potentialDevice, U32 connectionId )
 {
-   LogMessage( LOG_PRIO_INFO, "RegisterNewDevice: user: %s, userId: %u, connectionId: %u, gatewayId: %u", m_userInfo.userName.c_str(), m_userInfo.userId, m_userInfo.connectionId, m_userInfo.gatewayId );
-   PrintDetailsOfDeviceRegistrationToConsole( potentialDevice->deviceId, m_userInfo.userId, m_userInfo.uuid );
+   U32 gatewayId = GetGatewayId( connectionId );
+   U8 gameProductId = m_connectionDetails.GetGameProductId( connectionId );
+   LogMessage( LOG_PRIO_INFO, "RegisterNewDevice: user: %s, userId: %u, connectionId: %u, gatewayId: %u", m_userName.c_str(), m_userId, connectionId, gatewayId );
+   PrintDetailsOfDeviceRegistrationToConsole( potentialDevice->deviceId, m_userId, m_userUuid );
 
    if( potentialDevice->deviceId.size() < 8 )
    {
+      UserConnectionList connectionList;
+      m_connectionDetails.AssembleAllConnections( connectionList );
       LogMessage( LOG_PRIO_ERR, "Error: device has no identifier" );
-      m_mainThread->SendErrorToClient( m_userInfo.connectionId, m_userInfo.gatewayId, PacketErrorReport::ErrorType_Notification_DeviceIdIncorrect );
+      m_mainThread->SendErrorToClient( connectionList, PacketErrorReport::ErrorType_Notification_DeviceIdIncorrect );
       return;
    }
 
-   if( FindDeviceAndUpdate( m_deviceList, potentialDevice ) == true )
+   if( FindDeviceAndUpdate( m_deviceList, potentialDevice, connectionId ) == true )
    {
+      UserConnectionList connectionList;
+      m_connectionDetails.AssembleAllConnections( connectionList );
       LogMessage( LOG_PRIO_ERR, "Error: device is already in user's list" );
-      m_mainThread->SendErrorToClient( m_userInfo.connectionId, m_userInfo.gatewayId, PacketErrorReport::ErrorType_Notification_DeviceAlreadyRegistered );
+      m_mainThread->SendErrorToClient( connectionList, PacketErrorReport::ErrorType_Notification_DeviceAlreadyRegistered );
       return;
    }
 
@@ -488,24 +508,24 @@ void     UserConnection::RegisterNewDevice( const PacketNotification_RegisterDev
 
    string query( "INSERT INTO user_device ( user_uuid, device_uuid, device_id, name, icon_id, platformId, user_id, is_enabled )" );
    query += " VALUES( '";
-   query += m_userInfo.uuid.c_str();
+   query += m_userUuid;
    query += "', '";
    query += newDeviceUuid;
    query += "', x'";
-   query += devicetoa( (const unsigned char*)potentialDevice->deviceId.c_str(), potentialDevice->deviceId.size() );
+   query += DeviceToAscii( (const unsigned char*)potentialDevice->deviceId.c_str(), potentialDevice->deviceId.size() );
    query += "', '%s', '1', '"; // device name, icon id
    query += boost::lexical_cast< string  >( (int) potentialDevice->platformId );
    query += "', '";
-   query += boost::lexical_cast< string  >( m_userInfo.userId );
+   query += boost::lexical_cast< string  >( m_userId );
    query += "', '1' )";
 
 
-   PrintDetailsOfDeviceRegistrationToConsole( potentialDevice->deviceId, m_userInfo.userId, m_userInfo.uuid );
+   PrintDetailsOfDeviceRegistrationToConsole( potentialDevice->deviceId, m_userId, m_userUuid );
    LogMessage( LOG_PRIO_INFO, " New device uuid: %s", newDeviceUuid.c_str() );
   /* LogMessage( LOG_PRIO_INFO, "-------------------------------------------------------" );
    LogMessage( LOG_PRIO_INFO, " RegisterNewDevice: [%s]", BufferToHexString( potentialDevice->deviceId, 16 ).c_str() );
-   LogMessage( LOG_PRIO_INFO, " Useruuid: %s", m_userInfo.uuid.c_str() );
-   LogMessage( LOG_PRIO_INFO, " UserId: %d", m_userInfo.userId );*/
+   LogMessage( LOG_PRIO_INFO, " Useruuid: %s", m_userUuid );
+   LogMessage( LOG_PRIO_INFO, " UserId: %d", m_userId );*/
 
 
    // we're going to assume that this new entry works fine. There is the potential for a uuid conflict, so we'll need to build that later.
@@ -519,10 +539,10 @@ void     UserConnection::RegisterNewDevice( const PacketNotification_RegisterDev
       rd->isEnabled =  true;
 
    PacketDbQuery* dbQuery = new PacketDbQuery;
-   dbQuery->id =           m_userInfo.connectionId;
+   dbQuery->id =           m_userId;//m_userInfo.connectionId;
    dbQuery->meta =         newDeviceUuid;
    dbQuery->lookup =       QueryType_InsertDevice;
-   dbQuery->serverLookup = m_userInfo.gameProductId;
+   dbQuery->serverLookup = gameProductId;
    dbQuery->query =        query;
    dbQuery->customData  =  rd;
 
@@ -535,16 +555,16 @@ void     UserConnection::RegisterNewDevice( const PacketNotification_RegisterDev
 
    //RequestAllDeviceNotification();// this is the best way. There is an id that the db must generate for this to be a coherent value.
 
-   SendNewDeviceRegistrationResponse( newDeviceUuid );
+   SendNewDeviceRegistrationResponse( newDeviceUuid, connectionId );
 }
 
 //------------------------------------------------------------
 
-void  UserConnection::SendNewDeviceRegistrationResponse( const string& uuid )
+void  UserConnection::SendNewDeviceRegistrationResponse( const string& uuid, U32 connectionId )
 {
    PacketNotification_RegisterDeviceResponse* response = new PacketNotification_RegisterDeviceResponse;
    response->deviceUuid = uuid;
-   SendMessageToClient( response );
+   SendMessageToClient( response, connectionId );
 }
 
 //------------------------------------------------------------
@@ -555,7 +575,9 @@ void  UserConnection::CreateEnabledNotificationEntry( const PacketDbQueryResult*
    if( dbResult->successfulQuery == false )
    {
       delete customData;
-      m_mainThread->SendErrorToClient( m_userInfo.connectionId, m_userInfo.gatewayId, PacketErrorReport::ErrorType_Notification_CannotInsertNewDevice );
+      UserConnectionList connectionList;
+      m_connectionDetails.AssembleAllConnections( connectionList );
+      m_mainThread->SendErrorToClient( connectionList, PacketErrorReport::ErrorType_Notification_CannotInsertNewDevice );
       return;
    }
 
@@ -577,7 +599,7 @@ void  UserConnection::CreateEnabledNotificationEntry( const PacketDbQueryResult*
 void  UserConnection::CreateNewDeviceNotificationEntry( U32 userDeviceId, U32 gameType, const string& deviceId )
 {
    string printableDeviceId = BufferToHexString( reinterpret_cast< const U8* >( deviceId.c_str() ), 20 );
-   LogMessage( LOG_PRIO_INFO, "CreateNewDeviceNotificationEntry: user: %s, userId: %u, userDeviceId: %u, gameType: %d, deviceId: [%s]", m_userInfo.userName.c_str(), m_userInfo.userId, userDeviceId, gameType, printableDeviceId.c_str() );
+   LogMessage( LOG_PRIO_INFO, "CreateNewDeviceNotificationEntry: user: %s, userId: %u, userDeviceId: %u, gameType: %d, deviceId: [%s]", m_userName.c_str(), m_userId, userDeviceId, gameType, printableDeviceId.c_str() );
 
    string query( "INSERT INTO user_device_notification ( user_device_id, game_type, is_enabled, device_id) " );
    query += " VALUES( ";
@@ -585,18 +607,18 @@ void  UserConnection::CreateNewDeviceNotificationEntry( U32 userDeviceId, U32 ga
    query += ", ";
    query += boost::lexical_cast< string  >( gameType );
    query += ", 1, x'";
-   query += devicetoa( (const unsigned char*)deviceId.c_str(), deviceId.size() );
+   query += DeviceToAscii( (const unsigned char*)deviceId.c_str(), deviceId.size() );
    query += "')";
 
    LogMessage( LOG_PRIO_INFO, "---------------------------------------------------------" );
    LogMessage( LOG_PRIO_INFO, " CreateNewDeviceNotificationEntry: [%s]", printableDeviceId.c_str() );
    LogMessage( LOG_PRIO_INFO, " user_device_id: %d", userDeviceId );
-   LogMessage( LOG_PRIO_INFO, " Useruuid: %s", m_userInfo.uuid.c_str() );
-   LogMessage( LOG_PRIO_INFO, " UserId: %d", m_userInfo.userId );
+   LogMessage( LOG_PRIO_INFO, " Useruuid: %s", m_userUuid );
+   LogMessage( LOG_PRIO_INFO, " UserId: %d", m_userId );
    //cout, query );
 
    PacketDbQuery* dbQuery = new PacketDbQuery;
-   dbQuery->id =           m_userInfo.connectionId;
+   dbQuery->id =           m_userId;//m_userInfo.connectionId;
    dbQuery->meta =         "";
    dbQuery->lookup =       QueryType_InsertDeviceNotification;
    dbQuery->serverLookup = gameType;
@@ -610,19 +632,21 @@ void  UserConnection::CreateNewDeviceNotificationEntry( U32 userDeviceId, U32 ga
 
 //------------------------------------------------------------
 
-void  UserConnection::GrandfatherInOldDevices( RegisteredDeviceIterator iter, const string& newName )
+void  UserConnection::GrandfatherInOldDevices( RegisteredDeviceIterator iter, const string& newName, U32 connectionId )
 {
    iter->name = newName;
-   UpdateDbRecordForDevice( iter->userDeviceId );
+   UpdateDbRecordForDevice( iter->userDeviceId, connectionId );
 }
 
 //------------------------------------------------------------
 
-void  UserConnection::UpdateDevice( const PacketNotification_UpdateDevice* updateDevicePacket )
+void  UserConnection::UpdateDevice( const PacketNotification_UpdateDevice* updateDevicePacket, U32 connectionId )
 {
    if( updateDevicePacket->deviceUuid.size() < 1 )
    {
-      m_mainThread->SendErrorToClient( m_userInfo.connectionId, m_userInfo.gatewayId, PacketErrorReport::ErrorType_Notification_DeviceIdIncorrect );
+      UserConnectionList connectionList;
+      m_connectionDetails.AssembleAllConnections( connectionList );
+      m_mainThread->SendErrorToClient( connectionList, PacketErrorReport::ErrorType_Notification_DeviceIdIncorrect );
       return;
    }
 
@@ -634,23 +658,27 @@ void  UserConnection::UpdateDevice( const PacketNotification_UpdateDevice* updat
    if( deviceIt == m_deviceList.end() )
    {
       string text = "UpdateDevice:: User ";
-      text += m_userInfo.userName.c_str();
+      text += m_userName;
       text += " tried to update a device but it could not be found ";
       text += updateDevicePacket->deviceName.c_str();
       text += ", ";
       text += updateDevicePacket->deviceUuid.c_str();
       text += " but the device does not exist in UserConnection";
       m_mainThread->Log( text, 1 );
-      m_mainThread->SendErrorToClient( m_userInfo.connectionId, m_userInfo.gatewayId, PacketErrorReport::ErrorType_Notification_DeviceIdIncorrect );
+
+      UserConnectionList connectionList;
+      m_connectionDetails.AssembleAllConnections( connectionList );
+      m_mainThread->SendErrorToClient( connectionList, PacketErrorReport::ErrorType_Notification_DeviceIdIncorrect );
       return;
    }
    
    userDeviceId = deviceIt->userDeviceId;
+   U8 gameProductId = GetGameProductId( connectionId );
 
    if( userDeviceId == 0 )
    {
       string text = "UpdateDevice:: User ";
-      text += m_userInfo.userName.c_str();
+      text += m_userName;
       text += " tried to update a device but it could not be found ";
       text += updateDevicePacket->deviceName.c_str();
       text += ", ";
@@ -660,18 +688,20 @@ void  UserConnection::UpdateDevice( const PacketNotification_UpdateDevice* updat
       return;
    }
 
-   DeviceNotificationsIterator deviceEnabledIt = FindDeviceNotificationByUserDeviceId( userDeviceId );
+   DeviceNotificationsIterator deviceEnabledIt = FindDeviceNotification( userDeviceId, gameProductId );
    if( deviceEnabledIt == m_deviceEnabledList.end() )
    {
       string text = "UpdateDevice:: User ";
-      text += m_userInfo.userName.c_str();
+      text += m_userName;
       text += " tried to update a device but the enabled record could not be found ";
       text += updateDevicePacket->deviceName.c_str();
       text += ", ";
       text += updateDevicePacket->deviceUuid.c_str();
       text += " but the device does not exist in UserConnection";
       m_mainThread->Log( text, 1 );
-      m_mainThread->SendErrorToClient( m_userInfo.connectionId, m_userInfo.gatewayId, PacketErrorReport::ErrorType_Notification_DeviceIdIncorrect );
+      UserConnectionList connectionList;
+      m_connectionDetails.AssembleAllConnections( connectionList );
+      m_mainThread->SendErrorToClient( connectionList, PacketErrorReport::ErrorType_Notification_DeviceIdIncorrect );
       return;
    }
 
@@ -686,27 +716,28 @@ void  UserConnection::UpdateDevice( const PacketNotification_UpdateDevice* updat
    deviceEnabledIt->gameType = updateDevicePacket->gameType;
    deviceEnabledIt->isEnabled = updateDevicePacket->isEnabled;
 
-   UpdateDbRecordForDevice( userDeviceId );
+   UpdateDbRecordForDevice( userDeviceId, connectionId );
 }
 
 //------------------------------------------------------------
 
-void  UserConnection::UpdateDbRecordForDevice( U32 id )
+void  UserConnection::UpdateDbRecordForDevice( U32 userDeviceId, U32 connectionId )
 {
-   RegisteredDeviceIterator deviceIt = FindDeviceById( id );
+   RegisteredDeviceIterator deviceIt = FindDeviceById( userDeviceId );
    if( deviceIt == m_deviceList.end() )
    {
       string text = "UpdateDbRecordForDevice:: User ";
-      text += m_userInfo.userName.c_str();
+      text += m_userName;
       text += " tried to update a device but it could not be found ";
       text += " but the device does not exist in UserConnection";
       m_mainThread->Log( text, 1 );
       return;
    }
 
-   U32 userDeviceId = deviceIt->userDeviceId;
-   
-   DeviceNotificationsIterator   deviceEnabledIt = FindDeviceNotificationByUserDeviceId( userDeviceId );
+   //U32 userDeviceId = deviceIt->userDeviceId;
+   U8 gameProductId = GetGameProductId( connectionId );
+
+   DeviceNotificationsIterator   deviceEnabledIt = FindDeviceNotification( userDeviceId, gameProductId );
    if( deviceEnabledIt == m_deviceEnabledList.end() )
    {
       return;
@@ -720,7 +751,7 @@ void  UserConnection::UpdateDbRecordForDevice( U32 id )
    query += boost::lexical_cast< string  >( deviceIt->userDeviceId );
 
    PacketDbQuery* dbQuery = new PacketDbQuery;
-   dbQuery->id =           m_userInfo.connectionId;
+   dbQuery->id =           m_userId;//m_userInfo.connectionId;
    dbQuery->meta =         "";
    dbQuery->lookup =       QueryType_UpdateDevice;
    dbQuery->serverLookup = userDeviceId;
@@ -743,7 +774,7 @@ void  UserConnection::UpdateDbRecordForDevice( U32 id )
    //----------------------------
 
    dbQuery = new PacketDbQuery;
-   dbQuery->id =           m_userInfo.connectionId;
+   dbQuery->id =           m_userId;//m_userInfo.connectionId;
    dbQuery->meta =         "";
    dbQuery->lookup =       QueryType_InsertDeviceNotification;
    dbQuery->serverLookup = userDeviceId;
@@ -777,18 +808,19 @@ void     DumpDevice( const string& userName, const string&  userUuid, const Exte
 }
 //------------------------------------------------------------
 
-void        UserConnection::RequestDevicesList( const PacketNotification_RequestListOfDevices* device )
+void        UserConnection::RequestDevicesList( const PacketNotification_RequestListOfDevices* device, U32 connectionId )
 {
    PacketNotification_RequestListOfDevicesResponse* response = new PacketNotification_RequestListOfDevicesResponse;
 
+   U8 gameProductId = GetGameProductId( connectionId );
    // todo, divide this into multiple packets to deal with overflow.
    RegisteredDeviceIterator deviceIt = m_deviceList.begin();
    while( deviceIt != m_deviceList.end() )
    {
-      DumpDevice( m_userInfo.userName, m_userInfo.uuid, *deviceIt );
+      DumpDevice( m_userName, m_userUuid, *deviceIt );
 
       U32 userDeviceId = deviceIt->userDeviceId;
-      DeviceNotificationsIterator deviceNotificationIter = FindDeviceNotificationByUserDeviceId( userDeviceId );
+      DeviceNotificationsIterator deviceNotificationIter = FindDeviceNotification( userDeviceId, gameProductId );
       if( deviceNotificationIter != m_deviceEnabledList.end() )
       {
          RegisteredDevice rd;
@@ -805,18 +837,19 @@ void        UserConnection::RequestDevicesList( const PacketNotification_Request
       deviceIt++;
    }
 
-   SendMessageToClient( response );
+   SendMessageToClient( response, connectionId );
 }
 
 //------------------------------------------------------------
 
-void        UserConnection::RemoveDevice( const PacketNotification_RemoveDevice* removal )
+void        UserConnection::RemoveDevice( const PacketNotification_RemoveDevice* removal, U32 connectionId )
 {
    LogMessage( LOG_PRIO_INFO, "Remove device" );
    PacketNotification_RemoveDeviceResponse* response = new PacketNotification_RemoveDeviceResponse;
    response->success = false;
    const string lookupUuid = removal->deviceUuid.c_str();
    response->deviceUuid = lookupUuid;
+   U8 gameProductId = GetGameProductId( connectionId );
 
    RegisteredDeviceIterator deviceIt = m_deviceList.begin();
    while( deviceIt != m_deviceList.end() )
@@ -824,15 +857,15 @@ void        UserConnection::RemoveDevice( const PacketNotification_RemoveDevice*
       if( deviceIt->uuid == lookupUuid )
       {
          U32 userDeviceId = deviceIt->userDeviceId;  
-         DeviceNotificationsIterator deviceNotificationIter = FindDeviceNotificationByUserDeviceId( userDeviceId );
+         DeviceNotificationsIterator deviceNotificationIter = FindDeviceNotification( userDeviceId, gameProductId );
 
          PacketDbQuery* dbQuery = new PacketDbQuery;
-         dbQuery->id =           m_userInfo.connectionId;
+         dbQuery->id =           m_userId;//m_userInfo.connectionId;
          dbQuery->meta =         "";
          dbQuery->lookup =       QueryType_DeleteDevice;
-         dbQuery->serverLookup = m_userInfo.userId;
+         dbQuery->serverLookup = m_userId;
          dbQuery->query = "DELETE FROM user_device WHERE user_uuid='";
-         dbQuery->query += m_userInfo.uuid.c_str(); // a little extra validation
+         dbQuery->query += m_userUuid; // a little extra validation
          dbQuery->query += "' AND id='";
          dbQuery->query += boost::lexical_cast<string> ( userDeviceId );
          dbQuery->query += "'";
@@ -843,10 +876,10 @@ void        UserConnection::RemoveDevice( const PacketNotification_RemoveDevice*
          m_mainThread->AddQueryToOutput( dbQuery );
 
          dbQuery = new PacketDbQuery;
-         dbQuery->id =           m_userInfo.connectionId;
+         dbQuery->id =           m_userId;//m_userInfo.connectionId;
          dbQuery->meta =         "";
          dbQuery->lookup =       QueryType_DeleteDeviceNotification;
-         dbQuery->serverLookup = m_userInfo.userId;
+         dbQuery->serverLookup = m_userId;
          dbQuery->query = "DELETE FROM user_device_notification WHERE user_device_id='";
          dbQuery->query += boost::lexical_cast<string> ( userDeviceId );
          dbQuery->query += "'";
@@ -866,8 +899,8 @@ void        UserConnection::RemoveDevice( const PacketNotification_RemoveDevice*
       deviceIt++;
    }
 
-   SendMessageToClient( response );
-   RequestDevicesList( NULL );
+   SendMessageToClient( response, connectionId );
+   RequestDevicesList( NULL, connectionId );
 }
 /*
 //------------------------------------------------------------
@@ -915,12 +948,12 @@ UserConnection::RegisteredDeviceIterator
 
 // if you pass in a 0, you get all devices for all platforms.
 UserConnection::DeviceNotificationsIterator   
-   UserConnection::FindDeviceNotificationByUserDeviceId( U32 id )
+   UserConnection::FindDeviceNotification( U32 id, U8 gameProductId )
 {
    DeviceNotificationsIterator  deviceEnabledIt = m_deviceEnabledList.begin();
    while( deviceEnabledIt != m_deviceEnabledList.end() )
    {
-      if( m_userInfo.gameProductId == deviceEnabledIt->gameType )// we should match both fields.
+      if( gameProductId == deviceEnabledIt->gameType )// we should match both fields.
       {
          if( deviceEnabledIt->userDeviceId == id )
          {
@@ -936,12 +969,12 @@ UserConnection::DeviceNotificationsIterator
 
 // if you pass in a 0, you get all devices for all platforms.
 UserConnection::DeviceNotificationsIterator   
-   UserConnection::FindDeviceNotificationByDeviceId( const string& id )
+   UserConnection::FindDeviceNotificationByDeviceId( const string& id, U8 gameProductId )
 {
    DeviceNotificationsIterator  deviceEnabledIt = m_deviceEnabledList.begin();
    while( deviceEnabledIt != m_deviceEnabledList.end() )
    {
-      if( m_userInfo.gameProductId == deviceEnabledIt->gameType )// got to match both fields.
+      if( gameProductId == deviceEnabledIt->gameType )// got to match both fields.
       {
          if( deviceEnabledIt->deviceId == id )
          {
@@ -955,10 +988,11 @@ UserConnection::DeviceNotificationsIterator
 
 //---------------------------------------------------------------
 
-bool     UserConnection::SendMessageToClient( BasePacket* packet ) const
+bool     UserConnection::SendMessageToClient( BasePacket* packet, U32 connectionId ) const
 {
-   U32 connectionId = m_userInfo.connectionId;
-   U32 gatewayId = m_userInfo.gatewayId;
+   U32 gatewayId = GetGatewayId( connectionId );
+   //U32 connectionId = m_userInfo.connectionId;
+   //U32 gatewayId = m_userInfo.gatewayId;
    PacketGatewayWrapper* wrapper = new PacketGatewayWrapper();
    wrapper->SetupPacket( packet, connectionId );
 

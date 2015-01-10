@@ -18,6 +18,7 @@ DiplodocusGame::DiplodocusGame( const string& serverName, U32 serverId, U8 gameP
 int      DiplodocusGame::CallbackFunction()
 {
    UpdateInputPacketToBeProcessed();
+   UpdateOutputPacketToBeProcessed();
    return 1;
 }
 
@@ -97,12 +98,14 @@ bool     DiplodocusGame:: ProcessPacket( PacketStorage& storage )
 
    if( packet->packetType == PacketType_GatewayInformation )
    {
+      PacketCleaner cleaner( packet );
       HandleCommandFromGateway( packet, gatewayId );
       return false;
    }
 
    if( packet->packetType == PacketType_ServerJobWrapper )
    {
+      PacketCleaner cleaner( packet );
       HandlePacketFromOtherServer( packet, gatewayId );
       return true;
    }
@@ -181,8 +184,17 @@ bool  DiplodocusGame::HandlePacketFromOtherServer( BasePacket* packet, U32 conne
       case PacketLogin::LoginType_PrepareForUserLogin:
          ConnectUser( static_cast< PacketPrepareForUserLogin* >( actualPacket ) );
          return true;
+
       case PacketLogin::LoginType_PrepareForUserLogout:
          DisconnectUser( static_cast< PacketPrepareForUserLogout* >( actualPacket ) );
+         return true;
+
+      case PacketLogin::LoginType_ExpireUserLogin:
+         ExpireUser( static_cast< PacketLoginExpireUser* >( actualPacket ) );
+         return true;
+
+      case PacketLogin::LoginType_RequestServiceToFlushAllUserLogins:
+         DeleteAllUsers();
          return true;
       }
    }
@@ -191,7 +203,7 @@ bool  DiplodocusGame::HandlePacketFromOtherServer( BasePacket* packet, U32 conne
 
 //---------------------------------------------------------------
 
-void  DiplodocusGame::ConnectUser( const PacketPrepareForUserLogin* loginPacket )
+bool  DiplodocusGame::ConnectUser( const PacketPrepareForUserLogin* loginPacket )
 {
    U32 connectionId = loginPacket->connectionId;
    string uuid = loginPacket->uuid;
@@ -203,7 +215,7 @@ void  DiplodocusGame::ConnectUser( const PacketPrepareForUserLogin* loginPacket 
    {
       // we already have this which should be a major problem
       Log( "Chat server: Attempt to add a user connection fails" );
-      return;
+      return false;
    }
 
    bool found = false;
@@ -230,11 +242,12 @@ void  DiplodocusGame::ConnectUser( const PacketPrepareForUserLogin* loginPacket 
       m_connectionMap.insert( ConnectionPair ( connectionId, connection ) );
    m_mutex.unlock();*/
    }
+   return false;
 }
 
 //---------------------------------------------------------------
 
-void  DiplodocusGame::DisconnectUser( const PacketPrepareForUserLogout* logoutPacket )
+bool  DiplodocusGame::DisconnectUser( const PacketPrepareForUserLogout* logoutPacket )
 {
    cout << "Prep for logout: " << logoutPacket->connectionId << ", " << logoutPacket->uuid << endl;
   /* U32 connectionId = logoutPacket->connectionId;
@@ -259,6 +272,21 @@ void  DiplodocusGame::DisconnectUser( const PacketPrepareForUserLogout* logoutPa
       FinishedLogout( connectionId, uuid );
    m_mutex.unlock();*/
 
+   return false;
+}
+
+//---------------------------------------------------------------
+
+bool  DiplodocusGame::ExpireUser( const PacketLoginExpireUser* actualPacket )
+{
+   return true;
+}
+
+//---------------------------------------------------------------
+
+bool  DiplodocusGame::DeleteAllUsers()
+{
+   return true;
 }
 
 //---------------------------------------------------------------
