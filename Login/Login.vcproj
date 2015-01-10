@@ -258,15 +258,7 @@
 			UniqueIdentifier="{4FC737F1-C7A5-4376-A066-2A32D752A2FF}"
 			>
 			<File
-				RelativePath=".\ConnectionToUser.cpp"
-				>
-			</File>
-			<File
 				RelativePath=".\CreateAccountResultsAggregator.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\DiplodocusLogin.cpp"
 				>
 			</File>
 			<File
@@ -282,7 +274,15 @@
 				>
 			</File>
 			<File
+				RelativePath=".\ProductManager.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\ScheduledOutageDBReader.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\UserLogin.cpp"
 				>
 			</File>
 		</Filter>
@@ -292,15 +292,7 @@
 			UniqueIdentifier="{93995380-89BD-4b04-88EB-625FBE52EBFB}"
 			>
 			<File
-				RelativePath=".\ConnectionToUser.h"
-				>
-			</File>
-			<File
 				RelativePath=".\CreateAccountResultsAggregator.h"
-				>
-			</File>
-			<File
-				RelativePath=".\DiplodocusLogin.h"
 				>
 			</File>
 			<File
@@ -312,11 +304,27 @@
 				>
 			</File>
 			<File
+				RelativePath=".\LoginMainThread.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\LoginMainThread.h"
+				>
+			</File>
+			<File
 				RelativePath=".\ProductInfo.h"
 				>
 			</File>
 			<File
+				RelativePath=".\ProductManager.h"
+				>
+			</File>
+			<File
 				RelativePath=".\ScheduledOutageDBReader.h"
+				>
+			</File>
+			<File
+				RelativePath=".\UserLogin.h"
 				>
 			</File>
 		</Filter>
@@ -576,6 +584,18 @@
 				</File>
 				<File
 					RelativePath="..\NetworkCommon\General\FixedLengthString.inl"
+					>
+				</File>
+			</Filter>
+			<Filter
+				Name="UserAccount"
+				>
+				<File
+					RelativePath="..\NetworkCommon\UserAccount\UserAccountCommon.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\NetworkCommon\UserAccount\UserAccountCommon.h"
 					>
 				</File>
 			</Filter>

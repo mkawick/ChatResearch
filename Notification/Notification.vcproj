@@ -554,6 +554,18 @@
 					>
 				</File>
 			</Filter>
+			<Filter
+				Name="UserAccount"
+				>
+				<File
+					RelativePath="..\NetworkCommon\UserAccount\UserAccountCommon.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\NetworkCommon\UserAccount\UserAccountCommon.h"
+					>
+				</File>
+			</Filter>
 		</Filter>
 		<Filter
 			Name="CopiedFromSW"

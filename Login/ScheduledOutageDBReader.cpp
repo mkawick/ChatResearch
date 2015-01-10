@@ -8,8 +8,10 @@
 #include "../NetworkCommon/Utils/Utils.h"
 #include "../NetworkCommon/Packets/DbPacket.h"
 #include "../NetworkCommon/Utils/CommandLineParser.h"
+#include "../NetworkCommon/Utils/Enigmosaurus.h"
+#include "../NetworkCommon/Utils/TableWrapper.h"
 
-#include "DiplodocusLogin.h"
+#include "LoginMainThread.h"
 #include "ScheduledOutageDBReader.h"
 
 const int howFarInThePastToPullOutages_InHours = 4;
@@ -55,7 +57,7 @@ void  ScheduledOutageDBReader::Update()
 
       PacketDbQuery* dbQuery = new PacketDbQuery;
       dbQuery->id =     0;
-      dbQuery->lookup = DiplodocusLogin::QueryType_ScheduledOutage;
+      dbQuery->lookup = LoginMainThread::QueryType_ScheduledOutage;
 
       string date = GetDateInUTC( 0, -howFarInThePastToPullOutages_InHours, 0 );// look at up to 4 hours ago.
 
@@ -73,7 +75,7 @@ void  ScheduledOutageDBReader::Update()
 bool     ScheduledOutageDBReader::HandleResult( const PacketDbQueryResult* dbResult )
 {
    U32 queryType = static_cast< U32 >( dbResult->lookup );
-   if( queryType == DiplodocusLogin::QueryType_ScheduledOutage )
+   if( queryType == LoginMainThread::QueryType_ScheduledOutage )
    {
       IndexTableParser              enigma( dbResult->bucket );
       IndexTableParser::iterator    it = enigma.begin();
