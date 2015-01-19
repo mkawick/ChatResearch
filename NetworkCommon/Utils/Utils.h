@@ -34,6 +34,7 @@ const std::string    OpenAndLoadFile( const std::string& path );
 #if PLATFORM != PLATFORM_WINDOWS
 int kbhit();
 int getch();
+// for sleep, also take a look at: http://blog.habets.pp.se/2010/09/gettimeofday-should-never-be-used-to-measure-time
 #define Sleep(microSeconds)           usleep(( useconds_t )(microSeconds * 1000))
 
 #define  SOCKET_ERROR   -1
